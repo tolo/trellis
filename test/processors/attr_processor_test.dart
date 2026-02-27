@@ -1,0 +1,188 @@
+import 'package:test/test.dart';
+import 'package:trellis/trellis.dart';
+
+void main() {
+  group('Attribute processor', () {
+    late Trellis engine;
+
+    setUp(() {
+      engine = Trellis(loader: MapLoader({}), cache: false);
+    });
+
+    String render(String template, Map<String, dynamic> context) => engine.render(template, context);
+
+    group('shorthand attributes', () {
+      test('tl:href sets href', () {
+        final result = render(r'<a tl:href="${url}">link</a>', {'url': '/home'});
+        expect(result, contains('href="/home"'));
+        expect(result, contains('>link</a>'));
+      });
+
+      test('tl:src sets src', () {
+        final result = render(r'<img tl:src="${imgUrl}">', {'imgUrl': '/img/photo.png'});
+        expect(result, contains('src="/img/photo.png"'));
+      });
+
+      test('tl:value sets value', () {
+        final result = render(r'<input tl:value="${val}">', {'val': 'hello'});
+        expect(result, contains('value="hello"'));
+      });
+
+      test('tl:class replaces existing class', () {
+        final result = render(r'<div class="old" tl:class="${cls}">x</div>', {'cls': 'new'});
+        expect(result, contains('class="new"'));
+        expect(result, isNot(contains('old')));
+      });
+
+      test('tl:id sets id', () {
+        final result = render(r'<div tl:id="${myId}">x</div>', {'myId': 'main'});
+        expect(result, contains('id="main"'));
+      });
+
+      test('multiple shorthands on same element', () {
+        final result = render(r'<a tl:href="${url}" tl:class="${cls}">link</a>', {'url': '/page', 'cls': 'active'});
+        expect(result, contains('href="/page"'));
+        expect(result, contains('class="active"'));
+      });
+    });
+
+    group('tl:attr', () {
+      test('single attribute', () {
+        final result = render(r'<div tl:attr="data-id=${id}">x</div>', {'id': 42});
+        expect(result, contains('data-id="42"'));
+      });
+
+      test('multiple attributes', () {
+        final result = render(r'<div tl:attr="data-id=${id},title=${name}">x</div>', {'id': 42, 'name': 'Item'});
+        expect(result, contains('data-id="42"'));
+        expect(result, contains('title="Item"'));
+      });
+
+      test('expression with == in value', () {
+        final result = render(r'<div tl:attr="data-match=${a} == ${b}">x</div>', {'a': 1, 'b': 1});
+        expect(result, contains('data-match="true"'));
+      });
+    });
+
+    group('null handling', () {
+      test('null removes attribute', () {
+        final result = render(r'<a tl:href="${url}">link</a>', {'url': null});
+        expect(result, isNot(contains('href')));
+      });
+
+      test('null removes existing attribute', () {
+        final result = render(r'<a href="/old" tl:href="${url}">link</a>', {'url': null});
+        expect(result, isNot(contains('href')));
+      });
+
+      test('missing var (null) removes attribute', () {
+        final result = render(r'<a tl:href="${missing}">link</a>', {});
+        expect(result, isNot(contains('href')));
+      });
+    });
+
+    group('boolean HTML attributes', () {
+      test('true renders valueless attribute', () {
+        final result = render(r'<input tl:attr="disabled=${active}">', {'active': true});
+        expect(result, contains('disabled'));
+        // valueless: should not have disabled="true"
+        expect(result, isNot(contains('disabled="true"')));
+      });
+
+      test('false removes boolean attribute', () {
+        final result = render(r'<input disabled tl:attr="disabled=${active}">', {'active': false});
+        expect(result, isNot(contains('disabled')));
+      });
+
+      test('non-bool value on boolean attr renders as string', () {
+        final result = render(r'<input tl:attr="disabled=${val}">', {'val': 'yes'});
+        expect(result, contains('disabled="yes"'));
+      });
+    });
+
+    group('tl:class behavior', () {
+      test('replaces not appends', () {
+        final result = render(r'<div class="a b" tl:class="${cls}">x</div>', {'cls': 'c'});
+        expect(result, contains('class="c"'));
+        expect(result, isNot(contains('a b')));
+      });
+
+      test('null removes class', () {
+        final result = render(r'<div class="old" tl:class="${cls}">x</div>', {'cls': null});
+        expect(result, isNot(contains('class')));
+      });
+    });
+
+    group('URL expression in attr', () {
+      test('tl:href with URL expression', () {
+        final result = render(r'<a tl:href="@{/users(id=${userId})}">link</a>', {'userId': 42});
+        expect(result, contains('href="/users?id=42"'));
+      });
+    });
+
+    group('error handling', () {
+      test('malformed tl:attr throws', () {
+        expect(() => render('<div tl:attr="invalid">x</div>', {}), throwsA(isA<TemplateException>()));
+      });
+    });
+
+    group('tl:classappend', () {
+      test('appends to existing class attribute', () {
+        final result = render(r'<div class="btn" tl:classappend="${cls}">x</div>', {'cls': 'active'});
+        expect(result, contains('class="btn active"'));
+      });
+
+      test('sets class when no class attribute exists', () {
+        final result = render(r'<div tl:classappend="${cls}">x</div>', {'cls': 'primary'});
+        expect(result, contains('class="primary"'));
+      });
+
+      test('null expression leaves existing class unchanged', () {
+        final result = render(r'<div class="btn" tl:classappend="${cls}">x</div>', {'cls': null});
+        expect(result, contains('class="btn"'));
+      });
+
+      test('empty string result leaves existing class unchanged', () {
+        final result = render(r'<div class="btn" tl:classappend="${cls}">x</div>', {'cls': ''});
+        expect(result, contains('class="btn"'));
+      });
+
+      test('ternary — appends only when truthy', () {
+        final result = render(r'''<div class="item" tl:classappend="${active} ? 'active' : ''">x</div>''', {
+          'active': true,
+        });
+        expect(result, contains('class="item active"'));
+      });
+
+      test('ternary — no-op when falsy', () {
+        final result = render(r'''<div class="item" tl:classappend="${active} ? 'active' : ''">x</div>''', {
+          'active': false,
+        });
+        expect(result, contains('class="item"'));
+        expect(result, isNot(contains('active')));
+      });
+
+      test('tl:classappend removed from output', () {
+        final result = render(r'<div tl:classappend="${cls}">x</div>', {'cls': 'x'});
+        expect(result, isNot(contains('tl:classappend')));
+      });
+    });
+
+    group('attribute removal', () {
+      test('tl:href removed from output', () {
+        final result = render(r'<a tl:href="${url}">link</a>', {'url': '/x'});
+        expect(result, isNot(contains('tl:href')));
+      });
+
+      test('tl:attr removed from output', () {
+        final result = render(r'<div tl:attr="data-x=${val}">x</div>', {'val': 1});
+        expect(result, isNot(contains('tl:attr')));
+      });
+
+      test('tl:class removed from output', () {
+        final result = render(r'<div tl:class="${cls}">x</div>', {'cls': 'a'});
+        expect(result, isNot(contains('tl:class')));
+      });
+    });
+  });
+}

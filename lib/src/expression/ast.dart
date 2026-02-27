@@ -1,0 +1,88 @@
+/// AST node hierarchy for trellis expressions.
+sealed class Expr {}
+
+/// A literal value: string, int, double, bool, or null.
+final class LiteralExpr extends Expr {
+  final dynamic value;
+  LiteralExpr(this.value);
+}
+
+/// A variable reference: `name` resolved from context.
+final class VariableExpr extends Expr {
+  final String name;
+  VariableExpr(this.name);
+}
+
+/// Dot member access: `object.member`.
+final class MemberAccessExpr extends Expr {
+  final Expr object;
+  final String member;
+  MemberAccessExpr(this.object, this.member);
+}
+
+/// Bracket index access: `object[index]`.
+final class IndexAccessExpr extends Expr {
+  final Expr object;
+  final int index;
+  IndexAccessExpr(this.object, this.index);
+}
+
+/// Unary operator applied to an operand.
+final class UnaryExpr extends Expr {
+  final UnaryOp op;
+  final Expr operand;
+  UnaryExpr(this.op, this.operand);
+}
+
+/// Binary operator applied to two operands.
+final class BinaryExpr extends Expr {
+  final Expr left;
+  final BinaryOp op;
+  final Expr right;
+  BinaryExpr(this.left, this.op, this.right);
+}
+
+/// Ternary conditional: `condition ? ifTrue : ifFalse`.
+final class TernaryExpr extends Expr {
+  final Expr condition;
+  final Expr ifTrue;
+  final Expr ifFalse;
+  TernaryExpr(this.condition, this.ifTrue, this.ifFalse);
+}
+
+/// Elvis null-coalescing: `left ?: right`. Triggers on null only.
+final class ElvisExpr extends Expr {
+  final Expr left;
+  final Expr right;
+  ElvisExpr(this.left, this.right);
+}
+
+/// Pipe filter: `target | filterName`. Chains left-to-right.
+final class PipeExpr extends Expr {
+  final Expr target;
+  final String filterName;
+  PipeExpr(this.target, this.filterName);
+}
+
+/// URL expression: `@{/path(key=value, ...)}`.
+final class UrlExpr extends Expr {
+  final String path;
+  final List<(String key, Expr value)> params;
+  UrlExpr(this.path, this.params);
+}
+
+/// Binary operators. Includes placeholders for v0.2 arithmetic.
+enum BinaryOp {
+  eq,
+  notEq,
+  lt,
+  gt,
+  lte,
+  gte,
+  and_,
+  or_,
+  plus,
+}
+
+/// Unary operators.
+enum UnaryOp { not_ }

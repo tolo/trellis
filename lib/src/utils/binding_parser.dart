@@ -1,21 +1,19 @@
 import '../exceptions.dart';
 
-/// Split [input] on top-level commas, respecting nested `'...'`, `${...}`,
-/// `@{...}`, and `(...)` delimiters.
-List<String> splitTopLevel(String input) {
-  final segments = <String>[];
-  final buffer = StringBuffer();
+/// Find the index of the first top-level occurrence of [delimiter] in [input],
+/// respecting nested `'...'`, `${...}`, `@{...}`, and `(...)` delimiters.
+/// Returns -1 if not found.
+int findTopLevelDelimiter(String input, String delimiter) {
+  assert(delimiter.length == 1, 'delimiter must be a single character');
   var inSingleQuote = false;
   var braceDepth = 0;
   var parenDepth = 0;
 
   for (var i = 0; i < input.length; i++) {
     final char = input[i];
-
     if (inSingleQuote) {
-      buffer.write(char);
       if (char == r'\' && i + 1 < input.length && input[i + 1] == "'") {
-        buffer.write(input[++i]); // consume escaped quote
+        i++;
       } else if (char == "'") {
         inSingleQuote = false;
       }
@@ -24,28 +22,36 @@ List<String> splitTopLevel(String input) {
 
     if (char == "'") {
       inSingleQuote = true;
-      buffer.write(char);
     } else if (char == '{') {
       braceDepth++;
-      buffer.write(char);
     } else if (char == '}') {
       braceDepth--;
-      buffer.write(char);
     } else if (char == '(') {
       parenDepth++;
-      buffer.write(char);
     } else if (char == ')') {
       parenDepth--;
-      buffer.write(char);
-    } else if (char == ',' && braceDepth == 0 && parenDepth == 0) {
-      segments.add(buffer.toString().trim());
-      buffer.clear();
-    } else {
-      buffer.write(char);
+    } else if (char == delimiter && braceDepth == 0 && parenDepth == 0) {
+      return i;
     }
   }
 
-  segments.add(buffer.toString().trim());
+  return -1;
+}
+
+/// Split [input] on top-level commas, respecting nested `'...'`, `${...}`,
+/// `@{...}`, and `(...)` delimiters.
+List<String> splitTopLevel(String input) {
+  final segments = <String>[];
+  var remaining = input;
+  while (true) {
+    final idx = findTopLevelDelimiter(remaining, ',');
+    if (idx == -1) {
+      segments.add(remaining.trim());
+      break;
+    }
+    segments.add(remaining.substring(0, idx).trim());
+    remaining = remaining.substring(idx + 1);
+  }
   return segments;
 }
 

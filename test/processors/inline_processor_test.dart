@@ -226,9 +226,7 @@ void main() {
       });
 
       test('JS mode escapes uppercase </SCRIPT', () {
-        final result = render(r'<script tl:inline="javascript">var s = "[[${val}]]";</script>', {
-          'val': '</SCRIPT>',
-        });
+        final result = render(r'<script tl:inline="javascript">var s = "[[${val}]]";</script>', {'val': '</SCRIPT>'});
         expect(result, isNot(contains('</SCRIPT>')));
       });
 
@@ -241,9 +239,7 @@ void main() {
       });
 
       test('CSS mode escapes mixed-case </StYlE', () {
-        final result = render(r'<style tl:inline="css">.cls { content: "[[${val}]]"; }</style>', {
-          'val': '</StYlE>',
-        });
+        final result = render(r'<style tl:inline="css">.cls { content: "[[${val}]]"; }</style>', {'val': '</StYlE>'});
         expect(result, isNot(contains('</StYlE>')));
         expect(result, contains(r'\3c /style'));
       });

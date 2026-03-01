@@ -22,7 +22,7 @@ void processSwitch(Element element, String attrPrefix, ExpressionEvaluator evalu
   final switchStr = switchValue.toString();
 
   Element? defaultChild;
-  bool matched = false;
+  var matched = false;
 
   // Snapshot children to handle DOM mutations during iteration
   for (final child in List<Element>.from(element.children)) {

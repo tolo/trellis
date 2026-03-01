@@ -357,9 +357,18 @@ void main() {
 
       test('all alias/keyword words as member names', () {
         final obj = {
-          'gt': 1, 'lt': 2, 'ge': 3, 'le': 4, 'eq': 5, 'ne': 6,
-          'and': 7, 'or': 8, 'not': 9,
-          'true': 10, 'false': 11, 'null': 12,
+          'gt': 1,
+          'lt': 2,
+          'ge': 3,
+          'le': 4,
+          'eq': 5,
+          'ne': 6,
+          'and': 7,
+          'or': 8,
+          'not': 9,
+          'true': 10,
+          'false': 11,
+          'null': 12,
         };
         final ctx = {'obj': obj};
         expect(eval(r'${obj.gt}', ctx), 1);

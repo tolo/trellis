@@ -14,7 +14,5 @@ Map<String, dynamic> processObject(
   if (objectExpr == null) return context;
 
   final value = evaluator.evaluate(objectExpr, context);
-  final newContext = Map<String, dynamic>.from(context);
-  newContext[ExpressionEvaluator.selectionKey] = value;
-  return newContext;
+  return {...context, ExpressionEvaluator.selectionKey: value};
 }

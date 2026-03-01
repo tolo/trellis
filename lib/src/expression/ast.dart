@@ -77,7 +77,7 @@ final class UrlExpr extends Expr {
   UrlExpr(this.path, this.params);
 }
 
-/// Binary operators. Includes placeholders for v0.2 arithmetic.
+/// Binary operators.
 enum BinaryOp { eq, notEq, lt, gt, lte, gte, and_, or_, plus, minus, star, slash, percent }
 
 /// Selection expression: `*{field}` resolved against the tl:object scope.

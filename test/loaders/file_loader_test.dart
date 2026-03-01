@@ -84,7 +84,7 @@ void main() {
         // Create a file outside the base directory.
         final outsideFile = File('${tempDir.parent.path}/outside_secret.html');
         outsideFile.writeAsStringSync('SECRET');
-        addTearDown(() => outsideFile.deleteSync());
+        addTearDown(outsideFile.deleteSync);
 
         // Create a symlink inside basePath that points outside.
         final link = Link('${tempDir.path}/escape.html');
@@ -101,11 +101,11 @@ void main() {
 
         final outsideFile = File('${siblingBase.path}/secret.html');
         outsideFile.writeAsStringSync('SECRET');
-        addTearDown(() => outsideFile.deleteSync());
+        addTearDown(outsideFile.deleteSync);
 
         final link = Link('${tempDir.path}/escape_prefix.html');
         link.createSync(outsideFile.path);
-        addTearDown(() => link.deleteSync());
+        addTearDown(link.deleteSync);
 
         expect(() => loader.load('escape_prefix'), throwsA(isA<TemplateSecurityException>()));
       });

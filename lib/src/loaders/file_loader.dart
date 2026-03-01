@@ -7,7 +7,7 @@ import 'template_loader.dart';
 ///
 /// Enforces security boundaries: rejects absolute paths, `..` traversal,
 /// and symlink escapes outside the base path.
-class FileSystemLoader implements TemplateLoader {
+final class FileSystemLoader implements TemplateLoader {
   final String basePath;
   final String extension;
   late final String _canonicalBase;

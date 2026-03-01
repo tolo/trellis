@@ -20,8 +20,8 @@ void main() {
       test('1', () => expect(isTruthy(1), true));
       test('-1', () => expect(isTruthy(-1), true));
       test('3.14', () => expect(isTruthy(3.14), true));
-      test('[] (empty list)', () => expect(isTruthy([]), true));
-      test('{} (empty map)', () => expect(isTruthy({}), true));
+      test('[] (empty list)', () => expect(isTruthy(<dynamic>[]), true));
+      test('{} (empty map)', () => expect(isTruthy(<dynamic, dynamic>{}), true));
       test('[1]', () => expect(isTruthy([1]), true));
       test("{'a': 1}", () => expect(isTruthy({'a': 1}), true));
     });

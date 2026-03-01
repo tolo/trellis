@@ -15,7 +15,7 @@ Map<String, dynamic> processWith(
   if (withExpr == null) return context;
 
   final bindings = parseBindings(withExpr);
-  final newContext = Map<String, dynamic>.from(context);
+  final newContext = {...context};
   for (final (name, expression) in bindings) {
     newContext[name] = evaluator.evaluate(expression, newContext);
   }

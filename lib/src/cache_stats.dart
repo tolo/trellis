@@ -1,5 +1,5 @@
 /// Snapshot of template cache statistics.
-class CacheStats {
+final class CacheStats {
   final int size;
   final int hits;
   final int misses;

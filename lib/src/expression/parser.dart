@@ -3,7 +3,7 @@ import 'scanner.dart';
 import '../exceptions.dart';
 
 /// Recursive descent parser producing an AST from a trellis expression string.
-class Parser {
+final class Parser {
   final Scanner _scanner;
   final String _source;
 

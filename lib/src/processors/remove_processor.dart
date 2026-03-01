@@ -45,7 +45,7 @@ bool processRemove(Element element, String attrPrefix, ExpressionEvaluator evalu
       final children = element.children;
       if (children.isNotEmpty) {
         final firstChild = children.first;
-        bool foundFirst = false;
+        var foundFirst = false;
         for (final node in List<Node>.from(element.nodes)) {
           if (node == firstChild) {
             foundFirst = true;

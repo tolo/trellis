@@ -26,10 +26,10 @@ const _booleanHtmlAttrs = {
 };
 
 /// Shorthand attribute names mapped by `tl:$name` → HTML `$name`.
-const _shorthands = ['href', 'src', 'value', 'class', 'id'];
+const _shorthands = {'href', 'src', 'value', 'class', 'id'};
 
-/// Processes `tl:attr`, `tl:href`, `tl:src`, `tl:value`, `tl:class`,
-/// and `tl:id` attribute mutations.
+/// Processes attribute mutations: `tl:attr`, shorthands (`tl:href`, `tl:src`,
+/// `tl:value`, `tl:class`, `tl:id`), `tl:classappend`, and `tl:styleappend`.
 void processAttributes(
   Element element,
   String attrPrefix,

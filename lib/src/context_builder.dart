@@ -1,5 +1,5 @@
 /// Fluent builder for constructing template context maps.
-class TrellisContext {
+final class TrellisContext {
   final Map<String, dynamic> _data = {};
 
   /// Set a single key-value pair. Returns `this` for chaining.

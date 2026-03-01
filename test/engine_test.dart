@@ -298,7 +298,8 @@ void main() {
 
   group('renderFragments', () {
     late Trellis engine;
-    final template = '<div>'
+    final template =
+        '<div>'
         r'<p tl:fragment="a" tl:text="${msg}">x</p>'
         r'<span tl:fragment="b" tl:text="${name}">y</span>'
         '<footer tl:fragment="c">static</footer>'
@@ -360,7 +361,8 @@ void main() {
     });
 
     test('tl:if conditional in fragment', () {
-      final tpl = '<div>'
+      final tpl =
+          '<div>'
           r'<p tl:fragment="cond" tl:if="${show}">visible</p>'
           '</div>';
       final shown = engine.renderFragments(tpl, fragments: ['cond'], context: {'show': true});
@@ -368,7 +370,8 @@ void main() {
     });
 
     test('HTMX OOB attributes preserved', () {
-      final tpl = '<div>'
+      final tpl =
+          '<div>'
           r'<p tl:fragment="oob" hx-swap-oob="true" tl:text="${msg}">x</p>'
           '</div>';
       final result = engine.renderFragments(tpl, fragments: ['oob'], context: {'msg': 'updated'});
@@ -387,7 +390,8 @@ void main() {
     test('loads file and renders multiple fragments', () async {
       final engine = Trellis(
         loader: MapLoader({
-          'page': '<div>'
+          'page':
+              '<div>'
               r'<p tl:fragment="header" tl:text="${title}">x</p>'
               '<footer tl:fragment="footer">footer</footer>'
               '</div>',
@@ -412,10 +416,7 @@ void main() {
     });
 
     test('missing fragment throws FragmentNotFoundException', () {
-      final engine = Trellis(
-        loader: MapLoader({'page': '<div><p tl:fragment="a">ok</p></div>'}),
-        cache: false,
-      );
+      final engine = Trellis(loader: MapLoader({'page': '<div><p tl:fragment="a">ok</p></div>'}), cache: false);
       expect(
         () => engine.renderFileFragments('page', fragments: ['a', 'nope'], context: {}),
         throwsA(isA<FragmentNotFoundException>()),

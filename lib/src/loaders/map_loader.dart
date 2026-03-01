@@ -2,7 +2,7 @@ import '../exceptions.dart';
 import 'template_loader.dart';
 
 /// In-memory template loader for testing. Templates keyed by name.
-class MapLoader implements TemplateLoader {
+final class MapLoader implements TemplateLoader {
   final Map<String, String> templates;
 
   MapLoader(this.templates);

@@ -95,7 +95,7 @@ String _escape(String input, String mode) => switch (mode) {
   'text' => input, // Text node serializer handles HTML escaping
   'javascript' => _escapeJs(input),
   'css' => _escapeCss(input),
-  _ => input,
+  _ => throw StateError('unreachable: mode already validated'),
 };
 
 final _reCloseScript = RegExp(r'</script', caseSensitive: false);

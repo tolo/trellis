@@ -49,7 +49,7 @@ enum TokenType {
 }
 
 /// A single token produced by [Scanner].
-class Token {
+final class Token {
   final TokenType type;
   final dynamic value;
   final int offset;
@@ -61,7 +61,7 @@ class Token {
 }
 
 /// Tokenizer for trellis expressions, wrapping [StringScanner].
-class Scanner {
+final class Scanner {
   final StringScanner _scanner;
   final String _source;
   Token? _peeked;

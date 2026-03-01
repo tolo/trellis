@@ -10,7 +10,7 @@ import 'processors/fragment_processor.dart' show escapeAttrSelector;
 
 /// Core template engine. Parses HTML, processes `tl:*` attributes,
 /// renders output.
-class Trellis {
+final class Trellis {
   final TemplateLoader loader;
   final bool cache;
   final String prefix;
@@ -89,11 +89,7 @@ class Trellis {
   /// Designed for HTMX OOB (out-of-band) swap responses. Each fragment is
   /// processed independently with the same context. Fails fast if any
   /// fragment is missing — no partial output is returned.
-  String renderFragments(
-    String source, {
-    required List<String> fragments,
-    required Map<String, dynamic> context,
-  }) {
+  String renderFragments(String source, {required List<String> fragments, required Map<String, dynamic> context}) {
     if (fragments.isEmpty) return '';
 
     final doc = _parse(source);
@@ -139,7 +135,7 @@ class Trellis {
       _cacheHits++;
       final doc = _cache.remove(source)!;
       _cache[source] = doc;
-      return _cloneDocument(doc);
+      return doc.clone(true);
     }
     if (cache) _cacheMisses++;
     final doc = html_parser.parse(source);
@@ -149,11 +145,6 @@ class Trellis {
         _cache.remove(_cache.keys.first);
       }
     }
-    return cache ? _cloneDocument(doc) : doc;
+    return cache ? doc.clone(true) : doc;
   }
-
-  Document _cloneDocument(Document doc) {
-    return doc.clone(true);
-  }
-
 }

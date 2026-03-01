@@ -2,6 +2,7 @@ import 'package:html/dom.dart';
 
 import '../evaluator.dart';
 import '../exceptions.dart';
+import '../utils/binding_parser.dart' show findTopLevelDelimiter;
 
 /// Processes `tl:each` iteration attribute.
 /// Returns `true` if `tl:each` was present and handled (element was replicated).
@@ -16,7 +17,7 @@ bool processEach(
   if (attrValue == null) return false;
 
   // Parse: "item : ${collection}" or "item, stat : ${collection}"
-  final colonIndex = _findTopLevelColon(attrValue);
+  final colonIndex = findTopLevelDelimiter(attrValue, ':');
   if (colonIndex == -1) {
     throw TemplateException('Invalid tl:each syntax: "$attrValue". Expected "item : \${collection}".');
   }
@@ -77,7 +78,7 @@ bool processEach(
       'even': i.isEven,
     };
 
-    final scopedContext = Map<String, dynamic>.from(context)..addAll({itemVar: item, statVar: statusMap});
+    final scopedContext = {...context, itemVar: item, statVar: statusMap};
 
     final clone = element.clone(true);
     clone.attributes.remove('${attrPrefix}each');
@@ -88,48 +89,4 @@ bool processEach(
   // Remove the original template element
   element.remove();
   return true;
-}
-
-int _findTopLevelColon(String input) {
-  var inSingleQuote = false;
-  var braceDepth = 0;
-  var parenDepth = 0;
-
-  for (var i = 0; i < input.length; i++) {
-    final char = input[i];
-    if (inSingleQuote) {
-      if (char == r'\' && i + 1 < input.length && input[i + 1] == "'") {
-        i++;
-      } else if (char == "'") {
-        inSingleQuote = false;
-      }
-      continue;
-    }
-
-    if (char == "'") {
-      inSingleQuote = true;
-      continue;
-    }
-    if (char == '{') {
-      braceDepth++;
-      continue;
-    }
-    if (char == '}') {
-      braceDepth--;
-      continue;
-    }
-    if (char == '(') {
-      parenDepth++;
-      continue;
-    }
-    if (char == ')') {
-      parenDepth--;
-      continue;
-    }
-    if (char == ':' && braceDepth == 0 && parenDepth == 0) {
-      return i;
-    }
-  }
-
-  return -1;
 }

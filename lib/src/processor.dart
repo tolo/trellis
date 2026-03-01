@@ -15,7 +15,7 @@ import 'processors/text_processor.dart';
 import 'processors/with_processor.dart';
 
 /// Walks the DOM tree and processes `tl:*` attributes in priority order.
-class DomProcessor {
+final class DomProcessor {
   final String prefix;
   final String separator;
   final ExpressionEvaluator evaluator;
@@ -112,7 +112,7 @@ class DomProcessor {
     }
 
     // 4. tl:insert / tl:replace — fragment inclusion
-    if (processFragment(element, attrPrefix, evaluator, effectiveContext, loader, _processFragmentContent, this)) {
+    if (processFragment(element, effectiveContext, _processFragmentContent, this)) {
       return;
     }
 
@@ -129,10 +129,10 @@ class DomProcessor {
     if (processRemove(element, attrPrefix, evaluator, effectiveContext)) return;
 
     // 8. Remove all tl:* attributes from output
-    element.attributes.keys
-        .where((key) => key is String && key.startsWith(attrPrefix))
-        .toList()
-        .forEach(element.attributes.remove);
+    final keysToRemove = element.attributes.keys.where((key) => key is String && key.startsWith(attrPrefix)).toList();
+    for (final key in keysToRemove) {
+      element.attributes.remove(key);
+    }
 
     // 9. Recurse into children (snapshot to handle DOM mutations)
     for (final child in List<Element>.from(element.children)) {

@@ -54,7 +54,7 @@ void main() {
       });
 
       test('truthy empty list — element present', () {
-        final result = render('<p tl:if="\${show}">visible</p>', {'show': []});
+        final result = render('<p tl:if="\${show}">visible</p>', {'show': <dynamic>[]});
         expect(result, contains('<p>visible</p>'));
       });
 

@@ -3,7 +3,7 @@
 [![pub package](https://img.shields.io/pub/v/trellis.svg)](https://pub.dev/packages/trellis)
 [![package publisher](https://img.shields.io/pub/publisher/trellis.svg)](https://pub.dev/packages/trellis/publisher)
 
-A Thymeleaf-inspired HTML template engine for Dart. Natural HTML templates with `tl:*` attributes, fragment-first design for HTMX, AOT-compatible (no reflection).
+A natural HTML template engine for Dart — templates are valid HTML that browsers render as prototypes without a server. Fragment-first design built for hypermedia-driven web frameworks like [HTMX](https://htmx.org/). Inspired by [Thymeleaf](https://www.thymeleaf.org/).
 
 ## Features
 
@@ -30,7 +30,7 @@ dart pub add trellis
 ```dart
 import 'package:trellis/trellis.dart';
 
-final engine = Trellis(loader: MapLoader({}));
+final engine = Trellis();
 
 final html = engine.render(
   '<h1 tl:text="${title}">Default Title</h1>',
@@ -64,8 +64,8 @@ Truthy: non-null, non-false, non-zero, not `"false"`/`"off"`/`"no"`. Empty strin
 
 ```html
 <div tl:switch="${role}">
-  <p tl:case="'admin'">Admin view</p>
-  <p tl:case="'user'">User view</p>
+  <p tl:case="admin">Admin view</p>
+  <p tl:case="user">User view</p>
   <p tl:case="*">Guest view</p>
 </div>
 ```
@@ -111,6 +111,8 @@ Status variables are available as `${itemStat}` (or custom name via `item, stat 
 <div tl:insert="~{components :: #main-nav}">loads by id</div>
 ```
 
+Circular fragment inclusions are detected and reported with the full cycle path.
+
 ### Local Variables
 
 ```html
@@ -142,7 +144,7 @@ Objects are accessed via `toMap()` or `toJson()` if present, otherwise as `Map<S
 <div tl:id="${elementId}">identified</div>
 
 <!-- Append to existing class/style -->
-<div class="card" tl:classappend="${active} ? 'active'">content</div>
+<div class="card" tl:classappend="${active} ? 'active' : ''">content</div>
 <div style="color:red" tl:styleappend="font-weight:bold">content</div>
 
 <!-- Generic attribute setting -->
@@ -191,6 +193,25 @@ Boolean HTML attributes (`disabled`, `checked`, etc.): `true` renders valueless,
 
 `[[${expr}]]` — escaped output. `[(${expr})]` — unescaped output.
 
+### Filters
+
+Filters transform expression values using pipe syntax:
+
+```html
+<span tl:text="${name | upper}">NAME</span>
+<span tl:text="${input | trim | lower}">cleaned</span>
+```
+
+Built-in filters: `upper`, `lower`, `trim`, `length`.
+
+Custom filters via constructor:
+
+```dart
+Trellis(filters: {
+  'currency': (v) => '\$${(v as num).toStringAsFixed(2)}',
+})
+```
+
 ## Expression Syntax
 
 | Expression | Example | Description |
@@ -208,6 +229,7 @@ Boolean HTML attributes (`disabled`, `checked`, etc.): `true` renders valueless,
 | Comparison alias | `gt`, `lt`, `ge`, `le`, `eq`, `ne` | Word-form comparison operators |
 | Boolean | `${a} and ${b}`, `or`, `not` | Logical operators |
 | Concat | `${first} + ' ' + ${last}` | String concatenation |
+| Filter | `${name \| upper}` | Pipe-based value transformation |
 | No-op | `_` | Explicitly do nothing (prototype preservation) |
 
 ## HTMX Fragment Example
@@ -242,20 +264,22 @@ final fragments = engine.renderFragments(
 Trellis(
   loader: FileSystemLoader('templates/'), // Default
   cache: true,         // DOM caching with deep-clone (default: true)
-  maxCacheSize: 100,   // LRU eviction threshold (default: unbounded)
+  maxCacheSize: 100,   // LRU eviction threshold (default: 256)
   prefix: 'tl',        // Attribute prefix (default: 'tl')
   strict: false,       // Throw on undefined variables/members (default: false)
 )
 ```
 
-Use `TrellisContext` for a fluent builder alternative:
+`TrellisContext` is a fluent builder for constructing rendering context maps:
 
 ```dart
-final ctx = TrellisContext()
-  ..loader = FileSystemLoader('templates/')
-  ..strict = true
-  ..maxCacheSize = 50;
-final engine = Trellis.fromContext(ctx);
+final context = TrellisContext()
+  .set('title', 'Hello')
+  .set('user', {'name': 'Alice'})
+  .setAll({'items': ['a', 'b', 'c']})
+  .build();
+
+final html = engine.render(template, context);
 ```
 
 ### Template Loaders
@@ -268,7 +292,7 @@ final engine = Trellis.fromContext(ctx);
 Use `data-tl-*` attributes to pass HTML5 validation:
 
 ```dart
-Trellis(prefix: 'data-tl', separator: '-')
+Trellis(prefix: 'data-tl')
 ```
 
 ```html
@@ -283,20 +307,17 @@ Trellis(prefix: 'data-tl', separator: '-')
 | `renderFile(name, context)` | `Future<String>` | Load and render template file |
 | `renderFragment(source, fragment:, context:)` | `String` | Render named fragment from string |
 | `renderFileFragment(name, fragment:, context:)` | `Future<String>` | Load file and render named fragment |
-| `renderFragments(source, fragments:, context:)` | `Map<String, String>` | Render multiple fragments from string |
-| `renderFileFragments(name, fragments:, context:)` | `Future<Map<String, String>>` | Load file and render multiple fragments |
+| `renderFragments(source, fragments:, context:)` | `String` | Render multiple fragments concatenated |
+| `renderFileFragments(name, fragments:, context:)` | `Future<String>` | Load file and render multiple fragments |
+| `clearCache()` | `void` | Clear DOM cache and reset statistics |
 | `cacheStats` | `CacheStats` | Hit/miss/size metrics for the DOM cache |
 
-## Benchmark
+`ExpressionEvaluator` can be used standalone for expression evaluation without templates:
 
-Run the cache benchmark harness:
-
-```bash
-dart run benchmark/cache_benchmark.dart
+```dart
+final evaluator = ExpressionEvaluator(strict: true);
+final result = evaluator.evaluate(r'${a} + ${b}', {'a': 1, 'b': 2}); // 3
 ```
-
-The benchmark reports median render latency for `cache: true` vs `cache: false`,
-plus a simple RSS delta probe over 10k renders.
 
 ## Error Handling
 

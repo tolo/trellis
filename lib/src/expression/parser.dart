@@ -146,13 +146,21 @@ class Parser {
     return _parsePostfix();
   }
 
-  // Precedence 9: . member access and [n] index (postfix)
+  // Precedence 10: . member access and [n] index (postfix)
   Expr _parsePostfix() {
     var expr = _parsePrimary();
     while (true) {
       if (_match(TokenType.dot)) {
-        final name = _expect(TokenType.identifier, 'Expected member name after "."');
-        expr = MemberAccessExpr(expr, name.value as String);
+        final token = _scanner.next();
+        final name = Parser._memberName(token);
+        if (name == null) {
+          throw ExpressionException(
+            'Expected member name after ".", got ${token.type}',
+            expression: _source,
+            position: token.offset,
+          );
+        }
+        expr = MemberAccessExpr(expr, name);
       } else if (_match(TokenType.lBracket)) {
         final wasInBracket = _inBracketContext;
         _inBracketContext = true;
@@ -167,7 +175,7 @@ class Parser {
     return expr;
   }
 
-  // Precedence 10 (highest): literals, ${}, @{}, grouping
+  // Precedence 11 (highest): literals, ${}, @{}, grouping
   Expr _parsePrimary() {
     final token = _scanner.peek();
 
@@ -290,6 +298,30 @@ class Parser {
   }
 
   // --- Helpers ---
+
+  /// Maps keyword/operator tokens back to their word form for member access.
+  /// Note: gte→'ge' and lte→'le' because the scanner maps the words `ge`/`le`
+  /// to TokenType.gte/lte (the token names reflect the operator, not the alias).
+  static const _tokenToName = {
+    TokenType.gt: 'gt',
+    TokenType.lt: 'lt',
+    TokenType.gte: 'ge',
+    TokenType.lte: 'le',
+    TokenType.eq: 'eq',
+    TokenType.notEq: 'ne',
+    TokenType.and_: 'and',
+    TokenType.or_: 'or',
+    TokenType.not_: 'not',
+    TokenType.true_: 'true',
+    TokenType.false_: 'false',
+    TokenType.null_: 'null',
+  };
+
+  /// Returns the member name string for a token, or null if not a valid member name.
+  static String? _memberName(Token token) {
+    if (token.type == TokenType.identifier) return token.value as String;
+    return _tokenToName[token.type];
+  }
 
   bool _match(TokenType type) {
     if (_scanner.peek().type == type) {

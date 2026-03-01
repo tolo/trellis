@@ -1,6 +1,13 @@
 # Changelog
 
-## 0.2.0
+All notable changes to **trellis** are documented here.
+This project follows [Semantic Versioning](https://semver.org/).
+
+Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+
+---
+
+## [0.2.0] — 2026-03-01
 
 ### Added
 - **Expression enhancements**: arithmetic operators (`+ - * / %`), literal substitution (`|Hello, ${name}!|`), dynamic index expressions (`${list[index]}`), selection expressions (`*{field}` with `tl:object`), comparison aliases (`gt`, `lt`, `ge`, `le`, `eq`, `ne`), no-op token (`_`)
@@ -18,14 +25,21 @@
 - **Strict mode**: `Trellis(strict: true)` — undefined variables, members, and keys throw `ExpressionException`
 - **LRU cache**: configurable max cache size via `maxCacheSize` parameter; evicts least-recently-used entries
 - **`CacheStats`**: expose cache hit/miss/size metrics via `engine.cacheStats`
-- **`TrellisContext`**: builder API for constructing the engine configuration fluently
-- **`data-tl-*` prefix mode**: `Trellis(prefix: 'data-tl', separator: '-')` for strict HTML5-valid attribute names
+- **`clearCache()`**: clear DOM cache and reset statistics
+- **`TrellisContext`**: fluent builder for constructing rendering context maps
+- **`data-tl-*` prefix mode**: `Trellis(prefix: 'data-tl')` for strict HTML5-valid attribute names
+
+### Fixed
+- Expression parser: alias/keyword words (`gt`, `eq`, `and`, `true`, etc.) now work as member names after `.` — e.g. `${obj.eq}`, `${stats.gt}`
+- README: corrected `TrellisContext` example, `renderFragments` return types, `tl:switch` case syntax, `tl:classappend` ternary, `maxCacheSize` default, removed nonexistent `separator` parameter
 
 ### Changed
 - Fragment registry entries now carry parameter names for parameterized fragment resolution
 - Inclusion depth guard replaced by cycle detection stack (still enforces max depth 32 as hard limit)
 
-## 0.1.0
+---
+
+## [0.1.0] — 2026-02-27
 
 ### Added
 - Core template engine with 15 `tl:*` attributes for natural HTML templating
@@ -42,7 +56,8 @@
 - `FileSystemLoader` with security boundary enforcement (path traversal, symlink escape protection)
 - `MapLoader` for in-memory templates and testing
 - Typed exception hierarchy: `TemplateException`, `ExpressionException`, `FragmentNotFoundException`, `TemplateNotFoundException`, `TemplateSecurityException`
-- Benchmark harness: `dart run benchmark/cache_benchmark.dart` for cache on/off median latency and RSS probe
+
+---
 
 ## 0.0.1-dev.1
 

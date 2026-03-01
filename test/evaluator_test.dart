@@ -355,6 +355,38 @@ void main() {
         expect(() => eval(''), throwsA(isA<ExpressionException>()));
       });
 
+      test('all alias/keyword words as member names', () {
+        final obj = {
+          'gt': 1, 'lt': 2, 'ge': 3, 'le': 4, 'eq': 5, 'ne': 6,
+          'and': 7, 'or': 8, 'not': 9,
+          'true': 10, 'false': 11, 'null': 12,
+        };
+        final ctx = {'obj': obj};
+        expect(eval(r'${obj.gt}', ctx), 1);
+        expect(eval(r'${obj.lt}', ctx), 2);
+        expect(eval(r'${obj.ge}', ctx), 3);
+        expect(eval(r'${obj.le}', ctx), 4);
+        expect(eval(r'${obj.eq}', ctx), 5);
+        expect(eval(r'${obj.ne}', ctx), 6);
+        expect(eval(r'${obj.and}', ctx), 7);
+        expect(eval(r'${obj.or}', ctx), 8);
+        expect(eval(r'${obj.not}', ctx), 9);
+        expect(eval(r'${obj.true}', ctx), 10);
+        expect(eval(r'${obj.false}', ctx), 11);
+        expect(eval(r'${obj.null}', ctx), 12);
+      });
+
+      test('chained keyword members (a.not.gt)', () {
+        expect(
+          eval(r'${a.not.gt}', {
+            'a': {
+              'not': {'gt': 'found'},
+            },
+          }),
+          'found',
+        );
+      });
+
       test('deeply nested member access', () {
         expect(
           eval(r'${a.b.c.d}', {

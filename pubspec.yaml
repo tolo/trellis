@@ -1,7 +1,7 @@
 name: trellis
 description: >-
-  A Thymeleaf-inspired HTML template engine for Dart. Natural HTML templates
-  with tl:* attributes, fragment-first design for HTMX, AOT-compatible.
+  Template engine for Dart, using natural HTML templates. Fragment-first for
+  hypermedia-driven frameworks like HTMX. Inspired by Thymeleaf.
 version: 0.2.0
 repository: https://github.com/tolo/trellis
 topics:

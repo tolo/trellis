@@ -7,8 +7,6 @@
 // Then open http://localhost:8080 in your browser.
 
 import 'package:trellis/trellis.dart';
-// import 'package:shelf/shelf.dart';
-// import 'package:shelf/shelf_io.dart' as shelf_io;
 
 /// Page template demonstrating tl:text, tl:if, tl:each, tl:attr, and
 /// tl:fragment for HTMX partial rendering.

@@ -64,6 +64,41 @@ void main() {
         expect(inner.object, isA<VariableExpr>().having((e) => e.name, 'name', 'a'));
       });
 
+      test(r'${obj.gt} — alias word as member name', () {
+        final expr = parse(r'${obj.gt}');
+        expect(expr, isA<MemberAccessExpr>());
+        final member = expr as MemberAccessExpr;
+        expect(member.object, isA<VariableExpr>().having((e) => e.name, 'name', 'obj'));
+        expect(member.member, 'gt');
+      });
+
+      test('alias/keyword words as member names', () {
+        for (final word in ['gt', 'lt', 'ge', 'le', 'eq', 'ne', 'and', 'or', 'not', 'true', 'false', 'null']) {
+          final expr = parse('\${obj.$word}');
+          expect(expr, isA<MemberAccessExpr>(), reason: 'obj.$word should parse');
+          expect((expr as MemberAccessExpr).member, word, reason: 'member name should be "$word"');
+        }
+      });
+
+      test(r'${obj.+} — invalid member name throws', () {
+        expect(() => parse(r'${obj.+}'), throwsA(isA<ExpressionException>()));
+      });
+
+      test(r'${obj.} — missing member name throws', () {
+        expect(() => parse(r'${obj.}'), throwsA(isA<ExpressionException>()));
+      });
+
+      test(r'${a.not.gt} — chained keyword members', () {
+        final expr = parse(r'${a.not.gt}');
+        expect(expr, isA<MemberAccessExpr>());
+        final outer = expr as MemberAccessExpr;
+        expect(outer.member, 'gt');
+        expect(outer.object, isA<MemberAccessExpr>());
+        final inner = outer.object as MemberAccessExpr;
+        expect(inner.member, 'not');
+        expect(inner.object, isA<VariableExpr>().having((e) => e.name, 'name', 'a'));
+      });
+
       test(r'${items[0]} — index access', () {
         final expr = parse(r'${items[0]}');
         expect(expr, isA<IndexAccessExpr>());

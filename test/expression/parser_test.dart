@@ -69,7 +69,7 @@ void main() {
         expect(expr, isA<IndexAccessExpr>());
         final idx = expr as IndexAccessExpr;
         expect(idx.object, isA<VariableExpr>().having((e) => e.name, 'name', 'items'));
-        expect(idx.index, 0);
+        expect(idx.index, isA<LiteralExpr>().having((e) => e.value, 'value', 0));
       });
     });
 
@@ -117,6 +117,76 @@ void main() {
       test(r'${a} + ${b}', () {
         final expr = parse(r'${a} + ${b}');
         expect(expr, isA<BinaryExpr>().having((e) => e.op, 'op', BinaryOp.plus));
+      });
+    });
+
+    group('arithmetic expressions', () {
+      test(r'${a + b}', () {
+        final expr = parse(r'${a + b}');
+        expect(expr, isA<BinaryExpr>().having((e) => e.op, 'op', BinaryOp.plus));
+      });
+
+      test(r'${a - b}', () {
+        final expr = parse(r'${a - b}');
+        expect(expr, isA<BinaryExpr>().having((e) => e.op, 'op', BinaryOp.minus));
+      });
+
+      test(r'${a * b}', () {
+        final expr = parse(r'${a * b}');
+        expect(expr, isA<BinaryExpr>().having((e) => e.op, 'op', BinaryOp.star));
+      });
+
+      test(r'${a / b}', () {
+        final expr = parse(r'${a / b}');
+        expect(expr, isA<BinaryExpr>().having((e) => e.op, 'op', BinaryOp.slash));
+      });
+
+      test(r'${a % b}', () {
+        final expr = parse(r'${a % b}');
+        expect(expr, isA<BinaryExpr>().having((e) => e.op, 'op', BinaryOp.percent));
+      });
+
+      test(r'${2 + 3 * 4} — * binds tighter than +', () {
+        final expr = parse(r'${2 + 3 * 4}');
+        expect(expr, isA<BinaryExpr>());
+        final bin = expr as BinaryExpr;
+        expect(bin.op, BinaryOp.plus);
+        expect(bin.left, isA<LiteralExpr>().having((e) => e.value, 'value', 2));
+        expect(bin.right, isA<BinaryExpr>().having((e) => e.op, 'op', BinaryOp.star));
+      });
+
+      test(r'${2 * 3 + 4} — * binds tighter (left)', () {
+        final expr = parse(r'${2 * 3 + 4}');
+        expect(expr, isA<BinaryExpr>());
+        final bin = expr as BinaryExpr;
+        expect(bin.op, BinaryOp.plus);
+        expect(bin.left, isA<BinaryExpr>().having((e) => e.op, 'op', BinaryOp.star));
+        expect(bin.right, isA<LiteralExpr>().having((e) => e.value, 'value', 4));
+      });
+
+      test(r'${(2 + 3) * 4} — grouping overrides precedence', () {
+        final expr = parse(r'${(2 + 3) * 4}');
+        expect(expr, isA<BinaryExpr>());
+        final bin = expr as BinaryExpr;
+        expect(bin.op, BinaryOp.star);
+        expect(bin.left, isA<BinaryExpr>().having((e) => e.op, 'op', BinaryOp.plus));
+        expect(bin.right, isA<LiteralExpr>().having((e) => e.value, 'value', 4));
+      });
+
+      test(r'${-a} — unary minus', () {
+        final expr = parse(r'${-a}');
+        expect(expr, isA<UnaryExpr>());
+        final unary = expr as UnaryExpr;
+        expect(unary.op, UnaryOp.minus);
+        expect(unary.operand, isA<VariableExpr>().having((e) => e.name, 'name', 'a'));
+      });
+
+      test(r'${a - -b} — subtraction with unary minus', () {
+        final expr = parse(r'${a - -b}');
+        expect(expr, isA<BinaryExpr>());
+        final bin = expr as BinaryExpr;
+        expect(bin.op, BinaryOp.minus);
+        expect(bin.right, isA<UnaryExpr>().having((e) => e.op, 'op', UnaryOp.minus));
       });
     });
 
@@ -188,6 +258,106 @@ void main() {
 
       test('unexpected token throws', () {
         expect(() => parse('=='), throwsA(isA<ExpressionException>()));
+      });
+    });
+
+    group('literal substitution', () {
+      test('|Hello| — plain text', () {
+        final expr = parse('|Hello|');
+        expect(expr, isA<LiteralSubstitutionExpr>());
+        final parts = (expr as LiteralSubstitutionExpr).parts;
+        expect(parts, hasLength(1));
+        expect(parts[0], isA<LiteralExpr>().having((e) => e.value, 'value', 'Hello'));
+      });
+
+      test(r'|Hello, ${name}!| — text with expression', () {
+        final expr = parse(r'|Hello, ${name}!|');
+        expect(expr, isA<LiteralSubstitutionExpr>());
+        final parts = (expr as LiteralSubstitutionExpr).parts;
+        expect(parts, hasLength(3));
+        expect(parts[0], isA<LiteralExpr>().having((e) => e.value, 'value', 'Hello, '));
+        expect(parts[1], isA<VariableExpr>().having((e) => e.name, 'name', 'name'));
+        expect(parts[2], isA<LiteralExpr>().having((e) => e.value, 'value', '!'));
+      });
+
+      test('|| — empty literal sub', () {
+        final expr = parse('||');
+        expect(expr, isA<LiteralSubstitutionExpr>());
+        expect((expr as LiteralSubstitutionExpr).parts, isEmpty);
+      });
+
+      test('unterminated literal sub throws', () {
+        expect(() => parse('|hello'), throwsA(isA<ExpressionException>()));
+      });
+    });
+
+    group('dynamic index', () {
+      test(r'${list[i]} — variable index', () {
+        final expr = parse(r'${list[i]}');
+        expect(expr, isA<IndexAccessExpr>());
+        final idx = expr as IndexAccessExpr;
+        expect(idx.object, isA<VariableExpr>().having((e) => e.name, 'name', 'list'));
+        expect(idx.index, isA<VariableExpr>().having((e) => e.name, 'name', 'i'));
+      });
+
+      test(r'${list[i + 1]} — expression index', () {
+        final expr = parse(r'${list[i + 1]}');
+        expect(expr, isA<IndexAccessExpr>());
+        final idx = expr as IndexAccessExpr;
+        expect(idx.index, isA<BinaryExpr>().having((e) => e.op, 'op', BinaryOp.plus));
+      });
+
+      test(r'${matrix[r][c]} — nested index', () {
+        final expr = parse(r'${matrix[r][c]}');
+        expect(expr, isA<IndexAccessExpr>());
+        final outer = expr as IndexAccessExpr;
+        expect(outer.index, isA<VariableExpr>().having((e) => e.name, 'name', 'c'));
+        expect(outer.object, isA<IndexAccessExpr>());
+      });
+    });
+
+    group('selection expressions', () {
+      test('*{name} — simple selection', () {
+        final expr = parse('*{name}');
+        expect(expr, isA<SelectionExpr>());
+        final sel = expr as SelectionExpr;
+        expect(sel.inner, isA<VariableExpr>().having((e) => e.name, 'name', 'name'));
+      });
+
+      test('*{user.name} — member access in selection', () {
+        final expr = parse('*{user.name}');
+        expect(expr, isA<SelectionExpr>());
+        final sel = expr as SelectionExpr;
+        expect(sel.inner, isA<MemberAccessExpr>());
+        final member = sel.inner as MemberAccessExpr;
+        expect(member.object, isA<VariableExpr>().having((e) => e.name, 'name', 'user'));
+        expect(member.member, 'name');
+      });
+
+      test('*{name | upper} — pipe inside selection', () {
+        final expr = parse('*{name | upper}');
+        expect(expr, isA<SelectionExpr>());
+        final sel = expr as SelectionExpr;
+        expect(sel.inner, isA<PipeExpr>().having((e) => e.filterName, 'filterName', 'upper'));
+      });
+    });
+
+    group('dynamic index', () {
+      test('rejects nested \${} inside bracket index', () {
+        // F03: ${items[${i}]} is invalid; use ${items[i]} instead
+        expect(() => parse(r'${items[${i}]}'), throwsA(isA<ExpressionException>()));
+      });
+
+      test('rejects nested \${} deeper in bracket expression', () {
+        expect(() => parse(r'${a[b + ${c}]}'), throwsA(isA<ExpressionException>()));
+      });
+
+      test('bare identifier index is valid', () {
+        expect(() => parse(r'${items[i]}'), returnsNormally);
+      });
+
+      test('arithmetic index is valid', () {
+        expect(() => parse(r'${items[offset + 1]}'), returnsNormally);
       });
     });
 

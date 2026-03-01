@@ -126,6 +126,44 @@ void main() {
       });
     });
 
+    group('arithmetic tokens', () {
+      test('-', () {
+        final tokens = tokenize('-');
+        expect(tokens[0].type, TokenType.minus);
+      });
+
+      test('*', () {
+        final tokens = tokenize('*');
+        expect(tokens[0].type, TokenType.star);
+      });
+
+      test('/', () {
+        final tokens = tokenize('/');
+        expect(tokens[0].type, TokenType.slash);
+      });
+
+      test('%', () {
+        final tokens = tokenize('%');
+        expect(tokens[0].type, TokenType.percent);
+      });
+
+      test('sequence: - * / %', () {
+        final tokens = tokenize('- * / %');
+        expect(tokens[0].type, TokenType.minus);
+        expect(tokens[1].type, TokenType.star);
+        expect(tokens[2].type, TokenType.slash);
+        expect(tokens[3].type, TokenType.percent);
+        expect(tokens[4].type, TokenType.eof);
+      });
+
+      test('minus before integer emits separate tokens', () {
+        final tokens = tokenize('-42');
+        expect(tokens[0].type, TokenType.minus);
+        expect(tokens[1].type, TokenType.integer);
+        expect(tokens[1].value, 42);
+      });
+    });
+
     group('boolean keywords', () {
       test('and', () {
         final tokens = tokenize('and');
@@ -194,6 +232,65 @@ void main() {
         final second = scanner.peek();
         expect(first.type, second.type);
         expect(first.value, second.value);
+      });
+    });
+
+    group('comparison aliases', () {
+      test('gt → TokenType.gt', () {
+        expect(tokenize('gt')[0].type, TokenType.gt);
+      });
+
+      test('lt → TokenType.lt', () {
+        expect(tokenize('lt')[0].type, TokenType.lt);
+      });
+
+      test('ge → TokenType.gte', () {
+        expect(tokenize('ge')[0].type, TokenType.gte);
+      });
+
+      test('le → TokenType.lte', () {
+        expect(tokenize('le')[0].type, TokenType.lte);
+      });
+
+      test('eq → TokenType.eq', () {
+        expect(tokenize('eq')[0].type, TokenType.eq);
+      });
+
+      test('ne → TokenType.notEq', () {
+        expect(tokenize('ne')[0].type, TokenType.notEq);
+      });
+
+      test('longer identifier "greater" is not aliased', () {
+        final tokens = tokenize('greater');
+        expect(tokens[0].type, TokenType.identifier);
+        expect(tokens[0].value, 'greater');
+      });
+
+      test('aliases in expression context', () {
+        final tokens = tokenize('a gt b');
+        expect(tokens[0].type, TokenType.identifier);
+        expect(tokens[1].type, TokenType.gt);
+        expect(tokens[2].type, TokenType.identifier);
+      });
+    });
+
+    group('star-brace token', () {
+      test('*{ produces starLBrace', () {
+        final tokens = tokenize('*{');
+        expect(tokens[0].type, TokenType.starLBrace);
+      });
+
+      test('* alone produces star (multiplication)', () {
+        final tokens = tokenize('* ');
+        expect(tokens[0].type, TokenType.star);
+      });
+
+      test('*{ followed by identifier and }', () {
+        final tokens = tokenize('*{name}');
+        expect(tokens[0].type, TokenType.starLBrace);
+        expect(tokens[1].type, TokenType.identifier);
+        expect(tokens[1].value, 'name');
+        expect(tokens[2].type, TokenType.rBrace);
       });
     });
 

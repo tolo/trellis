@@ -7,12 +7,12 @@ import '../exceptions.dart';
 /// Returns `true` if `tl:each` was present and handled (element was replicated).
 bool processEach(
   Element element,
-  String prefix,
+  String attrPrefix,
   ExpressionEvaluator evaluator,
   Map<String, dynamic> context,
   void Function(Element, Map<String, dynamic>) processCallback,
 ) {
-  final attrValue = element.attributes['$prefix:each'];
+  final attrValue = element.attributes['${attrPrefix}each'];
   if (attrValue == null) return false;
 
   // Parse: "item : ${collection}" or "item, stat : ${collection}"
@@ -80,7 +80,7 @@ bool processEach(
     final scopedContext = Map<String, dynamic>.from(context)..addAll({itemVar: item, statVar: statusMap});
 
     final clone = element.clone(true);
-    clone.attributes.remove('$prefix:each');
+    clone.attributes.remove('${attrPrefix}each');
     parent.insertBefore(clone, element);
     processCallback(clone, scopedContext);
   }

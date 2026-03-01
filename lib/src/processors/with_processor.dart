@@ -7,11 +7,11 @@ import '../utils/binding_parser.dart';
 /// Returns the (potentially augmented) context map.
 Map<String, dynamic> processWith(
   Element element,
-  String prefix,
+  String attrPrefix,
   ExpressionEvaluator evaluator,
   Map<String, dynamic> context,
 ) {
-  final withExpr = element.attributes['$prefix:with'];
+  final withExpr = element.attributes['${attrPrefix}with'];
   if (withExpr == null) return context;
 
   final bindings = parseBindings(withExpr);

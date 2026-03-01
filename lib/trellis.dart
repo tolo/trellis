@@ -4,6 +4,8 @@
 /// Fragment-first design for HTMX partial rendering.
 library;
 
+export 'src/cache_stats.dart';
+export 'src/context_builder.dart';
 export 'src/engine.dart';
 export 'src/evaluator.dart' show ExpressionEvaluator;
 export 'src/exceptions.dart';

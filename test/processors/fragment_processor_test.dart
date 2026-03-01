@@ -143,7 +143,7 @@ void main() {
     });
 
     group('depth guard', () {
-      test('recursive inclusion throws TemplateException at max depth', () {
+      test('recursive inclusion throws TemplateException with cycle detection', () {
         final engine = Trellis(
           loader: MapLoader({
             'recursive': '<div tl:fragment="loop"><div tl:insert="~{recursive :: loop}"></div></div>',
@@ -152,7 +152,7 @@ void main() {
         );
         expect(
           () => engine.render('<div tl:insert="~{recursive :: loop}"></div>', {}),
-          throwsA(isA<TemplateException>().having((e) => e.message, 'message', contains('depth exceeded'))),
+          throwsA(isA<TemplateException>().having((e) => e.message, 'message', contains('cycle detected'))),
         );
       });
     });
@@ -227,6 +227,399 @@ void main() {
           {},
         );
         expect(result, isNot(contains('tl:fragment')));
+      });
+    });
+
+    group('parameterized fragments — same-file', () {
+      test('single param bound in fragment scope', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        final result = engine.render(
+          r'<span tl:fragment="greeting(name)"><b tl:text="${name}">x</b></span>'
+          r'<div tl:insert="greeting(${user})"></div>',
+          {'user': 'Alice'},
+        );
+        expect(result, contains('<b>Alice</b>'));
+      });
+
+      test('two params bound correctly', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        final result = engine.render(
+          r'<div tl:fragment="card(title, body)"><h2 tl:text="${title}">t</h2><p tl:text="${body}">b</p></div>'
+          r'<section tl:insert="card(${heading}, ${content})"></section>',
+          {'heading': 'Hello', 'content': 'World'},
+        );
+        expect(result, contains('<h2>Hello</h2>'));
+        expect(result, contains('<p>World</p>'));
+      });
+
+      test('string literal as argument', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        final result = engine.render(
+          r'<span tl:fragment="label(text)"><b tl:text="${text}">x</b></span>'
+          '<div tl:insert="label(\'hello\')"></div>',
+          {},
+        );
+        expect(result, contains('<b>hello</b>'));
+      });
+
+      test('arithmetic expression as argument', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        final result = engine.render(
+          r'<span tl:fragment="num(val)"><b tl:text="${val}">x</b></span>'
+          r'<div tl:insert="num(${a + b})"></div>',
+          {'a': 3, 'b': 4},
+        );
+        expect(result, contains('<b>7</b>'));
+      });
+
+      test('missing arg gets null', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        final result = engine.render(
+          '<div tl:fragment="card(a, b)"><span tl:text="\${a}">x</span><span tl:text="\${b}">y</span></div>'
+          '<section tl:insert="card(\${x})"></section>',
+          {'x': 'first'},
+        );
+        expect(result, contains('<span>first</span>'));
+        // b is null -> empty string
+        expect(result, contains('<span></span>'));
+      });
+
+      test('extra args ignored', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        final result = engine.render(
+          r'<span tl:fragment="single(a)"><b tl:text="${a}">x</b></span>'
+          r'<div tl:insert="single(${x}, ${y})"></div>',
+          {'x': 'kept', 'y': 'ignored'},
+        );
+        expect(result, contains('<b>kept</b>'));
+      });
+
+      test('empty parens equivalent to no params', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        final result = engine.render(
+          '<span tl:fragment="simple()">Content</span>'
+          '<div tl:insert="simple()"></div>',
+          {},
+        );
+        expect(result, contains('Content'));
+      });
+
+      test('tl:fragment="name()" element is NOT removed from DOM output', () {
+        // name() must behave like name — the element stays in rendered output
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        final result = engine.render('<div><span tl:fragment="header()">Header</span></div>', {});
+        expect(result, contains('Header'));
+        expect(result, contains('<span'));
+      });
+
+      test('v0.1 syntax still works (no parens)', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        final result = engine.render(
+          '<span tl:fragment="header">Header</span>'
+          '<div tl:insert="header"></div>',
+          {},
+        );
+        expect(result, contains('Header'));
+      });
+
+      test('tl:replace with params', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        final result = engine.render(
+          r'<span tl:fragment="tag(label)"><b tl:text="${label}">x</b></span>'
+          r'<div tl:replace="tag(${val})">placeholder</div>',
+          {'val': 'replaced'},
+        );
+        expect(result, contains('<b>replaced</b>'));
+        expect(result, isNot(contains('placeholder')));
+      });
+
+      test('comma inside expression not treated as arg separator', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        final result = engine.render(
+          r'<span tl:fragment="show(val)"><b tl:text="${val}">x</b></span>'
+          r'<div tl:insert="show(${flag ? 1 : 2})"></div>',
+          {'flag': true},
+        );
+        // Ternary with comma-like syntax: the ?: is inside ${}, not a param separator
+        expect(result, contains('<b>1</b>'));
+      });
+
+      test('comma inside string literal arg not treated as separator', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        final result = engine.render(
+          r'<span tl:fragment="msg(text)"><b tl:text="${text}">x</b></span>'
+          '<div tl:insert="msg(\'hello, world\')"></div>',
+          {},
+        );
+        expect(result, contains('<b>hello, world</b>'));
+      });
+    });
+
+    group('parameterized fragments — cross-file', () {
+      test('basic cross-file with param', () {
+        final engine = Trellis(
+          loader: MapLoader({'components': r'<span tl:fragment="badge(text)"><b tl:text="${text}">x</b></span>'}),
+          cache: false,
+        );
+        final result = engine.render(r'<div tl:insert="~{components :: badge(${label})}"></div>', {'label': 'New'});
+        expect(result, contains('<b>New</b>'));
+      });
+
+      test('cross-file with two params', () {
+        final engine = Trellis(
+          loader: MapLoader({
+            'cards': r'<div tl:fragment="card(t, b)"><h3 tl:text="${t}">x</h3><p tl:text="${b}">y</p></div>',
+          }),
+          cache: false,
+        );
+        final result = engine.render(r'<section tl:insert="~{cards :: card(${title}, ${body})}"></section>', {
+          'title': 'Hi',
+          'body': 'There',
+        });
+        expect(result, contains('<h3>Hi</h3>'));
+        expect(result, contains('<p>There</p>'));
+      });
+
+      test('cross-file missing arg gets null', () {
+        final engine = Trellis(
+          loader: MapLoader({
+            'tmpl': '<div tl:fragment="item(a, b)"><span tl:text="\${a}">x</span><span tl:text="\${b}">y</span></div>',
+          }),
+          cache: false,
+        );
+        final result = engine.render(r'<div tl:insert="~{tmpl :: item(${x})}"></div>', {'x': 'val'});
+        expect(result, contains('<span>val</span>'));
+        // b is null -> empty string
+        expect(result, contains('<span></span>'));
+      });
+
+      test('cross-file tl:replace with params', () {
+        final engine = Trellis(
+          loader: MapLoader({'parts': r'<span tl:fragment="tag(v)"><b tl:text="${v}">x</b></span>'}),
+          cache: false,
+        );
+        final result = engine.render(r'<div tl:replace="~{parts :: tag(${val})}">old</div>', {'val': 'new'});
+        expect(result, contains('<b>new</b>'));
+        expect(result, isNot(contains('old')));
+      });
+
+      test('cross-file no params backward compat', () {
+        final engine = Trellis(
+          loader: MapLoader({'layout': '<header tl:fragment="hdr"><h1>Title</h1></header>'}),
+          cache: false,
+        );
+        final result = engine.render('<div tl:insert="~{layout :: hdr}"></div>', {});
+        expect(result, contains('<h1>Title</h1>'));
+      });
+    });
+
+    group('CSS selector targeting — same-file', () {
+      test('#id selector selects element by id', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        final result = engine.render(
+          '<div id="hero"><h1>Hero</h1></div>'
+          '<section tl:insert="#hero"></section>',
+          {},
+        );
+        expect(result, contains('<section><h1>Hero</h1></section>'));
+      });
+
+      test('.class selector selects element by class', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        final result = engine.render(
+          '<p class="tagline">Welcome</p>'
+          '<div tl:insert=".tagline"></div>',
+          {},
+        );
+        expect(result, contains('Welcome'));
+      });
+
+      test('tl:replace with #id selector', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        final result = engine.render(
+          '<nav id="main-nav"><a>Link</a></nav>'
+          '<div tl:replace="#main-nav">placeholder</div>',
+          {},
+        );
+        expect(result, contains('<nav id="main-nav"><a>Link</a></nav>'));
+        expect(result, isNot(contains('placeholder')));
+      });
+
+      test('#id not found throws FragmentNotFoundException', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        expect(
+          () => engine.render('<div tl:insert="#nonexistent"></div>', {}),
+          throwsA(isA<FragmentNotFoundException>()),
+        );
+      });
+
+      test('.class not found throws FragmentNotFoundException', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        expect(() => engine.render('<div tl:insert=".missing"></div>', {}), throwsA(isA<FragmentNotFoundException>()));
+      });
+
+      test('tag name fallback when no named fragment matches', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        final result = engine.render(
+          '<footer><p>Footer content</p></footer>'
+          '<div tl:insert="footer"></div>',
+          {},
+        );
+        expect(result, contains('Footer content'));
+      });
+
+      test('named fragment takes precedence over tag name', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        // Fragment named "footer" should win over <footer> tag
+        final result = engine.render(
+          '<footer><p>Tag footer</p></footer>'
+          '<span tl:fragment="footer">Named footer</span>'
+          '<div tl:insert="footer"></div>',
+          {},
+        );
+        expect(result, contains('Named footer'));
+      });
+
+      test('expressions evaluated in CSS selector fragment', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        final result = engine.render(
+          r'<div id="greeting"><b tl:text="${name}">x</b></div>'
+          '<section tl:insert="#greeting"></section>',
+          {'name': 'Alice'},
+        );
+        expect(result, contains('<b>Alice</b>'));
+      });
+    });
+
+    group('CSS selector targeting — cross-file', () {
+      test('cross-file #id selector', () {
+        final engine = Trellis(
+          loader: MapLoader({'layout': '<header id="hdr"><h1>Header</h1></header>'}),
+          cache: false,
+        );
+        final result = engine.render('<div tl:insert="~{layout :: #hdr}"></div>', {});
+        expect(result, contains('<h1>Header</h1>'));
+      });
+
+      test('cross-file .class selector', () {
+        final engine = Trellis(loader: MapLoader({'ui': '<div class="card"><p>Card</p></div>'}), cache: false);
+        final result = engine.render('<section tl:insert="~{ui :: .card}"></section>', {});
+        expect(result, contains('<p>Card</p>'));
+      });
+
+      test('cross-file tag name selector', () {
+        final engine = Trellis(loader: MapLoader({'parts': '<footer><p>Footer</p></footer>'}), cache: false);
+        final result = engine.render('<div tl:insert="~{parts :: footer}"></div>', {});
+        expect(result, contains('Footer'));
+      });
+
+      test('cross-file tl:replace with #id selector', () {
+        final engine = Trellis(loader: MapLoader({'comps': '<nav id="nav"><a>Nav</a></nav>'}), cache: false);
+        final result = engine.render('<div tl:replace="~{comps :: #nav}">old</div>', {});
+        expect(result, contains('<nav id="nav"><a>Nav</a></nav>'));
+        expect(result, isNot(contains('old')));
+      });
+
+      test('cross-file CSS selector not found throws', () {
+        final engine = Trellis(loader: MapLoader({'tmpl': '<div>No matching elements</div>'}), cache: false);
+        expect(
+          () => engine.render('<div tl:insert="~{tmpl :: #missing}"></div>', {}),
+          throwsA(isA<FragmentNotFoundException>()),
+        );
+      });
+
+      test('cross-file expressions evaluated with CSS selector fragment', () {
+        final engine = Trellis(
+          loader: MapLoader({'parts': r'<div id="user"><span tl:text="${name}">x</span></div>'}),
+          cache: false,
+        );
+        final result = engine.render('<div tl:insert="~{parts :: #user}"></div>', {'name': 'Bob'});
+        expect(result, contains('<span>Bob</span>'));
+      });
+    });
+
+    group('cycle detection', () {
+      test('self-inclusion (A includes A) detected as cycle', () {
+        final engine = Trellis(
+          loader: MapLoader({'self': '<div tl:fragment="card"><div tl:insert="~{self :: card}"></div></div>'}),
+          cache: false,
+        );
+        expect(
+          () => engine.render('<div tl:insert="~{self :: card}"></div>', {}),
+          throwsA(isA<TemplateException>().having((e) => e.message, 'message', contains('cycle detected'))),
+        );
+      });
+
+      test('mutual cycle (A includes B, B includes A) detected', () {
+        final engine = Trellis(
+          loader: MapLoader({
+            'a': '<div tl:fragment="fa"><div tl:insert="~{b :: fb}"></div></div>',
+            'b': '<div tl:fragment="fb"><div tl:insert="~{a :: fa}"></div></div>',
+          }),
+          cache: false,
+        );
+        expect(
+          () => engine.render('<div tl:insert="~{a :: fa}"></div>', {}),
+          throwsA(isA<TemplateException>().having((e) => e.message, 'message', contains('cycle detected'))),
+        );
+      });
+
+      test('cycle path included in error message', () {
+        final engine = Trellis(
+          loader: MapLoader({
+            'x': '<div tl:fragment="fx"><div tl:insert="~{y :: fy}"></div></div>',
+            'y': '<div tl:fragment="fy"><div tl:insert="~{x :: fx}"></div></div>',
+          }),
+          cache: false,
+        );
+        expect(
+          () => engine.render('<div tl:insert="~{x :: fx}"></div>', {}),
+          throwsA(
+            isA<TemplateException>().having((e) => e.message, 'message', allOf(contains('x::fx'), contains('y::fy'))),
+          ),
+        );
+      });
+
+      test('non-cyclic deep nesting works', () {
+        // A includes B includes C — no cycle, should work
+        final engine = Trellis(
+          loader: MapLoader({
+            'a': '<div tl:fragment="fa"><span>A:<div tl:insert="~{b :: fb}"></div></span></div>',
+            'b': '<div tl:fragment="fb"><span>B:<div tl:insert="~{c :: fc}"></div></span></div>',
+            'c': '<div tl:fragment="fc">C</div>',
+          }),
+          cache: false,
+        );
+        final result = engine.render('<div tl:insert="~{a :: fa}"></div>', {});
+        expect(result, contains('A:'));
+        expect(result, contains('B:'));
+        expect(result, contains('C'));
+      });
+
+      test('same fragment used in multiple places (non-cyclic) works', () {
+        // Using same fragment twice is not a cycle
+        final engine = Trellis(loader: MapLoader({'shared': '<span tl:fragment="item">Item</span>'}), cache: false);
+        final result = engine.render(
+          '<div tl:insert="~{shared :: item}"></div>'
+          '<section tl:insert="~{shared :: item}"></section>',
+          {},
+        );
+        expect(result, contains('<div>Item</div>'));
+        expect(result, contains('<section>Item</section>'));
+      });
+
+      test('depth guard still triggers for non-cyclic deep nesting beyond limit', () {
+        // Build a chain of 33+ unique fragments (no cycle, but exceeds depth)
+        final templates = <String, String>{};
+        for (var i = 0; i < 34; i++) {
+          final next = i < 33 ? '<div tl:insert="~{t${i + 1} :: f${i + 1}}"></div>' : 'leaf';
+          templates['t$i'] = '<div tl:fragment="f$i">$next</div>';
+        }
+        final engine = Trellis(loader: MapLoader(templates), cache: false);
+        expect(
+          () => engine.render('<div tl:insert="~{t0 :: f0}"></div>', {}),
+          throwsA(isA<TemplateException>().having((e) => e.message, 'message', contains('depth exceeded'))),
+        );
       });
     });
 

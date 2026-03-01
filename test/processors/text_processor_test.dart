@@ -87,5 +87,25 @@ void main() {
         expect(result, isNot(contains('tl:utext')));
       });
     });
+
+    group('no-op sentinel _', () {
+      test('tl:text="_" leaves element text unchanged', () {
+        final result = render('<p tl:text="_">original</p>', {});
+        expect(result, contains('>original</p>'));
+        expect(result, isNot(contains('tl:text')));
+      });
+
+      test('tl:utext="_" leaves element content unchanged', () {
+        final result = render('<div tl:utext="_"><b>original</b></div>', {});
+        expect(result, contains('<b>original</b>'));
+        expect(result, isNot(contains('tl:utext')));
+      });
+
+      test(r'tl:text="${x}" where x is "_" is NOT no-op', () {
+        final result = render(r'<p tl:text="${x}">original</p>', {'x': '_'});
+        expect(result, contains('>_</p>'));
+        expect(result, isNot(contains('original')));
+      });
+    });
   });
 }

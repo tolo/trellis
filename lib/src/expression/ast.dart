@@ -20,11 +20,17 @@ final class MemberAccessExpr extends Expr {
   MemberAccessExpr(this.object, this.member);
 }
 
-/// Bracket index access: `object[index]`.
+/// Bracket index access: `object[index]` where index is a sub-expression.
 final class IndexAccessExpr extends Expr {
   final Expr object;
-  final int index;
+  final Expr index;
   IndexAccessExpr(this.object, this.index);
+}
+
+/// Pipe-delimited literal substitution: `|text ${expr} more|`.
+final class LiteralSubstitutionExpr extends Expr {
+  final List<Expr> parts;
+  LiteralSubstitutionExpr(this.parts);
 }
 
 /// Unary operator applied to an operand.
@@ -72,17 +78,13 @@ final class UrlExpr extends Expr {
 }
 
 /// Binary operators. Includes placeholders for v0.2 arithmetic.
-enum BinaryOp {
-  eq,
-  notEq,
-  lt,
-  gt,
-  lte,
-  gte,
-  and_,
-  or_,
-  plus,
+enum BinaryOp { eq, notEq, lt, gt, lte, gte, and_, or_, plus, minus, star, slash, percent }
+
+/// Selection expression: `*{field}` resolved against the tl:object scope.
+final class SelectionExpr extends Expr {
+  final Expr inner;
+  SelectionExpr(this.inner);
 }
 
 /// Unary operators.
-enum UnaryOp { not_ }
+enum UnaryOp { not_, minus }

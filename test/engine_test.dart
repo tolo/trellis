@@ -1,6 +1,13 @@
 import 'package:trellis/trellis.dart';
 import 'package:test/test.dart';
 
+class _User {
+  final String name;
+  final int age;
+  _User(this.name, this.age);
+  Map<String, dynamic> toMap() => {'name': name, 'age': age};
+}
+
 void main() {
   group('Trellis engine', () {
     late Trellis engine;
@@ -138,11 +145,11 @@ void main() {
   });
 
   group('custom prefix', () {
-    test('processes data-tl:text instead of tl:text', () {
+    test('processes data-tl-text instead of tl:text', () {
       final engine = Trellis(loader: MapLoader({}), cache: false, prefix: 'data-tl');
-      final result = engine.render(r'<p data-tl:text="${x}">default</p>', {'x': 'custom'});
+      final result = engine.render(r'<p data-tl-text="${x}">default</p>', {'x': 'custom'});
       expect(result, contains('<p>custom</p>'));
-      expect(result, isNot(contains('data-tl:text')));
+      expect(result, isNot(contains('data-tl-text')));
     });
 
     test('ignores tl:text with different prefix', () {
@@ -202,6 +209,33 @@ void main() {
     });
   });
 
+  group('arithmetic in templates', () {
+    test('multiplication in tl:text', () {
+      final engine = Trellis(loader: MapLoader({}), cache: false);
+      final result = engine.render(r'<span tl:text="${price * quantity}">0</span>', {'price': 10, 'quantity': 3});
+      expect(result, contains('<span>30</span>'));
+    });
+
+    test('division renders double', () {
+      final engine = Trellis(loader: MapLoader({}), cache: false);
+      final result = engine.render(r'<span tl:text="${total / count}">0</span>', {'total': 100, 'count': 3});
+      expect(result, contains('<span>'));
+      expect(result, contains('33.33'));
+    });
+
+    test('modulo in tl:if condition', () {
+      final engine = Trellis(loader: MapLoader({}), cache: false);
+      final result = engine.render(r'<div tl:if="${score % 2 == 0}">even</div>', {'score': 4});
+      expect(result, contains('even'));
+    });
+
+    test('modulo in tl:if removes when false', () {
+      final engine = Trellis(loader: MapLoader({}), cache: false);
+      final result = engine.render(r'<div tl:if="${score % 2 == 0}">even</div>', {'score': 3});
+      expect(result, isNot(contains('even')));
+    });
+  });
+
   group('filters', () {
     test('built-in filter works without registration', () {
       final engine = Trellis(loader: MapLoader({}), cache: false);
@@ -210,21 +244,13 @@ void main() {
     });
 
     test('custom filter registered and invoked in template', () {
-      final engine = Trellis(
-        loader: MapLoader({}),
-        cache: false,
-        filters: {'shout': (v) => '$v!!!'},
-      );
+      final engine = Trellis(loader: MapLoader({}), cache: false, filters: {'shout': (v) => '$v!!!'});
       final result = engine.render(r'<p tl:text="${msg | shout}">x</p>', {'msg': 'hi'});
       expect(result, contains('<p>hi!!!</p>'));
     });
 
     test('custom filter overrides built-in', () {
-      final engine = Trellis(
-        loader: MapLoader({}),
-        cache: false,
-        filters: {'upper': (v) => 'OVERRIDE'},
-      );
+      final engine = Trellis(loader: MapLoader({}), cache: false, filters: {'upper': (v) => 'OVERRIDE'});
       final result = engine.render(r'<p tl:text="${name | upper}">x</p>', {'name': 'hello'});
       expect(result, contains('<p>OVERRIDE</p>'));
     });
@@ -234,6 +260,208 @@ void main() {
       expect(
         () => engine.render(r'<p tl:text="${name | nonexistent}">x</p>', {'name': 'hello'}),
         throwsA(isA<ExpressionException>()),
+      );
+    });
+  });
+
+  group('object context and selection', () {
+    test('auto-conversion in tl:text', () {
+      final engine = Trellis(loader: MapLoader({}), cache: false);
+      final result = engine.render(r'<span tl:text="${user.name}">X</span>', {'user': _User('Alice', 30)});
+      expect(result, contains('<span>Alice</span>'));
+    });
+
+    test('tl:object with selection expression', () {
+      final engine = Trellis(loader: MapLoader({}), cache: false);
+      final result = engine.render(
+        r'<div tl:object="${user}"><span tl:text="*{name}">X</span><span tl:text="*{age}">X</span></div>',
+        {
+          'user': {'name': 'Alice', 'age': 30},
+        },
+      );
+      expect(result, contains('<span>Alice</span>'));
+      expect(result, contains('<span>30</span>'));
+    });
+
+    test('tl:each with tl:object per item', () {
+      final engine = Trellis(loader: MapLoader({}), cache: false);
+      final result = engine.render(r'<ul><li tl:each="u : ${users}" tl:object="${u}" tl:text="*{name}">X</li></ul>', {
+        'users': [
+          {'name': 'Alice'},
+          {'name': 'Bob'},
+        ],
+      });
+      expect(result, contains('<li>Alice</li>'));
+      expect(result, contains('<li>Bob</li>'));
+    });
+  });
+
+  group('renderFragments', () {
+    late Trellis engine;
+    final template = '<div>'
+        r'<p tl:fragment="a" tl:text="${msg}">x</p>'
+        r'<span tl:fragment="b" tl:text="${name}">y</span>'
+        '<footer tl:fragment="c">static</footer>'
+        '</div>';
+
+    setUp(() {
+      engine = Trellis(loader: MapLoader({}), cache: false);
+    });
+
+    test('concatenates fragments in list order', () {
+      final result = engine.renderFragments(template, fragments: ['a', 'b'], context: {'msg': 'Hi', 'name': 'Alice'});
+      expect(result, contains('<p>Hi</p>'));
+      expect(result, contains('<span>Alice</span>'));
+      // Verify order: a before b
+      expect(result.indexOf('<p>Hi</p>'), lessThan(result.indexOf('<span>Alice</span>')));
+    });
+
+    test('reversed order renders b before a', () {
+      final result = engine.renderFragments(template, fragments: ['b', 'a'], context: {'msg': 'Hi', 'name': 'Alice'});
+      expect(result.indexOf('<span>Alice</span>'), lessThan(result.indexOf('<p>Hi</p>')));
+    });
+
+    test('single fragment matches renderFragment output', () {
+      final multiResult = engine.renderFragments(template, fragments: ['a'], context: {'msg': 'Hi'});
+      final singleResult = engine.renderFragment(template, fragment: 'a', context: {'msg': 'Hi'});
+      expect(multiResult, equals(singleResult));
+    });
+
+    test('empty list returns empty string', () {
+      final result = engine.renderFragments(template, fragments: [], context: {});
+      expect(result, isEmpty);
+    });
+
+    test('missing fragment throws FragmentNotFoundException', () {
+      expect(
+        () => engine.renderFragments(template, fragments: ['a', 'missing', 'b'], context: {}),
+        throwsA(isA<FragmentNotFoundException>()),
+      );
+    });
+
+    test('fail-fast: missing fragment prevents any processing', () {
+      // Fragment 'a' exists but 'missing' does not — should throw before processing 'a'
+      expect(
+        () => engine.renderFragments(template, fragments: ['a', 'missing'], context: {'msg': 'Hi'}),
+        throwsA(isA<FragmentNotFoundException>()),
+      );
+    });
+
+    test('duplicate names render fragment twice independently', () {
+      final result = engine.renderFragments(template, fragments: ['c', 'c'], context: {});
+      final matches = 'static'.allMatches(result).length;
+      expect(matches, equals(2));
+    });
+
+    test('context processing with tl:text', () {
+      final result = engine.renderFragments(template, fragments: ['a', 'b'], context: {'msg': 'X', 'name': 'Y'});
+      expect(result, contains('<p>X</p>'));
+      expect(result, contains('<span>Y</span>'));
+    });
+
+    test('tl:if conditional in fragment', () {
+      final tpl = '<div>'
+          r'<p tl:fragment="cond" tl:if="${show}">visible</p>'
+          '</div>';
+      final shown = engine.renderFragments(tpl, fragments: ['cond'], context: {'show': true});
+      expect(shown, contains('visible'));
+    });
+
+    test('HTMX OOB attributes preserved', () {
+      final tpl = '<div>'
+          r'<p tl:fragment="oob" hx-swap-oob="true" tl:text="${msg}">x</p>'
+          '</div>';
+      final result = engine.renderFragments(tpl, fragments: ['oob'], context: {'msg': 'updated'});
+      expect(result, contains('hx-swap-oob="true"'));
+      expect(result, contains('<p'));
+      expect(result, contains('updated'));
+    });
+
+    test('tl:fragment attribute stripped from output', () {
+      final result = engine.renderFragments(template, fragments: ['a'], context: {'msg': 'Hi'});
+      expect(result, isNot(contains('tl:fragment')));
+    });
+  });
+
+  group('renderFileFragments', () {
+    test('loads file and renders multiple fragments', () async {
+      final engine = Trellis(
+        loader: MapLoader({
+          'page': '<div>'
+              r'<p tl:fragment="header" tl:text="${title}">x</p>'
+              '<footer tl:fragment="footer">footer</footer>'
+              '</div>',
+        }),
+        cache: false,
+      );
+      final result = await engine.renderFileFragments(
+        'page',
+        fragments: ['header', 'footer'],
+        context: {'title': 'Home'},
+      );
+      expect(result, contains('<p>Home</p>'));
+      expect(result, contains('footer'));
+    });
+
+    test('missing template throws TemplateNotFoundException', () {
+      final engine = Trellis(loader: MapLoader({}), cache: false);
+      expect(
+        () => engine.renderFileFragments('missing', fragments: ['a'], context: {}),
+        throwsA(isA<TemplateNotFoundException>()),
+      );
+    });
+
+    test('missing fragment throws FragmentNotFoundException', () {
+      final engine = Trellis(
+        loader: MapLoader({'page': '<div><p tl:fragment="a">ok</p></div>'}),
+        cache: false,
+      );
+      expect(
+        () => engine.renderFileFragments('page', fragments: ['a', 'nope'], context: {}),
+        throwsA(isA<FragmentNotFoundException>()),
+      );
+    });
+  });
+
+  group('CSS selector and cycle detection', () {
+    test('tl:insert with #id selector', () {
+      final engine = Trellis(loader: MapLoader({}), cache: false);
+      final result = engine.render(
+        '<div id="hero"><h1>Hero Section</h1></div>'
+        '<main tl:insert="#hero"></main>',
+        {},
+      );
+      expect(result, contains('<main><h1>Hero Section</h1></main>'));
+    });
+
+    test('tl:replace with .class selector', () {
+      final engine = Trellis(loader: MapLoader({}), cache: false);
+      final result = engine.render(
+        '<aside class="sidebar"><ul><li>Menu</li></ul></aside>'
+        '<div tl:replace=".sidebar">old</div>',
+        {},
+      );
+      expect(result, contains('<aside class="sidebar"><ul><li>Menu</li></ul></aside>'));
+      expect(result, isNot(contains('old')));
+    });
+
+    test('cycle error includes full cycle path', () {
+      final engine = Trellis(
+        loader: MapLoader({
+          'alpha': '<div tl:fragment="a"><div tl:insert="~{beta :: b}"></div></div>',
+          'beta': '<div tl:fragment="b"><div tl:insert="~{alpha :: a}"></div></div>',
+        }),
+        cache: false,
+      );
+      expect(
+        () => engine.render('<div tl:insert="~{alpha :: a}"></div>', {}),
+        throwsA(
+          isA<TemplateException>().having(
+            (e) => e.message,
+            'message',
+            allOf(contains('cycle detected'), contains('alpha::a'), contains('beta::b')),
+          ),
+        ),
       );
     });
   });

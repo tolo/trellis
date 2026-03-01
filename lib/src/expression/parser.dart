@@ -7,6 +7,10 @@ class Parser {
   final Scanner _scanner;
   final String _source;
 
+  /// Tracks whether we're inside a bracket `[...]` index sub-expression.
+  /// Prevents nested `${...}` which is invalid per F03 spec.
+  bool _inBracketContext = false;
+
   Parser(String source) : _source = source, _scanner = Scanner(source);
 
   /// Parse the full expression and expect EOF.
@@ -82,16 +86,16 @@ class Parser {
 
   // Precedence 6: < > <= >=
   Expr _parseComparison() {
-    var expr = _parseConcat();
+    var expr = _parseAdditive();
     while (true) {
       if (_match(TokenType.lt)) {
-        expr = BinaryExpr(expr, BinaryOp.lt, _parseConcat());
+        expr = BinaryExpr(expr, BinaryOp.lt, _parseAdditive());
       } else if (_match(TokenType.gt)) {
-        expr = BinaryExpr(expr, BinaryOp.gt, _parseConcat());
+        expr = BinaryExpr(expr, BinaryOp.gt, _parseAdditive());
       } else if (_match(TokenType.lte)) {
-        expr = BinaryExpr(expr, BinaryOp.lte, _parseConcat());
+        expr = BinaryExpr(expr, BinaryOp.lte, _parseAdditive());
       } else if (_match(TokenType.gte)) {
-        expr = BinaryExpr(expr, BinaryOp.gte, _parseConcat());
+        expr = BinaryExpr(expr, BinaryOp.gte, _parseAdditive());
       } else {
         break;
       }
@@ -99,19 +103,45 @@ class Parser {
     return expr;
   }
 
-  // Precedence 7: + (string concat)
-  Expr _parseConcat() {
-    var expr = _parseUnary();
-    while (_match(TokenType.plus)) {
-      expr = BinaryExpr(expr, BinaryOp.plus, _parseUnary());
+  // Precedence 7: + - (additive)
+  Expr _parseAdditive() {
+    var expr = _parseMultiplicative();
+    while (true) {
+      if (_match(TokenType.plus)) {
+        expr = BinaryExpr(expr, BinaryOp.plus, _parseMultiplicative());
+      } else if (_match(TokenType.minus)) {
+        expr = BinaryExpr(expr, BinaryOp.minus, _parseMultiplicative());
+      } else {
+        break;
+      }
     }
     return expr;
   }
 
-  // Precedence 8: not (unary)
+  // Precedence 8: * / % (multiplicative)
+  Expr _parseMultiplicative() {
+    var expr = _parseUnary();
+    while (true) {
+      if (_match(TokenType.star)) {
+        expr = BinaryExpr(expr, BinaryOp.star, _parseUnary());
+      } else if (_match(TokenType.slash)) {
+        expr = BinaryExpr(expr, BinaryOp.slash, _parseUnary());
+      } else if (_match(TokenType.percent)) {
+        expr = BinaryExpr(expr, BinaryOp.percent, _parseUnary());
+      } else {
+        break;
+      }
+    }
+    return expr;
+  }
+
+  // Precedence 9: not, - (unary)
   Expr _parseUnary() {
     if (_match(TokenType.not_)) {
       return UnaryExpr(UnaryOp.not_, _parseUnary());
+    }
+    if (_match(TokenType.minus)) {
+      return UnaryExpr(UnaryOp.minus, _parseUnary());
     }
     return _parsePostfix();
   }
@@ -124,9 +154,12 @@ class Parser {
         final name = _expect(TokenType.identifier, 'Expected member name after "."');
         expr = MemberAccessExpr(expr, name.value as String);
       } else if (_match(TokenType.lBracket)) {
-        final index = _expect(TokenType.integer, 'Expected integer index');
+        final wasInBracket = _inBracketContext;
+        _inBracketContext = true;
+        final index = _parsePipe();
+        _inBracketContext = wasInBracket;
         _expect(TokenType.rBracket, 'Expected "]"');
-        expr = IndexAccessExpr(expr, index.value as int);
+        expr = IndexAccessExpr(expr, index);
       } else {
         break;
       }
@@ -140,11 +173,7 @@ class Parser {
 
     switch (token.type) {
       case TokenType.string:
-        _scanner.next();
-        return LiteralExpr(token.value);
       case TokenType.integer:
-        _scanner.next();
-        return LiteralExpr(token.value);
       case TokenType.double_:
         _scanner.next();
         return LiteralExpr(token.value);
@@ -161,9 +190,21 @@ class Parser {
         _scanner.next();
         return VariableExpr(token.value as String);
       case TokenType.dollarLBrace:
+        if (_inBracketContext) {
+          throw ExpressionException(
+            'Nested \${} not allowed inside bracket index; use \${items[i]} instead of \${items[\${i}]}',
+            expression: _source,
+            position: token.offset,
+          );
+        }
         return _parseDollarExpr();
       case TokenType.atLBrace:
         return _parseUrlExpr();
+      case TokenType.starLBrace:
+        return _parseSelectionExpr();
+      case TokenType.pipe:
+        _scanner.next(); // consume opening |
+        return _parseLiteralSub();
       case TokenType.lParen:
         _scanner.next();
         final expr = _parseTernary();
@@ -180,6 +221,14 @@ class Parser {
     final expr = _parsePipe();
     _expect(TokenType.rBrace, 'Expected "}" to close variable expression');
     return expr;
+  }
+
+  /// Parse selection expression: `*{field}` or `*{field.nested}`.
+  Expr _parseSelectionExpr() {
+    _scanner.next(); // consume *{
+    final expr = _parsePipe();
+    _expect(TokenType.rBrace, 'Expected "}" to close selection expression');
+    return SelectionExpr(expr);
   }
 
   /// Parse `@{/path(key=${val}, ...)}`.
@@ -210,6 +259,34 @@ class Parser {
 
     _expect(TokenType.rBrace, 'Expected "}" to close URL expression');
     return UrlExpr(path, params);
+  }
+
+  /// Parse literal substitution: `|text ${expr} more text|`.
+  Expr _parseLiteralSub() {
+    final parts = <Expr>[];
+
+    while (true) {
+      final text = _scanner.scanLiteralSubSegment();
+      if (text.isNotEmpty) {
+        parts.add(LiteralExpr(text));
+      }
+
+      final token = _scanner.peek();
+      if (token.type == TokenType.pipe) {
+        _scanner.next(); // consume closing |
+        return LiteralSubstitutionExpr(parts);
+      } else if (token.type == TokenType.dollarLBrace) {
+        parts.add(_parseDollarExpr());
+      } else if (token.type == TokenType.eof) {
+        throw ExpressionException('Unterminated literal substitution', expression: _source, position: token.offset);
+      } else {
+        throw ExpressionException(
+          'Unexpected token inside literal substitution: ${token.type}',
+          expression: _source,
+          position: token.offset,
+        );
+      }
+    }
   }
 
   // --- Helpers ---

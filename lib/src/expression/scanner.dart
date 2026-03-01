@@ -15,6 +15,10 @@ enum TokenType {
   identifier,
   // Operators
   plus,
+  minus,
+  star,
+  slash,
+  percent,
   assign,
   eq,
   notEq,
@@ -38,6 +42,7 @@ enum TokenType {
   rBracket,
   dollarLBrace,
   atLBrace,
+  starLBrace,
   rBrace,
   // Control
   eof,
@@ -77,6 +82,33 @@ class Scanner {
       _scanner.readChar();
     }
     return _source.substring(start, _scanner.position);
+  }
+
+  /// Read raw text for literal substitution until `${` or `|` is hit.
+  /// Unlike [scanRawUntil], does NOT skip whitespace — spaces are significant.
+  /// Bare `$` not followed by `{` is included as literal text.
+  String scanLiteralSubSegment() {
+    _peeked = null;
+    final buffer = StringBuffer();
+    while (!_scanner.isDone) {
+      final char = _scanner.peekChar()!;
+      if (char == 0x7C) break; // | — end of literal sub
+      if (char == 0x24) {
+        // $ — check if followed by {
+        final pos = _scanner.position;
+        _scanner.readChar(); // consume $
+        if (!_scanner.isDone && _scanner.peekChar() == 0x7B) {
+          // ${ — rewind to $ so peek() produces dollarLBrace
+          _scanner.position = pos;
+          break;
+        }
+        // Bare $ — include as literal text
+        buffer.write(r'$');
+        continue;
+      }
+      buffer.writeCharCode(_scanner.readChar());
+    }
+    return buffer.toString();
   }
 
   /// Returns the next token without advancing.
@@ -119,6 +151,11 @@ class Scanner {
     // Single-char tokens
     if (_scanner.scan('|')) return Token(TokenType.pipe, null, offset);
     if (_scanner.scan('+')) return Token(TokenType.plus, null, offset);
+    if (_scanner.scan('-')) return Token(TokenType.minus, null, offset);
+    if (_scanner.scan('*{')) return Token(TokenType.starLBrace, null, offset);
+    if (_scanner.scan('*')) return Token(TokenType.star, null, offset);
+    if (_scanner.scan('/')) return Token(TokenType.slash, null, offset);
+    if (_scanner.scan('%')) return Token(TokenType.percent, null, offset);
     if (_scanner.scan('<')) return Token(TokenType.lt, null, offset);
     if (_scanner.scan('>')) return Token(TokenType.gt, null, offset);
     if (_scanner.scan('.')) return Token(TokenType.dot, null, offset);
@@ -197,6 +234,12 @@ class Scanner {
       'and' => Token(TokenType.and_, null, offset),
       'or' => Token(TokenType.or_, null, offset),
       'not' => Token(TokenType.not_, null, offset),
+      'gt' => Token(TokenType.gt, null, offset),
+      'lt' => Token(TokenType.lt, null, offset),
+      'ge' => Token(TokenType.gte, null, offset),
+      'le' => Token(TokenType.lte, null, offset),
+      'eq' => Token(TokenType.eq, null, offset),
+      'ne' => Token(TokenType.notEq, null, offset),
       _ => Token(TokenType.identifier, text, offset),
     };
   }

@@ -148,16 +148,18 @@ void main() {
       });
 
       test('ternary — appends only when truthy', () {
-        final result = render(r'''<div class="item" tl:classappend="${active} ? 'active' : ''">x</div>''', {
-          'active': true,
-        });
+        final result = render(
+          r'''<div class="item" tl:classappend="${active} ? 'active' : ''">x</div>''',
+          {'active': true},
+        );
         expect(result, contains('class="item active"'));
       });
 
       test('ternary — no-op when falsy', () {
-        final result = render(r'''<div class="item" tl:classappend="${active} ? 'active' : ''">x</div>''', {
-          'active': false,
-        });
+        final result = render(
+          r'''<div class="item" tl:classappend="${active} ? 'active' : ''">x</div>''',
+          {'active': false},
+        );
         expect(result, contains('class="item"'));
         expect(result, isNot(contains('active')));
       });
@@ -165,6 +167,70 @@ void main() {
       test('tl:classappend removed from output', () {
         final result = render(r'<div tl:classappend="${cls}">x</div>', {'cls': 'x'});
         expect(result, isNot(contains('tl:classappend')));
+      });
+
+      test('multiple classes in single append', () {
+        final result = render(r'<div class="a" tl:classappend="${cls}">x</div>', {'cls': 'b c'});
+        expect(result, contains('class="a b c"'));
+      });
+
+      test('tl:class and tl:classappend together', () {
+        final result = render(r'<div class="old" tl:class="${cls}" tl:classappend="${extra}">x</div>', {
+          'cls': 'base',
+          'extra': 'active',
+        });
+        expect(result, contains('class="base active"'));
+        expect(result, isNot(contains('old')));
+      });
+    });
+
+    group('tl:styleappend', () {
+      test('appends to existing style', () {
+        final result = render(r'<div style="color: red" tl:styleappend="${s}">x</div>', {'s': 'font-size: 12px'});
+        expect(result, contains('style="color: red; font-size: 12px"'));
+      });
+
+      test('existing style ends with semicolon — no double semicolon', () {
+        final result = render(r'<div style="color: red;" tl:styleappend="${s}">x</div>', {'s': 'font-size: 12px'});
+        expect(result, contains('style="color: red; font-size: 12px"'));
+        expect(result, isNot(contains(';;')));
+      });
+
+      test('sets style when no style attribute exists', () {
+        final result = render(r'<div tl:styleappend="${s}">x</div>', {'s': 'color: red'});
+        expect(result, contains('style="color: red"'));
+      });
+
+      test('null expression leaves existing style unchanged', () {
+        final result = render(r'<div style="color: red" tl:styleappend="${s}">x</div>', {'s': null});
+        expect(result, contains('style="color: red"'));
+      });
+
+      test('empty string leaves existing style unchanged', () {
+        final result = render(r'<div style="color: red" tl:styleappend="${s}">x</div>', {'s': ''});
+        expect(result, contains('style="color: red"'));
+      });
+
+      test('tl:styleappend removed from output', () {
+        final result = render(r'<div tl:styleappend="${s}">x</div>', {'s': 'color: red'});
+        expect(result, isNot(contains('tl:styleappend')));
+      });
+
+      test('ternary expression — appends when truthy', () {
+        final result = render(
+          r'''<div style="display: block" tl:styleappend="${active} ? 'color: red' : ''">x</div>''',
+          {'active': true},
+        );
+        expect(result, contains('color: red'));
+      });
+
+      test('ternary expression — no-op when falsy', () {
+        final result = render(
+          r'''<div style="display: block" tl:styleappend="${active} ? 'color: red' : ''">x</div>''',
+          {'active': false},
+        );
+        expect(result, isNot(contains('color: red')));
+        expect(result, contains('style="display: block"'));
       });
     });
 
@@ -182,6 +248,40 @@ void main() {
       test('tl:class removed from output', () {
         final result = render(r'<div tl:class="${cls}">x</div>', {'cls': 'a'});
         expect(result, isNot(contains('tl:class')));
+      });
+    });
+
+    group('no-op sentinel _', () {
+      test('tl:href="_" preserves existing href', () {
+        final result = render('<a href="/original" tl:href="_">link</a>', {});
+        expect(result, contains('href="/original"'));
+        expect(result, isNot(contains('tl:href')));
+      });
+
+      test('tl:src="_" preserves existing src', () {
+        final result = render('<img src="img.png" tl:src="_">', {});
+        expect(result, contains('src="img.png"'));
+      });
+
+      test('tl:value="_" preserves existing value', () {
+        final result = render('<input value="orig" tl:value="_">', {});
+        expect(result, contains('value="orig"'));
+      });
+
+      test('tl:class="_" preserves existing class', () {
+        final result = render('<div class="foo" tl:class="_">x</div>', {});
+        expect(result, contains('class="foo"'));
+      });
+
+      test('tl:id="_" preserves existing id', () {
+        final result = render('<div id="bar" tl:id="_">x</div>', {});
+        expect(result, contains('id="bar"'));
+      });
+
+      test('tl:attr="_" leaves all attrs unchanged', () {
+        final result = render('<div data-x="1" tl:attr="_">x</div>', {});
+        expect(result, contains('data-x="1"'));
+        expect(result, isNot(contains('tl:attr')));
       });
     });
   });

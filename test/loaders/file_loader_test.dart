@@ -55,10 +55,7 @@ void main() {
 
     group('constructor', () {
       test('nonexistent basePath throws TemplateException', () {
-        expect(
-          () => FileSystemLoader('nonexistent_dir_that_does_not_exist/'),
-          throwsA(isA<TemplateException>()),
-        );
+        expect(() => FileSystemLoader('nonexistent_dir_that_does_not_exist/'), throwsA(isA<TemplateException>()));
       });
     });
 

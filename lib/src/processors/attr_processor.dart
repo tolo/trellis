@@ -30,19 +30,25 @@ const _shorthands = ['href', 'src', 'value', 'class', 'id'];
 
 /// Processes `tl:attr`, `tl:href`, `tl:src`, `tl:value`, `tl:class`,
 /// and `tl:id` attribute mutations.
-void processAttributes(Element element, String prefix, ExpressionEvaluator evaluator, Map<String, dynamic> context) {
+void processAttributes(
+  Element element,
+  String attrPrefix,
+  ExpressionEvaluator evaluator,
+  Map<String, dynamic> context,
+) {
   // 1. Shorthand attributes
   for (final name in _shorthands) {
-    final expr = element.attributes['$prefix:$name'];
+    final expr = element.attributes['$attrPrefix$name'];
     if (expr != null) {
+      if (expr == '_') continue; // no-op sentinel
       final value = evaluator.evaluate(expr, context);
       _setAttribute(element, name, value);
     }
   }
 
   // 2. tl:classappend — conditionally append to existing class attribute
-  final classAppendExpr = element.attributes['$prefix:classappend'];
-  if (classAppendExpr != null) {
+  final classAppendExpr = element.attributes['${attrPrefix}classappend'];
+  if (classAppendExpr != null && classAppendExpr != '_') {
     final value = evaluator.evaluate(classAppendExpr, context);
     if (value != null) {
       final toAppend = value.toString().trim();
@@ -53,9 +59,27 @@ void processAttributes(Element element, String prefix, ExpressionEvaluator evalu
     }
   }
 
-  // 3. tl:attr — multi-attribute
-  final attrExpr = element.attributes['$prefix:attr'];
-  if (attrExpr != null) {
+  // 3. tl:styleappend — conditionally append to existing style attribute
+  final styleAppendExpr = element.attributes['${attrPrefix}styleappend'];
+  if (styleAppendExpr != null && styleAppendExpr != '_') {
+    final value = evaluator.evaluate(styleAppendExpr, context);
+    if (value != null) {
+      final toAppend = value.toString().trim();
+      if (toAppend.isNotEmpty) {
+        final existing = element.attributes['style'];
+        if (existing != null) {
+          final base = existing.trimRight().endsWith(';') ? existing.trimRight() : '${existing.trimRight()};';
+          element.attributes['style'] = '$base $toAppend';
+        } else {
+          element.attributes['style'] = toAppend;
+        }
+      }
+    }
+  }
+
+  // 4. tl:attr — multi-attribute
+  final attrExpr = element.attributes['${attrPrefix}attr'];
+  if (attrExpr != null && attrExpr != '_') {
     final bindings = parseBindings(attrExpr);
     for (final (name, expression) in bindings) {
       final value = evaluator.evaluate(expression, context);

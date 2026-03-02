@@ -46,6 +46,12 @@ bool processEach(
   // Evaluate collection expression
   final result = evaluator.evaluate(collectionExpr, context);
 
+  // Null/missing → treat as empty collection (Thymeleaf behavior)
+  if (result == null) {
+    element.remove();
+    return true;
+  }
+
   // Convert to list of items
   final List<dynamic> items;
   if (result is Map) {

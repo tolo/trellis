@@ -175,6 +175,20 @@ void main() {
         });
         expect(result, isNot(contains('<li>')));
       });
+
+      test('null iterable removes element (treated as empty)', () {
+        final result = render('<ul><li tl:each="item : \${items}" tl:text="\${item}">x</li></ul>', {
+          'items': null,
+        });
+        expect(result, isNot(contains('<li>')));
+        expect(result, contains('<ul>'));
+      });
+
+      test('missing variable removes element (treated as empty)', () {
+        final result = render('<ul><li tl:each="item : \${items}" tl:text="\${item}">x</li></ul>', {});
+        expect(result, isNot(contains('<li>')));
+        expect(result, contains('<ul>'));
+      });
     });
 
     group('non-iterable', () {

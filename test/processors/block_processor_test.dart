@@ -91,5 +91,105 @@ void main() {
       expect(result, contains('<div>yes</div>'));
       expect(result, isNot(contains('tl:block')));
     });
+
+    group('self-closing <tl:block/>', () {
+      test('does not consume subsequent siblings', () {
+        final result = render(r'<div><tl:block tl:utext="${body}"/><p>sibling</p></div>', {'body': '<b>hi</b>'});
+        expect(result, contains('<b>hi</b>'));
+        expect(result, contains('<p>sibling</p>'));
+        expect(result, isNot(contains('tl:block')));
+      });
+
+      test('preserves attributes on self-closing block', () {
+        final result = render(r'<div><tl:block tl:text="${val}"/>after</div>', {'val': 'hello'});
+        expect(result, contains('hello'));
+        expect(result, contains('after'));
+      });
+
+      test('self-closing block with no attributes', () {
+        final result = render('<div><tl:block/>tail</div>', {});
+        expect(result, contains('tail'));
+        expect(result, isNot(contains('tl:block')));
+      });
+
+      test('self-closing block with > in attribute value preserves siblings', () {
+        final result = render(
+          r'<div><tl:block tl:if="${count > 0}" tl:text="${count}"/><p>sibling</p></div>',
+          {'count': 3},
+        );
+        expect(result, contains('3'));
+        expect(result, contains('<p>sibling</p>'));
+        expect(result, isNot(contains('tl:block')));
+      });
+
+      test('self-closing block with >= in attribute value', () {
+        final result = render(
+          r'''<div><tl:block tl:if="${x >= 5}" tl:text="'yes'"/><p>after</p></div>''',
+          {'x': 10},
+        );
+        expect(result, contains('yes'));
+        expect(result, contains('<p>after</p>'));
+      });
+
+      test('self-closing block with single-quoted attribute containing >', () {
+        final result = render(
+          "<div><tl:block tl:if='\${n > 1}' tl:text='\${n}'/>tail</div>",
+          {'n': 5},
+        );
+        expect(result, contains('5'));
+        expect(result, contains('tail'));
+      });
+
+      test('multiple self-closing blocks preserve order', () {
+        final result = render(
+          r'<div><tl:block tl:text="${a}"/><tl:block tl:text="${b}"/></div>',
+          {'a': 'first', 'b': 'second'},
+        );
+        expect(result, contains('first'));
+        expect(result, contains('second'));
+        final idx1 = result.indexOf('first');
+        final idx2 = result.indexOf('second');
+        expect(idx1, lessThan(idx2));
+      });
+    });
+
+    group('tl:fragment on tl:block', () {
+      test('renderFragment returns unwrapped children', () {
+        final source = '<div><tl:block tl:fragment="msg"><p>content</p></tl:block></div>';
+        final result = engine.renderFragment(source, fragment: 'msg', context: {});
+        expect(result, contains('<p>content</p>'));
+        expect(result, isNot(contains('tl:block')));
+      });
+
+      test('renderFragment with expression in block fragment', () {
+        final source = r'<div><tl:block tl:fragment="greeting"><span tl:text="${name}">x</span></tl:block></div>';
+        final result = engine.renderFragment(source, fragment: 'greeting', context: {'name': 'World'});
+        expect(result, contains('<span>World</span>'));
+        expect(result, isNot(contains('tl:block')));
+      });
+
+      test('renderFragments returns unwrapped children for block fragments', () {
+        final source = '<div>'
+            '<tl:block tl:fragment="a"><p>alpha</p></tl:block>'
+            '<tl:block tl:fragment="b"><p>beta</p></tl:block>'
+            '</div>';
+        final result = engine.renderFragments(source, fragments: ['a', 'b'], context: {});
+        expect(result, contains('<p>alpha</p>'));
+        expect(result, contains('<p>beta</p>'));
+        expect(result, isNot(contains('tl:block')));
+      });
+
+      test('mixed block and regular fragment rendering', () {
+        final source = '<div>'
+            '<tl:block tl:fragment="block-frag"><p>from block</p></tl:block>'
+            '<span tl:fragment="span-frag">from span</span>'
+            '</div>';
+        final blockResult = engine.renderFragment(source, fragment: 'block-frag', context: {});
+        final spanResult = engine.renderFragment(source, fragment: 'span-frag', context: {});
+        expect(blockResult, contains('<p>from block</p>'));
+        expect(blockResult, isNot(contains('tl:block')));
+        expect(spanResult, contains('<span>from span</span>'));
+      });
+    });
   });
 }

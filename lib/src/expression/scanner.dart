@@ -138,6 +138,7 @@ final class Scanner {
     if (_scanner.scan('@{')) return Token(TokenType.atLBrace, null, offset);
     if (_scanner.scan('==')) return Token(TokenType.eq, null, offset);
     if (_scanner.scan('!=')) return Token(TokenType.notEq, null, offset);
+    if (_scanner.scan('!')) return Token(TokenType.not_, null, offset);
     if (_scanner.scan('<=')) return Token(TokenType.lte, null, offset);
     if (_scanner.scan('>=')) return Token(TokenType.gte, null, offset);
     if (_scanner.scan('=')) return Token(TokenType.assign, null, offset);

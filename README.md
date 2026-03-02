@@ -162,6 +162,9 @@ Boolean HTML attributes (`disabled`, `checked`, etc.): `true` renders valueless,
   <dt tl:text="${item.key}">key</dt>
   <dd tl:text="${item.value}">value</dd>
 </tl:block>
+
+<!-- Self-closing form also supported -->
+<tl:block tl:utext="${bodyHtml}"/>
 ```
 
 ### Remove
@@ -227,7 +230,7 @@ Trellis(filters: {
 | Elvis | `${val} ?: 'default'` | Null-coalescing |
 | Comparison | `${a} == ${b}`, `!=`, `<`, `>`, `<=`, `>=` | Value comparison |
 | Comparison alias | `gt`, `lt`, `ge`, `le`, `eq`, `ne` | Word-form comparison operators |
-| Boolean | `${a} and ${b}`, `or`, `not` | Logical operators |
+| Boolean | `${a} and ${b}`, `or`, `not` / `!` | Logical operators |
 | Concat | `${first} + ' ' + ${last}` | String concatenation |
 | Filter | `${name \| upper}` | Pipe-based value transformation |
 | No-op | `_` | Explicitly do nothing (prototype preservation) |
@@ -335,6 +338,10 @@ final result = evaluator.evaluate(r'${a} + ${b}', {'a': 1, 'b': 2}); // 3
 - `tl:inline` in `javascript`/`css` mode escapes output including `</script>` and `</style>` closing tags
 - `FileSystemLoader` rejects absolute paths, `..` traversal, and symlink escapes outside the base directory
 - `tl:text` always HTML-escapes output
+
+## Contributing
+
+Trellis is in early development and we're not accepting pull requests at this time. That said, we'd love to hear from you — bug reports, feature ideas, and general feedback are all very welcome! Please feel free to [open an issue](https://github.com/tolo/trellis/issues).
 
 ## License
 

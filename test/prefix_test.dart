@@ -83,10 +83,43 @@ void main() {
     });
 
     group('data-tl-block', () {
+      late Trellis engine;
+
+      setUp(() {
+        engine = Trellis(loader: MapLoader({}), cache: false, prefix: 'data-tl');
+      });
+
       test('data-tl-block unwraps correctly', () {
-        final engine = Trellis(loader: MapLoader({}), cache: false, prefix: 'data-tl');
         final result = engine.render('<div><data-tl-block>content</data-tl-block></div>', {});
         expect(result, contains('content'));
+        expect(result, isNot(contains('data-tl-block')));
+      });
+
+      test('self-closing data-tl-block does not consume siblings', () {
+        final result = engine.render(
+          r'<div><data-tl-block data-tl-text="${x}"/><p>sibling</p></div>',
+          {'x': 'hi'},
+        );
+        expect(result, contains('hi'));
+        expect(result, contains('<p>sibling</p>'));
+        expect(result, isNot(contains('data-tl-block')));
+      });
+
+      test('renderFragment returns unwrapped children for block fragment', () {
+        final source = '<div><data-tl-block data-tl-fragment="msg"><p>content</p></data-tl-block></div>';
+        final result = engine.renderFragment(source, fragment: 'msg', context: {});
+        expect(result, contains('<p>content</p>'));
+        expect(result, isNot(contains('data-tl-block')));
+      });
+
+      test('renderFragments returns unwrapped children for block fragments', () {
+        final source = '<div>'
+            '<data-tl-block data-tl-fragment="a"><p>alpha</p></data-tl-block>'
+            '<data-tl-block data-tl-fragment="b"><p>beta</p></data-tl-block>'
+            '</div>';
+        final result = engine.renderFragments(source, fragments: ['a', 'b'], context: {});
+        expect(result, contains('<p>alpha</p>'));
+        expect(result, contains('<p>beta</p>'));
         expect(result, isNot(contains('data-tl-block')));
       });
     });

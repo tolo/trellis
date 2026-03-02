@@ -124,6 +124,24 @@ void main() {
         final tokens = tokenize('+');
         expect(tokens[0].type, TokenType.plus);
       });
+
+      test('! as unary not', () {
+        final tokens = tokenize('!');
+        expect(tokens[0].type, TokenType.not_);
+      });
+
+      test('! followed by identifier', () {
+        final tokens = tokenize('!active');
+        expect(tokens[0].type, TokenType.not_);
+        expect(tokens[1].type, TokenType.identifier);
+        expect(tokens[1].value, 'active');
+      });
+
+      test('!= is notEq, not (not_ + assign)', () {
+        final tokens = tokenize('!=');
+        expect(tokens, hasLength(2)); // notEq + eof
+        expect(tokens[0].type, TokenType.notEq);
+      });
     });
 
     group('arithmetic tokens', () {

@@ -187,6 +187,21 @@ void main() {
         expect(eval(r'not ${a}', {'a': true}), false);
         expect(eval(r'not ${a}', {'a': false}), true);
       });
+
+      test('! operator (alias for not)', () {
+        expect(eval(r'!${a}', {'a': true}), false);
+        expect(eval(r'!${a}', {'a': false}), true);
+      });
+
+      test('! with compound expressions', () {
+        expect(eval(r'!${a} and ${b}', {'a': false, 'b': true}), true);
+        expect(eval(r'!${a} or ${b}', {'a': true, 'b': false}), false);
+      });
+
+      test('! preserves != operator', () {
+        expect(eval(r'${a} != ${b}', {'a': 1, 'b': 2}), true);
+        expect(eval(r'${a} != ${b}', {'a': 1, 'b': 1}), false);
+      });
     });
 
     group('arithmetic operators', () {

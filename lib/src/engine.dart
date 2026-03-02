@@ -68,10 +68,11 @@ final class Trellis {
     if (fragEl == null) {
       throw FragmentNotFoundException(fragment);
     }
+    final clone = fragEl.clone(true);
     final processor = _createProcessor()..collectFragments(doc);
-    processor.process(fragEl, context);
-    fragEl.attributes.remove('${attrPrefix}fragment');
-    return fragEl.outerHtml;
+    processor.process(clone, context);
+    clone.attributes.remove('${attrPrefix}fragment');
+    return _elementHtml(clone, attrPrefix);
   }
 
   /// Render a specific named fragment from a template file.
@@ -110,7 +111,7 @@ final class Trellis {
     for (final clone in clones) {
       clone.attributes.remove('${attrPrefix}fragment');
       processor.process(clone, context);
-      buffer.write(clone.outerHtml);
+      buffer.write(_elementHtml(clone, attrPrefix));
     }
 
     return buffer.toString();
@@ -130,17 +131,98 @@ final class Trellis {
     return DomProcessor(prefix: prefix, separator: separator, loader: loader, filters: filters, strict: strict);
   }
 
+  /// Return outerHtml for regular elements, innerHtml for block elements
+  /// (virtual wrappers that should not appear in output).
+  String _elementHtml(Element element, String attrPrefix) {
+    if (element.localName == '${attrPrefix}block') return element.innerHtml;
+    return element.outerHtml;
+  }
+
+  /// Rewrite self-closing `<tl:block .../>` to `<tl:block ...></tl:block>`.
+  /// HTML5 treats unknown elements as non-void, so `/>` is silently ignored
+  /// by the parser — causing all subsequent siblings to become children.
+  ///
+  /// Uses a quote-aware scan instead of a simple regex so that `>` inside
+  /// quoted attribute values (e.g. `tl:if="${count > 0}"`) is not mistaken
+  /// for the end of the tag.
+  String _fixSelfClosingBlocks(String source) {
+    final tag = '$prefix${separator}block';
+    final tagLower = tag.toLowerCase();
+    final tagLen = tag.length;
+    final buf = StringBuffer();
+    var i = 0;
+    while (i < source.length) {
+      // Look for '<'
+      if (source.codeUnitAt(i) != 0x3C) {
+        buf.writeCharCode(source.codeUnitAt(i));
+        i++;
+        continue;
+      }
+      // Check if tag name matches (case-insensitive)
+      final remaining = source.length - i;
+      if (remaining < tagLen + 2 ||
+          source.substring(i + 1, i + 1 + tagLen).toLowerCase() != tagLower) {
+        buf.writeCharCode(source.codeUnitAt(i));
+        i++;
+        continue;
+      }
+      // Char after tag name must be whitespace, '/' or '>'
+      final afterTag = source.codeUnitAt(i + 1 + tagLen);
+      if (afterTag != 0x20 && afterTag != 0x09 && afterTag != 0x0A && afterTag != 0x0D &&
+          afterTag != 0x2F && afterTag != 0x3E) {
+        buf.writeCharCode(source.codeUnitAt(i));
+        i++;
+        continue;
+      }
+      // Found a block tag — scan to end of tag, respecting quotes
+      final tagStart = i;
+      i += 1 + tagLen; // skip '<' + tag name
+      int? quoteChar;
+      while (i < source.length) {
+        final c = source.codeUnitAt(i);
+        if (quoteChar != null) {
+          if (c == quoteChar) quoteChar = null;
+          i++;
+        } else if (c == 0x22 || c == 0x27) {
+          // " or '
+          quoteChar = c;
+          i++;
+        } else if (c == 0x2F && i + 1 < source.length && source.codeUnitAt(i + 1) == 0x3E) {
+          // '/>' — rewrite to ></tag>
+          final attrs = source.substring(tagStart + 1 + tagLen, i);
+          final tagName = source.substring(tagStart + 1, tagStart + 1 + tagLen);
+          buf.write('<$tagName$attrs></$tagName>');
+          i += 2; // skip '/>'
+          break;
+        } else if (c == 0x3E) {
+          // '>' — not self-closing, copy as-is
+          buf.write(source.substring(tagStart, i + 1));
+          i++;
+          break;
+        } else {
+          i++;
+        }
+      }
+      // If we ran out of input inside the tag, copy remainder as-is
+      if (i >= source.length && (quoteChar != null || tagStart + 1 + tagLen >= source.length)) {
+        buf.write(source.substring(tagStart));
+      }
+    }
+    return buf.toString();
+  }
+
   Document _parse(String source) {
-    if (cache && _cache.containsKey(source)) {
+    final normalizedSource = _fixSelfClosingBlocks(source);
+    if (cache && _cache.containsKey(normalizedSource)) {
       _cacheHits++;
-      final doc = _cache.remove(source)!;
-      _cache[source] = doc;
+      final doc = _cache.remove(normalizedSource)!;
+      _cache[normalizedSource] = doc;
       return doc.clone(true);
     }
     if (cache) _cacheMisses++;
-    final doc = html_parser.parse(source);
+    final doc = html_parser.parse(normalizedSource);
     if (cache) {
-      _cache[source] = doc;
+      _cache[normalizedSource] = doc;
       if (_cache.length > maxCacheSize) {
         _cache.remove(_cache.keys.first);
       }

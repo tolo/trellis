@@ -35,7 +35,7 @@
 - Ternary: `${cond} ? 'a' : 'b'`
 - Elvis: `${val} ?: 'default'`
 - Comparisons: `== != < > <= >=`
-- Boolean: `and or not`
+- Boolean: `and or not` / `!`
 
 ## Processing Priority Order
 

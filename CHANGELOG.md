@@ -3,11 +3,9 @@
 All notable changes to **trellis** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
-Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
-
 ---
 
-## [0.2.1] — 2026-03-02
+## [0.2.1]
 
 ### Fixed
 - **`tl:block` self-closing**: `<tl:block/>` no longer swallows subsequent siblings — normalizer now uses a quote-aware scanner instead of a regex, correctly handling `>` inside attribute values (e.g. `tl:if="${count > 0}"`)
@@ -19,7 +17,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ---
 
-## [0.2.0] — 2026-03-01
+## [0.2.0]
 
 ### Added
 - **Expression enhancements**: arithmetic operators (`+ - * / %`), literal substitution (`|Hello, ${name}!|`), dynamic index expressions (`${list[index]}`), selection expressions (`*{field}` with `tl:object`), comparison aliases (`gt`, `lt`, `ge`, `le`, `eq`, `ne`), no-op token (`_`)
@@ -51,7 +49,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ---
 
-## [0.1.0] — 2026-02-27
+## [0.1.0]
 
 ### Added
 - Core template engine with 15 `tl:*` attributes for natural HTML templating
@@ -70,7 +68,3 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - Typed exception hierarchy: `TemplateException`, `ExpressionException`, `FragmentNotFoundException`, `TemplateNotFoundException`, `TemplateSecurityException`
 
 ---
-
-## 0.0.1-dev.1
-
-- Name reservation on pub.dev

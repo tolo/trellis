@@ -5,6 +5,12 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.4.1]
+
+- Added logo to README
+
+---
+
 ## [0.4.0]
 
 - Bumped minimum Dart SDK from 3.7 to 3.10

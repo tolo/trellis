@@ -1,0 +1,417 @@
+/* Trellis Todo — layout and styles */
+
+:root {
+  --color-primary: #3b82f6;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+  --color-low: #65a30d;
+  --color-bg: #f1f5f9;
+  --color-bg-card: #ffffff;
+  --color-border: #e2e8f0;
+  --color-text: #1e293b;
+  --color-text-muted: #64748b;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+  --radius: 8px;
+  --sidebar-width: 280px;
+  --header-height: 56px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--sl-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+/* ==================== APP LAYOUT ==================== */
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  height: var(--header-height);
+  padding: 0 20px;
+  background: var(--color-bg-card);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.app-logo {
+  font-size: 28px;
+  color: var(--color-primary);
+}
+
+.app-title {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.app-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ==================== SIDEBAR ==================== */
+
+.sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  background: var(--color-bg-card);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.sidebar-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.sidebar-lists {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  margin-bottom: 4px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background-color 0.15s;
+  text-decoration: none;
+  color: inherit;
+}
+
+.list-item:hover {
+  background: var(--color-bg);
+}
+
+.list-item.active {
+  background: #dbeafe;
+  border-left: 3px solid var(--color-primary);
+}
+
+.list-item.active .list-name {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.list-item.active .list-count {
+  background: var(--color-primary);
+  color: white;
+}
+
+.list-color-indicator {
+  width: 4px;
+  height: 36px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.list-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.list-name {
+  display: block;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list-count {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  padding: 2px 8px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.sidebar-footer {
+  padding: 12px;
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.add-list-form {
+  display: flex;
+  gap: 6px;
+}
+
+.add-list-form sl-input {
+  flex: 1;
+}
+
+/* ==================== MAIN CONTENT ==================== */
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  background: var(--color-bg);
+}
+
+.list-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.list-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.list-header-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.list-header-color {
+  width: 6px;
+  height: 40px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.list-header h2 {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+/* ==================== SEARCH & QUICK ADD ==================== */
+
+.search-bar {
+  margin-bottom: 16px;
+}
+
+.quick-add-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.quick-add-form sl-input {
+  flex: 1;
+}
+
+.priority-select {
+  width: 120px;
+}
+
+/* ==================== TODO ITEMS ==================== */
+
+.todos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.todo-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.todo-item:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.todo-item.completed {
+  opacity: 0.6;
+}
+
+.todo-item.completed .todo-title {
+  text-decoration: line-through;
+}
+
+.todo-item.overdue:not(.completed) {
+  border-left: 3px solid var(--color-danger);
+}
+
+.todo-item.priority-high:not(.completed):not(.overdue) {
+  border-left: 3px solid var(--color-danger);
+}
+
+.todo-item.priority-medium:not(.completed):not(.overdue) {
+  border-left: 3px solid var(--color-warning);
+}
+
+.todo-item.priority-low:not(.completed):not(.overdue) {
+  border-left: 3px solid var(--color-low);
+}
+
+.todo-checkbox {
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.todo-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.todo-title {
+  font-weight: 500;
+  display: block;
+  word-break: break-word;
+}
+
+.todo-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.todo-due {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.todo-due.overdue {
+  color: var(--color-danger);
+  font-weight: 500;
+}
+
+.todo-actions {
+  display: none;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.todo-item:hover .todo-actions {
+  display: flex;
+}
+
+/* ==================== EMPTY STATE ==================== */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  text-align: center;
+  color: var(--color-text-muted);
+  gap: 8px;
+}
+
+.empty-icon {
+  font-size: 64px;
+  opacity: 0.5;
+}
+
+/* ==================== LIST HEADER ACTIONS ==================== */
+
+.list-header-actions {
+  display: flex;
+  gap: 4px;
+}
+
+/* ==================== SIDEBAR LIST ACTIONS ==================== */
+
+.list-actions {
+  display: none;
+  gap: 2px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.list-item:hover .list-actions {
+  display: flex;
+}
+
+.list-actions sl-icon-button {
+  font-size: 14px;
+}
+
+.list-actions sl-icon-button::part(base) {
+  padding: 4px;
+}
+
+/* ==================== DIALOGS ==================== */
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.color-input {
+  height: 40px;
+  width: 60px;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+/* ==================== DANGER ICONS ==================== */
+
+.danger-icon::part(base) {
+  color: var(--color-danger);
+}
+
+.danger-icon:hover::part(base) {
+  color: #dc2626;
+}

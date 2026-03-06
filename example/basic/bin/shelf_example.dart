@@ -3,7 +3,7 @@
 // Prerequisites — add shelf to your pubspec.yaml:
 //   dart pub add shelf shelf_io
 //
-// Run: dart run example/shelf_example.dart
+// Run: dart run bin/shelf_example.dart
 // Then open http://localhost:8080 in your browser.
 
 import 'package:trellis/trellis.dart';

@@ -1,35 +1,29 @@
 import 'package:html/dom.dart';
 
-import '../evaluator.dart';
 import '../exceptions.dart';
+import '../processor_api.dart';
 
 /// Known mode keywords — checked before expression evaluation.
 const _modeKeywords = {'all', 'body', 'tag', 'all-but-first', 'none'};
 
-/// Processes `tl:remove` attribute.
-/// Returns `true` if the element was removed from DOM (caller should stop
-/// further processing); `false` otherwise.
-bool processRemove(Element element, String attrPrefix, ExpressionEvaluator evaluator, Map<String, dynamic> context) {
-  final removeExpr = element.attributes['${attrPrefix}remove'];
-  if (removeExpr == null) return false;
-
-  // Keyword-first: treat known mode names directly without expression eval
+/// Shared implementation for remove mode resolution and execution.
+bool _executeRemoveMode(Element element, String value, ProcessorContext context) {
   final String mode;
-  if (_modeKeywords.contains(removeExpr)) {
-    mode = removeExpr;
+  if (_modeKeywords.contains(value)) {
+    mode = value;
   } else {
-    final value = evaluator.evaluate(removeExpr, context);
-    mode = value?.toString() ?? '';
+    final result = context.evaluate(value, context.variables);
+    mode = result?.toString() ?? '';
   }
 
   switch (mode) {
     case 'all':
       element.remove();
-      return true;
+      return false; // element removed
 
     case 'body':
       element.nodes.clear();
-      return false;
+      return true; // element remains
 
     case 'tag':
       final parent = element.parentNode;
@@ -39,7 +33,7 @@ bool processRemove(Element element, String attrPrefix, ExpressionEvaluator evalu
         }
         element.remove();
       }
-      return true;
+      return false; // element removed
 
     case 'all-but-first':
       final children = element.children;
@@ -56,12 +50,26 @@ bool processRemove(Element element, String attrPrefix, ExpressionEvaluator evalu
           }
         }
       }
-      return false;
+      return true; // element remains
 
     case 'none':
-      return false;
+      return true; // element remains
 
     default:
       throw TemplateException('Invalid tl:remove value: "$mode"');
+  }
+}
+
+/// Processor class for `tl:remove` — element/content removal.
+class RemoveProcessor extends Processor {
+  @override
+  String get attribute => 'remove';
+
+  @override
+  ProcessorPriority get priority => ProcessorPriority.afterAttributes;
+
+  @override
+  bool process(Element element, String value, ProcessorContext context) {
+    return _executeRemoveMode(element, value, context);
   }
 }

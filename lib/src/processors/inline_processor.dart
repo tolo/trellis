@@ -2,15 +2,9 @@ import 'package:html/dom.dart';
 
 import '../evaluator.dart';
 import '../exceptions.dart';
+import '../processor_api.dart';
 
-/// Processes `tl:inline` attribute for inline expression evaluation in text nodes.
-///
-/// Supports escaped `[[${expr}]]` (output is escaped per mode) and unescaped
-/// `[(${expr})]` (output is raw). Modes: `text`, `javascript`, `css`, `none`.
-void processInline(Element element, String attrPrefix, ExpressionEvaluator evaluator, Map<String, dynamic> context) {
-  final modeAttr = element.attributes['${attrPrefix}inline'];
-  if (modeAttr == null) return;
-
+void _processInlineImpl(Element element, String modeAttr, ExpressionEvaluator evaluator, Map<String, dynamic> context) {
   final mode = modeAttr.trim().toLowerCase();
   if (mode == 'none') return;
   if (mode != 'text' && mode != 'javascript' && mode != 'css') {
@@ -120,4 +114,19 @@ String _escapeCss(String input) {
       .replaceAll('\n', r'\n')
       .replaceAll('\r', r'\r')
       .replaceAll(_reCloseStyle, r'\3c /style');
+}
+
+/// Processor class for `tl:inline` — inline expression processing.
+class InlineProcessor extends Processor {
+  @override
+  String get attribute => 'inline';
+
+  @override
+  ProcessorPriority get priority => ProcessorPriority.afterInclusion;
+
+  @override
+  bool process(Element element, String value, ProcessorContext context) {
+    _processInlineImpl(element, value, context.evaluator, context.variables);
+    return true;
+  }
 }

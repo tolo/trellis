@@ -600,13 +600,127 @@ void main() {
       });
 
       test('custom filter via constructor', () {
-        final customEval = ExpressionEvaluator(filters: {'double': (v) => '$v$v'});
+        final customEval = ExpressionEvaluator(filters: {'double': (dynamic v) => '$v$v'});
         expect(customEval.evaluate(r"${'ab' | double}", {}), 'abab');
       });
 
       test('custom filter overrides built-in', () {
-        final customEval = ExpressionEvaluator(filters: {'upper': (v) => 'CUSTOM'});
+        final customEval = ExpressionEvaluator(filters: {'upper': (dynamic v) => 'CUSTOM'});
         expect(customEval.evaluate(r"${'x' | upper}", {}), 'CUSTOM');
+      });
+    });
+
+    group('filter arguments', () {
+      test('string arg passed to new-style filter', () {
+        final e = ExpressionEvaluator(filters: {'format': (dynamic v, List<dynamic> args) => '${v}_${args[0]}'});
+        expect(e.evaluate(r"${val | format:'yyyy'}", {'val': 'date'}), 'date_yyyy');
+      });
+
+      test('int arg passed correctly', () {
+        final e = ExpressionEvaluator(
+          filters: {'truncate': (dynamic v, List<dynamic> args) => v.toString().substring(0, args[0] as int)},
+        );
+        expect(e.evaluate(r'${val | truncate:3}', {'val': 'hello'}), 'hel');
+      });
+
+      test('multi-arg passed as list', () {
+        final e = ExpressionEvaluator(
+          filters: {'pad': (dynamic v, List<dynamic> args) => v.toString().padLeft(args[0] as int, args[1] as String)},
+        );
+        expect(e.evaluate(r"${val | pad:5:'0'}", {'val': '42'}), '00042');
+      });
+
+      test('escaped single quote in string arg', () {
+        final e = ExpressionEvaluator(filters: {'wrap': (dynamic v, List<dynamic> args) => '${args[0]}$v${args[0]}'});
+        expect(e.evaluate(r"${val | wrap:'it\'s'}", {'val': ' great '}), "it's great it's");
+      });
+
+      test('boolean arg true', () {
+        final e = ExpressionEvaluator(filters: {'flag': (dynamic v, List<dynamic> args) => args[0] == true ? v : null});
+        expect(e.evaluate(r'${val | flag:true}', {'val': 'yes'}), 'yes');
+      });
+
+      test('boolean arg false', () {
+        final e = ExpressionEvaluator(filters: {'flag': (dynamic v, List<dynamic> args) => args[0] == true ? v : null});
+        expect(e.evaluate(r'${val | flag:false}', {'val': 'yes'}), isNull);
+      });
+
+      test('double arg', () {
+        final e = ExpressionEvaluator(
+          filters: {'scale': (dynamic v, List<dynamic> args) => (v as num) * (args[0] as num)},
+        );
+        expect(e.evaluate(r'${val | scale:3.14}', {'val': 2}), closeTo(6.28, 0.001));
+      });
+
+      test('variable arg resolves from context', () {
+        final e = ExpressionEvaluator(
+          filters: {'take': (dynamic v, List<dynamic> args) => (v as List).take(args[0] as int).toList()},
+        );
+        expect(
+          e.evaluate(r'${items | take:count}', {
+            'items': [1, 2, 3, 4, 5],
+            'count': 3,
+          }),
+          [1, 2, 3],
+        );
+      });
+
+      test('chained filters with mixed args/no-args', () {
+        final e = ExpressionEvaluator(
+          filters: {
+            'trim': (dynamic v) => v?.toString().trim(),
+            'upper': (dynamic v) => v?.toString().toUpperCase(),
+            'truncate': (dynamic v, List<dynamic> args) => v.toString().substring(0, args[0] as int),
+          },
+        );
+        expect(e.evaluate(r'${val | trim | truncate:5 | upper}', {'val': '  hello world  '}), 'HELLO');
+      });
+
+      test('old-style filter works without args (backward compat)', () {
+        final e = ExpressionEvaluator(filters: {'double': (dynamic v) => '$v$v'});
+        expect(e.evaluate(r"${'ab' | double}", {}), 'abab');
+      });
+
+      test('old-style filter with args throws ExpressionException', () {
+        final e = ExpressionEvaluator(filters: {'double': (dynamic v) => '$v$v'});
+        expect(
+          () => e.evaluate(r"${'ab' | double:1}", {}),
+          throwsA(
+            isA<ExpressionException>().having((e) => e.toString(), 'message', contains('does not accept arguments')),
+          ),
+        );
+      });
+
+      test('new-style filter called without args passes empty args list', () {
+        final e = ExpressionEvaluator(
+          filters: {'fmt': (dynamic v, List<dynamic> args) => args.isEmpty ? '$v-default' : '$v-${args[0]}'},
+        );
+        // When called without args, evaluatedArgs is empty → tries filter(value) first,
+        // falls back to filter(value, []) for new-style filters with required args param
+        expect(e.evaluate(r'${val | fmt}', {'val': 'x'}), 'x-default');
+      });
+
+      test('empty arg after colon throws ExpressionException', () {
+        expect(
+          () => ExpressionEvaluator().evaluate(r'${val | format:}', {'val': 'x'}),
+          throwsA(isA<ExpressionException>()),
+        );
+      });
+
+      test('built-in filters still work unchanged', () {
+        expect(ExpressionEvaluator().evaluate(r"${'hello' | upper}", {}), 'HELLO');
+        expect(ExpressionEvaluator().evaluate(r"${'HELLO' | lower}", {}), 'hello');
+        expect(ExpressionEvaluator().evaluate(r"${'  hi  ' | trim}", {}), 'hi');
+        expect(ExpressionEvaluator().evaluate(r"${'abc' | length}", {}), 3);
+      });
+
+      test('built-in filter with args throws (they are old-style)', () {
+        expect(
+          () => ExpressionEvaluator().evaluate(r"${'hello' | upper:1}", {}),
+          throwsA(
+            isA<ExpressionException>().having((e) => e.toString(), 'message', contains('does not accept arguments')),
+          ),
+        );
       });
     });
 

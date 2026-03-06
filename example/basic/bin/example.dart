@@ -1,13 +1,13 @@
 // Self-contained trellis example — no external dependencies.
 //
-// Run: dart run example/example.dart
+// Run: dart run bin/example.dart
 
 import 'package:trellis/trellis.dart';
 
 void main() {
   final engine = Trellis(
     loader: MapLoader({}),
-    filters: {'currency': (v) => '\$${(v as num).toStringAsFixed(2)}'},
+    filters: {'currency': (dynamic v) => '\$${(v as num).toStringAsFixed(2)}'},
   );
 
   // --- Template featuring v0.2 attributes ---
@@ -73,11 +73,7 @@ void main() {
 
   // Multi-fragment render (HTMX OOB swap)
   print('\n=== renderFragments: itemList + footer ===');
-  print(engine.renderFragments(
-    template,
-    fragments: ['itemList', 'footer'],
-    context: context,
-  ));
+  print(engine.renderFragments(template, fragments: ['itemList', 'footer'], context: context));
 
   // Standalone expression evaluator
   final evaluator = ExpressionEvaluator();

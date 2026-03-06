@@ -421,5 +421,155 @@ void main() {
         expect((expr as PipeExpr).target, isA<BinaryExpr>().having((e) => e.op, 'op', BinaryOp.or_));
       });
     });
+
+    group('filter arguments', () {
+      test('single string arg', () {
+        final expr = parse(r"${val | format:'yyyy-MM-dd'}");
+        expect(expr, isA<PipeExpr>());
+        final pipe = expr as PipeExpr;
+        expect(pipe.filterName, 'format');
+        expect(pipe.args, hasLength(1));
+        expect(pipe.args[0], isA<LiteralExpr>().having((e) => e.value, 'value', 'yyyy-MM-dd'));
+      });
+
+      test('single int arg', () {
+        final expr = parse(r'${val | truncate:50}');
+        final pipe = expr as PipeExpr;
+        expect(pipe.filterName, 'truncate');
+        expect(pipe.args, hasLength(1));
+        expect(pipe.args[0], isA<LiteralExpr>().having((e) => e.value, 'value', 50));
+      });
+
+      test('multi-arg (int and string)', () {
+        final expr = parse(r"${val | pad:5:'0'}");
+        final pipe = expr as PipeExpr;
+        expect(pipe.filterName, 'pad');
+        expect(pipe.args, hasLength(2));
+        expect(pipe.args[0], isA<LiteralExpr>().having((e) => e.value, 'value', 5));
+        expect(pipe.args[1], isA<LiteralExpr>().having((e) => e.value, 'value', '0'));
+      });
+
+      test('boolean arg', () {
+        final expr = parse(r'${val | flag:true}');
+        final pipe = expr as PipeExpr;
+        expect(pipe.args, hasLength(1));
+        expect(pipe.args[0], isA<LiteralExpr>().having((e) => e.value, 'value', true));
+      });
+
+      test('double arg', () {
+        final expr = parse(r'${val | scale:3.14}');
+        final pipe = expr as PipeExpr;
+        expect(pipe.args, hasLength(1));
+        expect(pipe.args[0], isA<LiteralExpr>().having((e) => e.value, 'value', 3.14));
+      });
+
+      test('variable (identifier) arg', () {
+        final expr = parse(r'${val | take:count}');
+        final pipe = expr as PipeExpr;
+        expect(pipe.args, hasLength(1));
+        expect(pipe.args[0], isA<VariableExpr>().having((e) => e.name, 'name', 'count'));
+      });
+
+      test('null arg', () {
+        final expr = parse(r'${val | filter:null}');
+        final pipe = expr as PipeExpr;
+        expect(pipe.args, hasLength(1));
+        expect(pipe.args[0], isA<LiteralExpr>().having((e) => e.value, 'value', isNull));
+      });
+
+      test('chained filters with mixed args/no-args', () {
+        final expr = parse(r'${val | trim | truncate:50 | upper}');
+        // Outermost: upper (no args)
+        expect(expr, isA<PipeExpr>().having((e) => e.filterName, 'filterName', 'upper'));
+        expect((expr as PipeExpr).args, isEmpty);
+        // Middle: truncate:50
+        final middle = (expr).target as PipeExpr;
+        expect(middle.filterName, 'truncate');
+        expect(middle.args, hasLength(1));
+        expect(middle.args[0], isA<LiteralExpr>().having((e) => e.value, 'value', 50));
+        // Innermost: trim (no args)
+        final inner = middle.target as PipeExpr;
+        expect(inner.filterName, 'trim');
+        expect(inner.args, isEmpty);
+      });
+
+      test('no-arg filter has empty args list', () {
+        final expr = parse(r'${val | upper}');
+        final pipe = expr as PipeExpr;
+        expect(pipe.args, isEmpty);
+      });
+
+      test('empty arg after colon throws', () {
+        expect(() => parse(r'${val | format:}'), throwsA(isA<ExpressionException>()));
+      });
+    });
+
+    group('message expressions', () {
+      test('#{welcome} parses as MessageExpr', () {
+        final expr = parse('#{welcome}');
+        expect(expr, isA<MessageExpr>());
+        expect((expr as MessageExpr).key, 'welcome');
+        expect(expr.args, isEmpty);
+      });
+
+      test('#{welcome.message} — flat key with dot', () {
+        final expr = parse('#{welcome.message}');
+        expect(expr, isA<MessageExpr>());
+        expect((expr as MessageExpr).key, 'welcome.message');
+        expect(expr.args, isEmpty);
+      });
+
+      test('#{key-with-hyphens} — key with hyphens', () {
+        final expr = parse('#{key-with-hyphens}');
+        expect((expr as MessageExpr).key, 'key-with-hyphens');
+      });
+
+      test(r'#{greeting(${name})} — one expression arg', () {
+        final expr = parse(r'#{greeting(${name})}');
+        final msg = expr as MessageExpr;
+        expect(msg.key, 'greeting');
+        expect(msg.args, hasLength(1));
+        expect(msg.args[0], isA<VariableExpr>());
+      });
+
+      test(r"#{greeting('literal', ${name})} — literal + expression args", () {
+        final expr = parse(r"#{greeting('Alice', ${name})}");
+        final msg = expr as MessageExpr;
+        expect(msg.key, 'greeting');
+        expect(msg.args, hasLength(2));
+        expect(msg.args[0], isA<LiteralExpr>());
+        expect((msg.args[0] as LiteralExpr).value, 'Alice');
+        expect(msg.args[1], isA<VariableExpr>());
+      });
+
+      test('#{greeting()} — empty args', () {
+        final expr = parse('#{greeting()}');
+        final msg = expr as MessageExpr;
+        expect(msg.key, 'greeting');
+        expect(msg.args, isEmpty);
+      });
+
+      test('#{} — empty key throws', () {
+        expect(
+          () => parse('#{}'),
+          throwsA(isA<ExpressionException>()),
+        );
+      });
+
+      test('#{key — unterminated throws', () {
+        expect(
+          () => parse('#{key'),
+          throwsA(isA<ExpressionException>()),
+        );
+      });
+
+      test('#{key} as operand in binary expression', () {
+        final expr = parse(r"${'Hello ' + #{name}}");
+        expect(expr, isA<BinaryExpr>());
+        final bin = expr as BinaryExpr;
+        expect(bin.right, isA<MessageExpr>());
+        expect((bin.right as MessageExpr).key, 'name');
+      });
+    });
   });
 }

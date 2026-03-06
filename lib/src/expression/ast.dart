@@ -63,11 +63,13 @@ final class ElvisExpr extends Expr {
   ElvisExpr(this.left, this.right);
 }
 
-/// Pipe filter: `target | filterName`. Chains left-to-right.
+/// Pipe filter: `target | filterName` or `target | filterName:arg1:arg2`.
+/// Chains left-to-right. Args are empty when no arguments provided.
 final class PipeExpr extends Expr {
   final Expr target;
   final String filterName;
-  PipeExpr(this.target, this.filterName);
+  final List<Expr> args;
+  PipeExpr(this.target, this.filterName, [this.args = const []]);
 }
 
 /// URL expression: `@{/path(key=value, ...)}`.
@@ -84,6 +86,17 @@ enum BinaryOp { eq, notEq, lt, gt, lte, gte, and_, or_, plus, minus, star, slash
 final class SelectionExpr extends Expr {
   final Expr inner;
   SelectionExpr(this.inner);
+}
+
+/// Message expression: `#{key}` or `#{key(arg1, arg2)}`.
+/// Resolves internationalized message from MessageSource [D08].
+final class MessageExpr extends Expr {
+  /// The message key (flat string, dots are part of the key name).
+  final String key;
+
+  /// Arguments for parameterized messages, evaluated before resolution.
+  final List<Expr> args;
+  MessageExpr(this.key, [this.args = const []]);
 }
 
 /// Unary operators.

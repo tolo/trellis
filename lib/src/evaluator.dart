@@ -1,6 +1,7 @@
 import 'exceptions.dart';
 import 'expression/ast.dart';
 import 'expression/parser.dart';
+import 'message_source.dart';
 import 'truthiness.dart';
 
 /// Evaluates trellis template expressions against a context map.
@@ -8,12 +9,20 @@ class ExpressionEvaluator {
   /// Reserved context key for the selection object set by tl:object.
   static const selectionKey = '__trellis_selection__';
 
-  final Map<String, dynamic Function(dynamic)> _filters;
+  final Map<String, Function> _filters;
   final bool _strict;
+  final MessageSource? _messageSource;
+  final String? _locale;
 
-  ExpressionEvaluator({Map<String, dynamic Function(dynamic)>? filters, bool strict = false})
-    : _filters = {..._builtinFilters, ...?filters},
-      _strict = strict;
+  ExpressionEvaluator({
+    Map<String, Function>? filters,
+    bool strict = false,
+    MessageSource? messageSource,
+    String? locale,
+  }) : _filters = filters ?? {..._builtinFilters},
+       _strict = strict,
+       _messageSource = messageSource,
+       _locale = locale;
 
   static const _builtinFilters = <String, dynamic Function(dynamic)>{
     'upper': _filterUpper,
@@ -51,9 +60,10 @@ class ExpressionEvaluator {
       isTruthy(_eval(condition, expr, context)) ? _eval(ifTrue, expr, context) : _eval(ifFalse, expr, context),
     ElvisExpr(:final left, :final right) => _eval(left, expr, context) ?? _eval(right, expr, context),
     UrlExpr(:final path, :final params) => _evalUrl(path, params, expr, context),
-    PipeExpr(:final target, :final filterName) => _evalPipe(target, filterName, expr, context),
+    PipeExpr(:final target, :final filterName, :final args) => _evalPipe(target, filterName, args, expr, context),
     LiteralSubstitutionExpr(:final parts) => parts.map((p) => _eval(p, expr, context)?.toString() ?? '').join(),
     SelectionExpr(:final inner) => _evalSelection(inner, expr, context),
+    MessageExpr(:final key, :final args) => _evalMessage(key, args, expr, context),
   };
 
   dynamic _evalVariable(String name, String expr, Map<String, dynamic> context) {
@@ -193,13 +203,31 @@ class ExpressionEvaluator {
     return val is int ? -val : -(val as double);
   }
 
-  dynamic _evalPipe(Expr target, String filterName, String expr, Map<String, dynamic> context) {
+  dynamic _evalPipe(Expr target, String filterName, List<Expr> args, String expr, Map<String, dynamic> context) {
     final value = _eval(target, expr, context);
     final filter = _filters[filterName];
     if (filter == null) {
       throw ExpressionException('Unknown filter: "$filterName"', expression: expr);
     }
-    return filter(value);
+
+    final evaluatedArgs = args.map((a) => _eval(a, expr, context)).toList();
+
+    if (evaluatedArgs.isEmpty) {
+      // No args — try calling with value only (old-style), fallback to empty args list (new-style)
+      try {
+        return filter(value);
+      } on NoSuchMethodError {
+        return (filter as dynamic)(value, <dynamic>[]);
+      }
+    }
+
+    // Args present — try calling with args list [D03]
+    try {
+      return (filter as dynamic)(value, evaluatedArgs);
+    } on NoSuchMethodError {
+      // Old-style filter doesn't accept args
+      throw ExpressionException("Filter '$filterName' does not accept arguments", expression: expr);
+    }
   }
 
   String _evalUrl(String path, List<(String, Expr)> params, String expr, Map<String, dynamic> context) {
@@ -210,6 +238,46 @@ class ExpressionEvaluator {
       return '${Uri.encodeQueryComponent(key)}=${Uri.encodeQueryComponent('$value')}';
     });
     return '$path?${queryParts.join('&')}';
+  }
+
+  dynamic _evalMessage(
+    String key,
+    List<Expr> args,
+    String expr,
+    Map<String, dynamic> context,
+  ) {
+    // Determine locale: context._locale overrides engine default
+    final locale = context['_locale'] as String? ?? _locale;
+
+    // Evaluate all args before resolution
+    final evaluatedArgs = args.map((a) => _eval(a, expr, context)).toList();
+
+    if (_messageSource == null) {
+      if (_strict) {
+        throw ExpressionException(
+          'No MessageSource configured for message key "$key"',
+          expression: expr,
+        );
+      }
+      return key;
+    }
+
+    final resolved = _messageSource.resolve(
+      key,
+      locale: locale,
+      args: evaluatedArgs,
+    );
+    if (resolved == null) {
+      if (_strict) {
+        throw ExpressionException(
+          'Message key "$key" not found',
+          expression: expr,
+        );
+      }
+      return key;
+    }
+
+    return resolved;
   }
 
   dynamic _evalSelection(Expr inner, String expr, Map<String, dynamic> context) {

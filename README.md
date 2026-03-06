@@ -10,9 +10,12 @@ A natural HTML template engine for Dart — templates are valid HTML that browse
 - **Natural templates** -- valid HTML that browsers render as prototypes without a server
 - **Fragment-first** -- `tl:fragment` + `renderFragment()` maps directly to HTMX partial responses
 - **Full expression language** -- variables, arithmetic, literal substitution, selection, URL, ternary, Elvis, comparisons, boolean
+- **i18n message expressions** -- `#{key}` with `MessageSource`, parameterized messages, and locale support
+- **Filter arguments** -- `| filterName:arg1:arg2` parameterized filter syntax
 - **Switch/case, block, remove, inline** -- multi-branch conditionals, virtual elements, output control, inline JS/CSS processing
 - **Parameterized fragments** -- `tl:fragment="card(title, body)"` with argument passing at inclusion
 - **CSS selector targeting** -- `tl:insert="~{file :: #id}"` and `tl:insert="~{file :: .class}"`
+- **Custom processors & dialects** -- register `Processor` implementations; compose feature sets with `Dialect`
 - **Sync-first API** -- `render()` is synchronous; `renderFile()` is async only for I/O
 - **LRU DOM cache** -- configurable size, `CacheStats` for hit/miss metrics
 - **Strict mode** -- undefined variables/members throw `ExpressionException`
@@ -207,13 +210,55 @@ Filters transform expression values using pipe syntax:
 
 Built-in filters: `upper`, `lower`, `trim`, `length`.
 
+Filters accept arguments using colon-separated syntax. Argument types supported: string (single-quoted, with `\'` escape), int, double, bool, null, and bare identifiers.
+
+```html
+<span tl:text="${price | currency:'USD':2}">price</span>
+<span tl:text="${text | truncate:100}">long text</span>
+```
+
 Custom filters via constructor:
 
 ```dart
 Trellis(filters: {
   'currency': (v) => '\$${(v as num).toStringAsFixed(2)}',
+  // Filter with arguments: FilterFunction signature
+  'truncate': (v, [args]) {
+    final limit = (args?.firstOrNull as int?) ?? 80;
+    final s = v.toString();
+    return s.length <= limit ? s : '${s.substring(0, limit)}…';
+  },
 })
 ```
+
+### i18n Message Expressions
+
+Use `#{key}` to look up messages from a `MessageSource`:
+
+```html
+<p tl:text="#{welcome.title}">Welcome</p>
+<p tl:text="#{greeting(${user.name})}">Hello, user!</p>
+```
+
+Wire up a `MessageSource` when constructing the engine:
+
+```dart
+Trellis(
+  messageSource: MapMessageSource(messages: {
+    'en': {
+      'welcome.title': 'Welcome to Trellis',
+      'greeting': 'Hello, {0}!',
+    },
+    'es': {
+      'welcome.title': 'Bienvenido a Trellis',
+      'greeting': '¡Hola, {0}!',
+    },
+  }),
+  locale: 'en', // default locale; override per-request via _locale context key
+)
+```
+
+Positional placeholders `{0}`, `{1}`, ... are replaced by the arguments passed in the expression. Missing keys return the key itself in lenient mode or throw in strict mode.
 
 ## Expression Syntax
 
@@ -221,6 +266,7 @@ Trellis(filters: {
 |---|---|---|
 | Variable | `${user.name}` | Dot-notation, null-safe traversal |
 | Selection | `*{field}` | Field access on `tl:object` context |
+| Message | `#{welcome.title}` | i18n key lookup via `MessageSource` |
 | URL | `@{/users(id=${userId})}` | URL with query params |
 | String literal | `'hello'` | Single-quoted string |
 | Literal substitution | `\|Hello, ${name}!\|` | Pipe-delimited template string |
@@ -232,7 +278,7 @@ Trellis(filters: {
 | Comparison alias | `gt`, `lt`, `ge`, `le`, `eq`, `ne` | Word-form comparison operators |
 | Boolean | `${a} and ${b}`, `or`, `not` / `!` | Logical operators |
 | Concat | `${first} + ' ' + ${last}` | String concatenation |
-| Filter | `${name \| upper}` | Pipe-based value transformation |
+| Filter | `${name \| upper}`, `${price \| fmt:'USD'}` | Pipe-based value transformation, with optional args |
 | No-op | `_` | Explicitly do nothing (prototype preservation) |
 
 ## HTMX Fragment Example
@@ -266,10 +312,15 @@ final fragments = engine.renderFragments(
 ```dart
 Trellis(
   loader: FileSystemLoader('templates/'), // Default
-  cache: true,         // DOM caching with deep-clone (default: true)
-  maxCacheSize: 100,   // LRU eviction threshold (default: 256)
-  prefix: 'tl',        // Attribute prefix (default: 'tl')
-  strict: false,       // Throw on undefined variables/members (default: false)
+  cache: true,           // DOM caching with deep-clone (default: true)
+  maxCacheSize: 100,     // LRU eviction threshold (default: 256)
+  prefix: 'tl',          // Attribute prefix (default: 'tl')
+  strict: false,         // Throw on undefined variables/members (default: false)
+  messageSource: ...,    // i18n MessageSource implementation
+  locale: 'en',          // Default locale for message lookup
+  processors: [...],     // Additional custom Processor instances
+  dialects: [...],       // Dialect instances contributing processors + filters
+  includeStandard: true, // Include the built-in StandardDialect (default: true)
 )
 ```
 
@@ -288,7 +339,96 @@ final html = engine.render(template, context);
 ### Template Loaders
 
 - **`FileSystemLoader(basePath)`** -- loads from filesystem with security boundaries
+- **`AssetLoader(packageUri)`** -- loads from Dart package assets (JIT only, see [AOT limitations](doc/guides/framework-integration.md))
+- **`CompositeLoader(delegates)`** -- tries multiple loaders in order with fallback
 - **`MapLoader(templates)`** -- in-memory templates, useful for testing
+
+### Custom Processors
+
+Implement the `Processor` interface to add new `tl:*` attributes. Processors declare their attribute name, priority, and whether to recurse into children:
+
+```dart
+class HighlightProcessor implements Processor {
+  @override
+  String get attribute => 'highlight';
+
+  @override
+  ProcessorPriority get priority => ProcessorPriority.afterContent;
+
+  @override
+  bool get autoProcessChildren => true;
+
+  @override
+  bool process(Element element, String value, ProcessorContext context) {
+    element.attributes['style'] =
+        '${element.attributes['style'] ?? ''}background:yellow';
+    element.attributes.remove('tl:highlight');
+    return true;
+  }
+}
+
+final engine = Trellis(processors: [HighlightProcessor()]);
+```
+
+### Dialects
+
+Group processors and filters into a reusable `Dialect`:
+
+```dart
+class MyDialect implements Dialect {
+  @override
+  String get name => 'MyDialect';
+
+  @override
+  List<Processor> get processors => [HighlightProcessor()];
+
+  @override
+  Map<String, Function> get filters => {
+    'shout': (v) => v.toString().toUpperCase() + '!!!',
+  };
+}
+
+final engine = Trellis(dialects: [MyDialect()]);
+
+// Use only custom dialects, omitting the built-in StandardDialect:
+final minimal = Trellis(dialects: [MyDialect()], includeStandard: false);
+```
+
+## Framework Integration
+
+Trellis integrates with any Dart server framework in a few lines. Here's a minimal shelf example:
+
+```dart
+import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf_io.dart' as shelf_io;
+import 'package:trellis/trellis.dart';
+
+final engine = Trellis(loader: FileSystemLoader('templates/'));
+
+Future<Response> handler(Request request) async {
+  final html = await engine.renderFile('index', {'title': 'Hello'});
+  return Response.ok(html,
+    headers: {'content-type': 'text/html; charset=utf-8'},
+  );
+}
+
+void main() async {
+  await shelf_io.serve(handler, 'localhost', 8080);
+}
+```
+
+HTMX partial responses use `renderFragment()`:
+
+```dart
+// Return only the todo list fragment for HTMX swap
+final html = engine.renderFragment(
+  source,
+  fragment: 'todoList',
+  context: {'todos': todos},
+);
+```
+
+Full guide with shelf middleware, dart_frog handlers, HTMX OOB swaps, and error handling: **[Framework Integration Guide](doc/guides/framework-integration.md)**.
 
 ### HTML5-Valid Attribute Names
 

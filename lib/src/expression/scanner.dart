@@ -42,6 +42,7 @@ enum TokenType {
   rBracket,
   dollarLBrace,
   atLBrace,
+  hashLBrace,
   starLBrace,
   rBrace,
   // Control
@@ -136,6 +137,7 @@ final class Scanner {
     // Two-char operators and delimiters
     if (_scanner.scan(r'${')) return Token(TokenType.dollarLBrace, null, offset);
     if (_scanner.scan('@{')) return Token(TokenType.atLBrace, null, offset);
+    if (_scanner.scan('#{')) return Token(TokenType.hashLBrace, null, offset);
     if (_scanner.scan('==')) return Token(TokenType.eq, null, offset);
     if (_scanner.scan('!=')) return Token(TokenType.notEq, null, offset);
     if (_scanner.scan('!')) return Token(TokenType.not_, null, offset);

@@ -18,3 +18,8 @@ export 'src/exceptions.dart'
 export 'src/loaders/template_loader.dart' show TemplateLoader;
 export 'src/loaders/file_loader.dart' show FileSystemLoader;
 export 'src/loaders/map_loader.dart' show MapLoader;
+export 'src/loaders/asset_loader.dart' show AssetLoader;
+export 'src/loaders/composite_loader.dart' show CompositeLoader;
+export 'src/processor_api.dart' show Processor, ProcessorPriority, ProcessorContext;
+export 'src/dialect.dart' show Dialect, StandardDialect;
+export 'src/message_source.dart' show MessageSource, MapMessageSource;

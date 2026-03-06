@@ -113,38 +113,31 @@ void main() {
       });
 
       test('self-closing block with > in attribute value preserves siblings', () {
-        final result = render(
-          r'<div><tl:block tl:if="${count > 0}" tl:text="${count}"/><p>sibling</p></div>',
-          {'count': 3},
-        );
+        final result = render(r'<div><tl:block tl:if="${count > 0}" tl:text="${count}"/><p>sibling</p></div>', {
+          'count': 3,
+        });
         expect(result, contains('3'));
         expect(result, contains('<p>sibling</p>'));
         expect(result, isNot(contains('tl:block')));
       });
 
       test('self-closing block with >= in attribute value', () {
-        final result = render(
-          r'''<div><tl:block tl:if="${x >= 5}" tl:text="'yes'"/><p>after</p></div>''',
-          {'x': 10},
-        );
+        final result = render(r'''<div><tl:block tl:if="${x >= 5}" tl:text="'yes'"/><p>after</p></div>''', {'x': 10});
         expect(result, contains('yes'));
         expect(result, contains('<p>after</p>'));
       });
 
       test('self-closing block with single-quoted attribute containing >', () {
-        final result = render(
-          "<div><tl:block tl:if='\${n > 1}' tl:text='\${n}'/>tail</div>",
-          {'n': 5},
-        );
+        final result = render("<div><tl:block tl:if='\${n > 1}' tl:text='\${n}'/>tail</div>", {'n': 5});
         expect(result, contains('5'));
         expect(result, contains('tail'));
       });
 
       test('multiple self-closing blocks preserve order', () {
-        final result = render(
-          r'<div><tl:block tl:text="${a}"/><tl:block tl:text="${b}"/></div>',
-          {'a': 'first', 'b': 'second'},
-        );
+        final result = render(r'<div><tl:block tl:text="${a}"/><tl:block tl:text="${b}"/></div>', {
+          'a': 'first',
+          'b': 'second',
+        });
         expect(result, contains('first'));
         expect(result, contains('second'));
         final idx1 = result.indexOf('first');
@@ -169,7 +162,8 @@ void main() {
       });
 
       test('renderFragments returns unwrapped children for block fragments', () {
-        final source = '<div>'
+        final source =
+            '<div>'
             '<tl:block tl:fragment="a"><p>alpha</p></tl:block>'
             '<tl:block tl:fragment="b"><p>beta</p></tl:block>'
             '</div>';
@@ -180,7 +174,8 @@ void main() {
       });
 
       test('mixed block and regular fragment rendering', () {
-        final source = '<div>'
+        final source =
+            '<div>'
             '<tl:block tl:fragment="block-frag"><p>from block</p></tl:block>'
             '<span tl:fragment="span-frag">from span</span>'
             '</div>';

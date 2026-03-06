@@ -1,18 +1,20 @@
 import 'package:html/dom.dart';
 
 import '../evaluator.dart';
+import '../processor_api.dart';
 
-/// Processes `tl:object` selection scope.
-/// Returns the context augmented with the selection object.
-Map<String, dynamic> processObject(
-  Element element,
-  String attrPrefix,
-  ExpressionEvaluator evaluator,
-  Map<String, dynamic> context,
-) {
-  final objectExpr = element.attributes['${attrPrefix}object'];
-  if (objectExpr == null) return context;
+/// Processor class for `tl:object` — context-modifying processor.
+class ObjectProcessor extends Processor {
+  @override
+  String get attribute => 'object';
 
-  final value = evaluator.evaluate(objectExpr, context);
-  return {...context, ExpressionEvaluator.selectionKey: value};
+  @override
+  ProcessorPriority get priority => ProcessorPriority.highest;
+
+  @override
+  bool process(Element element, String value, ProcessorContext context) {
+    final result = context.evaluate(value, context.variables);
+    context.variables = {...context.variables, ExpressionEvaluator.selectionKey: result};
+    return true;
+  }
 }

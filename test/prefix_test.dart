@@ -96,10 +96,7 @@ void main() {
       });
 
       test('self-closing data-tl-block does not consume siblings', () {
-        final result = engine.render(
-          r'<div><data-tl-block data-tl-text="${x}"/><p>sibling</p></div>',
-          {'x': 'hi'},
-        );
+        final result = engine.render(r'<div><data-tl-block data-tl-text="${x}"/><p>sibling</p></div>', {'x': 'hi'});
         expect(result, contains('hi'));
         expect(result, contains('<p>sibling</p>'));
         expect(result, isNot(contains('data-tl-block')));
@@ -113,7 +110,8 @@ void main() {
       });
 
       test('renderFragments returns unwrapped children for block fragments', () {
-        final source = '<div>'
+        final source =
+            '<div>'
             '<data-tl-block data-tl-fragment="a"><p>alpha</p></data-tl-block>'
             '<data-tl-block data-tl-fragment="b"><p>beta</p></data-tl-block>'
             '</div>';

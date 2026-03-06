@@ -1,6 +1,7 @@
 import 'package:html/dom.dart';
 
 import '../evaluator.dart';
+import '../processor_api.dart';
 import '../utils/binding_parser.dart';
 
 /// Standard HTML boolean attributes — `true` renders valueless, `false` removes.
@@ -28,9 +29,7 @@ const _booleanHtmlAttrs = {
 /// Shorthand attribute names mapped by `tl:$name` → HTML `$name`.
 const _shorthands = {'href', 'src', 'value', 'class', 'id'};
 
-/// Processes attribute mutations: `tl:attr`, shorthands (`tl:href`, `tl:src`,
-/// `tl:value`, `tl:class`, `tl:id`), `tl:classappend`, and `tl:styleappend`.
-void processAttributes(
+void _processAttributesImpl(
   Element element,
   String attrPrefix,
   ExpressionEvaluator evaluator,
@@ -101,5 +100,31 @@ void _setAttribute(Element element, String attrName, dynamic value) {
     }
   } else {
     element.attributes[attrName] = value.toString();
+  }
+}
+
+/// Returns true if the element has any attribute-related tl:* attributes.
+bool hasAttrAttributes(Element element, String attrPrefix) {
+  if (element.attributes.containsKey('${attrPrefix}attr')) return true;
+  if (element.attributes.containsKey('${attrPrefix}classappend')) return true;
+  if (element.attributes.containsKey('${attrPrefix}styleappend')) return true;
+  for (final name in _shorthands) {
+    if (element.attributes.containsKey('$attrPrefix$name')) return true;
+  }
+  return false;
+}
+
+/// Processor class for `tl:attr` and related attributes — attribute mutation.
+class AttrProcessor extends Processor {
+  @override
+  String get attribute => 'attr';
+
+  @override
+  ProcessorPriority get priority => ProcessorPriority.afterContent;
+
+  @override
+  bool process(Element element, String value, ProcessorContext context) {
+    _processAttributesImpl(element, context.attrPrefix, context.evaluator, context.variables);
+    return true;
   }
 }

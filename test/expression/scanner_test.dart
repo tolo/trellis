@@ -326,5 +326,28 @@ void main() {
         expect(tokens[2].value, 'upper');
       });
     });
+
+    group('hash-brace token', () {
+      test('#{ produces hashLBrace', () {
+        final tokens = tokenize('#{');
+        expect(tokens[0].type, TokenType.hashLBrace);
+      });
+
+      test('#{key} tokenizes as hashLBrace + identifier + rBrace', () {
+        final tokens = tokenize('#{key}');
+        expect(tokens[0].type, TokenType.hashLBrace);
+        expect(tokens[1].type, TokenType.identifier);
+        expect(tokens[1].value, 'key');
+        expect(tokens[2].type, TokenType.rBrace);
+      });
+
+      test('# alone (not followed by {) throws', () {
+        expect(() => tokenize('#'), throwsA(isA<ExpressionException>()));
+      });
+
+      test('#a (not followed by {) throws', () {
+        expect(() => tokenize('#a'), throwsA(isA<ExpressionException>()));
+      });
+    });
   });
 }

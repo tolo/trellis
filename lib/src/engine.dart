@@ -2,10 +2,13 @@ import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart';
 
 import 'cache_stats.dart';
+import 'dialect.dart';
 import 'exceptions.dart';
 import 'loaders/template_loader.dart';
 import 'loaders/file_loader.dart';
+import 'message_source.dart';
 import 'processor.dart';
+import 'processor_api.dart';
 import 'processors/fragment_processor.dart' show escapeAttrSelector;
 
 /// Core template engine. Parses HTML, processes `tl:*` attributes,
@@ -15,8 +18,13 @@ final class Trellis {
   final bool cache;
   final String prefix;
   final int maxCacheSize;
-  final Map<String, dynamic Function(dynamic)> filters;
+  final Map<String, Function> filters;
   final bool strict;
+  final List<Processor>? processors;
+  final List<Dialect>? dialects;
+  final bool includeStandard;
+  final MessageSource? messageSource;
+  final String? locale;
   final Map<String, Document> _cache = {};
 
   /// Separator between prefix and attribute name.
@@ -32,7 +40,12 @@ final class Trellis {
     this.prefix = 'tl',
     this.maxCacheSize = 256,
     this.strict = false,
-    Map<String, dynamic Function(dynamic)>? filters,
+    Map<String, Function>? filters,
+    this.processors,
+    this.dialects,
+    this.includeStandard = true,
+    this.messageSource,
+    this.locale,
   }) : loader = loader ?? FileSystemLoader('templates/'),
        filters = filters ?? const {};
 
@@ -128,7 +141,18 @@ final class Trellis {
   }
 
   DomProcessor _createProcessor() {
-    return DomProcessor(prefix: prefix, separator: separator, loader: loader, filters: filters, strict: strict);
+    return DomProcessor(
+      prefix: prefix,
+      separator: separator,
+      loader: loader,
+      filters: filters,
+      strict: strict,
+      processors: processors,
+      dialects: dialects,
+      includeStandard: includeStandard,
+      messageSource: messageSource,
+      locale: locale,
+    );
   }
 
   /// Return outerHtml for regular elements, innerHtml for block elements
@@ -160,16 +184,19 @@ final class Trellis {
       }
       // Check if tag name matches (case-insensitive)
       final remaining = source.length - i;
-      if (remaining < tagLen + 2 ||
-          source.substring(i + 1, i + 1 + tagLen).toLowerCase() != tagLower) {
+      if (remaining < tagLen + 2 || source.substring(i + 1, i + 1 + tagLen).toLowerCase() != tagLower) {
         buf.writeCharCode(source.codeUnitAt(i));
         i++;
         continue;
       }
       // Char after tag name must be whitespace, '/' or '>'
       final afterTag = source.codeUnitAt(i + 1 + tagLen);
-      if (afterTag != 0x20 && afterTag != 0x09 && afterTag != 0x0A && afterTag != 0x0D &&
-          afterTag != 0x2F && afterTag != 0x3E) {
+      if (afterTag != 0x20 &&
+          afterTag != 0x09 &&
+          afterTag != 0x0A &&
+          afterTag != 0x0D &&
+          afterTag != 0x2F &&
+          afterTag != 0x3E) {
         buf.writeCharCode(source.codeUnitAt(i));
         i++;
         continue;

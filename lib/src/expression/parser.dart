@@ -25,9 +25,39 @@ final class Parser {
     var expr = _parseTernary();
     while (_match(TokenType.pipe)) {
       final name = _expect(TokenType.identifier, 'Expected filter name after "|"');
-      expr = PipeExpr(expr, name.value as String);
+      final args = <Expr>[];
+      while (_match(TokenType.colon)) {
+        args.add(_parseFilterArg());
+      }
+      expr = PipeExpr(expr, name.value as String, args);
     }
     return expr;
+  }
+
+  /// Parse a single filter argument: literal, boolean, null, or bare identifier.
+  Expr _parseFilterArg() {
+    final token = _scanner.peek();
+    switch (token.type) {
+      case TokenType.string:
+      case TokenType.integer:
+      case TokenType.double_:
+        _scanner.next();
+        return LiteralExpr(token.value);
+      case TokenType.true_:
+        _scanner.next();
+        return LiteralExpr(true);
+      case TokenType.false_:
+        _scanner.next();
+        return LiteralExpr(false);
+      case TokenType.null_:
+        _scanner.next();
+        return LiteralExpr(null);
+      case TokenType.identifier:
+        _scanner.next();
+        return VariableExpr(token.value as String);
+      default:
+        throw ExpressionException('Expected filter argument', expression: _source, position: token.offset);
+    }
   }
 
   // Precedence 1: ternary ? : (right-associative)
@@ -208,6 +238,8 @@ final class Parser {
         return _parseDollarExpr();
       case TokenType.atLBrace:
         return _parseUrlExpr();
+      case TokenType.hashLBrace:
+        return _parseMessageExpr();
       case TokenType.starLBrace:
         return _parseSelectionExpr();
       case TokenType.pipe:
@@ -267,6 +299,35 @@ final class Parser {
 
     _expect(TokenType.rBrace, 'Expected "}" to close URL expression');
     return UrlExpr(path, params);
+  }
+
+  /// Parse message expression: `#{key}` or `#{key(arg1, arg2)}`.
+  Expr _parseMessageExpr() {
+    _scanner.next(); // consume #{
+
+    // Read message key as raw text until ( or }
+    // 0x28 = '(', 0x7D = '}'
+    final key = _scanner.scanRawUntil({0x28, 0x7D}).trim();
+    if (key.isEmpty) {
+      throw ExpressionException(
+        'Expected message key after "#{"',
+        expression: _source,
+        position: _scanner.position,
+      );
+    }
+
+    final args = <Expr>[];
+    if (_match(TokenType.lParen)) {
+      if (!_check(TokenType.rParen)) {
+        do {
+          args.add(_parsePipe());
+        } while (_match(TokenType.comma));
+      }
+      _expect(TokenType.rParen, 'Expected ")" after message arguments');
+    }
+
+    _expect(TokenType.rBrace, 'Expected "}" to close message expression');
+    return MessageExpr(key, args);
   }
 
   /// Parse literal substitution: `|text ${expr} more text|`.

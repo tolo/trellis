@@ -244,7 +244,7 @@ void main() {
     });
 
     test('custom filter registered and invoked in template', () {
-      final engine = Trellis(loader: MapLoader({}), cache: false, filters: {'shout': (v) => '$v!!!'});
+      final engine = Trellis(loader: MapLoader({}), cache: false, filters: {'shout': (dynamic v) => '$v!!!'});
       final result = engine.render(r'<p tl:text="${msg | shout}">x</p>', {'msg': 'hi'});
       expect(result, contains('<p>hi!!!</p>'));
     });
@@ -261,6 +261,44 @@ void main() {
         () => engine.render(r'<p tl:text="${name | nonexistent}">x</p>', {'name': 'hello'}),
         throwsA(isA<ExpressionException>()),
       );
+    });
+  });
+
+  group('filter arguments', () {
+    test('tl:text with filter args renders correctly', () {
+      final engine = Trellis(
+        loader: MapLoader({}),
+        cache: false,
+        filters: {'truncate': (dynamic v, List<dynamic> args) => v.toString().substring(0, args[0] as int)},
+      );
+      final result = engine.render(r'<p tl:text="${name | truncate:3}">x</p>', {'name': 'hello'});
+      expect(result, contains('<p>hel</p>'));
+    });
+
+    test('tl:attr with filter args renders correctly', () {
+      final engine = Trellis(
+        loader: MapLoader({}),
+        cache: false,
+        filters: {'suffix': (dynamic v, List<dynamic> args) => '$v${args[0]}'},
+      );
+      final result = engine.render(r'''<a tl:attr="href=${url | suffix:'.html'}">link</a>''', {'url': '/page'});
+      expect(result, contains('href="/page.html"'));
+    });
+
+    test('custom new-style filter with multiple args', () {
+      final engine = Trellis(
+        loader: MapLoader({}),
+        cache: false,
+        filters: {'pad': (dynamic v, List<dynamic> args) => v.toString().padLeft(args[0] as int, args[1] as String)},
+      );
+      final result = engine.render('<p tl:text="\${num | pad:5:\'0\'}">x</p>', {'num': '42'});
+      expect(result, contains('<p>00042</p>'));
+    });
+
+    test('old-style filter backward compat via Trellis constructor', () {
+      final engine = Trellis(loader: MapLoader({}), cache: false, filters: {'shout': (dynamic v) => '$v!!!'});
+      final result = engine.render(r'<p tl:text="${msg | shout}">x</p>', {'msg': 'hi'});
+      expect(result, contains('<p>hi!!!</p>'));
     });
   });
 

@@ -13,5 +13,8 @@ pubspec.lock
 .DS_Store
 Thumbs.db
 
+# Coverage
+coverage/
+
 # Agent temp
 .agent_temp/

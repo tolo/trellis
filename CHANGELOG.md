@@ -5,6 +5,25 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.3.0]
+
+### Added
+- **Processor interface & pipeline**: `Processor` abstract class, `ProcessorPriority` enum (8 priority slots), `ProcessorContext` class — all built-in processors implement the interface; pipeline iterates a sorted processor list
+- **Custom processor registration**: `DomProcessor(processors: [...])` registers custom `Processor` instances with auto-prefixed attributes, priority-sorted merge, error wrapping, and `autoProcessChildren` control
+- **Dialect system**: `Dialect` abstract class and `StandardDialect`; `DomProcessor(dialects: [...], includeStandard: false)` composes processors and filters across multiple dialects
+- **Filter arguments**: `| filterName:arg1:arg2` syntax for parameterized filters; supports string (`\'` escape), int, double, bool, null, and bare identifier args; backward compatible with existing `Function(dynamic)` filters
+- **i18n message expressions**: `#{key}` expression type with `MessageSource` abstract class and `MapMessageSource` implementation; parameterized messages `#{key(arg1, arg2)}` with `{0}`/`{1}` positional replacement; locale support via engine config and `_locale` context override; strict/lenient missing-key behavior
+- **`AssetLoader`**: loads templates from Dart package assets via `Isolate.resolvePackageUri`
+- **`CompositeLoader`**: tries delegate loaders in order, falling back on `TemplateNotFoundException`
+- **`Trellis` constructor params**: `processors`, `dialects`, `includeStandard`, `messageSource`, `locale`
+- **Framework Integration Guide**: `doc/guides/framework-integration.md` covering shelf, dart_frog, and HTMX patterns
+- **Todo app example**: `example/todo_app/` — full Shelf + HTMX app demonstrating v0.3 features
+
+### Changed
+- `example/` restructured into `example/basic/` and `example/todo_app/` sub-packages
+
+---
+
 ## [0.2.1]
 
 ### Fixed

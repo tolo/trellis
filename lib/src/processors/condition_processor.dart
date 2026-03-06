@@ -1,28 +1,42 @@
 import 'package:html/dom.dart';
 
-import '../evaluator.dart';
+import '../processor_api.dart';
 import '../truthiness.dart';
 
-/// Processes `tl:if` and `tl:unless` conditional attributes.
-/// Returns `true` if the element should be kept, `false` if removed.
-bool processCondition(Element element, String attrPrefix, ExpressionEvaluator evaluator, Map<String, dynamic> context) {
-  final ifExpr = element.attributes['${attrPrefix}if'];
-  if (ifExpr != null) {
-    final value = evaluator.evaluate(ifExpr, context);
-    if (!isTruthy(value)) {
+/// Processor class for `tl:if` — conditional rendering.
+class IfProcessor extends Processor {
+  @override
+  String get attribute => 'if';
+
+  @override
+  ProcessorPriority get priority => ProcessorPriority.highest;
+
+  @override
+  bool process(Element element, String value, ProcessorContext context) {
+    final result = context.evaluate(value, context.variables);
+    if (!isTruthy(result)) {
       element.remove();
       return false;
     }
+    return true;
   }
+}
 
-  final unlessExpr = element.attributes['${attrPrefix}unless'];
-  if (unlessExpr != null) {
-    final value = evaluator.evaluate(unlessExpr, context);
-    if (isTruthy(value)) {
+/// Processor class for `tl:unless` — inverse conditional rendering.
+class UnlessProcessor extends Processor {
+  @override
+  String get attribute => 'unless';
+
+  @override
+  ProcessorPriority get priority => ProcessorPriority.highest;
+
+  @override
+  bool process(Element element, String value, ProcessorContext context) {
+    final result = context.evaluate(value, context.variables);
+    if (isTruthy(result)) {
       element.remove();
       return false;
     }
+    return true;
   }
-
-  return true;
 }

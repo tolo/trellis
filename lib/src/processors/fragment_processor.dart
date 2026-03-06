@@ -5,6 +5,7 @@ import '../evaluator.dart';
 import '../exceptions.dart';
 import '../loaders/template_loader.dart';
 import '../processor.dart';
+import '../processor_api.dart';
 import '../utils/binding_parser.dart';
 
 /// Regex for cross-file fragment syntax: ~{filename :: fragmentName}
@@ -56,66 +57,6 @@ final class _ResolvedFragment {
   final String fragmentId;
 
   _ResolvedFragment(this.element, {this.registry, this.paramNames = const [], required this.fragmentId});
-}
-
-/// Processes `tl:fragment`, `tl:insert`, and `tl:replace` attributes.
-/// Returns `true` if `tl:replace` fired and the host element was replaced
-/// (caller should stop further processing); `false` otherwise.
-bool processFragment(
-  Element element,
-  Map<String, dynamic> context,
-  void Function(Element, Map<String, dynamic>, {String? fragmentId}) processCallback,
-  DomProcessor domProcessor,
-) {
-  final attrPrefix = domProcessor.attrPrefix;
-  final evaluator = domProcessor.evaluator;
-  final loader = domProcessor.loader;
-  // tl:fragment is a definition marker only — no-op here (attribute removed by general cleanup)
-
-  // tl:insert — include fragment content inside host element
-  final insertExpr = element.attributes['${attrPrefix}insert'];
-  if (insertExpr != null) {
-    final (_, argExprs) = _parseFragmentInvocation(insertExpr);
-    final resolved = _resolveFragment(insertExpr, attrPrefix, loader, domProcessor);
-    final effectiveContext = _bindArgs(resolved.paramNames, argExprs, evaluator, context);
-    final clone = resolved.element.clone(true);
-    _applyFragment(
-      resolved,
-      clone,
-      effectiveContext,
-      processCallback,
-      domProcessor,
-      attrPrefix,
-      fragmentId: resolved.fragmentId,
-    );
-    element.nodes.clear();
-    for (final child in clone.nodes.toList()) {
-      element.append(child);
-    }
-    return false;
-  }
-
-  // tl:replace — replace host element with fragment
-  final replaceExpr = element.attributes['${attrPrefix}replace'];
-  if (replaceExpr != null) {
-    final (_, argExprs) = _parseFragmentInvocation(replaceExpr);
-    final resolved = _resolveFragment(replaceExpr, attrPrefix, loader, domProcessor);
-    final effectiveContext = _bindArgs(resolved.paramNames, argExprs, evaluator, context);
-    final clone = resolved.element.clone(true);
-    _applyFragment(
-      resolved,
-      clone,
-      effectiveContext,
-      processCallback,
-      domProcessor,
-      attrPrefix,
-      fragmentId: resolved.fragmentId,
-    );
-    element.replaceWith(clone);
-    return true;
-  }
-
-  return false;
 }
 
 void _applyFragment(
@@ -234,3 +175,74 @@ bool _isCssSelector(String ref) => ref.startsWith('#') || ref.startsWith('.');
 /// Whether [ref] looks like a bare HTML tag name (lowercase letters/digits only).
 final _tagNamePattern = RegExp(r'^[a-z][a-z0-9]*$');
 bool _isTagName(String ref) => _tagNamePattern.hasMatch(ref);
+
+/// Processor class for `tl:insert` — fragment inclusion inside host element.
+class InsertProcessor extends Processor {
+  @override
+  String get attribute => 'insert';
+
+  @override
+  ProcessorPriority get priority => ProcessorPriority.afterIteration;
+
+  @override
+  bool get autoProcessChildren => false;
+
+  @override
+  bool process(Element element, String value, ProcessorContext context) {
+    final dp = context.domProcessor as DomProcessor;
+    final attrPrefix = context.attrPrefix;
+
+    final (_, argExprs) = _parseFragmentInvocation(value);
+    final resolved = _resolveFragment(value, attrPrefix, context.loader, dp);
+    final effectiveContext = _bindArgs(resolved.paramNames, argExprs, dp.evaluator, context.variables);
+    final clone = resolved.element.clone(true);
+    _applyFragment(
+      resolved,
+      clone,
+      effectiveContext,
+      dp.processFragmentContent,
+      dp,
+      attrPrefix,
+      fragmentId: resolved.fragmentId,
+    );
+    element.nodes.clear();
+    for (final child in clone.nodes.toList()) {
+      element.append(child);
+    }
+    return true;
+  }
+}
+
+/// Processor class for `tl:replace` — replace host element with fragment.
+class ReplaceProcessor extends Processor {
+  @override
+  String get attribute => 'replace';
+
+  @override
+  ProcessorPriority get priority => ProcessorPriority.afterIteration;
+
+  @override
+  bool get autoProcessChildren => false;
+
+  @override
+  bool process(Element element, String value, ProcessorContext context) {
+    final dp = context.domProcessor as DomProcessor;
+    final attrPrefix = context.attrPrefix;
+
+    final (_, argExprs) = _parseFragmentInvocation(value);
+    final resolved = _resolveFragment(value, attrPrefix, context.loader, dp);
+    final effectiveContext = _bindArgs(resolved.paramNames, argExprs, dp.evaluator, context.variables);
+    final clone = resolved.element.clone(true);
+    _applyFragment(
+      resolved,
+      clone,
+      effectiveContext,
+      dp.processFragmentContent,
+      dp,
+      attrPrefix,
+      fragmentId: resolved.fragmentId,
+    );
+    element.replaceWith(clone);
+    return false;
+  }
+}

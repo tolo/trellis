@@ -9,7 +9,7 @@ class TextProcessor extends Processor {
   String get attribute => 'text';
 
   @override
-  ProcessorPriority get priority => ProcessorPriority.afterInclusion;
+  ProcessorPriority get priority => .afterInclusion;
 
   @override
   bool process(Element element, String value, ProcessorContext context) {
@@ -29,7 +29,7 @@ class UtextProcessor extends Processor {
   String get attribute => 'utext';
 
   @override
-  ProcessorPriority get priority => ProcessorPriority.afterInclusion;
+  ProcessorPriority get priority => .afterInclusion;
 
   @override
   bool process(Element element, String value, ProcessorContext context) {

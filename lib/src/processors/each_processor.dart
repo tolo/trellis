@@ -10,7 +10,7 @@ class EachProcessor extends Processor {
   String get attribute => 'each';
 
   @override
-  ProcessorPriority get priority => ProcessorPriority.afterConditionals;
+  ProcessorPriority get priority => .afterConditionals;
 
   @override
   bool get autoProcessChildren => false;

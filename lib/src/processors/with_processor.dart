@@ -9,7 +9,7 @@ class WithProcessor extends Processor {
   String get attribute => 'with';
 
   @override
-  ProcessorPriority get priority => ProcessorPriority.highest;
+  ProcessorPriority get priority => .highest;
 
   @override
   bool process(Element element, String value, ProcessorContext context) {

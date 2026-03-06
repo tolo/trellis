@@ -231,19 +231,19 @@ final class Scanner {
     }
     final text = _source.substring(start, _scanner.position);
     return switch (text) {
-      'true' => Token(TokenType.true_, true, offset),
-      'false' => Token(TokenType.false_, false, offset),
-      'null' => Token(TokenType.null_, null, offset),
-      'and' => Token(TokenType.and_, null, offset),
-      'or' => Token(TokenType.or_, null, offset),
-      'not' => Token(TokenType.not_, null, offset),
-      'gt' => Token(TokenType.gt, null, offset),
-      'lt' => Token(TokenType.lt, null, offset),
-      'ge' => Token(TokenType.gte, null, offset),
-      'le' => Token(TokenType.lte, null, offset),
-      'eq' => Token(TokenType.eq, null, offset),
-      'ne' => Token(TokenType.notEq, null, offset),
-      _ => Token(TokenType.identifier, text, offset),
+      'true' => Token(.true_, true, offset),
+      'false' => Token(.false_, false, offset),
+      'null' => Token(.null_, null, offset),
+      'and' => Token(.and_, null, offset),
+      'or' => Token(.or_, null, offset),
+      'not' => Token(.not_, null, offset),
+      'gt' => Token(.gt, null, offset),
+      'lt' => Token(.lt, null, offset),
+      'ge' => Token(.gte, null, offset),
+      'le' => Token(.lte, null, offset),
+      'eq' => Token(.eq, null, offset),
+      'ne' => Token(.notEq, null, offset),
+      _ => Token(.identifier, text, offset),
     };
   }
 

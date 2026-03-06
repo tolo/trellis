@@ -5,6 +5,13 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.4.0]
+
+- Bumped minimum Dart SDK from 3.7 to 3.10
+- Applied Dart 3.10 dot shorthand syntax throughout `lib/src/` (zero behavioral changes)
+
+---
+
 ## [0.3.0]
 
 ### Added

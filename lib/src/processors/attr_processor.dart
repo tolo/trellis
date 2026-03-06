@@ -120,7 +120,7 @@ class AttrProcessor extends Processor {
   String get attribute => 'attr';
 
   @override
-  ProcessorPriority get priority => ProcessorPriority.afterContent;
+  ProcessorPriority get priority => .afterContent;
 
   @override
   bool process(Element element, String value, ProcessorContext context) {

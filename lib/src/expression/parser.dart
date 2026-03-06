@@ -16,17 +16,17 @@ final class Parser {
   /// Parse the full expression and expect EOF.
   Expr parse() {
     final expr = _parsePipe();
-    _expect(TokenType.eof, 'Expected end of expression');
+    _expect(.eof, 'Expected end of expression');
     return expr;
   }
 
   // Precedence 0 (lowest): | pipe chains, left-associative
   Expr _parsePipe() {
     var expr = _parseTernary();
-    while (_match(TokenType.pipe)) {
-      final name = _expect(TokenType.identifier, 'Expected filter name after "|"');
+    while (_match(.pipe)) {
+      final name = _expect(.identifier, 'Expected filter name after "|"');
       final args = <Expr>[];
-      while (_match(TokenType.colon)) {
+      while (_match(.colon)) {
         args.add(_parseFilterArg());
       }
       expr = PipeExpr(expr, name.value as String, args);
@@ -38,21 +38,21 @@ final class Parser {
   Expr _parseFilterArg() {
     final token = _scanner.peek();
     switch (token.type) {
-      case TokenType.string:
-      case TokenType.integer:
-      case TokenType.double_:
+      case .string:
+      case .integer:
+      case .double_:
         _scanner.next();
         return LiteralExpr(token.value);
-      case TokenType.true_:
+      case .true_:
         _scanner.next();
         return LiteralExpr(true);
-      case TokenType.false_:
+      case .false_:
         _scanner.next();
         return LiteralExpr(false);
-      case TokenType.null_:
+      case .null_:
         _scanner.next();
         return LiteralExpr(null);
-      case TokenType.identifier:
+      case .identifier:
         _scanner.next();
         return VariableExpr(token.value as String);
       default:
@@ -63,9 +63,9 @@ final class Parser {
   // Precedence 1: ternary ? : (right-associative)
   Expr _parseTernary() {
     final expr = _parseElvis();
-    if (_match(TokenType.question)) {
+    if (_match(.question)) {
       final ifTrue = _parseTernary(); // right-associative
-      _expect(TokenType.colon, "Expected ':' in ternary expression");
+      _expect(.colon, "Expected ':' in ternary expression");
       final ifFalse = _parseTernary(); // right-associative
       return TernaryExpr(expr, ifTrue, ifFalse);
     }
@@ -75,7 +75,7 @@ final class Parser {
   // Precedence 2: elvis ?:
   Expr _parseElvis() {
     var expr = _parseOr();
-    while (_match(TokenType.elvisOp)) {
+    while (_match(.elvisOp)) {
       expr = ElvisExpr(expr, _parseOr());
     }
     return expr;
@@ -84,8 +84,8 @@ final class Parser {
   // Precedence 3: or
   Expr _parseOr() {
     var expr = _parseAnd();
-    while (_match(TokenType.or_)) {
-      expr = BinaryExpr(expr, BinaryOp.or_, _parseAnd());
+    while (_match(.or_)) {
+      expr = BinaryExpr(expr, .or_, _parseAnd());
     }
     return expr;
   }
@@ -93,8 +93,8 @@ final class Parser {
   // Precedence 4: and
   Expr _parseAnd() {
     var expr = _parseEquality();
-    while (_match(TokenType.and_)) {
-      expr = BinaryExpr(expr, BinaryOp.and_, _parseEquality());
+    while (_match(.and_)) {
+      expr = BinaryExpr(expr, .and_, _parseEquality());
     }
     return expr;
   }
@@ -103,10 +103,10 @@ final class Parser {
   Expr _parseEquality() {
     var expr = _parseComparison();
     while (true) {
-      if (_match(TokenType.eq)) {
-        expr = BinaryExpr(expr, BinaryOp.eq, _parseComparison());
-      } else if (_match(TokenType.notEq)) {
-        expr = BinaryExpr(expr, BinaryOp.notEq, _parseComparison());
+      if (_match(.eq)) {
+        expr = BinaryExpr(expr, .eq, _parseComparison());
+      } else if (_match(.notEq)) {
+        expr = BinaryExpr(expr, .notEq, _parseComparison());
       } else {
         break;
       }
@@ -118,14 +118,14 @@ final class Parser {
   Expr _parseComparison() {
     var expr = _parseAdditive();
     while (true) {
-      if (_match(TokenType.lt)) {
-        expr = BinaryExpr(expr, BinaryOp.lt, _parseAdditive());
-      } else if (_match(TokenType.gt)) {
-        expr = BinaryExpr(expr, BinaryOp.gt, _parseAdditive());
-      } else if (_match(TokenType.lte)) {
-        expr = BinaryExpr(expr, BinaryOp.lte, _parseAdditive());
-      } else if (_match(TokenType.gte)) {
-        expr = BinaryExpr(expr, BinaryOp.gte, _parseAdditive());
+      if (_match(.lt)) {
+        expr = BinaryExpr(expr, .lt, _parseAdditive());
+      } else if (_match(.gt)) {
+        expr = BinaryExpr(expr, .gt, _parseAdditive());
+      } else if (_match(.lte)) {
+        expr = BinaryExpr(expr, .lte, _parseAdditive());
+      } else if (_match(.gte)) {
+        expr = BinaryExpr(expr, .gte, _parseAdditive());
       } else {
         break;
       }
@@ -137,10 +137,10 @@ final class Parser {
   Expr _parseAdditive() {
     var expr = _parseMultiplicative();
     while (true) {
-      if (_match(TokenType.plus)) {
-        expr = BinaryExpr(expr, BinaryOp.plus, _parseMultiplicative());
-      } else if (_match(TokenType.minus)) {
-        expr = BinaryExpr(expr, BinaryOp.minus, _parseMultiplicative());
+      if (_match(.plus)) {
+        expr = BinaryExpr(expr, .plus, _parseMultiplicative());
+      } else if (_match(.minus)) {
+        expr = BinaryExpr(expr, .minus, _parseMultiplicative());
       } else {
         break;
       }
@@ -152,12 +152,12 @@ final class Parser {
   Expr _parseMultiplicative() {
     var expr = _parseUnary();
     while (true) {
-      if (_match(TokenType.star)) {
-        expr = BinaryExpr(expr, BinaryOp.star, _parseUnary());
-      } else if (_match(TokenType.slash)) {
-        expr = BinaryExpr(expr, BinaryOp.slash, _parseUnary());
-      } else if (_match(TokenType.percent)) {
-        expr = BinaryExpr(expr, BinaryOp.percent, _parseUnary());
+      if (_match(.star)) {
+        expr = BinaryExpr(expr, .star, _parseUnary());
+      } else if (_match(.slash)) {
+        expr = BinaryExpr(expr, .slash, _parseUnary());
+      } else if (_match(.percent)) {
+        expr = BinaryExpr(expr, .percent, _parseUnary());
       } else {
         break;
       }
@@ -167,11 +167,11 @@ final class Parser {
 
   // Precedence 9: not, - (unary)
   Expr _parseUnary() {
-    if (_match(TokenType.not_)) {
-      return UnaryExpr(UnaryOp.not_, _parseUnary());
+    if (_match(.not_)) {
+      return UnaryExpr(.not_, _parseUnary());
     }
-    if (_match(TokenType.minus)) {
-      return UnaryExpr(UnaryOp.minus, _parseUnary());
+    if (_match(.minus)) {
+      return UnaryExpr(.minus, _parseUnary());
     }
     return _parsePostfix();
   }
@@ -180,7 +180,7 @@ final class Parser {
   Expr _parsePostfix() {
     var expr = _parsePrimary();
     while (true) {
-      if (_match(TokenType.dot)) {
+      if (_match(.dot)) {
         final token = _scanner.next();
         final name = Parser._memberName(token);
         if (name == null) {
@@ -191,12 +191,12 @@ final class Parser {
           );
         }
         expr = MemberAccessExpr(expr, name);
-      } else if (_match(TokenType.lBracket)) {
+      } else if (_match(.lBracket)) {
         final wasInBracket = _inBracketContext;
         _inBracketContext = true;
         final index = _parsePipe();
         _inBracketContext = wasInBracket;
-        _expect(TokenType.rBracket, 'Expected "]"');
+        _expect(.rBracket, 'Expected "]"');
         expr = IndexAccessExpr(expr, index);
       } else {
         break;
@@ -210,24 +210,24 @@ final class Parser {
     final token = _scanner.peek();
 
     switch (token.type) {
-      case TokenType.string:
-      case TokenType.integer:
-      case TokenType.double_:
+      case .string:
+      case .integer:
+      case .double_:
         _scanner.next();
         return LiteralExpr(token.value);
-      case TokenType.true_:
+      case .true_:
         _scanner.next();
         return LiteralExpr(true);
-      case TokenType.false_:
+      case .false_:
         _scanner.next();
         return LiteralExpr(false);
-      case TokenType.null_:
+      case .null_:
         _scanner.next();
         return LiteralExpr(null);
-      case TokenType.identifier:
+      case .identifier:
         _scanner.next();
         return VariableExpr(token.value as String);
-      case TokenType.dollarLBrace:
+      case .dollarLBrace:
         if (_inBracketContext) {
           throw ExpressionException(
             'Nested \${} not allowed inside bracket index; use \${items[i]} instead of \${items[\${i}]}',
@@ -236,19 +236,19 @@ final class Parser {
           );
         }
         return _parseDollarExpr();
-      case TokenType.atLBrace:
+      case .atLBrace:
         return _parseUrlExpr();
-      case TokenType.hashLBrace:
+      case .hashLBrace:
         return _parseMessageExpr();
-      case TokenType.starLBrace:
+      case .starLBrace:
         return _parseSelectionExpr();
-      case TokenType.pipe:
+      case .pipe:
         _scanner.next(); // consume opening |
         return _parseLiteralSub();
-      case TokenType.lParen:
+      case .lParen:
         _scanner.next();
         final expr = _parseTernary();
-        _expect(TokenType.rParen, 'Expected ")"');
+        _expect(.rParen, 'Expected ")"');
         return expr;
       default:
         throw ExpressionException('Unexpected token: ${token.type}', expression: _source, position: token.offset);
@@ -259,7 +259,7 @@ final class Parser {
   Expr _parseDollarExpr() {
     _scanner.next(); // consume ${
     final expr = _parsePipe();
-    _expect(TokenType.rBrace, 'Expected "}" to close variable expression');
+    _expect(.rBrace, 'Expected "}" to close variable expression');
     return expr;
   }
 
@@ -267,7 +267,7 @@ final class Parser {
   Expr _parseSelectionExpr() {
     _scanner.next(); // consume *{
     final expr = _parsePipe();
-    _expect(TokenType.rBrace, 'Expected "}" to close selection expression');
+    _expect(.rBrace, 'Expected "}" to close selection expression');
     return SelectionExpr(expr);
   }
 
@@ -285,19 +285,19 @@ final class Parser {
     final params = <(String, Expr)>[];
 
     // Parse optional params
-    if (_match(TokenType.lParen)) {
-      if (!_check(TokenType.rParen)) {
+    if (_match(.lParen)) {
+      if (!_check(.rParen)) {
         do {
-          final key = _expect(TokenType.identifier, 'Expected parameter name');
-          _expect(TokenType.assign, 'Expected "=" after parameter name');
+          final key = _expect(.identifier, 'Expected parameter name');
+          _expect(.assign, 'Expected "=" after parameter name');
           final value = _parseTernary();
           params.add((key.value as String, value));
-        } while (_match(TokenType.comma));
+        } while (_match(.comma));
       }
-      _expect(TokenType.rParen, 'Expected ")" to close URL parameters');
+      _expect(.rParen, 'Expected ")" to close URL parameters');
     }
 
-    _expect(TokenType.rBrace, 'Expected "}" to close URL expression');
+    _expect(.rBrace, 'Expected "}" to close URL expression');
     return UrlExpr(path, params);
   }
 
@@ -317,16 +317,16 @@ final class Parser {
     }
 
     final args = <Expr>[];
-    if (_match(TokenType.lParen)) {
-      if (!_check(TokenType.rParen)) {
+    if (_match(.lParen)) {
+      if (!_check(.rParen)) {
         do {
           args.add(_parsePipe());
-        } while (_match(TokenType.comma));
+        } while (_match(.comma));
       }
-      _expect(TokenType.rParen, 'Expected ")" after message arguments');
+      _expect(.rParen, 'Expected ")" after message arguments');
     }
 
-    _expect(TokenType.rBrace, 'Expected "}" to close message expression');
+    _expect(.rBrace, 'Expected "}" to close message expression');
     return MessageExpr(key, args);
   }
 
@@ -341,12 +341,12 @@ final class Parser {
       }
 
       final token = _scanner.peek();
-      if (token.type == TokenType.pipe) {
+      if (token.type == .pipe) {
         _scanner.next(); // consume closing |
         return LiteralSubstitutionExpr(parts);
-      } else if (token.type == TokenType.dollarLBrace) {
+      } else if (token.type == .dollarLBrace) {
         parts.add(_parseDollarExpr());
-      } else if (token.type == TokenType.eof) {
+      } else if (token.type == .eof) {
         throw ExpressionException('Unterminated literal substitution', expression: _source, position: token.offset);
       } else {
         throw ExpressionException(
@@ -380,7 +380,7 @@ final class Parser {
 
   /// Returns the member name string for a token, or null if not a valid member name.
   static String? _memberName(Token token) {
-    if (token.type == TokenType.identifier) return token.value as String;
+    if (token.type == .identifier) return token.value as String;
     return _tokenToName[token.type];
   }
 

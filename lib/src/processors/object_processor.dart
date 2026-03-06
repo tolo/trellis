@@ -9,7 +9,7 @@ class ObjectProcessor extends Processor {
   String get attribute => 'object';
 
   @override
-  ProcessorPriority get priority => ProcessorPriority.highest;
+  ProcessorPriority get priority => .highest;
 
   @override
   bool process(Element element, String value, ProcessorContext context) {

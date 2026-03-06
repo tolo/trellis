@@ -66,7 +66,7 @@ class RemoveProcessor extends Processor {
   String get attribute => 'remove';
 
   @override
-  ProcessorPriority get priority => ProcessorPriority.afterAttributes;
+  ProcessorPriority get priority => .afterAttributes;
 
   @override
   bool process(Element element, String value, ProcessorContext context) {

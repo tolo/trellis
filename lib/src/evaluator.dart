@@ -122,16 +122,16 @@ class ExpressionEvaluator {
   }
 
   dynamic _evalUnary(UnaryOp op, Expr operand, String expr, Map<String, dynamic> context) => switch (op) {
-    UnaryOp.not_ => !isTruthy(_eval(operand, expr, context)),
-    UnaryOp.minus => _evalNegate(operand, expr, context),
+    .not_ => !isTruthy(_eval(operand, expr, context)),
+    .minus => _evalNegate(operand, expr, context),
   };
 
   dynamic _evalBinary(Expr left, BinaryOp op, Expr right, String expr, Map<String, dynamic> context) {
     // Short-circuit for boolean ops
-    if (op == BinaryOp.and_) {
+    if (op == .and_) {
       return isTruthy(_eval(left, expr, context)) && isTruthy(_eval(right, expr, context));
     }
-    if (op == BinaryOp.or_) {
+    if (op == .or_) {
       return isTruthy(_eval(left, expr, context)) || isTruthy(_eval(right, expr, context));
     }
 
@@ -139,19 +139,19 @@ class ExpressionEvaluator {
     final rightVal = _eval(right, expr, context);
 
     return switch (op) {
-      BinaryOp.eq => leftVal == rightVal,
-      BinaryOp.notEq => leftVal != rightVal,
-      BinaryOp.lt => _compare(leftVal, rightVal, expr) < 0,
-      BinaryOp.gt => _compare(leftVal, rightVal, expr) > 0,
-      BinaryOp.lte => _compare(leftVal, rightVal, expr) <= 0,
-      BinaryOp.gte => _compare(leftVal, rightVal, expr) >= 0,
-      BinaryOp.plus => _evalPlus(leftVal, rightVal, expr),
-      BinaryOp.minus => _arithmeticOp(leftVal, rightVal, expr, (a, b) => a - b),
-      BinaryOp.star => _arithmeticOp(leftVal, rightVal, expr, (a, b) => a * b),
-      BinaryOp.slash => _arithmeticOp(leftVal, rightVal, expr, (a, b) => a.toDouble() / b.toDouble()),
-      BinaryOp.percent => _arithmeticOp(leftVal, rightVal, expr, _modulo),
-      BinaryOp.and_ => throw StateError('unreachable'),
-      BinaryOp.or_ => throw StateError('unreachable'),
+      .eq => leftVal == rightVal,
+      .notEq => leftVal != rightVal,
+      .lt => _compare(leftVal, rightVal, expr) < 0,
+      .gt => _compare(leftVal, rightVal, expr) > 0,
+      .lte => _compare(leftVal, rightVal, expr) <= 0,
+      .gte => _compare(leftVal, rightVal, expr) >= 0,
+      .plus => _evalPlus(leftVal, rightVal, expr),
+      .minus => _arithmeticOp(leftVal, rightVal, expr, (a, b) => a - b),
+      .star => _arithmeticOp(leftVal, rightVal, expr, (a, b) => a * b),
+      .slash => _arithmeticOp(leftVal, rightVal, expr, (a, b) => a.toDouble() / b.toDouble()),
+      .percent => _arithmeticOp(leftVal, rightVal, expr, _modulo),
+      .and_ => throw StateError('unreachable'),
+      .or_ => throw StateError('unreachable'),
     };
   }
 

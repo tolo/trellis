@@ -22,6 +22,10 @@ A natural HTML template engine for Dart — templates are valid HTML that browse
 - **Secure** -- `FileSystemLoader` enforces path traversal and symlink escape protection
 - **AOT-compatible** -- context is `Map<String, dynamic>`, no reflection
 
+## Requirements
+
+- Dart SDK `^3.10.0`
+
 ## Installation
 
 ```

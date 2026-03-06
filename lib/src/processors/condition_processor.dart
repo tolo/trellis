@@ -9,7 +9,7 @@ class IfProcessor extends Processor {
   String get attribute => 'if';
 
   @override
-  ProcessorPriority get priority => ProcessorPriority.highest;
+  ProcessorPriority get priority => .highest;
 
   @override
   bool process(Element element, String value, ProcessorContext context) {
@@ -28,7 +28,7 @@ class UnlessProcessor extends Processor {
   String get attribute => 'unless';
 
   @override
-  ProcessorPriority get priority => ProcessorPriority.highest;
+  ProcessorPriority get priority => .highest;
 
   @override
   bool process(Element element, String value, ProcessorContext context) {

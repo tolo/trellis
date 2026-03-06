@@ -122,7 +122,7 @@ class InlineProcessor extends Processor {
   String get attribute => 'inline';
 
   @override
-  ProcessorPriority get priority => ProcessorPriority.afterInclusion;
+  ProcessorPriority get priority => .afterInclusion;
 
   @override
   bool process(Element element, String value, ProcessorContext context) {

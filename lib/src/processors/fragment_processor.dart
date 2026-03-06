@@ -182,7 +182,7 @@ class InsertProcessor extends Processor {
   String get attribute => 'insert';
 
   @override
-  ProcessorPriority get priority => ProcessorPriority.afterIteration;
+  ProcessorPriority get priority => .afterIteration;
 
   @override
   bool get autoProcessChildren => false;
@@ -219,7 +219,7 @@ class ReplaceProcessor extends Processor {
   String get attribute => 'replace';
 
   @override
-  ProcessorPriority get priority => ProcessorPriority.afterIteration;
+  ProcessorPriority get priority => .afterIteration;
 
   @override
   bool get autoProcessChildren => false;

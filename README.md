@@ -1,7 +1,11 @@
-# trellis
+<p align="center">
+  <img src="https://raw.githubusercontent.com/tolo/trellis/main/assets/logo-with-text.png" alt="Trellis" width="400">
+</p>
 
-[![pub package](https://img.shields.io/pub/v/trellis.svg)](https://pub.dev/packages/trellis)
-[![package publisher](https://img.shields.io/pub/publisher/trellis.svg)](https://pub.dev/packages/trellis/publisher)
+<p align="center">
+  <a href="https://pub.dev/packages/trellis"><img src="https://img.shields.io/pub/v/trellis.svg" alt="pub package"></a>
+  <a href="https://pub.dev/packages/trellis/publisher"><img src="https://img.shields.io/pub/publisher/trellis.svg" alt="package publisher"></a>
+</p>
 
 A natural HTML template engine for Dart — templates are valid HTML that browsers render as prototypes without a server. Fragment-first design built for hypermedia-driven web frameworks like [HTMX](https://htmx.org/). Inspired by [Thymeleaf](https://www.thymeleaf.org/).
 

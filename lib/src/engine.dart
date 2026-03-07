@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart';
 
@@ -25,6 +27,7 @@ final class Trellis {
   final bool includeStandard;
   final MessageSource? messageSource;
   final String? locale;
+  final bool devMode;
   final Map<String, Document> _cache = {};
 
   /// Separator between prefix and attribute name.
@@ -33,6 +36,7 @@ final class Trellis {
 
   int _cacheHits = 0;
   int _cacheMisses = 0;
+  StreamSubscription<void>? _watchSubscription;
 
   Trellis({
     TemplateLoader? loader,
@@ -46,8 +50,13 @@ final class Trellis {
     this.includeStandard = true,
     this.messageSource,
     this.locale,
-  }) : loader = loader ?? FileSystemLoader('templates/'),
-       filters = filters ?? const {};
+    this.devMode = false,
+  }) : loader = loader ?? FileSystemLoader('templates/', devMode: devMode),
+       filters = filters ?? const {} {
+    if (devMode && this.loader is FileSystemLoader) {
+      _watchSubscription = (this.loader as FileSystemLoader).changes?.listen((_) => clearCache());
+    }
+  }
 
   /// Current cache statistics snapshot.
   CacheStats get cacheStats => CacheStats(size: _cache.length, hits: _cacheHits, misses: _cacheMisses);
@@ -57,6 +66,18 @@ final class Trellis {
     _cache.clear();
     _cacheHits = 0;
     _cacheMisses = 0;
+  }
+
+  /// Release resources held by this engine instance.
+  ///
+  /// Cancels the file-watch subscription (if any) and closes the underlying
+  /// loader when it is a [FileSystemLoader]. Safe to call multiple times.
+  Future<void> close() async {
+    await _watchSubscription?.cancel();
+    _watchSubscription = null;
+    if (loader is FileSystemLoader) {
+      await (loader as FileSystemLoader).close();
+    }
   }
 
   /// Render a template string with the given context.

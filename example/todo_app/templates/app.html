@@ -46,282 +46,439 @@
   concatenate the results yourself. The single-file approach was chosen here to
   keep the example self-contained and easy to follow.
 -->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title tl:text="${title}">Trellis Todo</title>
-  <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/themes/light.css">
-  <script type="module"
-          src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/shoelace-autoloader.js"></script>
-  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-  <link rel="stylesheet" href="/styles.css">
-</head>
-<body>
-  <div class="app-layout">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title tl:text="${title}">Trellis Todo</title>
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/themes/light.css"
+        />
+        <script
+            type="module"
+            src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/shoelace-autoloader.js"
+        ></script>
+        <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+        <link rel="stylesheet" href="/styles.css" />
+    </head>
+    <body>
+        <div class="app-layout">
+            <!-- App header -->
+            <header class="app-header">
+                <sl-icon name="check2-square" class="app-logo"></sl-icon>
+                <h1 class="app-title">Trellis Todo</h1>
+            </header>
 
-    <!-- App header -->
-    <header class="app-header">
-      <sl-icon name="check2-square" class="app-logo"></sl-icon>
-      <h1 class="app-title">Trellis Todo</h1>
-    </header>
+            <div class="app-content">
+                <!-- Sidebar -->
+                <nav
+                    tl:fragment="sidebar"
+                    id="sidebar"
+                    class="sidebar"
+                    hx-swap-oob="true"
+                >
+                    <div class="sidebar-header">
+                        <h2>My Lists</h2>
+                    </div>
 
-    <div class="app-content">
+                    <div class="sidebar-lists">
+                        <div
+                            tl:each="list : ${lists}"
+                            class="list-item"
+                            tl:classappend="${list.isActive} ? 'active' : ''"
+                            tl:attr="hx-get='/lists/' + ${list.id}, id='list-' + ${list.id}"
+                            hx-target="#main-content"
+                            hx-swap="outerHTML"
+                            hx-push-url="false"
+                        >
+                            <div
+                                class="list-color-indicator"
+                                tl:attr="style='background-color: ' + ${list.color}"
+                            ></div>
+                            <div class="list-info">
+                                <span class="list-name" tl:text="${list.name}"
+                                    >List Name</span
+                                >
+                            </div>
+                            <span class="list-count" tl:text="${list.todoCount}"
+                                >0</span
+                            >
+                            <div class="list-actions">
+                                <sl-icon-button
+                                    name="pencil"
+                                    label="Edit list"
+                                    tl:attr="data-list-id=${list.id}, data-list-name=${list.name}, data-list-color=${list.color}"
+                                    onclick="
+                                        event.stopPropagation();
+                                        openEditListDialog(this);
+                                    "
+                                >
+                                </sl-icon-button>
+                                <sl-icon-button
+                                    name="trash"
+                                    label="Delete list"
+                                    class="danger-icon"
+                                    tl:attr="hx-delete='/lists/' + ${list.id}"
+                                    hx-target="#main-content"
+                                    hx-swap="outerHTML"
+                                    hx-confirm="Delete this list and all its todos?"
+                                    onclick="event.stopPropagation()"
+                                >
+                                </sl-icon-button>
+                            </div>
+                        </div>
+                    </div>
 
-      <!-- Sidebar -->
-      <nav tl:fragment="sidebar" id="sidebar" class="sidebar" hx-swap-oob="true">
-        <div class="sidebar-header">
-          <h2>My Lists</h2>
+                    <div class="sidebar-footer">
+                        <form
+                            class="add-list-form"
+                            hx-post="/lists"
+                            hx-target="#main-content"
+                            hx-swap="outerHTML"
+                        >
+                            <sl-input
+                                name="name"
+                                placeholder="New list..."
+                                size="small"
+                                required
+                            ></sl-input>
+                            <sl-button
+                                type="submit"
+                                size="small"
+                                variant="primary"
+                                >+</sl-button
+                            >
+                        </form>
+                    </div>
+                </nav>
+
+                <!-- Main content area -->
+                <main
+                    tl:fragment="main-content"
+                    id="main-content"
+                    class="main-content"
+                >
+                    <div class="list-content">
+                        <!-- Active list header -->
+                        <div class="list-header" tl:if="${activeList}">
+                            <div class="list-header-info">
+                                <div
+                                    class="list-header-color"
+                                    tl:attr="style='background-color: ' + ${activeList.color}"
+                                ></div>
+                                <h2 tl:text="${activeList.name}">List Name</h2>
+                            </div>
+                            <div class="list-header-actions">
+                                <sl-icon-button
+                                    name="pencil"
+                                    label="Edit list"
+                                    tl:attr="data-list-id=${activeList.id}, data-list-name=${activeList.name}, data-list-color=${activeList.color}"
+                                    onclick="openEditListDialog(this)"
+                                >
+                                </sl-icon-button>
+                                <sl-icon-button
+                                    name="trash"
+                                    label="Delete list"
+                                    class="danger-icon"
+                                    tl:attr="hx-delete='/lists/' + ${activeList.id}"
+                                    hx-target="#main-content"
+                                    hx-swap="outerHTML"
+                                    hx-confirm="Delete this list and all its todos?"
+                                >
+                                </sl-icon-button>
+                            </div>
+                        </div>
+
+                        <!-- Search -->
+                        <div class="search-bar" tl:if="${activeList}">
+                            <sl-input
+                                type="search"
+                                placeholder="Search todos..."
+                                name="q"
+                                hx-get="/search"
+                                hx-trigger="sl-input changed delay:300ms"
+                                hx-target="#todo-list"
+                                hx-swap="outerHTML"
+                                tl:attr="hx-vals='js:{list:' + ${activeList.id} + '}'"
+                            >
+                            </sl-input>
+                        </div>
+
+                        <!-- Quick-add form -->
+                        <form
+                            class="quick-add-form"
+                            tl:if="${activeList}"
+                            hx-post="/todos"
+                            hx-target="#todo-list"
+                            hx-swap="outerHTML"
+                        >
+                            <input
+                                type="hidden"
+                                name="listId"
+                                tl:attr="value=${activeList.id}"
+                            />
+                            <sl-input
+                                name="title"
+                                placeholder="Add a new todo..."
+                                required
+                            ></sl-input>
+                            <sl-select
+                                name="priority"
+                                value="medium"
+                                class="priority-select"
+                            >
+                                <sl-option value="low">Low</sl-option>
+                                <sl-option value="medium">Medium</sl-option>
+                                <sl-option value="high">High</sl-option>
+                            </sl-select>
+                            <sl-button type="submit" variant="primary"
+                                >Add</sl-button
+                            >
+                        </form>
+
+                        <!-- Todo list -->
+                        <div
+                            tl:fragment="todo-list"
+                            id="todo-list"
+                            class="todos-list"
+                        >
+                            <tl:block tl:if="${todoCount}">
+                                <tl:block
+                                    tl:each="todo : ${todos}"
+                                    tl:with="activeTodo=${todo}"
+                                >
+                                    <tl:block
+                                        tl:insert="todo-row(${activeTodo})"
+                                    ></tl:block>
+                                </tl:block>
+                            </tl:block>
+
+                            <div tl:unless="${todoCount}" class="empty-state">
+                                <sl-icon
+                                    tl:if="${activeList}"
+                                    name="check2-all"
+                                    class="empty-icon"
+                                ></sl-icon>
+                                <h3 tl:if="${activeList}">All clear!</h3>
+                                <p tl:if="${activeList}">
+                                    No todos yet. Add one above!
+                                </p>
+                                <p tl:unless="${activeList}">
+                                    Select or create a list to get started.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Reusable todo row fragment -->
+                        <tl:block tl:fragment="todo-row(todo)">
+                            <div
+                                class="todo-item"
+                                tl:classappend="(${todo.isCompleted} ? 'completed ' : '') + (${todo.isOverdue} ? 'overdue ' : '') + 'priority-' + ${todo.priority}"
+                                tl:attr="id='todo-' + ${todo.id}"
+                                hx-target="#todo-list"
+                                hx-swap="outerHTML"
+                            >
+                                <div class="todo-checkbox">
+                                    <sl-checkbox
+                                        tl:attr="checked=${todo.isCompleted}, hx-put='/todos/' + ${todo.id} + '/toggle'"
+                                        hx-target="#todo-list"
+                                        hx-swap="outerHTML"
+                                    >
+                                    </sl-checkbox>
+                                </div>
+
+                                <div class="todo-content">
+                                    <span
+                                        class="todo-title"
+                                        tl:text="${todo.title}"
+                                        >Buy groceries</span
+                                    >
+                                    <div class="todo-meta">
+                                        <span
+                                            tl:if="${todo.dueDateFormatted}"
+                                            class="todo-due"
+                                            tl:classappend="${todo.isOverdue} ? 'overdue' : ''"
+                                            tl:text="${todo.dueDateFormatted}"
+                                        >
+                                            2026-03-15
+                                        </span>
+                                        <tl:block tl:switch="${todo.priority}">
+                                            <sl-badge
+                                                tl:case="high"
+                                                variant="danger"
+                                                pill
+                                                >high</sl-badge
+                                            >
+                                            <sl-badge
+                                                tl:case="medium"
+                                                variant="warning"
+                                                pill
+                                                >medium</sl-badge
+                                            >
+                                            <sl-badge
+                                                tl:case="low"
+                                                variant="success"
+                                                pill
+                                                >low</sl-badge
+                                            >
+                                        </tl:block>
+                                    </div>
+                                </div>
+
+                                <div class="todo-actions">
+                                    <sl-icon-button
+                                        name="pencil"
+                                        label="Edit todo"
+                                        tl:attr="data-todo-id=${todo.id}, data-todo-title=${todo.title}, data-todo-priority=${todo.priority}, data-todo-due-date=${todo.dueDateInput}"
+                                        onclick="openEditTodoDialog(this)"
+                                    >
+                                    </sl-icon-button>
+                                    <sl-icon-button
+                                        name="trash"
+                                        label="Delete todo"
+                                        class="danger-icon"
+                                        tl:attr="hx-delete='/todos/' + ${todo.id}"
+                                        hx-target="#todo-list"
+                                        hx-swap="outerHTML"
+                                        hx-confirm="Delete this todo?"
+                                    >
+                                    </sl-icon-button>
+                                </div>
+                            </div>
+                        </tl:block>
+                    </div>
+                </main>
+            </div>
         </div>
 
-        <div class="sidebar-lists">
-          <div tl:each="list : ${lists}"
-               class="list-item"
-               tl:classappend="${list.isActive} ? 'active' : ''"
-               tl:attr="hx-get='/lists/' + ${list.id}, id='list-' + ${list.id}"
-               hx-target="#main-content" hx-swap="outerHTML" hx-push-url="false">
-            <div class="list-color-indicator"
-                 tl:attr="style='background-color: ' + ${list.color}"></div>
-            <div class="list-info">
-              <span class="list-name" tl:text="${list.name}">List Name</span>
-            </div>
-            <span class="list-count" tl:text="${list.todoCount}">0</span>
-            <div class="list-actions">
-              <sl-icon-button name="pencil" label="Edit list"
-                  tl:attr="data-list-id=${list.id}, data-list-name=${list.name}, data-list-color=${list.color}"
-                  onclick="event.stopPropagation(); openEditListDialog(this)">
-              </sl-icon-button>
-              <sl-icon-button name="trash" label="Delete list" class="danger-icon"
-                  tl:attr="hx-delete='/lists/' + ${list.id}"
-                  hx-target="#main-content" hx-swap="outerHTML"
-                  hx-confirm="Delete this list and all its todos?"
-                  onclick="event.stopPropagation()">
-              </sl-icon-button>
-            </div>
-          </div>
-        </div>
-
-        <div class="sidebar-footer">
-          <form class="add-list-form"
-                hx-post="/lists"
-                hx-target="#main-content"
-                hx-swap="outerHTML">
-            <sl-input name="name" placeholder="New list..." size="small" required></sl-input>
-            <sl-button type="submit" size="small" variant="primary">+</sl-button>
-          </form>
-        </div>
-      </nav>
-
-      <!-- Main content area -->
-      <main tl:fragment="main-content" id="main-content" class="main-content">
-        <div class="list-content">
-
-          <!-- Active list header -->
-          <div class="list-header" tl:if="${activeList}">
-            <div class="list-header-info">
-              <div class="list-header-color"
-                   tl:attr="style='background-color: ' + ${activeList.color}"></div>
-              <h2 tl:text="${activeList.name}">List Name</h2>
-            </div>
-            <div class="list-header-actions">
-              <sl-icon-button name="pencil" label="Edit list"
-                  tl:attr="data-list-id=${activeList.id}, data-list-name=${activeList.name}, data-list-color=${activeList.color}"
-                  onclick="openEditListDialog(this)">
-              </sl-icon-button>
-              <sl-icon-button name="trash" label="Delete list" class="danger-icon"
-                  tl:attr="hx-delete='/lists/' + ${activeList.id}"
-                  hx-target="#main-content" hx-swap="outerHTML"
-                  hx-confirm="Delete this list and all its todos?">
-              </sl-icon-button>
-            </div>
-          </div>
-
-          <!-- Search -->
-          <div class="search-bar" tl:if="${activeList}">
-            <sl-input type="search"
-                      placeholder="Search todos..."
-                      name="q"
-                      hx-get="/search"
-                      hx-trigger="sl-input changed delay:300ms"
-                      hx-target="#todo-list"
-                      hx-swap="outerHTML"
-                      tl:attr="hx-vals='js:{list:' + ${activeList.id} + '}'">
-            </sl-input>
-          </div>
-
-          <!-- Quick-add form -->
-          <form class="quick-add-form" tl:if="${activeList}"
-                hx-post="/todos" hx-target="#todo-list" hx-swap="outerHTML">
-            <input type="hidden" name="listId" tl:attr="value=${activeList.id}">
-            <sl-input name="title" placeholder="Add a new todo..." required></sl-input>
-            <sl-select name="priority" value="medium" class="priority-select">
-              <sl-option value="low">Low</sl-option>
-              <sl-option value="medium">Medium</sl-option>
-              <sl-option value="high">High</sl-option>
-            </sl-select>
-            <sl-button type="submit" variant="primary">Add</sl-button>
-          </form>
-
-          <!-- Todo list -->
-          <div tl:fragment="todo-list" id="todo-list" class="todos-list">
-            <tl:block tl:if="${todoCount}">
-              <tl:block tl:each="todo : ${todos}" tl:with="activeTodo=${todo}">
-                <tl:block tl:insert="todo-row(${activeTodo})"></tl:block>
-              </tl:block>
-            </tl:block>
-
-            <div tl:unless="${todoCount}" class="empty-state">
-              <sl-icon tl:if="${activeList}" name="check2-all" class="empty-icon"></sl-icon>
-              <h3 tl:if="${activeList}">All clear!</h3>
-              <p tl:if="${activeList}">No todos yet. Add one above!</p>
-              <p tl:unless="${activeList}">Select or create a list to get started.</p>
-            </div>
-          </div>
-
-          <!-- Reusable todo row fragment -->
-          <tl:block tl:fragment="todo-row(todo)">
-            <div class="todo-item"
-                 tl:classappend="(${todo.isCompleted} ? 'completed ' : '') + (${todo.isOverdue} ? 'overdue ' : '') + 'priority-' + ${todo.priority}"
-                 tl:attr="id='todo-' + ${todo.id}"
-                 hx-target="#todo-list" hx-swap="outerHTML">
-
-              <div class="todo-checkbox">
-                <sl-checkbox
-                    tl:attr="checked=${todo.isCompleted}, hx-put='/todos/' + ${todo.id} + '/toggle'"
-                    hx-target="#todo-list" hx-swap="outerHTML">
-                </sl-checkbox>
-              </div>
-
-              <div class="todo-content">
-                <span class="todo-title" tl:text="${todo.title}">Buy groceries</span>
-                <div class="todo-meta">
-                  <span tl:if="${todo.dueDateFormatted}" class="todo-due"
-                        tl:classappend="${todo.isOverdue} ? 'overdue' : ''"
-                        tl:text="${todo.dueDateFormatted}">
-                    2026-03-15
-                  </span>
-                  <tl:block tl:switch="${todo.priority}">
-                    <sl-badge tl:case="high" variant="danger" pill>high</sl-badge>
-                    <sl-badge tl:case="medium" variant="warning" pill>medium</sl-badge>
-                    <sl-badge tl:case="low" variant="success" pill>low</sl-badge>
-                  </tl:block>
+        <!-- Edit List Dialog -->
+        <sl-dialog label="Edit List" id="edit-list-dialog">
+            <form id="edit-list-form">
+                <div class="form-group">
+                    <label for="edit-list-name">Name</label>
+                    <sl-input
+                        id="edit-list-name"
+                        name="name"
+                        required
+                    ></sl-input>
                 </div>
-              </div>
-
-              <div class="todo-actions">
-                <sl-icon-button name="pencil" label="Edit todo"
-                    tl:attr="data-todo-id=${todo.id}, data-todo-title=${todo.title}, data-todo-priority=${todo.priority}, data-todo-due-date=${todo.dueDateInput}"
-                    onclick="openEditTodoDialog(this)">
-                </sl-icon-button>
-                <sl-icon-button name="trash" label="Delete todo" class="danger-icon"
-                    tl:attr="hx-delete='/todos/' + ${todo.id}"
-                    hx-target="#todo-list" hx-swap="outerHTML"
-                    hx-confirm="Delete this todo?">
-                </sl-icon-button>
-              </div>
+                <div class="form-group">
+                    <label for="edit-list-color">Color</label>
+                    <input
+                        type="color"
+                        id="edit-list-color"
+                        name="color"
+                        class="color-input"
+                    />
+                </div>
+            </form>
+            <div slot="footer" class="dialog-footer">
+                <sl-button
+                    onclick="document.getElementById('edit-list-dialog').hide()"
+                    >Cancel</sl-button
+                >
+                <sl-button type="submit" form="edit-list-form" variant="primary"
+                    >Save Changes</sl-button
+                >
             </div>
-          </tl:block>
+        </sl-dialog>
 
-        </div>
-      </main>
+        <!-- Edit Todo Dialog -->
+        <sl-dialog label="Edit Todo" id="edit-todo-dialog">
+            <form id="edit-todo-form">
+                <div class="form-group">
+                    <label for="edit-todo-title">Title</label>
+                    <sl-input
+                        id="edit-todo-title"
+                        name="title"
+                        required
+                    ></sl-input>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-todo-due-date">Due Date</label>
+                        <sl-input
+                            id="edit-todo-due-date"
+                            name="dueDate"
+                            type="date"
+                        ></sl-input>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-todo-priority">Priority</label>
+                        <sl-select
+                            id="edit-todo-priority"
+                            name="priority"
+                            value="medium"
+                        >
+                            <sl-option value="low">Low</sl-option>
+                            <sl-option value="medium">Medium</sl-option>
+                            <sl-option value="high">High</sl-option>
+                        </sl-select>
+                    </div>
+                </div>
+            </form>
+            <div slot="footer" class="dialog-footer">
+                <sl-button
+                    onclick="document.getElementById('edit-todo-dialog').hide()"
+                    >Cancel</sl-button
+                >
+                <sl-button type="submit" form="edit-todo-form" variant="primary"
+                    >Save Changes</sl-button
+                >
+            </div>
+        </sl-dialog>
 
-    </div>
-  </div>
+        <script>
+            function openEditListDialog(btn) {
+                const id = btn.dataset.listId;
+                const name = btn.dataset.listName;
+                const color = btn.dataset.listColor;
 
-  <!-- Edit List Dialog -->
-  <sl-dialog label="Edit List" id="edit-list-dialog">
-    <form id="edit-list-form">
-      <div class="form-group">
-        <label for="edit-list-name">Name</label>
-        <sl-input id="edit-list-name" name="name" required></sl-input>
-      </div>
-      <div class="form-group">
-        <label for="edit-list-color">Color</label>
-        <input type="color" id="edit-list-color" name="color" class="color-input">
-      </div>
-    </form>
-    <div slot="footer" class="dialog-footer">
-      <sl-button onclick="document.getElementById('edit-list-dialog').hide()">Cancel</sl-button>
-      <sl-button type="submit" form="edit-list-form" variant="primary">Save Changes</sl-button>
-    </div>
-  </sl-dialog>
+                const form = document.getElementById("edit-list-form");
+                form.setAttribute("hx-put", "/lists/" + id);
+                form.setAttribute("hx-target", "#main-content");
+                form.setAttribute("hx-swap", "outerHTML");
+                htmx.process(form);
 
-  <!-- Edit Todo Dialog -->
-  <sl-dialog label="Edit Todo" id="edit-todo-dialog">
-    <form id="edit-todo-form">
-      <div class="form-group">
-        <label for="edit-todo-title">Title</label>
-        <sl-input id="edit-todo-title" name="title" required></sl-input>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="edit-todo-due-date">Due Date</label>
-          <sl-input id="edit-todo-due-date" name="dueDate" type="date"></sl-input>
-        </div>
-        <div class="form-group">
-          <label for="edit-todo-priority">Priority</label>
-          <sl-select id="edit-todo-priority" name="priority" value="medium">
-            <sl-option value="low">Low</sl-option>
-            <sl-option value="medium">Medium</sl-option>
-            <sl-option value="high">High</sl-option>
-          </sl-select>
-        </div>
-      </div>
-    </form>
-    <div slot="footer" class="dialog-footer">
-      <sl-button onclick="document.getElementById('edit-todo-dialog').hide()">Cancel</sl-button>
-      <sl-button type="submit" form="edit-todo-form" variant="primary">Save Changes</sl-button>
-    </div>
-  </sl-dialog>
+                document.getElementById("edit-list-name").value = name;
+                document.getElementById("edit-list-color").value =
+                    color || "#4a9eff";
+                document.getElementById("edit-list-dialog").show();
+            }
 
-  <script>
-    function openEditListDialog(btn) {
-      const id = btn.dataset.listId;
-      const name = btn.dataset.listName;
-      const color = btn.dataset.listColor;
+            function openEditTodoDialog(btn) {
+                const id = btn.dataset.todoId;
+                const title = btn.dataset.todoTitle;
+                const priority = btn.dataset.todoPriority;
+                const dueDate = btn.dataset.todoDueDate;
 
-      const form = document.getElementById('edit-list-form');
-      form.setAttribute('hx-put', '/lists/' + id);
-      form.setAttribute('hx-target', '#main-content');
-      form.setAttribute('hx-swap', 'outerHTML');
-      htmx.process(form);
+                const form = document.getElementById("edit-todo-form");
+                form.setAttribute("hx-put", "/todos/" + id);
+                form.setAttribute("hx-target", "#todo-list");
+                form.setAttribute("hx-swap", "outerHTML");
+                htmx.process(form);
 
-      document.getElementById('edit-list-name').value = name;
-      document.getElementById('edit-list-color').value = color || '#4a9eff';
-      document.getElementById('edit-list-dialog').show();
-    }
+                document.getElementById("edit-todo-title").value = title;
+                document.getElementById("edit-todo-due-date").value =
+                    dueDate || "";
+                const priorityEl =
+                    document.getElementById("edit-todo-priority");
+                priorityEl.value = priority || "medium";
 
-    function openEditTodoDialog(btn) {
-      const id = btn.dataset.todoId;
-      const title = btn.dataset.todoTitle;
-      const priority = btn.dataset.todoPriority;
-      const dueDate = btn.dataset.todoDueDate;
+                document.getElementById("edit-todo-dialog").show();
+            }
 
-      const form = document.getElementById('edit-todo-form');
-      form.setAttribute('hx-put', '/todos/' + id);
-      form.setAttribute('hx-target', '#todo-list');
-      form.setAttribute('hx-swap', 'outerHTML');
-      htmx.process(form);
-
-      document.getElementById('edit-todo-title').value = title;
-      document.getElementById('edit-todo-due-date').value = dueDate || '';
-      const priorityEl = document.getElementById('edit-todo-priority');
-      priorityEl.value = priority || 'medium';
-
-      document.getElementById('edit-todo-dialog').show();
-    }
-
-    // Auto-close dialogs after successful HTMX request
-    document.body.addEventListener('htmx:afterRequest', (evt) => {
-      if (evt.detail.successful) {
-        ['edit-list-dialog', 'edit-todo-dialog'].forEach(id => {
-          const d = document.getElementById(id);
-          if (d && d.open) d.hide();
-        });
-      }
-    });
-  </script>
-</body>
+            // Auto-close dialogs after successful HTMX request
+            document.body.addEventListener("htmx:afterRequest", (evt) => {
+                if (evt.detail.successful) {
+                    ["edit-list-dialog", "edit-todo-dialog"].forEach((id) => {
+                        const d = document.getElementById(id);
+                        if (d && d.open) d.hide();
+                    });
+                }
+            });
+        </script>
+    </body>
 </html>

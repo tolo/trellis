@@ -321,6 +321,7 @@ final fragments = engine.renderFragments(
 Trellis(
   loader: FileSystemLoader('templates/'), // Default
   cache: true,           // DOM caching with deep-clone (default: true)
+  devMode: false,        // File watching for dev (default: false)
   maxCacheSize: 100,     // LRU eviction threshold (default: 256)
   prefix: 'tl',          // Attribute prefix (default: 'tl')
   strict: false,         // Throw on undefined variables/members (default: false)
@@ -343,6 +344,25 @@ final context = TrellisContext()
 
 final html = engine.render(template, context);
 ```
+
+### Dev Mode (File Watching)
+
+Enable `devMode` to automatically reload templates when files change on disk — ideal for development:
+
+```dart
+final engine = Trellis(
+  loader: FileSystemLoader('templates/', devMode: true),
+  devMode: true,
+);
+
+// Templates are re-read automatically when modified.
+// Call close() when shutting down to release the file watcher:
+await engine.close();
+```
+
+When `devMode` is `false` (the default), no file watcher is created and there is zero runtime overhead.
+
+**Note:** `Trellis.close()` also closes the associated `FileSystemLoader`. If you share a loader across multiple engine instances, manage the loader's lifecycle separately.
 
 ### Template Loaders
 
@@ -462,6 +482,7 @@ Trellis(prefix: 'data-tl')
 | `renderFileFragments(name, fragments:, context:)` | `Future<String>` | Load file and render multiple fragments |
 | `clearCache()` | `void` | Clear DOM cache and reset statistics |
 | `cacheStats` | `CacheStats` | Hit/miss/size metrics for the DOM cache |
+| `close()` | `Future<void>` | Release file-watch resources; also closes the loader (no-op when devMode is false) |
 
 `ExpressionEvaluator` can be used standalone for expression evaluation without templates:
 

@@ -550,17 +550,11 @@ void main() {
       });
 
       test('#{} — empty key throws', () {
-        expect(
-          () => parse('#{}'),
-          throwsA(isA<ExpressionException>()),
-        );
+        expect(() => parse('#{}'), throwsA(isA<ExpressionException>()));
       });
 
       test('#{key — unterminated throws', () {
-        expect(
-          () => parse('#{key'),
-          throwsA(isA<ExpressionException>()),
-        );
+        expect(() => parse('#{key'), throwsA(isA<ExpressionException>()));
       });
 
       test('#{key} as operand in binary expression', () {

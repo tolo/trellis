@@ -5,6 +5,16 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.5.0]
+
+### Added
+- `devMode` parameter on `FileSystemLoader` — file watching via `dart:io` `Directory.watch()`
+- `devMode` parameter on `Trellis` — automatic cache invalidation on template file changes
+- `close()` on `FileSystemLoader` and `Trellis` for async resource disposal
+- `FileSystemLoader.changes` stream for change notifications
+
+---
+
 ## [0.4.1]
 
 - Added logo to README

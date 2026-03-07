@@ -55,6 +55,5 @@ class StandardDialect extends Dialect {
   static dynamic _filterUpper(dynamic v) => v?.toString().toUpperCase();
   static dynamic _filterLower(dynamic v) => v?.toString().toLowerCase();
   static dynamic _filterTrim(dynamic v) => v?.toString().trim();
-  static dynamic _filterLength(dynamic v) =>
-      v is Iterable ? v.length : (v?.toString().length ?? 0);
+  static dynamic _filterLength(dynamic v) => v is Iterable ? v.length : (v?.toString().length ?? 0);
 }

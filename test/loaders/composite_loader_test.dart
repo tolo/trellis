@@ -8,14 +8,13 @@ void main() {
   group('CompositeLoader', () {
     group('constructor', () {
       test('rejects empty delegate list', () {
-        expect(
-          () => CompositeLoader([]),
-          throwsA(isA<ArgumentError>()),
-        );
+        expect(() => CompositeLoader([]), throwsA(isA<ArgumentError>()));
       });
 
       test('accepts single delegate', () {
-        final loader = CompositeLoader([MapLoader({'a': '<p>A</p>'})]);
+        final loader = CompositeLoader([
+          MapLoader({'a': '<p>A</p>'}),
+        ]);
         expect(loader.delegates, hasLength(1));
       });
     });
@@ -47,14 +46,8 @@ void main() {
       });
 
       test('throws TemplateNotFoundException when all delegates fail', () async {
-        final loader = CompositeLoader([
-          MapLoader({}),
-          MapLoader({}),
-        ]);
-        expect(
-          () => loader.load('missing'),
-          throwsA(isA<TemplateNotFoundException>()),
-        );
+        final loader = CompositeLoader([MapLoader({}), MapLoader({})]);
+        expect(() => loader.load('missing'), throwsA(isA<TemplateNotFoundException>()));
       });
 
       test('propagates non-TemplateNotFoundException errors immediately', () async {
@@ -62,10 +55,7 @@ void main() {
           _ThrowingLoader(TemplateSecurityException('Path traversal detected')),
           MapLoader({'page': '<p>Should not reach</p>'}),
         ]);
-        expect(
-          () => loader.load('page'),
-          throwsA(isA<TemplateSecurityException>()),
-        );
+        expect(() => loader.load('page'), throwsA(isA<TemplateSecurityException>()));
       });
 
       test('propagates TemplateException (non-404) immediately', () async {
@@ -75,13 +65,7 @@ void main() {
         ]);
         expect(
           () => loader.load('page'),
-          throwsA(
-            isA<TemplateException>().having(
-              (e) => e.message,
-              'message',
-              'Disk error',
-            ),
-          ),
+          throwsA(isA<TemplateException>().having((e) => e.message, 'message', 'Disk error')),
         );
       });
     });
@@ -104,14 +88,8 @@ void main() {
       });
 
       test('throws TemplateNotFoundException when all delegates fail', () {
-        final loader = CompositeLoader([
-          MapLoader({}),
-          MapLoader({}),
-        ]);
-        expect(
-          () => loader.loadSync('missing'),
-          throwsA(isA<TemplateNotFoundException>()),
-        );
+        final loader = CompositeLoader([MapLoader({}), MapLoader({})]);
+        expect(() => loader.loadSync('missing'), throwsA(isA<TemplateNotFoundException>()));
       });
 
       test('skips delegates that return null from loadSync', () {
@@ -123,14 +101,8 @@ void main() {
       });
 
       test('throws TemplateNotFoundException when all return null or not found', () {
-        final loader = CompositeLoader([
-          _NullSyncLoader(),
-          MapLoader({}),
-        ]);
-        expect(
-          () => loader.loadSync('missing'),
-          throwsA(isA<TemplateNotFoundException>()),
-        );
+        final loader = CompositeLoader([_NullSyncLoader(), MapLoader({})]);
+        expect(() => loader.loadSync('missing'), throwsA(isA<TemplateNotFoundException>()));
       });
 
       test('propagates non-TemplateNotFoundException errors immediately', () {
@@ -138,10 +110,7 @@ void main() {
           _ThrowingSyncLoader(TemplateSecurityException('Security violation')),
           MapLoader({'page': '<p>Fallback</p>'}),
         ]);
-        expect(
-          () => loader.loadSync('page'),
-          throwsA(isA<TemplateSecurityException>()),
-        );
+        expect(() => loader.loadSync('page'), throwsA(isA<TemplateSecurityException>()));
       });
     });
 

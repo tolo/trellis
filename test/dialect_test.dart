@@ -50,8 +50,19 @@ void main() {
       expect(
         attributes,
         containsAll([
-          'with', 'object', 'if', 'unless', 'switch', 'each',
-          'insert', 'replace', 'text', 'utext', 'inline', 'attr', 'remove',
+          'with',
+          'object',
+          'if',
+          'unless',
+          'switch',
+          'each',
+          'insert',
+          'replace',
+          'text',
+          'utext',
+          'inline',
+          'attr',
+          'remove',
         ]),
       );
     });
@@ -145,54 +156,25 @@ void main() {
       final dialect = _TestDialect(
         name: 'FilterOnly',
         testProcessors: [],
-        testFilters: {
-          'exclaim': (dynamic v) => '$v!',
-        },
+        testFilters: {'exclaim': (dynamic v) => '$v!'},
       );
       final dp = _dp(dialects: [dialect]);
-      final body = _processBody(
-        '<span tl:text="\${name | exclaim}">x</span>',
-        {'name': 'World'},
-        dp,
-      );
+      final body = _processBody('<span tl:text="\${name | exclaim}">x</span>', {'name': 'World'}, dp);
       expect(body.querySelector('span')!.text, equals('World!'));
     });
 
     test('dialect filter + engine-level filter same name — engine-level wins', () {
-      final dialect = _TestDialect(
-        name: 'D1',
-        testProcessors: [],
-        testFilters: {'fmt': (dynamic v) => 'dialect:$v'},
-      );
-      final dp = _dp(
-        dialects: [dialect],
-        filters: {'fmt': (dynamic v) => 'engine:$v'},
-      );
-      final body = _processBody(
-        '<span tl:text="\${x | fmt}">x</span>',
-        {'x': 'val'},
-        dp,
-      );
+      final dialect = _TestDialect(name: 'D1', testProcessors: [], testFilters: {'fmt': (dynamic v) => 'dialect:$v'});
+      final dp = _dp(dialects: [dialect], filters: {'fmt': (dynamic v) => 'engine:$v'});
+      final body = _processBody('<span tl:text="\${x | fmt}">x</span>', {'x': 'val'}, dp);
       expect(body.querySelector('span')!.text, equals('engine:val'));
     });
 
     test('two dialects with same filter name — later dialect wins', () {
-      final d1 = _TestDialect(
-        name: 'D1',
-        testProcessors: [],
-        testFilters: {'fmt': (dynamic v) => 'd1:$v'},
-      );
-      final d2 = _TestDialect(
-        name: 'D2',
-        testProcessors: [],
-        testFilters: {'fmt': (dynamic v) => 'd2:$v'},
-      );
+      final d1 = _TestDialect(name: 'D1', testProcessors: [], testFilters: {'fmt': (dynamic v) => 'd1:$v'});
+      final d2 = _TestDialect(name: 'D2', testProcessors: [], testFilters: {'fmt': (dynamic v) => 'd2:$v'});
       final dp = _dp(dialects: [d1, d2]);
-      final body = _processBody(
-        '<span tl:text="\${x | fmt}">x</span>',
-        {'x': 'val'},
-        dp,
-      );
+      final body = _processBody('<span tl:text="\${x | fmt}">x</span>', {'x': 'val'}, dp);
       expect(body.querySelector('span')!.text, equals('d2:val'));
     });
 
@@ -212,11 +194,7 @@ void main() {
         ],
       );
       final dp = _dp(dialects: [dialect]);
-      final body = _processBody(
-        '<span tl:text="\${msg}" tl:custom="x">old</span>',
-        {'msg': 'hello'},
-        dp,
-      );
+      final body = _processBody('<span tl:text="\${msg}" tl:custom="x">old</span>', {'msg': 'hello'}, dp);
       // tl:text (standard, afterInclusion) runs before tl:custom (afterInclusion)
       expect(log, equals(['custom:hello']));
       expect(body.querySelector('span')!.text, equals('hello'));
@@ -237,11 +215,7 @@ void main() {
         ],
       );
       final dp = _dp(dialects: [dialect]);
-      final body = _processBody(
-        '<span tl:text="\${msg}" tl:stamp="x">old</span>',
-        {'msg': 'done'},
-        dp,
-      );
+      final body = _processBody('<span tl:text="\${msg}" tl:stamp="x">old</span>', {'msg': 'done'}, dp);
       expect(body.querySelector('span')!.attributes['data-stamped'], equals('done'));
     });
   });
@@ -249,22 +223,14 @@ void main() {
   group('includeStandard: false', () {
     test('tl:text NOT processed — content preserved', () {
       final dp = _dp(includeStandard: false);
-      final body = _processBody(
-        '<span tl:text="\${name}">prototype</span>',
-        {'name': 'Alice'},
-        dp,
-      );
+      final body = _processBody('<span tl:text="\${name}">prototype</span>', {'name': 'Alice'}, dp);
       // No processors fire; content stays as-is
       expect(body.querySelector('span')!.text, equals('prototype'));
     });
 
     test('built-in filters NOT available — no processor to trigger them', () {
       final dp = _dp(includeStandard: false);
-      final body = _processBody(
-        '<span tl:text="\${name | upper}">x</span>',
-        {'name': 'hi'},
-        dp,
-      );
+      final body = _processBody('<span tl:text="\${name | upper}">x</span>', {'name': 'hi'}, dp);
       // No text processor fires, so template left as-is
       expect(body.querySelector('span')!.text, equals('x'));
     });
@@ -284,22 +250,14 @@ void main() {
         ],
       );
       final dp = _dp(includeStandard: false, dialects: [dialect]);
-      final body = _processBody(
-        '<div tl:greet="x" tl:text="\${name}">old</div>',
-        {'name': 'Alice'},
-        dp,
-      );
+      final body = _processBody('<div tl:greet="x" tl:text="\${name}">old</div>', {'name': 'Alice'}, dp);
       // tl:greet fires (user dialect), tl:text does NOT (no standard)
       expect(body.querySelector('div')!.text, equals('Custom!'));
     });
 
     test('includeStandard: false + no dialects + no processors — template as-is', () {
       final dp = _dp(includeStandard: false);
-      final body = _processBody(
-        '<div tl:text="\${x}">proto</div>',
-        {'x': 'val'},
-        dp,
-      );
+      final body = _processBody('<div tl:text="\${x}">proto</div>', {'x': 'val'}, dp);
       expect(body.querySelector('div')!.text, equals('proto'));
       // tl:text attribute cleaned up by infrastructure
       expect(body.querySelector('div')!.attributes.containsKey('tl:text'), isFalse);
@@ -320,16 +278,8 @@ void main() {
           ),
         ],
       );
-      final dp = _dp(
-        includeStandard: false,
-        dialects: [dialect],
-        filters: {'exclaim': (dynamic v) => '$v!'},
-      );
-      final body = _processBody(
-        '<span tl:show="\${name | exclaim}">x</span>',
-        {'name': 'hi'},
-        dp,
-      );
+      final dp = _dp(includeStandard: false, dialects: [dialect], filters: {'exclaim': (dynamic v) => '$v!'});
+      final body = _processBody('<span tl:show="\${name | exclaim}">x</span>', {'name': 'hi'}, dp);
       expect(body.querySelector('span')!.text, equals('hi!'));
     });
   });
@@ -351,11 +301,7 @@ void main() {
         ],
       );
       final dp = _dp(dialects: [dialect]);
-      _processBody(
-        '<span tl:text="\${msg}">old</span>',
-        {'msg': 'hello'},
-        dp,
-      );
+      _processBody('<span tl:text="\${msg}">old</span>', {'msg': 'hello'}, dp);
       // Standard TextProcessor fires first (sets text to 'hello'),
       // then custom 'text' processor fires (sees 'hello')
       expect(log, equals(['custom-text:hello']));
@@ -369,7 +315,10 @@ void main() {
           _TestProcessor(
             attribute: 'tag',
             priority: ProcessorPriority.lowest,
-            handler: (el, val, ctx) { log.add('d1'); return true; },
+            handler: (el, val, ctx) {
+              log.add('d1');
+              return true;
+            },
           ),
         ],
       );
@@ -379,7 +328,10 @@ void main() {
           _TestProcessor(
             attribute: 'tag',
             priority: ProcessorPriority.lowest,
-            handler: (el, val, ctx) { log.add('d2'); return true; },
+            handler: (el, val, ctx) {
+              log.add('d2');
+              return true;
+            },
           ),
         ],
       );
@@ -406,13 +358,7 @@ void main() {
       dp.collectFragments(doc);
       expect(
         () => dp.process(doc.body!, {}),
-        throwsA(
-          isA<TemplateException>().having(
-            (e) => e.message,
-            'message',
-            contains('boom'),
-          ),
-        ),
+        throwsA(isA<TemplateException>().having((e) => e.message, 'message', contains('boom'))),
       );
     });
 
@@ -421,10 +367,7 @@ void main() {
       final doc = html_parser.parse('<span tl:text="\${missing}">x</span>');
       dp.collectFragments(doc);
       // Strict mode: undefined variable throws ExpressionException directly
-      expect(
-        () => dp.process(doc.body!, {}),
-        throwsA(isA<ExpressionException>()),
-      );
+      expect(() => dp.process(doc.body!, {}), throwsA(isA<ExpressionException>()));
     });
   });
 }
@@ -444,11 +387,7 @@ class _TestDialect extends Dialect {
   final List<Processor> testProcessors;
   final Map<String, Function> testFilters;
 
-  _TestDialect({
-    required this.name,
-    required this.testProcessors,
-    this.testFilters = const {},
-  });
+  _TestDialect({required this.name, required this.testProcessors, this.testFilters = const {}});
 
   @override
   List<Processor> get processors => testProcessors;
@@ -463,16 +402,11 @@ class _TestProcessor extends Processor {
   final ProcessorPriority priority;
   final bool Function(Element, String, ProcessorContext) handler;
 
-  _TestProcessor({
-    required this.attribute,
-    this.priority = ProcessorPriority.afterContent,
-    required this.handler,
-  });
+  _TestProcessor({required this.attribute, this.priority = ProcessorPriority.afterContent, required this.handler});
 
   @override
   final bool autoProcessChildren = true;
 
   @override
-  bool process(Element element, String value, ProcessorContext context) =>
-      handler(element, value, context);
+  bool process(Element element, String value, ProcessorContext context) => handler(element, value, context);
 }

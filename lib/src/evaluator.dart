@@ -240,12 +240,7 @@ class ExpressionEvaluator {
     return '$path?${queryParts.join('&')}';
   }
 
-  dynamic _evalMessage(
-    String key,
-    List<Expr> args,
-    String expr,
-    Map<String, dynamic> context,
-  ) {
+  dynamic _evalMessage(String key, List<Expr> args, String expr, Map<String, dynamic> context) {
     // Determine locale: context._locale overrides engine default
     final locale = context['_locale'] as String? ?? _locale;
 
@@ -254,25 +249,15 @@ class ExpressionEvaluator {
 
     if (_messageSource == null) {
       if (_strict) {
-        throw ExpressionException(
-          'No MessageSource configured for message key "$key"',
-          expression: expr,
-        );
+        throw ExpressionException('No MessageSource configured for message key "$key"', expression: expr);
       }
       return key;
     }
 
-    final resolved = _messageSource.resolve(
-      key,
-      locale: locale,
-      args: evaluatedArgs,
-    );
+    final resolved = _messageSource.resolve(key, locale: locale, args: evaluatedArgs);
     if (resolved == null) {
       if (_strict) {
-        throw ExpressionException(
-          'Message key "$key" not found',
-          expression: expr,
-        );
+        throw ExpressionException('Message key "$key" not found', expression: expr);
       }
       return key;
     }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import '../exceptions.dart';
@@ -10,9 +11,18 @@ import 'template_loader.dart';
 final class FileSystemLoader implements TemplateLoader {
   final String basePath;
   final String extension;
+  final bool devMode;
   late final String _canonicalBase;
 
-  FileSystemLoader(this.basePath, {this.extension = '.html'}) {
+  StreamController<void>? _changesController;
+  StreamSubscription<FileSystemEvent>? _watchSubscription;
+
+  /// A broadcast stream that emits an event whenever a template file changes.
+  ///
+  /// Returns `null` when [devMode] is `false`.
+  Stream<void>? get changes => _changesController?.stream;
+
+  FileSystemLoader(this.basePath, {this.extension = '.html', this.devMode = false}) {
     try {
       _canonicalBase = Directory(basePath).resolveSymbolicLinksSync();
     } on FileSystemException catch (e) {
@@ -20,6 +30,27 @@ final class FileSystemLoader implements TemplateLoader {
         'Template base path does not exist or is inaccessible: "$basePath" (${e.osError?.message})',
       );
     }
+    if (devMode) {
+      _startWatching();
+    }
+  }
+
+  void _startWatching() {
+    _changesController = StreamController<void>.broadcast();
+    _watchSubscription = Directory(_canonicalBase)
+        .watch(recursive: true)
+        .where((event) => event.path.endsWith(extension))
+        .listen((_) => _changesController?.add(null));
+  }
+
+  /// Stops watching for file changes and releases resources.
+  ///
+  /// Safe to call multiple times — subsequent calls are no-ops.
+  Future<void> close() async {
+    await _watchSubscription?.cancel();
+    _watchSubscription = null;
+    await _changesController?.close();
+    _changesController = null;
   }
 
   @override
@@ -81,8 +112,9 @@ final class FileSystemLoader implements TemplateLoader {
 
   bool _isWithinBase(String canonicalPath) {
     if (canonicalPath == _canonicalBase) return true;
-    final baseWithSep =
-        _canonicalBase.endsWith(Platform.pathSeparator) ? _canonicalBase : '$_canonicalBase${Platform.pathSeparator}';
+    final baseWithSep = _canonicalBase.endsWith(Platform.pathSeparator)
+        ? _canonicalBase
+        : '$_canonicalBase${Platform.pathSeparator}';
     return canonicalPath.startsWith(baseWithSep);
   }
 }

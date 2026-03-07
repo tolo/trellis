@@ -4,19 +4,18 @@ import 'package:trellis/src/processor.dart';
 import 'package:trellis/trellis.dart';
 
 void main() {
-  final messages = MapMessageSource(messages: {
-    'en': {
-      'welcome': 'Welcome!',
-      'greeting': 'Hello, {0}!',
-      'greeting.formal': 'Good day, {0}.',
-      'multi': '{0} has {1} items',
-      'truthy.msg': 'yes',
+  final messages = MapMessageSource(
+    messages: {
+      'en': {
+        'welcome': 'Welcome!',
+        'greeting': 'Hello, {0}!',
+        'greeting.formal': 'Good day, {0}.',
+        'multi': '{0} has {1} items',
+        'truthy.msg': 'yes',
+      },
+      'fr': {'welcome': 'Bienvenue!', 'greeting': 'Bonjour, {0}!'},
     },
-    'fr': {
-      'welcome': 'Bienvenue!',
-      'greeting': 'Bonjour, {0}!',
-    },
-  });
+  );
 
   group('ExpressionEvaluator i18n', () {
     test('#{welcome} resolves from MapMessageSource', () {
@@ -36,10 +35,7 @@ void main() {
 
     test('#{greeting.formal} — flat key lookup with dot [D08]', () {
       final e = ExpressionEvaluator(messageSource: messages, locale: 'en');
-      expect(
-        e.evaluate("#{greeting.formal('Sir')}", {}),
-        'Good day, Sir.',
-      );
+      expect(e.evaluate("#{greeting.formal('Sir')}", {}), 'Good day, Sir.');
     });
 
     test('#{missing.key} — no MessageSource, lenient: returns key', () {
@@ -51,11 +47,9 @@ void main() {
       final e = ExpressionEvaluator(strict: true);
       expect(
         () => e.evaluate('#{missing.key}', {}),
-        throwsA(isA<ExpressionException>().having(
-          (e) => e.toString(),
-          'message',
-          contains('No MessageSource configured'),
-        )),
+        throwsA(
+          isA<ExpressionException>().having((e) => e.toString(), 'message', contains('No MessageSource configured')),
+        ),
       );
     });
 
@@ -68,11 +62,7 @@ void main() {
       final e = ExpressionEvaluator(messageSource: messages, locale: 'en', strict: true);
       expect(
         () => e.evaluate('#{not.a.real.key}', {}),
-        throwsA(isA<ExpressionException>().having(
-          (e) => e.toString(),
-          'message',
-          contains('not found'),
-        )),
+        throwsA(isA<ExpressionException>().having((e) => e.toString(), 'message', contains('not found'))),
       );
     });
 
@@ -88,10 +78,7 @@ void main() {
 
     test('{0}, {1} positional replacement', () {
       final e = ExpressionEvaluator(messageSource: messages, locale: 'en');
-      expect(
-        e.evaluate(r"#{multi('Alice', 3)}", {}),
-        'Alice has 3 items',
-      );
+      expect(e.evaluate(r"#{multi('Alice', 3)}", {}), 'Alice has 3 items');
     });
 
     test('{0} with null arg -> empty string replacement', () {
@@ -106,9 +93,11 @@ void main() {
     });
 
     test(r"string concatenation: ${'Hello ' + #{name}}", () {
-      final src = MapMessageSource(messages: {
-        'en': {'name': 'World'},
-      });
+      final src = MapMessageSource(
+        messages: {
+          'en': {'name': 'World'},
+        },
+      );
       final e = ExpressionEvaluator(messageSource: src, locale: 'en');
       expect(e.evaluate(r"${'Hello ' + #{name}}", {}), 'Hello World');
     });
@@ -121,11 +110,7 @@ void main() {
   });
 
   group('DomProcessor i18n integration', () {
-    DomProcessor createProcessor({
-      MessageSource? messageSource,
-      String? locale,
-      bool strict = false,
-    }) {
+    DomProcessor createProcessor({MessageSource? messageSource, String? locale, bool strict = false}) {
       return DomProcessor(
         prefix: 'tl',
         separator: ':',
@@ -154,9 +139,7 @@ void main() {
 
     test('tl:if="#{truthy.msg}" — truthiness check on resolved string', () {
       final dp = createProcessor(messageSource: messages, locale: 'en');
-      final doc = html_parser.parse(
-        '<div><p tl:if="#{truthy.msg}">visible</p></div>',
-      );
+      final doc = html_parser.parse('<div><p tl:if="#{truthy.msg}">visible</p></div>');
       dp.collectFragments(doc);
       dp.process(doc.body!.children.first, {});
       expect(doc.body!.querySelector('p'), isNotNull);
@@ -164,9 +147,7 @@ void main() {
 
     test('inline [[#{key}]] renders resolved message', () {
       final dp = createProcessor(messageSource: messages, locale: 'en');
-      final doc = html_parser.parse(
-        '<p tl:inline="text">Hello [[#{welcome}]]</p>',
-      );
+      final doc = html_parser.parse('<p tl:inline="text">Hello [[#{welcome}]]</p>');
       dp.collectFragments(doc);
       dp.process(doc.body!.children.first, {});
       expect(doc.body!.querySelector('p')!.text, 'Hello Welcome!');
@@ -182,9 +163,7 @@ void main() {
 
     test(r'parameterized tl:text="#{greeting(${name})}"', () {
       final dp = createProcessor(messageSource: messages, locale: 'en');
-      final doc = html_parser.parse(
-        '<p tl:text="#{greeting(\${name})}">old</p>',
-      );
+      final doc = html_parser.parse('<p tl:text="#{greeting(\${name})}">old</p>');
       dp.collectFragments(doc);
       dp.process(doc.body!.children.first, {'name': 'Bob'});
       expect(doc.body!.querySelector('p')!.text, 'Hello, Bob!');

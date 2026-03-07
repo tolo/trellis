@@ -309,11 +309,7 @@ final class Parser {
     // 0x28 = '(', 0x7D = '}'
     final key = _scanner.scanRawUntil({0x28, 0x7D}).trim();
     if (key.isEmpty) {
-      throw ExpressionException(
-        'Expected message key after "#{"',
-        expression: _source,
-        position: _scanner.position,
-      );
+      throw ExpressionException('Expected message key after "#{"', expression: _source, position: _scanner.position);
     }
 
     final args = <Expr>[];

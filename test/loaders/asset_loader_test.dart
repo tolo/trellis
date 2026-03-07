@@ -8,17 +8,11 @@ void main() {
   group('AssetLoader', () {
     group('constructor', () {
       test('rejects non-package: basePath', () {
-        expect(
-          () => AssetLoader('templates/'),
-          throwsA(isA<ArgumentError>()),
-        );
+        expect(() => AssetLoader('templates/'), throwsA(isA<ArgumentError>()));
       });
 
       test('rejects basePath without trailing slash', () {
-        expect(
-          () => AssetLoader('package:trellis/test_fixtures'),
-          throwsA(isA<ArgumentError>()),
-        );
+        expect(() => AssetLoader('package:trellis/test_fixtures'), throwsA(isA<ArgumentError>()));
       });
 
       test('accepts valid package: basePath', () {
@@ -50,18 +44,12 @@ void main() {
       });
 
       test('throws TemplateNotFoundException for missing template', () async {
-        expect(
-          () => loader.load('nonexistent'),
-          throwsA(isA<TemplateNotFoundException>()),
-        );
+        expect(() => loader.load('nonexistent'), throwsA(isA<TemplateNotFoundException>()));
       });
 
       test('throws TemplateException for unresolvable package', () async {
         final badLoader = AssetLoader('package:no_such_package_xyz/templates/');
-        expect(
-          () => badLoader.load('page'),
-          throwsA(isA<TemplateException>()),
-        );
+        expect(() => badLoader.load('page'), throwsA(isA<TemplateException>()));
       });
     });
 
@@ -92,10 +80,7 @@ void main() {
 
       test('throws TemplateNotFoundException for missing template (after cache)', () async {
         await loader.load('simple'); // prime the cache
-        expect(
-          () => loader.loadSync('nonexistent'),
-          throwsA(isA<TemplateNotFoundException>()),
-        );
+        expect(() => loader.loadSync('nonexistent'), throwsA(isA<TemplateNotFoundException>()));
       });
     });
 
@@ -107,40 +92,25 @@ void main() {
       });
 
       test('rejects absolute path', () {
-        expect(
-          () => loader.load('/etc/passwd'),
-          throwsA(isA<TemplateSecurityException>()),
-        );
+        expect(() => loader.load('/etc/passwd'), throwsA(isA<TemplateSecurityException>()));
       });
 
       test('rejects path traversal with ..', () {
-        expect(
-          () => loader.load('../secret'),
-          throwsA(isA<TemplateSecurityException>()),
-        );
+        expect(() => loader.load('../secret'), throwsA(isA<TemplateSecurityException>()));
       });
 
       test('rejects double traversal', () {
-        expect(
-          () => loader.load('sub/../../secret'),
-          throwsA(isA<TemplateSecurityException>()),
-        );
+        expect(() => loader.load('sub/../../secret'), throwsA(isA<TemplateSecurityException>()));
       });
 
       test('loadSync rejects absolute path', () async {
         await loader.load('simple'); // prime cache
-        expect(
-          () => loader.loadSync('/etc/passwd'),
-          throwsA(isA<TemplateSecurityException>()),
-        );
+        expect(() => loader.loadSync('/etc/passwd'), throwsA(isA<TemplateSecurityException>()));
       });
 
       test('loadSync rejects traversal', () async {
         await loader.load('simple'); // prime cache
-        expect(
-          () => loader.loadSync('../secret'),
-          throwsA(isA<TemplateSecurityException>()),
-        );
+        expect(() => loader.loadSync('../secret'), throwsA(isA<TemplateSecurityException>()));
       });
 
       test('symlink escape rejected', () async {
@@ -149,9 +119,7 @@ void main() {
 
         // Create a symlink that escapes the base directory
         // Get resolved base path by loading a known template
-        final baseDir = Directory(
-          File(Platform.resolvedExecutable).parent.path,
-        ).parent;
+        final baseDir = Directory(File(Platform.resolvedExecutable).parent.path).parent;
 
         // Create a file outside the fixtures directory
         final outsideFile = File(
@@ -175,10 +143,7 @@ void main() {
         // Create a temp file with custom extension to test
         // Since we can't easily add files to the package assets at runtime,
         // test that the extension parameter is accepted
-        final loader = AssetLoader(
-          'package:trellis/test_fixtures/',
-          extension: '.txt',
-        );
+        final loader = AssetLoader('package:trellis/test_fixtures/', extension: '.txt');
         expect(loader.extension, equals('.txt'));
       });
     });

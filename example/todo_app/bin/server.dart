@@ -36,16 +36,17 @@ void main() async {
   final staticDir = '$scriptDir/static';
 
   // FileSystemLoader resolves template names (e.g. 'app.html') relative to
-  // templatesDir. cache: false means templates are re-read on every request,
-  // which is convenient during development. Set cache: true in production for
-  // a significant performance gain (parsed DOM trees are reused across requests).
+  // templatesDir. devMode: true enables file watching — templates are
+  // automatically re-read when modified on disk, which is convenient during
+  // development. In production, omit devMode (defaults to false) to use the
+  // LRU DOM cache for optimal performance.
   //
   // filters: custom filter functions callable from template expressions via the
   // pipe syntax — e.g. ${todo.dueDate | date} or ${todo.priority | capitalize}.
   // Filters receive the raw context value and return a display string.
   final engine = Trellis(
-    loader: FileSystemLoader(templatesDir),
-    cache: false,
+    loader: FileSystemLoader(templatesDir, devMode: true),
+    devMode: true,
     filters: {
       'date': _formatDate,
       'capitalize': (dynamic v) {
@@ -79,4 +80,10 @@ void main() async {
 
   final server = await shelf_io.serve(handler, 'localhost', 8080);
   print('Todo app running at http://localhost:${server.port}');
+
+  // Graceful shutdown: close file watcher and HTTP server on SIGINT.
+  ProcessSignal.sigint.watch().listen((_) async {
+    await engine.close();
+    await server.close();
+  });
 }

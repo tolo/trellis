@@ -43,14 +43,10 @@ final class AssetLoader implements TemplateLoader {
 
   AssetLoader(this.basePath, {this.extension = '.html'}) {
     if (!basePath.startsWith('package:')) {
-      throw ArgumentError(
-        'AssetLoader basePath must start with "package:" — got "$basePath"',
-      );
+      throw ArgumentError('AssetLoader basePath must start with "package:" — got "$basePath"');
     }
     if (!basePath.endsWith('/')) {
-      throw ArgumentError(
-        'AssetLoader basePath must end with "/" — got "$basePath"',
-      );
+      throw ArgumentError('AssetLoader basePath must end with "/" — got "$basePath"');
     }
   }
 
@@ -126,8 +122,7 @@ final class AssetLoader implements TemplateLoader {
     _resolvedBasePath = resolved.toFilePath();
     // Remove trailing separator if present for consistent base path
     if (_resolvedBasePath!.endsWith(Platform.pathSeparator)) {
-      _resolvedBasePath =
-          _resolvedBasePath!.substring(0, _resolvedBasePath!.length - 1);
+      _resolvedBasePath = _resolvedBasePath!.substring(0, _resolvedBasePath!.length - 1);
     }
     return _resolvedBasePath!;
   }
@@ -142,8 +137,7 @@ final class AssetLoader implements TemplateLoader {
     if (resolved == null) return null;
     _resolvedBasePath = resolved.toFilePath();
     if (_resolvedBasePath!.endsWith(Platform.pathSeparator)) {
-      _resolvedBasePath =
-          _resolvedBasePath!.substring(0, _resolvedBasePath!.length - 1);
+      _resolvedBasePath = _resolvedBasePath!.substring(0, _resolvedBasePath!.length - 1);
     }
     return _resolvedBasePath!;
   }
@@ -182,18 +176,14 @@ final class AssetLoader implements TemplateLoader {
     if (file.existsSync()) {
       final canonicalPath = file.resolveSymbolicLinksSync();
       if (!_isWithinBase(canonicalPath, canonicalBase)) {
-        throw TemplateSecurityException(
-          'Template path escapes base directory: "$name"',
-        );
+        throw TemplateSecurityException('Template path escapes base directory: "$name"');
       }
     } else {
       final parent = file.parent;
       if (parent.existsSync()) {
         final canonicalParent = parent.resolveSymbolicLinksSync();
         if (!_isWithinBase(canonicalParent, canonicalBase)) {
-          throw TemplateSecurityException(
-            'Template path escapes base directory: "$name"',
-          );
+          throw TemplateSecurityException('Template path escapes base directory: "$name"');
         }
       }
     }

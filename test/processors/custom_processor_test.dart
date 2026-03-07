@@ -22,18 +22,12 @@ class _TestProcessor extends Processor {
   }) : _handler = handler;
 
   @override
-  bool process(Element element, String value, ProcessorContext context) =>
-      _handler(element, value, context);
+  bool process(Element element, String value, ProcessorContext context) => _handler(element, value, context);
 }
 
 /// Helper to create a DomProcessor with custom processors.
 DomProcessor _createProcessor({List<Processor>? processors}) {
-  return DomProcessor(
-    prefix: 'tl',
-    separator: ':',
-    loader: MapLoader({}),
-    processors: processors,
-  );
+  return DomProcessor(prefix: 'tl', separator: ':', loader: MapLoader({}), processors: processors);
 }
 
 /// Helper to parse HTML and process the first body child element.
@@ -73,24 +67,13 @@ void main() {
             return true;
           },
         );
-        final element = _processHtml(
-          '<span tl:tooltip="help text">x</span>',
-          {},
-          processors: [processor],
-        );
+        final element = _processHtml('<span tl:tooltip="help text">x</span>', {}, processors: [processor]);
         expect(element.attributes['data-tip'], 'help text');
       });
 
       test('attribute removed from output after processing', () {
-        final processor = _TestProcessor(
-          attribute: 'highlight',
-          handler: (element, value, context) => true,
-        );
-        final element = _processHtml(
-          '<p tl:highlight="yes">text</p>',
-          {},
-          processors: [processor],
-        );
+        final processor = _TestProcessor(attribute: 'highlight', handler: (element, value, context) => true);
+        final element = _processHtml('<p tl:highlight="yes">text</p>', {}, processors: [processor]);
         expect(element.attributes.containsKey('tl:highlight'), isFalse);
       });
 
@@ -110,11 +93,7 @@ void main() {
             return true;
           },
         );
-        _processHtml(
-          '<p tl:check="x">text</p>',
-          {'key': 'val'},
-          processors: [processor],
-        );
+        _processHtml('<p tl:check="x">text</p>', {'key': 'val'}, processors: [processor]);
         expect(capturedPrefix, 'tl');
         expect(capturedSeparator, ':');
         expect(capturedAttrPrefix, 'tl:');
@@ -122,10 +101,7 @@ void main() {
       });
 
       test('process() returning true keeps element', () {
-        final processor = _TestProcessor(
-          attribute: 'keep',
-          handler: (element, value, context) => true,
-        );
+        final processor = _TestProcessor(attribute: 'keep', handler: (element, value, context) => true);
         final dp = _createProcessor(processors: [processor]);
         final doc = html_parser.parse('<div><p tl:keep="yes">text</p></div>');
         dp.collectFragments(doc);
@@ -167,11 +143,7 @@ void main() {
             return true;
           },
         );
-        final element = _processHtml(
-          '<p tl:eval="\${a + b}">x</p>',
-          {'a': 10, 'b': 32},
-          processors: [processor],
-        );
+        final element = _processHtml('<p tl:eval="\${a + b}">x</p>', {'a': 10, 'b': 32}, processors: [processor]);
         expect(element.attributes['data-result'], '42');
       });
 
@@ -187,9 +159,7 @@ void main() {
           },
         );
         final dp = _createProcessor(processors: [processor]);
-        final doc = html_parser.parse(
-          '<div tl:wrapper="yes"><p tl:text="\${msg}">old</p></div>',
-        );
+        final doc = html_parser.parse('<div tl:wrapper="yes"><p tl:text="\${msg}">old</p></div>');
         dp.collectFragments(doc);
         dp.process(doc.body!.children.first, {'msg': 'new'});
         expect(doc.body!.querySelector('p')!.text, 'new');
@@ -207,11 +177,7 @@ void main() {
             return true;
           },
         );
-        _processHtml(
-          '<p tl:with="x=42" tl:capture="yes">text</p>',
-          {},
-          processors: [processor],
-        );
+        _processHtml('<p tl:with="x=42" tl:capture="yes">text</p>', {}, processors: [processor]);
         expect(capturedValue, '42');
       });
 
@@ -226,11 +192,7 @@ void main() {
           },
         );
         // tl:remove="none" keeps element, so lowest-priority processor should fire
-        _processHtml(
-          '<p tl:remove="none" tl:final="yes">text</p>',
-          {},
-          processors: [processor],
-        );
+        _processHtml('<p tl:remove="none" tl:final="yes">text</p>', {}, processors: [processor]);
         expect(fired, isTrue);
       });
 
@@ -252,11 +214,7 @@ void main() {
             return true;
           },
         );
-        _processHtml(
-          '<p tl:alpha="1" tl:beta="2">text</p>',
-          {},
-          processors: [first, second],
-        );
+        _processHtml('<p tl:alpha="1" tl:beta="2">text</p>', {}, processors: [first, second]);
         expect(order, ['alpha', 'beta']);
       });
 
@@ -271,11 +229,7 @@ void main() {
           },
         );
         // tl:with runs at highest priority — should run before custom
-        _processHtml(
-          '<p tl:with="x=1" tl:custom-first="yes">text</p>',
-          {},
-          processors: [processor],
-        );
+        _processHtml('<p tl:with="x=1" tl:custom-first="yes">text</p>', {}, processors: [processor]);
         // tl:with fires first (built-in), then custom
         expect(order, ['custom']); // We can only verify custom fired
       });
@@ -307,11 +261,7 @@ void main() {
           },
         );
         // Register in non-sorted order
-        _processHtml(
-          '<p tl:low="1" tl:high="2" tl:mid="3">text</p>',
-          {},
-          processors: [low, high, mid],
-        );
+        _processHtml('<p tl:low="1" tl:high="2" tl:mid="3">text</p>', {}, processors: [low, high, mid]);
         expect(order, ['high', 'mid', 'low']);
       });
 
@@ -326,11 +276,7 @@ void main() {
           },
         );
         // tl:text runs at afterInclusion, but built-in is first within same slot
-        _processHtml(
-          '<p tl:text="\${msg}" tl:intercept="yes">old</p>',
-          {'msg': 'new'},
-          processors: [processor],
-        );
+        _processHtml('<p tl:text="\${msg}" tl:intercept="yes">old</p>', {'msg': 'new'}, processors: [processor]);
         // Built-in tl:text fires first (afterInclusion), then custom intercept
         expect(textBefore, 'new');
       });
@@ -338,14 +284,9 @@ void main() {
 
     group('autoProcessChildren', () {
       test('true (default) — children auto-processed', () {
-        final processor = _TestProcessor(
-          attribute: 'wrap',
-          handler: (element, value, context) => true,
-        );
+        final processor = _TestProcessor(attribute: 'wrap', handler: (element, value, context) => true);
         final dp = _createProcessor(processors: [processor]);
-        final doc = html_parser.parse(
-          '<div tl:wrap="yes"><p tl:text="\${msg}">old</p></div>',
-        );
+        final doc = html_parser.parse('<div tl:wrap="yes"><p tl:text="\${msg}">old</p></div>');
         dp.collectFragments(doc);
         dp.process(doc.body!.children.first, {'msg': 'new'});
         expect(doc.body!.querySelector('p')!.text, 'new');
@@ -363,9 +304,7 @@ void main() {
           },
         );
         final dp = _createProcessor(processors: [processor]);
-        final doc = html_parser.parse(
-          '<div tl:manual="yes"><p tl:text="\${msg}">old</p></div>',
-        );
+        final doc = html_parser.parse('<div tl:manual="yes"><p tl:text="\${msg}">old</p></div>');
         dp.collectFragments(doc);
         dp.process(doc.body!.children.first, {'msg': 'new'});
         expect(doc.body!.querySelector('p')!.text, 'new');
@@ -378,9 +317,7 @@ void main() {
           handler: (element, value, context) => true,
         );
         final dp = _createProcessor(processors: [processor]);
-        final doc = html_parser.parse(
-          '<div tl:skip="yes"><p tl:text="\${msg}">old</p></div>',
-        );
+        final doc = html_parser.parse('<div tl:skip="yes"><p tl:text="\${msg}">old</p></div>');
         dp.collectFragments(doc);
         dp.process(doc.body!.children.first, {'msg': 'new'});
         // tl:text on child should NOT have been processed
@@ -399,9 +336,7 @@ void main() {
           },
         );
         final dp = _createProcessor(processors: [processor]);
-        final doc = html_parser.parse(
-          '<div><span tl:remove-all="yes"><p tl:text="\${msg}">old</p></span></div>',
-        );
+        final doc = html_parser.parse('<div><span tl:remove-all="yes"><p tl:text="\${msg}">old</p></span></div>');
         dp.collectFragments(doc);
         dp.process(doc.body!.children.first, {'msg': 'new'});
         expect(doc.body!.querySelector('span'), isNull);
@@ -456,23 +391,14 @@ void main() {
         );
         expect(
           () => _processHtml('<p tl:state-err="yes">text</p>', {}, processors: [processor]),
-          throwsA(
-            isA<TemplateException>().having(
-              (e) => e.toString(),
-              'message',
-              contains('"state-err"'),
-            ),
-          ),
+          throwsA(isA<TemplateException>().having((e) => e.toString(), 'message', contains('"state-err"'))),
         );
       });
 
       test('built-in processor error NOT wrapped', () {
         // tl:each with a non-iterable should throw the original error type
         expect(
-          () => _processHtml(
-            '<p tl:each="item : \${val}">text</p>',
-            {'val': 42},
-          ),
+          () => _processHtml('<p tl:each="item : \${val}">text</p>', {'val': 42}),
           throwsA(isA<TemplateException>()),
         );
       });
@@ -489,11 +415,7 @@ void main() {
             return true;
           },
         );
-        final element = _processHtml(
-          '<p tl:text="\${msg}">old</p>',
-          {'msg': 'new'},
-          processors: [processor],
-        );
+        final element = _processHtml('<p tl:text="\${msg}">old</p>', {'msg': 'new'}, processors: [processor]);
         // Built-in tl:text fires first (sets text to 'new')
         expect(element.text, 'new');
         // Custom fires after
@@ -516,11 +438,7 @@ void main() {
             return true;
           },
         );
-        _processHtml(
-          '<p tl:dup="yes">text</p>',
-          {},
-          processors: [first, second],
-        );
+        _processHtml('<p tl:dup="yes">text</p>', {}, processors: [first, second]);
         // Both fire — both match the same attribute
         expect(order, ['first', 'second']);
       });
@@ -528,10 +446,7 @@ void main() {
 
     group('edge cases', () {
       test('no custom processors — baseline behavior', () {
-        final element = _processHtml(
-          '<p tl:text="\${msg}">old</p>',
-          {'msg': 'new'},
-        );
+        final element = _processHtml('<p tl:text="\${msg}">old</p>', {'msg': 'new'});
         expect(element.text, 'new');
       });
 
@@ -544,11 +459,7 @@ void main() {
             return true;
           },
         );
-        final element = _processHtml(
-          '<p tl:set-var="yes" tl:text="\${injected}">old</p>',
-          {},
-          processors: [processor],
-        );
+        final element = _processHtml('<p tl:set-var="yes" tl:text="\${injected}">old</p>', {}, processors: [processor]);
         expect(element.text, 'hello');
       });
 
@@ -564,9 +475,7 @@ void main() {
         );
         // Element with tl:fragment(param) should be removed before custom processor fires
         final dp = _createProcessor(processors: [processor]);
-        final doc = html_parser.parse(
-          '<div><p tl:fragment="tmpl(x)" tl:after-frag="yes">text</p></div>',
-        );
+        final doc = html_parser.parse('<div><p tl:fragment="tmpl(x)" tl:after-frag="yes">text</p></div>');
         dp.collectFragments(doc);
         dp.process(doc.body!.children.first, {});
         // Fragment def with params is removed — custom processor should NOT have fired on it
@@ -581,12 +490,7 @@ void main() {
             return true;
           },
         );
-        final dp = DomProcessor(
-          prefix: 'data-tl',
-          separator: '-',
-          loader: MapLoader({}),
-          processors: [processor],
-        );
+        final dp = DomProcessor(prefix: 'data-tl', separator: '-', loader: MapLoader({}), processors: [processor]);
         final doc = html_parser.parse('<p data-tl-tooltip="help">text</p>');
         dp.collectFragments(doc);
         dp.process(doc.body!.children.first, {});

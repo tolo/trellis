@@ -14,8 +14,7 @@ abstract class MessageSource {
 class MapMessageSource implements MessageSource {
   final Map<String, Map<String, String>> _messages;
 
-  MapMessageSource({required Map<String, Map<String, String>> messages})
-      : _messages = messages;
+  MapMessageSource({required Map<String, Map<String, String>> messages}) : _messages = messages;
 
   @override
   String? resolve(String key, {String? locale, List<dynamic> args = const []}) {

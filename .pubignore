@@ -1,6 +1,6 @@
 .agent_temp/
 .claude/
-.codex
+.codex/
 .github/
 .mcp.json
 benchmark/

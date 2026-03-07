@@ -20,6 +20,6 @@ final class TrellisContext {
   /// unmodifiable snapshot. Subsequent [set]/[setAll] calls do NOT
   /// affect previously built maps.
   Map<String, dynamic> build() {
-    return Map.unmodifiable(Map.of(_data));
+    return Map.unmodifiable({..._data});
   }
 }

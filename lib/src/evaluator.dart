@@ -19,12 +19,12 @@ class ExpressionEvaluator {
     bool strict = false,
     MessageSource? messageSource,
     String? locale,
-  }) : _filters = filters ?? {..._builtinFilters},
+  }) : _filters = filters ?? {...builtinFilters},
        _strict = strict,
        _messageSource = messageSource,
        _locale = locale;
 
-  static const _builtinFilters = <String, dynamic Function(dynamic)>{
+  static const builtinFilters = <String, dynamic Function(dynamic)>{
     'upper': _filterUpper,
     'lower': _filterLower,
     'trim': _filterTrim,
@@ -200,7 +200,7 @@ class ExpressionEvaluator {
     if (val is! num) {
       throw ExpressionException('Cannot negate ${val.runtimeType}', expression: expr);
     }
-    return val is int ? -val : -(val as double);
+    return -val;
   }
 
   dynamic _evalPipe(Expr target, String filterName, List<Expr> args, String expr, Map<String, dynamic> context) {

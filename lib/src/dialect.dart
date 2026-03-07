@@ -1,3 +1,4 @@
+import 'evaluator.dart';
 import 'processor_api.dart';
 import 'processors/attr_processor.dart';
 import 'processors/condition_processor.dart';
@@ -45,15 +46,5 @@ class StandardDialect extends Dialect {
   ];
 
   @override
-  Map<String, Function> get filters => const {
-    'upper': _filterUpper,
-    'lower': _filterLower,
-    'trim': _filterTrim,
-    'length': _filterLength,
-  };
-
-  static dynamic _filterUpper(dynamic v) => v?.toString().toUpperCase();
-  static dynamic _filterLower(dynamic v) => v?.toString().toLowerCase();
-  static dynamic _filterTrim(dynamic v) => v?.toString().trim();
-  static dynamic _filterLength(dynamic v) => v is Iterable ? v.length : (v?.toString().length ?? 0);
+  Map<String, Function> get filters => ExpressionEvaluator.builtinFilters;
 }

@@ -18,3 +18,4 @@ coverage/
 
 # Agent temp
 .agent_temp/
+.codex

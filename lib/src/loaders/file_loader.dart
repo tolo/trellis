@@ -4,6 +4,8 @@ import 'dart:io';
 import '../exceptions.dart';
 import 'template_loader.dart';
 
+final _pathSepPattern = RegExp(r'[/\\]');
+
 /// Loads templates from the filesystem relative to a base directory.
 ///
 /// Enforces security boundaries: rejects absolute paths, `..` traversal,
@@ -80,7 +82,7 @@ final class FileSystemLoader implements TemplateLoader {
     }
 
     // Reject path traversal segments.
-    final segments = name.split(RegExp(r'[/\\]'));
+    final segments = name.split(_pathSepPattern);
     if (segments.contains('..')) {
       throw TemplateSecurityException('Path traversal not allowed: "$name"');
     }

@@ -7,7 +7,7 @@ This guide covers:
 - `dart_frog`
 - HTMX partial rendering with `renderFragment()` and `renderFragments()`
 
-## Engine Setup (v0.3 API)
+## Engine Setup
 
 This setup demonstrates custom processors, dialects, filters with arguments, and i18n messages.
 
@@ -92,8 +92,12 @@ import 'package:trellis/trellis.dart';
 
 const _engineKey = 'trellis.engine';
 
-Middleware trellisMiddleware() {
-  final engine = Trellis(loader: FileSystemLoader('templates/'), strict: true);
+Middleware trellisMiddleware({bool devMode = false}) {
+  final engine = Trellis(
+    loader: FileSystemLoader('templates/', devMode: devMode),
+    devMode: devMode,
+    strict: true,
+  );
   return (inner) {
     return (request) => inner(request.change(context: {_engineKey: engine}));
   };
@@ -121,7 +125,7 @@ Future<Response> homeHandler(Request request) async {
 Future<void> main() async {
   final handler = const Pipeline()
       .addMiddleware(logRequests())
-      .addMiddleware(trellisMiddleware())
+      .addMiddleware(trellisMiddleware(devMode: true)) // file watching in dev
       .addHandler((request) {
     return switch (request.url.path) {
       '' || 'home' => homeHandler(request),
@@ -215,7 +219,10 @@ Template for the HTMX example:
 import 'package:dart_frog/dart_frog.dart';
 import 'package:trellis/trellis.dart';
 
-final _engine = Trellis(loader: FileSystemLoader('templates/'));
+final _engine = Trellis(
+  loader: FileSystemLoader('templates/', devMode: true),
+  devMode: true, // file watching in dev
+);
 
 Handler middleware(Handler handler) {
   return handler.use(provider<Trellis>((_) => _engine));

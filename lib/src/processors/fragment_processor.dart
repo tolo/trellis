@@ -176,6 +176,26 @@ bool _isCssSelector(String ref) => ref.startsWith('#') || ref.startsWith('.');
 final _tagNamePattern = RegExp(r'^[a-z][a-z0-9]*$');
 bool _isTagName(String ref) => _tagNamePattern.hasMatch(ref);
 
+/// Resolve, bind, clone, and process a fragment invocation.
+Element _resolveAndProcess(String value, ProcessorContext context) {
+  final dp = context.domProcessor as DomProcessor;
+  final attrPrefix = context.attrPrefix;
+  final (_, argExprs) = _parseFragmentInvocation(value);
+  final resolved = _resolveFragment(value, attrPrefix, context.loader, dp);
+  final effectiveContext = _bindArgs(resolved.paramNames, argExprs, dp.evaluator, context.variables);
+  final clone = resolved.element.clone(true);
+  _applyFragment(
+    resolved,
+    clone,
+    effectiveContext,
+    dp.processFragmentContent,
+    dp,
+    attrPrefix,
+    fragmentId: resolved.fragmentId,
+  );
+  return clone;
+}
+
 /// Processor class for `tl:insert` — fragment inclusion inside host element.
 class InsertProcessor extends Processor {
   @override
@@ -189,22 +209,7 @@ class InsertProcessor extends Processor {
 
   @override
   bool process(Element element, String value, ProcessorContext context) {
-    final dp = context.domProcessor as DomProcessor;
-    final attrPrefix = context.attrPrefix;
-
-    final (_, argExprs) = _parseFragmentInvocation(value);
-    final resolved = _resolveFragment(value, attrPrefix, context.loader, dp);
-    final effectiveContext = _bindArgs(resolved.paramNames, argExprs, dp.evaluator, context.variables);
-    final clone = resolved.element.clone(true);
-    _applyFragment(
-      resolved,
-      clone,
-      effectiveContext,
-      dp.processFragmentContent,
-      dp,
-      attrPrefix,
-      fragmentId: resolved.fragmentId,
-    );
+    final clone = _resolveAndProcess(value, context);
     element.nodes.clear();
     for (final child in clone.nodes.toList()) {
       element.append(child);
@@ -226,22 +231,7 @@ class ReplaceProcessor extends Processor {
 
   @override
   bool process(Element element, String value, ProcessorContext context) {
-    final dp = context.domProcessor as DomProcessor;
-    final attrPrefix = context.attrPrefix;
-
-    final (_, argExprs) = _parseFragmentInvocation(value);
-    final resolved = _resolveFragment(value, attrPrefix, context.loader, dp);
-    final effectiveContext = _bindArgs(resolved.paramNames, argExprs, dp.evaluator, context.variables);
-    final clone = resolved.element.clone(true);
-    _applyFragment(
-      resolved,
-      clone,
-      effectiveContext,
-      dp.processFragmentContent,
-      dp,
-      attrPrefix,
-      fragmentId: resolved.fragmentId,
-    );
+    final clone = _resolveAndProcess(value, context);
     element.replaceWith(clone);
     return false;
   }

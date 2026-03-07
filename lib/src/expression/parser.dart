@@ -359,19 +359,19 @@ final class Parser {
   /// Maps keyword/operator tokens back to their word form for member access.
   /// Note: gte→'ge' and lte→'le' because the scanner maps the words `ge`/`le`
   /// to TokenType.gte/lte (the token names reflect the operator, not the alias).
-  static const _tokenToName = {
-    TokenType.gt: 'gt',
-    TokenType.lt: 'lt',
-    TokenType.gte: 'ge',
-    TokenType.lte: 'le',
-    TokenType.eq: 'eq',
-    TokenType.notEq: 'ne',
-    TokenType.and_: 'and',
-    TokenType.or_: 'or',
-    TokenType.not_: 'not',
-    TokenType.true_: 'true',
-    TokenType.false_: 'false',
-    TokenType.null_: 'null',
+  static const _tokenToName = <TokenType, String>{
+    .gt: 'gt',
+    .lt: 'lt',
+    .gte: 'ge',
+    .lte: 'le',
+    .eq: 'eq',
+    .notEq: 'ne',
+    .and_: 'and',
+    .or_: 'or',
+    .not_: 'not',
+    .true_: 'true',
+    .false_: 'false',
+    .null_: 'null',
   };
 
   /// Returns the member name string for a token, or null if not a valid member name.

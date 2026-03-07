@@ -4,6 +4,8 @@ import 'dart:isolate';
 import '../exceptions.dart';
 import 'template_loader.dart';
 
+final _pathSepPattern = RegExp(r'[/\\]');
+
 /// Loads templates from Dart package assets using [Isolate.resolvePackageUri].
 ///
 /// Resolves `package:` URIs to filesystem paths at runtime, then reads the
@@ -77,7 +79,7 @@ final class AssetLoader implements TemplateLoader {
     final base = await _resolveBase();
     final fileName = name.endsWith(extension) ? name : '$name$extension';
     final resolved = '$base${Platform.pathSeparator}$fileName';
-    _ensureWithinBase(resolved, name, await _getCanonicalBase(base));
+    _ensureWithinBase(resolved, name, _getCanonicalBase(base));
     return resolved;
   }
 
@@ -89,7 +91,7 @@ final class AssetLoader implements TemplateLoader {
     if (base == null) return null;
     final fileName = name.endsWith(extension) ? name : '$name$extension';
     final resolved = '$base${Platform.pathSeparator}$fileName';
-    _ensureWithinBase(resolved, name, _getCanonicalBaseSync(base));
+    _ensureWithinBase(resolved, name, _getCanonicalBase(base));
     return resolved;
   }
 
@@ -101,7 +103,7 @@ final class AssetLoader implements TemplateLoader {
     }
 
     // Reject path traversal segments.
-    final segments = name.split(RegExp(r'[/\\]'));
+    final segments = name.split(_pathSepPattern);
     if (segments.contains('..')) {
       throw TemplateSecurityException('Path traversal not allowed: "$name"');
     }
@@ -119,45 +121,30 @@ final class AssetLoader implements TemplateLoader {
         'For AOT deployments, use FileSystemLoader.',
       );
     }
-    _resolvedBasePath = resolved.toFilePath();
-    // Remove trailing separator if present for consistent base path
-    if (_resolvedBasePath!.endsWith(Platform.pathSeparator)) {
-      _resolvedBasePath = _resolvedBasePath!.substring(0, _resolvedBasePath!.length - 1);
-    }
-    return _resolvedBasePath!;
+    return _cacheBasePath(resolved.toFilePath());
   }
 
   /// Resolve the base package URI synchronously.
   /// Returns null if resolution is not possible synchronously.
   String? _resolveBaseSync() {
     if (_resolvedBasePath != null) return _resolvedBasePath!;
-    // Isolate.resolvePackageUriSync is available in Dart 3.x
     final uri = Uri.parse(basePath);
     final resolved = Isolate.resolvePackageUriSync(uri);
     if (resolved == null) return null;
-    _resolvedBasePath = resolved.toFilePath();
-    if (_resolvedBasePath!.endsWith(Platform.pathSeparator)) {
-      _resolvedBasePath = _resolvedBasePath!.substring(0, _resolvedBasePath!.length - 1);
-    }
+    return _cacheBasePath(resolved.toFilePath());
+  }
+
+  /// Strip trailing separator and cache the resolved base path.
+  String _cacheBasePath(String path) {
+    _resolvedBasePath = path.endsWith(Platform.pathSeparator)
+        ? path.substring(0, path.length - 1)
+        : path;
     return _resolvedBasePath!;
   }
 
-  /// Get canonical base path for symlink detection (async, cached).
-  Future<String> _getCanonicalBase(String base) async {
-    if (_canonicalBase != null) return _canonicalBase!;
-    try {
-      _canonicalBase = Directory(base).resolveSymbolicLinksSync();
-    } on FileSystemException catch (e) {
-      throw TemplateException(
-        'Asset base path does not exist or is inaccessible: '
-        '"$basePath" resolved to "$base" (${e.osError?.message})',
-      );
-    }
-    return _canonicalBase!;
-  }
-
-  /// Get canonical base path synchronously (cached).
-  String _getCanonicalBaseSync(String base) {
+  /// Get canonical base path (cached). Both async and sync callers use
+  /// resolveSymbolicLinksSync, so the implementation is shared.
+  String _getCanonicalBase(String base) {
     if (_canonicalBase != null) return _canonicalBase!;
     try {
       _canonicalBase = Directory(base).resolveSymbolicLinksSync();

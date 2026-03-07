@@ -1,4 +1,8 @@
-docs/
-CLAUDE.md
 .agent_temp/
+.claude/
+.codex
+.github/
+.mcp.json
 benchmark/
+CLAUDE.md
+coverage/

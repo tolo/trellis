@@ -129,46 +129,46 @@ final class Scanner {
     _skipWhitespace();
 
     if (_scanner.isDone) {
-      return Token(TokenType.eof, null, _scanner.position);
+      return Token(.eof, null, _scanner.position);
     }
 
     final offset = _scanner.position;
 
     // Two-char operators and delimiters
-    if (_scanner.scan(r'${')) return Token(TokenType.dollarLBrace, null, offset);
-    if (_scanner.scan('@{')) return Token(TokenType.atLBrace, null, offset);
-    if (_scanner.scan('#{')) return Token(TokenType.hashLBrace, null, offset);
-    if (_scanner.scan('==')) return Token(TokenType.eq, null, offset);
-    if (_scanner.scan('!=')) return Token(TokenType.notEq, null, offset);
-    if (_scanner.scan('!')) return Token(TokenType.not_, null, offset);
-    if (_scanner.scan('<=')) return Token(TokenType.lte, null, offset);
-    if (_scanner.scan('>=')) return Token(TokenType.gte, null, offset);
-    if (_scanner.scan('=')) return Token(TokenType.assign, null, offset);
+    if (_scanner.scan(r'${')) return Token(.dollarLBrace, null, offset);
+    if (_scanner.scan('@{')) return Token(.atLBrace, null, offset);
+    if (_scanner.scan('#{')) return Token(.hashLBrace, null, offset);
+    if (_scanner.scan('==')) return Token(.eq, null, offset);
+    if (_scanner.scan('!=')) return Token(.notEq, null, offset);
+    if (_scanner.scan('!')) return Token(.not_, null, offset);
+    if (_scanner.scan('<=')) return Token(.lte, null, offset);
+    if (_scanner.scan('>=')) return Token(.gte, null, offset);
+    if (_scanner.scan('=')) return Token(.assign, null, offset);
 
     // Elvis ?: vs question ?
     if (_scanner.scan('?')) {
-      if (_scanner.scan(':')) return Token(TokenType.elvisOp, null, offset);
-      return Token(TokenType.question, null, offset);
+      if (_scanner.scan(':')) return Token(.elvisOp, null, offset);
+      return Token(.question, null, offset);
     }
 
     // Single-char tokens
-    if (_scanner.scan('|')) return Token(TokenType.pipe, null, offset);
-    if (_scanner.scan('+')) return Token(TokenType.plus, null, offset);
-    if (_scanner.scan('-')) return Token(TokenType.minus, null, offset);
-    if (_scanner.scan('*{')) return Token(TokenType.starLBrace, null, offset);
-    if (_scanner.scan('*')) return Token(TokenType.star, null, offset);
-    if (_scanner.scan('/')) return Token(TokenType.slash, null, offset);
-    if (_scanner.scan('%')) return Token(TokenType.percent, null, offset);
-    if (_scanner.scan('<')) return Token(TokenType.lt, null, offset);
-    if (_scanner.scan('>')) return Token(TokenType.gt, null, offset);
-    if (_scanner.scan('.')) return Token(TokenType.dot, null, offset);
-    if (_scanner.scan(',')) return Token(TokenType.comma, null, offset);
-    if (_scanner.scan(':')) return Token(TokenType.colon, null, offset);
-    if (_scanner.scan('(')) return Token(TokenType.lParen, null, offset);
-    if (_scanner.scan(')')) return Token(TokenType.rParen, null, offset);
-    if (_scanner.scan('[')) return Token(TokenType.lBracket, null, offset);
-    if (_scanner.scan(']')) return Token(TokenType.rBracket, null, offset);
-    if (_scanner.scan('}')) return Token(TokenType.rBrace, null, offset);
+    if (_scanner.scan('|')) return Token(.pipe, null, offset);
+    if (_scanner.scan('+')) return Token(.plus, null, offset);
+    if (_scanner.scan('-')) return Token(.minus, null, offset);
+    if (_scanner.scan('*{')) return Token(.starLBrace, null, offset);
+    if (_scanner.scan('*')) return Token(.star, null, offset);
+    if (_scanner.scan('/')) return Token(.slash, null, offset);
+    if (_scanner.scan('%')) return Token(.percent, null, offset);
+    if (_scanner.scan('<')) return Token(.lt, null, offset);
+    if (_scanner.scan('>')) return Token(.gt, null, offset);
+    if (_scanner.scan('.')) return Token(.dot, null, offset);
+    if (_scanner.scan(',')) return Token(.comma, null, offset);
+    if (_scanner.scan(':')) return Token(.colon, null, offset);
+    if (_scanner.scan('(')) return Token(.lParen, null, offset);
+    if (_scanner.scan(')')) return Token(.rParen, null, offset);
+    if (_scanner.scan('[')) return Token(.lBracket, null, offset);
+    if (_scanner.scan(']')) return Token(.rBracket, null, offset);
+    if (_scanner.scan('}')) return Token(.rBrace, null, offset);
 
     // String literal
     if (_scanner.scan("'")) return _scanString(offset);
@@ -192,7 +192,7 @@ final class Scanner {
       if (_scanner.scan(r"\'")) {
         buffer.write("'");
       } else if (_scanner.scan("'")) {
-        return Token(TokenType.string, buffer.toString(), offset);
+        return Token(.string, buffer.toString(), offset);
       } else {
         buffer.writeCharCode(_scanner.readChar());
       }
@@ -214,13 +214,13 @@ final class Scanner {
           _scanner.readChar();
         }
         final text = _source.substring(start, _scanner.position);
-        return Token(TokenType.double_, double.parse(text), offset);
+        return Token(.double_, double.parse(text), offset);
       }
       // Not a decimal — backtrack the dot
       _scanner.position = dotPos;
     }
     final text = _source.substring(start, _scanner.position);
-    return Token(TokenType.integer, int.parse(text), offset);
+    return Token(.integer, int.parse(text), offset);
   }
 
   Token _scanIdentifier(int offset) {

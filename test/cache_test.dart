@@ -7,15 +7,24 @@ import 'package:trellis/trellis.dart';
 void main() {
   group('CacheStats', () {
     test('equality', () {
-      expect(CacheStats(size: 1, hits: 2, misses: 3), CacheStats(size: 1, hits: 2, misses: 3));
+      expect(
+        CacheStats(size: 1, hits: 2, misses: 3, expressionCacheSize: 4),
+        CacheStats(size: 1, hits: 2, misses: 3, expressionCacheSize: 4),
+      );
     });
 
     test('inequality', () {
-      expect(CacheStats(size: 1, hits: 2, misses: 3), isNot(CacheStats(size: 0, hits: 2, misses: 3)));
+      expect(
+        CacheStats(size: 1, hits: 2, misses: 3, expressionCacheSize: 4),
+        isNot(CacheStats(size: 0, hits: 2, misses: 3, expressionCacheSize: 4)),
+      );
     });
 
     test('toString', () {
-      expect(CacheStats(size: 1, hits: 2, misses: 3).toString(), 'CacheStats(size: 1, hits: 2, misses: 3)');
+      expect(
+        CacheStats(size: 1, hits: 2, misses: 3, expressionCacheSize: 4).toString(),
+        'CacheStats(size: 1, hits: 2, misses: 3, expressionCacheSize: 4)',
+      );
     });
   });
 

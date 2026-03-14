@@ -20,8 +20,9 @@ A natural HTML template engine for Dart — templates are valid HTML that browse
 - **Parameterized fragments** -- `tl:fragment="card(title, body)"` with argument passing at inclusion
 - **CSS selector targeting** -- `tl:insert="~{file :: #id}"` and `tl:insert="~{file :: .class}"`
 - **Custom processors & dialects** -- register `Processor` implementations; compose feature sets with `Dialect`
+- **Template validation** -- `TemplateValidator`, `isValidTemplate()`, and `dart run trellis:validate` for test/CI checks
 - **Sync-first API** -- `render()` is synchronous; `renderFile()` is async only for I/O
-- **LRU DOM cache** -- configurable size, `CacheStats` for hit/miss metrics
+- **LRU DOM cache** -- configurable size, `CacheStats` for DOM and expression cache metrics
 - **Strict mode** -- undefined variables/members throw `ExpressionException`
 - **Secure** -- `FileSystemLoader` enforces path traversal and symlink escape protection
 - **AOT-compatible** -- context is `Map<String, dynamic>`, no reflection
@@ -371,6 +372,42 @@ When `devMode` is `false` (the default), no file watcher is created and there is
 - **`CompositeLoader(delegates)`** -- tries multiple loaders in order with fallback
 - **`MapLoader(templates)`** -- in-memory templates, useful for testing
 
+### Template Validation
+
+Validate templates in unit tests with the matcher from `package:trellis/testing.dart`:
+
+```dart
+import 'package:test/test.dart';
+import 'package:trellis/testing.dart';
+
+void main() {
+  test('template is valid', () {
+    expect('<p tl:text="${name}">x</p>', isValidTemplate());
+  });
+}
+```
+
+For direct validation APIs, use `TemplateValidator`:
+
+```dart
+final validator = TemplateValidator();
+final issues = validator.validate('<p tl:text=""></p>');
+```
+
+For CI or local checks, validate a directory recursively:
+
+```bash
+dart run trellis:validate
+dart run trellis:validate --dir templates --prefix tl
+```
+
+CLI behavior:
+
+- Success prints nothing and exits `0`
+- Validation issues are printed to `stderr` as `path:line: severity: message (attribute)`
+- Validation errors exit `1`
+- Warnings are printed but do not change the exit code unless at least one error is present
+
 ### Custom Processors
 
 Implement the `Processor` interface to add new `tl:*` attributes. Processors declare their attribute name, priority, and whether to recurse into children:
@@ -476,12 +513,14 @@ Trellis(prefix: 'data-tl')
 |---|---|---|
 | `render(source, context)` | `String` | Render template string |
 | `renderFile(name, context)` | `Future<String>` | Load and render template file |
+| `warmUp(names)` | `Future<WarmUpResult>` | Pre-load named templates into the DOM cache |
+| `warmUpAll()` | `Future<WarmUpResult>` | Discover and pre-load templates from `FileSystemLoader`/`MapLoader` |
 | `renderFragment(source, fragment:, context:)` | `String` | Render named fragment from string |
 | `renderFileFragment(name, fragment:, context:)` | `Future<String>` | Load file and render named fragment |
 | `renderFragments(source, fragments:, context:)` | `String` | Render multiple fragments concatenated |
 | `renderFileFragments(name, fragments:, context:)` | `Future<String>` | Load file and render multiple fragments |
 | `clearCache()` | `void` | Clear DOM cache and reset statistics |
-| `cacheStats` | `CacheStats` | Hit/miss/size metrics for the DOM cache |
+| `cacheStats` | `CacheStats` | Hit/miss/size metrics for DOM cache plus `expressionCacheSize` |
 | `close()` | `Future<void>` | Release file-watch resources; also closes the loader (no-op when devMode is false) |
 
 `ExpressionEvaluator` can be used standalone for expression evaluation without templates:

@@ -19,3 +19,4 @@ coverage/
 # Agent temp
 .agent_temp/
 .codex
+CLAUDE.local.md

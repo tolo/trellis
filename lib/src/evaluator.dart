@@ -13,16 +13,19 @@ class ExpressionEvaluator {
   final bool _strict;
   final MessageSource? _messageSource;
   final String? _locale;
+  final Map<String, Expr>? _expressionCache;
 
   ExpressionEvaluator({
     Map<String, Function>? filters,
     bool strict = false,
     MessageSource? messageSource,
     String? locale,
+    Map<String, Expr>? expressionCache,
   }) : _filters = filters ?? {...builtinFilters},
        _strict = strict,
        _messageSource = messageSource,
-       _locale = locale;
+       _locale = locale,
+       _expressionCache = expressionCache;
 
   static const builtinFilters = <String, dynamic Function(dynamic)>{
     'upper': _filterUpper,
@@ -39,14 +42,19 @@ class ExpressionEvaluator {
   /// Evaluate an expression string against a context map.
   dynamic evaluate(String expression, Map<String, dynamic> context) {
     try {
-      final parser = Parser(expression);
-      final ast = parser.parse();
+      final ast = _expressionCache?[expression] ?? _parseAndCache(expression);
       return _eval(ast, expression, context);
     } on ExpressionException {
       rethrow;
     } on Exception catch (e) {
       throw ExpressionException(e.toString(), expression: expression);
     }
+  }
+
+  Expr _parseAndCache(String expression) {
+    final ast = Parser(expression).parse();
+    _expressionCache?[expression] = ast;
+    return ast;
   }
 
   dynamic _eval(Expr node, String expr, Map<String, dynamic> context) => switch (node) {

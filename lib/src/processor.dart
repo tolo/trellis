@@ -5,6 +5,7 @@ import 'package:html/dom.dart';
 import 'dialect.dart';
 import 'evaluator.dart';
 import 'exceptions.dart';
+import 'expression/ast.dart';
 import 'message_source.dart';
 import 'loaders/template_loader.dart';
 import 'processor_api.dart';
@@ -55,6 +56,7 @@ final class DomProcessor {
     bool includeStandard = true,
     MessageSource? messageSource,
     String? locale,
+    Map<String, Expr>? expressionCache,
   }) : evaluator = ExpressionEvaluator(
          filters: _mergeFilters(
            dialects: dialects ?? const [],
@@ -64,6 +66,7 @@ final class DomProcessor {
          strict: strict,
          messageSource: messageSource,
          locale: locale,
+         expressionCache: expressionCache,
        ) {
     _processors = _buildProcessorList(
       dialects: dialects ?? const [],

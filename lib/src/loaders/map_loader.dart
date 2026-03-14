@@ -24,4 +24,7 @@ final class MapLoader implements TemplateLoader {
     }
     return source;
   }
+
+  /// Return all template names stored in this loader.
+  List<String> listTemplates() => templates.keys.toList();
 }

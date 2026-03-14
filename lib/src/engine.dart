@@ -6,12 +6,16 @@ import 'package:html/dom.dart';
 import 'cache_stats.dart';
 import 'dialect.dart';
 import 'exceptions.dart';
+import 'expression/ast.dart';
 import 'loaders/template_loader.dart';
 import 'loaders/file_loader.dart';
+import 'loaders/map_loader.dart';
 import 'message_source.dart';
 import 'processor.dart';
 import 'processor_api.dart';
 import 'processors/fragment_processor.dart' show escapeAttrSelector;
+import 'utils/html_normalizer.dart';
+import 'warm_up_result.dart';
 
 /// Core template engine. Parses HTML, processes `tl:*` attributes,
 /// renders output.
@@ -29,6 +33,7 @@ final class Trellis {
   final String? locale;
   final bool devMode;
   final Map<String, Document> _cache = {};
+  final Map<String, Expr>? _expressionCache;
 
   /// Separator between prefix and attribute name.
   /// Derived from prefix: `-` if prefix contains a hyphen, `:` otherwise.
@@ -52,18 +57,25 @@ final class Trellis {
     this.locale,
     this.devMode = false,
   }) : loader = loader ?? FileSystemLoader('templates/', devMode: devMode),
-       filters = filters ?? const {} {
+       filters = filters ?? const {},
+       _expressionCache = cache ? <String, Expr>{} : null {
     if (devMode && this.loader is FileSystemLoader) {
       _watchSubscription = (this.loader as FileSystemLoader).changes?.listen((_) => clearCache());
     }
   }
 
   /// Current cache statistics snapshot.
-  CacheStats get cacheStats => CacheStats(size: _cache.length, hits: _cacheHits, misses: _cacheMisses);
+  CacheStats get cacheStats => CacheStats(
+    size: _cache.length,
+    hits: _cacheHits,
+    misses: _cacheMisses,
+    expressionCacheSize: _expressionCache?.length ?? 0,
+  );
 
   /// Clear the template cache and reset statistics.
   void clearCache() {
     _cache.clear();
+    _expressionCache?.clear();
     _cacheHits = 0;
     _cacheMisses = 0;
   }
@@ -92,6 +104,48 @@ final class Trellis {
   Future<String> renderFile(String name, Map<String, dynamic> context) async {
     final source = await loader.load(name);
     return render(source, context);
+  }
+
+  /// Pre-load specific templates into the DOM cache.
+  ///
+  /// Throws [StateError] when caching is disabled.
+  Future<WarmUpResult> warmUp(List<String> names) async {
+    if (!cache) {
+      throw StateError('Cannot warm up with cache disabled');
+    }
+
+    final preSize = _cache.length;
+    var loaded = 0;
+    final failures = <(String name, Object error)>[];
+
+    for (final name in names) {
+      try {
+        final source = await loader.load(name);
+        final normalizedSource = fixSelfClosingBlocks(source, prefix: prefix, separator: separator);
+        final wasCached = _cache.containsKey(normalizedSource);
+        _parse(source);
+        if (!wasCached && _cache.containsKey(normalizedSource)) {
+          loaded++;
+        }
+      } catch (error) {
+        failures.add((name, error));
+      }
+    }
+
+    final projectedSize = preSize + loaded;
+    final evicted = projectedSize > _cache.length ? projectedSize - _cache.length : 0;
+    return WarmUpResult(loaded: loaded, failed: failures, evicted: evicted);
+  }
+
+  /// Discover templates from the configured loader and warm them into the DOM cache.
+  Future<WarmUpResult> warmUpAll() {
+    if (loader is FileSystemLoader) {
+      return warmUp((loader as FileSystemLoader).listTemplates());
+    }
+    if (loader is MapLoader) {
+      return warmUp((loader as MapLoader).listTemplates());
+    }
+    throw UnsupportedError('warmUpAll() is only supported for FileSystemLoader and MapLoader');
   }
 
   /// Render a specific named fragment from a template string.
@@ -173,6 +227,7 @@ final class Trellis {
       includeStandard: includeStandard,
       messageSource: messageSource,
       locale: locale,
+      expressionCache: _expressionCache,
     );
   }
 
@@ -183,84 +238,8 @@ final class Trellis {
     return element.outerHtml;
   }
 
-  /// Rewrite self-closing `<tl:block .../>` to `<tl:block ...></tl:block>`.
-  /// HTML5 treats unknown elements as non-void, so `/>` is silently ignored
-  /// by the parser — causing all subsequent siblings to become children.
-  ///
-  /// Uses a quote-aware scan instead of a simple regex so that `>` inside
-  /// quoted attribute values (e.g. `tl:if="${count > 0}"`) is not mistaken
-  /// for the end of the tag.
-  String _fixSelfClosingBlocks(String source) {
-    final tag = '$prefix${separator}block';
-    final tagLower = tag.toLowerCase();
-    final tagLen = tag.length;
-    final buf = StringBuffer();
-    var i = 0;
-    while (i < source.length) {
-      // Look for '<'
-      if (source.codeUnitAt(i) != 0x3C) {
-        buf.writeCharCode(source.codeUnitAt(i));
-        i++;
-        continue;
-      }
-      // Check if tag name matches (case-insensitive)
-      final remaining = source.length - i;
-      if (remaining < tagLen + 2 || source.substring(i + 1, i + 1 + tagLen).toLowerCase() != tagLower) {
-        buf.writeCharCode(source.codeUnitAt(i));
-        i++;
-        continue;
-      }
-      // Char after tag name must be whitespace, '/' or '>'
-      final afterTag = source.codeUnitAt(i + 1 + tagLen);
-      if (afterTag != 0x20 &&
-          afterTag != 0x09 &&
-          afterTag != 0x0A &&
-          afterTag != 0x0D &&
-          afterTag != 0x2F &&
-          afterTag != 0x3E) {
-        buf.writeCharCode(source.codeUnitAt(i));
-        i++;
-        continue;
-      }
-      // Found a block tag — scan to end of tag, respecting quotes
-      final tagStart = i;
-      i += 1 + tagLen; // skip '<' + tag name
-      int? quoteChar;
-      while (i < source.length) {
-        final c = source.codeUnitAt(i);
-        if (quoteChar != null) {
-          if (c == quoteChar) quoteChar = null;
-          i++;
-        } else if (c == 0x22 || c == 0x27) {
-          // " or '
-          quoteChar = c;
-          i++;
-        } else if (c == 0x2F && i + 1 < source.length && source.codeUnitAt(i + 1) == 0x3E) {
-          // '/>' — rewrite to ></tag>
-          final attrs = source.substring(tagStart + 1 + tagLen, i);
-          final tagName = source.substring(tagStart + 1, tagStart + 1 + tagLen);
-          buf.write('<$tagName$attrs></$tagName>');
-          i += 2; // skip '/>'
-          break;
-        } else if (c == 0x3E) {
-          // '>' — not self-closing, copy as-is
-          buf.write(source.substring(tagStart, i + 1));
-          i++;
-          break;
-        } else {
-          i++;
-        }
-      }
-      // If we ran out of input inside the tag, copy remainder as-is
-      if (i >= source.length && (quoteChar != null || tagStart + 1 + tagLen >= source.length)) {
-        buf.write(source.substring(tagStart));
-      }
-    }
-    return buf.toString();
-  }
-
   Document _parse(String source) {
-    final normalizedSource = _fixSelfClosingBlocks(source);
+    final normalizedSource = fixSelfClosingBlocks(source, prefix: prefix, separator: separator);
     if (cache && _cache.containsKey(normalizedSource)) {
       _cacheHits++;
       final doc = _cache.remove(normalizedSource)!;

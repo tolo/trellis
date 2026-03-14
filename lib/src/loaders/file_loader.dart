@@ -75,6 +75,26 @@ final class FileSystemLoader implements TemplateLoader {
     return file.readAsStringSync();
   }
 
+  /// Recursively list all templates under [basePath].
+  ///
+  /// Returned names match [load] input format: relative to [basePath] and
+  /// without the configured [extension].
+  List<String> listTemplates() {
+    final templates =
+        Directory(_canonicalBase)
+            .listSync(recursive: true)
+            .whereType<File>()
+            .map((file) => file.path)
+            .where((path) => path.endsWith(extension))
+            .map((path) {
+              final relative = path.substring(_canonicalBase.length + 1).replaceAll(Platform.pathSeparator, '/');
+              return relative.substring(0, relative.length - extension.length);
+            })
+            .toList()
+          ..sort();
+    return templates;
+  }
+
   String _resolve(String name) {
     // Reject absolute paths.
     if (File(name).isAbsolute) {

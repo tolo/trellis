@@ -3,7 +3,15 @@
 All notable changes to **trellis** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
----
+## [0.6.0]
+
+### Added
+- **Expression AST cache**: parsed expressions are now cached per `Trellis` instance and exposed via `cacheStats.expressionCacheSize`
+- **Warm-up APIs**: `warmUp()` and `warmUpAll()` pre-load templates into the DOM cache with `WarmUpResult` reporting for failures and evictions
+- **Template discovery**: `listTemplates()` on `FileSystemLoader` and `MapLoader` for startup warm-up workflows
+- **Template validation toolkit**: `TemplateValidator`, `ValidationError`, and `ValidationSeverity` for static template checks
+- **Testing helper**: `package:trellis/testing.dart` exports `isValidTemplate()` for unit-test assertions
+- **CLI validator**: `dart run trellis:validate` validates template directories for CI usage
 
 ## [0.5.0]
 
@@ -13,20 +21,17 @@ This project follows [Semantic Versioning](https://semver.org/).
 - `close()` on `FileSystemLoader` and `Trellis` for async resource disposal
 - `FileSystemLoader.changes` stream for change notifications
 
----
 
 ## [0.4.1]
 
 - Added logo to README
 
----
 
 ## [0.4.0]
 
 - Bumped minimum Dart SDK from 3.7 to 3.10
 - Applied Dart 3.10 dot shorthand syntax throughout `lib/src/` (zero behavioral changes)
 
----
 
 ## [0.3.0]
 
@@ -45,7 +50,6 @@ This project follows [Semantic Versioning](https://semver.org/).
 ### Changed
 - `example/` restructured into `example/basic/` and `example/todo_app/` sub-packages
 
----
 
 ## [0.2.1]
 
@@ -57,7 +61,6 @@ This project follows [Semantic Versioning](https://semver.org/).
 ### Added
 - **`!` negation operator**: `!` is now supported as an alias for `not` in expressions (e.g. `tl:if="!${active}"`)
 
----
 
 ## [0.2.0]
 
@@ -89,7 +92,6 @@ This project follows [Semantic Versioning](https://semver.org/).
 - Fragment registry entries now carry parameter names for parameterized fragment resolution
 - Inclusion depth guard replaced by cycle detection stack (still enforces max depth 32 as hard limit)
 
----
 
 ## [0.1.0]
 
@@ -108,5 +110,3 @@ This project follows [Semantic Versioning](https://semver.org/).
 - `FileSystemLoader` with security boundary enforcement (path traversal, symlink escape protection)
 - `MapLoader` for in-memory templates and testing
 - Typed exception hierarchy: `TemplateException`, `ExpressionException`, `FragmentNotFoundException`, `TemplateNotFoundException`, `TemplateSecurityException`
-
----

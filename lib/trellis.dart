@@ -23,3 +23,5 @@ export 'src/loaders/composite_loader.dart' show CompositeLoader;
 export 'src/processor_api.dart' show Processor, ProcessorPriority, ProcessorContext;
 export 'src/dialect.dart' show Dialect, StandardDialect;
 export 'src/message_source.dart' show MessageSource, MapMessageSource;
+export 'src/validator.dart' show TemplateValidator, ValidationError, ValidationSeverity;
+export 'src/warm_up_result.dart' show WarmUpResult;

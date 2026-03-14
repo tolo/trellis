@@ -1,5 +1,6 @@
 import 'package:html/dom.dart';
 import 'package:test/test.dart';
+import 'package:trellis/testing.dart';
 import 'package:trellis/trellis.dart';
 
 /// Custom processor for testing: uppercases element text.
@@ -215,7 +216,7 @@ void main() {
   });
 
   group('public API exports', () {
-    test('all v0.3 types are exported', () {
+    test('all v0.6 types are exported', () {
       // Processor API
       expect(ProcessorPriority.values, isNotEmpty);
 
@@ -248,6 +249,10 @@ void main() {
         ),
         returnsNormally,
       );
+
+      expect(TemplateValidator.new, returnsNormally);
+      expect(const WarmUpResult(loaded: 0), const WarmUpResult(loaded: 0));
+      expect(isValidTemplate(), isA<Matcher>());
     });
   });
 }

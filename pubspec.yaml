@@ -1,29 +1,38 @@
-name: trellis
-description: >-
-  Template engine for Dart, using natural HTML templates. Fragment-first for
-  hypermedia-driven frameworks like HTMX. Inspired by Thymeleaf.
-version: 0.6.0
-repository: https://github.com/tolo/trellis
-issue_tracker: https://github.com/tolo/trellis/issues
-topics:
-  - template
-  - html
-  - htmx
-  - server-side-rendering
-
+name: trellis_workspace
+publish_to: none
 environment:
   sdk: ^3.10.0
-
-dependencies:
-  args: ^2.6.0
-  html: ^0.15.6
-  matcher: ^0.12.17
-  string_scanner: ^1.4.1
-
-executables:
-  validate: validate
-
+workspace:
+  - packages/trellis
+  - packages/trellis_shelf
+  - packages/trellis_dev
+  - packages/trellis_cli
+  - examples/basic
+  - examples/todo_app
 dev_dependencies:
-  test: ^1.25.0
-  lints: ^6.0.0
-  coverage: ^1.15.0
+  melos: ^7.4.0
+
+# Melos scripts require global activation to use `melos run <script>`:
+#   dart pub global activate melos
+# Alternative without global install (uses dart run melos exec directly):
+#   dart run melos exec --dir-exists lib -- dart analyze --fatal-infos
+#   dart run melos exec --dir-exists test --fail-fast --order-dependents -- dart test
+melos:
+  repository: https://github.com/tolo/trellis
+  scripts:
+    analyze:
+      description: Run static analysis across all packages
+      exec: dart analyze --fatal-infos
+      packageFilters:
+        dirExists: lib
+    test:
+      description: Run tests in all packages
+      run: dart test
+      exec:
+        failFast: true
+        orderDependents: true
+      packageFilters:
+        dirExists: test
+    format:check:
+      description: Check formatting across all packages
+      exec: dart format --output none --set-exit-if-changed .

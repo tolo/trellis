@@ -16,6 +16,9 @@ Thumbs.db
 # Coverage
 coverage/
 
+# Workspace
+pubspec_overrides.yaml
+
 # Agent temp
 .agent_temp/
 .codex

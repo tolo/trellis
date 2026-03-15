@@ -1,0 +1,10 @@
+name: trellis_basic_example
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  trellis:
+    path: ../../packages/trellis

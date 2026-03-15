@@ -12,6 +12,7 @@ A natural HTML template engine for Dart — templates are valid HTML that browse
 ## Features
 
 - **Natural templates** -- valid HTML that browsers render as prototypes without a server
+- **Template inheritance** -- `tl:extends` + `tl:define` for layout-based composition with named block overrides
 - **Fragment-first** -- `tl:fragment` + `renderFragment()` maps directly to HTMX partial responses
 - **Full expression language** -- variables, arithmetic, literal substitution, selection, URL, ternary, Elvis, comparisons, boolean
 - **i18n message expressions** -- `#{key}` with `MessageSource`, parameterized messages, and locale support

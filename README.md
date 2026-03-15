@@ -548,6 +548,71 @@ final result = evaluator.evaluate(r'${a} + ${b}', {'a': 1, 'b': 2}); // 3
 - `FileSystemLoader` rejects absolute paths, `..` traversal, and symlink escapes outside the base directory
 - `tl:text` always HTML-escapes output
 
+## Developer Setup
+
+The repository uses a [Dart workspace](https://dart.dev/tools/pub/workspaces) with [Melos](https://melos.invertase.dev/) for multi-package scripts.
+
+**One-time setup**: activate Melos globally so `melos run <script>` works:
+
+```bash
+dart pub global activate melos
+dart pub get          # resolves all workspace packages
+```
+
+**Common commands** (with global Melos):
+
+```bash
+melos run analyze     # static analysis across all packages
+melos run test        # run tests in all packages (ordered by dependency)
+melos run format:check  # check formatting
+```
+
+**CI-safe alternatives** (no global Melos required):
+
+```bash
+dart run melos exec --dir-exists lib -- dart analyze --fatal-infos
+dart run melos exec --dir-exists test --fail-fast --order-dependents -- dart test
+```
+
+### Pre-publication Validation
+
+Before publishing packages, validate the generated starter app works with the
+local packages:
+
+```bash
+# 1. Generate a test project
+dart run packages/trellis_cli/bin/trellis.dart create smoke_test
+
+# 2. Add dependency_overrides so it uses local packages (not pub.dev)
+cat >> smoke_test/pubspec.yaml << 'EOF'
+dependency_overrides:
+  trellis:
+    path: ../packages/trellis
+  trellis_shelf:
+    path: ../packages/trellis_shelf
+  trellis_dev:
+    path: ../packages/trellis_dev
+EOF
+
+# 3. Resolve, analyze, and run
+cd smoke_test
+dart pub get
+dart analyze --fatal-infos
+dart run bin/server.dart   # visit http://localhost:8080
+```
+
+**Publishing order**: publish packages in dependency order — `trellis` first, then
+`trellis_shelf` and `trellis_dev` (both depend on `trellis`), then `trellis_cli`
+last.
+
+**Post-publication user path**:
+
+```bash
+dart pub global activate trellis_cli
+trellis create my_app
+cd my_app && dart pub get && dart run bin/server.dart
+```
+
 ## Contributing
 
 Trellis is in early development and we're not accepting pull requests at this time. That said, we'd love to hear from you — bug reports, feature ideas, and general feedback are all very welcome! Please feel free to [open an issue](https://github.com/tolo/trellis/issues).

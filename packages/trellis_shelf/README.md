@@ -110,11 +110,24 @@ final token = csrfToken(request);
 <input type="hidden" name="_csrf" tl:attr="value=${csrfToken}">
 ```
 
-HTMX requests can submit the token via header:
+HTMX requests can submit the token via the `htmx:configRequest` event. Add
+this to your base layout:
 
 ```html
-<body hx-headers='{"X-CSRF-Token": "${csrfToken}"}'>
+<!-- In <head>: render the token into a meta tag -->
+<meta name="csrf-token" tl:attr="content=${csrfToken}" content="">
+
+<!-- Also in <head>: inject it into every HTMX request -->
+<script>
+  document.addEventListener('htmx:configRequest', function(evt) {
+    var token = document.querySelector('meta[name="csrf-token"]').content;
+    if (token) evt.detail.headers['X-CSRF-Token'] = token;
+  });
+</script>
 ```
+
+The `tl:attr` renders the CSRF token into the `content` attribute at request time.
+The event listener then reads it and sets the header on every HTMX request.
 
 Configuration options:
 

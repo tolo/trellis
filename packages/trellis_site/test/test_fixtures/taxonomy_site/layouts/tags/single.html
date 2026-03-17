@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head><title tl:text="${page.title}">Term</title></head>
+<body>
+<h1 tl:text="${page.title}">Term</h1>
+<p>Pages tagged <strong tl:text="${page.termName}">term</strong>:</p>
+<ul id="tagged-pages">
+  <li tl:each="p : ${page.pages}">
+    <a tl:href="${p.url}" tl:text="${p.title}">page</a>
+  </li>
+</ul>
+</body>
+</html>

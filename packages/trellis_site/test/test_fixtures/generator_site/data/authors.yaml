@@ -1,0 +1,6 @@
+alice:
+  name: Alice
+  role: editor
+bob:
+  name: Bob
+  role: author

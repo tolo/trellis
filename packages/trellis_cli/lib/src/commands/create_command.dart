@@ -2,16 +2,28 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 
+import '../generator/blog_project_generator.dart';
 import '../generator/file_writer.dart';
 import '../generator/project_generator.dart';
 import '../validators.dart';
 
 /// The `trellis create <project-name>` command.
 ///
-/// Generates a complete Shelf + HTMX + Trellis project scaffold.
+/// Generates a Trellis project scaffold. Use `--template` to choose between
+/// the HTMX server-rendered app template (default) and the blog SSG template.
 class CreateCommand extends Command<int> {
   CreateCommand() {
-    argParser.addOption('template', abbr: 't', help: 'Project template to use.', defaultsTo: 'htmx', allowed: ['htmx']);
+    argParser.addOption(
+      'template',
+      abbr: 't',
+      help: 'Project template to use.',
+      defaultsTo: 'htmx',
+      allowed: ['htmx', 'blog'],
+      allowedHelp: {
+        'htmx': 'Shelf + HTMX server-rendered app (default)',
+        'blog': 'Static blog site with Markdown content and Trellis SSG',
+      },
+    );
   }
 
   @override
@@ -45,15 +57,31 @@ class CreateCommand extends Command<int> {
 
     await dir.create();
 
-    final generator = ProjectGenerator(projectName: projectName, writer: DiskFileWriter(dir.path));
-    await generator.generate();
+    final template = argResults!['template'] as String;
+    final writer = DiskFileWriter(dir.path);
 
-    stdout.writeln('Created project "$projectName".');
-    stdout.writeln('');
-    stdout.writeln('Next steps:');
-    stdout.writeln('  cd $projectName');
-    stdout.writeln('  dart pub get');
-    stdout.writeln('  dart run bin/server.dart');
+    if (template == 'blog') {
+      final generator = BlogProjectGenerator(projectName: projectName, writer: writer);
+      await generator.generate();
+
+      stdout.writeln('Created blog project "$projectName".');
+      stdout.writeln('');
+      stdout.writeln('Next steps:');
+      stdout.writeln('  cd $projectName');
+      stdout.writeln('  dart pub get');
+      stdout.writeln('  trellis build');
+      stdout.writeln('  trellis serve');
+    } else {
+      final generator = ProjectGenerator(projectName: projectName, writer: writer);
+      await generator.generate();
+
+      stdout.writeln('Created project "$projectName".');
+      stdout.writeln('');
+      stdout.writeln('Next steps:');
+      stdout.writeln('  cd $projectName');
+      stdout.writeln('  dart pub get');
+      stdout.writeln('  dart run bin/server.dart');
+    }
 
     return 0;
   }

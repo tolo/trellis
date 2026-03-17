@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head><title tl:text="${page.title}">Home</title></head>
+<body>
+<h1 tl:text="${page.title}">Site Title</h1>
+<div tl:utext="${page.content}">Content</div>
+<ul tl:if="${pages}">
+  <li tl:each="p : ${pages}"><a tl:href="${p.url}" tl:text="${p.title}">Page</a></li>
+</ul>
+</body>
+</html>

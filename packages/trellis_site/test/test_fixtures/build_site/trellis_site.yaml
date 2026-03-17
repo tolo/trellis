@@ -1,0 +1,11 @@
+title: Test Site
+baseUrl: https://example.com
+description: A test site
+
+contentDir: content
+layoutsDir: layouts
+staticDir: static
+outputDir: output
+
+params:
+  author: Test Author

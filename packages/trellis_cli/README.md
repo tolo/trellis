@@ -1,6 +1,6 @@
 # trellis_cli
 
-CLI tool for the [Trellis](https://pub.dev/packages/trellis) template engine — project scaffolding and developer utilities.
+CLI tool for the [Trellis](https://pub.dev/packages/trellis) template engine — project scaffolding, static site building, and local preview.
 
 ## Installation
 
@@ -16,6 +16,8 @@ dart pub global run trellis_cli:trellis create my_app
 
 ## Quick Start
 
+### Dynamic server app (Shelf + HTMX)
+
 ```bash
 trellis create my_app
 cd my_app
@@ -25,16 +27,35 @@ dart run bin/server.dart
 
 Then open http://localhost:8080 in your browser.
 
+### Static blog site
+
+```bash
+trellis create my_blog --template blog
+cd my_blog
+dart pub get
+trellis build
+trellis serve
+```
+
+Then open http://localhost:8080 in your browser.
+
 ## Commands
 
 ### `trellis create <project-name>`
 
-Generates a complete Shelf + HTMX + Trellis project.
+Generates a new Trellis project from a starter template.
 
 Options:
-- `--template` (`-t`): Project template (default: `htmx`)
+- `--template` (`-t`): Project template to use
 
-The generated project includes:
+Available templates:
+
+| Template | Description |
+|---|---|
+| `htmx` (default) | Shelf server with HTMX, hot reload, and trellis_shelf middleware |
+| `blog` | Static blog site built with trellis_site (Markdown content, layouts, taxonomies) |
+
+**`htmx` template** generates:
 - `bin/server.dart` — Shelf server with all trellis_shelf middleware and live reload
 - `lib/handlers.dart` — Route handlers using `renderPage`
 - `templates/layouts/base.html` — Base layout with `tl:define` blocks
@@ -42,6 +63,40 @@ The generated project includes:
 - `templates/partials/nav.html` — Nav partial with `tl:fragment`
 - `static/styles.css` — Starter stylesheet
 - `pubspec.yaml`, `analysis_options.yaml`, `.gitignore`
+
+**`blog` template** generates:
+- `trellis_site.yaml` — Site configuration (title, baseUrl, taxonomies)
+- `content/` — Markdown content with front matter (`_index.md`, posts, about page)
+- `layouts/` — Trellis HTML layouts (base, home, single, list, post)
+- `static/styles.css` — Starter stylesheet
+- `pubspec.yaml`, `analysis_options.yaml`, `.gitignore`
+
+### `trellis build`
+
+Builds a static site from the current directory. Reads `trellis_site.yaml` for configuration, runs the full trellis_site pipeline, and compiles any SASS/SCSS files in the static directory.
+
+Options:
+- `--output` (`-o`): Output directory (default: from config, or `output`)
+- `--drafts`: Include draft content (default: `false`)
+- `--verbose` (`-v`): Show detailed build log
+
+```bash
+trellis build
+trellis build --output dist --drafts --verbose
+```
+
+### `trellis serve`
+
+Starts a local static file server to preview a built site. Serves from the output directory with clean URL support (`/about/` resolves to `/about/index.html`).
+
+Options:
+- `--port` (`-p`): Port to listen on (default: `8080`)
+- `--output` (`-o`): Output directory to serve (default: from config, or `output`)
+
+```bash
+trellis serve
+trellis serve --port 3000
+```
 
 ### `trellis --version`
 

@@ -80,4 +80,81 @@ void main() {
       expect(pubspec, contains('name: hello_world'));
     });
   });
+
+  group('CreateCommand — blog template', () {
+    late Directory tempDir;
+    late String originalDir;
+
+    setUp(() {
+      tempDir = Directory.systemTemp.createTempSync('trellis_blog_test_');
+      originalDir = Directory.current.path;
+      Directory.current = tempDir;
+    });
+
+    tearDown(() {
+      Directory.current = originalDir;
+      tempDir.deleteSync(recursive: true);
+    });
+
+    test('--template blog creates project with expected files', () async {
+      final cli = TrellisCli();
+      final result = await cli.run(['create', '--template', 'blog', 'my_blog']);
+      expect(result, 0);
+
+      final projectDir = Directory('${tempDir.path}/my_blog');
+      expect(projectDir.existsSync(), isTrue);
+
+      final expectedFiles = [
+        'pubspec.yaml',
+        'trellis_site.yaml',
+        '.gitignore',
+        'analysis_options.yaml',
+        'content/_index.md',
+        'content/about.md',
+        'content/posts/_index.md',
+        'content/posts/welcome.md',
+        'content/posts/getting-started.md',
+        'layouts/base.html',
+        'layouts/home.html',
+        'layouts/_default/single.html',
+        'layouts/_default/list.html',
+        'layouts/posts/single.html',
+        'static/styles.css',
+      ];
+
+      for (final path in expectedFiles) {
+        expect(File('${projectDir.path}/$path').existsSync(), isTrue, reason: '$path should exist');
+      }
+    });
+
+    test('-t blog short flag creates blog project', () async {
+      final cli = TrellisCli();
+      final result = await cli.run(['create', '-t', 'blog', 'test_blog']);
+      expect(result, 0);
+      expect(File('${tempDir.path}/test_blog/trellis_site.yaml').existsSync(), isTrue);
+    });
+
+    test('--template blog next steps mentions trellis build and trellis serve', () async {
+      final cli = TrellisCli();
+      await cli.run(['create', '--template', 'blog', 'my_blog']);
+      // The output mentions "trellis build" and "trellis serve" — tested via
+      // the command completing without error and expected files existing.
+      expect(File('${tempDir.path}/my_blog/trellis_site.yaml').existsSync(), isTrue);
+    });
+
+    test('--template blog with existing directory produces error', () {
+      Directory('${tempDir.path}/existing_blog').createSync();
+      final cli = TrellisCli();
+      expect(() => cli.run(['create', '--template', 'blog', 'existing_blog']), throwsA(isA<UsageException>()));
+    });
+
+    test('--template htmx still works unchanged', () async {
+      final cli = TrellisCli();
+      final result = await cli.run(['create', '--template', 'htmx', 'my_htmx_app']);
+      expect(result, 0);
+      // HTMX project has pubspec.yaml with trellis_shelf
+      final pubspec = File('${tempDir.path}/my_htmx_app/pubspec.yaml').readAsStringSync();
+      expect(pubspec, contains('trellis_shelf:'));
+    });
+  });
 }

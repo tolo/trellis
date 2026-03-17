@@ -30,5 +30,23 @@ void main() {
     test('unknown command throws UsageException', () {
       expect(() => cli.run(['unknown']), throwsA(isA<UsageException>()));
     });
+
+    // T16: trellis build --help via runner
+    test('T16: build --help exits 0', () async {
+      final result = await cli.run(['build', '--help']);
+      expect(result, 0);
+    });
+
+    // T17: trellis serve --help via runner
+    test('T17: serve --help exits 0', () async {
+      final result = await cli.run(['serve', '--help']);
+      expect(result, 0);
+    });
+
+    // T18: TrellisCli has build and serve in its command list
+    test('T18: has build and serve commands registered', () {
+      expect(cli.commands.containsKey('build'), isTrue);
+      expect(cli.commands.containsKey('serve'), isTrue);
+    });
   });
 }

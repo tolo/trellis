@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head><title tl:text="${page.title}">Tags</title></head>
+<body>
+<h1 tl:text="${page.title}">Tags</h1>
+<ul id="terms">
+  <li tl:each="t : ${page.terms}">
+    <a tl:href="${t.url}" tl:text="${t.name}">term</a>
+    (<span tl:text="${t.count}">0</span>)
+  </li>
+</ul>
+</body>
+</html>

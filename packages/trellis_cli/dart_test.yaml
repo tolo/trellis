@@ -1,0 +1,8 @@
+# Test configuration for trellis_cli.
+#
+# Several test suites (build_command_test, serve_command_test, create_command_test)
+# mutate the process-global Directory.current in setUp/tearDown. Running suites
+# concurrently causes tearDown of one suite to delete a temp directory that
+# another suite has already set as the current directory, resulting in a
+# PathNotFoundException. Limiting concurrency to 1 prevents this race.
+concurrency: 1

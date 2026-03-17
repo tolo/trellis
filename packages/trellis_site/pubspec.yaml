@@ -1,0 +1,20 @@
+name: trellis_site
+version: 0.1.0
+description: >-
+  Static site generator for Trellis — Markdown content, Trellis templates,
+  Hugo-inspired conventions.
+repository: https://github.com/tolo/trellis/tree/main/packages/trellis_site
+resolution: workspace
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  markdown: ^7.3.0
+  path: ^1.9.0
+  trellis: ^0.7.0
+  yaml: ^3.1.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0

@@ -9,8 +9,12 @@ workspace:
   - packages/trellis_cli
   - packages/trellis_css
   - packages/trellis_site
+  - packages/trellis_dart_frog
+  - packages/trellis_relic
   - examples/basic
   - examples/todo_app
+  - examples/relic_app
+  - examples/dart_frog_app
 dev_dependencies:
   melos: ^7.4.0
 

@@ -15,6 +15,7 @@ A natural HTML template engine for Dart — templates are valid HTML that browse
 - **Template inheritance** -- `tl:extends` + `tl:define` for layout-based composition with named block overrides
 - **Fragment-first** -- `tl:fragment` + `renderFragment()` maps directly to HTMX partial responses
 - **Full expression language** -- variables, arithmetic, literal substitution, selection, URL, ternary, Elvis, comparisons, boolean
+- **Expression utility objects** -- `${#strings.*}`, `${#numbers.*}`, `${#dates.*}`, `${#lists.*}` for common string, number, date, and list operations (53 methods)
 - **i18n message expressions** -- `#{key}` with `MessageSource`, parameterized messages, and locale support
 - **Filter arguments** -- `| filterName:arg1:arg2` parameterized filter syntax
 - **Switch/case, block, remove, inline** -- multi-branch conditionals, virtual elements, output control, inline JS/CSS processing
@@ -289,6 +290,7 @@ Positional placeholders `{0}`, `{1}`, ... are replaced by the arguments passed i
 | Boolean | `${a} and ${b}`, `or`, `not` / `!` | Logical operators |
 | Concat | `${first} + ' ' + ${last}` | String concatenation |
 | Filter | `${name \| upper}`, `${price \| fmt:'USD'}` | Pipe-based value transformation, with optional args |
+| Utility object | `${#strings.capitalize(name)}`, `${#lists.size(items)}` | Built-in utility methods for strings, numbers, dates, and lists |
 | No-op | `_` | Explicitly do nothing (prototype preservation) |
 
 ## HTMX Fragment Example
@@ -369,7 +371,7 @@ When `devMode` is `false` (the default), no file watcher is created and there is
 ### Template Loaders
 
 - **`FileSystemLoader(basePath)`** -- loads from filesystem with security boundaries
-- **`AssetLoader(packageUri)`** -- loads from Dart package assets (JIT only, see [AOT limitations](doc/guides/framework-integration.md))
+- **`AssetLoader(packageUri)`** -- loads from Dart package assets (JIT only, see [AOT limitations](https://github.com/tolo/trellis/blob/main/doc/guides/framework-integration.md#9-aot-deployment-notes))
 - **`CompositeLoader(delegates)`** -- tries multiple loaders in order with fallback
 - **`MapLoader(templates)`** -- in-memory templates, useful for testing
 
@@ -494,7 +496,46 @@ final html = engine.renderFragment(
 );
 ```
 
-Full guide with shelf middleware, dart_frog handlers, HTMX OOB swaps, and error handling: **[Framework Integration Guide](doc/guides/framework-integration.md)**.
+Full guide with Shelf middleware, Dart Frog handlers, Relic handlers, HTMX OOB swaps, template testing, and error handling: **[Framework Integration Guide](https://github.com/tolo/trellis/blob/main/doc/guides/framework-integration.md)**.
+
+### Framework Integration Packages
+
+| Package | Description |
+|---|---|
+| [`trellis_shelf`](https://github.com/tolo/trellis/tree/main/packages/trellis_shelf) | Shelf middleware, response helpers, security headers, CSRF protection |
+| [`trellis_dart_frog`](https://github.com/tolo/trellis/tree/main/packages/trellis_dart_frog) | Dart Frog integration — `trellisProvider()` middleware, response helpers, HTMX helpers, CSRF |
+| [`trellis_relic`](https://github.com/tolo/trellis/tree/main/packages/trellis_relic) | Serverpod Relic integration — response helpers, HTMX helpers, security headers |
+| [`trellis_dev`](https://github.com/tolo/trellis/tree/main/packages/trellis_dev) | Hot reload via SSE — browser auto-refresh on template file changes |
+| [`trellis_css`](https://github.com/tolo/trellis/tree/main/packages/trellis_css) | SASS/SCSS compilation and `tl:scope` CSS scoping for fragments |
+| [`trellis_site`](https://github.com/tolo/trellis/tree/main/packages/trellis_site) | Static site generator — Markdown, taxonomies, pagination, RSS/Atom feeds, JSON search index |
+| [`trellis_cli`](https://github.com/tolo/trellis/tree/main/packages/trellis_cli) | `trellis create` scaffolding CLI — Shelf, Dart Frog, and blog starter templates |
+
+### Template Testing
+
+Testing utilities are built into the core package via `testing.dart`:
+
+```dart
+import 'package:trellis/testing.dart';
+import 'package:test/test.dart';
+
+void main() {
+  final engine = testEngine(templates: {
+    'card': '<div tl:fragment="card"><h2 tl:text="${title}">Title</h2></div>',
+  });
+
+  test('card fragment renders title', () {
+    final html = testFragment(engine, 'card', 'card', {'title': 'Hello'});
+    expect(html, hasElement('h2', withText: 'Hello'));
+    expect(html, hasNoElement('.missing'));
+  });
+
+  test('snapshot', () async {
+    await expectSnapshotFromSource(engine, '<p tl:text="${msg}">x</p>', {'msg': 'hi'});
+  });
+}
+```
+
+No extra dependency needed — just `import 'package:trellis/testing.dart'` in your tests.
 
 ### HTML5-Valid Attribute Names
 
@@ -602,8 +643,9 @@ dart run bin/server.dart   # visit http://localhost:8080
 ```
 
 **Publishing order**: publish packages in dependency order — `trellis` first, then
-`trellis_shelf` and `trellis_dev` (both depend on `trellis`), then `trellis_cli`
-last.
+`trellis_shelf`, `trellis_dev`, and `trellis_css` (all depend on `trellis`),
+then `trellis_dart_frog` and `trellis_relic` (depend on `trellis_shelf`), then
+`trellis_site` and `trellis_cli` last.
 
 **Post-publication user path**:
 

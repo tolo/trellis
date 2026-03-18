@@ -1,0 +1,37 @@
+/// Generates the templates/base.html content for a Relic + Trellis project.
+///
+/// Uses template inheritance (`tl:define`) and HTMX for client-side navigation.
+/// No CSRF meta tag — Relic lacks form body parsing, so CSRF is not included.
+String relicBaseLayoutTemplate(String projectName) => '''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title tl:text="\${title} — $projectName">$projectName</title>
+  <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"></script>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="/" class="brand">$projectName</a>
+      <div class="nav-links">
+        <a href="/" hx-get="/" hx-target="#content" hx-push-url="true">Home</a>
+        <a href="/about" hx-get="/about" hx-target="#content" hx-push-url="true">About</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="content" tl:define="content">
+    <p>Default content.</p>
+  </main>
+
+  <footer>
+    <p>Built with <a href="https://pub.dev/packages/trellis">Trellis</a>
+       + <a href="https://pub.dev/packages/relic">Relic</a>
+       + <a href="https://htmx.org">HTMX</a></p>
+  </footer>
+</body>
+</html>
+''';

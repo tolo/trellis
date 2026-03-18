@@ -1,0 +1,15 @@
+name: trellis_dart_frog_example
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  dart_frog: ^1.2.0
+  trellis:
+    path: ../../packages/trellis
+  trellis_dart_frog:
+    path: ../../packages/trellis_dart_frog
+  trellis_dev:
+    path: ../../packages/trellis_dev

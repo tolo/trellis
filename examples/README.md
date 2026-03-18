@@ -31,15 +31,40 @@ void main() {
 
 ## Examples
 
+Commands below assume you're in the repository root.
+
 ### [basic/](basic/) -- API Demos
 
 Self-contained examples showing core trellis features with inline templates.
 
 ```bash
-cd example/basic
+cd examples/basic
 dart pub get
 dart run bin/example.dart        # Template features: text, if, each, switch, fragments
 dart run bin/shelf_example.dart  # Shelf integration pattern
+```
+
+See [basic/README.md](basic/README.md) for a guided walkthrough.
+
+### [dart_frog_app/](dart_frog_app/) -- Dart Frog + HTMX Todo App
+
+A complete server-side rendered todo application demonstrating trellis with
+[Dart Frog](https://dartfrog.vgv.dev/) and [HTMX](https://htmx.org).
+
+Features demonstrated:
+- File-based routing (`routes/` directory convention)
+- `trellis_dart_frog` provider and middleware integration
+- HTMX todo CRUD (add, complete, delete) via fragment rendering
+- CSRF protection with double-submit cookie pattern
+- Template inheritance (`tl:extends` + `tl:define`)
+- Security headers via `trellisSecurityHeaders()`
+- Dev mode hot reload via `trellis_dev`
+
+```bash
+cd examples/dart_frog_app
+dart pub get
+dart_frog dev
+# Open http://localhost:8080
 ```
 
 ### [todo_app/](todo_app/) -- Full Shelf + HTMX App
@@ -56,7 +81,7 @@ Features demonstrated:
 - In-memory data store with CRUD operations
 
 ```bash
-cd example/todo_app
+cd examples/todo_app
 dart pub get
 dart run bin/server.dart
 # Open http://localhost:8080
@@ -96,3 +121,19 @@ can update both the primary target and the sidebar counts simultaneously.
 *`todoCount` as integer* — Trellis treats empty lists as truthy (unlike Thymeleaf),
 so `tl:if="${todos}"` would never hide the empty state. `tl:if="${todoCount}"` (where
 `0` is falsy) is the correct pattern for empty-collection guards in Trellis.
+
+See [todo_app/README.md](todo_app/README.md) for setup notes and route/template pointers.
+
+### [relic_app/](relic_app/) -- Relic + HTMX Example
+
+A minimal Relic application showing explicit-engine wiring, template inheritance,
+HTMX fragment responses, and Relic-specific middleware behavior.
+
+```bash
+cd examples/relic_app
+dart pub get
+dart run bin/server.dart
+# Open http://localhost:8080
+```
+
+See [relic_app/README.md](relic_app/README.md) for framework-specific notes.

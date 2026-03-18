@@ -3,11 +3,13 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 import 'content_discovery.dart';
+import 'feed_generator.dart';
 import 'front_matter_parser.dart';
 import 'markdown_renderer.dart';
 import 'page.dart';
 import 'page_generator.dart';
 import 'shortcode_processor.dart';
+import 'search_index_generator.dart';
 import 'site_config.dart';
 import 'sitemap_generator.dart';
 import 'taxonomy.dart';
@@ -94,6 +96,8 @@ class TrellisSite {
   /// 6. Generate HTML pages (S04)
   /// 7. Copy static assets
   /// 8. Generate sitemap
+  /// 8.5. Generate feeds (when `feeds:` config section exists)
+  /// 9. Generate search index (when `search.enabled: true`)
   ///
   /// Throws [SiteConfigException] if the output directory configuration is
   /// unsafe. Throws [TemplateNotFoundException] if a required layout is
@@ -189,6 +193,43 @@ class TrellisSite {
     final sitemapGenerator = SitemapGenerator(baseUrl: config.baseUrl, contentDir: config.contentDir);
     if (sitemapGenerator.writeToOutput(pages, config.outputDir)) staticCount++;
 
+    // 8.5. Generate feeds
+    if (config.feeds != null) {
+      final feedGenerator = FeedGenerator(
+        config: config.feeds!,
+        baseUrl: config.baseUrl,
+        siteTitle: config.title,
+        siteDescription: config.description,
+        contentDir: config.contentDir,
+        siteAuthor: config.params['author'] as String?,
+      );
+
+      // Validate configured sections against known sections
+      final knownSections = pages.where((pg) => pg.section.isNotEmpty).map((pg) => pg.section).toSet();
+      for (final section in config.feeds!.sections) {
+        if (!knownSections.contains(section)) {
+          buildWarnings.add(
+            BuildWarning(
+              "feeds.sections references unknown section '$section'. "
+              'Available: ${knownSections.join(', ')}',
+            ),
+          );
+        }
+      }
+
+      final feedResult = feedGenerator.writeToOutput(pages, config.outputDir);
+      staticCount += feedResult.fileCount;
+      for (final warning in feedResult.warnings) {
+        buildWarnings.add(BuildWarning(warning));
+      }
+    }
+
+    // 9. Generate search index
+    if (config.searchConfig.enabled) {
+      final searchGenerator = SearchIndexGenerator(config.searchConfig);
+      if (searchGenerator.writeToOutput(pages, config.outputDir)) staticCount++;
+    }
+
     stopwatch.stop();
 
     return BuildResult(
@@ -200,12 +241,23 @@ class TrellisSite {
   }
 
   /// Builds the `site` context map available as `${site.*}` in templates.
-  Map<String, dynamic> _buildSiteContext() => <String, dynamic>{
-    'title': config.title,
-    'baseUrl': config.baseUrl,
-    'description': config.description,
-    'params': config.params,
-  };
+  Map<String, dynamic> _buildSiteContext() {
+    final context = <String, dynamic>{
+      'title': config.title,
+      'baseUrl': config.baseUrl,
+      'description': config.description,
+      'params': config.params,
+    };
+
+    if (config.feeds != null) {
+      final feedUrls = <String, dynamic>{};
+      if (config.feeds!.atom) feedUrls['atom'] = '/feed.xml';
+      if (config.feeds!.rss) feedUrls['rss'] = '/rss.xml';
+      context['feeds'] = feedUrls;
+    }
+
+    return context;
+  }
 
   /// Validates that the output directory will not destroy source directories.
   ///

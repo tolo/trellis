@@ -250,9 +250,34 @@ final class Parser {
         final expr = _parseTernary();
         _expect(.rParen, 'Expected ")"');
         return expr;
+      case .hash:
+        _scanner.next(); // consume #
+        return _parseUtilityCall();
       default:
         throw ExpressionException('Unexpected token: ${token.type}', expression: _source, position: token.offset);
     }
+  }
+
+  /// Parse utility object call: `#name.method(args)`.
+  ///
+  /// Called after consuming the `#` token. Parses `name.method(arg1, arg2, ...)`.
+  Expr _parseUtilityCall() {
+    final nameToken = _expect(.identifier, 'Expected utility object name after "#"');
+    final objectName = nameToken.value as String;
+    _expect(.dot, 'Expected "." after utility object name "#$objectName"');
+    final methodToken = _expect(.identifier, 'Expected method name after "#$objectName."');
+    final method = methodToken.value as String;
+
+    final args = <Expr>[];
+    _expect(.lParen, 'Expected "(" after "#$objectName.$method"');
+    if (!_check(.rParen)) {
+      do {
+        args.add(_parsePipe());
+      } while (_match(.comma));
+    }
+    _expect(.rParen, 'Expected ")" to close utility method arguments');
+
+    return UtilityCallExpr(objectName, method, args);
   }
 
   /// Parse a full expression inside `${ ... }`.

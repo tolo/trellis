@@ -174,5 +174,52 @@ void main() {
       expect(config.taxonomies, isEmpty);
       expect(config.paginate, isNull);
     });
+
+    test('no search: section produces default (disabled) SearchConfig', () {
+      final tempDir = Directory.systemTemp.createTempSync('site_cfg_search_');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+      final configFile = File(p.join(tempDir.path, 'trellis_site.yaml'))..writeAsStringSync('title: No Search\n');
+
+      final config = SiteConfig.load(configFile.path);
+      expect(config.searchConfig.enabled, isFalse);
+    });
+
+    test('search: { enabled: true } produces enabled config with defaults', () {
+      final tempDir = Directory.systemTemp.createTempSync('site_cfg_search_');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+      final configFile = File(p.join(tempDir.path, 'trellis_site.yaml'))
+        ..writeAsStringSync('search:\n  enabled: true\n');
+
+      final config = SiteConfig.load(configFile.path);
+      expect(config.searchConfig.enabled, isTrue);
+      expect(config.searchConfig.output, equals('search-index.json'));
+      expect(config.searchConfig.stripHtml, isTrue);
+    });
+
+    test('search: all fields parsed correctly', () {
+      final tempDir = Directory.systemTemp.createTempSync('site_cfg_search_');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+      final configFile = File(p.join(tempDir.path, 'trellis_site.yaml'))
+        ..writeAsStringSync('''
+search:
+  enabled: true
+  output: index.json
+  fields:
+    - title
+    - content
+  excludeSections:
+    - drafts
+  stripHtml: false
+  maxContentLength: 2000
+''');
+
+      final config = SiteConfig.load(configFile.path);
+      expect(config.searchConfig.enabled, isTrue);
+      expect(config.searchConfig.output, equals('index.json'));
+      expect(config.searchConfig.fields, equals(['title', 'content']));
+      expect(config.searchConfig.excludeSections, equals(['drafts']));
+      expect(config.searchConfig.stripHtml, isFalse);
+      expect(config.searchConfig.maxContentLength, equals(2000));
+    });
   });
 }

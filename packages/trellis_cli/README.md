@@ -39,6 +39,17 @@ trellis serve
 
 Then open http://localhost:8080 in your browser.
 
+### Dart Frog app
+
+```bash
+trellis create my_frog_app --template dart_frog
+cd my_frog_app
+dart pub get
+dart_frog dev
+```
+
+Then open http://localhost:8080 in your browser.
+
 ## Commands
 
 ### `trellis create <project-name>`
@@ -54,6 +65,7 @@ Available templates:
 |---|---|
 | `htmx` (default) | Shelf server with HTMX, hot reload, and trellis_shelf middleware |
 | `blog` | Static blog site built with trellis_site (Markdown content, layouts, taxonomies) |
+| `dart_frog` | Dart Frog + HTMX server app using trellis_dart_frog middleware and helpers |
 
 **`htmx` template** generates:
 - `bin/server.dart` — Shelf server with all trellis_shelf middleware and live reload
@@ -70,6 +82,15 @@ Available templates:
 - `layouts/` — Trellis HTML layouts (base, home, single, list, post)
 - `static/styles.css` — Starter stylesheet
 - `pubspec.yaml`, `analysis_options.yaml`, `.gitignore`
+
+**`dart_frog` template** generates:
+- `routes/_middleware.dart` — Trellis provider, security headers, and CSRF middleware
+- `routes/index.dart` and `routes/todos/index.dart` — file-based routes with HTMX fragment responses
+- `templates/layouts/base.html` — base layout with HTMX and shared shell
+- `templates/pages/index.html` — home page using template inheritance
+- `templates/partials/nav.html` and `templates/partials/todo_list.html` — reusable partials
+- `public/styles.css` — starter stylesheet served by Dart Frog
+- `dart_frog.yaml`, `pubspec.yaml`, `analysis_options.yaml`, `.gitignore`
 
 ### `trellis build`
 

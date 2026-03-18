@@ -5,12 +5,14 @@
 library;
 
 export 'src/content_discovery.dart';
+export 'src/feed_generator.dart';
 export 'src/front_matter_parser.dart';
 export 'src/markdown_renderer.dart';
 export 'src/page.dart';
 export 'src/page_generator.dart';
 export 'src/paginator.dart';
 export 'src/shortcode_processor.dart';
+export 'src/search_index_generator.dart';
 export 'src/site_config.dart';
 export 'src/sitemap_generator.dart';
 export 'src/taxonomy.dart';

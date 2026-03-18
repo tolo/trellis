@@ -341,12 +341,17 @@ void main() {
         expect(tokens[2].type, TokenType.rBrace);
       });
 
-      test('# alone (not followed by {) throws', () {
-        expect(() => tokenize('#'), throwsA(isA<ExpressionException>()));
+      test('# alone (not followed by {) produces hash token', () {
+        final tokens = tokenize('#');
+        expect(tokens[0].type, TokenType.hash);
+        expect(tokens[1].type, TokenType.eof);
       });
 
-      test('#a (not followed by {) throws', () {
-        expect(() => tokenize('#a'), throwsA(isA<ExpressionException>()));
+      test('#a (not followed by {) produces hash then identifier', () {
+        final tokens = tokenize('#a');
+        expect(tokens[0].type, TokenType.hash);
+        expect(tokens[1].type, TokenType.identifier);
+        expect(tokens[1].value, 'a');
       });
     });
   });

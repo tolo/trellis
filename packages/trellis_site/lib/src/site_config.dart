@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
+import 'feed_generator.dart';
+import 'search_index_generator.dart';
 import 'yaml_utils.dart';
 
 /// Thrown when [SiteConfig.load()] encounters a configuration error.
@@ -62,6 +64,12 @@ class SiteConfig {
   /// Site-level parameters available in templates as `${site.params.*}`.
   final Map<String, dynamic> params;
 
+  /// Feed configuration. `null` when no `feeds:` section is present in config.
+  final FeedConfig? feeds;
+
+  /// Search index configuration. Default: disabled.
+  final SearchConfig searchConfig;
+
   const SiteConfig._({
     required this.siteDir,
     required this.title,
@@ -75,6 +83,8 @@ class SiteConfig {
     required this.taxonomies,
     required this.paginate,
     required this.params,
+    this.feeds,
+    this.searchConfig = const SearchConfig(),
   });
 
   /// Creates a [SiteConfig] with the given values.
@@ -93,6 +103,8 @@ class SiteConfig {
     List<String> taxonomies = const [],
     int? paginate,
     Map<String, dynamic> params = const {},
+    FeedConfig? feeds,
+    SearchConfig searchConfig = const SearchConfig(),
   }) {
     String resolve(String? rel, String defaultName) {
       if (rel == null) return p.join(siteDir, defaultName);
@@ -112,6 +124,8 @@ class SiteConfig {
       taxonomies: taxonomies,
       paginate: paginate,
       params: params,
+      feeds: feeds,
+      searchConfig: searchConfig,
     );
   }
 
@@ -162,6 +176,11 @@ class SiteConfig {
     final rawPaginate = map['paginate'];
     final paginate = rawPaginate is int ? rawPaginate : null;
 
+    final rawSearch = map['search'];
+    final searchConfig = rawSearch is YamlMap
+        ? SearchConfig.fromYaml(convertYamlMap(rawSearch))
+        : const SearchConfig();
+
     return SiteConfig(
       siteDir: siteDir,
       title: (map['title'] as String?) ?? '',
@@ -175,6 +194,8 @@ class SiteConfig {
       taxonomies: taxonomies,
       paginate: paginate,
       params: params,
+      feeds: FeedConfig.fromYaml(map['feeds']),
+      searchConfig: searchConfig,
     );
   }
 

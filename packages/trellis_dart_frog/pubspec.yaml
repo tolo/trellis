@@ -1,0 +1,22 @@
+name: trellis_dart_frog
+version: 0.1.0
+description: >-
+  Dart Frog integration for the Trellis template engine — provider, HTMX helpers,
+  and security middleware.
+repository: https://github.com/tolo/trellis/tree/main/packages/trellis_dart_frog
+resolution: workspace
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  dart_frog: ^1.2.0
+  shelf: ^1.4.0
+  trellis: ^0.7.0
+  trellis_shelf: ^0.1.0
+
+dev_dependencies:
+  http: ^1.2.0
+  lints: ^6.0.0
+  mocktail: ^1.0.0
+  test: ^1.25.0

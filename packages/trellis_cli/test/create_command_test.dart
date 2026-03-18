@@ -157,4 +157,158 @@ void main() {
       expect(pubspec, contains('trellis_shelf:'));
     });
   });
+
+  group('CreateCommand — dart_frog template', () {
+    late Directory tempDir;
+    late String originalDir;
+
+    setUp(() {
+      tempDir = Directory.systemTemp.createTempSync('trellis_dart_frog_test_');
+      originalDir = Directory.current.path;
+      Directory.current = tempDir;
+    });
+
+    tearDown(() {
+      Directory.current = originalDir;
+      tempDir.deleteSync(recursive: true);
+    });
+
+    test('--template dart_frog creates project with expected files', () async {
+      final cli = TrellisCli();
+      final result = await cli.run(['create', '--template', 'dart_frog', 'my_df_app']);
+      expect(result, 0);
+
+      final projectDir = Directory('${tempDir.path}/my_df_app');
+      expect(projectDir.existsSync(), isTrue);
+
+      final expectedFiles = [
+        'pubspec.yaml',
+        'dart_frog.yaml',
+        '.gitignore',
+        'analysis_options.yaml',
+        'routes/_middleware.dart',
+        'routes/index.dart',
+        'routes/todos/index.dart',
+        'templates/layouts/base.html',
+        'templates/pages/index.html',
+        'templates/partials/nav.html',
+        'templates/partials/todo_list.html',
+        'public/styles.css',
+      ];
+
+      for (final path in expectedFiles) {
+        expect(File('${projectDir.path}/$path').existsSync(), isTrue, reason: '$path should exist');
+      }
+    });
+
+    test('-t dart_frog short flag creates Dart Frog project', () async {
+      final cli = TrellisCli();
+      final result = await cli.run(['create', '-t', 'dart_frog', 'short_flag_app']);
+      expect(result, 0);
+      expect(File('${tempDir.path}/short_flag_app/dart_frog.yaml').existsSync(), isTrue);
+    });
+
+    test('generated pubspec contains dart_frog and trellis_dart_frog', () async {
+      final cli = TrellisCli();
+      await cli.run(['create', '--template', 'dart_frog', 'df_pubspec_test']);
+
+      final pubspec = File('${tempDir.path}/df_pubspec_test/pubspec.yaml').readAsStringSync();
+      expect(pubspec, contains('dart_frog:'));
+      expect(pubspec, contains('trellis_dart_frog:'));
+    });
+
+    test('--template dart_frog with existing directory produces error', () {
+      Directory('${tempDir.path}/existing_df').createSync();
+      final cli = TrellisCli();
+      expect(() => cli.run(['create', '--template', 'dart_frog', 'existing_df']), throwsA(isA<UsageException>()));
+    });
+
+    test('--template blog still works unchanged after dart_frog addition', () async {
+      final cli = TrellisCli();
+      final result = await cli.run(['create', '--template', 'blog', 'my_blog_check']);
+      expect(result, 0);
+      expect(File('${tempDir.path}/my_blog_check/trellis_site.yaml').existsSync(), isTrue);
+    });
+
+    test('--template htmx still works unchanged after dart_frog addition', () async {
+      final cli = TrellisCli();
+      final result = await cli.run(['create', '--template', 'htmx', 'my_htmx_check']);
+      expect(result, 0);
+      final pubspec = File('${tempDir.path}/my_htmx_check/pubspec.yaml').readAsStringSync();
+      expect(pubspec, contains('trellis_shelf:'));
+    });
+  });
+
+  group('CreateCommand — relic template', () {
+    late Directory tempDir;
+    late String originalDir;
+
+    setUp(() {
+      tempDir = Directory.systemTemp.createTempSync('trellis_relic_test_');
+      originalDir = Directory.current.path;
+      Directory.current = tempDir;
+    });
+
+    tearDown(() {
+      Directory.current = originalDir;
+      tempDir.deleteSync(recursive: true);
+    });
+
+    test('--template relic creates project with expected files', () async {
+      final cli = TrellisCli();
+      final result = await cli.run(['create', '--template', 'relic', 'my_relic_app']);
+      expect(result, 0);
+
+      final projectDir = Directory('${tempDir.path}/my_relic_app');
+      expect(projectDir.existsSync(), isTrue);
+
+      final expectedFiles = [
+        'pubspec.yaml',
+        '.gitignore',
+        'analysis_options.yaml',
+        'bin/server.dart',
+        'lib/handlers.dart',
+        'templates/base.html',
+        'templates/index.html',
+        'templates/about.html',
+        'static/styles.css',
+      ];
+
+      for (final path in expectedFiles) {
+        expect(File('${projectDir.path}/$path').existsSync(), isTrue, reason: '$path should exist');
+      }
+    });
+
+    test('-t relic short flag creates Relic project', () async {
+      final cli = TrellisCli();
+      final result = await cli.run(['create', '-t', 'relic', 'short_flag_relic']);
+      expect(result, 0);
+      expect(File('${tempDir.path}/short_flag_relic/bin/server.dart').existsSync(), isTrue);
+    });
+
+    test('generated pubspec contains relic and trellis_relic', () async {
+      final cli = TrellisCli();
+      await cli.run(['create', '--template', 'relic', 'relic_pubspec_test']);
+
+      final pubspec = File('${tempDir.path}/relic_pubspec_test/pubspec.yaml').readAsStringSync();
+      expect(pubspec, contains('relic:'));
+      expect(pubspec, contains('trellis_relic:'));
+    });
+
+    test('--template relic with existing directory produces error', () {
+      Directory('${tempDir.path}/existing_relic').createSync();
+      final cli = TrellisCli();
+      expect(() => cli.run(['create', '--template', 'relic', 'existing_relic']), throwsA(isA<UsageException>()));
+    });
+
+    test('generated server configures CSP for HTMX CDN script', () async {
+      final cli = TrellisCli();
+      await cli.run(['create', '--template', 'relic', 'relic_csp_test']);
+
+      final server = File('${tempDir.path}/relic_csp_test/bin/server.dart').readAsStringSync();
+      expect(server, contains('CspBuilder'));
+      expect(server, contains('https://cdn.jsdelivr.net'));
+      expect(server, contains('trellisSecurityHeaders(csp: csp)'));
+    });
+  });
 }

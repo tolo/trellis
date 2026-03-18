@@ -1,0 +1,3 @@
+# Tests in this package start real HTTP servers via dart_frog's serve() function.
+# Parallel test file execution causes port/connection interference; run serially.
+concurrency: 1

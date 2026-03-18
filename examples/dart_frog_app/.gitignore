@@ -1,0 +1,13 @@
+# Dart
+.dart_tool/
+.packages
+pubspec.lock
+build/
+
+# Dart Frog
+.dart_frog/
+
+# IDE
+.idea/
+*.iml
+.vscode/

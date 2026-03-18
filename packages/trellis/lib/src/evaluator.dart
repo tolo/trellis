@@ -3,11 +3,37 @@ import 'expression/ast.dart';
 import 'expression/parser.dart';
 import 'message_source.dart';
 import 'truthiness.dart';
+import 'utility_objects/date_utility_object.dart';
+import 'utility_objects/formatting_delegate.dart';
+import 'utility_objects/list_utility_object.dart';
+import 'utility_objects/number_utility_object.dart';
+import 'utility_objects/string_utility_object.dart';
+import 'utility_objects/utility_object.dart';
 
 /// Evaluates trellis template expressions against a context map.
 class ExpressionEvaluator {
   /// Reserved context key for the selection object set by tl:object.
   static const selectionKey = '__trellis_selection__';
+
+  /// Built-in utility object registry, keyed by name.
+  static final Map<String, UtilityObject> _utilityObjects = {
+    'strings': StringUtilityObject(),
+    'numbers': NumberUtilityObject(),
+    'dates': DateUtilityObject(),
+    'lists': ListUtilityObject(),
+  };
+
+  /// Optional delegate for locale-aware number/date formatting.
+  ///
+  /// When set, `#numbers.format` and `#dates.format` delegate to this
+  /// for pattern-based formatting. When null, built-in English-only
+  /// formatting is used.
+  ///
+  /// Example using package:intl:
+  /// ```dart
+  /// ExpressionEvaluator.formattingDelegate = MyIntlFormattingDelegate();
+  /// ```
+  static FormattingDelegate? formattingDelegate;
 
   final Map<String, Function> _filters;
   final bool _strict;
@@ -72,6 +98,13 @@ class ExpressionEvaluator {
     LiteralSubstitutionExpr(:final parts) => parts.map((p) => _eval(p, expr, context)?.toString() ?? '').join(),
     SelectionExpr(:final inner) => _evalSelection(inner, expr, context),
     MessageExpr(:final key, :final args) => _evalMessage(key, args, expr, context),
+    UtilityCallExpr(:final objectName, :final method, :final args) => _evalUtilityCall(
+      objectName,
+      method,
+      args,
+      expr,
+      context,
+    ),
   };
 
   dynamic _evalVariable(String name, String expr, Map<String, dynamic> context) {
@@ -290,6 +323,25 @@ class ExpressionEvaluator {
       selectionMap = converted;
     }
     return _eval(inner, expr, {...context, ...selectionMap});
+  }
+
+  dynamic _evalUtilityCall(
+    String objectName,
+    String method,
+    List<Expr> args,
+    String expr,
+    Map<String, dynamic> context,
+  ) {
+    final utilityObject = _utilityObjects[objectName];
+    if (utilityObject == null) {
+      throw ExpressionException(
+        'Unknown utility object: #$objectName. '
+        'Available: ${_utilityObjects.keys.map((k) => '#$k').join(', ')}',
+        expression: expr,
+      );
+    }
+    final evaluatedArgs = args.map((a) => _eval(a, expr, context)).toList();
+    return utilityObject.call(method, evaluatedArgs, expr);
   }
 
   /// Auto-convert a non-Map object to Map via toMap() or toJson() dynamic dispatch.

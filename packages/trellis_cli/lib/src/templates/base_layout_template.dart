@@ -14,8 +14,8 @@ String baseLayoutTemplate(String projectName) =>
     r'''</title>
   <meta name="csrf-token" tl:attr="content=${csrfToken}" content="">
   <link rel="stylesheet" href="/styles.css">
-  <script src="https://unpkg.com/htmx.org@2.0.4"
-          integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
+  <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"
+          integrity="sha384-/TgkGk7p307TH7EXJDuUlgG3Ce1UVolAOFopFekQkkXihi5u/6OCvVKyz1W+idaz"
           crossorigin="anonymous"></script>
   <!-- Set CSRF header on all HTMX requests -->
   <script>

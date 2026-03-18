@@ -99,5 +99,22 @@ final class MessageExpr extends Expr {
   MessageExpr(this.key, [this.args = const []]);
 }
 
+/// Utility object method call: `#name.method(args)`.
+///
+/// Resolved against built-in utility objects (#strings, #numbers, #dates, #lists).
+/// The evaluator dispatches to the registered [UtilityObject]'s call() method.
+final class UtilityCallExpr extends Expr {
+  /// The utility object name (e.g., 'strings', 'numbers', 'dates', 'lists').
+  final String objectName;
+
+  /// The method name to invoke (e.g., 'capitalize', 'format', 'size').
+  final String method;
+
+  /// Arguments to pass to the method (evaluated before dispatch).
+  final List<Expr> args;
+
+  UtilityCallExpr(this.objectName, this.method, [this.args = const []]);
+}
+
 /// Unary operators.
 enum UnaryOp { not_, minus }

@@ -14,8 +14,11 @@ Part of the [Trellis SDK](https://github.com/tolo/trellis).
 - **Taxonomies** -- configurable taxonomy collection (`tags`, `categories`, etc.) with virtual listing and term pages
 - **Pagination** -- automatic page splitting for section, home, and taxonomy term pages
 - **Sitemap** -- `sitemap.xml` generation with `<lastmod>` from front matter or file mtime
+- **Feeds** -- Atom `feed.xml`, optional RSS `rss.xml`, and per-section feeds
+- **Search index** -- configurable JSON output for client-side search tools
 - **Shortcodes** -- reusable content snippets via `{{% name %}}` (pre-Markdown) and `<!-- tl:name -->` (post-Markdown)
 - **Data cascade** -- site params, global data files (`data/*.yaml`), section front matter, page front matter
+- **Configurable directories** -- override content, layouts, static, data, and output paths
 - **Page bundles** -- `index.md` directories with co-located assets copied to output
 - **Draft filtering** -- `draft: true` pages excluded by default, includable via flag
 
@@ -54,6 +57,43 @@ Or use the CLI:
 ```bash
 trellis build
 trellis serve
+```
+
+## Configuration
+
+`trellis_site.yaml` supports a small set of top-level keys for common setup:
+
+- `title`, `baseUrl`, `description`
+- `contentDir`, `layoutsDir`, `staticDir`, `dataDir`, `outputDir`
+- `taxonomies`, `paginate`
+- `params` for arbitrary site-level values exposed as `${site.params.*}`
+- `feeds` and `search` for generated output artifacts
+
+Paths may be relative to the site root or absolute.
+
+```yaml
+title: My Site
+baseUrl: https://example.com
+description: Notes about Dart and server-rendered HTML
+contentDir: content
+layoutsDir: layouts
+staticDir: static
+dataDir: data
+outputDir: output
+taxonomies: [tags, categories]
+paginate: 10
+params:
+  author: Tobias
+  showReadingTime: true
+feeds:
+  atom: true
+  rss: true
+  sections: [posts]
+  limit: 20
+search:
+  enabled: true
+  output: search-index.json
+  fields: [title, summary, content, tags]
 ```
 
 ## Project Structure
@@ -117,7 +157,7 @@ summary: A custom summary for listings.
 Content here.
 ```
 
-Standard fields: `title`, `date`, `draft`, `summary`, `layout`, `type`, `sitemap`. Custom fields are available in templates as `${page.fieldName}`.
+Standard fields: `title`, `date`, `draft`, `summary`, `layout`, `type`, `sitemap`, `feed`, `search`. Custom fields are available in templates as `${page.fieldName}`.
 
 ## Template Context
 
@@ -134,6 +174,7 @@ Additional context variables:
 - `${pages}` -- child pages for list pages (section, home, taxonomy term)
 - `${pagination.*}` -- pagination metadata (`page`, `totalPages`, `hasNext`, `prevUrl`, `nextUrl`, `pages`)
 - `${taxonomy.*}` -- taxonomy term lists (when taxonomies are configured)
+- `${feeds.*}` -- generated site-wide feed URLs (`atom`, `rss`) when feeds are enabled
 
 ## Layout Resolution
 
@@ -198,6 +239,45 @@ Post-Markdown syntax (processed after Markdown rendering):
 ## Sitemap
 
 When `baseUrl` is set, `sitemap.xml` is generated automatically. Pages with `sitemap: false` in front matter are excluded. `<lastmod>` uses the `date` front matter field, falling back to file modification time.
+
+## Feeds
+
+Enable feeds in `trellis_site.yaml`:
+
+```yaml
+feeds:
+  atom: true
+  rss: true
+  sections: [posts]
+  limit: 20
+  fullContent: false
+```
+
+Generated outputs:
+
+- `feed.xml` -- site-wide Atom feed
+- `rss.xml` -- site-wide RSS 2.0 feed when `rss: true`
+- `/{section}/feed.xml` and `/{section}/rss.xml` -- per-section feeds when `sections` are configured
+
+Templates can link to site-wide feeds via `${feeds.atom}` and `${feeds.rss}` when available. Pages with `feed: false` in front matter are excluded.
+
+## Search Index
+
+Generate a JSON search index for client-side search:
+
+```yaml
+search:
+  enabled: true
+  output: search-index.json
+  fields: [title, summary, content, tags]
+  excludeSections: [drafts, internal]
+  stripHtml: true
+  maxContentLength: 5000
+```
+
+This writes a JSON array to the output directory, suitable for tools such as
+Fuse.js or Lunr.js. Draft pages and pages with `search: false` in front matter
+are excluded.
 
 ## License
 

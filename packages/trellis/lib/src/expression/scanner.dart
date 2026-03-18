@@ -43,6 +43,7 @@ enum TokenType {
   dollarLBrace,
   atLBrace,
   hashLBrace,
+  hash,
   starLBrace,
   rBrace,
   // Control
@@ -138,6 +139,7 @@ final class Scanner {
     if (_scanner.scan(r'${')) return Token(.dollarLBrace, null, offset);
     if (_scanner.scan('@{')) return Token(.atLBrace, null, offset);
     if (_scanner.scan('#{')) return Token(.hashLBrace, null, offset);
+    if (_scanner.scan('#')) return Token(.hash, null, offset);
     if (_scanner.scan('==')) return Token(.eq, null, offset);
     if (_scanner.scan('!=')) return Token(.notEq, null, offset);
     if (_scanner.scan('!')) return Token(.not_, null, offset);

@@ -3,6 +3,66 @@
 All notable changes to **trellis** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### trellis (core)
+
+#### Added
+- **Expression utility objects**: `${#strings.*}`, `${#numbers.*}`, `${#dates.*}`, `${#lists.*}` — 53 built-in methods for common string, number, date, and list operations
+  - `#strings`: `capitalize`, `upperCase`, `lowerCase`, `trim`, `isEmpty`, `isNotEmpty`, `length`, `contains`, `startsWith`, `endsWith`, `replace`, `substring`, `indexOf`, `split`, `join`, `repeat`
+  - `#numbers`: `formatDecimal`, `formatCurrency`, `formatPercent`, `abs`, `min`, `max`, `round`, `floor`, `ceil`, `isOdd`, `isEven`
+  - `#dates`: `format`, `formatDate`, `formatTime`, `now`, `year`, `month`, `day`, `hour`, `minute`, `second`, `isBefore`, `isAfter`
+  - `#lists`: `size`, `isEmpty`, `isNotEmpty`, `first`, `last`, `contains`, `sort`, `sortBy`, `reverse`, `take`, `skip`, `where`, `map`, `join`, `flatten`
+- `UtilityCallExpr` AST node and parser rule for `${#name.method(args)}` syntax
+- `#dates.format` and `#numbers.format` use `package:intl` when available, English-only fallback otherwise
+- Unknown utility object or method produces `ExpressionException` with a message listing available options
+
+#### Added (testing utilities — `testing.dart`)
+- Merged `trellis_test` into core as `package:trellis/testing.dart`
+- `testEngine()` — preconfigured engine factory for testing with `MapLoader`, strict mode enabled, and caching disabled
+- CSS-selector HTML matchers: `hasElement`, `hasNoElement`, `hasAttribute`, `elementCount`, `hasTextContent`
+- Snapshot golden file testing: `expectSnapshot`, `expectSnapshotFromSource` — auto-creates on first run, fails with readable diff on mismatch; `TRELLIS_UPDATE_GOLDENS=true` regenerates all golden files
+- Fragment isolation helpers: `testFragment`, `testFragmentFile`
+- `normalizeHtml()` — parse-and-serialize round-trip for stable snapshot comparison
+
+### trellis_dart_frog (new package)
+
+- `trellisProvider()` — Dart Frog middleware for Trellis engine injection via `context.read<Trellis>()`
+- `renderPage()`, `renderFragment()`, `renderOobFragments()` — template rendering helpers accepting `RequestContext`
+- `isHtmxRequest()`, `htmxTarget()`, `htmxTrigger()`, `isHtmxBoosted()` — HTMX request detection
+- `trellisSecurityHeaders()` — security headers middleware bridged from `trellis_shelf`
+- `trellisCsrf()` — CSRF protection middleware with HMAC-SHA256 double-submit cookie pattern; token available in template context as `csrfToken`
+- `csrfToken()` — CSRF token extraction from request context
+- `CspBuilder` — re-exported from `trellis_shelf` for CSP configuration
+
+### trellis_relic (new package)
+
+- `renderPage()`, `renderFragment()`, `renderOobFragments()` — Relic response helpers for template rendering with explicit engine passing
+- `isHtmxRequest()`, `htmxTarget()`, `htmxTrigger()`, `isHtmxBoosted()` — HTMX request detection
+- `trellisSecurityHeaders()` — security headers middleware with configurable `CspBuilder`
+- `htmlResponse()` — convenience function for creating `text/html` Relic responses
+
+### trellis_site
+
+#### Added
+- **RSS/Atom feed generation**: opt-in via `feeds:` config section in `trellis_site.yaml`; generates Atom (RFC 4287) feed at `feed.xml` and optional RSS 2.0 at `rss.xml`; per-section feeds, configurable item limit, `${site.feeds.atom}` available in template context
+- **JSON search index**: opt-in via `search:` config in `trellis_site.yaml`; generates a JSON array compatible with Lunr.js, Fuse.js, and Pagefind; configurable fields, HTML stripping, content truncation
+
+### trellis_cli
+
+#### Added
+- `trellis create --template dart_frog <name>` — scaffolds a complete Dart Frog + Trellis + HTMX project with file-based routing, `trellis_dart_frog` provider/middleware, HTMX todo example, security headers, CSRF, and `trellis_dev` hot reload
+
+### examples
+
+#### Added
+- `examples/relic_app/` — full example demonstrating Relic + Trellis + HTMX with `RelicApp` router, `trellis_relic` response helpers, HTMX counter interaction, and security headers
+
+### doc
+
+#### Changed
+- `doc/guides/framework-integration.md` — comprehensive rewrite covering Shelf, Dart Frog, and Relic; includes per-framework integration, security patterns, HTMX fragment patterns, and `trellis_test` usage
+
 ## [0.7.0]
 
 ### Added

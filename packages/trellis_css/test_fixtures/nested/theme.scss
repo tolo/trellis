@@ -1,0 +1,6 @@
+@use 'colors';
+
+.theme {
+  background: colors.$bg;
+  color: colors.$text;
+}

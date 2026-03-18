@@ -7,6 +7,8 @@ workspace:
   - packages/trellis_shelf
   - packages/trellis_dev
   - packages/trellis_cli
+  - packages/trellis_css
+  - packages/trellis_site
   - examples/basic
   - examples/todo_app
 dev_dependencies:

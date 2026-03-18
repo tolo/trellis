@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head><title tl:text="${page.title}">Title</title></head>
+<body>
+<h1 tl:text="${page.title}">Title</h1>
+<ul id="posts">
+  <li tl:each="p : ${pages}"><a tl:href="${p.url}" tl:text="${p.title}">Post</a></li>
+</ul>
+<nav tl:if="${pagination}" id="pagination">
+  <a tl:if="${pagination.hasPrev}" tl:href="${pagination.prevUrl}" id="prev">Prev</a>
+  <span tl:text="${pagination.page}">1</span>/<span tl:text="${pagination.totalPages}">N</span>
+  <a tl:if="${pagination.hasNext}" tl:href="${pagination.nextUrl}" id="next">Next</a>
+</nav>
+</body>
+</html>

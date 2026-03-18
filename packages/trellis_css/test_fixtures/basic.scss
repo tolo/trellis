@@ -1,0 +1,28 @@
+$primary: #3498db;
+$font-size: 16px;
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .header {
+    color: $primary;
+    font-size: $font-size * 1.5;
+  }
+
+  .content {
+    font-size: $font-size;
+    line-height: 1.6;
+  }
+}
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero {
+  @include flex-center;
+  background-color: $primary;
+}

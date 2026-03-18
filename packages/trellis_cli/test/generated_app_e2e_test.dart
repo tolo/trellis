@@ -19,29 +19,28 @@ import 'package:trellis_cli/trellis_cli.dart';
 const _kPort = 19080;
 
 void main() {
-  group(
-    'Generated app E2E',
-    () {
-      late Directory projectDir;
-      Process? serverProcess;
+  group('Generated app E2E', () {
+    late Directory projectDir;
+    Process? serverProcess;
 
-      setUpAll(() async {
-        // ── 1. Generate project ────────────────────────────────────────────
-        final tempDir = await Directory.systemTemp.createTemp('trellis_e2e_');
-        const projectName = 'e2e_test_app';
-        final appDir = Directory('${tempDir.path}/$projectName');
-        await appDir.create();
+    setUpAll(() async {
+      // ── 1. Generate project ────────────────────────────────────────────
+      final tempDir = await Directory.systemTemp.createTemp('trellis_e2e_');
+      const projectName = 'e2e_test_app';
+      final appDir = Directory('${tempDir.path}/$projectName');
+      await appDir.create();
 
-        final writer = DiskFileWriter(appDir.path);
-        final generator = ProjectGenerator(projectName: projectName, writer: writer);
-        await generator.generate();
-        projectDir = appDir;
+      final writer = DiskFileWriter(appDir.path);
+      final generator = ProjectGenerator(projectName: projectName, writer: writer);
+      await generator.generate();
+      projectDir = appDir;
 
-        // ── 2. Inject dependency_overrides for local workspace packages ────
-        final workspaceRoot = _findWorkspaceRoot().path;
-        final pubspecFile = File('${projectDir.path}/pubspec.yaml');
-        final pubspecContent = await pubspecFile.readAsString();
-        final overrides = '''
+      // ── 2. Inject dependency_overrides for local workspace packages ────
+      final workspaceRoot = _findWorkspaceRoot().path;
+      final pubspecFile = File('${projectDir.path}/pubspec.yaml');
+      final pubspecContent = await pubspecFile.readAsString();
+      final overrides =
+          '''
 dependency_overrides:
   trellis:
     path: $workspaceRoot/packages/trellis
@@ -50,130 +49,99 @@ dependency_overrides:
   trellis_dev:
     path: $workspaceRoot/packages/trellis_dev
 ''';
-        await pubspecFile.writeAsString(pubspecContent + overrides);
+      await pubspecFile.writeAsString(pubspecContent + overrides);
 
-        // ── 3. Patch server port to avoid collision with default 8080 ──────
-        final serverFile = File('${projectDir.path}/bin/server.dart');
-        final serverContent = (await serverFile.readAsString()).replaceFirst(
-          "await shelf_io.serve(handler, 'localhost', 8080)",
-          "await shelf_io.serve(handler, 'localhost', $_kPort)",
-        );
-        await serverFile.writeAsString(serverContent);
+      // ── 3. Patch server port to avoid collision with default 8080 ──────
+      final serverFile = File('${projectDir.path}/bin/server.dart');
+      final serverContent = (await serverFile.readAsString()).replaceFirst(
+        "await shelf_io.serve(handler, 'localhost', 8080)",
+        "await shelf_io.serve(handler, 'localhost', $_kPort)",
+      );
+      await serverFile.writeAsString(serverContent);
 
-        // ── 4. dart pub get ────────────────────────────────────────────────
-        final pubGet = await Process.run(
-          'dart',
-          ['pub', 'get'],
-          workingDirectory: projectDir.path,
-        );
-        expect(
-          pubGet.exitCode,
-          0,
-          reason: 'dart pub get failed:\n${pubGet.stdout}\n${pubGet.stderr}',
-        );
+      // ── 4. dart pub get ────────────────────────────────────────────────
+      final pubGet = await Process.run('dart', ['pub', 'get'], workingDirectory: projectDir.path);
+      expect(pubGet.exitCode, 0, reason: 'dart pub get failed:\n${pubGet.stdout}\n${pubGet.stderr}');
 
-        // ── 5. dart analyze ────────────────────────────────────────────────
-        final analyze = await Process.run(
-          'dart',
-          ['analyze', '--fatal-infos'],
-          workingDirectory: projectDir.path,
-        );
-        expect(
-          analyze.exitCode,
-          0,
-          reason: 'dart analyze failed:\n${analyze.stdout}\n${analyze.stderr}',
-        );
+      // ── 5. dart analyze ────────────────────────────────────────────────
+      final analyze = await Process.run('dart', ['analyze', '--fatal-infos'], workingDirectory: projectDir.path);
+      expect(analyze.exitCode, 0, reason: 'dart analyze failed:\n${analyze.stdout}\n${analyze.stderr}');
 
-        // ── 6. Boot server ─────────────────────────────────────────────────
-        serverProcess = await Process.start(
-          'dart',
-          ['run', 'bin/server.dart'],
-          workingDirectory: projectDir.path,
-        );
+      // ── 6. Boot server ─────────────────────────────────────────────────
+      serverProcess = await Process.start('dart', ['run', 'bin/server.dart'], workingDirectory: projectDir.path);
 
-        final started = await _waitForServer('localhost', _kPort);
-        expect(started, isTrue, reason: 'Server did not start within timeout');
-      });
+      final started = await _waitForServer('localhost', _kPort);
+      expect(started, isTrue, reason: 'Server did not start within timeout');
+    });
 
-      tearDownAll(() async {
-        serverProcess?.kill();
-        await serverProcess?.exitCode.timeout(
-          const Duration(seconds: 5),
-          onTimeout: () => -1,
-        );
-        await projectDir.parent.delete(recursive: true);
-      });
+    tearDownAll(() async {
+      serverProcess?.kill();
+      await serverProcess?.exitCode.timeout(const Duration(seconds: 5), onTimeout: () => -1);
+      await projectDir.parent.delete(recursive: true);
+    });
 
-      test('GET / returns 200', () async {
-        final res = await _get('http://localhost:$_kPort/');
-        expect(res.statusCode, 200);
-      });
+    test('GET / returns 200', () async {
+      final res = await _get('http://localhost:$_kPort/');
+      expect(res.statusCode, 200);
+    });
 
-      test('GET /status returns 200 for HTMX request', () async {
-        final res = await _get(
-          'http://localhost:$_kPort/status',
-          headers: {'HX-Request': 'true'},
-        );
-        expect(res.statusCode, 200);
-      });
+    test('GET /status returns 200 for HTMX request', () async {
+      final res = await _get('http://localhost:$_kPort/status', headers: {'HX-Request': 'true'});
+      expect(res.statusCode, 200);
+    });
 
-      test('POST /greet with valid CSRF token returns 200', () async {
-        // Obtain a CSRF cookie from an initial GET.
-        final getRes = await _get('http://localhost:$_kPort/');
-        expect(getRes.statusCode, 200);
+    test('POST /greet with valid CSRF token returns 200', () async {
+      // Obtain a CSRF cookie from an initial GET.
+      final getRes = await _get('http://localhost:$_kPort/');
+      expect(getRes.statusCode, 200);
 
-        final cookieValue = _extractCsrfCookieValue(getRes.setCookieHeader);
-        expect(cookieValue, isNotNull, reason: '__csrf cookie should be set on GET /');
+      final cookieValue = _extractCsrfCookieValue(getRes.setCookieHeader);
+      expect(cookieValue, isNotNull, reason: '__csrf cookie should be set on GET /');
 
-        // The cookie is `rawToken.hmac`; only rawToken goes in the form field.
-        final rawToken = cookieValue!.split('.').first;
+      // The cookie is `rawToken.hmac`; only rawToken goes in the form field.
+      final rawToken = cookieValue!.split('.').first;
 
-        final postRes = await _post(
-          'http://localhost:$_kPort/greet',
-          body: 'name=Alice&_csrf=$rawToken',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'HX-Request': 'true',
-            'Cookie': '__csrf=$cookieValue',
-          },
-        );
-        expect(postRes.statusCode, 200);
-      });
+      final postRes = await _post(
+        'http://localhost:$_kPort/greet',
+        body: 'name=Alice&_csrf=$rawToken',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'HX-Request': 'true',
+          'Cookie': '__csrf=$cookieValue',
+        },
+      );
+      expect(postRes.statusCode, 200);
+    });
 
-      test('POST /greet without CSRF token returns 403', () async {
-        final postRes = await _post(
-          'http://localhost:$_kPort/greet',
-          body: 'name=Alice',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'HX-Request': 'true',
-          },
-        );
-        expect(postRes.statusCode, 403);
-      });
+    test('POST /greet without CSRF token returns 403', () async {
+      final postRes = await _post(
+        'http://localhost:$_kPort/greet',
+        body: 'name=Alice',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded', 'HX-Request': 'true'},
+      );
+      expect(postRes.statusCode, 403);
+    });
 
-      test('XSS prevention: greet endpoint escapes HTML in name parameter', () async {
-        final getRes = await _get('http://localhost:$_kPort/');
-        final cookieValue = _extractCsrfCookieValue(getRes.setCookieHeader)!;
-        final rawToken = cookieValue.split('.').first;
+    test('XSS prevention: greet endpoint escapes HTML in name parameter', () async {
+      final getRes = await _get('http://localhost:$_kPort/');
+      final cookieValue = _extractCsrfCookieValue(getRes.setCookieHeader)!;
+      final rawToken = cookieValue.split('.').first;
 
-        final xssPayload = Uri.encodeComponent('<script>alert(1)</script>');
-        final postRes = await _post(
-          'http://localhost:$_kPort/greet',
-          body: 'name=$xssPayload&_csrf=$rawToken',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'HX-Request': 'true',
-            'Cookie': '__csrf=$cookieValue',
-          },
-        );
-        expect(postRes.statusCode, 200);
-        expect(postRes.body, isNot(contains('<script>alert(1)</script>')));
-        expect(postRes.body, contains('&lt;script&gt;'));
-      });
-    },
-    timeout: const Timeout(Duration(minutes: 4)),
-  );
+      final xssPayload = Uri.encodeComponent('<script>alert(1)</script>');
+      final postRes = await _post(
+        'http://localhost:$_kPort/greet',
+        body: 'name=$xssPayload&_csrf=$rawToken',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'HX-Request': 'true',
+          'Cookie': '__csrf=$cookieValue',
+        },
+      );
+      expect(postRes.statusCode, 200);
+      expect(postRes.body, isNot(contains('<script>alert(1)</script>')));
+      expect(postRes.body, contains('&lt;script&gt;'));
+    });
+  }, timeout: const Timeout(Duration(minutes: 4)));
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -197,11 +165,7 @@ Directory _findWorkspaceRoot() {
 typedef _Response = ({int statusCode, String? setCookieHeader, String body});
 
 /// Polls [host]:[port] until a TCP connection succeeds or [timeout] elapses.
-Future<bool> _waitForServer(
-  String host,
-  int port, {
-  Duration timeout = const Duration(seconds: 15),
-}) async {
+Future<bool> _waitForServer(String host, int port, {Duration timeout = const Duration(seconds: 15)}) async {
   final deadline = DateTime.now().add(timeout);
   while (DateTime.now().isBefore(deadline)) {
     try {
@@ -233,11 +197,7 @@ Future<_Response> _get(String url, {Map<String, String> headers = const {}}) asy
 }
 
 /// Issues an HTTP POST and returns status, Set-Cookie header, and body.
-Future<_Response> _post(
-  String url, {
-  required String body,
-  Map<String, String> headers = const {},
-}) async {
+Future<_Response> _post(String url, {required String body, Map<String, String> headers = const {}}) async {
   final uri = Uri.parse(url);
   final client = HttpClient();
   try {

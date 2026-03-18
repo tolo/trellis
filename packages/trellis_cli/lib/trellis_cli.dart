@@ -5,6 +5,7 @@
 library;
 
 export 'src/cli_runner.dart' show TrellisCli;
+export 'src/generator/blog_project_generator.dart' show BlogProjectGenerator;
 export 'src/generator/file_writer.dart' show FileWriter, DiskFileWriter, InMemoryFileWriter;
 export 'src/generator/project_generator.dart' show ProjectGenerator;
 export 'src/validators.dart' show validateProjectName;

@@ -201,8 +201,8 @@ final class Trellis {
     final processor = _createProcessor()..collectFragments(doc);
     final buffer = StringBuffer();
     for (final clone in clones) {
-      clone.attributes.remove('${attrPrefix}fragment');
       processor.process(clone, context);
+      clone.attributes.remove('${attrPrefix}fragment');
       buffer.write(_elementHtml(clone, attrPrefix));
     }
 

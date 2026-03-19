@@ -1,7 +1,7 @@
 # Dart Frog + Trellis Example
 
-A todo application demonstrating [Dart Frog](https://dartfrog.vgv.dev/) +
-[Trellis](https://pub.dev/packages/trellis) + [HTMX](https://htmx.org) integration.
+A minimal counter application demonstrating [Dart Frog](https://dartfrog.vgv.dev/)
++ [Trellis](https://pub.dev/packages/trellis) + [HTMX](https://htmx.org) integration.
 
 ## Quick Start
 
@@ -25,7 +25,8 @@ DEV=true dart_frog dev
 Dart Frog maps route files to URL paths automatically:
 
 - `routes/index.dart` handles `GET /`
-- `routes/todos/index.dart` handles `GET|POST|PUT|DELETE /todos`
+- `routes/about.dart` handles `GET /about`
+- `routes/counter/increment.dart`, `decrement.dart`, and `reset.dart` handle counter mutations
 - `routes/_middleware.dart` applies middleware to all routes
 
 ### Provider-Based Dependency Injection
@@ -41,23 +42,32 @@ handler.use(trellisProvider(_engine))
 renderPage(context, 'pages/index.html', {...});
 ```
 
-### HTMX Todo Interaction
+### HTMX SPA Navigation
 
-The todo list demonstrates full CRUD via HTMX fragment rendering:
+Navigation uses HTMX for SPA-style page transitions without full page reloads:
 
-1. `POST /todos` adds a new todo (form submission)
-2. `PUT /todos` toggles done state (button click)
-3. `DELETE /todos` removes a todo (button click)
-4. Each mutation returns only the `todo-list` fragment — HTMX swaps it in place
-5. No JavaScript required beyond HTMX itself
+- Nav links use `hx-get` + `hx-target="#content"` + `hx-push-url="true"`
+- HTMX requests return only the `page-content` fragment
+- Direct page loads return the full page with layout
+- Browser history is updated via `hx-push-url`
+
+### HTMX Counter Interaction
+
+The counter demonstrates fragment rendering for mutations:
+
+1. `POST /counter/increment` increments the count
+2. `POST /counter/decrement` decrements it
+3. `POST /counter/reset` resets it to zero
+4. Each mutation returns only the `counter` fragment
+5. HTMX swaps the fragment in place without custom JavaScript
 
 ### Template Inheritance
 
 Templates use Trellis's `tl:extends` and `tl:define`:
 
-- `layouts/base.html` defines the page shell with `content` and `footer` blocks
-- `pages/index.html` extends the base layout and overrides `content`
-- `partials/todo_list.html` defines the `todo-list` fragment for HTMX responses
+- `layouts/base.html` defines the page shell with the `content` block
+- `pages/index.html` and `pages/about.html` extend the base and override `content`
+- `pages/index.html` also defines the `counter` fragment for HTMX responses
 
 ### Security Headers + CSRF Protection
 
@@ -67,7 +77,7 @@ enables double-submit cookie CSRF protection:
 - A `csrfToken` is automatically available in the template context
 - The base layout injects it via `<meta name="csrf-token">`
 - HTMX sends it on every request via `htmx:configRequest`
-- Forms include a hidden `_csrf` field
+- Hidden `_csrf` fields remain as a fallback
 
 ### Dev Mode Hot Reload
 
@@ -78,14 +88,18 @@ the server.
 ## Project Structure
 
 ```
-routes/_middleware.dart           — Engine setup, security, CSRF, dev middleware
-routes/index.dart                 — Home page handler
-routes/todos/index.dart           — Todo CRUD handlers (GET/POST/PUT/DELETE)
-templates/layouts/base.html       — Base layout with nav, CSRF meta, HTMX script
-templates/pages/index.html        — Home page with features list and todo app
-templates/partials/nav.html       — Navigation partial
-templates/partials/todo_list.html — Todo list fragment for HTMX responses
-public/styles.css                 — Application styles
+routes/_middleware.dart             — Engine setup, security, CSRF, dev middleware
+routes/index.dart                   — Home page handler (full page + HTMX fragment)
+routes/about.dart                   — About page explaining Dart Frog patterns
+lib/counter_state.dart              — Shared in-memory counter state + page context
+routes/counter/increment.dart       — Increment mutation endpoint
+routes/counter/decrement.dart       — Decrement mutation endpoint
+routes/counter/reset.dart           — Reset mutation endpoint
+templates/layouts/base.html         — Base layout with nav, CSRF meta, HTMX script
+templates/pages/index.html          — Home page with counter + feature list
+templates/pages/about.html          — About page with framework pattern docs
+templates/partials/nav.html         — SPA navigation with hx-get + hx-push-url
+public/styles.css                   — Application styles
 ```
 
 ## Dependencies

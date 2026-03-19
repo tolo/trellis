@@ -1,0 +1,40 @@
+<html tl:extends="layouts/base.html">
+<body>
+  <main tl:define="content">
+    <div tl:fragment="page-content">
+      <h1>About This Example</h1>
+
+      <h2>Shelf Pipeline</h2>
+      <p>Shelf composes the application as a middleware pipeline around a final
+         handler. This example wraps the router with logging, security headers,
+         Trellis engine injection, CSRF protection, and optional dev-mode live
+         reload.</p>
+
+      <h2>Request Context</h2>
+      <p><code>trellisEngine(engine)</code> stores the Trellis engine in the
+         Shelf request context, so handlers can call <code>renderPage()</code>
+         and <code>renderFragment()</code> without globals. Response helpers
+         also merge request-scoped values like <code>csrfToken</code> into the
+         template context automatically.</p>
+
+      <h2>Middleware Ordering</h2>
+      <p><code>trellisSecurityHeaders()</code> runs outside the rest of the app
+         so every response gets the same policy. The Trellis engine middleware
+         must run before <code>trellisCsrf()</code> so CSRF-aware handlers can
+         still resolve the engine from the request context.</p>
+
+      <h2>CSRF Protection</h2>
+      <p><code>trellisCsrf()</code> uses the double-submit cookie pattern.
+         Safe requests mint a signed token cookie, and HTMX sends that token back
+         on mutations via the <code>X-CSRF-Token</code> header. Hidden form
+         fields remain as a fallback for non-HTMX requests.</p>
+
+      <h2>Dev Hot Reload</h2>
+      <p>When you run the example with <code>--dev</code> or set
+         <code>DEV=true</code>, <code>devMiddleware()</code> watches the template
+         directory and injects a small SSE client into HTML responses. Template
+         edits refresh in the browser without restarting the server.</p>
+    </div>
+  </main>
+</body>
+</html>

@@ -108,6 +108,10 @@ Renders as:
 </div>
 ```
 
+## API Documentation
+
+- https://pub.dev/documentation/trellis_css/latest/
+
 ## License
 
 See the [Trellis repository](https://github.com/tolo/trellis) for license information.

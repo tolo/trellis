@@ -1,10 +1,13 @@
 /// Generates the templates/partials/nav.html content.
 ///
 /// Demonstrates `tl:fragment` for reusable navigation included via `tl:insert`.
-/// The fallback content is visible when opening the file directly in a browser
-/// (natural template).
+/// Links use HTMX SPA navigation while remaining valid, navigable anchors.
 String navPartialTemplate() => r'''
 <nav tl:fragment="nav">
-  <a href="/">Home</a>
+  <a href="/" class="brand">Home</a>
+  <div class="nav-links">
+    <a href="/" hx-get="/" hx-target="#content" hx-push-url="true">Home</a>
+    <a href="/about" hx-get="/about" hx-target="#content" hx-push-url="true">About</a>
+  </div>
 </nav>
 ''';

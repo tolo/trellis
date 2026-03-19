@@ -15,6 +15,8 @@ import 'dart:io';
 import 'package:test/test.dart';
 import 'package:trellis_cli/trellis_cli.dart';
 
+import '_workspace_root.dart';
+
 /// Port used for the generated app server; chosen to avoid collisions with 8080.
 const _kPort = 19080;
 
@@ -36,7 +38,7 @@ void main() {
       projectDir = appDir;
 
       // ── 2. Inject dependency_overrides for local workspace packages ────
-      final workspaceRoot = _findWorkspaceRoot().path;
+      final workspaceRoot = (await findWorkspaceRoot()).path;
       final pubspecFile = File('${projectDir.path}/pubspec.yaml');
       final pubspecContent = await pubspecFile.readAsString();
       final overrides =
@@ -85,12 +87,21 @@ dependency_overrides:
       expect(res.statusCode, 200);
     });
 
-    test('GET /status returns 200 for HTMX request', () async {
-      final res = await _get('http://localhost:$_kPort/status', headers: {'HX-Request': 'true'});
+    test('GET /about returns 200', () async {
+      final res = await _get('http://localhost:$_kPort/about');
       expect(res.statusCode, 200);
+      expect(res.body, contains('About This App'));
+      expect(res.body, contains('<!DOCTYPE html>'));
     });
 
-    test('POST /greet with valid CSRF token returns 200', () async {
+    test('GET /about returns fragment for HTMX navigation', () async {
+      final res = await _get('http://localhost:$_kPort/about', headers: {'HX-Request': 'true'});
+      expect(res.statusCode, 200);
+      expect(res.body, contains('About This App'));
+      expect(res.body, isNot(contains('<!DOCTYPE html>')));
+    });
+
+    test('POST /counter/increment with valid CSRF token returns 200', () async {
       // Obtain a CSRF cookie from an initial GET.
       final getRes = await _get('http://localhost:$_kPort/');
       expect(getRes.statusCode, 200);
@@ -102,8 +113,8 @@ dependency_overrides:
       final rawToken = cookieValue!.split('.').first;
 
       final postRes = await _post(
-        'http://localhost:$_kPort/greet',
-        body: 'name=Alice&_csrf=$rawToken',
+        'http://localhost:$_kPort/counter/increment',
+        body: '_csrf=$rawToken',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'HX-Request': 'true',
@@ -111,55 +122,31 @@ dependency_overrides:
         },
       );
       expect(postRes.statusCode, 200);
+      expect(postRes.body, contains('counter-value'));
+      expect(postRes.body, contains('>1<'));
     });
 
-    test('POST /greet without CSRF token returns 403', () async {
+    test('POST /counter/increment without CSRF token returns 403', () async {
       final postRes = await _post(
-        'http://localhost:$_kPort/greet',
-        body: 'name=Alice',
+        'http://localhost:$_kPort/counter/increment',
+        body: '',
         headers: {'Content-Type': 'application/x-www-form-urlencoded', 'HX-Request': 'true'},
       );
       expect(postRes.statusCode, 403);
     });
 
-    test('XSS prevention: greet endpoint escapes HTML in name parameter', () async {
-      final getRes = await _get('http://localhost:$_kPort/');
-      final cookieValue = _extractCsrfCookieValue(getRes.setCookieHeader)!;
-      final rawToken = cookieValue.split('.').first;
-
-      final xssPayload = Uri.encodeComponent('<script>alert(1)</script>');
-      final postRes = await _post(
-        'http://localhost:$_kPort/greet',
-        body: 'name=$xssPayload&_csrf=$rawToken',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'HX-Request': 'true',
-          'Cookie': '__csrf=$cookieValue',
-        },
-      );
-      expect(postRes.statusCode, 200);
-      expect(postRes.body, isNot(contains('<script>alert(1)</script>')));
-      expect(postRes.body, contains('&lt;script&gt;'));
+    test('security headers include the generated CSP policy', () async {
+      final uri = Uri.parse('http://localhost:$_kPort/');
+      final client = HttpClient();
+      try {
+        final request = await client.getUrl(uri);
+        final response = await request.close();
+        expect(response.headers.value('content-security-policy'), contains('https://cdn.jsdelivr.net'));
+      } finally {
+        client.close();
+      }
     });
   }, timeout: const Timeout(Duration(minutes: 4)));
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-/// Finds the workspace root by searching upward for `packages/trellis/`.
-///
-/// Works regardless of whether `dart test` is invoked from the workspace root
-/// or from within a package directory.
-Directory _findWorkspaceRoot() {
-  var dir = Directory.current.absolute;
-  while (true) {
-    if (Directory('${dir.path}/packages/trellis').existsSync()) return dir;
-    final parent = dir.parent;
-    if (parent.path == dir.path) {
-      throw StateError('Could not find workspace root (looked for packages/trellis/)');
-    }
-    dir = parent;
-  }
 }
 
 typedef _Response = ({int statusCode, String? setCookieHeader, String body});

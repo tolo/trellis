@@ -149,3 +149,7 @@ CSRF middleware is **not included** in `trellis_relic`. Relic lacks a built-in f
 ---
 
 Part of the [Trellis SDK](https://github.com/tolo/trellis) — a multi-package toolkit for server-rendered web applications in pure Dart.
+
+## API Documentation
+
+- https://pub.dev/documentation/trellis_relic/latest/

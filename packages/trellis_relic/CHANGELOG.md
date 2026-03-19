@@ -2,7 +2,13 @@
 
 ## 0.1.0
 
-- `renderPage()`, `renderFragment()`, `renderOobFragments()` — Relic response helpers for template rendering with the Trellis engine.
-- `isHtmxRequest()`, `htmxTarget()`, `htmxTrigger()`, `isHtmxBoosted()` — HTMX request detection helpers.
-- `trellisSecurityHeaders()` — security headers middleware with configurable `CspBuilder`.
-- `htmlResponse()` — convenience function for creating `text/html` Relic responses.
+### Added
+
+- `renderPage()`, `renderFragment()`, and `renderOobFragments()` for rendering Trellis templates in Relic handlers.
+- HTMX request helpers: `isHtmxRequest()`, `htmxTarget()`, `htmxTrigger()`, and `isHtmxBoosted()`.
+- `htmlResponse()` for `text/html; charset=utf-8` Relic responses.
+
+### Security
+
+- `trellisSecurityHeaders()` middleware for applying standard response headers in matched Relic routes.
+- `CspBuilder` for composing Content-Security-Policy directives in Relic applications.

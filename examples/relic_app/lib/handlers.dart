@@ -17,6 +17,7 @@ Map<String, dynamic> _counterContext() => {
 Future<Response> homePage(Request request, Trellis engine) async {
   final context = {
     'title': 'Home',
+    'pageTitle': 'Home — Trellis + Relic',
     'appTitle': 'Trellis + Relic',
     ..._counterContext(),
   };
@@ -37,7 +38,11 @@ Future<Response> homePage(Request request, Trellis engine) async {
 
 /// GET /about — About page.
 Future<Response> aboutPage(Request request, Trellis engine) async {
-  final context = {'title': 'About', 'appTitle': 'Trellis + Relic'};
+  final context = {
+    'title': 'About',
+    'pageTitle': 'About — Trellis + Relic',
+    'appTitle': 'Trellis + Relic',
+  };
 
   if (isHtmxRequest(request)) {
     return renderFragment(

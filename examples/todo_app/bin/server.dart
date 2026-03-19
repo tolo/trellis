@@ -29,6 +29,7 @@ String _formatDate(dynamic v) {
 
 void main() async {
   final store = TodoStore()..seed();
+  final port = int.tryParse(Platform.environment['PORT'] ?? '') ?? 8080;
 
   // Resolve directories relative to the script location.
   final scriptDir = File(Platform.script.toFilePath()).parent.parent.path;
@@ -99,7 +100,7 @@ void main() async {
       .addMiddleware(logRequests())
       .addHandler(cascade.handler);
 
-  final server = await shelf_io.serve(handler, 'localhost', 8080);
+  final server = await shelf_io.serve(handler, 'localhost', port);
   print('Todo app running at http://localhost:${server.port}');
 
   // Graceful shutdown: close file watcher and HTTP server on SIGINT.

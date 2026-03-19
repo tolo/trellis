@@ -2,13 +2,14 @@
 ///
 /// Uses template inheritance (`tl:define`) and HTMX for client-side navigation.
 /// No CSRF meta tag — Relic lacks form body parsing, so CSRF is not included.
-String relicBaseLayoutTemplate(String projectName) => '''
+String relicBaseLayoutTemplate(String projectName) =>
+    '''
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title tl:text="\${title} — $projectName">$projectName</title>
+  <title tl:text="\${pageTitle}">$projectName</title>
   <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"></script>
   <link rel="stylesheet" href="/styles.css">
 </head>

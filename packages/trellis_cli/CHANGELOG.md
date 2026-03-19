@@ -1,16 +1,24 @@
+# Changelog
+
 ## 0.2.0
 
-- `trellis build` command — runs the full trellis_site SSG pipeline from `trellis_site.yaml`, including SASS/SCSS compilation via trellis_css.
-  - `--output` (`-o`), `--drafts`, and `--verbose` (`-v`) options.
-- `trellis serve` command — local static file server with clean URL support for previewing built sites.
-  - `--port` (`-p`) and `--output` (`-o`) options.
-- `trellis create --template blog` — blog starter template generating a complete trellis_site project (Markdown content, Trellis layouts, taxonomies, styles).
+### Added
+
+- `trellis build` for running the full `trellis_site` static-site pipeline from `trellis_site.yaml`.
+- `trellis serve` for previewing built output with clean URL handling.
+- `trellis create --template blog` for generating a Trellis blog starter with content, layouts, taxonomies, and styles.
+- `trellis create --template dart_frog` for generating a Dart Frog + Trellis + HTMX starter with file-based routing, security headers, CSRF protection, and hot reload.
+- `trellis create --template relic` for generating a Relic + Trellis + HTMX starter with explicit-engine wiring and counter fragment handling.
+
+### Changed
+
+- Expanded the starter lineup from the original Shelf scaffold to four documented templates: `htmx`, `blog`, `dart_frog`, and `relic`.
 
 ## 0.1.0
 
-- Initial release.
-- `trellis create <project-name>` command for project scaffolding.
-- Generates Shelf + HTMX + Trellis projects with all middleware and hot reload.
-- Templates demonstrate `tl:extends`, `tl:define`, `tl:insert`, `tl:each`, `tl:text`.
-- `--version` and `--help` flags.
-- Project name validation (Dart naming rules + reserved word check).
+### Added
+
+- `trellis create <project-name>` for scaffolding a Shelf + Trellis + HTMX application.
+- Project-name validation for Dart naming rules and reserved words.
+- Starter templates demonstrating template inheritance, HTMX fragments, security middleware, CSRF protection, and optional dev-mode live reload.
+- `--help` and `--version` CLI support.

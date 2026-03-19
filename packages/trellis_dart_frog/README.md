@@ -177,6 +177,10 @@ final token = csrfToken(context); // String? — null if middleware not applied
 
 For hot reload during development, use [`trellis_dev`](https://pub.dev/packages/trellis_dev) alongside `dart_frog dev`. The SSE-based browser refresh works independently of Dart Frog's hot restart.
 
+## API Documentation
+
+- https://pub.dev/documentation/trellis_dart_frog/latest/
+
 ## License
 
 MIT

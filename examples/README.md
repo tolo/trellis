@@ -33,28 +33,31 @@ void main() {
 
 Commands below assume you're in the repository root.
 
-### [basic/](basic/) -- API Demos
+### [shelf_app/](shelf_app/) -- Shelf + HTMX Starter App
 
-Self-contained examples showing core trellis features with inline templates.
+A materialized version of the default `trellis create` starter for Shelf.
+It demonstrates the same counter app used by the Dart Frog and Relic examples:
+Home + About pages, HTMX SPA navigation, counter fragment updates, security
+headers, CSRF protection, and optional dev-mode hot reload.
 
 ```bash
-cd examples/basic
+cd examples/shelf_app
 dart pub get
-dart run bin/example.dart        # Template features: text, if, each, switch, fragments
-dart run bin/shelf_example.dart  # Shelf integration pattern
+dart run bin/server.dart
+# Open http://localhost:8080
 ```
 
-See [basic/README.md](basic/README.md) for a guided walkthrough.
+See [shelf_app/README.md](shelf_app/README.md) for the framework-specific notes.
 
-### [dart_frog_app/](dart_frog_app/) -- Dart Frog + HTMX Todo App
+### [dart_frog_app/](dart_frog_app/) -- Dart Frog + HTMX Starter App
 
-A complete server-side rendered todo application demonstrating trellis with
+A complete server-side rendered counter application demonstrating trellis with
 [Dart Frog](https://dartfrog.vgv.dev/) and [HTMX](https://htmx.org).
 
 Features demonstrated:
 - File-based routing (`routes/` directory convention)
 - `trellis_dart_frog` provider and middleware integration
-- HTMX todo CRUD (add, complete, delete) via fragment rendering
+- HTMX counter updates via fragment rendering
 - CSRF protection with double-submit cookie pattern
 - Template inheritance (`tl:extends` + `tl:define`)
 - Security headers via `trellisSecurityHeaders()`
@@ -124,10 +127,11 @@ so `tl:if="${todos}"` would never hide the empty state. `tl:if="${todoCount}"` (
 
 See [todo_app/README.md](todo_app/README.md) for setup notes and route/template pointers.
 
-### [relic_app/](relic_app/) -- Relic + HTMX Example
+### [relic_app/](relic_app/) -- Relic + HTMX Starter App
 
 A minimal Relic application showing explicit-engine wiring, template inheritance,
-HTMX fragment responses, and Relic-specific middleware behavior.
+the same counter + Home/About flow, HTMX fragment responses, and Relic-specific
+middleware behavior.
 
 ```bash
 cd examples/relic_app

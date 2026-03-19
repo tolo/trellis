@@ -139,11 +139,7 @@ Future<int> _compileSass(SiteConfig config, bool verbose) async {
     final outPath = p.join(config.outputDir, p.setExtension(relative, '.css'));
     Directory(p.dirname(outPath)).createSync(recursive: true);
 
-    final css = TrellisCss.compileSass(
-      file.path,
-      outputStyle: OutputStyle.compressed,
-      loadPaths: [config.staticDir],
-    );
+    final css = TrellisCss.compileSass(file.path, outputStyle: OutputStyle.compressed, loadPaths: [config.staticDir]);
     File(outPath).writeAsStringSync(css);
 
     if (verbose) stdout.writeln('  Compiled ${file.path} → $outPath');

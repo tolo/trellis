@@ -1,5 +1,6 @@
 /// Generates the pubspec.yaml content for a Dart Frog + Trellis project.
-String dartFrogPubspecTemplate(String projectName) => '''
+String dartFrogPubspecTemplate(String projectName) =>
+    '''
 name: $projectName
 version: 0.1.0
 description: A Dart Frog + Trellis web application.

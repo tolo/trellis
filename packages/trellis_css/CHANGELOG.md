@@ -2,9 +2,15 @@
 
 ## 0.1.0
 
-- `TrellisCss.compileSass()` — file-based SASS/SCSS compilation via `package:sass`
-- `TrellisCss.compileSassString()` — string-based SASS/SCSS compilation
-- `OutputStyle` enum — `expanded` (default) and `compressed` output styles
-- `Syntax` enum — `scss` (default) and `sass` (indented) input syntax
-- `SassCompilationException` — structured compilation error with file path, line, and column info
-- `CssDialect` and `ScopeProcessor` — `tl:scope` fragment-scoped CSS via CSS `@scope`
+### Added
+
+- `TrellisCss.compileSass()` for file-based SASS and SCSS compilation.
+- `TrellisCss.compileSassString()` for compiling inline SASS and SCSS source.
+- `OutputStyle` with `expanded` and `compressed` output modes.
+- `Syntax` with `scss` and indented `sass` parsing modes.
+- `SassCompilationException` with file path, line, and column information for failed compilations.
+
+### Trellis Integration
+
+- `CssDialect` for registering CSS-focused processors with a Trellis engine.
+- `ScopeProcessor` and `OrphanScopeProcessor` for `tl:scope` fragment-scoped CSS using native `@scope` output.

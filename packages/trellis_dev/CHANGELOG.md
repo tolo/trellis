@@ -2,7 +2,13 @@
 
 ## 0.1.0
 
-- Initial release.
-- `liveReloadHandler()` — Shelf Handler serving SSE reload events.
-- `devMiddleware()` — Shelf Middleware with SSE endpoint and optional script injection.
-- `liveReloadScript()` — Self-contained JS EventSource snippet for browser reload.
+### Added
+
+- `liveReloadHandler()` for streaming SSE reload events to connected browsers.
+- `devMiddleware()` for mounting the reload endpoint and optionally injecting the client script into buffered HTML responses.
+- `liveReloadScript()` for manual integration when you want to control HTML injection yourself.
+
+### Notes
+
+- Designed to pair with `FileSystemLoader(devMode: true)` from the core `trellis` package.
+- Works independently of framework-specific hot restart workflows by focusing on template changes and browser refresh.

@@ -279,6 +279,10 @@ This writes a JSON array to the output directory, suitable for tools such as
 Fuse.js or Lunr.js. Draft pages and pages with `search: false` in front matter
 are excluded.
 
+## API Documentation
+
+- https://pub.dev/documentation/trellis_site/latest/
+
 ## License
 
 See the [Trellis repository](https://github.com/tolo/trellis) for license information.

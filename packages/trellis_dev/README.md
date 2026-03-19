@@ -91,3 +91,7 @@ Returns a Shelf `Middleware` that:
 ### `liveReloadScript({String ssePath})`
 
 Returns a `<script>` block containing a self-contained IIFE that connects to the SSE endpoint and reloads the page on `reload` events.
+
+## API Documentation
+
+- https://pub.dev/documentation/trellis_dev/latest/

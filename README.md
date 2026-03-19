@@ -642,6 +642,21 @@ dart analyze --fatal-infos
 dart run bin/server.dart   # visit http://localhost:8080
 ```
 
+**Release validation**:
+
+```bash
+# Verify generated starters and materialized examples before publishing
+cd packages/trellis_cli
+dart test -t e2e \
+  test/generated_app_e2e_test.dart \
+  test/dart_frog_e2e_test.dart \
+  test/relic_e2e_test.dart \
+  test/examples_smoke_test.dart
+```
+
+This covers starter generation plus the checked-in `examples/shelf_app`,
+`examples/dart_frog_app`, `examples/relic_app`, and `examples/todo_app`.
+
 **Publishing order**: publish packages in dependency order — `trellis` first, then
 `trellis_shelf`, `trellis_dev`, and `trellis_css` (all depend on `trellis`),
 then `trellis_dart_frog` and `trellis_relic` (depend on `trellis_shelf`), then
@@ -658,6 +673,10 @@ cd my_app && dart pub get && dart run bin/server.dart
 ## Contributing
 
 Trellis is in early development and we're not accepting pull requests at this time. That said, we'd love to hear from you — bug reports, feature ideas, and general feedback are all very welcome! Please feel free to [open an issue](https://github.com/tolo/trellis/issues).
+
+## API Documentation
+
+- https://pub.dev/documentation/trellis/latest/
 
 ## License
 

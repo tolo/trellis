@@ -1,8 +1,7 @@
-/// Generates the bin/server.dart content for a new Trellis project.
+/// Generates the bin/server.dart content for a new Shelf + Trellis project.
 ///
-/// Demonstrates all trellis_shelf middleware plus trellis_dev hot reload.
-/// Includes dev/prod mode via `--dev` flag, CSRF with env-based secret,
-/// and explanatory comments for each middleware.
+/// Demonstrates the full middleware stack, HTMX counter endpoints, CSRF, and
+/// dev-mode hot reload.
 String serverTemplate(String projectName) =>
     '''
 import 'dart:io';
@@ -35,11 +34,17 @@ void main(List<String> args) async {
   // CSRF secret: use an environment variable in production.
   // WARNING: Change this default before deploying to production!
   final csrfSecret = Platform.environment['CSRF_SECRET'] ?? '$projectName-dev-secret';
+  const csp = CspBuilder(
+    scriptSrc: "'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+    connectSrc: "'self' ws:",
+  );
 
   final router = Router()
     ..get('/', (Request req) => indexPage(req))
-    ..get('/status', (Request req) => status(req))
-    ..post('/greet', (Request req) => greet(req));
+    ..get('/about', (Request req) => aboutPage(req))
+    ..post('/counter/increment', (Request req) => incrementCounter(req))
+    ..post('/counter/decrement', (Request req) => decrementCounter(req))
+    ..post('/counter/reset', (Request req) => resetCounter(req));
 
   final staticHandler = createStaticHandler(
     staticDir,
@@ -61,7 +66,7 @@ void main(List<String> args) async {
   //                             and injects live-reload script into HTML.
   var pipeline = const Pipeline()
       .addMiddleware(logRequests())
-      .addMiddleware(trellisSecurityHeaders())
+      .addMiddleware(trellisSecurityHeaders(csp: csp))
       .addMiddleware(trellisEngine(engine))
       .addMiddleware(trellisCsrf(secret: csrfSecret));
 

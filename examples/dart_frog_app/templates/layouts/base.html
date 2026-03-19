@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title tl:text="${title}">dart_frog_app</title>
+  <title tl:text="${pageTitle}">Trellis + Dart Frog</title>
   <meta name="csrf-token" tl:attr="content=${csrfToken}" content="">
   <link rel="stylesheet" href="/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"
@@ -19,11 +19,10 @@
 </head>
 <body>
   <header>
-    <h1>dart_frog_app</h1>
     <nav tl:insert="~{partials/nav.html :: nav}"></nav>
   </header>
 
-  <main tl:define="content">
+  <main id="content" tl:define="content">
     <p>Default content — override with tl:define="content".</p>
   </main>
 

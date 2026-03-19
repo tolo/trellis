@@ -1,0 +1,57 @@
+<html tl:extends="layouts/base.html">
+<body>
+  <main tl:define="content">
+    <div tl:fragment="page-content">
+      <h1>About This Example</h1>
+
+      <h2>Provider-Based Dependency Injection</h2>
+      <p>Dart Frog uses providers for dependency injection. The Trellis engine is
+         registered once in <code>_middleware.dart</code> via
+         <code>trellisProvider(_engine)</code> and automatically available to all
+         route handlers through <code>context.read&lt;Trellis&gt;()</code>. The
+         <code>renderPage</code> and <code>renderFragment</code> helpers read the
+         engine from the context automatically.</p>
+
+      <h2>File-Based Routing</h2>
+      <p>Routes map directly to files in the <code>routes/</code> directory.
+         <code>routes/index.dart</code> handles <code>GET /</code>,
+         <code>routes/about.dart</code> handles <code>GET /about</code>, and
+         the counter mutations live in <code>routes/counter/</code>. Shared
+         in-memory state sits in <code>lib/counter_state.dart</code>, and
+         <code>_middleware.dart</code> applies middleware to all routes in its
+         directory and below.</p>
+
+      <h2>Middleware Chain</h2>
+      <p>Middleware is composed via <code>.use()</code> calls in
+         <code>_middleware.dart</code>. This example chains: Trellis engine provider,
+         security headers, CSRF protection, request logging, and (in dev mode)
+         template hot reload. Order matters — security middleware runs before
+         route handlers.</p>
+
+      <h2>HTMX Fragment Rendering</h2>
+      <p>HTMX requests are detected via the <code>HX-Request</code> header using
+         <code>isHtmxRequest(context)</code>. When detected, handlers return only
+         the relevant HTML fragment instead of the full page. Navigation links use
+         <code>hx-get</code> with <code>hx-target="#content"</code> and
+         <code>hx-push-url="true"</code> for SPA-style page transitions. The
+         counter buttons use <code>hx-post</code> to replace only the
+         <code>counter</code> fragment.</p>
+
+      <h2>CSRF Protection</h2>
+      <p>The <code>trellisCsrf()</code> middleware implements double-submit cookie
+         CSRF protection. A <code>csrfToken</code> variable is automatically
+         injected into the template context. The base layout stores it in a
+         <code>&lt;meta&gt;</code> tag, and a small script sends it as an
+         <code>X-CSRF-Token</code> header on every HTMX request. Forms include
+         a hidden <code>_csrf</code> field as a fallback.</p>
+
+      <h2>Template Hot Reload</h2>
+      <p>When the <code>DEV=true</code> environment variable is set,
+         <code>trellis_dev</code>'s <code>devMiddleware</code> watches template
+         files and injects an SSE script. Template changes are reflected instantly
+         in the browser without restarting the server. Run with
+         <code>DEV=true dart_frog dev</code> to enable.</p>
+    </div>
+  </main>
+</body>
+</html>

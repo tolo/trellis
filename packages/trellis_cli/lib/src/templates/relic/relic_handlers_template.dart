@@ -1,7 +1,7 @@
 /// Generates the lib/handlers.dart content for a Relic + Trellis project.
 ///
 /// Demonstrates the no-DI pattern: engine is passed explicitly to each handler.
-String relicHandlersTemplate() =>
+String relicHandlersTemplate(String projectName) =>
     "import 'package:relic/relic.dart';\n"
     "import 'package:trellis/trellis.dart';\n"
     "import 'package:trellis_relic/trellis_relic.dart';\n"
@@ -21,6 +21,8 @@ String relicHandlersTemplate() =>
     'Future<Response> homePage(Request request, Trellis engine) async {\n'
     '  final context = {\n'
     "    'title': 'Home',\n"
+    "    'pageTitle': 'Home — $projectName',\n"
+    "    'appTitle': '$projectName',\n"
     '    ..._counterContext(),\n'
     '  };\n'
     '\n'
@@ -33,7 +35,7 @@ String relicHandlersTemplate() =>
     '\n'
     '/// GET /about — About page.\n'
     'Future<Response> aboutPage(Request request, Trellis engine) async {\n'
-    "  final context = {'title': 'About'};\n"
+    "  final context = {'title': 'About', 'pageTitle': 'About — $projectName', 'appTitle': '$projectName'};\n"
     '\n'
     '  if (isHtmxRequest(request)) {\n'
     "    return renderFragment(request, engine, 'about.html', 'page-content', context);\n"

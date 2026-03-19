@@ -15,6 +15,8 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:trellis_cli/trellis_cli.dart';
 
+import '_workspace_root.dart';
+
 void main() {
   group('Blog starter E2E', () {
     late Directory projectDir;
@@ -33,10 +35,11 @@ void main() {
       projectDir = blogDir;
 
       // ── 2. Inject dependency_overrides for local workspace packages ────
-      final workspaceRoot = _findWorkspaceRoot().path;
+      final workspaceRoot = (await findWorkspaceRoot()).path;
       final pubspecFile = File('${projectDir.path}/pubspec.yaml');
       final pubspecContent = await pubspecFile.readAsString();
-      final overrides = '''
+      final overrides =
+          '''
 dependency_overrides:
   trellis:
     path: $workspaceRoot/packages/trellis
@@ -90,10 +93,7 @@ dependency_overrides:
     });
 
     test('getting-started post is generated', () {
-      expect(
-        File(p.join(projectDir.path, 'output', 'posts', 'getting-started', 'index.html')).existsSync(),
-        isTrue,
-      );
+      expect(File(p.join(projectDir.path, 'output', 'posts', 'getting-started', 'index.html')).existsSync(), isTrue);
     });
 
     test('static CSS is copied', () {
@@ -126,19 +126,4 @@ dependency_overrides:
       expect(outputDir.existsSync(), isTrue);
     });
   }, timeout: const Timeout(Duration(minutes: 4)));
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-/// Finds the workspace root by searching upward for `packages/trellis/`.
-Directory _findWorkspaceRoot() {
-  var dir = Directory.current.absolute;
-  while (true) {
-    if (Directory('${dir.path}/packages/trellis').existsSync()) return dir;
-    final parent = dir.parent;
-    if (parent.path == dir.path) {
-      throw StateError('Could not find workspace root (looked for packages/trellis/)');
-    }
-    dir = parent;
-  }
 }

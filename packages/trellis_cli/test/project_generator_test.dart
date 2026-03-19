@@ -22,8 +22,8 @@ void main() {
           'lib/handlers.dart',
           'templates/layouts/base.html',
           'templates/pages/index.html',
+          'templates/pages/about.html',
           'templates/partials/nav.html',
-          'templates/partials/htmx.html',
           'static/styles.css',
           '.gitignore',
           'analysis_options.yaml',
@@ -57,22 +57,28 @@ void main() {
       expect(server, contains('trellisCsrf'));
       expect(server, contains('CSRF_SECRET'));
       expect(server, contains('--dev'));
+      expect(server, contains("..get('/about'"));
+      expect(server, contains("..post('/counter/increment'"));
+      expect(server, contains('CspBuilder'));
+      expect(server, contains('https://cdn.jsdelivr.net'));
     });
 
-    test('handlers.dart uses trellis_shelf helpers and greet endpoint', () async {
+    test('handlers.dart uses trellis_shelf helpers and counter routes', () async {
       final generator = ProjectGenerator(projectName: 'my_app', writer: writer);
       await generator.generate();
 
       final handlers = writer.files['lib/handlers.dart']!;
       expect(handlers, contains('renderPage'));
       expect(handlers, contains("import 'package:trellis_shelf/trellis_shelf.dart'"));
-      expect(handlers, contains('isHtmxRequest'));
       expect(handlers, contains('renderFragment'));
-      expect(handlers, contains('greet'));
-      expect(handlers, contains('status'));
+      expect(handlers, contains('aboutPage'));
+      expect(handlers, contains('incrementCounter'));
+      expect(handlers, contains('decrementCounter'));
+      expect(handlers, contains('resetCounter'));
+      expect(handlers, contains('_counter'));
     });
 
-    test('index page uses tl:extends, tl:define, and HTMX with CSRF', () async {
+    test('index page uses tl:extends, fragments, and HTMX counter controls', () async {
       final generator = ProjectGenerator(projectName: 'my_app', writer: writer);
       await generator.generate();
 
@@ -81,19 +87,24 @@ void main() {
       expect(index, contains('tl:define="content"'));
       expect(index, contains('tl:each'));
       expect(index, contains('tl:text'));
-      expect(index, contains('hx-post="/greet"'));
-      expect(index, contains('hx-target="#greeting-result"'));
-      expect(index, contains('hx-swap="innerHTML"'));
+      expect(index, contains('tl:fragment="page-content"'));
+      expect(index, contains('tl:fragment="counter"'));
+      expect(index, contains('hx-post="/counter/increment"'));
+      expect(index, contains('hx-post="/counter/decrement"'));
+      expect(index, contains('hx-post="/counter/reset"'));
+      expect(index, contains('hx-target="#counter"'));
+      expect(index, contains('hx-swap="outerHTML"'));
       expect(index, contains('_csrf'));
       expect(index, contains(r'tl:attr="value=${csrfToken}"'));
     });
 
-    test('base layout uses tl:insert, SRI, and CSRF header', () async {
+    test('base layout uses tl:insert, SPA navigation shell, SRI, and CSRF header', () async {
       final generator = ProjectGenerator(projectName: 'my_app', writer: writer);
       await generator.generate();
 
       final base = writer.files['templates/layouts/base.html']!;
       expect(base, contains('tl:define="content"'));
+      expect(base, contains('id="content"'));
       expect(base, contains('tl:insert="~{partials/nav.html :: nav}"'));
       expect(base, contains('integrity="sha384-'));
       expect(base, contains('crossorigin="anonymous"'));
@@ -102,12 +113,27 @@ void main() {
       expect(base, contains('htmx:configRequest'));
     });
 
-    test('nav partial defines a tl:fragment', () async {
+    test('nav partial defines a tl:fragment with Home and About links', () async {
       final generator = ProjectGenerator(projectName: 'my_app', writer: writer);
       await generator.generate();
 
       final nav = writer.files['templates/partials/nav.html']!;
       expect(nav, contains('tl:fragment="nav"'));
+      expect(nav, contains('hx-get="/about"'));
+      expect(nav, contains('hx-target="#content"'));
+      expect(nav, contains('hx-push-url="true"'));
+    });
+
+    test('about page explains Shelf-specific patterns', () async {
+      final generator = ProjectGenerator(projectName: 'my_app', writer: writer);
+      await generator.generate();
+
+      final about = writer.files['templates/pages/about.html']!;
+      expect(about, contains('Shelf Pipeline'));
+      expect(about, contains('Request Context'));
+      expect(about, contains('Middleware Ordering'));
+      expect(about, contains('CSRF Protection'));
+      expect(about, contains('Dev Hot Reload'));
     });
 
     test('all generated files have non-empty content', () async {

@@ -1,21 +1,23 @@
 import 'file_writer.dart';
 import '../templates/analysis_options_template.dart';
+import '../templates/dart_frog/dart_frog_about_page_template.dart';
+import '../templates/dart_frog/dart_frog_about_route_template.dart';
 import '../templates/dart_frog/dart_frog_base_layout_template.dart';
 import '../templates/dart_frog/dart_frog_config_template.dart';
+import '../templates/dart_frog/dart_frog_counter_route_templates.dart';
+import '../templates/dart_frog/dart_frog_counter_state_template.dart';
 import '../templates/dart_frog/dart_frog_index_page_template.dart';
 import '../templates/dart_frog/dart_frog_index_route_template.dart';
 import '../templates/dart_frog/dart_frog_middleware_template.dart';
 import '../templates/dart_frog/dart_frog_nav_partial_template.dart';
 import '../templates/dart_frog/dart_frog_pubspec_template.dart';
 import '../templates/dart_frog/dart_frog_styles_template.dart';
-import '../templates/dart_frog/dart_frog_todo_partial_template.dart';
-import '../templates/dart_frog/dart_frog_todo_route_template.dart';
 
 /// Generates a complete Dart Frog + Trellis + HTMX project scaffold.
 ///
 /// Produces a runnable server project demonstrating file-based routing,
-/// `trellis_dart_frog` provider/middleware, template inheritance, and HTMX
-/// fragment interactions (todo example with add, complete, and delete).
+/// `trellis_dart_frog` provider/middleware, template inheritance, HTMX SPA
+/// navigation, and counter fragment interactions.
 class DartFrogProjectGenerator {
   /// Creates a generator for a Dart Frog project with [projectName], writing
   /// files via [writer].
@@ -29,9 +31,9 @@ class DartFrogProjectGenerator {
 
   /// Generates all project files.
   ///
-  /// Creates 12 files: pubspec.yaml, dart_frog.yaml, analysis_options.yaml,
-  /// .gitignore, 2 route handlers, 3 HTML templates, 1 nav partial,
-  /// 1 todo partial, and styles.css.
+  /// Creates 16 files: pubspec.yaml, dart_frog.yaml, analysis_options.yaml,
+  /// .gitignore, 5 route files, 1 shared library, 4 HTML templates,
+  /// 1 nav partial, and styles.css.
   Future<void> generate() async {
     // Config files
     await writer.writeFile('pubspec.yaml', dartFrogPubspecTemplate(projectName));
@@ -42,13 +44,17 @@ class DartFrogProjectGenerator {
     // Routes
     await writer.writeFile('routes/_middleware.dart', dartFrogMiddlewareTemplate(projectName));
     await writer.writeFile('routes/index.dart', dartFrogIndexRouteTemplate(projectName));
-    await writer.writeFile('routes/todos/index.dart', dartFrogTodoRouteTemplate());
+    await writer.writeFile('routes/about.dart', dartFrogAboutRouteTemplate(projectName));
+    await writer.writeFile('routes/counter/increment.dart', dartFrogIncrementRouteTemplate(projectName));
+    await writer.writeFile('routes/counter/decrement.dart', dartFrogDecrementRouteTemplate(projectName));
+    await writer.writeFile('routes/counter/reset.dart', dartFrogResetRouteTemplate(projectName));
+    await writer.writeFile('lib/counter_state.dart', dartFrogCounterStateTemplate(projectName));
 
     // Templates
     await writer.writeFile('templates/layouts/base.html', dartFrogBaseLayoutTemplate(projectName));
     await writer.writeFile('templates/pages/index.html', dartFrogIndexPageTemplate());
+    await writer.writeFile('templates/pages/about.html', dartFrogAboutPageTemplate());
     await writer.writeFile('templates/partials/nav.html', dartFrogNavPartialTemplate());
-    await writer.writeFile('templates/partials/todo_list.html', dartFrogTodoPartialTemplate());
 
     // Static assets (Dart Frog serves from public/ by default)
     await writer.writeFile('public/styles.css', dartFrogStylesTemplate());

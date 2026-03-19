@@ -1,5 +1,6 @@
 /// Generates the pubspec.yaml content for a Relic + Trellis project.
-String relicPubspecTemplate(String projectName) => '''
+String relicPubspecTemplate(String projectName) =>
+    '''
 name: $projectName
 version: 0.1.0
 description: A Relic + Trellis web application.

@@ -7,6 +7,7 @@ import 'package:trellis_relic/trellis_relic.dart';
 import 'package:trellis_relic_example/handlers.dart';
 
 Future<void> main() async {
+  final port = int.tryParse(Platform.environment['PORT'] ?? '') ?? 8080;
   // Resolve directories relative to the script location.
   final scriptDir = File(Platform.script.toFilePath()).parent.parent.path;
   final templatesDir = '$scriptDir/templates';
@@ -40,6 +41,6 @@ Future<void> main() async {
       return Response.ok(body: Body.fromString(css, mimeType: MimeType.css));
     });
 
-  await app.serve(address: InternetAddress.anyIPv4, port: 8080);
-  print('Relic + Trellis example running at http://localhost:8080');
+  await app.serve(address: InternetAddress.anyIPv4, port: port);
+  print('Relic + Trellis example running at http://localhost:$port');
 }

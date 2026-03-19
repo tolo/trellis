@@ -1,55 +1,81 @@
-/// Generates the lib/handlers.dart content for a new Trellis project.
+/// Generates the lib/handlers.dart content for a new Shelf + Trellis project.
 ///
-/// Demonstrates `renderPage()` for full pages, `renderFragment()` for HTMX
-/// partial responses, and `isHtmxRequest()` detection.
+/// Demonstrates full-page rendering, HTMX fragment responses for SPA
+/// navigation and counter updates, and automatic request-context merging via
+/// `trellis_shelf`.
 String handlersTemplate(String projectName) {
-  // Use regular string with \$ escaping for Dart interpolation in generated code.
   return "import 'package:shelf/shelf.dart';\n"
       "import 'package:trellis_shelf/trellis_shelf.dart';\n"
       '\n'
-      '/// GET / \u2014 Renders the index page.\n'
-      '///\n'
-      '/// renderPage() retrieves the Trellis engine from request context (injected by\n'
-      '/// trellisEngine middleware) and automatically merges the CSRF token into the\n'
-      '/// template context.\n'
+      '// In-memory counter state. In a real app this would be request- or\n'
+      '// session-scoped, or stored in a database.\n'
+      'int _counter = 0;\n'
+      '\n'
+      'Map<String, dynamic> _counterContext() => {\n'
+      "  'count': _counter,\n"
+      "  'isZero': _counter == 0,\n"
+      '};\n'
+      '\n'
+      'Map<String, dynamic> _homeContext() => {\n'
+      "  'title': 'Home',\n"
+      "  'pageTitle': 'Home — $projectName',\n"
+      "  'appTitle': '$projectName',\n"
+      '  ..._counterContext(),\n'
+      '  \'features\': [\n'
+      '    {\n'
+      '      \'name\': \'Shelf pipeline\',\n'
+      '      \'description\': \'Middleware composes logging, security headers, engine access, CSRF, and hot reload.\',\n'
+      '    },\n'
+      '    {\n'
+      '      \'name\': \'HTMX fragments\',\n'
+      '      \'description\': \'Navigation swaps page-content, while counter updates replace only the counter fragment.\',\n'
+      '    },\n'
+      '    {\n'
+      '      \'name\': \'Template inheritance\',\n'
+      '      \'description\': \'Base layout + child pages use tl:extends and tl:define for shared structure.\',\n'
+      '    },\n'
+      '    {\n'
+      '      \'name\': \'Security defaults\',\n'
+      '      \'description\': \'trellisSecurityHeaders() and trellisCsrf() protect the generated app out of the box.\',\n'
+      '    },\n'
+      '  ],\n'
+      '};\n'
+      '\n'
+      '/// GET / — Home page with counter.\n'
       'Future<Response> indexPage(Request request) async {\n'
-      '  final context = <String, dynamic>{\n'
-      "    'title': '$projectName',\n"
-      "    'message': 'Welcome to $projectName!',\n"
-      "    'features': [\n"
-      "      {'name': 'Natural HTML templates', 'description': 'Templates are valid HTML'},\n"
-      "      {'name': 'Fragment-first design', 'description': 'Built for HTMX partial responses'},\n"
-      "      {'name': 'Hot reload', 'description': 'See changes instantly during development'},\n"
-      '    ],\n'
-      '  };\n'
-      '\n'
-      "  return renderPage(request, 'pages/index.html', context);\n"
+      '  return renderPage(\n'
+      '    request,\n'
+      "    'pages/index.html',\n"
+      '    _homeContext(),\n'
+      "    htmxFragment: 'page-content',\n"
+      '  );\n'
       '}\n'
       '\n'
-      '/// POST /greet \u2014 HTMX endpoint that returns a greeting fragment.\n'
-      '///\n'
-      '/// Renders the greeting fragment from the index page template.\n'
-      '/// User input is safely escaped by Trellis (tl:text).\n'
-      '/// For non-HTMX requests, redirects to home.\n'
-      'Future<Response> greet(Request request) async {\n'
-      '  final body = await request.readAsString();\n'
-      '  final params = Uri.splitQueryString(body);\n'
-      "  final name = params['name']?.trim() ?? 'World';\n"
-      '\n'
-      '  if (isHtmxRequest(request)) {\n'
-      "    return renderFragment(request, 'partials/htmx.html', 'greeting',\n"
-      "        {'name': name});\n"
-      '  }\n'
-      '\n'
-      '  // Non-HTMX fallback \u2014 redirect to home.\n'
-      "  return Response.seeOther(Uri.parse('/'));\n"
+      '/// GET /about — About page.\n'
+      'Future<Response> aboutPage(Request request) async {\n'
+      '  return renderPage(\n'
+      '    request,\n'
+      "    'pages/about.html',\n"
+      "    {'title': 'About', 'pageTitle': 'About — $projectName', 'appTitle': '$projectName'},\n"
+      "    htmxFragment: 'page-content',\n"
+      '  );\n'
       '}\n'
       '\n'
-      '/// GET /status \u2014 HTMX endpoint demonstrating hx-get.\n'
-      '///\n'
-      '/// Returns a server status fragment (swapped into #status-result).\n'
-      'Future<Response> status(Request request) async {\n'
-      "  return renderFragment(request, 'partials/htmx.html', 'status',\n"
-      "      {'uptime': DateTime.now().toIso8601String()});\n"
+      '/// POST /counter/increment — Increment counter, return counter fragment.\n'
+      'Future<Response> incrementCounter(Request request) async {\n'
+      '  _counter++;\n'
+      "  return renderFragment(request, 'pages/index.html', 'counter', _counterContext());\n"
+      '}\n'
+      '\n'
+      '/// POST /counter/decrement — Decrement counter, return counter fragment.\n'
+      'Future<Response> decrementCounter(Request request) async {\n'
+      '  _counter--;\n'
+      "  return renderFragment(request, 'pages/index.html', 'counter', _counterContext());\n"
+      '}\n'
+      '\n'
+      '/// POST /counter/reset — Reset counter to zero, return counter fragment.\n'
+      'Future<Response> resetCounter(Request request) async {\n'
+      '  _counter = 0;\n'
+      "  return renderFragment(request, 'pages/index.html', 'counter', _counterContext());\n"
       '}\n';
 }

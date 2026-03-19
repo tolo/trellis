@@ -183,3 +183,7 @@ const Pipeline()
 Security headers should be outermost so they apply to all responses.
 CSRF middleware must be after `trellisEngine()` since response helpers need
 the engine from request context.
+
+## API Documentation
+
+- https://pub.dev/documentation/trellis_shelf/latest/

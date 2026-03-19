@@ -16,6 +16,9 @@ Thumbs.db
 # Coverage
 coverage/
 
+# Generated API docs
+**/doc/api
+
 # Workspace
 pubspec_overrides.yaml
 

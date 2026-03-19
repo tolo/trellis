@@ -1,14 +1,14 @@
 /// Generates the templates/layouts/base.html content for a Dart Frog + Trellis project.
 ///
-/// Uses raw string concatenation to avoid conflicts with Trellis `${}` expressions
-/// while injecting [projectName] as a Dart string interpolation.
+/// Uses raw string concatenation to avoid conflicts with Trellis `${}`
+/// expressions while injecting [projectName] as a Dart string interpolation.
 String dartFrogBaseLayoutTemplate(String projectName) =>
     r'''<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title tl:text="${title}">''' +
+  <title tl:text="${pageTitle}">''' +
     projectName +
     r'''</title>
   <meta name="csrf-token" tl:attr="content=${csrfToken}" content="">
@@ -26,13 +26,14 @@ String dartFrogBaseLayoutTemplate(String projectName) =>
 </head>
 <body>
   <header>
-    <h1>''' +
+    <nav tl:insert="~{partials/nav.html :: nav}">
+      <a href="/" class="brand">''' +
     projectName +
-    r'''</h1>
-    <nav tl:insert="~{partials/nav.html :: nav}"></nav>
+    r'''</a>
+    </nav>
   </header>
 
-  <main tl:define="content">
+  <main id="content" tl:define="content">
     <p>Default content — override with tl:define="content".</p>
   </main>
 

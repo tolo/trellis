@@ -38,17 +38,11 @@ class RelicProjectGenerator {
     await writer.writeFile('analysis_options.yaml', analysisOptionsTemplate());
 
     // Dart source
-    await writer.writeFile(
-      'bin/server.dart',
-      relicServerTemplate(projectName),
-    );
-    await writer.writeFile('lib/handlers.dart', relicHandlersTemplate());
+    await writer.writeFile('bin/server.dart', relicServerTemplate(projectName));
+    await writer.writeFile('lib/handlers.dart', relicHandlersTemplate(projectName));
 
     // Templates
-    await writer.writeFile(
-      'templates/base.html',
-      relicBaseLayoutTemplate(projectName),
-    );
+    await writer.writeFile('templates/base.html', relicBaseLayoutTemplate(projectName));
     await writer.writeFile('templates/index.html', relicIndexPageTemplate());
     await writer.writeFile('templates/about.html', relicAboutPageTemplate());
 

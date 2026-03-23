@@ -61,6 +61,17 @@ dart run bin/server.dart
 
 Then open http://localhost:8080 in your browser.
 
+### Theme scaffold
+
+```bash
+trellis create my-theme --template theme
+cd my-theme
+# Edit theme.yaml, layouts/, and sass/
+cd example && trellis build && trellis serve
+```
+
+See the [Theme Authoring Guide](../../docs/guides/theme-authoring.md) for a complete walkthrough.
+
 ## Commands
 
 ### `trellis create <project-name>`
@@ -78,6 +89,7 @@ Available templates:
 | `blog` | Static blog site built with trellis_site (Markdown content, layouts, taxonomies) |
 | `dart_frog` | Dart Frog + HTMX counter app with file-based routing, CSRF, security headers, and hot reload |
 | `relic` | Relic + HTMX counter app with explicit-engine wiring and security headers |
+| `theme` | Trellis theme scaffold with `theme.yaml`, layouts, SASS architecture, and example preview site |
 
 **`htmx` template** generates:
 - `bin/server.dart` — Shelf server with logging, security headers, Trellis engine injection, CSRF, and optional live reload
@@ -151,6 +163,65 @@ Prints the CLI version.
 ### `trellis --help`
 
 Prints usage information.
+
+## Theme Management
+
+The `trellis theme` subcommands manage themes for static sites built with `trellis_site`.
+
+See the [Theme Usage Guide](../../docs/guides/theme-usage.md) for full documentation, and the [Theme Authoring Guide](../../docs/guides/theme-authoring.md) for creating themes.
+
+### `trellis theme add <url>`
+
+Installs a theme from a git URL or local path.
+
+Options:
+- `--ref`: Pin to a git tag, branch, or commit SHA (recommended for production)
+
+```bash
+# Install from git
+trellis theme add https://github.com/tolo/trellis-theme-verdant
+
+# Pin to a specific release
+trellis theme add https://github.com/tolo/trellis-theme-verdant --ref v1.0.0
+
+# Install from a local path (theme development)
+trellis theme add ./path/to/my-theme
+```
+
+After installing, set `theme: <name>` in `trellis_site.yaml`.
+
+### `trellis theme update [<name>]`
+
+Pulls the latest version of an installed theme (or all themes if no name given).
+
+```bash
+trellis theme update
+trellis theme update verdant
+```
+
+### `trellis theme list`
+
+Lists all installed themes with their names, versions, and source URLs.
+
+```bash
+trellis theme list
+```
+
+### `trellis theme info <name>`
+
+Displays the full manifest for an installed theme: name, version, author, description, features, and all params with their defaults.
+
+```bash
+trellis theme info verdant
+```
+
+### `trellis theme remove <name>`
+
+Removes an installed theme from `themes/` and clears `theme:` from `trellis_site.yaml`.
+
+```bash
+trellis theme remove verdant
+```
 
 ## Maintainer Validation
 

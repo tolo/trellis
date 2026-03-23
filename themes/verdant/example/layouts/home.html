@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<!--
+  Verdant example site — example/layouts/home.html
+  A minimal self-contained layout for previewing the example site.
+  This overrides the theme's home layout to add a local welcome banner.
+  It extends the theme's base layout using the "theme:" prefix so Trellis
+  resolves it from the theme directory, not the example's own layouts/.
+-->
+<html lang="en" tl:extends="theme:layouts/base">
+<head>
+  <title>Example Preview</title>
+</head>
+<body>
+
+<!-- Override the content block defined in theme's base.html -->
+<main tl:define="content">
+
+  <!-- Hero section -->
+  <section class="hero">
+    <h1 tl:text="${theme.hero_title} ?: ${site.title}">My Blog</h1>
+    <p class="hero-description"
+       tl:if="${theme.hero_description} ?: ${site.description}"
+       tl:text="${theme.hero_description} ?: ${site.description}">
+      Blog description goes here.
+    </p>
+  </section>
+
+  <!-- Recent posts -->
+  <section class="recent-posts">
+    <h2>Recent Posts</h2>
+
+    <ul class="post-list" tl:if="${pages}">
+      <li class="post-card" tl:each="p : ${pages}">
+        <h3 class="post-card-title">
+          <a tl:text="${p.title}" tl:href="@{${p.url}}">Post title</a>
+        </h3>
+        <p class="post-card-summary"
+           tl:if="${p.description}"
+           tl:text="${p.description}">
+          Post summary.
+        </p>
+      </li>
+    </ul>
+
+    <a class="all-posts-link" href="/posts/">All posts &rarr;</a>
+  </section>
+
+</main>
+
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<!-- Verdant Blog Theme — layouts/_default/list.html
+     Section listing layout: paginated post list with prev/next controls.
+     Used for section pages (e.g., /posts/) and as fallback for taxonomy listings.
+
+     Trellis Patterns Used:
+     - tl:extends:   Inherits base.html shell.
+     - tl:define:    Fills the "content" slot.
+     - tl:each:      Iterates ${pages} — SSG injects paginated slice when paginate: is set.
+     - ${pagination.*}: hasPrev, prevUrl, hasNext, nextUrl, page, totalPages.
+     - tl:if:        Guards pagination controls and optional summary display.
+     - tl:href/@{}: Generates correct prev/next pagination URLs.
+     - tl:text:      Renders page title and post metadata.
+-->
+<html tl:extends="layouts/base.html" lang="en">
+<head><title>Posts</title></head>
+<body>
+  <main tl:define="content">
+    <div class="container">
+
+      <header class="section-header">
+        <h1 class="section-title" tl:text="${page.title}">Posts</h1>
+        <div class="section-description" tl:if="${page.description}"
+             tl:utext="${page.content}">Section description.</div>
+      </header>
+
+      <!-- Post list — ${pages} is the paginated slice (or all posts when no pagination) -->
+      <ul class="post-list" tl:if="${pages}">
+        <li tl:each="p : ${pages}">
+          <article class="post-item">
+            <h2 class="post-item-title">
+              <a tl:href="${p.url}" tl:text="${p.title}">Post Title</a>
+            </h2>
+            <time class="post-meta-date" tl:if="${p.date}" tl:text="${#dates.format(p.date, theme.date_format)}">
+              Jan 1, 2024
+            </time>
+            <p class="post-item-summary" tl:if="${p.summary}" tl:text="${p.summary}">
+              Post summary.
+            </p>
+          </article>
+        </li>
+      </ul>
+
+      <p class="no-posts" tl:unless="${pages}">No posts in this section yet.</p>
+
+      <!-- Pagination controls — only rendered when pagination context is present -->
+      <nav class="pagination" aria-label="Pagination" tl:if="${pagination}">
+        <a class="pagination-prev"
+           tl:if="${pagination.hasPrev}"
+           tl:href="${pagination.prevUrl}">← Previous</a>
+        <span class="pagination-prev pagination-disabled"
+              tl:unless="${pagination.hasPrev}">← Previous</span>
+
+        <span class="pagination-info"
+              tl:text="'Page ' + ${pagination.page} + ' of ' + ${pagination.totalPages}">
+          Page 1 of 3
+        </span>
+
+        <a class="pagination-next"
+           tl:if="${pagination.hasNext}"
+           tl:href="${pagination.nextUrl}">Next →</a>
+        <span class="pagination-next pagination-disabled"
+              tl:unless="${pagination.hasNext}">Next →</span>
+      </nav>
+
+    </div>
+  </main>
+</body>
+</html>

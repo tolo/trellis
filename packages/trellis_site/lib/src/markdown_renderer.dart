@@ -22,13 +22,20 @@ final _firstParagraphPattern = RegExp(r'<p>(.*?)</p>', dotAll: true);
 /// Call [render] after [FrontMatterParser.parse] has populated [Page.rawContent]
 /// and [Page.frontMatter].
 class MarkdownRenderer {
+  /// Maximum character length for auto-generated summaries.
+  ///
+  /// When set, summaries extracted from the first paragraph are truncated to
+  /// this length on a word boundary and an ellipsis is appended. Front matter
+  /// `summary` values are never truncated. `null` disables truncation.
+  final int? maxSummaryLength;
+
   /// Creates a [MarkdownRenderer].
-  const MarkdownRenderer();
+  const MarkdownRenderer({this.maxSummaryLength});
 
   /// Renders [page.rawContent] to HTML, populating:
   /// - [Page.content] — rendered HTML
   /// - [Page.summary] — front matter `summary` field if present, otherwise first
-  ///   paragraph of rendered content
+  ///   paragraph of rendered content (optionally truncated by [maxSummaryLength])
   /// - [Page.toc] — table of contents entries for h2-h6 headings
   ///
   /// If [page.rawContent] is empty, all fields remain empty/empty-list.
@@ -39,7 +46,7 @@ class MarkdownRenderer {
 
     page.content = html;
     page.toc = _extractToc(html);
-    page.summary = _resolveSummary(html, page.frontMatter);
+    page.summary = _resolveSummary(html, page.frontMatter, maxSummaryLength);
   }
 }
 
@@ -57,11 +64,29 @@ List<TocEntry> _extractToc(String html) {
 /// Resolves the page summary.
 ///
 /// Uses [frontMatter]'s `summary` field if it is a non-empty [String],
-/// otherwise falls back to the first paragraph of [html].
-String _resolveSummary(String html, Map<String, dynamic> frontMatter) {
+/// otherwise falls back to the first paragraph of [html], optionally
+/// truncated to [maxLength] characters on a word boundary.
+String _resolveSummary(String html, Map<String, dynamic> frontMatter, int? maxLength) {
   final fmSummary = frontMatter['summary'];
   if (fmSummary is String && fmSummary.isNotEmpty) return fmSummary;
-  return _extractFirstParagraph(html);
+  final paragraph = _extractFirstParagraph(html);
+  if (maxLength == null || maxLength <= 0) return paragraph;
+  return _truncateText(paragraph, maxLength);
+}
+
+/// Truncates [html] to [maxLength] characters on a word boundary.
+///
+/// Strips HTML tags first, then truncates at the last space before [maxLength].
+/// Appends an ellipsis (U+2026) when truncation occurs.
+String _truncateText(String html, int maxLength) {
+  final text = _stripHtml(html);
+  if (text.length <= maxLength) return text;
+  final truncated = text.substring(0, maxLength);
+  final lastSpace = truncated.lastIndexOf(' ');
+  if (lastSpace > maxLength ~/ 2) {
+    return '${truncated.substring(0, lastSpace)}\u2026';
+  }
+  return '$truncated\u2026';
 }
 
 /// Extracts the inner HTML of the first `<p>` element in [html].

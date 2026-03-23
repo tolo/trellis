@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<!-- Verdant Blog Theme — layouts/tags/term.html
+     Taxonomy term page: shows all posts with a specific tag.
+     Matched by PageGenerator for pages with frontMatter['taxonomyName'] == 'tags'
+     and frontMatter['termName'] set.
+
+     Trellis Patterns Used:
+     - tl:extends:   Inherits base.html shell.
+     - tl:define:    Fills the "content" slot.
+     - ${page.*}:    page.title carries the term name (injected by TaxonomyCollector).
+     - ${pages}:     List of posts tagged with this term (injected by pipeline).
+     - tl:each:      Iterates posts for this tag.
+     - tl:if:        Guards date and summary display.
+     - tl:href/@{}: Generates back-link to tag listing.
+-->
+<html tl:extends="layouts/base.html" lang="en">
+<head><title>Tag</title></head>
+<body>
+  <main tl:define="content">
+    <div class="container">
+
+      <header class="taxonomy-header">
+        <p class="taxonomy-breadcrumb">
+          <a href="/tags/">Tags</a> /
+        </p>
+        <h1 class="taxonomy-title">
+          Posts tagged: <span tl:text="${page.title}">tag-name</span>
+        </h1>
+      </header>
+
+      <!-- Posts for this tag -->
+      <ul class="post-list" tl:if="${pages}">
+        <li tl:each="p : ${pages}">
+          <article class="post-item">
+            <h2 class="post-item-title">
+              <a tl:href="${p.url}" tl:text="${p.title}">Post Title</a>
+            </h2>
+            <time class="post-meta-date" tl:if="${p.date}" tl:text="${#dates.format(p.date, theme.date_format)}">
+              Jan 1, 2024
+            </time>
+            <p class="post-item-summary" tl:if="${p.summary}" tl:text="${p.summary}">
+              Post summary.
+            </p>
+          </article>
+        </li>
+      </ul>
+
+      <p class="no-posts" tl:unless="${pages}">No posts with this tag yet.</p>
+
+      <nav class="taxonomy-nav" aria-label="Tag navigation">
+        <a href="/tags/" class="back-link">← All tags</a>
+      </nav>
+
+    </div>
+  </main>
+</body>
+</html>

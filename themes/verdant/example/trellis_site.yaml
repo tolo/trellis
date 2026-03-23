@@ -1,0 +1,31 @@
+title: My Blog
+description: A sample blog powered by Trellis and the Verdant theme.
+base_url: http://localhost:4000
+author: Your Name
+
+# Theme configuration
+# To use Verdant from your own site, set:
+#   theme: /path/to/verdant
+# or after `trellis theme add <verdant-url>`:
+#   theme: verdant
+theme: ..
+
+# Customize theme params here — all params are optional (defaults from theme.yaml apply)
+theme_params:
+  skin: auto
+  show_reading_time: true
+  show_date: true
+  show_author: true
+  show_tags: true
+  nav_links:
+    - label: Home
+      url: /
+    - label: Posts
+      url: /posts/
+    - label: About
+      url: /about/
+  footer_text: "© 2024 My Blog"
+  show_powered_by: true
+
+# Pagination
+paginate: 5

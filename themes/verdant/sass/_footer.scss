@@ -1,0 +1,44 @@
+// Verdant Blog Theme — sass/_footer.scss
+// Footer layout, social links, and powered-by text.
+// The footer is already defined structurally in _layout.scss (.site-footer, .footer-inner).
+// This file handles footer-specific content components.
+
+// ── Footer content ────────────────────────────────────────────────────────────
+
+.footer-copy {
+  // Copyright / custom footer text
+}
+
+.footer-powered-by {
+  // "Powered by Trellis" attribution
+  color: $trellis-muted-color;
+
+  a {
+    color: $trellis-muted-color;
+
+    &:hover {
+      color: $trellis-primary-color;
+    }
+  }
+}
+
+// ── Social links ──────────────────────────────────────────────────────────────
+
+.social-links {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $trellis-space-sm;
+  padding: 0;
+  margin: 0;
+
+  a {
+    color: $trellis-muted-color;
+    font-size: $trellis-font-size-sm;
+    text-decoration: none;
+
+    &:hover {
+      color: $trellis-primary-color;
+    }
+  }
+}

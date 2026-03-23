@@ -193,6 +193,100 @@ $primary: #3498db;
       expect(Directory(p.join(tempDir.path, 'output')).existsSync(), isFalse);
     });
 
+    // Themed site build: theme config preserved, theme layouts used, SASS bridge wired
+    test('builds themed site with theme config, layouts, and SASS bridge', () async {
+      minimalSite(tempDir);
+
+      // Create a minimal theme
+      final themeDir = Directory(p.join(tempDir.path, 'themes', 'test-theme'));
+      themeDir.createSync(recursive: true);
+      File(p.join(themeDir.path, 'theme.yaml')).writeAsStringSync('''
+name: test-theme
+version: 1.0.0
+author: Test
+description: A test theme.
+params:
+  primary_color:
+    type: color
+    default: "#ff0000"
+    description: Primary color
+  site_name:
+    type: string
+    default: "Default Name"
+    description: Site name
+''');
+
+      // Theme layouts that use ${theme.*} params
+      Directory(p.join(themeDir.path, 'layouts', '_default')).createSync(recursive: true);
+      File(p.join(themeDir.path, 'layouts', '_default', 'list.html')).writeAsStringSync(r'''
+<!DOCTYPE html>
+<html>
+<head><title tl:text="${page.title}">Title</title></head>
+<body><h1 tl:text="${page.title}">Title</h1></body>
+</html>
+''');
+      File(p.join(themeDir.path, 'layouts', 'home.html')).writeAsStringSync(r'''
+<!DOCTYPE html>
+<html>
+<head><title tl:text="${page.title}">Title</title></head>
+<body>
+  <h1 tl:text="${page.title}">Title</h1>
+  <span class="theme-color" tl:text="${theme.primary_color}">color</span>
+  <span class="theme-name" tl:text="${theme.site_name}">name</span>
+</body>
+</html>
+''');
+
+      // Theme SASS
+      Directory(p.join(themeDir.path, 'sass')).createSync();
+      File(p.join(themeDir.path, 'sass', 'main.scss')).writeAsStringSync(r'''
+@import 'variables';
+.themed { color: $trellis-primary-color; }
+''');
+      File(p.join(themeDir.path, 'sass', '_variables.scss')).writeAsStringSync(r'''
+$trellis-primary-color: #ff0000 !default;
+''');
+
+      // Update site config to use the theme with an override.
+      // Delete site-level layouts so theme layouts are used (site-first resolution).
+      File(p.join(tempDir.path, 'layouts', 'home.html')).deleteSync();
+      File(p.join(tempDir.path, 'layouts', '_default', 'list.html')).deleteSync();
+      File(p.join(tempDir.path, 'trellis_site.yaml')).writeAsStringSync('''
+title: Test Site
+baseUrl: https://example.com
+outputDir: output
+theme: test-theme
+theme_params:
+  primary_color: "#00ff00"
+  site_name: "Overridden Name"
+''');
+
+      final cli = TrellisCli();
+      final result = await cli.run(['build']);
+      expect(result, 0);
+
+      // Theme layout should be used — output should contain the overridden param
+      final homeHtml = File(p.join(tempDir.path, 'output', 'index.html'));
+      expect(homeHtml.existsSync(), isTrue);
+      final homeContent = homeHtml.readAsStringSync();
+      expect(homeContent, contains('#00ff00'));
+      expect(homeContent, contains('Overridden Name'));
+
+      // SASS bridge should produce compiled CSS
+      final cssFile = File(p.join(tempDir.path, 'output', 'css', 'main.css'));
+      expect(cssFile.existsSync(), isTrue);
+      final cssContent = cssFile.readAsStringSync();
+      expect(cssContent, contains('.themed'));
+      // The bridge should have injected the overridden color.
+      // SASS compresses #00ff00 to the CSS keyword 'lime'.
+      expect(cssContent, contains('lime'));
+
+      // CSS custom properties file should be generated
+      final propsFile = File(p.join(tempDir.path, 'output', 'css', 'theme-props.css'));
+      expect(propsFile.existsSync(), isTrue);
+      expect(propsFile.readAsStringSync(), contains('--trellis-primary-color'));
+    });
+
     // --base-url overrides config baseUrl
     test('--base-url overrides baseUrl from config', () async {
       minimalSite(tempDir);

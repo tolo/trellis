@@ -1,0 +1,89 @@
+// Verdant Blog Theme — sass/_variables.scss
+// All theme params as $trellis-* SASS variables with !default.
+//
+// The SASS bridge (S03) generates _theme_params.scss which defines these same
+// variables from the merged params (theme.yaml defaults + site theme_params:).
+// Because that file is in the load path BEFORE this file's !default declarations
+// take effect, bridge values win. Site users control these via theme_params: in
+// trellis_site.yaml — never edit this file directly.
+
+// ── Skin & Colors ────────────────────────────────────────────────────────────
+
+$trellis-skin: auto !default;             // light | dark | auto
+$trellis-primary-color: #2563eb !default; // links, buttons, active states
+$trellis-accent-color: #3b82f6 !default;  // hover states, highlights
+$trellis-text-color: #1f2937 !default;    // main body text
+$trellis-muted-color: #6b7280 !default;   // dates, metadata, captions
+$trellis-bg-color: #ffffff !default;      // page background
+$trellis-surface-color: #f3f4f6 !default; // code blocks, cards
+$trellis-border-color: #e5e7eb !default;  // borders, dividers
+
+// ── Typography ───────────────────────────────────────────────────────────────
+
+$trellis-font-family: system-ui, -apple-system, sans-serif !default;
+$trellis-heading-font-family: null !default; // null inherits body font
+$trellis-code-font-family: ui-monospace, SFMono-Regular, monospace !default;
+
+// Derived: heading font with fallback to body font
+$trellis-heading-font: if($trellis-heading-font-family, $trellis-heading-font-family, $trellis-font-family);
+
+// Base font sizes and line heights
+$trellis-font-size-base: 1rem !default;
+$trellis-font-size-sm: 0.875rem !default;
+$trellis-font-size-xs: 0.8rem !default;
+$trellis-line-height: 1.7 !default;
+$trellis-heading-line-height: 1.25 !default;
+
+// ── Layout ───────────────────────────────────────────────────────────────────
+
+$trellis-max-width: 800px !default;
+$trellis-border-radius: 6px !default;
+
+// Spacing scale
+$trellis-space-xs: 0.25rem !default;
+$trellis-space-sm: 0.5rem !default;
+$trellis-space-md: 1rem !default;
+$trellis-space-lg: 1.5rem !default;
+$trellis-space-xl: 2rem !default;
+$trellis-space-2xl: 3rem !default;
+$trellis-space-3xl: 4rem !default;
+
+// ── Navigation ───────────────────────────────────────────────────────────────
+
+// nav_links and social_links are lists — no SASS variable equivalent;
+// they are accessed in templates via ${theme.nav_links} and ${theme.social_links}.
+
+// ── Accessibility ────────────────────────────────────────────────────────────
+
+// Focus ring derived from primary color
+$trellis-focus-ring-color: $trellis-primary-color !default;
+$trellis-focus-ring-width: 2px !default;
+$trellis-focus-ring-offset: 2px !default;
+
+// ── CSS Custom Properties ────────────────────────────────────────────────────
+// Emit :root custom properties so runtime overrides are possible without
+// recompiling SASS. Templates can reference var(--trellis-*) in inline CSS,
+// and the SASS bridge emits these from merged theme params.
+
+:root {
+  --trellis-primary: #{$trellis-primary-color};
+  --trellis-accent: #{$trellis-accent-color};
+  --trellis-text: #{$trellis-text-color};
+  --trellis-muted: #{$trellis-muted-color};
+  --trellis-bg: #{$trellis-bg-color};
+  --trellis-surface: #{$trellis-surface-color};
+  --trellis-border: #{$trellis-border-color};
+  --trellis-font: #{$trellis-font-family};
+  --trellis-heading-font: #{$trellis-heading-font};
+  --trellis-code-font: #{$trellis-code-font-family};
+  --trellis-max-width: #{$trellis-max-width};
+  --trellis-radius: #{$trellis-border-radius};
+
+  // Syntax highlighting token colors (Prism.js)
+  --trellis-code-keyword: #8b5cf6;
+  --trellis-code-string: #059669;
+  --trellis-code-number: #d97706;
+  --trellis-code-comment: #6b7280;
+  --trellis-code-function: #{$trellis-primary-color};
+  --trellis-code-punctuation: #6b7280;
+}

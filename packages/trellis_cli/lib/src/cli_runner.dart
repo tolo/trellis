@@ -5,6 +5,7 @@ import 'package:args/command_runner.dart';
 import 'commands/build_command.dart';
 import 'commands/create_command.dart';
 import 'commands/serve_command.dart';
+import 'commands/theme_command.dart';
 import 'version.dart';
 
 /// The top-level command runner for the Trellis CLI.
@@ -19,6 +20,7 @@ class TrellisCli extends CommandRunner<int> {
     addCommand(CreateCommand());
     addCommand(BuildCommand());
     addCommand(ServeCommand(stopSignal: serveStopSignal));
+    addCommand(ThemeCommand());
   }
 
   @override

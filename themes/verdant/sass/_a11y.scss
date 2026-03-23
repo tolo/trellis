@@ -1,0 +1,67 @@
+// Verdant Blog Theme — sass/_a11y.scss
+// Accessibility: skip-to-content, focus styles, reduced-motion.
+
+// ── Skip to content ───────────────────────────────────────────────────────────
+
+.skip-to-content {
+  position: absolute;
+  top: -100%;
+  left: $trellis-space-md;
+  z-index: 200;
+  padding: $trellis-space-sm $trellis-space-md;
+  background-color: $trellis-primary-color;
+  color: $trellis-bg-color;
+  font-weight: 700;
+  font-size: $trellis-font-size-sm;
+  border-radius: $trellis-border-radius;
+  text-decoration: none;
+  transition: top 0.1s ease;
+
+  &:focus {
+    top: $trellis-space-md;
+    outline: 2px solid $trellis-bg-color;
+    outline-offset: 2px;
+  }
+}
+
+// ── Screen reader only ────────────────────────────────────────────────────────
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// ── Focus-visible outlines ────────────────────────────────────────────────────
+// Uses :focus-visible so keyboard users get clear outlines while
+// pointer users don't see unwanted rings.
+
+:focus-visible {
+  outline: 2px solid $trellis-primary-color;
+  outline-offset: 3px;
+  border-radius: $trellis-border-radius;
+}
+
+// Remove default outline only when :focus-visible is supported
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+// ── Reduced motion ────────────────────────────────────────────────────────────
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -65,6 +65,9 @@ class BuildCommand extends Command<int> {
         taxonomies: rawConfig.taxonomies,
         paginate: rawConfig.paginate,
         params: rawConfig.params,
+        feeds: rawConfig.feeds,
+        searchConfig: rawConfig.searchConfig,
+        themeConfig: rawConfig.themeConfig,
       );
     } on SiteConfigException catch (e) {
       stderr.writeln('Error: $e');
@@ -92,7 +95,7 @@ class BuildCommand extends Command<int> {
     // Compile SASS after build (build() cleans outputDir as step 1)
     final int sassCount;
     try {
-      sassCount = await _compileSass(config, verbose);
+      sassCount = await _compileSass(config, verbose, themeBuildConfig: result.themeBuildConfig);
     } on SassCompilationException catch (e) {
       stderr.writeln('SASS compilation failed: $e');
       return 1;
@@ -122,28 +125,79 @@ class BuildCommand extends Command<int> {
 /// start with `_`), compiles each with [TrellisCss.compileSass], and writes the
 /// resulting `.css` files to [config.outputDir] mirroring the source structure.
 ///
+/// When [themeBuildConfig] is provided, uses theme-aware SASS load paths and
+/// also compiles SASS files from the theme's `sass/` directory.
+///
 /// Returns the number of SASS files compiled.
 ///
 /// Throws [SassCompilationException] on compilation failure.
-Future<int> _compileSass(SiteConfig config, bool verbose) async {
-  final staticDir = Directory(config.staticDir);
-  if (!staticDir.existsSync()) return 0;
-
+Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? themeBuildConfig}) async {
+  final loadPaths = themeBuildConfig?.sassLoadPaths ?? [config.staticDir];
   var count = 0;
-  for (final file in staticDir.listSync(recursive: true).whereType<File>()) {
-    final ext = p.extension(file.path).toLowerCase();
-    if (ext != '.scss' && ext != '.sass') continue;
-    if (p.basename(file.path).startsWith('_')) continue; // skip partials
 
-    final relative = p.relative(file.path, from: config.staticDir);
-    final outPath = p.join(config.outputDir, p.setExtension(relative, '.css'));
-    Directory(p.dirname(outPath)).createSync(recursive: true);
+  // Compile site static SASS files
+  final staticDir = Directory(config.staticDir);
+  if (staticDir.existsSync()) {
+    for (final file in staticDir.listSync(recursive: true).whereType<File>()) {
+      final ext = p.extension(file.path).toLowerCase();
+      if (ext != '.scss' && ext != '.sass') continue;
+      if (p.basename(file.path).startsWith('_')) continue; // skip partials
 
-    final css = TrellisCss.compileSass(file.path, outputStyle: OutputStyle.compressed, loadPaths: [config.staticDir]);
-    File(outPath).writeAsStringSync(css);
+      final relative = p.relative(file.path, from: config.staticDir);
+      final outPath = p.join(config.outputDir, p.setExtension(relative, '.css'));
+      Directory(p.dirname(outPath)).createSync(recursive: true);
 
-    if (verbose) stdout.writeln('  Compiled ${file.path} → $outPath');
-    count++;
+      final css = TrellisCss.compileSass(file.path, outputStyle: OutputStyle.compressed, loadPaths: loadPaths);
+      File(outPath).writeAsStringSync(css);
+
+      if (verbose) stdout.writeln('  Compiled ${file.path} → $outPath');
+      count++;
+    }
   }
+
+  // Compile theme SASS files from theme's sass/ directory.
+  // When a theme bridge is active, generate a wrapper entry file that imports
+  // _theme_params.scss before the theme's SCSS file. This ensures merged params
+  // (theme defaults + site theme_params:) override the theme's !default values.
+  if (themeBuildConfig != null && config.themeConfig != null) {
+    final themeDir = p.join(config.siteDir, 'themes', config.themeConfig!.name);
+    final themeSassDir = Directory(p.join(themeDir, 'sass'));
+    if (themeSassDir.existsSync()) {
+      for (final file in themeSassDir.listSync(recursive: true).whereType<File>()) {
+        final ext = p.extension(file.path).toLowerCase();
+        if (ext != '.scss' && ext != '.sass') continue;
+        if (p.basename(file.path).startsWith('_')) continue; // skip partials
+
+        final relative = p.relative(file.path, from: themeSassDir.path);
+        final outPath = p.join(config.outputDir, 'css', p.setExtension(relative, '.css'));
+        Directory(p.dirname(outPath)).createSync(recursive: true);
+
+        // Generate a bridge wrapper that imports _theme_params.scss first.
+        // The wrapper lives in .trellis/build/ so its @import "theme_params"
+        // resolves to the adjacent _theme_params.scss. The theme's actual SCSS
+        // file is imported via absolute path so its own relative @imports
+        // resolve correctly from its original directory.
+        final wrapperBaseName = p.basenameWithoutExtension(file.path);
+        final wrapperPath = p.join(themeBuildConfig.buildDir, 'bridge_$wrapperBaseName.scss');
+        final themeFileAbsolute = p.canonicalize(file.path);
+        File(wrapperPath).writeAsStringSync(
+          '// Auto-generated bridge wrapper — do not edit\n'
+          '@import "theme_params";\n'
+          '@import "$themeFileAbsolute";\n',
+        );
+
+        final css = TrellisCss.compileSass(
+          wrapperPath,
+          outputStyle: OutputStyle.compressed,
+          loadPaths: loadPaths,
+        );
+        File(outPath).writeAsStringSync(css);
+
+        if (verbose) stdout.writeln('  Compiled ${file.path} → $outPath');
+        count++;
+      }
+    }
+  }
+
   return count;
 }

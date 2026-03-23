@@ -109,7 +109,7 @@ Map<String, dynamic> pageToMap(Page page) => <String, dynamic>{
   'url': page.url,
   'content': page.content,
   'summary': page.summary,
-  'toc': page.toc,
+  'toc': page.toc.map((e) => {'id': e.id, 'text': e.text, 'level': e.level}).toList(),
   'section': page.section,
   'kind': page.kind.name,
   'isDraft': page.isDraft,

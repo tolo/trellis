@@ -1,0 +1,146 @@
+import 'dart:io';
+
+import 'package:path/path.dart' as p;
+import 'package:test/test.dart';
+import 'package:trellis_site/trellis_site.dart';
+
+void main() {
+  group('ThemeSassGenerator — integration', () {
+    late Directory tempDir;
+    late String siteDir;
+    late String themeDir;
+
+    setUp(() {
+      tempDir = Directory.systemTemp.createTempSync('trellis_sass_integ_');
+      siteDir = tempDir.path;
+      themeDir = p.join(siteDir, 'themes', 'verdant');
+      Directory(themeDir).createSync(recursive: true);
+    });
+
+    tearDown(() => tempDir.deleteSync(recursive: true));
+
+    test('generate() creates _theme_params.scss with correct content', () {
+      final config = _generate(
+        siteDir: siteDir,
+        themeDir: themeDir,
+        params: {
+          'skin': 'light',
+          'primary_color': '#2563eb',
+          'font_family': 'system-ui, sans-serif',
+          'show_powered_by': true,
+        },
+        types: {
+          'skin': 'enum',
+          'primary_color': 'color',
+          'font_family': 'string',
+          'show_powered_by': 'boolean',
+        },
+      );
+
+      final sassFile = File(p.join(config.buildDir, '_theme_params.scss'));
+      expect(sassFile.existsSync(), isTrue);
+      final content = sassFile.readAsStringSync();
+      expect(content, contains(r'$trellis-primary-color: #2563eb !default;'));
+      expect(content, contains(r'$trellis-font-family: "system-ui, sans-serif" !default;'));
+      expect(content, contains(r'$trellis-show-powered-by: true !default;'));
+    });
+
+    test('generate() creates _theme_custom_props.css with :root block', () {
+      final config = _generate(
+        siteDir: siteDir,
+        themeDir: themeDir,
+        params: {
+          'skin': 'light',
+          'primary_color': '#2563eb',
+          'show_powered_by': true,
+        },
+        types: {
+          'skin': 'enum',
+          'primary_color': 'color',
+          'show_powered_by': 'boolean',
+        },
+      );
+
+      final cssFile = File(p.join(config.buildDir, '_theme_custom_props.css'));
+      expect(cssFile.existsSync(), isTrue);
+      final content = cssFile.readAsStringSync();
+      expect(content, contains(':root {'));
+      expect(content, contains('--trellis-primary-color: #2563eb;'));
+      // boolean excluded
+      expect(content, isNot(contains('--trellis-show-powered-by')));
+    });
+
+    test('generate() creates .trellis/.gitignore', () {
+      _generate(siteDir: siteDir, themeDir: themeDir, params: {'skin': 'auto'}, types: {'skin': 'enum'});
+      final gitignore = File(p.join(siteDir, '.trellis', '.gitignore'));
+      expect(gitignore.existsSync(), isTrue);
+      expect(gitignore.readAsStringSync(), contains('*'));
+    });
+
+    test('generate() returns correct SASS load paths', () {
+      final config = _generate(
+        siteDir: siteDir,
+        themeDir: themeDir,
+        params: {'skin': 'light'},
+        types: {'skin': 'enum'},
+      );
+      expect(config.sassLoadPaths, contains(p.join(siteDir, 'sass')));
+      expect(config.sassLoadPaths, contains(p.join(themeDir, 'sass')));
+      expect(config.sassLoadPaths, contains(config.buildDir));
+      // Order: build dir first (bridge files), then site sass, then theme sass
+      final siteIdx = config.sassLoadPaths.indexOf(p.join(siteDir, 'sass'));
+      final themeIdx = config.sassLoadPaths.indexOf(p.join(themeDir, 'sass'));
+      final buildIdx = config.sassLoadPaths.indexOf(config.buildDir);
+      expect(buildIdx, lessThan(siteIdx));
+      expect(siteIdx, lessThan(themeIdx));
+    });
+
+    test('generate() resolves skinMode correctly', () {
+      final config = _generate(
+        siteDir: siteDir,
+        themeDir: themeDir,
+        params: {'skin': 'dark'},
+        types: {'skin': 'enum'},
+      );
+      expect(config.skinMode, SkinMode.dark);
+    });
+
+    test('generate() with null themeDir omits theme paths', () {
+      final config = _generate(
+        siteDir: siteDir,
+        themeDir: null,
+        params: {'skin': 'auto'},
+        types: {'skin': 'enum'},
+      );
+      expect(config.sassLoadPaths, isNot(contains(p.join(themeDir, 'sass'))));
+    });
+
+    test('generate() with theme without sass/ directory still generates CSS custom properties', () {
+      // themeDir exists but has no sass/ subdirectory
+      final config = _generate(
+        siteDir: siteDir,
+        themeDir: themeDir,
+        params: {'skin': 'light', 'primary_color': '#abc'},
+        types: {'skin': 'enum', 'primary_color': 'color'},
+      );
+      final cssFile = File(p.join(config.buildDir, '_theme_custom_props.css'));
+      expect(cssFile.existsSync(), isTrue);
+      expect(cssFile.readAsStringSync(), contains('--trellis-primary-color: #abc;'));
+    });
+  });
+}
+
+ThemeBuildConfig _generate({
+  required String siteDir,
+  required String? themeDir,
+  required Map<String, dynamic> params,
+  required Map<String, String> types,
+}) {
+  const gen = ThemeSassGenerator();
+  return gen.generate(
+    mergedParams: params,
+    paramTypes: types,
+    siteDir: siteDir,
+    themeDir: themeDir,
+  );
+}

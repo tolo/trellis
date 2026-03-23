@@ -1,0 +1,38 @@
+name: valid-theme
+version: 1.0.0
+author: Test Author
+description: A test theme
+min_trellis_version: 0.8.0
+screenshots:
+  - screenshots/light.png
+features:
+  - blog
+  - dark-mode
+params:
+  skin:
+    type: enum
+    values: [light, dark, auto]
+    default: auto
+    description: Color scheme
+  primary_color:
+    type: color
+    default: "#2563eb"
+    description: Brand accent color
+  font_family:
+    type: string
+    default: "system-ui, sans-serif"
+    description: Body font
+  show_powered_by:
+    type: boolean
+    default: true
+    description: Show attribution
+  nav_links:
+    type: list
+    default: []
+    description: Navigation links
+  social:
+    type: map
+    default:
+      github: ""
+      twitter: ""
+    description: Social links

@@ -1,0 +1,16 @@
+name: sample
+version: 1.0.0
+params:
+  skin:
+    type: enum
+    values: [light, dark, auto]
+    default: auto
+    description: Color scheme
+  primary_color:
+    type: color
+    default: "#2563eb"
+    description: Brand color
+  font_family:
+    type: string
+    default: "system-ui, sans-serif"
+    description: Body font

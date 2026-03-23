@@ -62,6 +62,12 @@ class PageGenerator {
   /// Items per page for list pages. `null` disables pagination.
   final int? paginate;
 
+  /// Additional layout directories checked after [layoutsDir] (theme fallback).
+  final List<String> layoutSearchPaths;
+
+  /// Optional theme data directory (fallback for global data files).
+  final String? themeDataDir;
+
   late final Trellis _engine;
 
   /// Creates a [PageGenerator].
@@ -70,6 +76,9 @@ class PageGenerator {
   /// [dataDir] defaults to `path.join(siteDir, 'data')`.
   /// [siteParams] defaults to an empty map.
   /// [paginate] defaults to `null` (no pagination).
+  /// [loader] overrides the default [FileSystemLoader] for theme-aware resolution.
+  /// [layoutSearchPaths] adds additional layout directories (e.g., theme layouts).
+  /// [themeDataDir] adds a theme data directory as a fallback for global data.
   PageGenerator({
     required this.siteDir,
     required this.outputDir,
@@ -77,10 +86,14 @@ class PageGenerator {
     String? layoutsDir,
     String? dataDir,
     this.paginate,
+    TemplateLoader? loader,
+    List<String>? layoutSearchPaths,
+    this.themeDataDir,
   }) : siteParams = siteParams ?? const {},
        layoutsDir = layoutsDir ?? p.join(siteDir, 'layouts'),
-       dataDir = dataDir ?? p.join(siteDir, 'data') {
-    _engine = Trellis(loader: FileSystemLoader(siteDir));
+       dataDir = dataDir ?? p.join(siteDir, 'data'),
+       layoutSearchPaths = layoutSearchPaths ?? [] {
+    _engine = Trellis(loader: loader ?? FileSystemLoader(siteDir));
   }
 
   /// Generates all non-draft pages, writing rendered HTML to [outputDir].
@@ -99,10 +112,9 @@ class PageGenerator {
       if (_isListPage(page)) {
         outputCount += await _generatePaginatedPage(page, nonDraftPages, globalData);
       } else {
-        final templatePath = resolveLayout(page);
-        final relTemplatePath = p.relative(templatePath, from: siteDir);
+        final templateName = resolveLayout(page);
         final context = _buildContext(page, nonDraftPages, globalData);
-        final html = await _engine.renderFile(relTemplatePath, context);
+        final html = await _engine.renderFile(templateName, context);
         _writeOutput(page.url, html);
         outputCount++;
       }
@@ -154,8 +166,7 @@ class PageGenerator {
   /// chunk is rendered as a separate output file at the appropriate URL.
   /// Returns the number of output files written.
   Future<int> _generatePaginatedPage(Page page, List<Page> allPages, Map<String, dynamic> globalData) async {
-    final templatePath = resolveLayout(page);
-    final relTemplatePath = p.relative(templatePath, from: siteDir);
+    final templateName = resolveLayout(page);
     final childPages = _getChildPages(page, allPages);
 
     final paginatedPages = const Paginator().paginate<Map<String, dynamic>>(
@@ -172,16 +183,17 @@ class PageGenerator {
         paginatedItems: paginatedPage.items,
         pagination: paginatedPage.pagination,
       );
-      final html = await _engine.renderFile(relTemplatePath, context);
+      final html = await _engine.renderFile(templateName, context);
       _writeOutput(paginatedPage.url, html);
     }
 
     return paginatedPages.length;
   }
 
-  /// Resolves the layout template path (absolute) for [page].
+  /// Resolves the layout template name for [page].
   ///
-  /// Uses a priority-ordered lookup:
+  /// Uses a priority-ordered lookup across all layout directories
+  /// ([layoutsDir] first, then [layoutSearchPaths] as fallback):
   /// 1. Front matter `layout` field
   /// 2. Type-specific: `{type}/{kindSlug}.html`
   /// 3. Section-specific: `{section}/{kindSlug}.html`
@@ -190,17 +202,24 @@ class PageGenerator {
   /// Home pages use a separate chain:
   /// `home.html` → `index.html` → `_default/list.html`
   ///
-  /// Throws [TemplateNotFoundException] if no layout is found.
+  /// Returns the template name (e.g. `layouts/home.html`) that the engine's
+  /// loader can resolve via site-first, theme-fallback ordering.
+  ///
+  /// Throws [TemplateNotFoundException] if no layout is found in any directory.
   String resolveLayout(Page page) {
     final candidates = _layoutCandidates(page);
+    final allLayoutDirs = [layoutsDir, ...layoutSearchPaths];
     for (final candidate in candidates) {
-      final fullPath = p.join(layoutsDir, candidate);
-      if (File(fullPath).existsSync()) return fullPath;
+      for (final dir in allLayoutDirs) {
+        if (File(p.join(dir, candidate)).existsSync()) {
+          return 'layouts/$candidate';
+        }
+      }
     }
     throw TemplateNotFoundException(
       'No layout found for page: ${page.url}',
       pageUrl: page.url,
-      tried: candidates.map((c) => p.join(layoutsDir, c)).toList(),
+      tried: candidates.expand((c) => allLayoutDirs.map((d) => p.join(d, c))).toList(),
     );
   }
 
@@ -253,19 +272,44 @@ class PageGenerator {
     return context;
   }
 
-  /// Loads global data from `dataDir/*.yaml`.
-  Map<String, dynamic> _loadGlobalData() {
-    final dataDir = Directory(this.dataDir);
-    if (!dataDir.existsSync()) return const {};
+  /// Loads global data from `dataDir/*.yaml`, with optional theme data fallback.
+  ///
+  /// Theme data files are loaded first (lower priority). Site data files are
+  /// loaded second and overwrite theme data at the same key (per-file, not deep merge).
+  ///
+  /// Exposed as a public method so tests can verify data-merge behaviour
+  /// without running a full build.
+  Map<String, dynamic> loadGlobalData() => _loadGlobalData();
 
+  Map<String, dynamic> _loadGlobalData() {
     final result = <String, dynamic>{};
-    for (final file in dataDir.listSync().whereType<File>()) {
-      if (p.extension(file.path) != '.yaml') continue;
-      final stem = p.basenameWithoutExtension(file.path);
-      final dynamic yaml = loadYaml(file.readAsStringSync());
-      if (yaml == null) continue;
-      result[stem] = convertYaml(yaml);
+
+    // Load theme data first (lower priority fallback)
+    if (themeDataDir != null) {
+      final themeData = Directory(themeDataDir!);
+      if (themeData.existsSync()) {
+        for (final file in themeData.listSync().whereType<File>()) {
+          if (p.extension(file.path) != '.yaml') continue;
+          final stem = p.basenameWithoutExtension(file.path);
+          final dynamic yaml = loadYaml(file.readAsStringSync());
+          if (yaml == null) continue;
+          result[stem] = convertYaml(yaml);
+        }
+      }
     }
+
+    // Load site data second (higher priority — overwrites theme data per file)
+    final siteDataDir = Directory(dataDir);
+    if (siteDataDir.existsSync()) {
+      for (final file in siteDataDir.listSync().whereType<File>()) {
+        if (p.extension(file.path) != '.yaml') continue;
+        final stem = p.basenameWithoutExtension(file.path);
+        final dynamic yaml = loadYaml(file.readAsStringSync());
+        if (yaml == null) continue;
+        result[stem] = convertYaml(yaml);
+      }
+    }
+
     return result;
   }
 

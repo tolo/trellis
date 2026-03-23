@@ -1,0 +1,6 @@
+title: Theme Test Site
+baseUrl: https://example.com
+theme: sample
+theme_params:
+  primary_color: "#e11d48"
+  skin: dark

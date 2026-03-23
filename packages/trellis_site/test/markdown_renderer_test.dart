@@ -68,6 +68,24 @@ void main() {
       });
     });
 
+    group('fenced code blocks', () {
+      test('emits language class for fenced code with language identifier', () {
+        final page = makePageWithContent('```dart\nvoid main() {}\n```');
+        renderer.render(page);
+        expect(page.content, contains('class="language-dart"'));
+        expect(page.content, contains('<pre>'));
+        expect(page.content, contains('<code'));
+      });
+
+      test('no language class when no language identifier', () {
+        final page = makePageWithContent('```\nplain code\n```');
+        renderer.render(page);
+        expect(page.content, contains('<pre>'));
+        expect(page.content, contains('<code>'));
+        expect(page.content, isNot(contains('language-')));
+      });
+    });
+
     group('GFM extensions', () {
       test('renders GFM table', () {
         final page = makePageWithContent('| A | B |\n|---|---|\n| 1 | 2 |');
@@ -205,6 +223,58 @@ void main() {
         final page = makePageWithContent('## Heading Only');
         renderer.render(page);
         expect(page.summary, isEmpty);
+      });
+    });
+
+    group('summary truncation (maxSummaryLength)', () {
+      test('truncates long auto-generated summary at word boundary', () {
+        final truncatingRenderer = MarkdownRenderer(maxSummaryLength: 20);
+        final page = makePageWithContent(
+          'This is a fairly long paragraph that should be truncated.',
+        );
+        truncatingRenderer.render(page);
+        expect(page.summary.length, lessThanOrEqualTo(21)); // 20 + ellipsis
+        expect(page.summary, endsWith('\u2026'));
+        expect(page.summary, isNot(contains('<')));
+      });
+
+      test('does not truncate when text is shorter than maxSummaryLength', () {
+        final truncatingRenderer = MarkdownRenderer(maxSummaryLength: 1000);
+        final page = makePageWithContent('Short text.');
+        truncatingRenderer.render(page);
+        expect(page.summary, 'Short text.');
+      });
+
+      test('does not truncate front matter summary', () {
+        final truncatingRenderer = MarkdownRenderer(maxSummaryLength: 10);
+        final page = makePageWithContent(
+          'This paragraph is ignored.',
+          frontMatter: {'summary': 'This explicit summary should not be truncated at all.'},
+        );
+        truncatingRenderer.render(page);
+        expect(page.summary, 'This explicit summary should not be truncated at all.');
+      });
+
+      test('null maxSummaryLength preserves full paragraph', () {
+        const noTruncation = MarkdownRenderer();
+        final page = makePageWithContent(
+          'This is a fairly long paragraph that should not be truncated at all.',
+        );
+        noTruncation.render(page);
+        expect(
+          page.summary,
+          'This is a fairly long paragraph that should not be truncated at all.',
+        );
+      });
+
+      test('strips HTML tags before truncating', () {
+        final truncatingRenderer = MarkdownRenderer(maxSummaryLength: 30);
+        final page = makePageWithContent(
+          'Text with **bold** and `code` in a long enough paragraph to trigger truncation.',
+        );
+        truncatingRenderer.render(page);
+        expect(page.summary, isNot(contains('<')));
+        expect(page.summary, isNot(contains('>')));
       });
     });
   });

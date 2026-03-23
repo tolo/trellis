@@ -1,0 +1,129 @@
+// Verdant Blog Theme — sass/_layout.scss
+// Page structure, container, and responsive breakpoints.
+// Mobile-first: base styles target mobile, media queries add desktop complexity.
+
+// ── Breakpoints ──────────────────────────────────────────────────────────────
+
+$bp-sm: 640px;   // Tablet
+$bp-md: 768px;   // Small desktop
+$bp-lg: 1024px;  // Desktop
+
+// ── Container ────────────────────────────────────────────────────────────────
+
+.container {
+  width: 100%;
+  max-width: $trellis-max-width;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: $trellis-space-lg;
+  padding-right: $trellis-space-lg;
+
+  @media (min-width: $bp-sm) {
+    padding-left: $trellis-space-xl;
+    padding-right: $trellis-space-xl;
+  }
+}
+
+// ── Site header ──────────────────────────────────────────────────────────────
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: $trellis-bg-color;
+  border-bottom: 1px solid $trellis-border-color;
+
+  .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: $trellis-space-md;
+    padding-bottom: $trellis-space-md;
+  }
+}
+
+.site-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: $trellis-text-color;
+  text-decoration: none;
+  flex-shrink: 0;
+
+  &:hover {
+    color: $trellis-primary-color;
+  }
+}
+
+// ── Main content ─────────────────────────────────────────────────────────────
+
+.main-content {
+  padding-top: $trellis-space-2xl;
+  padding-bottom: $trellis-space-3xl;
+  min-height: 60vh;
+}
+
+// ── Site footer ──────────────────────────────────────────────────────────────
+
+.site-footer {
+  border-top: 1px solid $trellis-border-color;
+  padding-top: $trellis-space-xl;
+  padding-bottom: $trellis-space-xl;
+  color: $trellis-muted-color;
+  font-size: $trellis-font-size-sm;
+}
+
+.footer-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $trellis-space-sm;
+  text-align: center;
+
+  @media (min-width: $bp-sm) {
+    flex-direction: row;
+    justify-content: space-between;
+    text-align: left;
+  }
+}
+
+// ── Section header ───────────────────────────────────────────────────────────
+
+.section-header {
+  margin-bottom: $trellis-space-xl;
+  padding-bottom: $trellis-space-lg;
+  border-bottom: 1px solid $trellis-border-color;
+
+  .section-title {
+    margin-top: 0;
+    margin-bottom: $trellis-space-sm;
+  }
+
+  .section-description {
+    color: $trellis-muted-color;
+    font-size: 1.05rem;
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+// ── Taxonomy header ──────────────────────────────────────────────────────────
+
+.taxonomy-header {
+  margin-bottom: $trellis-space-xl;
+
+  .taxonomy-breadcrumb {
+    font-size: $trellis-font-size-sm;
+    color: $trellis-muted-color;
+    margin-bottom: $trellis-space-xs;
+  }
+
+  .taxonomy-title {
+    margin-top: 0;
+  }
+}
+
+.taxonomy-nav {
+  margin-top: $trellis-space-xl;
+}

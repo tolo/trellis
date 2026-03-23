@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<!-- Verdant Blog Theme — layouts/_default/single.html
+     Single post/page layout: full article with metadata bar and tags.
+     Used for all single content pages unless a more specific layout exists.
+
+     Trellis Patterns Used:
+     - tl:extends:   Inherits base.html shell.
+     - tl:define:    Fills the "content" slot.
+     - ${theme.*}:   show_date, show_author, show_reading_time, show_tags params.
+     - ${page.*}:    page.title, page.date, page.content, page.author, page.tags.
+     - tl:if:        Toggles each metadata item independently via theme params.
+     - tl:each:      Iterates page.tags to render tag pills.
+     - tl:utext:     Renders rendered Markdown HTML unescaped.
+     - tl:with:      Binds local variable for reading time calculation.
+     - #strings / #numbers: Utility objects for reading time approximation.
+-->
+<html tl:extends="layouts/base.html" lang="en">
+<head><title>Post</title></head>
+<body>
+  <main tl:define="content">
+    <div class="container">
+      <article class="post">
+
+        <!-- Post header: title + metadata bar -->
+        <header class="post-header">
+          <h1 class="post-title" tl:text="${page.title}">Post Title</h1>
+
+          <!-- Metadata bar: date, author, reading time — each toggleable -->
+          <div class="post-meta" tl:if="${theme.show_date} or ${theme.show_author} or ${theme.show_reading_time}">
+
+            <time class="post-meta-date"
+                  tl:if="${theme.show_date} and ${page.date}"
+                  tl:text="${#dates.format(page.date, theme.date_format)}">
+              Jan 1, 2024
+            </time>
+
+            <span class="post-meta-author"
+                  tl:if="${theme.show_author} and ${page.author}"
+                  tl:text="${page.author}">
+              Author
+            </span>
+
+            <!-- Reading time: ~1000 chars ≈ 1 min (200 wpm × 5 chars/word) -->
+            <span tl:if="${theme.show_reading_time}"
+                  tl:with="readTime=${#numbers.max(#numbers.ceil(#strings.length(page.content) / 1000), 1)}">
+              <span class="post-meta-reading-time"
+                    tl:text="${readTime} + ' min read'">3 min read</span>
+            </span>
+
+          </div>
+
+          <!-- Tag pills — shown when show_tags is true and page has tags -->
+          <ul class="tags" tl:if="${theme.show_tags} and ${page.tags}">
+            <li tl:each="tag : ${page.tags}">
+              <a tl:href="@{/tags/{tag}/}" tl:text="${tag}">tag</a>
+            </li>
+          </ul>
+        </header>
+
+        <!-- Table of contents — shown when show_toc is true and page has headings -->
+        <nav class="toc" tl:if="${theme.show_toc} and ${page.toc}" aria-label="Table of contents">
+          <h2 class="toc-title">Contents</h2>
+          <ul class="toc-list">
+            <li tl:each="entry : ${page.toc}">
+              <a tl:href="'#' + ${entry.id}" tl:text="${entry.text}">Heading</a>
+            </li>
+          </ul>
+        </nav>
+
+        <!-- Post body — rendered Markdown HTML from pipeline -->
+        <div class="post-content" tl:utext="${page.content}">
+          <p>Post content renders here.</p>
+        </div>
+
+      </article>
+
+      <!-- Back navigation -->
+      <nav class="post-nav" aria-label="Post navigation">
+        <a href="/posts/" class="back-link">← Back to posts</a>
+      </nav>
+
+    </div>
+  </main>
+</body>
+</html>

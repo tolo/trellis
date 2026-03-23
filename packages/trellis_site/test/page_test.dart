@@ -130,4 +130,70 @@ void main() {
       expect(page.bundleAssets, ['posts/my-trip/photo.jpg']);
     });
   });
+
+  group('pageToMap', () {
+    test('converts TocEntry objects to plain maps', () {
+      final page = Page(
+        sourcePath: 'posts/hello.md',
+        url: '/posts/hello/',
+        section: 'posts',
+        kind: PageKind.single,
+        isDraft: false,
+        isBundle: false,
+        bundleAssets: [],
+        toc: [
+          TocEntry(id: 'intro', text: 'Introduction', level: 2),
+          TocEntry(id: 'details', text: 'Details', level: 3),
+        ],
+      );
+
+      final map = pageToMap(page);
+      final toc = map['toc'] as List;
+      expect(toc, hasLength(2));
+      expect(toc[0], isA<Map<String, dynamic>>());
+      expect(toc[0]['id'], 'intro');
+      expect(toc[0]['text'], 'Introduction');
+      expect(toc[0]['level'], 2);
+      expect(toc[1]['id'], 'details');
+      expect(toc[1]['text'], 'Details');
+      expect(toc[1]['level'], 3);
+    });
+
+    test('empty toc converts to empty list', () {
+      final page = Page(
+        sourcePath: 'about.md',
+        url: '/about/',
+        section: '',
+        kind: PageKind.single,
+        isDraft: false,
+        isBundle: false,
+        bundleAssets: [],
+      );
+
+      final map = pageToMap(page);
+      expect(map['toc'], isEmpty);
+    });
+
+    test('preserves front matter keys alongside SSG fields', () {
+      final page = Page(
+        sourcePath: 'posts/hello.md',
+        url: '/posts/hello/',
+        section: 'posts',
+        kind: PageKind.single,
+        isDraft: false,
+        isBundle: false,
+        bundleAssets: [],
+        frontMatter: {'title': 'Hello World', 'tags': ['dart']},
+        content: '<p>Hello</p>',
+        summary: 'Hello',
+      );
+
+      final map = pageToMap(page);
+      expect(map['title'], 'Hello World');
+      expect(map['tags'], ['dart']);
+      expect(map['url'], '/posts/hello/');
+      expect(map['content'], '<p>Hello</p>');
+      expect(map['summary'], 'Hello');
+    });
+  });
 }

@@ -1,0 +1,3 @@
+name: malformed
+  bad_indent: causes: parse: error
+    nested: wrong

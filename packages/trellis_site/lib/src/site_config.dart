@@ -5,6 +5,7 @@ import 'package:yaml/yaml.dart';
 
 import 'feed_generator.dart';
 import 'search_index_generator.dart';
+import 'theme_config.dart';
 import 'yaml_utils.dart';
 
 /// Thrown when [SiteConfig.load()] encounters a configuration error.
@@ -70,6 +71,9 @@ class SiteConfig {
   /// Search index configuration. Default: disabled.
   final SearchConfig searchConfig;
 
+  /// Theme configuration. `null` when no `theme:` is set in config.
+  final ThemeConfig? themeConfig;
+
   const SiteConfig._({
     required this.siteDir,
     required this.title,
@@ -85,6 +89,7 @@ class SiteConfig {
     required this.params,
     this.feeds,
     this.searchConfig = const SearchConfig(),
+    this.themeConfig,
   });
 
   /// Creates a [SiteConfig] with the given values.
@@ -105,6 +110,7 @@ class SiteConfig {
     Map<String, dynamic> params = const {},
     FeedConfig? feeds,
     SearchConfig searchConfig = const SearchConfig(),
+    ThemeConfig? themeConfig,
   }) {
     String resolve(String? rel, String defaultName) {
       if (rel == null) return p.join(siteDir, defaultName);
@@ -126,6 +132,7 @@ class SiteConfig {
       params: params,
       feeds: feeds,
       searchConfig: searchConfig,
+      themeConfig: themeConfig,
     );
   }
 
@@ -177,9 +184,9 @@ class SiteConfig {
     final paginate = rawPaginate is int ? rawPaginate : null;
 
     final rawSearch = map['search'];
-    final searchConfig = rawSearch is YamlMap
-        ? SearchConfig.fromYaml(convertYamlMap(rawSearch))
-        : const SearchConfig();
+    final searchConfig = rawSearch is YamlMap ? SearchConfig.fromYaml(convertYamlMap(rawSearch)) : const SearchConfig();
+
+    final themeConfig = ThemeConfig.fromYaml(map);
 
     return SiteConfig(
       siteDir: siteDir,
@@ -196,6 +203,7 @@ class SiteConfig {
       params: params,
       feeds: FeedConfig.fromYaml(map['feeds']),
       searchConfig: searchConfig,
+      themeConfig: themeConfig,
     );
   }
 

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:trellis/trellis.dart' hide TemplateNotFoundException;
 
 import 'content_discovery.dart';
 import 'feed_generator.dart';
@@ -13,6 +14,10 @@ import 'search_index_generator.dart';
 import 'site_config.dart';
 import 'sitemap_generator.dart';
 import 'taxonomy.dart';
+import 'theme_aware_loader.dart';
+import 'theme_manifest.dart';
+import 'theme_param_merger.dart';
+import 'theme_sass_generator.dart';
 
 /// A non-fatal issue collected during a site build.
 class BuildWarning {
@@ -45,11 +50,18 @@ class BuildResult {
   /// Non-fatal issues encountered during the build.
   final List<BuildWarning> warnings;
 
+  /// Theme SASS build configuration, if a theme with SASS is active.
+  ///
+  /// Used by the CLI to configure SASS compilation with correct load paths.
+  /// `null` when no theme is configured.
+  final ThemeBuildConfig? themeBuildConfig;
+
   const BuildResult({
     required this.pageCount,
     required this.staticFileCount,
     required this.elapsed,
     this.warnings = const [],
+    this.themeBuildConfig,
   });
 
   /// Whether any warnings were collected.
@@ -121,6 +133,41 @@ class TrellisSite {
   }
 
   Future<BuildResult> _runPipeline(Stopwatch stopwatch, List<BuildWarning> buildWarnings) async {
+    // 1.5. Load theme manifest, merge params, and generate SASS bridge
+    Map<String, dynamic>? mergedThemeParams;
+    ThemeBuildConfig? themeBuildConfig;
+    if (config.themeConfig != null) {
+      final themeDir = p.join(config.siteDir, 'themes', config.themeConfig!.name);
+      final ThemeManifest manifest;
+      try {
+        manifest = ThemeManifest.load(themeDir);
+      } on ThemeManifestException catch (e) {
+        throw SiteConfigException(e.message, configPath: p.join(config.siteDir, 'trellis_site.yaml'));
+      }
+
+      const merger = ThemeParamMerger();
+      final mergeResult = merger.merge(manifest.defaultParams, config.themeConfig!.params);
+      mergedThemeParams = mergeResult.params;
+
+      for (final warning in mergeResult.warnings) {
+        buildWarnings.add(BuildWarning(warning));
+      }
+
+      // Generate SASS bridge files (_theme_params.scss, _theme_custom_props.css)
+      final paramTypes = <String, String>{for (final entry in manifest.params.entries) entry.key: entry.value.type};
+      try {
+        const generator = ThemeSassGenerator();
+        themeBuildConfig = generator.generate(
+          mergedParams: mergedThemeParams,
+          paramTypes: paramTypes,
+          siteDir: config.siteDir,
+          themeDir: themeDir,
+        );
+      } on ArgumentError catch (e) {
+        throw SiteConfigException(e.message.toString(), configPath: p.join(config.siteDir, 'trellis_site.yaml'));
+      }
+    }
+
     // 2. Discover pages
     final discovery = ContentDiscovery(config.contentDir);
     final pages = await discovery.discover();
@@ -138,7 +185,8 @@ class TrellisSite {
     }
 
     // 4. Render Markdown
-    final mdRenderer = const MarkdownRenderer();
+    final excerptLength = mergedThemeParams?['excerpt_length'] as int?;
+    final mdRenderer = MarkdownRenderer(maxSummaryLength: excerptLength);
     for (final page in pages) {
       mdRenderer.render(page);
     }
@@ -157,7 +205,7 @@ class TrellisSite {
     }
 
     // 5. Taxonomy: collect terms and inject virtual pages
-    var siteParams = <String, dynamic>{'site': _buildSiteContext()};
+    var siteParams = <String, dynamic>{'site': _buildSiteContext(), 'theme': ?mergedThemeParams};
     if (config.taxonomies.isNotEmpty) {
       final collector = const TaxonomyCollector();
       final nonDraftPages = pages.where((pg) => !pg.isDraft).toList();
@@ -167,27 +215,41 @@ class TrellisSite {
       final taxContext = <String, dynamic>{
         for (final entry in taxIndex.entries) entry.key: entry.value.toTermMapList(),
       };
-      siteParams = <String, dynamic>{'site': _buildSiteContext(), 'taxonomy': taxContext};
+      siteParams = <String, dynamic>{'site': _buildSiteContext(), 'taxonomy': taxContext, 'theme': ?mergedThemeParams};
 
       // Inject virtual taxonomy listing and term pages into the pipeline
       final virtualPages = collector.buildVirtualPages(taxIndex, nonDraftPages);
       pages.addAll(virtualPages);
     }
 
-    // 6. Generate HTML pages
+    // 6. Generate HTML pages — with theme-aware loader and layout/data search paths
+    final themeDir = config.themeConfig != null ? p.join(config.siteDir, 'themes', config.themeConfig!.name) : null;
+    final TemplateLoader loader;
+    if (themeDir != null) {
+      loader = ThemeAwareLoader.forTheme(siteDir: config.siteDir, themeDir: themeDir);
+    } else {
+      loader = ThemeAwareLoader.noTheme(siteDir: config.siteDir);
+    }
     final generator = PageGenerator(
       siteDir: config.siteDir,
       outputDir: config.outputDir,
       layoutsDir: config.layoutsDir,
       dataDir: config.dataDir,
       siteParams: siteParams,
-      paginate: config.paginate,
+      paginate: config.paginate ?? (mergedThemeParams?['posts_per_page'] as int?),
+      loader: loader,
+      layoutSearchPaths: themeDir != null ? [p.join(themeDir, 'layouts')] : null,
+      themeDataDir: themeDir != null ? p.join(themeDir, 'data') : null,
     );
     // pageCount reflects actual output files, including paginated pages
     final pageCount = await generator.generateAll(pages);
 
-    // 7. Copy static assets
-    var staticCount = _copyStaticAssets() + _copyBundleAssets(pages);
+    // 7. Copy static assets — theme first so site files overwrite on conflict
+    final themeStaticCount = themeDir != null ? _copyThemeStaticAssets(themeDir) : 0;
+    var staticCount = themeStaticCount + _copyStaticAssets() + _copyBundleAssets(pages);
+    if (themeBuildConfig != null) {
+      staticCount += _copyThemeCustomProps(themeBuildConfig);
+    }
 
     // 8. Generate sitemap
     final sitemapGenerator = SitemapGenerator(baseUrl: config.baseUrl, contentDir: config.contentDir);
@@ -237,6 +299,7 @@ class TrellisSite {
       staticFileCount: staticCount,
       elapsed: stopwatch.elapsed,
       warnings: buildWarnings,
+      themeBuildConfig: themeBuildConfig,
     );
   }
 
@@ -296,6 +359,42 @@ class TrellisSite {
     final outDir = Directory(config.outputDir);
     if (outDir.existsSync()) outDir.deleteSync(recursive: true);
     outDir.createSync(recursive: true);
+  }
+
+  /// Copies the generated `_theme_custom_props.css` to `css/theme-props.css` in the output.
+  ///
+  /// Returns 1 if the file was copied, 0 if it didn't exist.
+  int _copyThemeCustomProps(ThemeBuildConfig themeBuildConfig) {
+    final srcFile = File(p.join(themeBuildConfig.buildDir, '_theme_custom_props.css'));
+    if (!srcFile.existsSync()) return 0;
+    final dest = p.join(config.outputDir, 'css', 'theme-props.css');
+    Directory(p.dirname(dest)).createSync(recursive: true);
+    srcFile.copySync(dest);
+    return 1;
+  }
+
+  /// Copies theme static files from `themeDir/static/` to the output directory.
+  ///
+  /// Called before [_copyStaticAssets] so that site files overwrite theme files
+  /// on conflict. Skips `.scss` and `.sass` files (compiled by the CSS pipeline).
+  /// Returns the number of files copied, or 0 if the theme `static/` directory
+  /// does not exist.
+  int _copyThemeStaticAssets(String themeDir) {
+    final themeStaticDir = Directory(p.join(themeDir, 'static'));
+    if (!themeStaticDir.existsSync()) return 0;
+
+    var count = 0;
+    for (final entity in themeStaticDir.listSync(recursive: true).whereType<File>()) {
+      final ext = p.extension(entity.path).toLowerCase();
+      if (ext == '.scss' || ext == '.sass') continue;
+
+      final relative = p.relative(entity.path, from: themeStaticDir.path);
+      final dest = p.join(config.outputDir, relative);
+      Directory(p.dirname(dest)).createSync(recursive: true);
+      entity.copySync(dest);
+      count++;
+    }
+    return count;
   }
 
   /// Copies static files from [SiteConfig.staticDir] to the output directory.

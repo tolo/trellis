@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<!-- Verdant Blog Theme — layouts/tags/list.html
+     Taxonomy listing page: shows all tags with post counts.
+     Matched by PageGenerator for pages with frontMatter['taxonomyName'] == 'tags'
+     and no termName set (the top-level taxonomy index page).
+
+     Trellis Patterns Used:
+     - tl:extends:   Inherits base.html shell.
+     - tl:define:    Fills the "content" slot.
+     - ${taxonomy.tags}: List of {name, url, count} maps from TaxonomyCollector.
+     - tl:each:      Iterates all tag terms.
+     - tl:if:        Guards count display.
+     - tl:href/@{}: Generates tag page URLs.
+     - tl:text:      Renders term names and counts.
+-->
+<html tl:extends="layouts/base.html" lang="en">
+<head><title>Tags</title></head>
+<body>
+  <main tl:define="content">
+    <div class="container">
+
+      <header class="taxonomy-header">
+        <h1 class="taxonomy-title">Tags</h1>
+      </header>
+
+      <!-- Tag cloud — all terms with post counts -->
+      <ul class="tag-cloud" tl:if="${taxonomy.tags}">
+        <li tl:each="term : ${taxonomy.tags}">
+          <a class="tag-pill"
+             tl:href="${term.url}"
+             tl:text="${term.name}">tag-name</a>
+          <span class="tag-count"
+                tl:text="'(' + ${term.count} + ')'">
+            (0)
+          </span>
+        </li>
+      </ul>
+
+      <p class="no-tags" tl:unless="${taxonomy.tags}">No tags yet.</p>
+
+    </div>
+  </main>
+</body>
+</html>

@@ -1,3 +1,22 @@
+/// Extracts a theme name from a git URL.
+///
+/// Strips the `.git` suffix and trailing path segments, then removes the
+/// `trellis-theme-` prefix if present.
+///
+/// Examples:
+/// - `https://github.com/user/trellis-theme-verdant.git` -> `verdant`
+/// - `https://github.com/user/verdant.git` -> `verdant`
+/// - `git@github.com:user/verdant.git` -> `verdant`
+String themeNameFromUrl(String url) {
+  // Handle SSH URLs (git@github.com:user/repo.git)
+  var name = url.contains(':') && !url.startsWith('http') ? url.split(':').last : url;
+  name = name.split('/').last;
+  if (name.endsWith('.git')) name = name.substring(0, name.length - 4);
+  // Strip common trellis-theme- prefix
+  if (name.startsWith('trellis-theme-')) name = name.substring('trellis-theme-'.length);
+  return name;
+}
+
 /// Validates a Dart project name.
 ///
 /// Returns `null` if [name] is valid, or a human-readable error message

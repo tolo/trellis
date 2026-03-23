@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!-- Verdant Blog Theme — layouts/home.html
+     Home page layout: hero section + recent posts grid.
+     Extends the base layout and fills the "content" slot.
+
+     Trellis Patterns Used:
+     - tl:extends:   Inherits the full HTML shell from layouts/base.html.
+     - tl:define:    Fills the "content" slot defined in base.html.
+     - ${theme.*}:   hero_title, hero_description, show_rss_link params.
+     - ${site.*}:    site.title, site.description, site.feeds as fallbacks.
+     - tl:text / tl:utext: Render front matter text and HTML content.
+     - tl:each:      Iterates ${pages} to render recent post cards.
+     - tl:if:        Conditionally shows hero description and feed link.
+     - tl:href/@{}: Generates correct post URLs.
+-->
+<html tl:extends="layouts/base.html" lang="en">
+<head><title>Home</title></head>
+<body>
+  <main tl:define="content">
+    <div class="container">
+
+      <!-- Hero section — title/description from theme params, fallback to site config -->
+      <section class="hero" aria-labelledby="hero-title">
+        <h1 id="hero-title"
+            tl:text="${theme.hero_title} ?: ${site.title}">Welcome</h1>
+        <p class="hero-description" tl:if="${theme.hero_description} ?: ${site.description}"
+           tl:text="${theme.hero_description} ?: ${site.description}">
+          Site description.
+        </p>
+      </section>
+
+      <!-- Recent posts list — ${pages} is injected by the SSG pipeline -->
+      <section class="recent-posts" aria-labelledby="recent-posts-heading">
+        <h2 id="recent-posts-heading">Recent Posts</h2>
+
+        <ul class="post-list" tl:if="${pages}">
+          <li tl:each="p : ${pages}">
+            <article class="post-card">
+              <h3 class="post-card-title">
+                <a tl:href="${p.url}" tl:text="${p.title}">Post Title</a>
+              </h3>
+              <time class="post-meta-date" tl:text="${#dates.format(p.date, theme.date_format)}">Jan 1, 2024</time>
+              <p class="post-card-summary" tl:if="${p.summary}" tl:text="${p.summary}">
+                Post summary.
+              </p>
+            </article>
+          </li>
+        </ul>
+
+        <p class="no-posts" tl:unless="${pages}">No posts yet.</p>
+
+        <a href="/posts/" class="all-posts-link">All posts →</a>
+      </section>
+
+    </div>
+  </main>
+</body>
+</html>

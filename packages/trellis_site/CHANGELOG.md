@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.2.0
+
+### Added
+
+- **Theme system**: `ThemeManifest`, `ThemeConfig`, and `ThemeParamMerger` for parsing `theme.yaml` manifests and deep-merging theme params with site overrides.
+- `ThemeAwareLoader` for site-first, theme-fallback layout resolution with `theme:` prefix support for cross-boundary `tl:extends`.
+- `ThemeSassGenerator` for auto-generating `_theme_params.scss` (SASS variables) and `_theme_custom_props.css` (CSS custom properties) from merged theme params.
+- `ThemeBuildConfig` and `SkinMode` for SASS bridge configuration and skin file resolution (light, dark, auto).
+- Theme static asset merging (theme `static/` copied to output, site `static/` wins on conflict).
+- Theme data file merging (theme `data/` as fallback, site `data/` wins per-file).
+- `${theme.*}` template context namespace for accessing merged theme params.
+- Build warnings for unknown `theme_params:` keys.
+- `siteVersion` constant for runtime version identification.
+
+### Changed
+
+- `SiteConfig` extended with `themeConfig` field (parsed from `theme:`, `theme_ref:`, `theme_params:` in `trellis_site.yaml`).
+- `BuildResult` extended with optional `ThemeBuildConfig` for CLI SASS compilation.
+- `PageGenerator` accepts external `TemplateLoader`, `layoutSearchPaths`, and `themeDataDir` for theme-aware builds.
+- SASS load path order: `.trellis/build/` (bridge) → `site/sass/` → `theme/sass/`.
+
 ## 0.1.0
 
 ### Added

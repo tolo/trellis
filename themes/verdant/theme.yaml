@@ -1,0 +1,177 @@
+name: verdant
+version: 1.0.0
+author: Trellis Team
+description: >-
+  A minimal, accessible blog theme for Trellis. Content-first design with
+  three color skins, responsive layout, and full keyboard navigation.
+min_trellis_version: 0.8.0
+screenshots:
+  - screenshots/light.png
+  - screenshots/dark.png
+features:
+  - blog
+  - dark-mode
+  - responsive
+  - accessible
+  - rss
+
+params:
+  # === Standard Params (19) ===
+
+  # Skin & Colors
+  skin:
+    type: enum
+    values: [light, dark, auto]
+    default: auto
+    description: Color scheme — auto follows OS prefers-color-scheme
+
+  primary_color:
+    type: color
+    default: "#2563eb"
+    description: Brand/accent color — links, buttons, active states
+
+  accent_color:
+    type: color
+    default: "#3b82f6"
+    description: Secondary accent — hover states, highlights
+
+  text_color:
+    type: color
+    default: "#1f2937"
+    description: Main body text
+
+  muted_color:
+    type: color
+    default: "#6b7280"
+    description: Secondary text — dates, metadata, captions
+
+  bg_color:
+    type: color
+    default: "#ffffff"
+    description: Page background
+
+  surface_color:
+    type: color
+    default: "#f3f4f6"
+    description: Elevated surfaces — code blocks, cards
+
+  border_color:
+    type: color
+    default: "#e5e7eb"
+    description: Borders, dividers
+
+  # Typography
+  font_family:
+    type: string
+    default: "system-ui, -apple-system, sans-serif"
+    description: Body text font stack
+
+  heading_font_family:
+    type: string
+    default: null
+    description: Heading font stack (null inherits body)
+
+  code_font_family:
+    type: string
+    default: "ui-monospace, SFMono-Regular, monospace"
+    description: Code/pre font stack
+
+  # Layout
+  max_width:
+    type: string
+    default: "800px"
+    description: Maximum content width
+
+  border_radius:
+    type: string
+    default: "6px"
+    description: Global border radius
+
+  # Navigation
+  nav_links:
+    type: list
+    default:
+      - label: Home
+        url: /
+      - label: Blog
+        url: /posts/
+    description: Header navigation links
+
+  social_links:
+    type: list
+    default: []
+    description: "Social media links [{platform, url, label?}]"
+
+  # Footer
+  footer_text:
+    type: string
+    default: null
+    description: Custom footer text (null = theme default)
+
+  show_powered_by:
+    type: boolean
+    default: true
+    description: Show "Powered by Trellis" attribution
+
+  # Features
+  show_rss_link:
+    type: boolean
+    default: true
+    description: Display RSS/Atom feed link
+
+  syntax_highlighting:
+    type: boolean
+    default: true
+    description: Enable syntax highlighting for code blocks via Prism.js
+
+  # === Blog-Specific Params (10) ===
+
+  show_reading_time:
+    type: boolean
+    default: true
+    description: Estimated reading time on posts
+
+  show_date:
+    type: boolean
+    default: true
+    description: Publication date on posts
+
+  show_author:
+    type: boolean
+    default: true
+    description: Author name on posts
+
+  show_tags:
+    type: boolean
+    default: true
+    description: Tag links on posts
+
+  show_toc:
+    type: boolean
+    default: false
+    description: Table of contents on posts
+
+  hero_title:
+    type: string
+    default: null
+    description: Homepage hero title override (null = site title)
+
+  hero_description:
+    type: string
+    default: null
+    description: Homepage hero subtitle (null = site description)
+
+  date_format:
+    type: string
+    default: "MMM d, yyyy"
+    description: Date display format
+
+  excerpt_length:
+    type: int
+    default: 160
+    description: Post excerpt character limit (auto-generated summaries only)
+
+  posts_per_page:
+    type: int
+    default: null
+    description: Override site-level paginate for blog listings

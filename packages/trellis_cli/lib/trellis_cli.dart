@@ -10,5 +10,6 @@ export 'src/generator/dart_frog_project_generator.dart' show DartFrogProjectGene
 export 'src/generator/file_writer.dart' show FileWriter, DiskFileWriter, InMemoryFileWriter;
 export 'src/generator/project_generator.dart' show ProjectGenerator;
 export 'src/generator/relic_project_generator.dart' show RelicProjectGenerator;
-export 'src/validators.dart' show validateProjectName;
+export 'src/generator/theme_project_generator.dart' show ThemeProjectGenerator;
+export 'src/validators.dart' show themeNameFromUrl, validateProjectName;
 export 'src/version.dart' show cliVersion;

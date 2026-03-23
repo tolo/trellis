@@ -22,6 +22,34 @@ Part of the [Trellis SDK](https://github.com/tolo/trellis).
 - **Page bundles** -- `index.md` directories with co-located assets copied to output
 - **Draft filtering** -- `draft: true` pages excluded by default, includable via flag
 
+## Theme System
+
+Trellis sites can use pre-built themes for complete, customizable designs with zero boilerplate.
+
+Install a theme with the CLI:
+
+```bash
+trellis theme add https://github.com/tolo/trellis-theme-verdant
+```
+
+Then configure in `trellis_site.yaml`:
+
+```yaml
+theme: verdant
+theme_params:
+  skin: dark
+  primary_color: "#e11d48"
+  nav_links:
+    - label: Home
+      url: /
+    - label: Blog
+      url: /posts/
+```
+
+All 19 standard params (colors, fonts, layout, nav, social links, feature toggles) are configurable without forking or editing the theme. Sites can also override individual layouts or `tl:define` blocks for deeper customization.
+
+See the [Theme Usage Guide](../../docs/guides/theme-usage.md) and [Standard Params Contract](../../docs/reference/standard-params.md) for full documentation.
+
 ## Installation
 
 ```yaml

@@ -47,4 +47,30 @@ void main() {
       expect(validateProjectName('dynamic'), isNotNull);
     });
   });
+
+  group('themeNameFromUrl', () {
+    test('strips trellis-theme- prefix and .git suffix from HTTPS URL', () {
+      expect(themeNameFromUrl('https://github.com/user/trellis-theme-verdant.git'), 'verdant');
+    });
+
+    test('strips .git suffix from HTTPS URL without prefix', () {
+      expect(themeNameFromUrl('https://github.com/user/verdant.git'), 'verdant');
+    });
+
+    test('handles SSH URL format', () {
+      expect(themeNameFromUrl('git@github.com:user/verdant.git'), 'verdant');
+    });
+
+    test('handles SSH URL with trellis-theme- prefix', () {
+      expect(themeNameFromUrl('git@github.com:user/trellis-theme-my-theme.git'), 'my-theme');
+    });
+
+    test('handles HTTPS URL without .git suffix', () {
+      expect(themeNameFromUrl('https://github.com/user/my-theme'), 'my-theme');
+    });
+
+    test('handles multi-segment paths (e.g. GitLab subgroups)', () {
+      expect(themeNameFromUrl('https://gitlab.com/org/sub/trellis-theme-custom.git'), 'custom');
+    });
+  });
 }

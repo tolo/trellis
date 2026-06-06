@@ -371,7 +371,7 @@ When `devMode` is `false` (the default), no file watcher is created and there is
 ### Template Loaders
 
 - **`FileSystemLoader(basePath)`** -- loads from filesystem with security boundaries
-- **`AssetLoader(packageUri)`** -- loads from Dart package assets (JIT only, see [AOT limitations](https://github.com/tolo/trellis/blob/main/doc/guides/framework-integration.md#9-aot-deployment-notes))
+- **`AssetLoader(packageUri)`** -- loads from Dart package assets (JIT only, see [AOT limitations](https://github.com/tolo/trellis/blob/main/docs/guides/framework-integration.md#9-aot-deployment-notes))
 - **`CompositeLoader(delegates)`** -- tries multiple loaders in order with fallback
 - **`MapLoader(templates)`** -- in-memory templates, useful for testing
 
@@ -496,7 +496,7 @@ final html = engine.renderFragment(
 );
 ```
 
-Full guide with Shelf middleware, Dart Frog handlers, Relic handlers, HTMX OOB swaps, template testing, and error handling: **[Framework Integration Guide](https://github.com/tolo/trellis/blob/main/doc/guides/framework-integration.md)**.
+Full guide with Shelf middleware, Dart Frog handlers, Relic handlers, HTMX OOB swaps, template testing, and error handling: **[Framework Integration Guide](https://github.com/tolo/trellis/blob/main/docs/guides/framework-integration.md)**.
 
 ### Framework Integration Packages
 

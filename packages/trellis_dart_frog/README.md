@@ -9,7 +9,7 @@ Part of the [Trellis SDK](https://github.com/tolo/trellis).
 
 ```yaml
 dependencies:
-  trellis: ^0.7.0
+  trellis: ^0.8.0
   trellis_dart_frog: ^0.1.0
 ```
 

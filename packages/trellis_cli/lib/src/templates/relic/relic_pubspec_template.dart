@@ -10,7 +10,7 @@ environment:
 
 dependencies:
   relic: ^1.2.0
-  trellis: ^0.7.0
+  trellis: ^0.8.0
   trellis_relic: ^0.1.0
 
 dev_dependencies:

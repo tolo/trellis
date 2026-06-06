@@ -6,7 +6,7 @@ Serverpod Relic integration for the [Trellis](https://pub.dev/packages/trellis) 
 
 ```yaml
 dependencies:
-  trellis: ^0.7.0
+  trellis: ^0.8.0
   trellis_relic: ^0.1.0
 ```
 

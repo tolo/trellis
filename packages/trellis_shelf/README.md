@@ -6,7 +6,7 @@ Shelf integration for the [Trellis](https://pub.dev/packages/trellis) template e
 
 ```yaml
 dependencies:
-  trellis: ^0.7.0
+  trellis: ^0.8.0
   trellis_shelf: ^0.1.0
 ```
 

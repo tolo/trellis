@@ -9,7 +9,7 @@ environment:
   sdk: ^3.10.0
 
 dependencies:
-  trellis: ^0.7.0
+  trellis: ^0.8.0
   shelf: ^1.4.0
 
 dev_dependencies:

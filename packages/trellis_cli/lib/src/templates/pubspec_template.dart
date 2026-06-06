@@ -15,7 +15,7 @@ dependencies:
   shelf: ^1.4.0
   shelf_router: ^1.1.0
   shelf_static: ^1.1.0
-  trellis: ^0.7.0
+  trellis: ^0.8.0
   trellis_dev: ^0.1.0
   trellis_shelf: ^0.1.0
 

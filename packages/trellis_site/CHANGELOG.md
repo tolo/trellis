@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0
+
+### Changed
+
+- Version aligned to the unified Trellis SDK lockstep versioning scheme — all SDK packages now share a single version number and are released together. No functional changes since 0.2.0.
+
 ## 0.2.0
 
 ### Added

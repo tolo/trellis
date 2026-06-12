@@ -1,5 +1,5 @@
 name: trellis_dev
-version: 0.1.0
+version: 0.8.0
 description: >-
   Developer tools for the Trellis template engine — SSE browser hot reload.
 repository: https://github.com/tolo/trellis/tree/main/packages/trellis_dev

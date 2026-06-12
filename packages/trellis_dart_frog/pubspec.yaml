@@ -1,5 +1,5 @@
 name: trellis_dart_frog
-version: 0.1.0
+version: 0.8.0
 description: >-
   Dart Frog integration for the Trellis template engine — provider, HTMX helpers,
   and security middleware.
@@ -13,7 +13,7 @@ dependencies:
   dart_frog: ^1.2.0
   shelf: ^1.4.0
   trellis: ^0.8.0
-  trellis_shelf: ^0.1.0
+  trellis_shelf: ^0.8.0
 
 dev_dependencies:
   http: ^1.2.0

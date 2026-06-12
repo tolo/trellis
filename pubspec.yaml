@@ -25,6 +25,17 @@ dev_dependencies:
 #   dart run melos exec --dir-exists test --fail-fast --order-dependents -- dart test
 melos:
   repository: https://github.com/tolo/trellis
+  command:
+    version:
+      # Lockstep release policy (ADR-009): every publishable package shares ONE
+      # version and is bumped together. Cut releases with tool/version_lockstep.sh,
+      # which drives `melos version` with an explicit version for each package.
+      # Melos rewrites dependents' constraints automatically in the same pass.
+      branch: main
+      workspaceChangelog: true
+      linkToCommits: true
+      message: |
+        chore(release): trellis SDK {new_package_versions}
   scripts:
     analyze:
       description: Run static analysis across all packages

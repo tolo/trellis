@@ -1,5 +1,5 @@
 name: trellis_shelf
-version: 0.1.0
+version: 0.8.0
 description: >-
   Shelf integration for the Trellis template engine — middleware, HTMX helpers,
   and security defaults.

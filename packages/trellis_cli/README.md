@@ -2,6 +2,8 @@
 
 CLI tool for the [Trellis](https://pub.dev/packages/trellis) template engine — project scaffolding, static site building, and local preview.
 
+Part of the [Trellis SDK](https://github.com/tolo/trellis).
+
 ## Installation
 
 ```bash

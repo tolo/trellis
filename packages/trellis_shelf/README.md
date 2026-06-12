@@ -2,6 +2,8 @@
 
 Shelf integration for the [Trellis](https://pub.dev/packages/trellis) template engine — middleware, HTMX helpers, and security defaults.
 
+Part of the [Trellis SDK](https://github.com/tolo/trellis).
+
 ## Installation
 
 ```yaml

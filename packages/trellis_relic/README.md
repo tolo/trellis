@@ -2,6 +2,8 @@
 
 Serverpod Relic integration for the [Trellis](https://pub.dev/packages/trellis) template engine — response helpers, HTMX detection, and security headers.
 
+Part of the [Trellis SDK](https://github.com/tolo/trellis).
+
 ## Installation
 
 ```yaml

@@ -2,6 +2,8 @@
 
 Developer tools for the [Trellis](https://pub.dev/packages/trellis) template engine — SSE-based browser hot reload.
 
+Part of the [Trellis SDK](https://github.com/tolo/trellis).
+
 ## Overview
 
 `trellis_dev` provides live reload for Trellis template development. When a template file changes on disk, all connected browser tabs automatically refresh via Server-Sent Events (SSE).

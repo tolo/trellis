@@ -3,7 +3,7 @@
 All notable changes to **trellis** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
-## [0.8.0] - 2026-06-04
+## [0.8.0]
 
 ### Added
 - **Expression utility objects**: `${#strings.*}`, `${#numbers.*}`, `${#dates.*}`, `${#lists.*}` — 53 built-in methods for common string, number, date, and list operations

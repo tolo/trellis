@@ -61,6 +61,10 @@ Melos 7 has **no native lockstep mode** — it versions independently even with 
 - **`tool/version_lockstep.sh <version>`** drives a single `melos version` pass with an explicit `--manual-version <pkg>:<version>` for every publishable package. Melos rewrites inter-package constraints (`trellis: ^x.y.z` etc.) in the same run.
 - The `melos.command.version` block in root `pubspec.yaml` pins releases to `main`, generates a workspace-level CHANGELOG, and links commits.
 
+### Git tagging
+
+Releases use a **single global tag per release** (`vX.Y.Z`, e.g. `v0.8.0`), continuing the pre-monorepo convention — one SDK version means one tag. Do **not** use Melos's default *per-package* tag format (`trellis-vX.Y.Z`, `trellis_shelf-vX.Y.Z`, …): under lockstep every package shares the version, so per-package tags are pure noise. When `melos version` drives tagging, set its tag format accordingly or pass `--no-git-tag-version` and tag manually (`git tag vX.Y.Z && git push origin vX.Y.Z`). A tag points at the commit whose published source matches that version (i.e. the actual release HEAD, not necessarily the version-bump commit).
+
 ### Re-evaluation trigger
 
 Revisit at **core 1.0.0**. After 1.0, `^1.x` provides proper compatible-range caret semantics (minor bumps are non-breaking), packages will have stabilized and genuinely decoupled, and independent — or hybrid (Option 3) — versioning starts earning its keep. Lockstep is a pre-1.0 simplification, not a permanent commitment.

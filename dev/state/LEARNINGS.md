@@ -22,6 +22,13 @@ Traps, gotchas, and non-obvious patterns from implementing Trellis. Bar for incl
 - **Fragment registry stores param names at pre-scan time**: The `tl:fragment` attribute is stripped during processing, so param names must be captured during the `collectFragments()` pre-scan, not at resolution time.
 - **Cycle detection uses string IDs, not element identity**: Fragments are cloned before processing, so element identity doesn't work. IDs are `"name"` for same-file, `"file::name"` for cross-file.
 
+## HTML5 Parser Boundary
+
+Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* any `tl:*` processor runs. The tokenizer/tree-builder silently mutates malformed input – and those mutations are invisible in the post-parse DOM, so the resulting bugs are silent (wrong output, no error). The validator surfaces them by reading `HtmlParser.errors` (curated allowlist in `_surfacedParseErrors`), since the runtime cannot detect them after the fact.
+
+- **Duplicate attributes are dropped at tokenization**: `<el tl:attr="a=${x}" tl:attr="b=${y}">` keeps only the *first* `tl:attr` – the tokenizer drops the duplicate when emitting the start-tag token (parse error `duplicate-attribute`) and `element.attributes` is a map, so the processor never sees the second. A runtime "merge multiple `tl:attr`" is therefore impossible – the data is gone before trellis runs. Correct authoring: one comma-separated `tl:attr` per element. Detection is only possible via parse errors.
+- **`tl:each` on `<tl:block>` inside `<table>`/`<select>` is foster-parented out**: An unknown element in "in table" insertion mode hits `startTagOther`, which emits parse error `unexpected-start-tag-implies-table-voodoo` and relocates the node out of the table – detaching the loop scope (symptom: right row/option count, empty cells). This is the HTML5 foster-parenting rule, not a trellis bug, so it can't be prevented. Correct authoring: put `tl:each` (and other `tl:*`) directly on `<tr>`/`<option>`, not a wrapping `<tl:block>`.
+
 ## Processor System
 
 - **`ProcessorContext.domProcessor` is typed as `dynamic`**: Avoids circular import between `processor_api.dart` and `processor.dart`. Processors cast when they need DomProcessor methods.

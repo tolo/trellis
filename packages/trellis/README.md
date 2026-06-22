@@ -170,6 +170,8 @@ Objects are accessed via `toMap()` or `toJson()` if present, otherwise as `Map<S
 `tl:class` replaces the existing class (not appends). `tl:classappend`/`tl:styleappend` append. Null values remove the attribute.
 Boolean HTML attributes (`disabled`, `checked`, etc.): `true` renders valueless, `false` removes.
 
+> **Set multiple attributes with one comma-separated `tl:attr`** (as above), not several `tl:attr` on the same element. HTML forbids duplicate attribute names, so the HTML5 parser silently keeps only the first `tl:attr` and drops the rest – before trellis runs. `TemplateValidator` warns when this happens.
+
 ### Block (Virtual Element)
 
 ```html
@@ -182,6 +184,8 @@ Boolean HTML attributes (`disabled`, `checked`, etc.): `true` renders valueless,
 <!-- Self-closing form also supported -->
 <tl:block tl:utext="${bodyHtml}"/>
 ```
+
+> **Don't wrap `<table>`/`<select>` rows in a `<tl:block>`.** Inside these elements the HTML5 parser foster-parents unknown tags (like `<tl:block>`) out of the table before trellis runs, detaching the loop scope (symptom: correct row count, empty cells). Put `tl:each` directly on `<tr>`/`<option>` instead. `TemplateValidator` warns when an element is foster-parented this way.
 
 ### Remove
 

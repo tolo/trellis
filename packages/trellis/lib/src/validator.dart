@@ -91,8 +91,16 @@ final class TemplateValidator {
   List<ValidationError> validate(String source) {
     try {
       final normalized = fixSelfClosingBlocks(source, prefix: prefix, separator: _separator);
-      final doc = html_parser.parse(normalized);
+      // Parse via an HtmlParser instance (not the top-level parse()) so HTML5
+      // parse errors are retained. The tokenizer/tree-builder silently mutates
+      // the template before trellis runs – dropping duplicate attributes and
+      // foster-parenting elements out of <table>/<select> – which detaches any
+      // tl:* directives. Those mutations are invisible in the post-parse DOM, so
+      // surfacing the parse errors is the only way to flag them.
+      final parser = html_parser.HtmlParser(normalized, generateSpans: true);
+      final doc = parser.parse();
       final errors = <ValidationError>[];
+      _collectParseErrors(parser.errors, errors);
       final defineNames = <String>{};
       final root = doc.documentElement;
       if (root != null) {
@@ -101,6 +109,34 @@ final class TemplateValidator {
       return errors;
     } catch (error) {
       return [ValidationError(message: 'Validator failed: $error', severity: ValidationSeverity.error)];
+    }
+  }
+
+  /// Map curated HTML5 parse errors to validation warnings.
+  ///
+  /// Only the high-signal codes in [_surfacedParseErrors] are reported; other
+  /// parse errors (missing doctype, fragment templates without a document
+  /// wrapper, etc.) are expected for valid trellis templates and ignored.
+  ///
+  /// The reported [ValidationError.line] is element-level: `package:html` spans
+  /// these errors to the start of the offending element (or the document start
+  /// for repeated occurrences), not to the specific attribute that was dropped.
+  void _collectParseErrors(List<html_parser.ParseError> parseErrors, List<ValidationError> errors) {
+    // One authoring mistake can raise several parse errors (e.g. a block in a
+    // table emits both start- and end-tag "voodoo"), so collapse warnings that
+    // share a message and line into one.
+    final seen = <String>{};
+    for (final parseError in parseErrors) {
+      final message = _surfacedParseErrors[parseError.errorCode];
+      if (message == null) {
+        continue;
+      }
+      final line = parseError.span?.start.line;
+      final resolvedLine = line == null ? null : line + 1;
+      if (!seen.add('$resolvedLine\u0000$message')) {
+        continue;
+      }
+      errors.add(ValidationError(message: message, severity: ValidationSeverity.warning, line: resolvedLine));
     }
   }
 
@@ -339,6 +375,21 @@ final class TemplateValidator {
     );
   }
 }
+
+/// HTML5 parse errors surfaced as template warnings, keyed by `package:html`
+/// error code. These flag silent template mutations that strip `tl:*` directives
+/// before trellis can process them; all other parse errors are treated as noise.
+const _surfacedParseErrors = <String, String>{
+  'duplicate-attribute':
+      'Duplicate attribute dropped by the HTML parser – only the first occurrence is kept. '
+      'When setting multiple Trellis attributes on one element, combine them into a single comma-separated tl:attr.',
+  'unexpected-start-tag-implies-table-voodoo':
+      'Element foster-parented out of its <table>/<select> by the HTML5 parser, detaching any '
+      'tl:* directives on it. Put tl:each (and other tl:* attributes) on <tr>/<option> directly.',
+  'unexpected-end-tag-implies-table-voodoo':
+      'Element foster-parented out of its <table>/<select> by the HTML5 parser, detaching any '
+      'tl:* directives on it. Put tl:each (and other tl:* attributes) on <tr>/<option> directly.',
+};
 
 const _expressionAttributes = {'text', 'utext', 'if', 'unless', 'switch', 'object'};
 const _bindingAttributes = {'with', 'attr'};

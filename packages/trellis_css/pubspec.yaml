@@ -1,5 +1,5 @@
 name: trellis_css
-version: 0.8.0
+version: 0.8.1
 description: >-
   CSS utilities for the Trellis template engine — SASS compilation and
   fragment-scoped CSS via tl:scope.
@@ -12,7 +12,7 @@ environment:
 dependencies:
   html: ^0.15.6
   sass: ^1.98.0
-  trellis: ^0.8.0
+  trellis: ^0.8.1
 
 dev_dependencies:
   lints: ^6.0.0

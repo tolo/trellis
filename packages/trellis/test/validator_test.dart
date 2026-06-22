@@ -127,5 +127,50 @@ void main() {
       expect(errors.single.severity, ValidationSeverity.error);
       expect(errors.single.message, contains('Failed to load template'));
     });
+
+    group('HTML5 parse-error surfacing', () {
+      test('warns when a duplicate tl:attr is silently dropped', () {
+        final validator = TemplateValidator();
+
+        final errors = validator.validate('<a tl:attr="href=\${u}" tl:attr="title=\${t}">x</a>');
+
+        final warnings = errors.where((error) => error.message.contains('Duplicate attribute')).toList();
+        expect(warnings, hasLength(1));
+        expect(warnings.single.severity, ValidationSeverity.warning);
+      });
+
+      test('warns when a tl:each block is foster-parented out of a table', () {
+        final validator = TemplateValidator();
+
+        final errors = validator.validate(
+          '<table><tl:block tl:each="r : \${rows}"><tr><td tl:text="\${r}"></td></tr></tl:block></table>',
+        );
+
+        // A single block-in-table mistake raises both start- and end-tag voodoo
+        // parse errors; they must collapse into one warning, not two.
+        final warnings = errors.where((error) => error.message.contains('foster-parented')).toList();
+        expect(warnings, hasLength(1));
+        expect(warnings.single.severity, ValidationSeverity.warning);
+      });
+
+      test('does not warn for tl:each on <tr> directly inside a table', () {
+        final validator = TemplateValidator();
+
+        final errors = validator.validate('<table><tr tl:each="r : \${rows}"><td tl:text="\${r}"></td></tr></table>');
+
+        expect(errors, isEmpty);
+      });
+
+      test('does not surface non-curated parser noise on doctype-less fragments', () {
+        final validator = TemplateValidator();
+
+        // Fragment templates have no <html>/doctype, so the HTML5 parser always
+        // emits expected-doctype-but-got-start-tag. That noise must stay
+        // unsurfaced; only the curated codes become warnings.
+        final errors = validator.validate('<div tl:text="\${name}">x</div>');
+
+        expect(errors, isEmpty);
+      });
+    });
   });
 }

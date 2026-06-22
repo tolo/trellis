@@ -3,6 +3,13 @@
 All notable changes to **trellis** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.8.1]
+
+### Fixed
+- **`TemplateValidator` surfaces silent HTML5 parser mutations**: templates are parsed by `package:html` before `tl:*` processors run, and the parser can silently rewrite malformed input – dropping duplicate attributes and foster-parenting elements out of `<table>`/`<select>` – stripping `tl:*` directives with no error. The validator now reports these as warnings:
+  - **Duplicate `tl:attr` on one element** – only the first is kept (HTML forbids duplicate attribute names); use a single comma-separated `tl:attr` instead.
+  - **`tl:each`/`tl:*` on a `<tl:block>` (or other unknown tag) inside `<table>`/`<select>`** – foster-parented out of the table, detaching the loop scope; put the directive directly on `<tr>`/`<option>`.
+
 ## [0.8.0]
 
 ### Added

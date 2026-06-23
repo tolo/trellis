@@ -1,0 +1,42 @@
+name: Publish to pub.dev
+
+# Publishes the whole Trellis SDK in lockstep when a release tag is pushed.
+#
+# Uses pub.dev's OIDC automated publishing — no API tokens or secrets are
+# stored: each job mints a short-lived OIDC token (`id-token: write`) that
+# pub.dev validates against the tag. Every package must have automated
+# publishing enabled on its pub.dev Admin tab (repository `tolo/trellis`,
+# tag pattern `v{{version}}`) for its job to succeed.
+#
+# Lockstep (ADR-009): all packages share one version, so a single `vX.Y.Z` tag
+# matches `v{{version}}` for every package. Cut releases with
+# tool/version_lockstep.sh, then push the tag.
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  publish:
+    name: ${{ matrix.package }}
+    strategy:
+      # Publish every package even if one fails — pub.dev tolerates a satellite
+      # whose core dependency is still mid-publish, and a failed job can be
+      # re-run independently.
+      fail-fast: false
+      matrix:
+        package:
+          - trellis
+          - trellis_shelf
+          - trellis_css
+          - trellis_site
+          - trellis_dev
+          - trellis_relic
+          - trellis_cli
+          - trellis_dart_frog
+    permissions:
+      id-token: write # Mint the OIDC token pub.dev validates; no secret needed.
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    with:
+      working-directory: packages/${{ matrix.package }}

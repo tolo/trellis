@@ -1,0 +1,32 @@
+# Trellis
+
+> A pure-Dart SDK for server-rendered web apps and static sites. At its core is **trellis**, a
+> Thymeleaf-inspired HTML template engine: templates are valid HTML annotated with `tl:*`
+> attributes, render server-side, and are fragment-first for hypermedia frameworks like HTMX.
+> No Node.js, no JS build step, AOT-compatible (no reflection).
+
+The SDK is a Melos monorepo of independently published, lockstep-versioned packages: `trellis`
+(engine), `trellis_shelf` / `trellis_dart_frog` / `trellis_relic` (server integrations),
+`trellis_site` (static site generation), `trellis_css` (CSS processing), `trellis_dev` (hot
+reload), and `trellis_cli` (scaffolding CLI).
+
+When generating Trellis templates, follow the agent guide first — it covers the escaping/trust
+rules and the silent-failure footguns that matter most.
+
+## For AI agents
+
+- [Agent guide (rules for writing templates)](https://github.com/tolo/trellis/blob/main/packages/trellis/doc/trellis-for-agents.md): Escaping/trust boundary, keep-templates-dumb, core directives, silent footguns, validation. Start here.
+
+## Core docs
+
+- [trellis engine README](https://github.com/tolo/trellis/blob/main/packages/trellis/README.md): Full `tl:*` directive and expression syntax, configuration, loaders, validation, custom processors/dialects.
+- [Project README](https://github.com/tolo/trellis/blob/main/README.md): SDK overview, package map, and the `trellis` CLI.
+- [Framework integration guide](https://github.com/tolo/trellis/blob/main/docs/guides/framework-integration.md): Shelf middleware, Dart Frog and Relic handlers, HTMX fragments and OOB swaps, template testing, error handling, AOT deployment notes.
+- [API reference](https://pub.dev/documentation/trellis/latest/): Generated Dart API docs for the `trellis` package.
+
+## Optional
+
+- [Theme usage guide](https://github.com/tolo/trellis/blob/main/docs/guides/theme-usage.md): Using themes in a Trellis site.
+- [Theme authoring guide](https://github.com/tolo/trellis/blob/main/docs/guides/theme-authoring.md): Building a reusable theme.
+- [Standard params reference](https://github.com/tolo/trellis/blob/main/docs/reference/standard-params.md): Standard template/context parameters.
+- [pub.dev package](https://pub.dev/packages/trellis): Install, changelog, scores.

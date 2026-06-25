@@ -3,6 +3,12 @@
 All notable changes to **trellis** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.8.2]
+
+### Added
+- **`trellis:validate --strict` CI gate**: the `--strict` flag (alias `--fatal-warnings`) makes the CLI exit `1` on warnings, not only errors. This lets `dart run trellis:validate` gate CI on the silent HTML5-parser mutations surfaced in 0.8.1 (duplicate `tl:attr`, `<table>`/`<select>` foster-parenting) — these are reported as *warnings*, so a plain run exits `0` even when present.
+- **`trellis:validate` accepts the target directory positionally** — `dart run trellis:validate templates` now works alongside `--dir templates`.
+
 ## [0.8.1]
 
 ### Fixed

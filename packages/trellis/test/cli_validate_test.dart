@@ -61,6 +61,35 @@ void main() {
       expect(result.stderr, contains('warning'));
     });
 
+    test('--strict makes warnings exit 1', () async {
+      final file = File('${tempDir.path}/warning.html');
+      file.writeAsStringSync('<p tl:textt="\${name}">x</p>');
+
+      final result = await Process.run('dart', [
+        'run',
+        'trellis:validate',
+        '--dir',
+        tempDir.path,
+        '--strict',
+      ], workingDirectory: Directory.current.path);
+
+      expect(result.exitCode, 1);
+      expect(result.stderr, contains('warning'));
+    });
+
+    test('positional directory argument is supported', () async {
+      File('${tempDir.path}/home.html').writeAsStringSync('<p tl:text="\${name}">x</p>');
+
+      final result = await Process.run('dart', [
+        'run',
+        'trellis:validate',
+        tempDir.path,
+      ], workingDirectory: Directory.current.path);
+
+      expect(result.exitCode, 0);
+      expect(result.stderr, isEmpty);
+    });
+
     test('custom prefix is supported', () async {
       File('${tempDir.path}/custom.html').writeAsStringSync('<p data-tl-text="\${name}">x</p>');
 

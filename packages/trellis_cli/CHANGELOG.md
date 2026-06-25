@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.2
+
+### Fixed
+
+- `trellis_cli --version` now reports the correct version — the internal version constant had drifted from the package version (stuck at 0.8.0).
+
 ## 0.8.1
 
 ### Changed

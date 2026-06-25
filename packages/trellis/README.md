@@ -406,8 +406,10 @@ final issues = validator.validate('<p tl:text=""></p>');
 For CI or local checks, validate a directory recursively:
 
 ```bash
-dart run trellis:validate
+dart run trellis:validate                       # scans ./templates
+dart run trellis:validate templates             # or pass the directory positionally
 dart run trellis:validate --dir templates --prefix tl
+dart run trellis:validate --strict              # CI gate: warnings also fail the build
 ```
 
 CLI behavior:
@@ -415,7 +417,14 @@ CLI behavior:
 - Success prints nothing and exits `0`
 - Validation issues are printed to `stderr` as `path:line: severity: message (attribute)`
 - Validation errors exit `1`
-- Warnings are printed but do not change the exit code unless at least one error is present
+- Warnings (including the silent HTML5-parser mutations described above) are printed but
+  exit `0` by default — pass `--strict` (alias `--fatal-warnings`) so they exit `1` too
+
+> **For CI, run with `--strict`.** The silent-mutation issues that strip `tl:*` directives
+> (duplicate `tl:attr`, table/select foster-parenting) are reported as *warnings*, so a plain
+> `dart run trellis:validate` exits `0` even when they're present. `--strict` makes the CLI a
+> real gate. Equivalently, assert zero issues inside `dart test` with `isValidTemplate()` over
+> your shipping templates.
 
 ### Custom Processors
 

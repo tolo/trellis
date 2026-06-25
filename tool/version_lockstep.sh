@@ -35,10 +35,29 @@ PACKAGES=(
   trellis_relic
 )
 
+# Dart source files holding a hardcoded version constant that must track the
+# package version. Melos only bumps pubspec.yaml, so without this these drift
+# (as they did at 0.8.1, where trellis_cli --version reported a stale 0.8.0).
+# The `version_test.dart` guard in each package fails CI if this list is wrong.
+ROOT="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
+VERSION_CONSTANT_FILES=(
+  "${ROOT}/packages/trellis_cli/lib/src/version.dart"
+  "${ROOT}/packages/trellis_site/lib/src/version.dart"
+)
+
 ARGS=()
 for pkg in "${PACKAGES[@]}"; do
   ARGS+=("--manual-version" "${pkg}:${VERSION}")
 done
 
 echo "Releasing Trellis SDK ${VERSION} (lockstep) across ${#PACKAGES[@]} packages..."
-exec dart run melos version "${ARGS[@]}" "$@"
+dart run melos version "${ARGS[@]}" "$@"
+
+echo "Syncing version.dart constants to ${VERSION}..."
+for file in "${VERSION_CONSTANT_FILES[@]}"; do
+  [[ -f "${file}" ]] || continue
+  # Rewrite `const String fooVersion = '...';` in place; perl is present on
+  # macOS and the Linux CI runners, sidestepping GNU/BSD sed -i differences.
+  perl -pi -e "s/(const String \w+Version = ')[^']*(';)/\${1}${VERSION}\${2}/" "${file}"
+  git add "${file}" 2>/dev/null || true
+done

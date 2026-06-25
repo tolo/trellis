@@ -37,6 +37,12 @@ jobs:
           - trellis_dart_frog
     permissions:
       id-token: write # Mint the OIDC token pub.dev validates; no secret needed.
+    # Pinned to the major tag (currently == v1.7.2) on purpose: a moving `@v1`
+    # auto-receives upstream patches, including the eventual Node 20 -> 24 bump.
+    # The "Node.js 20 is deprecated" warning in the logs comes from the
+    # `dart-lang/setup-dart` action pinned *inside* this reusable workflow, not
+    # from anything here — it is upstream's to fix and is currently harmless
+    # (jobs are force-run on Node 24). Tracked in dev/state/TECH-DEBT-BACKLOG.md.
     uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
     with:
       working-directory: packages/${{ matrix.package }}

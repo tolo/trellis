@@ -42,6 +42,14 @@ class Page {
   /// The top-level section name (e.g. `posts`). Empty string for root pages.
   final String section;
 
+  /// The full nested section lineage (e.g. `docs/guides`). Empty string for
+  /// root pages. Unlike [section] (top-level only), this captures every
+  /// directory level so nested sub-sections are distinguishable.
+  ///
+  /// Additive to [section]: [section] keeps its top-level value; templates read
+  /// this via `${page.sectionPath}` (string) and `${page.ancestors}` (list).
+  final String sectionPath;
+
   /// The kind of page: single content page, section listing, or home page.
   final PageKind kind;
 
@@ -82,12 +90,14 @@ class Page {
     required this.isDraft,
     required this.isBundle,
     required this.bundleAssets,
+    String? sectionPath,
     Map<String, dynamic>? frontMatter,
     String? rawContent,
     String? content,
     String? summary,
     List<TocEntry>? toc,
-  }) : frontMatter = frontMatter ?? {},
+  }) : sectionPath = sectionPath ?? section,
+       frontMatter = frontMatter ?? {},
        rawContent = rawContent ?? '',
        content = content ?? '',
        summary = summary ?? '',
@@ -101,9 +111,14 @@ class Page {
 /// Converts a [Page] to a plain [Map] suitable for use as a Trellis context value.
 ///
 /// The resulting map spreads [Page.frontMatter] and overrides it with the SSG
-/// structural fields (`url`, `content`, `summary`, `toc`, `section`, `kind`,
-/// `isDraft`). Any extra keys injected into `frontMatter` (e.g. taxonomy data)
-/// are preserved and accessible as `${page.key}` in templates.
+/// structural fields (`url`, `content`, `summary`, `toc`, `section`,
+/// `sectionPath`, `ancestors`, `kind`, `isDraft`). Any extra keys injected into
+/// `frontMatter` (e.g. taxonomy data) are preserved and accessible as
+/// `${page.key}` in templates.
+///
+/// `section` stays the top-level folder (unchanged). `sectionPath` is the full
+/// nested lineage (e.g. `docs/guides`), and `ancestors` is its list form
+/// (e.g. `['docs', 'docs/guides']`) — the additive nested-section fields.
 Map<String, dynamic> pageToMap(Page page) => <String, dynamic>{
   ...page.frontMatter,
   'url': page.url,
@@ -111,6 +126,22 @@ Map<String, dynamic> pageToMap(Page page) => <String, dynamic>{
   'summary': page.summary,
   'toc': page.toc.map((e) => {'id': e.id, 'text': e.text, 'level': e.level}).toList(),
   'section': page.section,
+  'sectionPath': page.sectionPath,
+  'ancestors': _sectionAncestors(page.sectionPath),
   'kind': page.kind.name,
   'isDraft': page.isDraft,
 };
+
+/// Builds the cumulative ancestor lineage list from a `sectionPath`.
+///
+/// Each entry is a progressively deeper section path, e.g. `docs/guides` yields
+/// `['docs', 'docs/guides']`. An empty `sectionPath` (root page) yields `[]`.
+List<String> _sectionAncestors(String sectionPath) {
+  if (sectionPath.isEmpty) return const [];
+  final parts = sectionPath.split('/');
+  final result = <String>[];
+  for (var i = 0; i < parts.length; i++) {
+    result.add(parts.sublist(0, i + 1).join('/'));
+  }
+  return result;
+}

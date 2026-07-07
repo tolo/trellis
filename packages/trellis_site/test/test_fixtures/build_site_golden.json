@@ -1,0 +1,8 @@
+{
+  "about/index.html": "<!DOCTYPE html><html><head><title>About</title></head>\n<body>\n<h1>About</h1>\n<article><p>This is the about page.</p>\n</article>\n\n\n</body></html>",
+  "index.html": "<!DOCTYPE html><html><head><title>Home</title></head>\n<body>\n<h1>Home</h1>\n<div><p>Welcome to the test site.</p>\n</div>\n<ul>\n  <li><a href=\"/posts/hello-world/\">Hello World</a></li><li><a href=\"/posts/second-post/\">Second Post</a></li><li><a href=\"/about/\">About</a></li><li><a href=\"/no-sitemap/\">No Sitemap Page</a></li>\n</ul>\n\n\n</body></html>",
+  "no-sitemap/index.html": "<!DOCTYPE html><html><head><title>No Sitemap Page</title></head>\n<body>\n<h1>No Sitemap Page</h1>\n<article><p>This page should not appear in the sitemap.</p>\n</article>\n\n\n</body></html>",
+  "posts/hello-world/index.html": "<!DOCTYPE html><html><head><title>Hello World</title></head>\n<body>\n<h1>Hello World</h1>\n<article><p>This is the first post.</p>\n</article>\n\n\n</body></html>",
+  "posts/index.html": "<!DOCTYPE html><html><head><title>Posts</title></head>\n<body>\n<h1>Posts</h1>\n<ul>\n  <li><a href=\"/posts/hello-world/\">Hello World</a></li><li><a href=\"/posts/second-post/\">Second Post</a></li>\n</ul>\n\n\n</body></html>",
+  "posts/second-post/index.html": "<!DOCTYPE html><html><head><title>Second Post</title></head>\n<body>\n<h1>Second Post</h1>\n<article><p>This is the second post.</p>\n</article>\n\n\n</body></html>"
+}

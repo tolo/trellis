@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!-- Arbor Docs Theme — layouts/_default/list.html. Section listing page: docs
+     shell (sidebar + listing) for section index pages and taxonomy fallbacks.
+     Overrides the "content" block and pulls in the shared sidebar fragment;
+     tolerates an empty page list. -->
+<html tl:extends="layouts/base.html" lang="en">
+<head><title>Section</title></head>
+<body>
+  <main id="main-content" class="main-content" tl:define="content">
+    <div class="container">
+      <div class="docs-shell">
+
+        <!-- Sidebar; guarded at the call site (theme toggle + data presence). -->
+        <div tl:if="${theme.show_sidebar} and ${site.menu}" tl:replace="~{layouts/base.html :: sidebar}"></div>
+
+        <!-- Listing column -->
+        <div class="docs-main">
+          <header class="section-header">
+            <h1 class="section-title" tl:text="${page.title}">Section</h1>
+            <div class="section-description" tl:if="${page.content}"
+                 tl:utext="${page.content}">Section description.</div>
+          </header>
+
+          <ul class="card-list" tl:if="${pages}">
+            <li class="doc-card" tl:each="p : ${pages}">
+              <h2 class="doc-card-title">
+                <a tl:href="${p.url}" tl:text="${p.title}">Page Title</a>
+              </h2>
+              <p class="doc-card-summary" tl:if="${p.summary}" tl:text="${p.summary}">
+                Page summary.
+              </p>
+            </li>
+          </ul>
+
+          <p class="no-pages" tl:unless="${pages}">No pages in this section yet.</p>
+
+          <!-- Pagination controls — only when a pagination context is present. -->
+          <nav class="pagination" aria-label="Pagination" tl:if="${pagination}">
+            <a class="pagination-prev" tl:if="${pagination.hasPrev}" tl:href="${pagination.prevUrl}">← Previous</a>
+            <span class="pagination-prev pagination-disabled" tl:unless="${pagination.hasPrev}">← Previous</span>
+            <span class="pagination-info"
+                  tl:text="'Page ' + ${pagination.page} + ' of ' + ${pagination.totalPages}">Page 1 of 1</span>
+            <a class="pagination-next" tl:if="${pagination.hasNext}" tl:href="${pagination.nextUrl}">Next →</a>
+            <span class="pagination-next pagination-disabled" tl:unless="${pagination.hasNext}">Next →</span>
+          </nav>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</body>
+</html>

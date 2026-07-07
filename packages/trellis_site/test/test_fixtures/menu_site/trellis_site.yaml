@@ -1,0 +1,11 @@
+title: Menu Site
+baseUrl: https://example.com
+description: Menu tree fixture
+
+contentDir: content
+layoutsDir: layouts
+staticDir: static
+outputDir: output
+
+taxonomies:
+  - tags

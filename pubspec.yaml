@@ -17,6 +17,13 @@ workspace:
   - examples/dart_frog_app
 dev_dependencies:
   melos: ^7.4.0
+  # For the docs-site link-integrity checker (tool/link_check.dart) and its test.
+  # The workspace root is publish_to: none, so these are dev-only tooling deps,
+  # not runtime dependencies of any published package. `html` is already resolved
+  # in the workspace (trellis, trellis_css) — no new transitive dependency.
+  html: ^0.15.6
+  path: ^1.9.0
+  test: ^1.25.0
 
 # Melos scripts require global activation to use `melos run <script>`:
 #   dart pub global activate melos

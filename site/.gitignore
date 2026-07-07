@@ -1,0 +1,4 @@
+# Build artifacts
+output/
+output-root/
+.trellis/

@@ -92,6 +92,7 @@ trellis serve
 `trellis_site.yaml` supports a small set of top-level keys for common setup:
 
 - `title`, `baseUrl`, `description`
+- `pathPrefix` for serving the site under a sub-path (see [Path prefix](#path-prefix))
 - `contentDir`, `layoutsDir`, `staticDir`, `dataDir`, `outputDir`
 - `taxonomies`, `paginate`
 - `params` for arbitrary site-level values exposed as `${site.params.*}`
@@ -102,6 +103,7 @@ Paths may be relative to the site root or absolute.
 ```yaml
 title: My Site
 baseUrl: https://example.com
+pathPrefix: /my-site/
 description: Notes about Dart and server-rendered HTML
 contentDir: content
 layoutsDir: layouts
@@ -123,6 +125,61 @@ search:
   output: search-index.json
   fields: [title, summary, content, tags]
 ```
+
+### Path prefix
+
+`pathPrefix` serves a site under a sub-path (e.g. GitHub project pages at
+`https://user.github.io/my-site/`) instead of a domain root. When set, every
+engine-derived internal URL resolves under the prefix -- page links
+(`${page.url}`), the section/menu tree, prev/next links, and the search-index
+`url` fields -- and `sitemap.xml`/feeds compose `baseUrl` with the prefixed URL
+so the prefix appears exactly once (`https://example.com/my-site/posts/intro/`).
+
+The value is normalized: `my-site`, `/my-site`, `my-site/`, and `/my-site/` all
+canonicalize to `/my-site/` (leading slash, single trailing slash). `''` and
+`/` mean "served at root" -- with no `pathPrefix` (the default), output is
+byte-for-byte identical to a root-served build. An un-normalizable value (a
+scheme-bearing or protocol-relative URL such as `http://x` or `//host`, or a
+non-string) aborts the build with a `SiteConfigException` and writes no output.
+
+`baseUrl` (the canonical absolute origin used by `sitemap.xml`/feeds) and
+`pathPrefix` (the sub-path) are orthogonal and compose.
+
+The prefix lives in the emitted **URLs**, not in the on-disk output layout:
+files are written at their unprefixed paths (`output/posts/intro/index.html`,
+not `output/my-site/posts/intro/index.html`). Deploy by publishing the whole
+`output/` directory as the site root — the host mounts it under the prefix
+(GitHub Project Pages serves the artifact root at `/<repo>/`), so a `/my-site/`
+link resolves to the corresponding unprefixed file. Nesting the output under the
+prefix would double-apply it.
+
+**Hand-written links and assets get the prefix automatically** (expected SSG
+behavior, like Hugo's `baseURL`): any **root-absolute internal** `href`/`src` in
+the emitted HTML — a Markdown link like `[guide](/docs/guide/)`, a theme literal
+like `<link href="/css/main.css">`, or a vendored `<script src="/js/app.js">` —
+is rewritten to carry the prefix. **Relative links** (`../guide/`) and in-page
+anchors (`#section`) are left untouched, so they keep working as-is; absolute/
+external URLs and already-prefixed engine URLs are never touched (no double
+prefix). Escaped code examples (a `` ```html `` block showing `href="/x"`) are
+not rewritten. With no `pathPrefix`, this pass is a no-op. Only `href`/`src` are
+rewritten — `srcset` and CSS `url(...)` are not, so use relative or prefix-aware
+paths there. You can still use `${site.pathPrefix}` explicitly if you prefer.
+
+`${site.pathPrefix}` in templates and theme layouts holds the normalized prefix
+(`/my-site/` when set, empty string when not) so theme authors can prefix
+hand-written literal asset and link references the engine cannot rewrite
+automatically. Concatenate it onto the literal path in a `tl:href`/`tl:src`
+expression:
+
+```html
+<link rel="stylesheet" tl:href="${site.pathPrefix} + 'css/main.css'">
+<script tl:src="${site.pathPrefix} + 'js/app.js'"></script>
+```
+
+With `pathPrefix: /my-site/` these emit `/my-site/css/main.css` and
+`/my-site/js/app.js`; with no prefix they stay `css/main.css` and `js/app.js`.
+Engine-derived URLs such as `${page.url}` already carry the prefix and need no
+concatenation.
 
 ## Project Structure
 
@@ -158,13 +215,17 @@ my_site/
 
 ## Content Conventions
 
-| File | URL | Kind |
-|------|-----|------|
-| `content/_index.md` | `/` | home |
-| `content/about.md` | `/about/` | single |
-| `content/posts/_index.md` | `/posts/` | section |
-| `content/posts/hello.md` | `/posts/hello/` | single |
-| `content/posts/trip/index.md` | `/posts/trip/` | single (bundle) |
+| File | URL | Kind | `section` | `sectionPath` |
+|------|-----|------|-----------|---------------|
+| `content/_index.md` | `/` | home | `` | `` |
+| `content/about.md` | `/about/` | single | `` | `` |
+| `content/posts/_index.md` | `/posts/` | section | `posts` | `posts` |
+| `content/posts/hello.md` | `/posts/hello/` | single | `posts` | `posts` |
+| `content/posts/trip/index.md` | `/posts/trip/` | single (bundle) | `posts` | `posts` |
+| `content/docs/guides/_index.md` | `/docs/guides/` | section | `docs` | `docs/guides` |
+| `content/docs/guides/a.md` | `/docs/guides/a/` | single | `docs` | `docs/guides` |
+
+A nested `_index.md` is a section page for its own level. Its `${pages}` listing contains exactly that level's own pages (e.g. `docs/guides/_index.md` lists `docs/guides/*` and excludes sibling `docs/tutorials/*`).
 
 ## Front Matter
 
@@ -185,21 +246,109 @@ summary: A custom summary for listings.
 Content here.
 ```
 
-Standard fields: `title`, `date`, `draft`, `summary`, `layout`, `type`, `sitemap`, `feed`, `search`. Custom fields are available in templates as `${page.fieldName}`.
+Standard fields: `title`, `date`, `draft`, `summary`, `layout`, `type`, `weight`, `sitemap`, `feed`, `search`, `menu_title`, `menu_exclude`. Custom fields are available in templates as `${page.fieldName}`.
+
+`menu_title` (string) overrides a page's title in the `${site.menu}` navigation tree; `menu_exclude: true` removes a page from that tree. See [Navigation Menu](#navigation-menu).
+
+## Page Ordering
+
+Within a section, pages are ordered by an integer `weight` front-matter field, then by the default date order:
+
+- **Weighted pages first**, ascending by `weight` (lower `weight` sorts earlier).
+- **Ties among equal weights**, and **all unweighted pages**, fall through to the default order: date descending, then URL ascending.
+- When **no page in a section declares `weight`**, the order is exactly the default date-descending-then-URL order -- no new tiebreak is introduced (existing blog behavior is byte-for-byte unchanged).
+
+A non-integer or otherwise malformed `weight` (e.g. a quoted string) is **ignored with a build warning** naming the page and the page is treated as unweighted; the build never aborts.
+
+This one ordering rule is applied by a single reusable engine function, `orderedSectionPages(sectionPath, allPages)`, which returns a section's own-level content pages in canonical order. The `${pages}` list, pagination, and every downstream ordering consumer (menu tree, prev/next) route through this same function, so all derived orderings match the `${pages}` listing exactly.
+
+## Navigation Menu
+
+`${site.menu}` is a nested navigation tree mirroring the content section hierarchy, available on **every** page render -- single pages, section listings, the home page, and taxonomy virtual pages alike (not only list pages). Each node is a map with exactly three keys:
+
+```
+{ title: String, url: String, children: List<node> }
+```
+
+- **Order** -- each section's own-level pages appear in the same canonical (weight-aware) order as `${pages}`; sections nest by `${page.sectionPath}` lineage.
+- **Title** follows a 3-tier precedence: `menu_title` front matter → `title` front matter → humanized URL slug (`getting-started` → `Getting Started`). A section folder with no `_index.md` still yields a node titled from its humanized folder name.
+- **Exclusion** -- draft pages and pages with `menu_exclude: true` are absent. A section page that opts out drops its own node but hoists its surviving children to the parent. Empty or fully-excluded content yields an empty list (never null).
+- **Active trail** -- the tree is built once and shared across renders, so it carries **no** per-node active flag. A theme marks the current page and its ancestor trail by comparing each `node.url` against `${page.url}` at render time.
+
+```html
+<nav>
+  <ul>
+    <li tl:each="item : ${site.menu}">
+      <a tl:href="${item.url}" tl:class="${item.url == page.url} ? 'active' : ''" tl:text="${item.title}">Item</a>
+      <ul tl:if="${item.children}">
+        <li tl:each="child : ${item.children}">
+          <a tl:href="${child.url}" tl:text="${child.title}">Child</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+```
+
+## In-Section Prev/Next
+
+Every **single doc page** exposes `${page.prev}` and `${page.next}` -- references to its immediate neighbors within the page's own section, so a doc can be read straight through in its authored order. Each is a `{url, title}` map:
+
+```
+{ url: String, title: String }
+```
+
+- **Order** -- neighbors come from the section's own-level pages in the same canonical (weight-aware) order as `${pages}` and `${site.menu}` (via `orderedSectionPages`); there is **no** separate prev/next sort. Weighted sections read in `weight` order, not date order.
+- **Own section only** -- neighbors are drawn from the page's own `${page.sectionPath}` level; sibling sub-sections are not chained, and there is no cross-section or whole-site "next article".
+- **Boundaries by absence** -- the first page has no `prev`, the last has no `next`, and a single-page section has neither. Absent neighbors are simply not attached (the key is falsy), so a template guards each side with `tl:if` and renders only the links that exist -- never an error or an empty placeholder.
+- **Single doc pages only** -- section listings, the home page, and taxonomy pages do **not** receive `${page.prev}`/`${page.next}`; list-page sequencing stays with `${pagination.*}`.
+
+```html
+<nav tl:if="${page.prev} or ${page.next}" aria-label="Page navigation">
+  <a tl:if="${page.prev}" tl:href="${page.prev.url}" tl:text="${page.prev.title}">Previous</a>
+  <a tl:if="${page.next}" tl:href="${page.next.url}" tl:text="${page.next.title}">Next</a>
+</nav>
+```
+
+## Breadcrumbs
+
+Every page exposes `${page.breadcrumbs}` -- a structured trail of its ancestor sections, one node per lineage level in shallow-to-deep order, ready to render as a labelled breadcrumb. Each node is a `{url, title}` map:
+
+```
+{ url: String, title: String }
+```
+
+- **Titles** -- each node's `title` uses the same 3-tier fallback as `${site.menu}`: the section `_index.md`'s `menu_title`, then its `title`, then the humanized folder segment (e.g. `Guides`, never the raw `docs/guides` path).
+- **URLs** -- `url` is the section's own (path-prefix-aware) URL, matching the shape of `${site.menu}` section nodes. A folder with no `_index.md` yields an empty `url` (nothing to link to) while still contributing a humanized title.
+- **Ordering** -- nodes mirror `${page.ancestors}`: for `docs/guides`, `[{docs}, {docs/guides}]`. Root pages have an empty list.
+- **Additive** -- `${page.ancestors}` (the cumulative *path* list) is unchanged; `${page.breadcrumbs}` is the labelled, linkable companion.
+
+```html
+<nav tl:if="${page.breadcrumbs}" aria-label="Breadcrumb">
+  <a href="/">Home</a>
+  <a tl:each="crumb : ${page.breadcrumbs}" tl:href="${crumb.url}" tl:text="${crumb.title}">Section</a>
+</nav>
+```
 
 ## Template Context
 
 Templates receive a data cascade (lowest to highest priority):
 
-1. **Site params** -- `${site.title}`, `${site.baseUrl}`, `${site.params.*}`
+1. **Site params** -- `${site.title}`, `${site.baseUrl}`, `${site.pathPrefix}`, `${site.params.*}`
 2. **Global data** -- `${data.filename.*}` from `data/*.yaml`
 3. **Section front matter** -- from the section's `_index.md`
 4. **Page front matter** -- from the page's own front matter
 
 Additional context variables:
 
-- `${page.*}` -- page metadata (`url`, `content`, `summary`, `toc`, `section`, `kind`)
+- `${page.*}` -- page metadata (`url`, `content`, `summary`, `toc`, `section`, `sectionPath`, `ancestors`, `kind`)
+  - `${page.section}` is the **top-level** folder (e.g. `docs`) -- unchanged for nested pages.
+  - `${page.sectionPath}` is the **full nested lineage** (e.g. `docs/guides`); empty for root pages.
+  - `${page.ancestors}` is the cumulative lineage list (e.g. `['docs', 'docs/guides']`); empty for root pages.
+  - `${page.breadcrumbs}` is the structured breadcrumb trail (`{url, title}` nodes, one per ancestor section); empty for root pages. See [Breadcrumbs](#breadcrumbs).
+  - `${page.prev}` / `${page.next}` -- immediate in-section neighbors (`{url, title}`) for single doc pages; absent at section boundaries. See [In-Section Prev/Next](#in-section-prevnext).
 - `${pages}` -- child pages for list pages (section, home, taxonomy term)
+- `${site.menu}` -- nested navigation tree (`{title, url, children}` nodes) available on every page render; see [Navigation Menu](#navigation-menu)
 - `${pagination.*}` -- pagination metadata (`page`, `totalPages`, `hasNext`, `prevUrl`, `nextUrl`, `pages`)
 - `${taxonomy.*}` -- taxonomy term lists (when taxonomies are configured)
 - `${feeds.*}` -- generated site-wide feed URLs (`atom`, `rss`) when feeds are enabled

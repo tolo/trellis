@@ -1,0 +1,167 @@
+name: arbor
+version: 1.0.0
+author: Trellis Team
+description: >-
+  A documentation theme for Trellis. Hierarchical sidebar navigation, in-page
+  table of contents, prev/next links, and a vendored (no-CDN) client-side syntax
+  highlighter. Fully readable with JavaScript disabled.
+min_trellis_version: 0.8.0
+screenshots:
+  - screenshots/light.png
+  - screenshots/dark.png
+features:
+  - docs
+  - dark-mode
+  - responsive
+  - accessible
+  - syntax-highlighting
+  - search
+
+params:
+  # === Standard Params (19) ===
+  # Contract: docs/reference/standard-params.md. Every standard param is present
+  # with the contract type. Non-null defaults required except optional strings
+  # (heading_font_family, footer_text).
+
+  # Skin & Colors
+  skin:
+    type: enum
+    values: [light, dark, auto]
+    default: auto
+    description: Color scheme — auto follows OS prefers-color-scheme
+
+  primary_color:
+    type: color
+    default: "#0f7a4d"
+    description: Brand/accent color — links, buttons, active states
+
+  accent_color:
+    type: color
+    default: "#0a6b43"
+    description: Secondary accent — hover states, highlights
+
+  text_color:
+    type: color
+    default: "#1b1f24"
+    description: Main body text
+
+  muted_color:
+    type: color
+    default: "#5b6470"
+    description: Secondary text — metadata, captions, TOC links
+
+  bg_color:
+    type: color
+    default: "#ffffff"
+    description: Page background
+
+  surface_color:
+    type: color
+    default: "#f6f8f6"
+    description: Elevated surfaces — code blocks, sidebar, cards
+
+  border_color:
+    type: color
+    default: "#e2e6e2"
+    description: Borders, dividers
+
+  # Typography
+  font_family:
+    type: string
+    default: "system-ui, -apple-system, sans-serif"
+    description: Body text font stack
+
+  heading_font_family:
+    type: string
+    default: null
+    description: Heading font stack (null inherits body)
+
+  code_font_family:
+    type: string
+    default: "ui-monospace, SFMono-Regular, monospace"
+    description: Code/pre font stack
+
+  # Layout
+  max_width:
+    type: string
+    default: "1200px"
+    description: Maximum content width (wider than a blog to fit sidebar + content + TOC)
+
+  border_radius:
+    type: string
+    default: "6px"
+    description: Global border radius
+
+  # Navigation
+  nav_links:
+    type: list
+    default:
+      - label: Home
+        url: /
+      - label: Docs
+        url: /docs/
+    description: Header navigation links
+
+  social_links:
+    type: list
+    default: []
+    description: "Social media links [{platform, url, label?}]"
+
+  # Footer
+  footer_text:
+    type: string
+    default: null
+    description: Custom footer text (null = theme default)
+
+  show_powered_by:
+    type: boolean
+    default: true
+    description: Show "Powered by Trellis" attribution
+
+  # Features
+  show_rss_link:
+    type: boolean
+    default: true
+    description: Display RSS/Atom feed link
+
+  syntax_highlighting:
+    type: boolean
+    default: true
+    description: Enable client-side syntax highlighting via the vendored Prism assets
+
+  excerpt_length:
+    type: int
+    default: 160
+    description: Auto-generated summary/excerpt character limit (plain-text, word-boundary truncated)
+
+  # === Docs-Specific Params ===
+
+  show_sidebar:
+    type: boolean
+    default: true
+    description: Show the hierarchical navigation sidebar (from ${site.menu})
+
+  show_toc:
+    type: boolean
+    default: true
+    description: Show the in-page table of contents (from ${page.toc})
+
+  show_prev_next:
+    type: boolean
+    default: true
+    description: Show prev/next page links (from ${page.prev}/${page.next})
+
+  show_search:
+    type: boolean
+    default: true
+    description: Show the sidebar search box (client-side search over the generated search-index.json; requires search.enabled in site config)
+
+  toc_title:
+    type: string
+    default: "On this page"
+    description: Heading shown above the in-page table of contents
+
+  sidebar_title:
+    type: string
+    default: "Documentation"
+    description: Accessible label / heading for the navigation sidebar

@@ -1,0 +1,22 @@
+// Arbor Docs Theme — sass/_skins/_dark.scss
+// Dark skin color overrides. Imported when skin: dark; also mirrored as the
+// prefers-color-scheme: dark :root overrides in main.scss for skin: auto.
+//
+// WCAG 2.1 AA contrast ratios (computed over sRGB, per WCAG relative luminance):
+//   Body/UI text on page background (#0d1117):
+//     #e6edf3 on #0d1117 = 16.02:1  (body text — passes 4.5:1)
+//     #9aa5b1 on #0d1117 =  7.56:1  (muted — passes 4.5:1)
+//     #4ade80 on #0d1117 = 10.86:1  (primary/links — passes 4.5:1)
+//     #6ee7a8 on #0d1117 = 12.31:1  (accent — passes 4.5:1)
+//   On the elevated surface (#161b22 — sidebar, code blocks):
+//     #e6edf3 on #161b22 = 14.64:1  (body text — passes 4.5:1)
+//     #9aa5b1 on #161b22 =  6.91:1  (muted — passes 4.5:1)
+//     #4ade80 on #161b22 =  9.93:1  (primary — passes 4.5:1)
+
+$trellis-text-color: #e6edf3 !default;
+$trellis-muted-color: #9aa5b1 !default;
+$trellis-bg-color: #0d1117 !default;
+$trellis-surface-color: #161b22 !default;
+$trellis-border-color: #2d333b !default;
+$trellis-primary-color: #4ade80 !default;
+$trellis-accent-color: #6ee7a8 !default;

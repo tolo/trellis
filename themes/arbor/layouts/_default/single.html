@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<!-- Arbor Docs Theme — layouts/_default/single.html. A documentation page:
+     docs shell (sidebar + article + TOC) with an in-page TOC and prev/next.
+     Overrides the "content" block and pulls in the shared sidebar/toc fragments.
+     Navigation regions are guarded so absent data renders nothing. -->
+<html tl:extends="layouts/base.html" lang="en">
+<head><title>Doc</title></head>
+<body>
+  <main id="main-content" class="main-content" tl:define="content">
+    <div class="container">
+      <div class="docs-shell">
+
+        <!-- Sidebar; guarded at the call site (theme toggle + data presence). -->
+        <div tl:if="${theme.show_sidebar} and ${site.menu}" tl:replace="~{layouts/base.html :: sidebar}"></div>
+
+        <!-- Article column -->
+        <div class="docs-main">
+          <article class="doc">
+
+            <!-- Breadcrumb from the structured section lineage; optional. Each
+                 crumb carries a section title (label) and prefixed url (href). -->
+            <nav class="breadcrumb" tl:if="${page.breadcrumbs}" aria-label="Breadcrumb">
+              <ul class="list-unstyled breadcrumb">
+                <li><a href="/">Home</a></li>
+                <li tl:each="crumb : ${page.breadcrumbs}">
+                  <a tl:if="${crumb.url != ''}" tl:href="${crumb.url}" tl:text="${crumb.title}">section</a>
+                  <span tl:unless="${crumb.url != ''}" tl:text="${crumb.title}">section</span>
+                </li>
+              </ul>
+            </nav>
+
+            <header class="doc-header">
+              <h1 class="doc-title" tl:text="${page.title}">Doc Title</h1>
+            </header>
+
+            <!-- Inline TOC for narrow viewports (CSS hides it once the TOC column
+                 appears). Guarded at the call site. -->
+            <div class="toc-inline" tl:if="${theme.show_toc} and ${page.toc}">
+              <div tl:replace="~{layouts/base.html :: toc}"></div>
+            </div>
+
+            <!-- Rendered Markdown body -->
+            <div class="doc-content" tl:utext="${page.content}">
+              <p>Doc content renders here.</p>
+            </div>
+
+            <!-- Prev / next region (S08). Each side renders only when its neighbor
+                 exists; absent today, the whole region collapses to nothing. -->
+            <nav class="page-nav" tl:if="${theme.show_prev_next} and (${page.prev} or ${page.next})" aria-label="Page navigation">
+              <a class="page-nav-link page-nav-prev" tl:if="${page.prev}" tl:href="${page.prev.url}">
+                <span class="page-nav-label">Previous</span>
+                <span class="page-nav-title" tl:text="${page.prev.title}">Previous page</span>
+              </a>
+              <a class="page-nav-link page-nav-next" tl:if="${page.next}" tl:href="${page.next.url}">
+                <span class="page-nav-label">Next</span>
+                <span class="page-nav-title" tl:text="${page.next.title}">Next page</span>
+              </a>
+            </nav>
+
+          </article>
+        </div>
+
+        <!-- TOC column; guarded at the call site (theme toggle + data presence). -->
+        <div tl:if="${theme.show_toc} and ${page.toc}" tl:replace="~{layouts/base.html :: toc}"></div>
+
+      </div>
+    </div>
+  </main>
+</body>
+</html>

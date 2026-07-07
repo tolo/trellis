@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<!-- Arbor Docs Theme — layouts/home.html. Landing page: a full-width hero plus
+     a grid of page cards, no sidebar. Overrides the "content" block and tolerates
+     an empty page list. This is the target `layout: home` resolves to. -->
+<html tl:extends="layouts/base.html" lang="en">
+<head><title>Home</title></head>
+<body>
+  <main id="main-content" class="main-content" tl:define="content">
+    <div class="container">
+
+      <!-- Hero — title/description from theme params, falling back to site config. -->
+      <section class="hero" aria-labelledby="hero-title">
+        <h1 id="hero-title" tl:text="${theme.hero_title} ?: ${site.title}">Welcome</h1>
+        <p class="hero-description"
+           tl:if="${theme.hero_description} ?: ${site.description}"
+           tl:text="${theme.hero_description} ?: ${site.description}">
+          Site description.
+        </p>
+        <a class="hero-cta" href="/docs/">Read the docs →</a>
+      </section>
+
+      <!-- Page body — the landing's Markdown content (pitch, differentiators,
+           code example, CTAs). Rendered from ${page.content} so a content-driven
+           home page (layout: home) surfaces its body, not just the hero. -->
+      <section class="home-content" tl:if="${page.content}">
+        <div class="prose" tl:utext="${page.content}">Body content.</div>
+      </section>
+
+      <!-- Featured pages — the page list is injected by the SSG pipeline. -->
+      <section class="featured" aria-labelledby="featured-heading">
+        <h2 id="featured-heading">Explore</h2>
+
+        <ul class="card-list" tl:if="${pages}">
+          <li class="doc-card" tl:each="p : ${pages}">
+            <h3 class="doc-card-title">
+              <a tl:href="${p.url}" tl:text="${p.title}">Page Title</a>
+            </h3>
+            <p class="doc-card-summary" tl:if="${p.summary}" tl:text="${p.summary}">
+              Page summary.
+            </p>
+          </li>
+        </ul>
+
+        <p class="no-pages" tl:unless="${pages}">Documentation is on its way.</p>
+      </section>
+
+    </div>
+  </main>
+</body>
+</html>

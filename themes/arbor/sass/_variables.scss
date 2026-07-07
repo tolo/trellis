@@ -1,0 +1,118 @@
+// Arbor Docs Theme — sass/_variables.scss
+// All SASS-representable theme params as $trellis-* variables with !default.
+//
+// The SASS bridge generates _theme_params.scss (from theme.yaml defaults merged
+// with the site's theme_params:) and imports it BEFORE this file's !default
+// declarations take effect, so bridge/site values always win. Never edit this
+// file to change site values — use theme_params: in trellis_site.yaml.
+//
+// Every $trellis-* below carries !default: omitting it would shadow the bridge
+// value and break site-level overrides.
+
+// ── Skin & Colors ────────────────────────────────────────────────────────────
+
+$trellis-skin: auto !default;             // light | dark | auto
+$trellis-primary-color: #0f7a4d !default; // links, buttons, active states
+$trellis-accent-color: #0a6b43 !default;  // hover states, highlights
+$trellis-text-color: #1b1f24 !default;    // main body text
+$trellis-muted-color: #5b6470 !default;   // metadata, captions, TOC links
+$trellis-bg-color: #ffffff !default;      // page background
+$trellis-surface-color: #f6f8f6 !default; // code blocks, sidebar, cards
+$trellis-border-color: #e2e6e2 !default;  // borders, dividers
+
+// ── Typography ───────────────────────────────────────────────────────────────
+
+$trellis-font-family: system-ui, -apple-system, sans-serif !default;
+$trellis-heading-font-family: null !default; // null inherits body font
+$trellis-code-font-family: ui-monospace, SFMono-Regular, monospace !default;
+
+// Derived: heading font with fallback to body font. (@if avoids the deprecated
+// if() builtin function; @if shares the enclosing/root scope, so this updates the
+// global variable without !global.)
+$trellis-heading-font: $trellis-font-family;
+@if $trellis-heading-font-family {
+  $trellis-heading-font: $trellis-heading-font-family;
+}
+
+// Base font sizes and line heights
+$trellis-font-size-base: 1rem !default;
+$trellis-font-size-sm: 0.875rem !default;
+$trellis-font-size-xs: 0.8rem !default;
+$trellis-line-height: 1.7 !default;
+$trellis-heading-line-height: 1.25 !default;
+
+// ── Layout ───────────────────────────────────────────────────────────────────
+
+$trellis-max-width: 1200px !default;
+$trellis-border-radius: 6px !default;
+
+// Docs layout column widths (used by _layout.scss)
+$trellis-sidebar-width: 260px !default;
+$trellis-toc-width: 220px !default;
+
+// Spacing scale
+$trellis-space-xs: 0.25rem !default;
+$trellis-space-sm: 0.5rem !default;
+$trellis-space-md: 1rem !default;
+$trellis-space-lg: 1.5rem !default;
+$trellis-space-xl: 2rem !default;
+$trellis-space-2xl: 3rem !default;
+$trellis-space-3xl: 4rem !default;
+
+// ── Footer ───────────────────────────────────────────────────────────────────
+
+$trellis-footer-text: null !default;     // custom footer text (null = theme default)
+
+// ── Feature toggles ──────────────────────────────────────────────────────────
+// Boolean/enum params — SASS variable only (no CSS custom property), per the
+// Standard Params Contract. Consumed by templates for conditional rendering;
+// declared here so the theme compiles standalone (no bridge) too.
+
+$trellis-show-powered-by: true !default;
+$trellis-show-rss-link: true !default;
+$trellis-syntax-highlighting: true !default;
+
+// Docs-specific toggles
+$trellis-show-sidebar: true !default;
+$trellis-show-toc: true !default;
+$trellis-show-prev-next: true !default;
+$trellis-show-search: true !default;
+
+// ── Navigation ───────────────────────────────────────────────────────────────
+// nav_links and social_links are list params — no SASS variable equivalent;
+// they are accessed only in templates via ${theme.nav_links} / ${theme.social_links}.
+
+// ── Accessibility ────────────────────────────────────────────────────────────
+
+$trellis-focus-ring-color: $trellis-primary-color !default;
+$trellis-focus-ring-width: 2px !default;
+$trellis-focus-ring-offset: 2px !default;
+
+// ── CSS Custom Properties ────────────────────────────────────────────────────
+// Emit :root custom properties so token colors and theme values can be overridden
+// at runtime without recompiling SASS. Color tokens here match the LIGHT skin;
+// the dark skin overrides them in main.scss under prefers-color-scheme.
+
+:root {
+  --trellis-primary: #{$trellis-primary-color};
+  --trellis-accent: #{$trellis-accent-color};
+  --trellis-text: #{$trellis-text-color};
+  --trellis-muted: #{$trellis-muted-color};
+  --trellis-bg: #{$trellis-bg-color};
+  --trellis-surface: #{$trellis-surface-color};
+  --trellis-border: #{$trellis-border-color};
+  --trellis-font: #{$trellis-font-family};
+  --trellis-heading-font: #{$trellis-heading-font};
+  --trellis-code-font: #{$trellis-code-font-family};
+  --trellis-max-width: #{$trellis-max-width};
+  --trellis-radius: #{$trellis-border-radius};
+
+  // Syntax highlighting token colors (Prism.js) — light-skin variants.
+  // Each clears >= 4.5:1 on the light code-block surface (#f6f8f6).
+  --trellis-code-keyword: #8250df;     // 4.73:1 on #f6f8f6
+  --trellis-code-string: #0a6b43;      // 6.15:1 on #f6f8f6
+  --trellis-code-number: #953800;      // 6.92:1 on #f6f8f6
+  --trellis-code-comment: #5b6470;     // 5.62:1 on #f6f8f6 (italic)
+  --trellis-code-function: #0550ae;    // 7.12:1 on #f6f8f6
+  --trellis-code-punctuation: #5b6470; // 5.62:1 on #f6f8f6
+}

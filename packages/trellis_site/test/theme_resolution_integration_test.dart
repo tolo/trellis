@@ -36,12 +36,12 @@ void main() {
   });
 
   SiteConfig makeConfig() => SiteConfig(
-        siteDir: fixturePath,
-        title: 'Theme Resolution Test Site',
-        baseUrl: 'https://example.com',
-        outputDir: outputDir.path,
-        themeConfig: const ThemeConfig(name: 'sample'),
-      );
+    siteDir: fixturePath,
+    title: 'Theme Resolution Test Site',
+    baseUrl: 'https://example.com',
+    outputDir: outputDir.path,
+    themeConfig: const ThemeConfig(name: 'sample'),
+  );
 
   Future<BuildResult> buildSite() => TrellisSite(makeConfig()).build();
 
@@ -112,6 +112,53 @@ void main() {
     test('elapsed time is non-negative', () async {
       final result = await buildSite();
       expect(result.elapsed.inMilliseconds, greaterThanOrEqualTo(0));
+    });
+  });
+
+  // A site may reference a theme that lives OUTSIDE its own directory via a
+  // relative `theme:` value (e.g. `../../themes/arbor` — the docs site referencing
+  // a repo-root theme). `themeDir` is `p.join(siteDir, 'themes', <value>)`, which
+  // yields a path with un-collapsed `..` segments through a non-existent
+  // `siteDir/themes` directory; the build must normalize it so both the manifest
+  // loader and the template FileSystemLoader resolve a real path.
+  group('theme resolution — relative theme path escaping the site dir', () {
+    late Directory root;
+
+    setUp(() {
+      root = Directory.systemTemp.createTempSync('theme_rel_path_');
+      // <root>/themes/mytheme/  (the theme, a sibling of the site)
+      final themeLayouts = Directory(p.join(root.path, 'themes', 'mytheme', 'layouts', '_default'))
+        ..createSync(recursive: true);
+      File(p.join(root.path, 'themes', 'mytheme', 'theme.yaml')).writeAsStringSync('name: mytheme\nversion: 1.0.0\n');
+      File(
+        p.join(themeLayouts.path, 'list.html'),
+      ).writeAsStringSync('<html><body><p class="src">from-mytheme</p></body></html>\n');
+      // <root>/site/  referencing the theme via a relative escaping path.
+      Directory(p.join(root.path, 'site', 'content')).createSync(recursive: true);
+      File(p.join(root.path, 'site', 'content', '_index.md')).writeAsStringSync('---\ntitle: Home\n---\nHi\n');
+    });
+
+    tearDown(() => root.deleteSync(recursive: true));
+
+    test('a relative theme: path (../../themes/mytheme) resolves and renders', () async {
+      final out = Directory.systemTemp.createTempSync('theme_rel_out_');
+      addTearDown(() => out.deleteSync(recursive: true));
+      final config = SiteConfig(
+        siteDir: p.join(root.path, 'site'),
+        title: 'Rel Theme Site',
+        baseUrl: 'https://example.com',
+        outputDir: out.path,
+        // Escapes site/ up to <root>/ then into themes/mytheme — the exact shape
+        // the docs site uses to reach a repo-root theme.
+        themeConfig: const ThemeConfig(name: '../../themes/mytheme'),
+      );
+
+      // Must not throw a "base path does not exist" TemplateException.
+      final result = await TrellisSite(config).build();
+      expect(result.pageCount, greaterThanOrEqualTo(1));
+
+      final html = File(p.join(out.path, 'index.html')).readAsStringSync();
+      expect(html, contains('from-mytheme'), reason: 'home page should render through the relative-path theme');
     });
   });
 }

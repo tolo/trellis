@@ -1,0 +1,5 @@
+# Repo-root formatter config for workspace-level Dart (tool/, test/).
+# Packages carry their own analysis_options.yaml; this only sets the shared
+# 120-char page width for root-level files (workspace convention).
+formatter:
+  page_width: 120

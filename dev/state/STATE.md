@@ -4,14 +4,15 @@
 
 ## Current Phase
 
-**SDK Phase 4** — SSG Theme System (completed 2026-03-20)
+**Docs Site** — public front door (marketing landing + curated docs) built entirely with Trellis (`trellis_site` + the new `arbor` docs theme), plus the five docs-shaped engine features (completed 2026-07-06, in the working tree, uncommitted).
 
-**Next up**: SDK Phase 5 — Full CSS Processing (purging, minification). Draft PRD tracked in the private planning repo.
+**Next up**: commit + squash-merge the docs-site work; a single **lockstep version bump** (`tool/version_lockstep.sh`, ADR-009) for the `trellis_site`/`trellis_cli` engine features before publish; then SDK Phase 5 — Full CSS Processing.
 
 ## Recent Completions
 
 | Phase | Completed | Key Deliverables |
 |-------|-----------|------------------|
+| Docs Site | 2026-07-06 | Engine: weighted ordering + nested sections + `orderedSectionPages` seam, `${site.menu}` nav tree (section-weight ordered), `pathPrefix` (with unprefixed on-disk layout + content-link rewriting), in-section prev/next; `arbor` docs theme (vendored Prism + SRI, WCAG-AA skins, responsive, search shell); `site/` (marketing landing + curated docs IA: getting-started, complete `tl:*` syntax reference, 8 package guides, theme-authoring); client-side search; GitHub Pages CI deploy + pure-Dart link-integrity checker. Deploy target: `tolo.github.io/trellis/` (`pathPrefix: /trellis/`). |
 | SDK Phase 4 | 2026-03-20 | Theme manifest + params, ThemeAwareLoader, SASS bridge, CLI theme commands, Verdant theme |
 | SDK Phase 3 | 2026-03-17 | trellis_dart_frog, trellis_relic, expression utility objects, RSS, search index |
 | SDK Phase 2 | 2026-03-16 | trellis_site (SSG), trellis_css, CLI build/serve, blog starter |
@@ -19,9 +20,9 @@
 
 ## Published Versions
 
-- `trellis` (core): **v0.6.0** on pub.dev. **v0.8.0 cut locally** (2026-06-05), pending publish — adds expression utility objects and the merged `testing.dart` (with a `matcher` dep) on top of the never-published 0.7.0 (template inheritance, contextual escaping). `dart pub publish --dry-run`: 0 warnings.
-- SDK packages (all unpublished): `trellis_site` **0.2.0**, `trellis_cli` **0.3.0**; `trellis_shelf` / `trellis_dev` / `trellis_css` / `trellis_relic` / `trellis_dart_frog` all **0.1.0**. CHANGELOG/pubspec/version.dart are internally consistent for every package; satellites depend on `trellis: ^0.8.0`.
-- No `path:` sibling deps anywhere (all use `^x.y.z`), so nothing structurally blocks publishing. **Publish order:** core → {shelf, dev, css, site, relic} → dart_frog (needs shelf) → cli (needs css + site).
+- **All 8 SDK packages published on pub.dev at v0.8.2** under lockstep versioning (ADR-009): `trellis`, `trellis_shelf`, `trellis_dev`, `trellis_cli`, `trellis_css`, `trellis_site`, `trellis_dart_frog`, `trellis_relic`. Verified against the pub.dev API 2026-07-07.
+- Local working tree matches: every `pubspec.yaml` at 0.8.2, `version.dart` constants synced (commit 96267dc; per-package `version_test.dart` guards fail CI on drift). The docs-site engine features sit under **Unreleased** in `trellis_site`/`trellis_cli` CHANGELOGs, awaiting the next lockstep bump via `tool/version_lockstep.sh`.
+- Releases are cut with `tool/version_lockstep.sh` (single `melos version` pass); publish is OIDC tag-triggered (`publish.yml`, global `vX.Y.Z` tag per ADR-009).
 - The 4 `examples/*` packages + root workspace correctly carry `publish_to: none`.
 
 ## Decisions
@@ -31,7 +32,7 @@
 
 ## Test Health
 
-~2,377 total tests across all packages. 1 pre-existing failure in content_discovery_test; 2 pre-existing blog_e2e_test failures (concurrency). `dart analyze`: 56 info-level issues in CLI test fixtures (pre-existing); no errors in library/package code.
+~2,377 total tests across all packages (+ docs-site additions). After the docs-site work: `trellis_site` **754 pass / 1 fail** (the pre-existing `content_discovery_test` empty-dir failure, TD-002); `trellis_cli` **240 pass** serially (the `examples_smoke_test` is parallel-flaky — passes with `-j 1`); repo-root `test/` (`link_check` + `search_client`) 24 pass. `dart analyze --fatal-infos` clean across `trellis_site`, `trellis_cli`, and the new `tool/link_check.dart`. New Dart Sass 3.0 forward-compat tech-debt logged as TD-006 (`@import` in theme SASS + the bridge).
 
 ## Blockers
 

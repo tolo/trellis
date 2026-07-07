@@ -478,7 +478,7 @@ The official Verdant theme implements all patterns in this guide:
 
 | Pattern | Verdant file |
 |---|---|
-| Full manifest with all 29 params | `themes/verdant/theme.yaml` |
+| Full manifest: 19 standard + 10 theme-specific params | `themes/verdant/theme.yaml` |
 | `_variables.scss` with `!default` | `themes/verdant/sass/_variables.scss` |
 | Light and dark skin files | `themes/verdant/sass/_skins/` |
 | `main.scss` with auto skin media query | `themes/verdant/sass/main.scss` |

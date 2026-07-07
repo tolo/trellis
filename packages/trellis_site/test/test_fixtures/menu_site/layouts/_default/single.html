@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html><head><title tl:text="${page.title}">P</title></head>
+<body>
+<nav id="menu" tl:if="${site.menu}">MENU-PRESENT<ul>
+  <li tl:each="n : ${site.menu}"><a tl:href="${n.url}" tl:text="${n.title}">n</a>
+    <ul tl:if="${n.children}">
+      <li tl:each="c : ${n.children}"><a tl:href="${c.url}" tl:text="${c.title}">c</a>
+        <ul tl:if="${c.children}">
+          <li tl:each="g : ${c.children}"><a tl:href="${g.url}" tl:text="${g.title}">g</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul></nav>
+<h1 tl:text="${page.title}">T</h1>
+</body></html>

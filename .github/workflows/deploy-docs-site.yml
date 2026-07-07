@@ -1,0 +1,99 @@
+name: Deploy docs site
+
+# Builds the Trellis docs site (site/) with the pure-Dart SSG and publishes it to
+# GitHub Pages on every push to main. No npm/Node/yarn — the whole pipeline is Dart.
+#
+# The deploy target is config-driven: baseUrl + pathPrefix live in
+# site/trellis_site.yaml (currently the GitHub Project Pages sub-path /trellis/).
+# Nothing here hardcodes the domain — moving to a custom root domain later is a
+# config edit, not a workflow change.
+#
+# A green `trellis build` is NOT proof of a working site: a wrong-base-path link
+# emits valid HTML and no build error but a dead link in production. So the build
+# job gates on tool/link_check.dart — the deploy job cannot run unless both the
+# build and the integrity check pass, so no partial/broken output reaches Pages.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Least-privilege: read the repo, write the Pages artifact, mint the OIDC token
+# deploy-pages validates (same id-token: write style as publish.yml).
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One in-flight Pages deployment at a time; let a newer push supersede an
+# in-progress run rather than queueing stale deploys.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build + link-integrity check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+
+      - name: Install workspace dependencies
+        run: dart pub get
+
+      # Install the CLI so `trellis build` runs from site/ (which has no pubspec
+      # of its own — the build reads trellis_site.yaml from the working directory).
+      - name: Activate trellis CLI
+        run: |
+          dart pub global activate --source path packages/trellis_cli
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+      # Production build: the path-prefixed (/trellis/) sub-path build, driven by
+      # pathPrefix in site/trellis_site.yaml. No domain is passed here.
+      - name: Build site (production, sub-path)
+        working-directory: site
+        run: trellis build
+
+      # REQUIRED GATE: fail the pipeline (blocking deploy) on any broken internal
+      # link/asset. --base-path must match pathPrefix in trellis_site.yaml, so a
+      # root-absolute link that did not pick up the prefix is reported broken.
+      - name: Link-integrity check (sub-path)
+        run: dart run tool/link_check.dart site/output --base-path /trellis/
+
+      # FR10 portability regression guard (pipeline-gating, does NOT change the
+      # live deploy): build a root-served variant and check it with no base-path,
+      # so the root-served code path can't silently rot while production is
+      # sub-path served. Runs into a throwaway output dir.
+      - name: Build + check root-served variant (portability guard)
+        working-directory: site
+        run: |
+          trellis build --path-prefix '' --output output-root
+          dart run "$GITHUB_WORKSPACE/tool/link_check.dart" output-root
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          # Publish the production (sub-path) output tree.
+          path: site/output
+
+  deploy:
+    name: Deploy to GitHub Pages
+    # Gated: deploy only runs after build (and thus both integrity checks) passed.
+    # A failed build or a non-zero checker short-circuits the pipeline here — no
+    # artifact is uploaded and this job never starts, so nothing partial reaches Pages.
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

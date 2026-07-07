@@ -1,0 +1,163 @@
+// Arbor Docs Theme — sass/_layout.scss
+// Page structure: sticky header, docs 3-column shell (sidebar / content / TOC),
+// footer, and responsive breakpoints. Mobile-first: base styles target mobile,
+// media queries add the multi-column desktop layout.
+
+// ── Breakpoints ──────────────────────────────────────────────────────────────
+
+$bp-sm: 640px;   // Large phone / small tablet
+$bp-md: 900px;   // Sidebar appears as a persistent column
+$bp-lg: 1200px;  // TOC column appears
+
+// ── Container ────────────────────────────────────────────────────────────────
+
+.container {
+  width: 100%;
+  max-width: $trellis-max-width;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: $trellis-space-lg;
+  padding-right: $trellis-space-lg;
+
+  @media (min-width: $bp-sm) {
+    padding-left: $trellis-space-xl;
+    padding-right: $trellis-space-xl;
+  }
+}
+
+// ── Site header ──────────────────────────────────────────────────────────────
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--trellis-bg, #{$trellis-bg-color});
+  border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
+
+  .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $trellis-space-md;
+    padding-top: $trellis-space-md;
+    padding-bottom: $trellis-space-md;
+  }
+}
+
+.site-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--trellis-text, #{$trellis-text-color});
+  text-decoration: none;
+  flex-shrink: 0;
+
+  &:hover { color: var(--trellis-primary, #{$trellis-primary-color}); }
+}
+
+// ── Docs shell ───────────────────────────────────────────────────────────────
+// Mobile: single column, sidebar is a collapsible <details> above the content.
+// >= $bp-md: sidebar becomes a fixed-width left column.
+// >= $bp-lg: an additional right TOC column appears.
+
+.docs-shell {
+  display: block;
+
+  @media (min-width: $bp-md) {
+    display: grid;
+    grid-template-columns: $trellis-sidebar-width minmax(0, 1fr);
+    gap: $trellis-space-2xl;
+    align-items: start;
+  }
+
+  @media (min-width: $bp-lg) {
+    grid-template-columns: $trellis-sidebar-width minmax(0, 1fr) $trellis-toc-width;
+  }
+}
+
+// The main content column. minmax(0, 1fr) above keeps long code lines from
+// blowing out the grid; this guards the same at the flex/inline level.
+.docs-main {
+  min-width: 0;
+  padding-top: $trellis-space-xl;
+  padding-bottom: $trellis-space-3xl;
+}
+
+// ── Sidebar column ───────────────────────────────────────────────────────────
+
+.docs-sidebar {
+  @media (min-width: $bp-md) {
+    position: sticky;
+    top: 4.5rem; // clears the sticky header
+    align-self: start;
+    max-height: calc(100vh - 5.5rem);
+    overflow-y: auto;
+    padding-top: $trellis-space-xl;
+    padding-right: $trellis-space-sm;
+  }
+}
+
+// ── In-page TOC column ───────────────────────────────────────────────────────
+
+.docs-toc {
+  display: none; // hidden until the third column exists
+
+  @media (min-width: $bp-lg) {
+    display: block;
+    position: sticky;
+    top: 4.5rem;
+    align-self: start;
+    max-height: calc(100vh - 5.5rem);
+    overflow-y: auto;
+    padding-top: $trellis-space-xl;
+    font-size: $trellis-font-size-sm;
+  }
+}
+
+// ── Main content (non-docs pages, e.g. home) ─────────────────────────────────
+
+.main-content {
+  padding-top: $trellis-space-2xl;
+  padding-bottom: $trellis-space-3xl;
+  min-height: 60vh;
+}
+
+// ── Site footer ──────────────────────────────────────────────────────────────
+
+.site-footer {
+  border-top: 1px solid var(--trellis-border, #{$trellis-border-color});
+  padding-top: $trellis-space-xl;
+  padding-bottom: $trellis-space-xl;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+  font-size: $trellis-font-size-sm;
+}
+
+.footer-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $trellis-space-sm;
+  text-align: center;
+
+  @media (min-width: $bp-sm) {
+    flex-direction: row;
+    justify-content: space-between;
+    text-align: left;
+  }
+}
+
+// ── Section / list header ────────────────────────────────────────────────────
+
+.section-header {
+  margin-bottom: $trellis-space-xl;
+  padding-bottom: $trellis-space-lg;
+  border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
+
+  .section-title { margin-top: 0; margin-bottom: $trellis-space-sm; }
+
+  .section-description {
+    color: var(--trellis-muted, #{$trellis-muted-color});
+    font-size: 1.05rem;
+
+    p:last-child { margin-bottom: 0; }
+  }
+}

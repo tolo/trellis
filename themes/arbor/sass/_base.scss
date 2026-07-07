@@ -1,0 +1,149 @@
+// Arbor Docs Theme — sass/_base.scss
+// Minimal reset, typography, and base element styles.
+// Colors reference SASS variables from _variables.scss.
+
+// ── Reset ────────────────────────────────────────────────────────────────────
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  // Offset in-page anchor jumps so a heading isn't hidden under the sticky header.
+  scroll-padding-top: 5rem;
+}
+
+// Core surfaces reference the --trellis-* custom properties (with the compiled
+// SASS value as fallback) so `skin: auto` flips light/dark at runtime via the
+// prefers-color-scheme :root overrides in main.scss — not just the code tokens.
+body {
+  margin: 0;
+  font-family: $trellis-font-family;
+  font-size: $trellis-font-size-base;
+  line-height: $trellis-line-height;
+  color: var(--trellis-text, #{$trellis-text-color});
+  background-color: var(--trellis-bg, #{$trellis-bg-color});
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// ── Typography ───────────────────────────────────────────────────────────────
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: $trellis-heading-font;
+  line-height: $trellis-heading-line-height;
+  color: var(--trellis-text, #{$trellis-text-color});
+  margin-top: $trellis-space-xl;
+  margin-bottom: $trellis-space-sm;
+  font-weight: 700;
+  scroll-margin-top: 5rem;
+}
+
+h1 { font-size: 2rem; margin-top: 0; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1.125rem; }
+h5,
+h6 { font-size: 1rem; }
+
+p {
+  margin: 0 0 $trellis-space-md;
+}
+
+// ── Links ────────────────────────────────────────────────────────────────────
+
+a {
+  color: var(--trellis-primary, #{$trellis-primary-color});
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:hover {
+    color: var(--trellis-accent, #{$trellis-accent-color});
+    text-decoration: none;
+  }
+}
+
+// Nav and UI links — no underline (restored contextually in _components.scss)
+nav a {
+  text-decoration: none;
+}
+
+// ── Lists ────────────────────────────────────────────────────────────────────
+
+ul,
+ol {
+  margin: 0 0 $trellis-space-md;
+  padding-left: $trellis-space-xl;
+}
+
+li {
+  margin-bottom: $trellis-space-xs;
+}
+
+.list-unstyled {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+// ── Inline elements ──────────────────────────────────────────────────────────
+
+strong { font-weight: 700; }
+em { font-style: italic; }
+small { font-size: $trellis-font-size-sm; }
+
+// ── Horizontal rule ──────────────────────────────────────────────────────────
+
+hr {
+  border: none;
+  border-top: 1px solid var(--trellis-border, #{$trellis-border-color});
+  margin: $trellis-space-xl 0;
+}
+
+// ── Images ───────────────────────────────────────────────────────────────────
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+// ── Blockquote ───────────────────────────────────────────────────────────────
+
+blockquote {
+  margin: $trellis-space-lg 0;
+  padding: $trellis-space-sm $trellis-space-lg;
+  border-left: 4px solid var(--trellis-primary, #{$trellis-primary-color});
+  background-color: var(--trellis-surface, #{$trellis-surface-color});
+  border-radius: 0 $trellis-border-radius $trellis-border-radius 0;
+
+  p:last-child { margin-bottom: 0; }
+}
+
+// ── Tables ───────────────────────────────────────────────────────────────────
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: $trellis-space-lg;
+  font-size: $trellis-font-size-sm;
+}
+
+th,
+td {
+  padding: $trellis-space-sm $trellis-space-md;
+  text-align: left;
+  border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
+}
+
+th {
+  font-weight: 700;
+  background-color: var(--trellis-surface, #{$trellis-surface-color});
+}

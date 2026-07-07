@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:isolate';
 
 import 'package:path/path.dart' as p;
@@ -47,6 +48,22 @@ void main() {
     test('section index → section name', () => expect(deriveSection('posts/_index.md'), 'posts'));
   });
 
+  group('deriveSectionPath (nested lineage — AS05/TI05)', () {
+    test('root file → empty string', () => expect(deriveSectionPath('about.md'), ''));
+    test('root _index.md → empty string', () => expect(deriveSectionPath('_index.md'), ''));
+    test('one level deep → top-level path', () => expect(deriveSectionPath('posts/hello.md'), 'posts'));
+    test('deeply nested → full lineage', () => expect(deriveSectionPath('docs/guides/a.md'), 'docs/guides'));
+    test(
+      'deeply nested single → full lineage (excludes filename)',
+      () => expect(deriveSectionPath('docs/advanced/config.md'), 'docs/advanced'),
+    );
+    test(
+      'nested section index → owns its level',
+      () => expect(deriveSectionPath('docs/guides/_index.md'), 'docs/guides'),
+    );
+    test('section index one level → section name', () => expect(deriveSectionPath('posts/_index.md'), 'posts'));
+  });
+
   group('ContentDiscovery', () {
     late String simpleSiteDir;
     late String emptySiteDir;
@@ -55,6 +72,8 @@ void main() {
     setUp(() {
       simpleSiteDir = fixture('simple_site/content');
       emptySiteDir = fixture('empty_site/content');
+      // Git cannot track empty directories, so create the fixture on the fly.
+      Directory(emptySiteDir).createSync(recursive: true);
       nestedSiteDir = fixture('nested_site/content');
     });
 
@@ -151,6 +170,22 @@ void main() {
       expect(advancedSection.kind, PageKind.section);
       expect(advancedSection.url, '/docs/advanced/');
       expect(advancedSection.section, 'docs');
+    });
+
+    test('nested site: sectionPath is full lineage while section stays top-level (AS05/TI05)', () async {
+      final discovery = ContentDiscovery(nestedSiteDir);
+      final pages = await discovery.discover();
+
+      final config = pages.firstWhere((p) => p.sourcePath == 'docs/advanced/configuration.md');
+      expect(config.section, 'docs', reason: 'section stays top-level');
+      expect(config.sectionPath, 'docs/advanced', reason: 'sectionPath is full nested lineage');
+
+      final topLevel = pages.firstWhere((p) => p.sourcePath == 'docs/getting-started.md');
+      expect(topLevel.section, 'docs');
+      expect(topLevel.sectionPath, 'docs');
+
+      final home = pages.firstWhere((p) => p.sourcePath == 'docs/_index.md');
+      expect(home.sectionPath, 'docs');
     });
 
     test('default mutable fields are empty after discovery', () async {

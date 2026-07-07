@@ -1,0 +1,454 @@
+// Arbor Docs Theme — sass/_components.scss
+// Header nav, sidebar tree (with active + active-trail markers), mobile sidebar
+// disclosure, in-page TOC, prev/next, search shell, hero, and doc cards.
+
+// ── Header navigation ────────────────────────────────────────────────────────
+
+.nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $trellis-space-sm;
+
+  a {
+    color: var(--trellis-muted, #{$trellis-muted-color});
+    font-size: $trellis-font-size-sm;
+    font-weight: 500;
+    padding: $trellis-space-xs $trellis-space-sm;
+    border-radius: $trellis-border-radius;
+    transition: color 0.15s ease, background-color 0.15s ease;
+
+    &:hover {
+      color: var(--trellis-primary, #{$trellis-primary-color});
+      background-color: var(--trellis-surface, #{$trellis-surface-color});
+    }
+  }
+}
+
+// ── Sidebar navigation tree ──────────────────────────────────────────────────
+// Built from ${site.menu} (nested {title, url, children}). Nested <ul>s indent
+// each level. The active node (node.url == page.url) gets .is-active +
+// aria-current="page"; ancestor nodes get .is-active-trail.
+
+.sidebar-nav {
+  margin-bottom: $trellis-space-xl;
+
+  .sidebar-title {
+    font-size: $trellis-font-size-xs;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--trellis-muted, #{$trellis-muted-color});
+    margin: 0 0 $trellis-space-sm;
+    font-weight: 700;
+  }
+}
+
+.sidebar-tree,
+.sidebar-subtree {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+// Nested subtrees indent and get a guide rail.
+.sidebar-subtree {
+  margin-left: $trellis-space-sm;
+  padding-left: $trellis-space-sm;
+  border-left: 1px solid var(--trellis-border, #{$trellis-border-color});
+}
+
+.sidebar-item {
+  margin-bottom: 0;
+}
+
+// A node's link/label row.
+.sidebar-link,
+.sidebar-label {
+  display: block;
+  padding: $trellis-space-xs $trellis-space-sm;
+  border-radius: $trellis-border-radius;
+  font-size: $trellis-font-size-sm;
+  line-height: 1.4;
+  text-decoration: none;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+}
+
+.sidebar-link:hover {
+  color: var(--trellis-text, #{$trellis-text-color});
+  background-color: var(--trellis-surface, #{$trellis-surface-color});
+}
+
+// A section folder with no _index.md (empty url) renders as a non-link label.
+.sidebar-label {
+  color: var(--trellis-text, #{$trellis-text-color});
+  font-weight: 600;
+  cursor: default;
+}
+
+// Active node — the page currently being viewed.
+.sidebar-link.is-active {
+  color: var(--trellis-primary, #{$trellis-primary-color});
+  background-color: var(--trellis-surface, #{$trellis-surface-color});
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--trellis-primary, #{$trellis-primary-color});
+}
+
+// Ancestor-trail nodes — on the path to the active node.
+.sidebar-link.is-active-trail,
+.sidebar-label.is-active-trail {
+  color: var(--trellis-text, #{$trellis-text-color});
+  font-weight: 600;
+}
+
+// ── Mobile sidebar disclosure (JS-free) ──────────────────────────────────────
+// On mobile the sidebar is wrapped in <details class="sidebar-disclosure">, so
+// it collapses/expands with no JavaScript. On desktop the disclosure is forced
+// open and its summary hidden (the sidebar is a persistent column).
+
+.sidebar-disclosure {
+  margin-bottom: $trellis-space-lg;
+  border: 1px solid var(--trellis-border, #{$trellis-border-color});
+  border-radius: $trellis-border-radius;
+  background-color: var(--trellis-surface, #{$trellis-surface-color});
+
+  @media (min-width: $bp-md) {
+    border: none;
+    background: none;
+    margin-bottom: 0;
+  }
+}
+
+.sidebar-toggle {
+  display: block;
+  padding: $trellis-space-sm $trellis-space-md;
+  font-weight: 600;
+  font-size: $trellis-font-size-sm;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+
+  &::-webkit-details-marker { display: none; }
+
+  &::before {
+    content: '☰';
+    margin-right: $trellis-space-sm;
+  }
+
+  @media (min-width: $bp-md) {
+    display: none;
+  }
+}
+
+.sidebar-disclosure > .docs-sidebar {
+  padding: 0 $trellis-space-md $trellis-space-md;
+
+  @media (min-width: $bp-md) {
+    padding: 0;
+  }
+}
+
+// ── Search shell (client-side search wired in static/js/search.js) ───────────
+// Progressive enhancement: the <input> ships disabled and is enabled only after
+// the index loads. On a failed index fetch the whole shell is hidden via
+// .search-unavailable so it is never a broken, interactive-looking control.
+
+.search-shell {
+  margin-bottom: $trellis-space-lg;
+
+  &.search-unavailable { display: none; }
+}
+
+.search-input {
+  width: 100%;
+  padding: $trellis-space-sm $trellis-space-md;
+  font-size: $trellis-font-size-sm;
+  font-family: inherit;
+  color: var(--trellis-text, #{$trellis-text-color});
+  background-color: var(--trellis-bg, #{$trellis-bg-color});
+  border: 1px solid var(--trellis-border, #{$trellis-border-color});
+  border-radius: $trellis-border-radius;
+
+  &::placeholder { color: var(--trellis-muted, #{$trellis-muted-color}); }
+
+  &:focus-visible {
+    outline: 2px solid var(--trellis-primary, #{$trellis-primary-color});
+    outline-offset: 2px;
+  }
+
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+.search-results {
+  margin-top: $trellis-space-sm;
+  list-style: none;
+  padding: 0;
+
+  &[hidden] { display: none; }
+}
+
+.search-empty {
+  padding: $trellis-space-sm $trellis-space-md;
+  font-size: $trellis-font-size-sm;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+}
+
+.search-result {
+  margin-bottom: $trellis-space-xs;
+}
+
+.search-result-link {
+  display: block;
+  padding: $trellis-space-sm $trellis-space-md;
+  border-radius: $trellis-border-radius;
+  text-decoration: none;
+  color: var(--trellis-text, #{$trellis-text-color});
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--trellis-surface, #{$trellis-surface-color});
+  }
+}
+
+.search-result-title {
+  display: block;
+  font-size: $trellis-font-size-sm;
+  font-weight: 600;
+  color: var(--trellis-primary, #{$trellis-primary-color});
+}
+
+.search-result-snippet {
+  display: block;
+  margin-top: $trellis-space-xs;
+  font-size: $trellis-font-size-xs;
+  line-height: 1.4;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+}
+
+// ── In-page table of contents ────────────────────────────────────────────────
+// Built from the FLAT ${page.toc} list. Indentation comes from each entry's
+// level via .toc-level-{n} classes (no pre-nested children).
+
+.toc {
+  margin: 0;
+}
+
+.toc-title {
+  font-size: $trellis-font-size-xs;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+  margin: 0 0 $trellis-space-sm;
+  font-weight: 700;
+}
+
+.toc-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.toc-item {
+  margin-bottom: 0;
+
+  a {
+    display: block;
+    padding: $trellis-space-xs 0;
+    color: var(--trellis-muted, #{$trellis-muted-color});
+    text-decoration: none;
+    font-size: $trellis-font-size-sm;
+    line-height: 1.4;
+    border-left: 2px solid transparent;
+
+    &:hover {
+      color: var(--trellis-primary, #{$trellis-primary-color});
+      border-left-color: var(--trellis-border, #{$trellis-border-color});
+    }
+  }
+}
+
+// Level-based subordination: deeper headings indent further.
+.toc-level-2 a { padding-left: $trellis-space-sm; }
+.toc-level-3 a { padding-left: $trellis-space-lg; }
+.toc-level-4 a { padding-left: $trellis-space-xl; }
+.toc-level-5 a { padding-left: $trellis-space-2xl; }
+.toc-level-6 a { padding-left: $trellis-space-3xl; }
+
+// Inline TOC fallback rendered inside the article on narrow viewports where the
+// dedicated TOC column is hidden. It reuses the `toc` fragment (root .docs-toc),
+// so re-show that inner region here — .docs-toc is display:none until $bp-lg.
+.toc-inline {
+  margin: 0 0 $trellis-space-xl;
+  padding: $trellis-space-md $trellis-space-lg;
+  border-left: 3px solid var(--trellis-primary, #{$trellis-primary-color});
+  background-color: var(--trellis-surface, #{$trellis-surface-color});
+  border-radius: 0 $trellis-border-radius $trellis-border-radius 0;
+
+  .docs-toc {
+    display: block;
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding: 0;
+  }
+
+  @media (min-width: $bp-lg) {
+    display: none; // the dedicated TOC column takes over
+  }
+}
+
+// ── Prev / next page navigation ──────────────────────────────────────────────
+
+.page-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $trellis-space-md;
+  justify-content: space-between;
+  margin-top: $trellis-space-2xl;
+  padding-top: $trellis-space-lg;
+  border-top: 1px solid var(--trellis-border, #{$trellis-border-color});
+}
+
+.page-nav-link {
+  display: flex;
+  flex-direction: column;
+  gap: $trellis-space-xs;
+  padding: $trellis-space-md $trellis-space-lg;
+  border: 1px solid var(--trellis-border, #{$trellis-border-color});
+  border-radius: $trellis-border-radius;
+  text-decoration: none;
+  flex: 1 1 45%;
+  min-width: 0;
+
+  &:hover {
+    border-color: var(--trellis-primary, #{$trellis-primary-color});
+    background-color: var(--trellis-surface, #{$trellis-surface-color});
+  }
+
+  &.page-nav-next {
+    text-align: right;
+    align-items: flex-end;
+  }
+}
+
+.page-nav-label {
+  font-size: $trellis-font-size-xs;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.page-nav-title {
+  font-weight: 600;
+  color: var(--trellis-primary, #{$trellis-primary-color});
+}
+
+// ── Breadcrumb ───────────────────────────────────────────────────────────────
+
+.breadcrumb {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $trellis-space-xs;
+  padding: 0;
+  margin: 0 0 $trellis-space-md;
+  font-size: $trellis-font-size-sm;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+
+  li:not(:last-child)::after {
+    content: '/';
+    margin-left: $trellis-space-xs;
+    color: var(--trellis-border, #{$trellis-border-color});
+  }
+
+  a { color: var(--trellis-muted, #{$trellis-muted-color}); text-decoration: none; &:hover { color: var(--trellis-primary, #{$trellis-primary-color}); } }
+}
+
+// ── Hero (home) ──────────────────────────────────────────────────────────────
+
+.hero {
+  padding: $trellis-space-2xl 0;
+  margin-bottom: $trellis-space-2xl;
+  border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
+
+  h1 {
+    font-size: 2.5rem;
+    margin-bottom: $trellis-space-md;
+
+    @media (min-width: $bp-sm) { font-size: 3rem; }
+  }
+
+  .hero-description {
+    font-size: 1.15rem;
+    color: var(--trellis-muted, #{$trellis-muted-color});
+    margin-bottom: $trellis-space-lg;
+    max-width: 640px;
+  }
+
+  .hero-cta {
+    display: inline-block;
+    padding: $trellis-space-sm $trellis-space-lg;
+    background-color: var(--trellis-primary, #{$trellis-primary-color});
+    color: var(--trellis-bg, #{$trellis-bg-color});
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: $trellis-border-radius;
+
+    &:hover { background-color: var(--trellis-accent, #{$trellis-accent-color}); }
+  }
+}
+
+// ── Doc / page cards (home + list listings) ──────────────────────────────────
+
+.card-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: $trellis-space-lg;
+
+  @media (min-width: $bp-sm) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.doc-card {
+  padding: $trellis-space-lg;
+  border: 1px solid var(--trellis-border, #{$trellis-border-color});
+  border-radius: $trellis-border-radius;
+
+  &:hover { border-color: var(--trellis-primary, #{$trellis-primary-color}); }
+
+  .doc-card-title {
+    margin: 0 0 $trellis-space-xs;
+    font-size: 1.15rem;
+
+    a { color: var(--trellis-text, #{$trellis-text-color}); text-decoration: none; &:hover { color: var(--trellis-primary, #{$trellis-primary-color}); } }
+  }
+
+  .doc-card-summary {
+    margin: 0;
+    color: var(--trellis-muted, #{$trellis-muted-color});
+    font-size: 0.95rem;
+  }
+}
+
+// ── Article header ───────────────────────────────────────────────────────────
+
+.doc-header {
+  margin-bottom: $trellis-space-xl;
+  padding-bottom: $trellis-space-lg;
+  border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
+
+  .doc-title { margin-top: 0; margin-bottom: $trellis-space-sm; }
+}
+
+.doc-content {
+  > * + * { margin-top: $trellis-space-md; }
+  > *:first-child { margin-top: 0; }
+}
+
+.no-pages {
+  color: var(--trellis-muted, #{$trellis-muted-color});
+}

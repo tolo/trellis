@@ -8,6 +8,7 @@ export 'src/content_discovery.dart';
 export 'src/feed_generator.dart';
 export 'src/front_matter_parser.dart';
 export 'src/markdown_renderer.dart';
+export 'src/navigation_builder.dart';
 export 'src/page.dart';
 export 'src/page_generator.dart';
 export 'src/paginator.dart';

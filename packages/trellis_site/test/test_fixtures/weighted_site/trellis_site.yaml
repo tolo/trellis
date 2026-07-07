@@ -1,0 +1,8 @@
+title: Weighted Test Site
+baseUrl: https://example.com
+description: A fixture exercising weighted ordering and nested sections
+
+contentDir: content
+layoutsDir: layouts
+staticDir: static
+outputDir: output

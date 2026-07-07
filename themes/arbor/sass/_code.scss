@@ -1,0 +1,110 @@
+// Arbor Docs Theme — sass/_code.scss
+// Inline code, code blocks (pre), and Prism.js token colors.
+// Token colors use CSS custom properties (--trellis-code-*) so they adapt to the
+// light/dark skin. The vendored Prism highlighter targets `pre code[class^="language-"]`
+// and emits `.token.*` spans, which this file styles.
+
+// ── Inline code ───────────────────────────────────────────────────────────────
+
+code {
+  font-family: $trellis-code-font-family;
+  font-size: 0.875em;
+  background-color: var(--trellis-surface, #{$trellis-surface-color});
+  color: var(--trellis-text, #{$trellis-text-color});
+  padding: 0.15em 0.4em;
+  border-radius: $trellis-border-radius;
+  border: 1px solid var(--trellis-border, #{$trellis-border-color});
+}
+
+// ── Code blocks ───────────────────────────────────────────────────────────────
+
+pre {
+  background-color: var(--trellis-surface, #{$trellis-surface-color});
+  border: 1px solid var(--trellis-border, #{$trellis-border-color});
+  border-radius: $trellis-border-radius;
+  padding: $trellis-space-lg;
+  overflow-x: auto;
+  margin: $trellis-space-lg 0;
+  line-height: 1.6;
+  font-family: $trellis-code-font-family;
+
+  code {
+    // Reset inline-code styles inside a block.
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: $trellis-font-size-sm;
+    color: inherit;
+  }
+}
+
+// ── Syntax highlighting tokens (Prism.js) ──────────────────────────────────────
+// Reused unchanged with the vendored Prism assets. Colors reference the
+// --trellis-code-* custom properties so they flip with the active skin.
+
+pre code {
+  .token.comment,
+  .token.prolog,
+  .token.doctype,
+  .token.cdata {
+    color: var(--trellis-code-comment);
+    font-style: italic;
+  }
+
+  .token.punctuation {
+    color: var(--trellis-code-punctuation);
+  }
+
+  .token.property,
+  .token.tag,
+  .token.boolean,
+  .token.number,
+  .token.constant,
+  .token.symbol {
+    color: var(--trellis-code-number);
+  }
+
+  .token.selector,
+  .token.attr-name,
+  .token.string,
+  .token.char,
+  .token.builtin {
+    color: var(--trellis-code-string);
+  }
+
+  .token.operator,
+  .token.entity,
+  .token.url {
+    color: var(--trellis-code-punctuation);
+  }
+
+  .token.atrule,
+  .token.attr-value,
+  .token.keyword {
+    color: var(--trellis-code-keyword);
+  }
+
+  .token.function,
+  .token.class-name {
+    color: var(--trellis-code-function);
+  }
+
+  .token.regex,
+  .token.important,
+  .token.variable {
+    color: var(--trellis-code-number);
+  }
+}
+
+// ── Keyboard input ──────────────────────────────────────────────────────────────
+
+kbd {
+  font-family: $trellis-code-font-family;
+  font-size: 0.875em;
+  background-color: var(--trellis-surface, #{$trellis-surface-color});
+  color: var(--trellis-text, #{$trellis-text-color});
+  padding: 0.15em 0.4em;
+  border-radius: $trellis-border-radius;
+  border: 1px solid var(--trellis-border, #{$trellis-border-color});
+  box-shadow: 0 1px 0 var(--trellis-border, #{$trellis-border-color});
+}

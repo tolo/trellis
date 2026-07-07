@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Trellis">
+  <rect width="32" height="32" rx="6" fill="#0f7a4d"/>
+  <g stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" fill="none">
+    <path d="M9 24V11"/>
+    <path d="M16 24V8"/>
+    <path d="M23 24V11"/>
+    <path d="M6 14h20"/>
+    <path d="M6 19h20"/>
+  </g>
+</svg>

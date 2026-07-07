@@ -1,0 +1,38 @@
+title: Arbor Docs
+description: Preview site for the Arbor documentation theme.
+base_url: http://localhost:8080
+author: Trellis Team
+
+# Theme resolution
+# ----------------
+# The build resolves a theme by joining <siteDir>/themes/<value>. This example
+# lives inside the theme, so `themes/arbor` is provided as a symlink pointing at
+# the theme root (../.. relative to themes/). That gives a real directory chain
+# that both the manifest loader and the template FileSystemLoader can resolve.
+#
+# To use Arbor from your own site instead, run `trellis theme add <arbor-url>`
+# and set `theme: arbor` (a real themes/arbor/ directory).
+theme: arbor
+
+# Customize theme params here — all are optional (defaults from theme.yaml apply).
+theme_params:
+  skin: auto
+  sidebar_title: "Documentation"
+  toc_title: "On this page"
+  syntax_highlighting: true
+  show_search: true
+  show_toc: true
+  show_sidebar: true
+  nav_links:
+    - label: Home
+      url: /
+    - label: Docs
+      url: /docs/
+  footer_text: "© 2026 Trellis"
+  show_powered_by: true
+
+# Search (progressive enhancement): emits search-index.json for the vendored
+# client-side search script (show_search above only toggles the UI shell).
+search:
+  enabled: true
+  fields: [title, summary, content]

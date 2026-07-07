@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `trellis build --path-prefix <value>` overrides the site's `pathPrefix` (sub-path) from the command line, for building a path-prefixed variant without editing `trellis_site.yaml`.
+
+### Fixed
+
+- `trellis build` now carries `pathPrefix` from `trellis_site.yaml` into the build (it was dropped when the CLI reconstructed the config, so path-prefix builds silently produced root-absolute URLs).
+- `trellis build` now compiles theme SASS for a theme referenced by a relative `theme:` path that escapes the site directory (e.g. `../../themes/arbor`); the theme directory is normalized before the SASS scan, so such sites no longer build silently unstyled.
+- `theme_params: { skin: light | dark }` now forces the corresponding palette. The SASS bridge imports the theme's `_skins/_light.scss` / `_skins/_dark.scss` before `_theme_params.scss`, so the skin's `!default` colors win over the theme's light defaults. `skin: auto` (and unset) is unchanged — no skin import, byte-for-byte identical output. Previously the skin file was never imported, so `light`/`dark` were dead config and only `auto`'s `prefers-color-scheme` block had any effect.
+
 ## 0.8.2
 
 ### Fixed

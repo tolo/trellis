@@ -91,8 +91,9 @@ void main() {
       final site = TrellisSite(config);
       final result = await site.build();
       // Fixture has: _index.md (home), about.md, no-sitemap.md, draft-page.md (draft),
-      //              posts/_index.md (section), posts/hello-world.md — 5 non-draft
-      expect(result.pageCount, equals(5));
+      //              posts/_index.md (section), posts/hello-world.md, posts/second-post.md
+      //              — 6 non-draft
+      expect(result.pageCount, equals(6));
     });
 
     test('generates home page at output/index.html', () async {
@@ -184,8 +185,9 @@ void main() {
     test('BuildResult.pageCount matches non-draft page count', () async {
       final config = isolatedConfig();
       final result = await TrellisSite(config).build();
-      // 5 non-draft pages: home, about, no-sitemap, posts/_index, posts/hello-world
-      expect(result.pageCount, equals(5));
+      // 6 non-draft pages: home, about, no-sitemap, posts/_index, posts/hello-world,
+      // posts/second-post
+      expect(result.pageCount, equals(6));
     });
 
     test('build generates sitemap.xml in output directory', () async {
@@ -230,10 +232,7 @@ void main() {
       final fakeSiteDir = p.join(tempDir.path, 'site');
       Directory(fakeSiteDir).createSync();
 
-      final config = SiteConfig(
-        siteDir: fakeSiteDir,
-        outputDir: tempDir.path,
-      );
+      final config = SiteConfig(siteDir: fakeSiteDir, outputDir: tempDir.path);
       expect(TrellisSite(config).build(), throwsA(isA<SiteConfigException>()));
     });
 
@@ -241,10 +240,7 @@ void main() {
       final tempDir = Directory.systemTemp.createTempSync('trellis_safety_');
       addTearDown(() => tempDir.deleteSync(recursive: true));
 
-      final config = SiteConfig(
-        siteDir: tempDir.path,
-        outputDir: tempDir.path,
-      );
+      final config = SiteConfig(siteDir: tempDir.path, outputDir: tempDir.path);
       expect(TrellisSite(config).build(), throwsA(isA<SiteConfigException>()));
     });
 
@@ -254,10 +250,7 @@ void main() {
       final contentDir = p.join(tempDir.path, 'content');
       Directory(contentDir).createSync();
 
-      final config = SiteConfig(
-        siteDir: tempDir.path,
-        outputDir: contentDir,
-      );
+      final config = SiteConfig(siteDir: tempDir.path, outputDir: contentDir);
       expect(TrellisSite(config).build(), throwsA(isA<SiteConfigException>()));
     });
 
@@ -267,10 +260,7 @@ void main() {
       final layoutsDir = p.join(tempDir.path, 'layouts');
       Directory(layoutsDir).createSync();
 
-      final config = SiteConfig(
-        siteDir: tempDir.path,
-        outputDir: layoutsDir,
-      );
+      final config = SiteConfig(siteDir: tempDir.path, outputDir: layoutsDir);
       expect(TrellisSite(config).build(), throwsA(isA<SiteConfigException>()));
     });
 
@@ -280,10 +270,7 @@ void main() {
       final staticDir = p.join(tempDir.path, 'static');
       Directory(staticDir).createSync();
 
-      final config = SiteConfig(
-        siteDir: tempDir.path,
-        outputDir: staticDir,
-      );
+      final config = SiteConfig(siteDir: tempDir.path, outputDir: staticDir);
       expect(TrellisSite(config).build(), throwsA(isA<SiteConfigException>()));
     });
 
@@ -293,10 +280,7 @@ void main() {
       final dataDir = p.join(tempDir.path, 'data');
       Directory(dataDir).createSync();
 
-      final config = SiteConfig(
-        siteDir: tempDir.path,
-        outputDir: dataDir,
-      );
+      final config = SiteConfig(siteDir: tempDir.path, outputDir: dataDir);
       expect(TrellisSite(config).build(), throwsA(isA<SiteConfigException>()));
     });
   });
@@ -320,22 +304,17 @@ void main() {
       final contentDir = p.join(tempDir.path, 'content');
       final bundleDir = p.join(contentDir, 'draft-post');
       Directory(bundleDir).createSync(recursive: true);
-      File(p.join(bundleDir, 'index.md')).writeAsStringSync(
-        '---\ntitle: Draft\ndraft: true\n---\nDraft content.\n',
-      );
+      File(p.join(bundleDir, 'index.md')).writeAsStringSync('---\ntitle: Draft\ndraft: true\n---\nDraft content.\n');
       File(p.join(bundleDir, 'image.png')).writeAsBytesSync([0x89, 0x50, 0x4e, 0x47]);
 
       final layoutsDir = p.join(tempDir.path, 'layouts', '_default');
       Directory(layoutsDir).createSync(recursive: true);
-      File(p.join(layoutsDir, 'single.html')).writeAsStringSync(
-        '<html><body tl:utext="\${page.content}">content</body></html>',
-      );
+      File(
+        p.join(layoutsDir, 'single.html'),
+      ).writeAsStringSync('<html><body tl:utext="\${page.content}">content</body></html>');
 
       final outputDir = p.join(tempDir.path, 'output');
-      final config = SiteConfig(
-        siteDir: tempDir.path,
-        outputDir: outputDir,
-      );
+      final config = SiteConfig(siteDir: tempDir.path, outputDir: outputDir);
       await TrellisSite(config).build();
 
       // Draft page HTML should not exist
@@ -353,9 +332,7 @@ void main() {
       // Set up site with custom data dir
       final contentDir = p.join(tempDir.path, 'content');
       Directory(contentDir).createSync();
-      File(p.join(contentDir, 'page.md')).writeAsStringSync(
-        '---\ntitle: Page\n---\nContent.\n',
-      );
+      File(p.join(contentDir, 'page.md')).writeAsStringSync('---\ntitle: Page\n---\nContent.\n');
 
       final customDataDir = p.join(tempDir.path, 'my_data');
       Directory(customDataDir).createSync();
@@ -363,16 +340,12 @@ void main() {
 
       final layoutsDir = p.join(tempDir.path, 'layouts', '_default');
       Directory(layoutsDir).createSync(recursive: true);
-      File(p.join(layoutsDir, 'single.html')).writeAsStringSync(
-        '<html><body><span tl:text="\${data.site_info.company}">company</span></body></html>',
-      );
+      File(
+        p.join(layoutsDir, 'single.html'),
+      ).writeAsStringSync('<html><body><span tl:text="\${data.site_info.company}">company</span></body></html>');
 
       final outputDir = p.join(tempDir.path, 'output');
-      final config = SiteConfig(
-        siteDir: tempDir.path,
-        outputDir: outputDir,
-        dataDir: customDataDir,
-      );
+      final config = SiteConfig(siteDir: tempDir.path, outputDir: outputDir, dataDir: customDataDir);
       await TrellisSite(config).build();
 
       final html = File(p.join(outputDir, 'page', 'index.html')).readAsStringSync();

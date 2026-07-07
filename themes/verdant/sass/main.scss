@@ -4,14 +4,16 @@
 // Build pipeline (S03 SASS bridge):
 //   1. The bridge generates _theme_params.scss with $trellis-* vars from merged
 //      theme params (theme.yaml defaults + site theme_params:).
-//   2. It also generates a load-path entry for the appropriate skin file.
+//   2. For a forced skin it injects the skin import BEFORE _theme_params.scss.
 //   3. This file is compiled via: sass --load-path=<bridge-dir> main.scss
 //
 // Skin loading:
-//   The SASS bridge adds the correct skin import before this file compiles.
-//   skin: light  → _skins/_light.scss imported first
-//   skin: dark   → _skins/_dark.scss imported first
-//   skin: auto   → _skins/_light.scss imported; dark overrides via prefers-color-scheme
+//   For a forced skin the skin's !default palette wins over theme.yaml's light
+//   defaults (SASS honors the first !default assignment).
+//   skin: light  → _skins/_light.scss imported first (matches the light defaults)
+//   skin: dark   → _skins/_dark.scss imported first; the dark palette applies
+//   skin: auto   → no skin import; light params apply, and dark overrides via the
+//                  prefers-color-scheme @media block below at runtime
 //
 // If building standalone (no bridge), default light-skin colors from _variables.scss apply.
 

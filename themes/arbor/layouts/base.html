@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<!-- Arbor Docs Theme — layouts/base.html. Root layout: full HTML shell with the
+     four tl:define blocks (head-extra, site-header, content, site-footer) and the
+     shared sidebar/toc fragments. See README.md and VENDORED.md for details. -->
+<html lang="en">
+<!-- assetBase yields a root-absolute prefix for hand-written asset links: the
+     configured pathPrefix (e.g. /docs/) when set, or / when the site is served
+     at the root. Prefixing with pathPrefix alone would produce page-relative
+     URLs at the root (empty pathPrefix), which 404 on nested pages. -->
+<head tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title tl:text="${page.title} + ' — ' + ${site.title}">Page — Site</title>
+
+  <meta name="description"
+        tl:attr="content=${page.description} ?: ${page.summary} ?: ${site.description}">
+
+  <!-- Open Graph -->
+  <meta property="og:title" tl:attr="content=${page.title}">
+  <meta property="og:description"
+        tl:attr="content=${page.description} ?: ${page.summary} ?: ${site.description}">
+  <meta property="og:type" content="website">
+  <meta property="og:url" tl:attr="content=${site.baseUrl} + ${page.url}">
+
+  <!-- Theme CSS (compiled from sass/main.scss), root-absolute via assetBase. -->
+  <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/main.css'" href="/css/main.css">
+  <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/theme-props.css'" href="/css/theme-props.css">
+
+  <!-- RSS/Atom feed link — controlled by show_rss_link param -->
+  <link tl:if="${site.feeds.atom} and ${theme.show_rss_link}"
+        rel="alternate" type="application/atom+xml"
+        title="Atom Feed" tl:attr="href=${site.feeds.atom}">
+  <link tl:if="${site.feeds.rss} and ${theme.show_rss_link}"
+        rel="alternate" type="application/rss+xml"
+        title="RSS Feed" tl:attr="href=${site.feeds.rss}">
+
+  <!-- Vendored syntax highlighter: Prism 1.29.0, same-origin, per-file SRI, no CDN.
+       Order: core, clike base, then per-language components (dart extends clike;
+       markdown extends markup; scss extends css). Served from the output root;
+       see VENDORED.md. -->
+  <script tl:if="${theme.syntax_highlighting}"
+          tl:attr="src=${assetBase} + 'prism/prism-core.min.js'"
+          integrity="sha384-MXybTpajaBV0AkcBaCPT4KIvo0FzoCiWXgcihYsw4FUkEz0Pv3JGV6tk2G8vJtDc"
+          crossorigin="anonymous" defer></script>
+  <script tl:if="${theme.syntax_highlighting}"
+          tl:attr="src=${assetBase} + 'prism/prism-clike.min.js'"
+          integrity="sha384-7LHwxHIDSHTBleLmgDWZbC/IMJsfYfFVOihKhvsrxYW4j47YQcRwZja4ToFE3bA8"
+          crossorigin="anonymous" defer></script>
+  <script tl:if="${theme.syntax_highlighting}"
+          tl:attr="src=${assetBase} + 'prism/prism-markup.min.js'"
+          integrity="sha384-HkMr0bZB9kBW4iVtXn6nd35kO/L/dQtkkUBkL9swzTEDMdIe5ExJChVDSnC79aNA"
+          crossorigin="anonymous" defer></script>
+  <script tl:if="${theme.syntax_highlighting}"
+          tl:attr="src=${assetBase} + 'prism/prism-markdown.min.js'"
+          integrity="sha384-s888ApkYHxfPsp8n81g77Unl/0XYnYltLvWbwqKHcheRE8/dZPlT4IjW3mRGv/Hd"
+          crossorigin="anonymous" defer></script>
+  <script tl:if="${theme.syntax_highlighting}"
+          tl:attr="src=${assetBase} + 'prism/prism-css.min.js'"
+          integrity="sha384-0mV13Neu0xhJFylI+HV43C+XiR13bGSeL7D0/7e6hK7sJgvyvK6HVjeQwmvXTstY"
+          crossorigin="anonymous" defer></script>
+  <script tl:if="${theme.syntax_highlighting}"
+          tl:attr="src=${assetBase} + 'prism/prism-scss.min.js'"
+          integrity="sha384-kRWiSF1UhVO7HGkpK3GX+OGmVHxBjCBwRxc9EIP3tqScIgDEAizIeCWds1M6ratq"
+          crossorigin="anonymous" defer></script>
+  <script tl:if="${theme.syntax_highlighting}"
+          tl:attr="src=${assetBase} + 'prism/prism-dart.min.js'"
+          integrity="sha384-cfEVSC1pSQWFCAHLhuVkdGm1NrPSw0Jj4pAt0cnC/e9PP3eSnxKk77LgaFFSUqws"
+          crossorigin="anonymous" defer></script>
+  <script tl:if="${theme.syntax_highlighting}"
+          tl:attr="src=${assetBase} + 'prism/prism-yaml.min.js'"
+          integrity="sha384-AKAiycghK0jDCjD+aavMHzDkLzRR7Yzcwh3+xL/295cvyVMe+cxQfyQC8xxGGcI8"
+          crossorigin="anonymous" defer></script>
+  <script tl:if="${theme.syntax_highlighting}"
+          tl:attr="src=${assetBase} + 'prism/prism-bash.min.js'"
+          integrity="sha384-9WmlN8ABpoFSSHvBGGjhvB3E/D8UkNB9HpLJjBQFC2VSQsM1odiQDv4NbEo+7l15"
+          crossorigin="anonymous" defer></script>
+
+  <!-- Client-side search (S09): vendored, same-origin, per-file SRI, no CDN.
+       Reads the index URL from the shell's data-search-index attribute; on a
+       failed index fetch it hides the control so the page stays fully readable. -->
+  <script tl:if="${theme.show_search}"
+          tl:attr="src=${assetBase} + 'js/search.js'"
+          integrity="sha384-39YMhumgS1xq8+xDAoRuz+/iuKgAJ+ivwijtWn0EXlf/VfgqUsmmuZY94XO7+aDG"
+          crossorigin="anonymous" defer></script>
+
+  <!-- Extra head slot: child layouts inject additional tags here. -->
+  <meta tl:define="head-extra">
+</head>
+<body>
+  <a href="#main-content" class="skip-to-content">Skip to content</a>
+
+  <!-- Site header -->
+  <header class="site-header" tl:define="site-header">
+    <div class="container">
+      <a href="/" class="site-title" tl:text="${site.title}">Site Title</a>
+
+      <nav aria-label="Main navigation">
+        <ul class="nav-list">
+          <li tl:each="link : ${theme.nav_links}">
+            <a tl:href="${link.url}" tl:text="${link.label}">Link</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main content region. Child layouts fill the "content" block. This default
+       body hosts the reusable sidebar/toc fragments child layouts pull in. -->
+  <main id="main-content" class="main-content" tl:define="content">
+    <div class="container">
+      <div class="docs-shell">
+
+        <!-- Fragment: sidebar. Collapsible on mobile (JS-free details), a
+             persistent column on desktop. Guard insertion at the call site with
+             tl:if (a fragment-root tl:if is not re-evaluated on insertion). -->
+        <details class="sidebar-disclosure" open tl:fragment="sidebar">
+          <summary class="sidebar-toggle" tl:text="${theme.sidebar_title}">Documentation</summary>
+
+          <div class="docs-sidebar">
+            <!-- Search UI shell. The querying behavior lives in the vendored
+                 static/js/search.js (S09). The static script cannot interpolate
+                 ${site.pathPrefix}, so the root-absolute index URL is passed in
+                 via data-search-index, computed with the same assetBase rule the
+                 <head> asset links use (pathPrefix, or / when served at root).
+                 The index is written to the output root, so it is served at
+                 ${assetBase}search-index.json (e.g. /trellis/search-index.json). -->
+            <div class="search-shell" tl:if="${theme.show_search}"
+                 tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}"
+                 tl:attr="data-search-index=${assetBase} + 'search-index.json'">
+              <label class="sr-only" for="docs-search">Search documentation</label>
+              <input type="search" id="docs-search" class="search-input"
+                     placeholder="Search…" autocomplete="off"
+                     data-arbor-search disabled>
+              <ul class="search-results" data-arbor-search-results hidden></ul>
+            </div>
+
+            <nav class="sidebar-nav" tl:attr="aria-label=${theme.sidebar_title}">
+              <p class="sidebar-title" tl:text="${theme.sidebar_title}">Documentation</p>
+
+              <!-- Level 1 -->
+              <ul class="sidebar-tree">
+                <li class="sidebar-item" tl:each="n1 : ${site.menu}">
+                  <a class="sidebar-link"
+                     tl:if="${n1.url != ''}"
+                     tl:href="${n1.url}"
+                     tl:text="${n1.title}"
+                     tl:classappend="${n1.url != '' and n1.url == page.url} ? 'is-active' : (${n1.url != '' and n1.url != '/' and n1.url != page.url and #strings.startsWith(page.url, n1.url)} ? 'is-active-trail' : '')"
+                     tl:attr="aria-current=${n1.url != '' and n1.url == page.url} ? 'page' : _">L1</a>
+                  <span class="sidebar-label" tl:unless="${n1.url != ''}" tl:text="${n1.title}">L1</span>
+
+                  <!-- Level 2 -->
+                  <ul class="sidebar-subtree" tl:if="${n1.children}">
+                    <li class="sidebar-item" tl:each="n2 : ${n1.children}">
+                      <a class="sidebar-link"
+                         tl:if="${n2.url != ''}"
+                         tl:href="${n2.url}"
+                         tl:text="${n2.title}"
+                         tl:classappend="${n2.url != '' and n2.url == page.url} ? 'is-active' : (${n2.url != '' and n2.url != '/' and n2.url != page.url and #strings.startsWith(page.url, n2.url)} ? 'is-active-trail' : '')"
+                         tl:attr="aria-current=${n2.url != '' and n2.url == page.url} ? 'page' : _">L2</a>
+                      <span class="sidebar-label" tl:unless="${n2.url != ''}" tl:text="${n2.title}">L2</span>
+
+                      <!-- Level 3 -->
+                      <ul class="sidebar-subtree" tl:if="${n2.children}">
+                        <li class="sidebar-item" tl:each="n3 : ${n2.children}">
+                          <a class="sidebar-link"
+                             tl:if="${n3.url != ''}"
+                             tl:href="${n3.url}"
+                             tl:text="${n3.title}"
+                             tl:classappend="${n3.url != '' and n3.url == page.url} ? 'is-active' : (${n3.url != '' and n3.url != '/' and n3.url != page.url and #strings.startsWith(page.url, n3.url)} ? 'is-active-trail' : '')"
+                             tl:attr="aria-current=${n3.url != '' and n3.url == page.url} ? 'page' : _">L3</a>
+                          <span class="sidebar-label" tl:unless="${n3.url != ''}" tl:text="${n3.title}">L3</span>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </details>
+
+        <!-- Default article body (used only if no child overrides "content"). -->
+        <div class="docs-main">
+          <p>Override the "content" block in a child layout.</p>
+        </div>
+
+        <!-- Fragment: toc. In-page table of contents from the FLAT page.toc list;
+             indentation comes from each entry's level via toc-level-{n} classes.
+             Guard insertion at the call site with tl:if. -->
+        <aside class="docs-toc" tl:fragment="toc">
+          <nav aria-label="Table of contents">
+            <p class="toc-title" tl:text="${theme.toc_title}">On this page</p>
+            <ul class="toc-list">
+              <li tl:each="entry : ${page.toc}"
+                  tl:attr="class='toc-item toc-level-' + ${entry.level}">
+                <a tl:href="'#' + ${entry.id}" tl:text="${entry.text}">Heading</a>
+              </li>
+            </ul>
+          </nav>
+        </aside>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Site footer -->
+  <footer class="site-footer" tl:define="site-footer">
+    <div class="container">
+      <div class="footer-inner">
+
+        <ul class="social-links" tl:if="${theme.social_links}">
+          <li tl:each="link : ${theme.social_links}">
+            <a tl:href="${link.url}"
+               tl:text="${link.label} ?: ${link.platform}"
+               rel="noopener noreferrer"
+               target="_blank">Social</a>
+          </li>
+        </ul>
+
+        <p class="footer-text" tl:if="${theme.footer_text}" tl:text="${theme.footer_text}">
+          Custom footer text
+        </p>
+
+        <p class="footer-powered-by" tl:if="${theme.show_powered_by}">
+          Built with <a href="https://pub.dev/packages/trellis">Trellis</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

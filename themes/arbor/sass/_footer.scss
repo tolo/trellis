@@ -1,0 +1,28 @@
+// Arbor Docs Theme — sass/_footer.scss
+// Footer content components. Footer structure lives in _layout.scss
+// (.site-footer, .footer-inner).
+
+.footer-powered-by {
+  color: var(--trellis-muted, #{$trellis-muted-color});
+
+  a {
+    color: var(--trellis-muted, #{$trellis-muted-color});
+    &:hover { color: var(--trellis-primary, #{$trellis-primary-color}); }
+  }
+}
+
+.social-links {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $trellis-space-sm;
+  padding: 0;
+  margin: 0;
+
+  a {
+    color: var(--trellis-muted, #{$trellis-muted-color});
+    font-size: $trellis-font-size-sm;
+    text-decoration: none;
+    &:hover { color: var(--trellis-primary, #{$trellis-primary-color}); }
+  }
+}

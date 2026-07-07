@@ -183,7 +183,10 @@ void main() {
         isDraft: false,
         isBundle: false,
         bundleAssets: [],
-        frontMatter: {'title': 'Hello World', 'tags': ['dart']},
+        frontMatter: {
+          'title': 'Hello World',
+          'tags': ['dart'],
+        },
         content: '<p>Hello</p>',
         summary: 'Hello',
       );
@@ -194,6 +197,70 @@ void main() {
       expect(map['url'], '/posts/hello/');
       expect(map['content'], '<p>Hello</p>');
       expect(map['summary'], 'Hello');
+    });
+
+    test('exposes additive sectionPath and ancestors while section stays top-level (AS05)', () {
+      final page = Page(
+        sourcePath: 'docs/guides/a.md',
+        url: '/docs/guides/a/',
+        section: 'docs',
+        sectionPath: 'docs/guides',
+        kind: PageKind.single,
+        isDraft: false,
+        isBundle: false,
+        bundleAssets: [],
+      );
+
+      final map = pageToMap(page);
+      expect(map['section'], 'docs', reason: 'section is unchanged (top-level)');
+      expect(map['sectionPath'], 'docs/guides');
+      expect(map['ancestors'], ['docs', 'docs/guides']);
+    });
+
+    test('root page (empty lineage) has empty sectionPath and empty ancestors', () {
+      final page = Page(
+        sourcePath: 'about.md',
+        url: '/about/',
+        section: '',
+        kind: PageKind.single,
+        isDraft: false,
+        isBundle: false,
+        bundleAssets: [],
+      );
+
+      final map = pageToMap(page);
+      expect(map['section'], '');
+      expect(map['sectionPath'], '');
+      expect(map['ancestors'], isEmpty);
+    });
+  });
+
+  group('Page.sectionPath', () {
+    test('defaults to section when not provided (single-level compatibility)', () {
+      final page = Page(
+        sourcePath: 'posts/hello.md',
+        url: '/posts/hello/',
+        section: 'posts',
+        kind: PageKind.single,
+        isDraft: false,
+        isBundle: false,
+        bundleAssets: [],
+      );
+      expect(page.sectionPath, 'posts');
+    });
+
+    test('explicit sectionPath is preserved', () {
+      final page = Page(
+        sourcePath: 'docs/guides/a.md',
+        url: '/docs/guides/a/',
+        section: 'docs',
+        sectionPath: 'docs/guides',
+        kind: PageKind.single,
+        isDraft: false,
+        isBundle: false,
+        bundleAssets: [],
+      );
+      expect(page.sectionPath, 'docs/guides');
     });
   });
 }

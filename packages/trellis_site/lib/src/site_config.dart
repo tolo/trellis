@@ -35,6 +35,18 @@ class SiteConfig {
   /// The canonical base URL (e.g. `https://example.com`).
   final String baseUrl;
 
+  /// The normalized URL path-prefix (sub-path) the site is served under.
+  ///
+  /// Orthogonal to [baseUrl]: [baseUrl] is the canonical absolute origin used
+  /// by the sitemap/feeds, while [pathPrefix] is the sub-path every internal
+  /// root-absolute URL resolves under (e.g. GitHub project pages served at
+  /// `/trellis/`).
+  ///
+  /// Normalized to the canonical `/x/` form (leading slash, single trailing
+  /// slash) when set, or the empty string when the site is served at the root.
+  /// See [normalizePathPrefix].
+  final String pathPrefix;
+
   /// The site description.
   final String description;
 
@@ -78,6 +90,7 @@ class SiteConfig {
     required this.siteDir,
     required this.title,
     required this.baseUrl,
+    required this.pathPrefix,
     required this.description,
     required this.contentDir,
     required this.layoutsDir,
@@ -99,6 +112,7 @@ class SiteConfig {
     required String siteDir,
     String title = '',
     String baseUrl = '',
+    String pathPrefix = '',
     String description = '',
     String? contentDir,
     String? layoutsDir,
@@ -121,6 +135,7 @@ class SiteConfig {
       siteDir: siteDir,
       title: title,
       baseUrl: baseUrl,
+      pathPrefix: normalizePathPrefix(pathPrefix),
       description: description,
       contentDir: resolve(contentDir, 'content'),
       layoutsDir: resolve(layoutsDir, 'layouts'),
@@ -188,10 +203,19 @@ class SiteConfig {
 
     final themeConfig = ThemeConfig.fromYaml(map);
 
+    final rawPathPrefix = map['pathPrefix'];
+    final String pathPrefix;
+    try {
+      pathPrefix = normalizePathPrefix(rawPathPrefix);
+    } on SiteConfigException catch (e) {
+      throw SiteConfigException(e.message, configPath: resolvedPath);
+    }
+
     return SiteConfig(
       siteDir: siteDir,
       title: (map['title'] as String?) ?? '',
       baseUrl: (map['baseUrl'] as String?) ?? '',
+      pathPrefix: pathPrefix,
       description: (map['description'] as String?) ?? '',
       contentDir: map['contentDir'] as String?,
       layoutsDir: map['layoutsDir'] as String?,
@@ -205,6 +229,71 @@ class SiteConfig {
       searchConfig: searchConfig,
       themeConfig: themeConfig,
     );
+  }
+
+  /// Normalizes a raw `pathPrefix` config value to its canonical form.
+  ///
+  /// Accepts a `String` (or `null`, treated as no prefix) and returns:
+  /// - the empty string for the root-equivalent values `''`, `/`, and `null`
+  ///   (the no-prefix state — output is byte-for-byte unchanged); or
+  /// - the canonical `/x/` form (leading slash, exactly one trailing slash) for
+  ///   any non-empty sub-path, so `trellis`, `/trellis`, `trellis/`, and
+  ///   `/trellis/` all normalize to `/trellis/`.
+  ///
+  /// Throws [SiteConfigException] naming `pathPrefix` and the offending value
+  /// when [value] is not a `String`, or is a `String` that cannot be a
+  /// root-absolute sub-path: a scheme-bearing/absolute URL such as
+  /// `http://example.com`, a protocol-relative `//host`, a value containing
+  /// whitespace or a `:` character, a `.`/`..` path segment, or an empty
+  /// interior segment (e.g. `a//b`). A malformed prefix is rejected rather
+  /// than silently half-applied.
+  static String normalizePathPrefix(Object? value) {
+    if (value == null) return '';
+    if (value is! String) {
+      throw SiteConfigException(
+        'pathPrefix must be a string sub-path (e.g. /trellis/), got ${value.runtimeType}: $value',
+      );
+    }
+
+    final trimmed = value.trim();
+    if (trimmed.isEmpty || trimmed == '/') return '';
+
+    // Reject scheme-bearing (http://x) and protocol-relative (//host) values —
+    // pathPrefix is a root-absolute sub-path, not an absolute/external URL.
+    if (trimmed.contains('://') || trimmed.startsWith('//')) {
+      throw SiteConfigException(
+        'pathPrefix must be a root-absolute sub-path (e.g. /trellis/), '
+        'not an absolute or scheme-bearing URL: $value',
+      );
+    }
+
+    // Reject internal whitespace and ':' — never valid in a URL sub-path.
+    if (trimmed.contains(RegExp(r'\s')) || trimmed.contains(':')) {
+      throw SiteConfigException('pathPrefix must not contain whitespace or a colon: $value');
+    }
+
+    // Reject dot segments ('.', '..') and empty interior segments ('a//b') —
+    // both would silently corrupt the resolved sub-path. Strip a single
+    // leading/trailing empty segment first (from a leading/trailing '/'),
+    // since that's the well-formed case; what's left must all be non-empty,
+    // non-dot segments.
+    final allSegments = trimmed.split('/');
+    final coreSegments = allSegments.sublist(
+      allSegments.isNotEmpty && allSegments.first.isEmpty ? 1 : 0,
+      allSegments.isNotEmpty && allSegments.last.isEmpty ? allSegments.length - 1 : allSegments.length,
+    );
+    for (final segment in coreSegments) {
+      if (segment == '.' || segment == '..') {
+        throw SiteConfigException('pathPrefix must not contain "." or ".." path segments: $value');
+      }
+      if (segment.isEmpty) {
+        throw SiteConfigException('pathPrefix must not contain an empty interior segment ("//"): $value');
+      }
+    }
+
+    final withLeading = trimmed.startsWith('/') ? trimmed : '/$trimmed';
+    final withTrailing = withLeading.endsWith('/') ? withLeading : '$withLeading/';
+    return withTrailing;
   }
 
   @override

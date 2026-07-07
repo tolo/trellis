@@ -7,6 +7,7 @@ import 'content_discovery.dart';
 import 'feed_generator.dart';
 import 'front_matter_parser.dart';
 import 'markdown_renderer.dart';
+import 'navigation_builder.dart';
 import 'page.dart';
 import 'page_generator.dart';
 import 'shortcode_processor.dart';
@@ -137,7 +138,11 @@ class TrellisSite {
     Map<String, dynamic>? mergedThemeParams;
     ThemeBuildConfig? themeBuildConfig;
     if (config.themeConfig != null) {
-      final themeDir = p.join(config.siteDir, 'themes', config.themeConfig!.name);
+      // Normalize so a relative `theme:` value (e.g. `../../themes/arbor`, used
+      // when a site references a theme outside its own dir) collapses its `..`
+      // segments to a real path both the manifest loader and the template
+      // FileSystemLoader can resolve — the loader does not canonicalize.
+      final themeDir = p.normalize(p.join(config.siteDir, 'themes', config.themeConfig!.name));
       final ThemeManifest manifest;
       try {
         manifest = ThemeManifest.load(themeDir);
@@ -168,8 +173,8 @@ class TrellisSite {
       }
     }
 
-    // 2. Discover pages
-    final discovery = ContentDiscovery(config.contentDir);
+    // 2. Discover pages — pathPrefix flows through deriveUrl into every page.url
+    final discovery = ContentDiscovery(config.contentDir, pathPrefix: config.pathPrefix);
     final pages = await discovery.discover();
 
     // 3. Parse front matter
@@ -205,7 +210,8 @@ class TrellisSite {
     }
 
     // 5. Taxonomy: collect terms and inject virtual pages
-    var siteParams = <String, dynamic>{'site': _buildSiteContext(), 'theme': ?mergedThemeParams};
+    final siteContext = _buildSiteContext(pages);
+    var siteParams = <String, dynamic>{'site': siteContext, 'theme': ?mergedThemeParams};
     if (config.taxonomies.isNotEmpty) {
       final collector = const TaxonomyCollector();
       final nonDraftPages = pages.where((pg) => !pg.isDraft).toList();
@@ -215,7 +221,7 @@ class TrellisSite {
       final taxContext = <String, dynamic>{
         for (final entry in taxIndex.entries) entry.key: entry.value.toTermMapList(),
       };
-      siteParams = <String, dynamic>{'site': _buildSiteContext(), 'taxonomy': taxContext, 'theme': ?mergedThemeParams};
+      siteParams = <String, dynamic>{'site': siteContext, 'taxonomy': taxContext, 'theme': ?mergedThemeParams};
 
       // Inject virtual taxonomy listing and term pages into the pipeline
       final virtualPages = collector.buildVirtualPages(taxIndex, nonDraftPages);
@@ -223,7 +229,9 @@ class TrellisSite {
     }
 
     // 6. Generate HTML pages — with theme-aware loader and layout/data search paths
-    final themeDir = config.themeConfig != null ? p.join(config.siteDir, 'themes', config.themeConfig!.name) : null;
+    final themeDir = config.themeConfig != null
+        ? p.normalize(p.join(config.siteDir, 'themes', config.themeConfig!.name))
+        : null;
     final TemplateLoader loader;
     if (themeDir != null) {
       loader = ThemeAwareLoader.forTheme(siteDir: config.siteDir, themeDir: themeDir);
@@ -240,9 +248,11 @@ class TrellisSite {
       loader: loader,
       layoutSearchPaths: themeDir != null ? [p.join(themeDir, 'layouts')] : null,
       themeDataDir: themeDir != null ? p.join(themeDir, 'data') : null,
+      pathPrefix: config.pathPrefix,
     );
     // pageCount reflects actual output files, including paginated pages
     final pageCount = await generator.generateAll(pages);
+    buildWarnings.addAll(generator.warnings);
 
     // 7. Copy static assets — theme first so site files overwrite on conflict
     final themeStaticCount = themeDir != null ? _copyThemeStaticAssets(themeDir) : 0;
@@ -304,12 +314,28 @@ class TrellisSite {
   }
 
   /// Builds the `site` context map available as `${site.*}` in templates.
-  Map<String, dynamic> _buildSiteContext() {
+  ///
+  /// [pages] is the discovered content set (drafts already resolved via
+  /// `includeDrafts`); it is used to build the `${site.menu}` navigation tree so
+  /// that tree rides the shared site params on every page render — single,
+  /// section, home, and taxonomy virtual pages alike. Taxonomy virtual pages are
+  /// injected into the pipeline after this call, so they never appear as menu
+  /// nodes but still receive the tree.
+  Map<String, dynamic> _buildSiteContext(List<Page> pages) {
     final context = <String, dynamic>{
       'title': config.title,
       'baseUrl': config.baseUrl,
+      // Normalized path-prefix for theme authors to prefix hand-written literal
+      // asset/link references the engine cannot auto-rewrite, e.g.
+      // `href="${site.pathPrefix}css/main.css"`. Canonical `/x/` (trailing
+      // slash) when configured, empty string when the site is served at root.
+      'pathPrefix': config.pathPrefix,
       'description': config.description,
       'params': config.params,
+      // Hierarchical navigation tree (nested {title, url, children} nodes),
+      // built once and shared across every render. Active-trail state is resolved
+      // at render time by comparing node.url to ${page.url} (no per-node flag).
+      'menu': const NavigationBuilder().build(pages),
     };
 
     if (config.feeds != null) {
@@ -430,7 +456,9 @@ class TrellisSite {
         if (!sourceFile.existsSync()) continue;
 
         final filename = p.basename(assetPath);
-        final urlPath = page.url.replaceAll(RegExp(r'^/|/$'), '');
+        // Strip the path-prefix so bundle assets land beside their unprefixed
+        // page output (the emitted page.url keeps the prefix; see stripPathPrefix).
+        final urlPath = stripPathPrefix(page.url, config.pathPrefix).replaceAll(RegExp(r'^/|/$'), '');
         final dest = urlPath.isEmpty ? p.join(config.outputDir, filename) : p.join(config.outputDir, urlPath, filename);
 
         Directory(p.dirname(dest)).createSync(recursive: true);

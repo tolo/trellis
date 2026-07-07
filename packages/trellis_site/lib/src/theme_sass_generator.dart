@@ -40,11 +40,7 @@ class ThemeBuildConfig {
   /// The resolved skin mode.
   final SkinMode skinMode;
 
-  const ThemeBuildConfig({
-    required this.buildDir,
-    required this.sassLoadPaths,
-    required this.skinMode,
-  });
+  const ThemeBuildConfig({required this.buildDir, required this.sassLoadPaths, required this.skinMode});
 }
 
 /// Generates SASS variable files and CSS custom properties from merged theme params.
@@ -102,17 +98,9 @@ class ThemeSassGenerator {
     // Bridge dir is first so @import "theme_params" resolves to the generated
     // file. Site SASS is before theme SASS so site-level overrides shadow
     // theme partials of the same name.
-    final sassLoadPaths = <String>[
-      buildDir,
-      p.join(siteDir, 'sass'),
-      if (themeDir != null) p.join(themeDir, 'sass'),
-    ];
+    final sassLoadPaths = <String>[buildDir, p.join(siteDir, 'sass'), if (themeDir != null) p.join(themeDir, 'sass')];
 
-    return ThemeBuildConfig(
-      buildDir: buildDir,
-      sassLoadPaths: sassLoadPaths,
-      skinMode: skinMode,
-    );
+    return ThemeBuildConfig(buildDir: buildDir, sassLoadPaths: sassLoadPaths, skinMode: skinMode);
   }
 }
 
@@ -142,6 +130,15 @@ String _generateSassVariables(Map<String, dynamic> params, Map<String, String> p
 String _toSassName(String paramName) => 'trellis-${paramName.replaceAll('_', '-')}';
 
 /// Converts a param value to a SASS value string.
+///
+/// String values are wrapped in SASS's legacy global `unquote()` rather than
+/// emitted as a quoted literal. A quoted `!default` value (e.g.
+/// `"system-ui, sans-serif"`) wins over the theme's own unquoted
+/// `_variables.scss` default (since the bridge partial loads first) and
+/// produces invalid CSS like `font-family: "system-ui, sans-serif"`. Routing
+/// through `unquote()` keeps the variable a SASS string — so it still
+/// satisfies `!default` overriding — but its value is unquoted, matching what
+/// the theme authors would have written by hand.
 String _toSassValue(dynamic value, String type) {
   if (value == null) return 'null';
   if (value is bool) return value.toString();
@@ -153,7 +150,7 @@ String _toSassValue(dynamic value, String type) {
     }
     // Color type hint: pass through unquoted (named colors, rgb(), etc.)
     if (type == 'color') return value;
-    return '"$value"';
+    return 'unquote("${_escapeSassString(value)}")';
   }
   if (value is List) {
     return '(${value.map((v) => _toSassValue(v, 'string')).join(', ')})';
@@ -162,8 +159,14 @@ String _toSassValue(dynamic value, String type) {
     final entries = value.entries.map((e) => '"${e.key}": ${_toSassValue(e.value, 'string')}');
     return '(${entries.join(', ')})';
   }
-  return '"$value"';
+  return 'unquote("${_escapeSassString(value.toString())}")';
 }
+
+/// Escapes a string for embedding inside a double-quoted SASS string literal.
+///
+/// Backslashes must be escaped first so a pre-existing `\"` in the input
+/// isn't double-escaped into `\\"`.
+String _escapeSassString(String value) => value.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
 
 /// Generates CSS custom property declarations from merged theme params.
 ///
@@ -209,4 +212,3 @@ String _toCssValue(dynamic value) {
   if (value is num) return value.toString();
   return value.toString();
 }
-

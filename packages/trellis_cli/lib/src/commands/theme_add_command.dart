@@ -129,7 +129,13 @@ class ThemeAddCommand extends Command<int> {
     if (ref != null) cloneArgs.addAll(['--branch', ref]);
     cloneArgs.addAll([url, destDir]);
 
-    final result = await Process.run('git', cloneArgs);
+    final ProcessResult result;
+    try {
+      result = await Process.run('git', cloneArgs);
+    } on ProcessException {
+      stderr.writeln('Error: git is required for theme commands but was not found on PATH — install git and retry.');
+      throw _ThemeAddException();
+    }
     if (result.exitCode != 0) {
       stderr.writeln('Error: Failed to clone theme: ${result.stderr}');
       throw _ThemeAddException();

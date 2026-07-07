@@ -21,9 +21,19 @@ void main() {
       expect(result, contains(r'$trellis-bg: #ff000080 !default;'));
     });
 
-    test('string param generates quoted value', () {
+    test('string param generates unquote()-wrapped value', () {
       final result = _generateSass({'font_family': 'system-ui, sans-serif'}, {'font_family': 'string'});
-      expect(result, contains(r'$trellis-font-family: "system-ui, sans-serif" !default;'));
+      expect(result, contains(r'$trellis-font-family: unquote("system-ui, sans-serif") !default;'));
+    });
+
+    test('string param with double quote escapes it', () {
+      final result = _generateSass({'label': 'say "hi"'}, {'label': 'string'});
+      expect(result, contains(r'$trellis-label: unquote("say \"hi\"") !default;'));
+    });
+
+    test('string param with backslash escapes it before quotes', () {
+      final result = _generateSass({'path': r'C:\themes\verdant'}, {'path': 'string'});
+      expect(result, contains(r'$trellis-path: unquote("C:\\themes\\verdant") !default;'));
     });
 
     test('boolean true param generates unquoted true', () {
@@ -60,7 +70,12 @@ void main() {
     });
 
     test('map param generates SASS map syntax with !default', () {
-      final result = _generateSass({'colors': <String, dynamic>{'primary': '#blue'}}, {'colors': 'map'});
+      final result = _generateSass(
+        {
+          'colors': <String, dynamic>{'primary': '#blue'},
+        },
+        {'colors': 'map'},
+      );
       expect(result, contains(r'$trellis-colors'));
       expect(result, contains('!default;'));
     });
@@ -107,11 +122,7 @@ String _generateSassRaw(Map<String, dynamic> params, Map<String, String> types) 
   final tempDir = Directory.systemTemp.createTempSync('trellis_sass_test_');
   try {
     const gen = ThemeSassGenerator();
-    gen.generate(
-      mergedParams: params,
-      paramTypes: types,
-      siteDir: tempDir.path,
-    );
+    gen.generate(mergedParams: params, paramTypes: types, siteDir: tempDir.path);
     return File(p.join(tempDir.path, '.trellis', 'build', '_theme_params.scss')).readAsStringSync();
   } finally {
     tempDir.deleteSync(recursive: true);

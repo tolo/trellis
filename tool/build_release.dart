@@ -62,12 +62,6 @@ Future<void> main() async {
 
   stdout.writeln('Built $archive');
   stdout.writeln('       $archive.sha256');
-
-  // Surface the version to GitHub Actions for downstream jobs.
-  final ghOutput = Platform.environment['GITHUB_OUTPUT'];
-  if (ghOutput != null) {
-    File(ghOutput).writeAsStringSync('version=$version\n', mode: FileMode.append);
-  }
 }
 
 (String, String) _hostTarget() {

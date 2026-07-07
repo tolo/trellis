@@ -50,25 +50,30 @@ class ThemeUpdateCommand extends Command<int> {
     // Determine ref from config
     final ref = config.themeConfig?.ref;
 
-    if (ref != null) {
-      // Fetch and checkout pinned ref
-      var result = await Process.run('git', ['-C', themeDir, 'fetch', 'origin']);
-      if (result.exitCode != 0) {
-        stderr.writeln('Error: git fetch failed: ${result.stderr}');
-        return 1;
+    try {
+      if (ref != null) {
+        // Fetch and checkout pinned ref
+        var result = await Process.run('git', ['-C', themeDir, 'fetch', 'origin']);
+        if (result.exitCode != 0) {
+          stderr.writeln('Error: git fetch failed: ${result.stderr}');
+          return 1;
+        }
+        result = await Process.run('git', ['-C', themeDir, 'checkout', ref]);
+        if (result.exitCode != 0) {
+          stderr.writeln('Error: git checkout $ref failed: ${result.stderr}');
+          return 1;
+        }
+      } else {
+        // Pull latest
+        final result = await Process.run('git', ['-C', themeDir, 'pull']);
+        if (result.exitCode != 0) {
+          stderr.writeln('Error: git pull failed: ${result.stderr}');
+          return 1;
+        }
       }
-      result = await Process.run('git', ['-C', themeDir, 'checkout', ref]);
-      if (result.exitCode != 0) {
-        stderr.writeln('Error: git checkout $ref failed: ${result.stderr}');
-        return 1;
-      }
-    } else {
-      // Pull latest
-      final result = await Process.run('git', ['-C', themeDir, 'pull']);
-      if (result.exitCode != 0) {
-        stderr.writeln('Error: git pull failed: ${result.stderr}');
-        return 1;
-      }
+    } on ProcessException {
+      stderr.writeln('Error: git is required for theme commands but was not found on PATH — install git and retry.');
+      return 1;
     }
 
     // Reload manifest and check min_trellis_version against installed version

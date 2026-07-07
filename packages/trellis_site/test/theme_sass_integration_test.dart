@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
 
 void main() {
@@ -29,19 +30,14 @@ void main() {
           'font_family': 'system-ui, sans-serif',
           'show_powered_by': true,
         },
-        types: {
-          'skin': 'enum',
-          'primary_color': 'color',
-          'font_family': 'string',
-          'show_powered_by': 'boolean',
-        },
+        types: {'skin': 'enum', 'primary_color': 'color', 'font_family': 'string', 'show_powered_by': 'boolean'},
       );
 
       final sassFile = File(p.join(config.buildDir, '_theme_params.scss'));
       expect(sassFile.existsSync(), isTrue);
       final content = sassFile.readAsStringSync();
       expect(content, contains(r'$trellis-primary-color: #2563eb !default;'));
-      expect(content, contains(r'$trellis-font-family: "system-ui, sans-serif" !default;'));
+      expect(content, contains(r'$trellis-font-family: unquote("system-ui, sans-serif") !default;'));
       expect(content, contains(r'$trellis-show-powered-by: true !default;'));
     });
 
@@ -49,16 +45,8 @@ void main() {
       final config = _generate(
         siteDir: siteDir,
         themeDir: themeDir,
-        params: {
-          'skin': 'light',
-          'primary_color': '#2563eb',
-          'show_powered_by': true,
-        },
-        types: {
-          'skin': 'enum',
-          'primary_color': 'color',
-          'show_powered_by': 'boolean',
-        },
+        params: {'skin': 'light', 'primary_color': '#2563eb', 'show_powered_by': true},
+        types: {'skin': 'enum', 'primary_color': 'color', 'show_powered_by': 'boolean'},
       );
 
       final cssFile = File(p.join(config.buildDir, '_theme_custom_props.css'));
@@ -96,22 +84,12 @@ void main() {
     });
 
     test('generate() resolves skinMode correctly', () {
-      final config = _generate(
-        siteDir: siteDir,
-        themeDir: themeDir,
-        params: {'skin': 'dark'},
-        types: {'skin': 'enum'},
-      );
+      final config = _generate(siteDir: siteDir, themeDir: themeDir, params: {'skin': 'dark'}, types: {'skin': 'enum'});
       expect(config.skinMode, SkinMode.dark);
     });
 
     test('generate() with null themeDir omits theme paths', () {
-      final config = _generate(
-        siteDir: siteDir,
-        themeDir: null,
-        params: {'skin': 'auto'},
-        types: {'skin': 'enum'},
-      );
+      final config = _generate(siteDir: siteDir, themeDir: null, params: {'skin': 'auto'}, types: {'skin': 'enum'});
       expect(config.sassLoadPaths, isNot(contains(p.join(themeDir, 'sass'))));
     });
 
@@ -127,6 +105,50 @@ void main() {
       expect(cssFile.existsSync(), isTrue);
       expect(cssFile.readAsStringSync(), contains('--trellis-primary-color: #abc;'));
     });
+
+    test('compiled CSS: string param produces unquoted font-family, not a quoted literal', () {
+      final config = _generate(
+        siteDir: siteDir,
+        themeDir: themeDir,
+        params: {'skin': 'light', 'font_family': 'system-ui, -apple-system, sans-serif', 'max_width': '1200px'},
+        types: {'skin': 'enum', 'font_family': 'string', 'max_width': 'string'},
+      );
+
+      // A minimal theme main.scss that consumes the bridged variables like a
+      // real theme's _variables.scss would — proving the compiled CSS (not
+      // just the generated .scss text) is unquoted.
+      final mainScss = File(p.join(themeDir, 'sass', 'main.scss'))..parent.createSync(recursive: true);
+      mainScss.writeAsStringSync('''
+@import "theme_params";
+body { font-family: \$trellis-font-family; max-width: \$trellis-max-width; }
+''');
+
+      final css = TrellisCss.compileSass(mainScss.path, loadPaths: config.sassLoadPaths);
+
+      expect(css, contains('font-family: system-ui, -apple-system, sans-serif;'));
+      expect(css, contains('max-width: 1200px;'));
+      expect(css, isNot(contains('font-family: "')));
+      expect(css, isNot(contains('max-width: "')));
+    });
+
+    test('compiled CSS: string value containing a double quote is escaped and compiles cleanly', () {
+      final config = _generate(
+        siteDir: siteDir,
+        themeDir: themeDir,
+        params: {'skin': 'light', 'hero_title': 'Say "hello" to Trellis'},
+        types: {'skin': 'enum', 'hero_title': 'string'},
+      );
+
+      final mainScss = File(p.join(themeDir, 'sass', 'main.scss'))..parent.createSync(recursive: true);
+      mainScss.writeAsStringSync('''
+@import "theme_params";
+body::before { content: \$trellis-hero-title; }
+''');
+
+      final css = TrellisCss.compileSass(mainScss.path, loadPaths: config.sassLoadPaths);
+
+      expect(css, contains('content: Say "hello" to Trellis;'));
+    });
   });
 }
 
@@ -137,10 +159,5 @@ ThemeBuildConfig _generate({
   required Map<String, String> types,
 }) {
   const gen = ThemeSassGenerator();
-  return gen.generate(
-    mergedParams: params,
-    paramTypes: types,
-    siteDir: siteDir,
-    themeDir: themeDir,
-  );
+  return gen.generate(mergedParams: params, paramTypes: types, siteDir: siteDir, themeDir: themeDir);
 }

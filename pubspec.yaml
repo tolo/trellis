@@ -42,7 +42,13 @@ melos:
       # which drives `melos version` with an explicit version for each package.
       # Melos rewrites dependents' constraints automatically in the same pass.
       branch: main
-      workspaceChangelog: true
+      # The root CHANGELOG.md was removed at SDK Phase 1 — each package now
+      # keeps its own hand-written CHANGELOG.md (see release rules in
+      # CLAUDE.md). With this left as the melos default (true), `melos version`
+      # still tries to `git add` a workspace-root CHANGELOG.md that no longer
+      # exists and aborts with "pathspec 'CHANGELOG.md' did not match any
+      # files", killing version_lockstep.sh before its version.dart sync step.
+      workspaceChangelog: false
       linkToCommits: true
       message: |
         chore(release): trellis SDK {new_package_versions}

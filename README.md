@@ -61,12 +61,16 @@ ships as a self-contained binary (no Dart SDK required) and on pub.dev:
 # Homebrew (macOS / Linux)
 brew install tolo/trellis/trellis
 
-# Manual: download the archive for your platform from the latest release, verify,
-# and put the binary on your PATH.
-#   https://github.com/tolo/trellis/releases/latest
-# Assets: trellis-v<version>-{macos-arm64,macos-x64,linux-x64,linux-arm64}.tar.gz
-#         trellis-v<version>-windows-x64.zip  (+ aggregate SHA256SUMS.txt)
+# Manual (macOS / Linux): download the archive + checksums, verify, extract the
+# binary, and put it on your PATH.
+#   Assets: trellis-v<version>-{macos-arm64,macos-x64,linux-x64,linux-arm64}.tar.gz
+#           trellis-v<version>-windows-x64.zip  (+ aggregate SHA256SUMS.txt)
+curl -LO https://github.com/tolo/trellis/releases/latest/download/trellis-v<version>-macos-arm64.tar.gz
+curl -LO https://github.com/tolo/trellis/releases/latest/download/SHA256SUMS.txt
 shasum -a 256 -c SHA256SUMS.txt --ignore-missing   # verify before extracting
+tar -xzf trellis-v<version>-macos-arm64.tar.gz trellis && sudo mv trellis /usr/local/bin/
+# Windows (PowerShell): Invoke-WebRequest the .zip + SHA256SUMS.txt, check with
+# Get-FileHash -Algorithm SHA256, then Expand-Archive. See packages/trellis_cli.
 
 # pub.dev (requires the Dart SDK)
 dart pub global activate trellis_cli

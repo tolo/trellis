@@ -55,7 +55,7 @@ class Trellis < Formula
   end
 
   test do
-    assert_match "trellis_cli", shell_output("#{bin}/trellis --version")
+    assert_match "#{version}", shell_output("#{bin}/trellis --version")
   end
 end
 ''';

@@ -31,23 +31,38 @@ jobs:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
+      - name: Setup Dart
+        # Pinned so release binaries are reproducible; 3.12.1 = locally verified toolchain.
+        uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1
+        with:
+          sdk: 3.12.1
+
+      - name: Install dependencies
+        run: dart pub get
+
       - name: Read and verify version
         id: read
         run: |
-          # Guard: tag == trellis_cli pubspec version == cliVersion constant (lockstep, ADR-009).
-          PUBSPEC_VERSION=$(grep -m1 '^version:' packages/trellis_cli/pubspec.yaml | sed 's/version:[[:space:]]*//')
-          if [ -z "$PUBSPEC_VERSION" ]; then echo "No version in trellis_cli pubspec.yaml" >&2; exit 1; fi
-          CONSTANT_VERSION=$(grep -m1 "cliVersion" packages/trellis_cli/lib/src/version.dart | sed "s/.*'\\(.*\\)'.*/\\1/")
-          if [ "$PUBSPEC_VERSION" != "$CONSTANT_VERSION" ]; then
-            echo "Version drift: pubspec $PUBSPEC_VERSION != cliVersion $CONSTANT_VERSION" >&2
-            exit 1
-          fi
+          # read_version.dart cross-checks pubspec `version:` against the cliVersion
+          # constant (lockstep, ADR-009) and throws on drift; only the tag match is left to bash.
+          VERSION=$(dart run tool/read_version.dart)
           TAG_VERSION="${GITHUB_REF_NAME#v}"
-          if [ "$TAG_VERSION" != "$PUBSPEC_VERSION" ]; then
-            echo "Tag $GITHUB_REF_NAME does not match trellis_cli version $PUBSPEC_VERSION" >&2
+          if [ "$TAG_VERSION" != "$VERSION" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match trellis_cli version $VERSION" >&2
             exit 1
           fi
-          echo "version=$PUBSPEC_VERSION" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # Single creation point avoids the concurrent-create race from five matrix
+          # jobs; kept a draft until every artifact lands so users never see a partial
+          # release. `|| create` makes the step idempotent across job re-runs.
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || \
+            gh release create "$GITHUB_REF_NAME" --draft --verify-tag --title "Trellis SDK $GITHUB_REF_NAME"
 
   build:
     name: Build (${{ matrix.target }})
@@ -72,7 +87,10 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Setup Dart
+        # Pinned so release binaries are reproducible; 3.12.1 = locally verified toolchain.
         uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1
+        with:
+          sdk: 3.12.1
 
       - name: Install dependencies
         run: dart pub get
@@ -82,14 +100,22 @@ jobs:
         env:
           TRELLIS_RELEASE_TARGET: ${{ matrix.target }}
 
-      # Smoke-test the compiled binary before upload: it must prove the core SSG
-      # loop works with no Dart SDK on PATH. The `blog` template was chosen
-      # because it is fully offline — `create` writes embedded-constant files (no
-      # git clone, no network) and `build` runs entirely on packages compiled
-      # into the binary (no `dart pub get` for the generated project). Verified
-      # locally against the AOT binary from a clean dir outside the workspace.
       # linux-arm64 is cross-compiled on an x64 runner, so its binary cannot
-      # execute here — skipped; the other four targets cover the AOT code paths.
+      # execute here; assert at least the ELF arch instead of running it.
+      - name: Assert cross-compiled arch (linux-arm64)
+        if: matrix.target == 'linux-arm64'
+        run: file build/stage/trellis | grep -q aarch64
+
+      # Smoke-test the compiled binary before upload: it must prove the core SSG
+      # loop works with the Dart SDK stripped from PATH (PATH=/usr/bin:/bin, and
+      # we assert `dart` is unresolvable), so the AOT binary can't silently lean
+      # on a host SDK. The `blog` template was chosen because it is fully offline
+      # — `create` writes embedded-constant files (no git clone, no network) and
+      # `build` runs entirely on packages compiled into the binary (no `dart pub
+      # get` for the generated project). Verified locally against the AOT binary
+      # from a clean dir outside the workspace. linux-arm64 is cross-compiled on
+      # an x64 runner, so its binary cannot execute here — skipped; the other
+      # four targets cover the AOT code paths.
       - name: Smoke test (unix)
         if: runner.os != 'Windows' && matrix.target != 'linux-arm64'
         run: |
@@ -98,6 +124,8 @@ jobs:
           WORK="$RUNNER_TEMP/smoke"
           rm -rf "$WORK" && mkdir -p "$WORK"
           cd "$WORK"
+          export PATH=/usr/bin:/bin
+          if command -v dart >/dev/null 2>&1; then echo "dart still on PATH; strip failed" >&2; exit 1; fi
           VER=$("$BIN" --version)
           echo "version output: $VER"
           case "$VER" in
@@ -120,22 +148,32 @@ jobs:
           Remove-Item -Recurse -Force $work -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Path $work | Out-Null
           Set-Location $work
+          # Strip the Dart SDK from PATH so the AOT binary can't lean on a host SDK.
+          $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot;$env:SystemRoot\System32\WindowsPowerShell\v1.0"
+          if (Get-Command dart -ErrorAction SilentlyContinue) { Write-Error 'dart still on PATH; strip failed' }
           $ver = & $bin --version
+          if ($LASTEXITCODE -ne 0) { throw "trellis --version exited $LASTEXITCODE" }
           Write-Host "version output: $ver"
           $tag = $env:GITHUB_REF_NAME.TrimStart('v')
           if ($ver -notmatch [regex]::Escape($tag)) {
             Write-Error "--version '$ver' does not contain tag $tag"
           }
           & $bin create smoke_site --template blog
+          if ($LASTEXITCODE -ne 0) { throw "trellis create exited $LASTEXITCODE" }
           Set-Location smoke_site
           & $bin build
+          if ($LASTEXITCODE -ne 0) { throw "trellis build exited $LASTEXITCODE" }
           if (-not (Test-Path 'output/index.html')) { Write-Error 'output/index.html missing' }
           Write-Host 'Smoke test passed: output/index.html produced.'
 
-      - name: Publish release asset
-        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3
-        with:
-          files: build/trellis-v*-${{ matrix.target }}.*
+      - name: Upload release asset
+        # bash on every runner (Windows included) so the glob expands the same way;
+        # --clobber makes re-runs idempotent against the draft release.
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release upload "$GITHUB_REF_NAME" build/trellis-v*-${{ matrix.target }}.* --clobber
 
   checksums:
     name: Publish aggregate checksums
@@ -156,21 +194,35 @@ jobs:
           cat release-checksums/*.sha256 | LC_ALL=C sort > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
-      - name: Publish SHA256SUMS.txt
-        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3
-        with:
-          files: SHA256SUMS.txt
+      - name: Upload SHA256SUMS.txt
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release upload "$GITHUB_REF_NAME" SHA256SUMS.txt --clobber
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # Flip the draft to public only after every binary + the checksums file
+          # exist, so there is never a partial public release; asset URLs take their
+          # final releases/download/<tag>/ form once published.
+          gh release edit "$GITHUB_REF_NAME" --draft=false --latest
 
   homebrew:
     name: Update Homebrew tap
-    needs: [version, build]
+    needs: [version, checksums]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Setup Dart
+        # Pinned so release binaries are reproducible; 3.12.1 = locally verified toolchain.
         uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1
+        with:
+          sdk: 3.12.1
 
       - name: Install dependencies
         run: dart pub get

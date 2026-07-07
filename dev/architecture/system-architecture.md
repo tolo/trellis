@@ -525,6 +525,16 @@ green build but a dead link in production, so it runs (with `--base-path` matchi
 ref. A second, non-live root-served variant is built and checked with no base-path as
 an FR10 portability regression guard.
 
+### CLI distribution channels
+
+The `trellis` CLI ships through three channels, all keyed off the lockstep
+`vX.Y.Z` release tag (ADR-009). `.github/workflows/release-binaries.yml` compiles
+per-platform AOT binaries (macOS arm64/x64, Linux x64/arm64, Windows x64) and
+attaches them to the GitHub Release, then updates the Homebrew tap
+`tolo/homebrew-trellis` so `brew install tolo/trellis/trellis` resolves. The same
+tag drives `publish.yml`, which publishes the packages to pub.dev independently.
+The linux-arm64 binary is cross-compiled on an x64 runner (`--target-os/--target-arch`).
+
 ---
 
 ## Cross-References

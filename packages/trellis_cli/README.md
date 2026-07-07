@@ -28,14 +28,28 @@ Grab the archive for your platform from the
 | Linux (arm64) | `trellis-v<version>-linux-arm64.tar.gz` |
 | Windows (x64) | `trellis-v<version>-windows-x64.zip` |
 
-Each archive contains the `trellis` binary plus `README` and `LICENSE`. Verify
-the download against the aggregate `SHA256SUMS.txt` on the release, then extract
-and put the binary on your `PATH`:
+Each archive contains the `trellis` binary plus `README` and `LICENSE`. Download
+the archive and `SHA256SUMS.txt`, verify the checksum, then extract the binary
+and put it on your `PATH`.
+
+macOS / Linux:
 
 ```bash
+curl -LO https://github.com/tolo/trellis/releases/latest/download/trellis-v<version>-macos-arm64.tar.gz
+curl -LO https://github.com/tolo/trellis/releases/latest/download/SHA256SUMS.txt
 shasum -a 256 -c SHA256SUMS.txt --ignore-missing
-tar -xzf trellis-v<version>-macos-arm64.tar.gz
+tar -xzf trellis-v<version>-macos-arm64.tar.gz trellis
 sudo mv trellis /usr/local/bin/
+```
+
+Windows (PowerShell):
+
+```powershell
+Invoke-WebRequest https://github.com/tolo/trellis/releases/latest/download/trellis-v<version>-windows-x64.zip -OutFile trellis.zip
+Invoke-WebRequest https://github.com/tolo/trellis/releases/latest/download/SHA256SUMS.txt -OutFile SHA256SUMS.txt
+Get-FileHash trellis.zip -Algorithm SHA256   # compare against the matching line in SHA256SUMS.txt
+Expand-Archive trellis.zip -DestinationPath trellis-bin
+# Then move trellis-bin\trellis.exe onto your PATH.
 ```
 
 ### From pub.dev (requires the Dart SDK)

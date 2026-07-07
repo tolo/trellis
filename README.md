@@ -54,11 +54,28 @@ Full template syntax, expression language, fragments, loaders, and API reference
 
 ### B. As a full SDK (CLI)
 
-Install the CLI and scaffold a complete, runnable project:
+Install the `trellis` CLI, then scaffold a complete, runnable project. The CLI
+ships as a self-contained binary (no Dart SDK required) and on pub.dev:
 
 ```bash
+# Homebrew (macOS / Linux)
+brew install tolo/trellis/trellis
+
+# Manual: download the archive for your platform from the latest release, verify,
+# and put the binary on your PATH.
+#   https://github.com/tolo/trellis/releases/latest
+# Assets: trellis-v<version>-{macos-arm64,macos-x64,linux-x64,linux-arm64}.tar.gz
+#         trellis-v<version>-windows-x64.zip  (+ aggregate SHA256SUMS.txt)
+shasum -a 256 -c SHA256SUMS.txt --ignore-missing   # verify before extracting
+
+# pub.dev (requires the Dart SDK)
 dart pub global activate trellis_cli
+
+# From source
+dart compile exe packages/trellis_cli/bin/trellis.dart -o trellis
 ```
+
+See [`packages/trellis_cli`](packages/trellis_cli) for the full install matrix.
 
 ```bash
 # Dynamic server app (Shelf + HTMX) — the default template

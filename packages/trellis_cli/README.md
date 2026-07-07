@@ -6,6 +6,40 @@ Part of the [Trellis SDK](https://github.com/tolo/trellis).
 
 ## Installation
 
+`trellis` ships as a self-contained binary (no Dart SDK required) and as a pub.dev
+package. Pick whichever fits your workflow.
+
+### Homebrew (macOS / Linux)
+
+```bash
+brew install tolo/trellis/trellis
+```
+
+### Manual download
+
+Grab the archive for your platform from the
+[latest release](https://github.com/tolo/trellis/releases/latest):
+
+| Platform | Asset |
+|---|---|
+| macOS (Apple Silicon) | `trellis-v<version>-macos-arm64.tar.gz` |
+| macOS (Intel) | `trellis-v<version>-macos-x64.tar.gz` |
+| Linux (x64) | `trellis-v<version>-linux-x64.tar.gz` |
+| Linux (arm64) | `trellis-v<version>-linux-arm64.tar.gz` |
+| Windows (x64) | `trellis-v<version>-windows-x64.zip` |
+
+Each archive contains the `trellis` binary plus `README` and `LICENSE`. Verify
+the download against the aggregate `SHA256SUMS.txt` on the release, then extract
+and put the binary on your `PATH`:
+
+```bash
+shasum -a 256 -c SHA256SUMS.txt --ignore-missing
+tar -xzf trellis-v<version>-macos-arm64.tar.gz
+sudo mv trellis /usr/local/bin/
+```
+
+### From pub.dev (requires the Dart SDK)
+
 ```bash
 dart pub global activate trellis_cli
 ```
@@ -14,6 +48,15 @@ Or run directly without installing:
 
 ```bash
 dart pub global run trellis_cli:trellis create my_app
+```
+
+### From source
+
+```bash
+git clone https://github.com/tolo/trellis
+cd trellis
+dart pub get
+dart compile exe packages/trellis_cli/bin/trellis.dart -o trellis
 ```
 
 ## Quick Start

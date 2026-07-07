@@ -1,0 +1,218 @@
+name: Release Binaries
+# Action-update process: to bump a pinned action, re-resolve the tag to its current SHA with
+#   gh api repos/<owner>/<repo>/commits/<tag> --jq .sha
+# then update both the SHA and the trailing # vX comment on the uses: line.
+#
+# Compiles the trellis_cli AOT binary for five targets and attaches them to the
+# GitHub Release, then updates the Homebrew tap. Triggered by the same
+# `vX.Y.Z` tag that drives publish.yml (pub.dev). The two workflows are
+# independent — this one only touches the Release + tap, never pub.dev.
+#
+# Homebrew publishing is skipped automatically when TAP_TOKEN is not configured.
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+env:
+  HOMEBREW_TAP_REPO: tolo/homebrew-trellis
+
+jobs:
+  version:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Read and verify version
+        id: read
+        run: |
+          # Guard: tag == trellis_cli pubspec version == cliVersion constant (lockstep, ADR-009).
+          PUBSPEC_VERSION=$(grep -m1 '^version:' packages/trellis_cli/pubspec.yaml | sed 's/version:[[:space:]]*//')
+          if [ -z "$PUBSPEC_VERSION" ]; then echo "No version in trellis_cli pubspec.yaml" >&2; exit 1; fi
+          CONSTANT_VERSION=$(grep -m1 "cliVersion" packages/trellis_cli/lib/src/version.dart | sed "s/.*'\\(.*\\)'.*/\\1/")
+          if [ "$PUBSPEC_VERSION" != "$CONSTANT_VERSION" ]; then
+            echo "Version drift: pubspec $PUBSPEC_VERSION != cliVersion $CONSTANT_VERSION" >&2
+            exit 1
+          fi
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$TAG_VERSION" != "$PUBSPEC_VERSION" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match trellis_cli version $PUBSPEC_VERSION" >&2
+            exit 1
+          fi
+          echo "version=$PUBSPEC_VERSION" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build (${{ matrix.target }})
+    needs: version
+    runs-on: ${{ matrix.runs_on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runs_on: macos-15
+            target: macos-arm64
+          - runs_on: macos-15-intel
+            target: macos-x64
+          - runs_on: ubuntu-latest
+            target: linux-x64
+          - runs_on: ubuntu-latest
+            target: linux-arm64
+          - runs_on: windows-latest
+            target: windows-x64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Build release artifact
+        run: dart run tool/build_release.dart
+        env:
+          TRELLIS_RELEASE_TARGET: ${{ matrix.target }}
+
+      # Smoke-test the compiled binary before upload: it must prove the core SSG
+      # loop works with no Dart SDK on PATH. The `blog` template was chosen
+      # because it is fully offline — `create` writes embedded-constant files (no
+      # git clone, no network) and `build` runs entirely on packages compiled
+      # into the binary (no `dart pub get` for the generated project). Verified
+      # locally against the AOT binary from a clean dir outside the workspace.
+      # linux-arm64 is cross-compiled on an x64 runner, so its binary cannot
+      # execute here — skipped; the other four targets cover the AOT code paths.
+      - name: Smoke test (unix)
+        if: runner.os != 'Windows' && matrix.target != 'linux-arm64'
+        run: |
+          set -euo pipefail
+          BIN="$PWD/build/stage/trellis"
+          WORK="$RUNNER_TEMP/smoke"
+          rm -rf "$WORK" && mkdir -p "$WORK"
+          cd "$WORK"
+          VER=$("$BIN" --version)
+          echo "version output: $VER"
+          case "$VER" in
+            *"${GITHUB_REF_NAME#v}"*) : ;;
+            *) echo "--version '$VER' does not contain tag ${GITHUB_REF_NAME#v}" >&2; exit 1 ;;
+          esac
+          "$BIN" create smoke_site --template blog
+          cd smoke_site
+          "$BIN" build
+          test -f output/index.html
+          echo "Smoke test passed: output/index.html produced."
+
+      - name: Smoke test (windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $bin = "$PWD\build\stage\trellis.exe"
+          $work = "$env:RUNNER_TEMP\smoke"
+          Remove-Item -Recurse -Force $work -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $work | Out-Null
+          Set-Location $work
+          $ver = & $bin --version
+          Write-Host "version output: $ver"
+          $tag = $env:GITHUB_REF_NAME.TrimStart('v')
+          if ($ver -notmatch [regex]::Escape($tag)) {
+            Write-Error "--version '$ver' does not contain tag $tag"
+          }
+          & $bin create smoke_site --template blog
+          Set-Location smoke_site
+          & $bin build
+          if (-not (Test-Path 'output/index.html')) { Write-Error 'output/index.html missing' }
+          Write-Host 'Smoke test passed: output/index.html produced.'
+
+      - name: Publish release asset
+        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3
+        with:
+          files: build/trellis-v*-${{ matrix.target }}.*
+
+  checksums:
+    name: Publish aggregate checksums
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release checksum assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          mkdir -p release-checksums
+          gh release download "$TAG_NAME" --pattern '*.sha256' --dir release-checksums
+
+      - name: Build aggregate SHA256SUMS.txt
+        run: |
+          cat release-checksums/*.sha256 | LC_ALL=C sort > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Publish SHA256SUMS.txt
+        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3
+        with:
+          files: SHA256SUMS.txt
+
+  homebrew:
+    name: Update Homebrew tap
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Download platform checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          mkdir -p tap-checksums
+          gh release download "$TAG_NAME" --pattern 'trellis-v*-macos-*.tar.gz.sha256' --dir tap-checksums
+          gh release download "$TAG_NAME" --pattern 'trellis-v*-linux-*.tar.gz.sha256' --dir tap-checksums
+
+      - name: Render formula
+        run: |
+          dart run tool/render_homebrew_formula.dart \
+            --version "${{ needs.version.outputs.version }}" \
+            --repo "${{ github.repository }}" \
+            --checksums-dir tap-checksums \
+            --output trellis.rb
+          cat trellis.rb
+
+      - name: Publish formula to tap
+        env:
+          TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          if [ -z "$TAP_TOKEN" ]; then
+            echo "TAP_TOKEN not configured; skipping Homebrew tap update." >&2
+            exit 0
+          fi
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git clone --depth 1 "https://x-access-token:${TAP_TOKEN}@github.com/${HOMEBREW_TAP_REPO}.git" tap-repo
+          mkdir -p tap-repo/Formula
+          cp trellis.rb tap-repo/Formula/trellis.rb
+          cd tap-repo
+          git add Formula/trellis.rb
+          if git diff --cached --quiet; then
+            echo "Formula already current for ${VERSION}; nothing to push."
+          else
+            git commit -m "trellis ${VERSION}"
+            git push
+          fi

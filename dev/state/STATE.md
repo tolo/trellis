@@ -21,7 +21,8 @@
 ## Published Versions
 
 - **Published on pub.dev: v0.8.2** (all 8 SDK packages, lockstep per ADR-009; verified against the pub.dev API 2026-07-07): `trellis`, `trellis_shelf`, `trellis_dev`, `trellis_cli`, `trellis_css`, `trellis_site`, `trellis_dart_frog`, `trellis_relic`.
-- **v0.9.0 cut locally** (2026-07-07, docs-site engine features + arbor theme + skin-forcing fix) — pubspecs, inter-package constraints, `version.dart`, and hand-written CHANGELOGs all at 0.9.0; per-package `version_test.dart` guards enforce sync. **Pending publish**: push the global `v0.9.0` tag to trigger the OIDC publish workflow.
+- **v0.9.0 published 2026-07-07** (docs-site engine features + arbor theme + skin-forcing fix); docs site live at `www.leafnode.se/trellis/` (the account-level custom domain applies to project pages; `tolo.github.io/trellis/` 301s there).
+- **v0.9.1** (2026-07-07): patch release fixing the theme SASS bridge quoting string params into invalid CSS (serif-fallback fonts, unconstrained layout on every bridge-built theme) + `version_lockstep.sh`/melos `workspaceChangelog` fix.
 - Releases are cut with `tool/version_lockstep.sh` (single `melos version` pass); publish is OIDC tag-triggered (`publish.yml`, global `vX.Y.Z` tag per ADR-009).
 - The 4 `examples/*` packages + root workspace correctly carry `publish_to: none`.
 

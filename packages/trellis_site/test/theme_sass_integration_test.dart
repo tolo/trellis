@@ -173,6 +173,92 @@ body::before { content: \$trellis-hero-title; }
       expect(css, contains(r'content: total #{1 + 1} items;'));
       expect(css, isNot(contains('total 2 items')));
     });
+
+    test('compiled CSS: interpolation-shaped hex-length value is literal, not evaluated (F-A)', () {
+      final config = _generate(
+        siteDir: siteDir,
+        themeDir: themeDir,
+        params: {'skin': 'light', 'hero_title': r'#{9}'},
+        types: {'skin': 'enum', 'hero_title': 'string'},
+      );
+
+      final mainScss = File(p.join(themeDir, 'sass', 'main.scss'))..parent.createSync(recursive: true);
+      mainScss.writeAsStringSync('''
+@import "theme_params";
+body::before { content: \$trellis-hero-title; }
+''');
+
+      final css = TrellisCss.compileSass(mainScss.path, loadPaths: config.sassLoadPaths);
+
+      // `#{9}` is hex-length; the old length-only fast-path evaluated it to `9`.
+      expect(css, contains(r'content: #{9};'));
+      expect(css, isNot(contains('content: 9;')));
+    });
+
+    test('compiled CSS: color-typed interpolation value is literal, not evaluated (F-C)', () {
+      final config = _generate(
+        siteDir: siteDir,
+        themeDir: themeDir,
+        params: {'skin': 'light', 'brand_color': r'#{1 + 1}'},
+        types: {'skin': 'enum', 'brand_color': 'color'},
+      );
+
+      final mainScss = File(p.join(themeDir, 'sass', 'main.scss'))..parent.createSync(recursive: true);
+      mainScss.writeAsStringSync('''
+@import "theme_params";
+a { color: \$trellis-brand-color; }
+''');
+
+      final css = TrellisCss.compileSass(mainScss.path, loadPaths: config.sassLoadPaths);
+
+      // The `color` passthrough must neutralize interpolation, not evaluate it.
+      expect(css, contains(r'color: #{1 + 1};'));
+      expect(css, isNot(contains('color: 2;')));
+    });
+
+    test('compiled CSS: map with a hostile key compiles without breaking the literal (F-B)', () {
+      final config = _generate(
+        siteDir: siteDir,
+        themeDir: themeDir,
+        params: {
+          'skin': 'light',
+          'sizes': <String, dynamic>{'a"#{1+1}': 'x', 'norm': 'y'},
+        },
+        types: {'skin': 'enum', 'sizes': 'map'},
+      );
+
+      final mainScss = File(p.join(themeDir, 'sass', 'main.scss'))..parent.createSync(recursive: true);
+      mainScss.writeAsStringSync('''
+@import "theme_params";
+a { color: red; }
+''');
+
+      // An unescaped `"` in the key aborts the `@import` while parsing the map
+      // literal; a clean compile proves the hostile key was escaped and the map
+      // literal parsed intact.
+      final css = TrellisCss.compileSass(mainScss.path, loadPaths: config.sassLoadPaths);
+      expect(css, contains('color: red;'));
+    });
+
+    test('compiled CSS: multiline param value compiles without aborting (F-D)', () {
+      final config = _generate(
+        siteDir: siteDir,
+        themeDir: themeDir,
+        params: {'skin': 'light', 'notice': 'line1\nline2'},
+        types: {'skin': 'enum', 'notice': 'string'},
+      );
+
+      final mainScss = File(p.join(themeDir, 'sass', 'main.scss'))..parent.createSync(recursive: true);
+      mainScss.writeAsStringSync('''
+@import "theme_params";
+body::before { content: \$trellis-notice; }
+''');
+
+      // A raw newline aborts the SASS compile; the CSS `\a ` escape keeps it compiling.
+      final css = TrellisCss.compileSass(mainScss.path, loadPaths: config.sassLoadPaths);
+      expect(css, contains('line1'));
+      expect(css, contains('line2'));
+    });
   });
 }
 

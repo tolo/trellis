@@ -129,6 +129,14 @@ String _generateSassVariables(Map<String, dynamic> params, Map<String, String> p
 /// `primary_color` → `trellis-primary-color`
 String _toSassName(String paramName) => 'trellis-${paramName.replaceAll('_', '-')}';
 
+/// Matches a genuine CSS hex color literal (`#rgb`, `#rrggbb`, `#rrggbbaa`).
+///
+/// The hex fast-path must gate on this pattern, not string length: a length-only
+/// check (`length == 4 || 7 || 9`) also matched interpolation-shaped values like
+/// `#{9}` (length 4) and passed them through raw, so SASS evaluated them —
+/// defeating the interpolation-injection defense the escaped branch provides.
+final _hexColorPattern = RegExp(r'^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$');
+
 /// Converts a param value to a SASS value string.
 ///
 /// String values are emitted via SASS interpolation of a quoted literal —
@@ -141,24 +149,38 @@ String _toSassName(String paramName) => 'trellis-${paramName.replaceAll('_', '-'
 /// what the theme authors would have written by hand. Unlike the legacy global
 /// `unquote()`, interpolation emits no `global-builtin` deprecation warning
 /// (that builtin is removed in Dart Sass 3.0.0).
+///
+/// Values come from semi-trusted theme.yaml / site config. Every branch that
+/// emits raw (unescaped) — the hex fast-path and the `color` type hint —
+/// neutralizes SASS interpolation so a `#{...}` value cannot be *evaluated*
+/// (silent arbitrary-expression evaluation is the surprising hazard). Structural
+/// characters (`;{}`) in a value are not neutralized here: they are build-time
+/// author config, not untrusted input, and a value carrying them fails the
+/// compile loudly rather than silently — a broader value-validation pass is
+/// tracked as tech debt (TD-011).
 String _toSassValue(dynamic value, String type) {
   if (value == null) return 'null';
   if (value is bool) return value.toString();
   if (value is num) return value.toString();
   if (value is String) {
-    // Colors (hex): pass through unquoted
-    if (value.startsWith('#') && (value.length == 4 || value.length == 7 || value.length == 9)) {
-      return value;
-    }
-    // Color type hint: pass through unquoted (named colors, rgb(), etc.)
-    if (type == 'color') return value;
+    // Genuine hex colors pass through unquoted (matched by pattern, not length,
+    // so interpolation-shaped values like `#{9}` don't slip through raw).
+    if (_hexColorPattern.hasMatch(value)) return value;
+    // Color type hint: pass named colors / rgb() / var() / etc. through
+    // unquoted, but neutralize an interpolation marker so a `#{...}` value is
+    // emitted literally instead of being evaluated.
+    if (type == 'color') return value.contains('#{') ? '#{"${_escapeSassString(value)}"}' : value;
     return '#{"${_escapeSassString(value)}"}';
   }
   if (value is List) {
     return '(${value.map((v) => _toSassValue(v, 'string')).join(', ')})';
   }
   if (value is Map) {
-    final entries = value.entries.map((e) => '"${e.key}": ${_toSassValue(e.value, 'string')}');
+    // Keys are escaped too — an unescaped `"` breaks the map literal and `#{`
+    // in a key would inject interpolation (same threat as string values).
+    final entries = value.entries.map(
+      (e) => '"${_escapeSassString(e.key.toString())}": ${_toSassValue(e.value, 'string')}',
+    );
     return '(${entries.join(', ')})';
   }
   return '#{"${_escapeSassString(value.toString())}"}';

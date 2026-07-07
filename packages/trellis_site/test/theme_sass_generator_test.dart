@@ -46,6 +46,43 @@ void main() {
       expect(result, contains(r'$trellis-notice: #{"line1\a line2"} !default;'));
     });
 
+    // Follow-up review hardening: every branch that can emit a raw (unescaped)
+    // value must not let an interpolation-shaped value slip through.
+
+    test('interpolation-shaped value of hex length is escaped, not passed raw (F-A)', () {
+      // `#{9}` is length 4 like a 3-digit hex — it must NOT take the hex fast-path.
+      final result = _generateSass({'v': '#{9}'}, {'v': 'string'});
+      expect(result, contains(r'$trellis-v: #{"\#{9}"} !default;'));
+      expect(result, isNot(contains(r'$trellis-v: #{9} !default;')));
+    });
+
+    test('genuine hex still passes through unquoted regardless of type (F-A guard)', () {
+      final result = _generateSass({'v': '#abc'}, {'v': 'string'});
+      expect(result, contains(r'$trellis-v: #abc !default;'));
+    });
+
+    test('color-typed value with interpolation marker is neutralized (F-C)', () {
+      final result = _generateSass({'brand': '#{1 + 1}'}, {'brand': 'color'});
+      expect(result, contains(r'$trellis-brand: #{"\#{1 + 1}"} !default;'));
+      expect(result, isNot(contains(r'$trellis-brand: #{1 + 1} !default;')));
+    });
+
+    test('color-typed named/function values still pass through unquoted (F-C guard)', () {
+      final result = _generateSass({'brand': 'rgb(0, 0, 0)', 'accent': 'red'}, {'brand': 'color', 'accent': 'color'});
+      expect(result, contains(r'$trellis-brand: rgb(0, 0, 0) !default;'));
+      expect(result, contains(r'$trellis-accent: red !default;'));
+    });
+
+    test('map key with double quote / interpolation marker is escaped (F-B)', () {
+      final result = _generateSass(
+        {
+          'sizes': <String, dynamic>{'a"#{1+1}': 'x'},
+        },
+        {'sizes': 'map'},
+      );
+      expect(result, contains(r'"a\"\#{1+1}": #{"x"}'));
+    });
+
     test('boolean true param generates unquoted true', () {
       final result = _generateSass({'show_powered_by': true}, {'show_powered_by': 'boolean'});
       expect(result, contains(r'$trellis-show-powered-by: true !default;'));

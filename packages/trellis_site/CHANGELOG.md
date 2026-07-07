@@ -4,7 +4,7 @@
 
 ### Fixed
 
-- **Theme SASS bridge hardening** (follow-up review of the 0.9.1 fix): string params are now emitted via SASS interpolation (`#{"..."}`) instead of the deprecated global `unquote()` (removed in Dart Sass 3.0.0), eliminating the `global-builtin` deprecation warnings 0.9.1 introduced; param values containing `#{...}` are neutralized to literal text instead of being evaluated as SASS interpolation; multiline (newline-containing) param values no longer abort the SASS compile (escaped as CSS `\a`).
+- **Theme SASS bridge hardening** (follow-up review of the 0.9.1 fix): string params are now emitted via SASS interpolation (`#{"..."}`) instead of the deprecated global `unquote()` (removed in Dart Sass 3.0.0), eliminating the `global-builtin` deprecation warnings 0.9.1 introduced. A SASS interpolation marker (`#{...}`) in a param value is neutralized to literal text — never evaluated — across **every** emit path: string values, the hex-color fast-path (now gated on a real hex pattern rather than string length, so an interpolation-shaped value like `#{9}` can no longer slip through raw and be evaluated), `color`-typed values, and map keys. Multiline (newline-containing) param values no longer abort the SASS compile (escaped as CSS `\a`). (Structural characters `;{}` in a value remain a separate, tracked robustness limitation — see TD-011.)
 
 ## 0.9.1
 

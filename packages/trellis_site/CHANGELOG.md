@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.1
+
+### Fixed
+
+- **Theme SASS bridge: string params compiled into invalid quoted CSS values.** String-typed theme params (`font_family`, `max_width`, ...) were written to the generated `_theme_params.scss` as quoted SASS strings; the bridge loads before the theme's `_variables.scss`, so the quoted value won and compiled into invalid CSS (`font-family: "system-ui, ..."` — ignored by browsers, falling back to serif; `max-width: "1200px"` — dropped, unconstraining the layout). Affected every theme built with a params bridge (arbor and verdant alike). The generator now emits values via `unquote()` with escaping for embedded quotes/backslashes.
+
 ## 0.9.0
 
 ### Added

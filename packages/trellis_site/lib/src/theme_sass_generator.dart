@@ -131,14 +131,16 @@ String _toSassName(String paramName) => 'trellis-${paramName.replaceAll('_', '-'
 
 /// Converts a param value to a SASS value string.
 ///
-/// String values are wrapped in SASS's legacy global `unquote()` rather than
-/// emitted as a quoted literal. A quoted `!default` value (e.g.
-/// `"system-ui, sans-serif"`) wins over the theme's own unquoted
+/// String values are emitted via SASS interpolation of a quoted literal —
+/// `#{"<escaped>"}` — rather than as a bare quoted literal. A quoted `!default`
+/// value (e.g. `"system-ui, sans-serif"`) wins over the theme's own unquoted
 /// `_variables.scss` default (since the bridge partial loads first) and
-/// produces invalid CSS like `font-family: "system-ui, sans-serif"`. Routing
-/// through `unquote()` keeps the variable a SASS string — so it still
-/// satisfies `!default` overriding — but its value is unquoted, matching what
-/// the theme authors would have written by hand.
+/// produces invalid CSS like `font-family: "system-ui, sans-serif"`.
+/// Interpolating the quoted string yields an *unquoted* SASS string — so it
+/// still satisfies `!default` overriding — but its value is unquoted, matching
+/// what the theme authors would have written by hand. Unlike the legacy global
+/// `unquote()`, interpolation emits no `global-builtin` deprecation warning
+/// (that builtin is removed in Dart Sass 3.0.0).
 String _toSassValue(dynamic value, String type) {
   if (value == null) return 'null';
   if (value is bool) return value.toString();
@@ -150,7 +152,7 @@ String _toSassValue(dynamic value, String type) {
     }
     // Color type hint: pass through unquoted (named colors, rgb(), etc.)
     if (type == 'color') return value;
-    return 'unquote("${_escapeSassString(value)}")';
+    return '#{"${_escapeSassString(value)}"}';
   }
   if (value is List) {
     return '(${value.map((v) => _toSassValue(v, 'string')).join(', ')})';
@@ -159,14 +161,30 @@ String _toSassValue(dynamic value, String type) {
     final entries = value.entries.map((e) => '"${e.key}": ${_toSassValue(e.value, 'string')}');
     return '(${entries.join(', ')})';
   }
-  return 'unquote("${_escapeSassString(value.toString())}")';
+  return '#{"${_escapeSassString(value.toString())}"}';
 }
 
 /// Escapes a string for embedding inside a double-quoted SASS string literal.
 ///
-/// Backslashes must be escaped first so a pre-existing `\"` in the input
-/// isn't double-escaped into `\\"`.
-String _escapeSassString(String value) => value.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+/// Order matters:
+/// - Backslashes are escaped first so a pre-existing `\"` in the input isn't
+///   double-escaped into `\\"`, and so the escapes added below aren't
+///   themselves re-escaped.
+/// - `#{` is neutralized to `\#{` so a param value like `foo #{1+1}` is emitted
+///   as literal text instead of being evaluated as a SASS interpolation
+///   expression (values come from semi-trusted theme.yaml/site config; silent
+///   evaluation or an unclosed `#{` breaking the build is a robustness hazard).
+/// - Double quotes are escaped so they don't terminate the literal.
+/// - Raw newlines/carriage returns are illegal inside a SASS string literal
+///   (they abort compilation with "Expected \""); a CSS `\a` escape keeps a
+///   multiline param value compiling as literal text.
+String _escapeSassString(String value) => value
+    .replaceAll(r'\', r'\\')
+    .replaceAll(r'#{', r'\#{')
+    .replaceAll('"', r'\"')
+    .replaceAll('\r\n', r'\a ')
+    .replaceAll('\n', r'\a ')
+    .replaceAll('\r', r'\a ');
 
 /// Generates CSS custom property declarations from merged theme params.
 ///

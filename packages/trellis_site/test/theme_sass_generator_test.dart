@@ -21,19 +21,29 @@ void main() {
       expect(result, contains(r'$trellis-bg: #ff000080 !default;'));
     });
 
-    test('string param generates unquote()-wrapped value', () {
+    test('string param generates interpolated value', () {
       final result = _generateSass({'font_family': 'system-ui, sans-serif'}, {'font_family': 'string'});
-      expect(result, contains(r'$trellis-font-family: unquote("system-ui, sans-serif") !default;'));
+      expect(result, contains(r'$trellis-font-family: #{"system-ui, sans-serif"} !default;'));
     });
 
     test('string param with double quote escapes it', () {
       final result = _generateSass({'label': 'say "hi"'}, {'label': 'string'});
-      expect(result, contains(r'$trellis-label: unquote("say \"hi\"") !default;'));
+      expect(result, contains(r'$trellis-label: #{"say \"hi\""} !default;'));
     });
 
     test('string param with backslash escapes it before quotes', () {
       final result = _generateSass({'path': r'C:\themes\verdant'}, {'path': 'string'});
-      expect(result, contains(r'$trellis-path: unquote("C:\\themes\\verdant") !default;'));
+      expect(result, contains(r'$trellis-path: #{"C:\\themes\\verdant"} !default;'));
+    });
+
+    test('string param with interpolation marker neutralizes it', () {
+      final result = _generateSass({'label': 'total #{1+1} items'}, {'label': 'string'});
+      expect(result, contains(r'$trellis-label: #{"total \#{1+1} items"} !default;'));
+    });
+
+    test('string param with newline escapes it to a CSS newline', () {
+      final result = _generateSass({'notice': 'line1\nline2'}, {'notice': 'string'});
+      expect(result, contains(r'$trellis-notice: #{"line1\a line2"} !default;'));
     });
 
     test('boolean true param generates unquoted true', () {

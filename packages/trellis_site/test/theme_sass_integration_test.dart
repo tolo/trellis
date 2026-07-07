@@ -37,7 +37,10 @@ void main() {
       expect(sassFile.existsSync(), isTrue);
       final content = sassFile.readAsStringSync();
       expect(content, contains(r'$trellis-primary-color: #2563eb !default;'));
-      expect(content, contains(r'$trellis-font-family: unquote("system-ui, sans-serif") !default;'));
+      expect(content, contains(r'$trellis-font-family: #{"system-ui, sans-serif"} !default;'));
+      // Guard the deprecation-free emission: the legacy global unquote() builtin
+      // (removed in Dart Sass 3.0.0, warns today) must not reappear.
+      expect(content, isNot(contains('unquote(')));
       expect(content, contains(r'$trellis-show-powered-by: true !default;'));
     });
 
@@ -148,6 +151,27 @@ body::before { content: \$trellis-hero-title; }
       final css = TrellisCss.compileSass(mainScss.path, loadPaths: config.sassLoadPaths);
 
       expect(css, contains('content: Say "hello" to Trellis;'));
+    });
+
+    test('compiled CSS: value containing a SASS interpolation marker is emitted literally, not evaluated', () {
+      final config = _generate(
+        siteDir: siteDir,
+        themeDir: themeDir,
+        params: {'skin': 'light', 'hero_title': r'total #{1 + 1} items'},
+        types: {'skin': 'enum', 'hero_title': 'string'},
+      );
+
+      final mainScss = File(p.join(themeDir, 'sass', 'main.scss'))..parent.createSync(recursive: true);
+      mainScss.writeAsStringSync('''
+@import "theme_params";
+body::before { content: \$trellis-hero-title; }
+''');
+
+      final css = TrellisCss.compileSass(mainScss.path, loadPaths: config.sassLoadPaths);
+
+      // The `#{1 + 1}` stays literal text — it must NOT evaluate to `total 2 items`.
+      expect(css, contains(r'content: total #{1 + 1} items;'));
+      expect(css, isNot(contains('total 2 items')));
     });
   });
 }

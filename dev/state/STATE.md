@@ -20,8 +20,8 @@
 
 ## Published Versions
 
-- **All 8 SDK packages published on pub.dev at v0.8.2** under lockstep versioning (ADR-009): `trellis`, `trellis_shelf`, `trellis_dev`, `trellis_cli`, `trellis_css`, `trellis_site`, `trellis_dart_frog`, `trellis_relic`. Verified against the pub.dev API 2026-07-07.
-- Local working tree matches: every `pubspec.yaml` at 0.8.2, `version.dart` constants synced (commit 96267dc; per-package `version_test.dart` guards fail CI on drift). The docs-site engine features sit under **Unreleased** in `trellis_site`/`trellis_cli` CHANGELOGs, awaiting the next lockstep bump via `tool/version_lockstep.sh`.
+- **Published on pub.dev: v0.8.2** (all 8 SDK packages, lockstep per ADR-009; verified against the pub.dev API 2026-07-07): `trellis`, `trellis_shelf`, `trellis_dev`, `trellis_cli`, `trellis_css`, `trellis_site`, `trellis_dart_frog`, `trellis_relic`.
+- **v0.9.0 cut locally** (2026-07-07, docs-site engine features + arbor theme + skin-forcing fix) — pubspecs, inter-package constraints, `version.dart`, and hand-written CHANGELOGs all at 0.9.0; per-package `version_test.dart` guards enforce sync. **Pending publish**: push the global `v0.9.0` tag to trigger the OIDC publish workflow.
 - Releases are cut with `tool/version_lockstep.sh` (single `melos version` pass); publish is OIDC tag-triggered (`publish.yml`, global `vX.Y.Z` tag per ADR-009).
 - The 4 `examples/*` packages + root workspace correctly carry `publish_to: none`.
 

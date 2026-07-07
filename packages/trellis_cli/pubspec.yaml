@@ -1,5 +1,5 @@
 name: trellis_cli
-version: 0.8.2
+version: 0.9.0
 description: >-
   CLI tool for the Trellis template engine — project scaffolding, static site
   build, and local development server.
@@ -14,8 +14,8 @@ dependencies:
   path: ^1.9.0
   shelf: ^1.4.0
   shelf_static: ^1.1.0
-  trellis_css: ^0.8.2
-  trellis_site: ^0.8.2
+  trellis_css: ^0.9.0
+  trellis_site: ^0.9.0
 
 dev_dependencies:
   lints: ^6.0.0

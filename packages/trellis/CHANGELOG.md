@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.0
+
+### Changed
+
+- Lockstep version bump to keep all Trellis SDK packages on a single shared version. No functional changes in this package.
+
 All notable changes to **trellis** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 

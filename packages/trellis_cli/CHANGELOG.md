@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- `trellis build` no longer prints Dart Sass's `@import` deprecation warning. The generated theme bridge and theme partials deliberately use `@import` (the `@use` migration is tracked as TD-006); the build now silences that one deprecation so build output stays clean. Other Sass warnings are unaffected.
+
 ## 0.9.1
 
 ### Changed

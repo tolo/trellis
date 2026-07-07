@@ -152,7 +152,12 @@ Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? the
       final outPath = p.join(config.outputDir, p.setExtension(relative, '.css'));
       Directory(p.dirname(outPath)).createSync(recursive: true);
 
-      final css = TrellisCss.compileSass(file.path, outputStyle: OutputStyle.compressed, loadPaths: loadPaths);
+      final css = TrellisCss.compileSass(
+        file.path,
+        outputStyle: OutputStyle.compressed,
+        loadPaths: loadPaths,
+        silenceImportDeprecation: true,
+      );
       File(outPath).writeAsStringSync(css);
 
       if (verbose) stdout.writeln('  Compiled ${file.path} → $outPath');
@@ -210,7 +215,12 @@ Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? the
           '@import "$themeFileAbsolute";\n',
         );
 
-        final css = TrellisCss.compileSass(wrapperPath, outputStyle: OutputStyle.compressed, loadPaths: loadPaths);
+        final css = TrellisCss.compileSass(
+          wrapperPath,
+          outputStyle: OutputStyle.compressed,
+          loadPaths: loadPaths,
+          silenceImportDeprecation: true,
+        );
         File(outPath).writeAsStringSync(css);
 
         if (verbose) stdout.writeln('  Compiled ${file.path} → $outPath');

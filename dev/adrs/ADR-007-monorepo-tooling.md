@@ -83,7 +83,7 @@ melos:
   repository: https://github.com/tolo/trellis
   command:
     version:
-      workspaceChangelog: true
+      workspaceChangelog: false # root CHANGELOG.md was removed at SDK Phase 1; per-package changelogs are hand-written (ADR-009)
       linkToCommits: true
   scripts:
     analyze:

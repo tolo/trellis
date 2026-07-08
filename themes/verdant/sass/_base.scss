@@ -15,8 +15,8 @@ body {
   font-family: $trellis-font-family;
   font-size: $trellis-font-size-base;
   line-height: $trellis-line-height;
-  color: $trellis-text-color;
-  background-color: $trellis-bg-color;
+  color: var(--trellis-text, #{$trellis-text-color});
+  background-color: var(--trellis-bg, #{$trellis-bg-color});
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -31,7 +31,7 @@ h5,
 h6 {
   font-family: $trellis-heading-font;
   line-height: $trellis-heading-line-height;
-  color: $trellis-text-color;
+  color: var(--trellis-text, #{$trellis-text-color});
   margin-top: $trellis-space-xl;
   margin-bottom: $trellis-space-sm;
   font-weight: 700;
@@ -51,12 +51,12 @@ p {
 // ── Links ────────────────────────────────────────────────────────────────────
 
 a {
-  color: $trellis-primary-color;
+  color: var(--trellis-primary, #{$trellis-primary-color});
   text-decoration: underline;
   text-underline-offset: 2px;
 
   &:hover {
-    color: $trellis-accent-color;
+    color: var(--trellis-accent, #{$trellis-accent-color});
     text-decoration: none;
   }
 }
@@ -103,7 +103,7 @@ small {
 
 hr {
   border: none;
-  border-top: 1px solid $trellis-border-color;
+  border-top: 1px solid var(--trellis-border, #{$trellis-border-color});
   margin: $trellis-space-xl 0;
 }
 
@@ -120,8 +120,8 @@ img {
 blockquote {
   margin: $trellis-space-lg 0;
   padding: $trellis-space-sm $trellis-space-lg;
-  border-left: 4px solid $trellis-primary-color;
-  background-color: $trellis-surface-color;
+  border-left: 4px solid var(--trellis-primary, #{$trellis-primary-color});
+  background-color: var(--trellis-surface, #{$trellis-surface-color});
   border-radius: 0 $trellis-border-radius $trellis-border-radius 0;
 
   p:last-child {
@@ -142,10 +142,10 @@ th,
 td {
   padding: $trellis-space-sm $trellis-space-md;
   text-align: left;
-  border-bottom: 1px solid $trellis-border-color;
+  border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
 }
 
 th {
   font-weight: 700;
-  background-color: $trellis-surface-color;
+  background-color: var(--trellis-surface, #{$trellis-surface-color});
 }

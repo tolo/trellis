@@ -30,8 +30,8 @@ $bp-lg: 1024px;  // Desktop
   position: sticky;
   top: 0;
   z-index: 100;
-  background-color: $trellis-bg-color;
-  border-bottom: 1px solid $trellis-border-color;
+  background-color: var(--trellis-bg, #{$trellis-bg-color});
+  border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
 
   .container {
     display: flex;
@@ -45,12 +45,12 @@ $bp-lg: 1024px;  // Desktop
 .site-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: $trellis-text-color;
+  color: var(--trellis-text, #{$trellis-text-color});
   text-decoration: none;
   flex-shrink: 0;
 
   &:hover {
-    color: $trellis-primary-color;
+    color: var(--trellis-primary, #{$trellis-primary-color});
   }
 }
 
@@ -65,10 +65,10 @@ $bp-lg: 1024px;  // Desktop
 // ── Site footer ──────────────────────────────────────────────────────────────
 
 .site-footer {
-  border-top: 1px solid $trellis-border-color;
+  border-top: 1px solid var(--trellis-border, #{$trellis-border-color});
   padding-top: $trellis-space-xl;
   padding-bottom: $trellis-space-xl;
-  color: $trellis-muted-color;
+  color: var(--trellis-muted, #{$trellis-muted-color});
   font-size: $trellis-font-size-sm;
 }
 
@@ -91,7 +91,7 @@ $bp-lg: 1024px;  // Desktop
 .section-header {
   margin-bottom: $trellis-space-xl;
   padding-bottom: $trellis-space-lg;
-  border-bottom: 1px solid $trellis-border-color;
+  border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
 
   .section-title {
     margin-top: 0;
@@ -99,7 +99,7 @@ $bp-lg: 1024px;  // Desktop
   }
 
   .section-description {
-    color: $trellis-muted-color;
+    color: var(--trellis-muted, #{$trellis-muted-color});
     font-size: 1.05rem;
 
     p:last-child {
@@ -115,7 +115,7 @@ $bp-lg: 1024px;  // Desktop
 
   .taxonomy-breadcrumb {
     font-size: $trellis-font-size-sm;
-    color: $trellis-muted-color;
+    color: var(--trellis-muted, #{$trellis-muted-color});
     margin-bottom: $trellis-space-xs;
   }
 

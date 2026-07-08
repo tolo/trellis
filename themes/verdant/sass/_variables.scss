@@ -24,8 +24,13 @@ $trellis-font-family: system-ui, -apple-system, sans-serif !default;
 $trellis-heading-font-family: null !default; // null inherits body font
 $trellis-code-font-family: ui-monospace, SFMono-Regular, monospace !default;
 
-// Derived: heading font with fallback to body font
-$trellis-heading-font: if($trellis-heading-font-family, $trellis-heading-font-family, $trellis-font-family);
+// Derived: heading font with fallback to body font. (@if avoids the deprecated
+// if() builtin; @if shares the enclosing/root scope, so this updates the global
+// variable without !global.)
+$trellis-heading-font: $trellis-font-family;
+@if $trellis-heading-font-family {
+  $trellis-heading-font: $trellis-heading-font-family;
+}
 
 // Base font sizes and line heights
 $trellis-font-size-base: 1rem !default;

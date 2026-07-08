@@ -9,8 +9,8 @@
   left: $trellis-space-md;
   z-index: 200;
   padding: $trellis-space-sm $trellis-space-md;
-  background-color: $trellis-primary-color;
-  color: $trellis-bg-color;
+  background-color: var(--trellis-primary, #{$trellis-primary-color});
+  color: var(--trellis-bg, #{$trellis-bg-color});
   font-weight: 700;
   font-size: $trellis-font-size-sm;
   border-radius: $trellis-border-radius;
@@ -19,7 +19,7 @@
 
   &:focus {
     top: $trellis-space-md;
-    outline: 2px solid $trellis-bg-color;
+    outline: 2px solid var(--trellis-bg, #{$trellis-bg-color});
     outline-offset: 2px;
   }
 }
@@ -43,7 +43,7 @@
 // pointer users don't see unwanted rings.
 
 :focus-visible {
-  outline: 2px solid $trellis-primary-color;
+  outline: 2px solid var(--trellis-primary, #{$trellis-primary-color});
   outline-offset: 3px;
   border-radius: $trellis-border-radius;
 }

@@ -6,18 +6,18 @@
 code {
   font-family: $trellis-code-font-family;
   font-size: 0.875em;
-  background-color: $trellis-surface-color;
-  color: $trellis-text-color;
+  background-color: var(--trellis-surface, #{$trellis-surface-color});
+  color: var(--trellis-text, #{$trellis-text-color});
   padding: 0.15em 0.4em;
   border-radius: $trellis-border-radius;
-  border: 1px solid $trellis-border-color;
+  border: 1px solid var(--trellis-border, #{$trellis-border-color});
 }
 
 // ── Code blocks ───────────────────────────────────────────────────────────────
 
 pre {
-  background-color: $trellis-surface-color;
-  border: 1px solid $trellis-border-color;
+  background-color: var(--trellis-surface, #{$trellis-surface-color});
+  border: 1px solid var(--trellis-border, #{$trellis-border-color});
   border-radius: $trellis-border-radius;
   padding: $trellis-space-lg;
   overflow-x: auto;
@@ -96,10 +96,10 @@ pre code {
 kbd {
   font-family: $trellis-code-font-family;
   font-size: 0.875em;
-  background-color: $trellis-surface-color;
-  color: $trellis-text-color;
+  background-color: var(--trellis-surface, #{$trellis-surface-color});
+  color: var(--trellis-text, #{$trellis-text-color});
   padding: 0.15em 0.4em;
   border-radius: $trellis-border-radius;
-  border: 1px solid $trellis-border-color;
-  box-shadow: 0 1px 0 $trellis-border-color;
+  border: 1px solid var(--trellis-border, #{$trellis-border-color});
+  box-shadow: 0 1px 0 var(--trellis-border, #{$trellis-border-color});
 }

@@ -122,7 +122,10 @@ params:
   syntax_highlighting:
     type: boolean
     default: true
-    description: Enable syntax highlighting for code blocks via Prism.js
+    description: >-
+      Ship Prism-compatible token color styles for code blocks. Verdant bundles
+      no client-side highlighter (no CDN, no runtime JS) — add a self-hosted one
+      to activate the colors. Arbor is the sibling theme with a vendored highlighter.
 
   # === Blog-Specific Params (10) ===
 

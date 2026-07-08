@@ -45,13 +45,13 @@
         rel="alternate" type="application/rss+xml"
         title="RSS Feed" tl:attr="href=${site.feeds.rss}">
 
-  <!-- Syntax highlighting via Prism.js (CDN) — controlled by syntax_highlighting param.
-       Only the JS is loaded; token colors are provided by the theme's _code.scss. -->
-  <script tl:if="${theme.syntax_highlighting}"
-          src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" defer></script>
-  <script tl:if="${theme.syntax_highlighting}"
-          src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"
-          defer></script>
+  <!-- Verdant is the minimal, content-first blog theme and ships no client-side
+       highlighter — deliberately no external/runtime JS dependency (a CDN would
+       break the pure-Dart, no-external-deps, offline-capable static-site model).
+       Its _code.scss styles the Prism `.token.*` classes, so a site that wants
+       highlighted code can add a self-hosted highlighter and pick up the theme's
+       token colors — no CDN. (Arbor, the docs sibling, is the theme that vendors a
+       full highlighter; it is the one that lists `syntax-highlighting` as a feature.) -->
 
   <!-- Extra head slot: child layouts or site override can inject additional tags -->
   <meta tl:define="head-extra">

@@ -139,6 +139,9 @@ params:
 
 `null` defaults are emitted as `initial` in CSS custom property output (e.g. `--trellis-footer-text: initial;`).
 
+> String params are emitted unquoted (via `#{"…"}` interpolation), so font stacks and lengths
+> are usable directly as CSS values; `"`/`\` are escaped and `#{…}` is never evaluated.
+
 
 ## The Params System
 

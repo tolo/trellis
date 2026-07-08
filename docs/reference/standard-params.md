@@ -133,12 +133,19 @@ In templates: `${theme.primary_color}` (returns the hex string)
 
 ### `string`
 
-A free-form string. Font stacks, dimensions, and display text use this type. Emitted as a SASS variable and CSS custom property (unless `null`).
+A free-form string — font stacks, dimensions, and display text all use this type. Emitted as a SASS variable and a CSS custom property (unless `null`).
 
 ```yaml
 font_family: "system-ui, -apple-system, sans-serif"
+max_width: "800px"
 heading_font_family: null    # null omitted from CSS output
 ```
+
+The SASS variable is emitted **unquoted**: the generator interpolates the value (`#{"…"}`) rather than writing a bare quoted literal, so a theme can use the variable directly (`font-family: $trellis-font-family`, `max-width: $trellis-max-width`) and get valid CSS. (A quoted `"800px"` would win the bridge's `!default` and compile to the invalid `max-width: "800px"`, which browsers drop.) Embedded `"` and `\` are escaped, and a SASS interpolation marker `#{…}` in a value is emitted as literal text — never evaluated. Avoid the structural characters `;`, `{`, `}` in a value; they are not neutralized and fail the SASS compile (tracked as TD-011).
+
+In SASS: `$trellis-font-family: #{"system-ui, -apple-system, sans-serif"} !default;` (compiles to the unquoted `system-ui, -apple-system, sans-serif`)
+In CSS: `--trellis-font-family: system-ui, -apple-system, sans-serif;`
+In templates: `${theme.font_family}` (returns the raw string)
 
 ### `boolean`
 

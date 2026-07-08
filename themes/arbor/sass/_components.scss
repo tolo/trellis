@@ -20,7 +20,8 @@
     border-radius: $trellis-border-radius;
     transition: color 0.15s ease, background-color 0.15s ease;
 
-    &:hover {
+    &:hover,
+    &:focus-visible {
       color: var(--trellis-primary, #{$trellis-primary-color});
       background-color: var(--trellis-surface, #{$trellis-surface-color});
     }
@@ -368,34 +369,54 @@
 // ── Hero (home) ──────────────────────────────────────────────────────────────
 
 .hero {
-  padding: $trellis-space-2xl 0;
+  padding: $trellis-space-3xl 0 $trellis-space-2xl;
   margin-bottom: $trellis-space-2xl;
   border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
 
+  // A short brand-colored rule sits above the title as a quiet "eyebrow".
+  &::before {
+    content: '';
+    display: block;
+    width: 2.5rem;
+    height: 3px;
+    border-radius: 3px;
+    margin-bottom: $trellis-space-lg;
+    background-color: var(--trellis-primary, #{$trellis-primary-color});
+  }
+
   h1 {
-    font-size: 2.5rem;
+    font-size: 2.75rem;
+    letter-spacing: -0.025em;
     margin-bottom: $trellis-space-md;
 
-    @media (min-width: $bp-sm) { font-size: 3rem; }
+    @media (min-width: $bp-sm) { font-size: 3.25rem; }
   }
 
   .hero-description {
-    font-size: 1.15rem;
+    font-size: 1.2rem;
+    line-height: 1.5;
     color: var(--trellis-muted, #{$trellis-muted-color});
     margin-bottom: $trellis-space-lg;
     max-width: 640px;
   }
 
   .hero-cta {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: $trellis-space-xs;
     padding: $trellis-space-sm $trellis-space-lg;
     background-color: var(--trellis-primary, #{$trellis-primary-color});
     color: var(--trellis-bg, #{$trellis-bg-color});
     font-weight: 600;
     text-decoration: none;
     border-radius: $trellis-border-radius;
+    transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 
-    &:hover { background-color: var(--trellis-accent, #{$trellis-accent-color}); }
+    &:hover {
+      background-color: var(--trellis-accent, #{$trellis-accent-color});
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px -8px var(--trellis-primary, #{$trellis-primary-color});
+    }
   }
 }
 
@@ -414,15 +435,22 @@
 }
 
 .doc-card {
+  position: relative;
   padding: $trellis-space-lg;
   border: 1px solid var(--trellis-border, #{$trellis-border-color});
   border-radius: $trellis-border-radius;
+  background-color: var(--trellis-bg, #{$trellis-bg-color});
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 
-  &:hover { border-color: var(--trellis-primary, #{$trellis-primary-color}); }
+  &:hover {
+    border-color: var(--trellis-primary, #{$trellis-primary-color});
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px -16px var(--trellis-primary, #{$trellis-primary-color});
+  }
 
   .doc-card-title {
     margin: 0 0 $trellis-space-xs;
-    font-size: 1.15rem;
+    font-size: 1.2rem;
 
     a { color: var(--trellis-text, #{$trellis-text-color}); text-decoration: none; &:hover { color: var(--trellis-primary, #{$trellis-primary-color}); } }
   }

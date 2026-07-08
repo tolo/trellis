@@ -47,9 +47,11 @@ h6 {
   scroll-margin-top: 5rem;
 }
 
-h1 { font-size: 2rem; margin-top: 0; }
-h2 { font-size: 1.5rem; }
-h3 { font-size: 1.25rem; }
+// Serif display sizes read best with a touch of negative tracking; smaller
+// headings stay at normal tracking for legibility.
+h1 { font-size: 2.25rem; margin-top: 0; letter-spacing: -0.021em; }
+h2 { font-size: 1.6rem; letter-spacing: -0.014em; }
+h3 { font-size: 1.28rem; letter-spacing: -0.006em; }
 h4 { font-size: 1.125rem; }
 h5,
 h6 { font-size: 1rem; }

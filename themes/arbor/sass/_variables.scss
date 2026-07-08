@@ -23,12 +23,16 @@ $trellis-border-color: #e2e6e2 !default;  // borders, dividers
 // ── Typography ───────────────────────────────────────────────────────────────
 
 $trellis-font-family: system-ui, -apple-system, sans-serif !default;
-$trellis-heading-font-family: null !default; // null inherits body font
+// Arbor's identity: a system-serif heading stack (no web fonts, no CDN) paired
+// with the sans body and mono code. Quote-free names sidestep the SASS-bridge
+// value escaping. Set heading_font_family: null in theme_params to inherit the
+// body font instead (the standard "null = inherit body" contract still holds).
+$trellis-heading-font-family: Charter, Cambria, Georgia, ui-serif, serif !default;
 $trellis-code-font-family: ui-monospace, SFMono-Regular, monospace !default;
 
-// Derived: heading font with fallback to body font. (@if avoids the deprecated
-// if() builtin function; @if shares the enclosing/root scope, so this updates the
-// global variable without !global.)
+// Derived: heading font, falling back to the body font when the family is unset.
+// (@if avoids the deprecated if() builtin function; @if shares the enclosing/root
+// scope, so this updates the global variable without !global.)
 $trellis-heading-font: $trellis-font-family;
 @if $trellis-heading-font-family {
   $trellis-heading-font: $trellis-heading-font-family;

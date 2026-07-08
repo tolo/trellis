@@ -10,7 +10,7 @@ JavaScript-free collapsible mobile sidebar.
 Arbor is a sibling of the `verdant` blog theme and shares its conventions
 (manifest shape, SASS bridge, `tl:extends`/`tl:define` layout inheritance). It
 diverges on exactly one axis: the client-side highlighter and search script are
-**vendored, same-origin, SRI-pinned assets — never CDN-loaded** (see
+**vendored, same-origin assets — never CDN-loaded** (see
 [`VENDORED.md`](VENDORED.md)).
 
 ## Features
@@ -22,8 +22,8 @@ diverges on exactly one axis: the client-side highlighter and search script are
 - **Prev/next page navigation** from `${page.prev}`/`${page.next}` (renders when
   those neighbors are available).
 - **Vendored syntax highlighting** — Prism 1.29.0 core + `dart`, `markup`/`html`,
-  `css`, `yaml`, `bash` grammars, each with a per-file SRI hash. No CDN, no npm,
-  no autoloader.
+  `css`, `yaml`, `bash` grammars, served same-origin. No CDN, no npm, no
+  autoloader.
 - **Progressive enhancement** — the docs are fully readable with JavaScript
   disabled; highlighting and search never gate reading.
 - **Light + dark skins** (and `auto`, following the OS preference), both passing
@@ -97,5 +97,6 @@ the navigation regions simply render empty.
 
 ## Vendored assets
 
-All JavaScript is committed under `static/` and served same-origin. See
-[`VENDORED.md`](VENDORED.md) for the per-file source URL, version, and SRI hash.
+All JavaScript is committed under `static/` and served same-origin (no CDN, no
+npm). See [`VENDORED.md`](VENDORED.md) for provenance — what is vendored and where
+it came from.

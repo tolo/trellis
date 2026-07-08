@@ -38,6 +38,76 @@ pre {
   }
 }
 
+// ── Framed code block (progressive enhancement) ────────────────────────────────
+// static/js/code-enhance.js wraps each `pre > code[class*=language-]` in
+// .code-block with a .code-bar (language label + copy button). Without JS the
+// bare <pre> above stands on its own; with JS the frame merges the bar and pre
+// into one card, so the pre sheds its own border/radius/margin here.
+
+.code-block {
+  margin: $trellis-space-lg 0;
+  border: 1px solid var(--trellis-border, #{$trellis-border-color});
+  border-radius: $trellis-border-radius;
+  overflow: hidden;
+  background-color: var(--trellis-surface, #{$trellis-surface-color});
+
+  pre {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    // A hairline accent ties the code surface to the brand color.
+    box-shadow: inset 2px 0 0 var(--trellis-primary, #{$trellis-primary-color});
+  }
+}
+
+.code-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $trellis-space-md;
+  padding: $trellis-space-xs $trellis-space-md;
+  border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
+  background-color: var(--trellis-bg, #{$trellis-bg-color});
+}
+
+.code-lang {
+  font-family: $trellis-code-font-family;
+  font-size: $trellis-font-size-xs;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+}
+
+.code-copy {
+  font-family: $trellis-font-family;
+  font-size: $trellis-font-size-xs;
+  font-weight: 600;
+  line-height: 1;
+  padding: $trellis-space-xs $trellis-space-sm;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+  background-color: transparent;
+  border: 1px solid var(--trellis-border, #{$trellis-border-color});
+  border-radius: $trellis-border-radius;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+
+  &:hover {
+    color: var(--trellis-primary, #{$trellis-primary-color});
+    border-color: var(--trellis-primary, #{$trellis-primary-color});
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--trellis-primary, #{$trellis-primary-color});
+    outline-offset: 2px;
+  }
+
+  &.is-copied {
+    color: var(--trellis-primary, #{$trellis-primary-color});
+    border-color: var(--trellis-primary, #{$trellis-primary-color});
+  }
+}
+
 // ── Syntax highlighting tokens (Prism.js) ──────────────────────────────────────
 // Reused unchanged with the vendored Prism assets. Colors reference the
 // --trellis-code-* custom properties so they flip with the active skin.

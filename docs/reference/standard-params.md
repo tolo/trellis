@@ -52,6 +52,14 @@ All 19 standard params, with their SASS variable names and CSS custom property n
 
 > Verified against `themes/verdant/theme.yaml` and `themes/verdant/sass/_variables.scss`.
 
+> **Defaults are per-theme.** The **Default** column shows the *reference* defaults
+> (the values the `verdant` theme ships). The contract fixes each param's **name,
+> type, and semantics** — not its default value. A theme may ship its own default
+> for any param, and most do: e.g. `arbor` uses `primary_color: "#0f7a4d"` and a
+> serif `heading_font_family` (`"Charter, Cambria, Georgia, ui-serif, serif"`),
+> while `bloom` ships a purple palette. `heading_font_family: null` still means
+> "inherit the body font" wherever a theme (or a site) sets it back to null.
+
 
 ## Categories
 

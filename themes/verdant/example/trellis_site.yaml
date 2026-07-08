@@ -1,7 +1,6 @@
 title: My Blog
 description: A sample blog powered by Trellis and the Verdant theme.
 baseUrl: http://localhost:4000
-author: Your Name
 
 # Theme configuration
 # To use Verdant from your own site, set:

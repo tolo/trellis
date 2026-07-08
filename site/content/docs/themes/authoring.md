@@ -453,7 +453,6 @@ locally without a real content site:
 title: My Blog
 description: A sample blog powered by Trellis and this theme.
 baseUrl: http://localhost:4000
-author: Your Name
 
 # Use a relative path to the theme directory
 theme: ..

@@ -2,12 +2,22 @@ title: My Blog
 description: A sample blog powered by Trellis and the Verdant theme.
 baseUrl: http://localhost:4000
 
-# Theme configuration
-# To use Verdant from your own site, set:
-#   theme: /path/to/verdant
-# or after `trellis theme add <verdant-url>`:
-#   theme: verdant
-theme: ..
+# Theme resolution
+# ----------------
+# The build resolves a theme by joining <siteDir>/themes/<value>. This example
+# lives inside the theme, so `themes/verdant` is provided as a symlink pointing at
+# the theme root (../.. relative to themes/). That gives a real directory chain
+# that both the manifest loader and the template FileSystemLoader can resolve.
+#
+# To use Verdant from your own site instead, run `trellis theme add <verdant-url>`
+# and set `theme: verdant` (a real themes/verdant/ directory).
+theme: verdant
+
+# Taxonomies to collect from front matter. `tags` generates the term pages
+# (/tags/ and /tags/<slug>/) that the post tag pills link to; without it those
+# pages are never built and the pills render nothing.
+taxonomies:
+  - tags
 
 # Customize theme params here — all params are optional (defaults from theme.yaml apply)
 theme_params:

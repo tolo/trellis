@@ -223,6 +223,16 @@ class TrellisSite {
       };
       siteParams = <String, dynamic>{'site': siteContext, 'taxonomy': taxContext, 'theme': ?mergedThemeParams};
 
+      // Enrich each content page with its OWN terms as pre-slugified link maps,
+      // resolved from the same index that generates the term pages. Templates
+      // link tags via `${page.termLinks.<taxonomy>}[].url` — the canonical term
+      // URL — instead of string-building `/{taxonomy}/{rawTerm}/`, which 404s
+      // for any term that slugifies (uppercase, spaces, punctuation).
+      for (final page in nonDraftPages) {
+        final termLinks = collector.termLinksForPage(page, taxIndex);
+        if (termLinks.isNotEmpty) page.frontMatter['termLinks'] = termLinks;
+      }
+
       // Inject virtual taxonomy listing and term pages into the pipeline
       final virtualPages = collector.buildVirtualPages(taxIndex, nonDraftPages);
       pages.addAll(virtualPages);

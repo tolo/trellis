@@ -7,9 +7,9 @@
      - tl:extends:   Inherits base.html shell.
      - tl:define:    Fills the "content" slot.
      - ${theme.*}:   show_date, show_author, show_reading_time, show_tags params.
-     - ${page.*}:    page.title, page.date, page.content, page.author, page.tags.
+     - ${page.*}:    page.title, page.date, page.content, page.author, page.termLinks.
      - tl:if:        Toggles each metadata item independently via theme params.
-     - tl:each:      Iterates page.tags to render tag pills.
+     - tl:each:      Iterates page.termLinks.tags to render tag pills.
      - tl:utext:     Renders rendered Markdown HTML unescaped.
      - tl:with:      Binds local variable for reading time calculation.
      - #strings / #numbers: Utility objects for reading time approximation.
@@ -49,10 +49,16 @@
 
           </div>
 
-          <!-- Tag pills — shown when show_tags is true and page has tags -->
-          <ul class="tags" tl:if="${theme.show_tags} and ${page.tags}">
-            <li tl:each="tag : ${page.tags}">
-              <a tl:href="@{/tags/{tag}/}" tl:text="${tag}">tag</a>
+          <!-- Tag pills — shown when show_tags is true and the page has resolved
+               tag links. `${page.termLinks.tags}` carries {name, slug, url, count}
+               maps whose `url` is the canonical, slugified term-page path (built
+               by the taxonomy collector), so pills link correctly for any tag —
+               including ones needing slugification like "Hello World". Present
+               only when `tags` is a declared taxonomy, so pills never link to a
+               term page that was not generated. -->
+          <ul class="tags" tl:if="${theme.show_tags} and ${page.termLinks.tags}">
+            <li tl:each="tag : ${page.termLinks.tags}">
+              <a tl:href="${tag.url}" tl:text="${tag.name}">tag</a>
             </li>
           </ul>
         </header>

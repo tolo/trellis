@@ -32,7 +32,7 @@
     <ul class="post-list" tl:if="${pages}">
       <li class="post-card" tl:each="p : ${pages}">
         <h3 class="post-card-title">
-          <a tl:text="${p.title}" tl:href="@{${p.url}}">Post title</a>
+          <a tl:text="${p.title}" tl:href="${p.url}">Post title</a>
         </h3>
         <p class="post-card-summary"
            tl:if="${p.description}"

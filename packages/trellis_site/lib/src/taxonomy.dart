@@ -174,6 +174,39 @@ class TaxonomyCollector {
     return virtual;
   }
 
+  /// Resolves [page]'s own front-matter terms to link maps, per taxonomy.
+  ///
+  /// For every taxonomy in [index] that the page carries in front matter, each
+  /// raw term is normalised and looked up in the collected [TaxonomyIndex], so
+  /// the returned `url`/`slug` are the *same* canonical, slugified values that
+  /// [buildVirtualPages] uses to emit the term pages. Templates link tags via
+  /// this `url` instead of string-building `/{taxonomy}/{rawTerm}/`, which
+  /// breaks for any term needing slugification (uppercase, spaces, punctuation).
+  ///
+  /// Returns a map keyed by taxonomy name → ordered list of
+  /// `{name, slug, url, count}` maps (front-matter order, deduped). Taxonomies
+  /// absent from [page] front matter are omitted, so a page with no terms yields
+  /// an empty map. Surfaced to templates as `${page.termLinks.<taxonomy>}`.
+  Map<String, List<Map<String, dynamic>>> termLinksForPage(Page page, Map<String, TaxonomyIndex> index) {
+    final result = <String, List<Map<String, dynamic>>>{};
+
+    for (final entry in index.entries) {
+      final raw = page.frontMatter[entry.key];
+      if (raw == null) continue;
+
+      final byName = {for (final term in entry.value.terms) term.name: term};
+      final links = <Map<String, dynamic>>[];
+      for (final name in _extractTerms(raw)) {
+        final term = byName[name];
+        if (term == null) continue; // term with no page (shouldn't happen for rendered pages)
+        links.add(<String, dynamic>{'name': term.name, 'slug': term.slug, 'url': term.url, 'count': term.count});
+      }
+      if (links.isNotEmpty) result[entry.key] = links;
+    }
+
+    return result;
+  }
+
   /// Normalises a raw term value to lowercase and trims whitespace.
   ///
   /// ```dart

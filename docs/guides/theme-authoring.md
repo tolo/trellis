@@ -53,7 +53,7 @@ my-theme/
     _a11y.scss                  # Accessibility: skip-link, focus rings
     _code.scss                  # Code block styles
     main.scss                   # Entry point — imports all partials
-  static/                       # Static assets copied as-is (fonts, images)
+  static/                       # Static assets copied as-is (fonts, images, vendored JS/CSS — see Third-Party and Vendored Assets)
     .gitkeep
   screenshots/
     light.png                   # Preview screenshot (light skin)
@@ -436,6 +436,23 @@ Or from the theme root, using the example directory:
 ```bash
 cd example && trellis build && trellis serve
 ```
+
+
+## Third-Party and Vendored Assets
+
+A built Trellis site is a **self-contained folder you can host anywhere** — it must keep working with JavaScript disabled and with no reachable third-party host. That model (pure Dart, no external dependencies, offline-capable) sets a default preference order for any asset a theme needs — a font, a script, a stylesheet, a highlighter:
+
+> **Prefer self-contained, build-time-generated output; then vendored, same-origin assets; and only as a last resort, runtime CDN dependencies.**
+
+1. **Build-time output (best)** — generate the asset during `trellis build` and ship the result. No runtime cost, no third-party trust surface. Example: syntax highlighting is produced at build time by `trellis_site`, so themes carry only token CSS and no highlighter JS (see [ADR-010](../../dev/adrs/ADR-010-syntax-highlighting.md)).
+2. **Vendored, same-origin asset (acceptable)** — commit the asset and serve it from `static/`, alongside the HTML that loads it. Auditable, pinnable, and outage-independent. Example: Arbor's first-party `search.js` and `code-enhance.js`, documented for provenance in [`themes/arbor/VENDORED.md`](../../themes/arbor/VENDORED.md).
+3. **Runtime CDN dependency (last resort)** — fetching a script, font, or stylesheet from an external host at page load trades **availability, privacy, and supply-chain integrity** for convenience: the page breaks if the host is down or blocked, every visitor's request leaks to a third party, and a compromised CDN can inject code into your site.
+
+This is a **default with rationale, not an absolute ban.** Reaching for tier 3 is allowed as a deliberate, documented exception — a conscious trade-off, not the path of least resistance. If you do, record *why* (the way `VENDORED.md` records provenance for tier 2) so the next maintainer can re-evaluate it.
+
+The `static/` directory in the [directory structure](#theme-directory-structure) above holds everything copied verbatim into the build output — fonts, images, and any vendored JS/CSS — all served same-origin (tier 2). Keeping a dependency there instead of on a CDN *is* the line between tiers 2 and 3.
+
+**Worked example — Verdant ships no highlighter.** Verdant, the minimal blog theme, deliberately ships **no** client-side highlighter rather than pulling one from a CDN. Its [`layouts/base.html`](../../themes/verdant/layouts/base.html) records the reasoning inline: a CDN highlighter would break the offline-capable static-site model, so code renders clean but uncolored, and a site that wants color can self-host a highlighter and inherit the theme's token colors. Arbor, the docs sibling, is the theme that historically vendored a full highlighter (tier 2); [ADR-010](../../dev/adrs/ADR-010-syntax-highlighting.md) moves highlighting for both themes to tier 1 (build-time output).
 
 
 ## Publishing

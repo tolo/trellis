@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<!-- Bloom Landing Theme — layouts/partials/showcase.html. Default showcase
+     fragment inserted by home.html's showcase section. It is a simple, neutral
+     placeholder grid meant to be SHADOWED by a site-level override: a site can
+     drop its own layouts/partials/showcase.html (same path) and the SSG
+     CompositeLoader resolves site templates BEFORE theme templates, so the site
+     copy wins with no theme fork. To force the theme copy, insert with the
+     `theme:` prefix instead: ~{theme:layouts/partials/showcase.html :: showcase}. -->
+<html lang="en">
+<body>
+  <!-- The fragment root is a <tl:block> (virtual — not emitted), so a tl:insert
+       drops these tiles straight into the host .showcase-grid in home.html; the
+       grid element belongs to the caller, keeping this partial layout-agnostic. -->
+  <tl:block tl:fragment="showcase">
+    <div class="showcase-tile">
+      <div class="showcase-frame" aria-hidden="true"></div>
+      <p class="showcase-caption">Drop a screenshot here — override
+        <code>layouts/partials/showcase.html</code> in your site.</p>
+    </div>
+    <div class="showcase-tile">
+      <div class="showcase-frame" aria-hidden="true"></div>
+      <p class="showcase-caption">Ships as a placeholder; site-level layouts win
+        over theme layouts, so your copy replaces this one.</p>
+    </div>
+    <div class="showcase-tile">
+      <div class="showcase-frame" aria-hidden="true"></div>
+      <p class="showcase-caption">Insert the theme default explicitly with the
+        <code>theme:</code> prefix if you ever need it back.</p>
+    </div>
+  </tl:block>
+</body>
+</html>

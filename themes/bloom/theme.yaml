@@ -1,0 +1,155 @@
+name: bloom
+version: 0.1.0
+author: Tobias Löfstrand
+description: A bold landing/marketing page theme for products and apps
+min_trellis_version: 0.8.0
+screenshots:
+  - screenshots/light.png
+  - screenshots/dark.png
+features:
+  - landing
+  - dark-mode
+  - responsive
+  - accessible
+
+params:
+  # === Standard Params (19) ===
+  # Contract: docs/reference/standard-params.md. Every standard param is present
+  # with the contract type. Non-null defaults required except optional strings
+  # (heading_font_family, footer_text).
+
+  # Skin & Colors
+  skin:
+    type: enum
+    values: [light, dark, auto]
+    default: auto
+    description: Color scheme — auto follows OS prefers-color-scheme
+
+  primary_color:
+    type: color
+    default: "#6d28d9"
+    description: Brand/accent color — links, buttons, active states
+
+  accent_color:
+    type: color
+    default: "#db2777"
+    description: Secondary accent — hover states, highlights
+
+  text_color:
+    type: color
+    default: "#1a1523"
+    description: Main body text
+
+  muted_color:
+    type: color
+    default: "#5b5568"
+    description: Secondary text — metadata, captions
+
+  bg_color:
+    type: color
+    default: "#ffffff"
+    description: Page background
+
+  surface_color:
+    type: color
+    default: "#f7f5fb"
+    description: Elevated surfaces — cards, bands
+
+  border_color:
+    type: color
+    default: "#e7e3f0"
+    description: Borders, dividers
+
+  # Typography
+  font_family:
+    type: string
+    default: "system-ui, -apple-system, sans-serif"
+    description: Body text font stack
+
+  heading_font_family:
+    type: string
+    default: null
+    description: Heading font stack (null inherits body)
+
+  code_font_family:
+    type: string
+    default: "ui-monospace, SFMono-Regular, monospace"
+    description: Code/pre font stack
+
+  # Layout
+  max_width:
+    type: string
+    default: "1120px"
+    description: Maximum content width for centered sections
+
+  border_radius:
+    type: string
+    default: "16px"
+    description: Global border radius — soft, rounded cards
+
+  # Navigation
+  nav_links:
+    type: list
+    default:
+      - label: Features
+        url: "#features"
+      - label: Pricing
+        url: "#pricing"
+      - label: FAQ
+        url: "#faq"
+    description: Header navigation links
+
+  social_links:
+    type: list
+    default: []
+    description: "Social media links [{platform, url, label?}]"
+
+  # Footer
+  footer_text:
+    type: string
+    default: null
+    description: Custom footer text (null = theme default)
+
+  show_powered_by:
+    type: boolean
+    default: true
+    description: Show "Powered by Trellis" attribution
+
+  # Features
+  show_rss_link:
+    type: boolean
+    default: true
+    description: Display RSS/Atom feed link
+
+  syntax_highlighting:
+    type: boolean
+    default: true
+    description: Enable code block container styles
+
+  # === Bloom-Specific Params ===
+
+  hero_align:
+    type: enum
+    values: [center, split]
+    default: center
+    description: Hero layout — centered stack, or split text/image (falls back to center when no hero image)
+
+  accent_gradient_start:
+    type: color
+    default: "#6d28d9"
+    description: Gradient start — hero title gradient and primary buttons
+
+  accent_gradient_end:
+    type: color
+    default: "#db2777"
+    description: Gradient end — hero title gradient and primary buttons
+
+  pill_badges:
+    type: boolean
+    default: true
+    description: Render eyebrow/badge labels as rounded pills
+
+  logo:
+    type: string
+    default: null
+    description: Optional header logo image path (null = text site title)

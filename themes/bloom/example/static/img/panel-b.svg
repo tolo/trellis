@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 420" role="img" aria-label="Linked notes graph preview">
+  <defs>
+    <linearGradient id="gb" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6d28d9"/>
+      <stop offset="1" stop-color="#db2777"/>
+    </linearGradient>
+  </defs>
+  <rect width="560" height="420" rx="20" fill="#f7f5fb"/>
+  <g stroke="#c9bff0" stroke-width="3">
+    <line x1="280" y1="210" x2="150" y2="120"/>
+    <line x1="280" y1="210" x2="430" y2="130"/>
+    <line x1="280" y1="210" x2="170" y2="300"/>
+    <line x1="280" y1="210" x2="410" y2="300"/>
+  </g>
+  <circle cx="280" cy="210" r="34" fill="url(#gb)"/>
+  <circle cx="150" cy="120" r="20" fill="#ffffff" stroke="#e7e3f0" stroke-width="3"/>
+  <circle cx="430" cy="130" r="20" fill="#ffffff" stroke="#e7e3f0" stroke-width="3"/>
+  <circle cx="170" cy="300" r="20" fill="#ffffff" stroke="#e7e3f0" stroke-width="3"/>
+  <circle cx="410" cy="300" r="20" fill="#ffffff" stroke="#e7e3f0" stroke-width="3"/>
+</svg>

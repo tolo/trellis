@@ -1,0 +1,22 @@
+// Bloom Landing Theme — sass/_skins/_dark.scss
+// Dark skin color overrides. Imported when skin: dark; also mirrored as the
+// prefers-color-scheme: dark :root overrides in main.scss for skin: auto.
+//
+// WCAG 2.1 AA contrast ratios (computed over sRGB, per WCAG relative luminance):
+//   On the page background (#120f1a):
+//     #f3f0fa on #120f1a = 16.82:1  (body text — passes 4.5:1)
+//     #a79fc0 on #120f1a =  7.54:1  (muted — passes 4.5:1)
+//     #a78bfa on #120f1a =  6.96:1  (primary/links — passes 4.5:1)
+//     #f472b6 on #120f1a =  7.15:1  (accent — passes 4.5:1)
+//   On the elevated surface (#1c1730 — cards, bands):
+//     #f3f0fa on #1c1730 = 15.36:1  (body text — passes 4.5:1)
+//     #a79fc0 on #1c1730 =  6.89:1  (muted — passes 4.5:1)
+//     #a78bfa on #1c1730 =  6.35:1  (primary — passes 4.5:1)
+
+$trellis-text-color: #f3f0fa !default;
+$trellis-muted-color: #a79fc0 !default;
+$trellis-bg-color: #120f1a !default;
+$trellis-surface-color: #1c1730 !default;
+$trellis-border-color: #302a45 !default;
+$trellis-primary-color: #a78bfa !default;
+$trellis-accent-color: #f472b6 !default;

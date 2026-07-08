@@ -1,0 +1,614 @@
+// Bloom Landing Theme — sass/_components.scss
+// Landing components: buttons, eyebrow/badge pills, section heads, hero,
+// features grid, showcase, alternating story rows, pricing, FAQ, CTA band, and
+// the prose page header (single/list). Colors reference the --trellis-* custom
+// properties so they flip with the active skin.
+
+@import 'layout'; // for $bp-* breakpoints
+
+// ── Buttons ──────────────────────────────────────────────────────────────────
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $trellis-space-sm;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+
+  &:hover { transform: translateY(-1px); }
+}
+
+.btn-primary {
+  color: #ffffff;
+  background-image: linear-gradient(
+    135deg,
+    var(--trellis-gradient-start, #{$trellis-accent-gradient-start}),
+    var(--trellis-gradient-end, #{$trellis-accent-gradient-end})
+  );
+  box-shadow: 0 8px 24px -8px color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 70%, transparent);
+
+  &:hover {
+    color: #ffffff;
+    box-shadow: 0 12px 30px -8px color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 80%, transparent);
+  }
+}
+
+.btn-ghost {
+  color: var(--trellis-text, #{$trellis-text-color});
+  background-color: transparent;
+  border-color: var(--trellis-border, #{$trellis-border-color});
+
+  &:hover {
+    color: var(--trellis-primary, #{$trellis-primary-color});
+    border-color: var(--trellis-primary, #{$trellis-primary-color});
+    background-color: var(--trellis-surface, #{$trellis-surface-color});
+  }
+}
+
+// Inverted button for the accent CTA band (band background is the primary color).
+.btn-invert {
+  color: var(--trellis-primary, #{$trellis-primary-color});
+  background-color: #ffffff;
+
+  &:hover { color: var(--trellis-accent, #{$trellis-accent-color}); background-color: #ffffff; }
+}
+
+// ── Eyebrow / badge ──────────────────────────────────────────────────────────
+
+.eyebrow {
+  display: inline-block;
+  margin: 0 0 $trellis-space-md;
+  font-size: $trellis-font-size-xs;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--trellis-primary, #{$trellis-primary-color});
+}
+
+.eyebrow-pill {
+  padding: 0.35em 0.9em;
+  border-radius: 999px;
+  background-color: color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 30%, transparent);
+}
+
+// ── Section heads (shared by showcase / pricing) ─────────────────────────────
+
+.section-head {
+  text-align: center;
+  max-width: $trellis-measure;
+  margin: 0 auto $trellis-space-2xl;
+}
+
+.section-heading {
+  margin: 0 0 $trellis-space-sm;
+}
+
+.section-sub {
+  color: var(--trellis-muted, #{$trellis-muted-color});
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+// ── Hero ─────────────────────────────────────────────────────────────────────
+
+.hero {
+  padding: $trellis-space-4xl 0 $trellis-space-3xl;
+}
+
+.hero-inner {
+  display: grid;
+  gap: $trellis-space-2xl;
+  align-items: center;
+}
+
+.hero-center .hero-inner {
+  text-align: center;
+
+  .hero-copy { max-width: 760px; margin: 0 auto; }
+  .hero-ctas { justify-content: center; }
+}
+
+.hero-split .hero-inner {
+  @media (min-width: $bp-md) {
+    grid-template-columns: 1.1fr 1fr;
+    text-align: left;
+  }
+}
+
+.hero-title {
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  line-height: 1.05;
+  margin-bottom: $trellis-space-lg;
+  // Gradient text — clips the accent gradient to the glyphs. A solid color
+  // fallback stays in place for engines that ignore background-clip.
+  color: var(--trellis-text, #{$trellis-text-color});
+  background-image: linear-gradient(
+    120deg,
+    var(--trellis-gradient-start, #{$trellis-accent-gradient-start}),
+    var(--trellis-gradient-end, #{$trellis-accent-gradient-end})
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+
+  // Windows High Contrast / forced-colors: gradient-clipped text can render
+  // invisible, so drop the clip and paint the title in the forced system color.
+  @media (forced-colors: active) {
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+}
+
+.hero-subtitle {
+  font-size: clamp(1.15rem, 2.5vw, 1.5rem);
+  font-weight: 600;
+  color: var(--trellis-text, #{$trellis-text-color});
+  margin-bottom: $trellis-space-md;
+}
+
+.hero-lede {
+  font-size: 1.15rem;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+  margin-bottom: $trellis-space-xl;
+  max-width: 640px;
+
+  .hero-center & { margin-left: auto; margin-right: auto; }
+}
+
+.hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $trellis-space-md;
+}
+
+.hero-media {
+  .hero-image {
+    display: block;
+    width: 100%;
+    border-radius: var(--trellis-radius, #{$trellis-border-radius});
+    border: 1px solid var(--trellis-border, #{$trellis-border-color});
+    box-shadow: 0 24px 60px -24px color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 45%, transparent);
+  }
+}
+
+// ── Home Markdown body band ──────────────────────────────────────────────────
+
+.home-prose-band {
+  padding: $trellis-space-2xl 0;
+
+  .prose { text-align: center; }
+}
+
+// ── Section spacing helper (applied per landing section) ─────────────────────
+
+.features,
+.showcase,
+.stories,
+.pricing,
+.faq {
+  padding: $trellis-space-3xl 0;
+}
+
+// Alternate the surface tint on odd landing bands for visual rhythm.
+.showcase,
+.faq {
+  background-color: var(--trellis-surface, #{$trellis-surface-color});
+}
+
+// ── Features grid ────────────────────────────────────────────────────────────
+
+.feature-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: $trellis-space-lg;
+
+  @media (min-width: $bp-sm) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (min-width: $bp-md) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.feature-card {
+  margin: 0;
+  padding: $trellis-space-xl;
+  background-color: var(--trellis-bg, #{$trellis-bg-color});
+  border: 1px solid var(--trellis-border, #{$trellis-border-color});
+  border-radius: var(--trellis-radius, #{$trellis-border-radius});
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 40%, var(--trellis-border, #{$trellis-border-color}));
+    box-shadow: 0 16px 40px -20px color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 50%, transparent);
+  }
+}
+
+.feature-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: $trellis-space-md;
+  font-size: 1.4rem;
+  line-height: 1;
+  border-radius: 50%;
+  color: var(--trellis-primary, #{$trellis-primary-color});
+  background-color: color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 12%, transparent);
+
+  svg { width: 1.5rem; height: 1.5rem; }
+}
+
+.feature-title {
+  margin: 0 0 $trellis-space-sm;
+  font-size: 1.2rem;
+}
+
+.feature-body {
+  margin: 0;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+}
+
+// ── Showcase ─────────────────────────────────────────────────────────────────
+
+.showcase-grid {
+  display: grid;
+  gap: $trellis-space-lg;
+
+  @media (min-width: $bp-sm) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.showcase-tile {
+  display: flex;
+  flex-direction: column;
+  gap: $trellis-space-sm;
+}
+
+.showcase-frame {
+  aspect-ratio: 4 / 3;
+  border-radius: var(--trellis-radius, #{$trellis-border-radius});
+  border: 1px dashed var(--trellis-border, #{$trellis-border-color});
+  background-image:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 14%, transparent),
+      color-mix(in srgb, var(--trellis-accent, #{$trellis-accent-color}) 14%, transparent));
+}
+
+.showcase-caption {
+  margin: 0;
+  font-size: $trellis-font-size-sm;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+
+  code {
+    font-size: 0.85em;
+    word-break: break-word;
+  }
+}
+
+// ── Story rows (alternating two-column) ──────────────────────────────────────
+
+.story {
+  padding: $trellis-space-xl 0;
+
+  & + & {
+    border-top: 1px solid var(--trellis-border, #{$trellis-border-color});
+  }
+}
+
+.story-split {
+  display: grid;
+  gap: $trellis-space-2xl;
+  align-items: center;
+
+  @media (min-width: $bp-md) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+// Reverse: place the media column first on desktop (text visually second).
+.story-reverse {
+  @media (min-width: $bp-md) {
+    .story-media { order: -1; }
+  }
+}
+
+.story-full {
+  max-width: $trellis-measure;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.story-title {
+  margin: 0 0 $trellis-space-md;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+.story-body {
+  margin: 0;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+  font-size: 1.1rem;
+}
+
+.story-image {
+  display: block;
+  width: 100%;
+  border-radius: var(--trellis-radius, #{$trellis-border-radius});
+  border: 1px solid var(--trellis-border, #{$trellis-border-color});
+}
+
+// ── Pricing ──────────────────────────────────────────────────────────────────
+
+.pricing-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: $trellis-space-lg;
+  align-items: stretch;
+
+  @media (min-width: $bp-md) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.price-card {
+  position: relative;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  padding: $trellis-space-xl;
+  background-color: var(--trellis-bg, #{$trellis-bg-color});
+  border: 1px solid var(--trellis-border, #{$trellis-border-color});
+  border-radius: var(--trellis-radius, #{$trellis-border-radius});
+}
+
+.price-card-highlight {
+  border-color: var(--trellis-primary, #{$trellis-primary-color});
+  box-shadow: 0 20px 50px -24px color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 55%, transparent);
+
+  @media (min-width: $bp-md) { transform: scale(1.03); }
+}
+
+.price-badge {
+  position: absolute;
+  top: 0;
+  right: $trellis-space-lg;
+  transform: translateY(-50%);
+  padding: 0.3em 0.8em;
+  font-size: $trellis-font-size-xs;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #ffffff;
+  border-radius: 999px;
+  background-image: linear-gradient(
+    135deg,
+    var(--trellis-gradient-start, #{$trellis-accent-gradient-start}),
+    var(--trellis-gradient-end, #{$trellis-accent-gradient-end})
+  );
+}
+
+.price-name {
+  margin: 0 0 $trellis-space-sm;
+  font-size: 1.2rem;
+}
+
+.price-amount {
+  margin: 0 0 $trellis-space-md;
+  display: flex;
+  align-items: baseline;
+  gap: $trellis-space-xs;
+}
+
+.price-value {
+  font-family: var(--trellis-heading-font, #{$trellis-heading-font});
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--trellis-text, #{$trellis-text-color});
+}
+
+.price-period {
+  color: var(--trellis-muted, #{$trellis-muted-color});
+  font-size: $trellis-font-size-sm;
+}
+
+.price-desc {
+  margin: 0 0 $trellis-space-md;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+}
+
+.price-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 $trellis-space-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $trellis-space-sm;
+
+  li {
+    position: relative;
+    margin: 0;
+    padding-left: 1.6em;
+    font-size: $trellis-font-size-sm;
+
+    &::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--trellis-primary, #{$trellis-primary-color});
+      font-weight: 700;
+    }
+  }
+}
+
+// Push the CTA to the bottom so cards align regardless of feature count.
+.price-cta {
+  margin-top: auto;
+  width: 100%;
+}
+
+.pricing-note {
+  margin: $trellis-space-xl 0 0;
+  text-align: center;
+  font-size: $trellis-font-size-sm;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+}
+
+// ── FAQ (native details/summary accordion) ───────────────────────────────────
+
+.faq-list {
+  list-style: none;
+  padding: 0;
+  margin: $trellis-space-xl 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: $trellis-space-sm;
+}
+
+.faq-item {
+  margin: 0;
+
+  details {
+    border: 1px solid var(--trellis-border, #{$trellis-border-color});
+    border-radius: var(--trellis-radius, #{$trellis-border-radius});
+    background-color: var(--trellis-bg, #{$trellis-bg-color});
+    overflow: hidden;
+  }
+
+  summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $trellis-space-md;
+    padding: $trellis-space-lg;
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+
+    &::-webkit-details-marker { display: none; }
+
+    &::after {
+      content: '+';
+      font-size: 1.4rem;
+      line-height: 1;
+      color: var(--trellis-primary, #{$trellis-primary-color});
+      transition: transform 0.2s ease;
+    }
+  }
+
+  details[open] summary::after { transform: rotate(45deg); }
+
+  .faq-answer {
+    padding: 0 $trellis-space-lg $trellis-space-lg;
+    color: var(--trellis-muted, #{$trellis-muted-color});
+  }
+}
+
+// ── CTA band ─────────────────────────────────────────────────────────────────
+
+.cta-band {
+  padding: $trellis-space-3xl 0;
+  color: #ffffff;
+  background-image: linear-gradient(
+    135deg,
+    var(--trellis-gradient-start, #{$trellis-accent-gradient-start}),
+    var(--trellis-gradient-end, #{$trellis-accent-gradient-end})
+  );
+}
+
+.cta-inner {
+  text-align: center;
+  max-width: $trellis-measure;
+}
+
+.cta-title {
+  margin: 0 0 $trellis-space-md;
+  color: #ffffff;
+}
+
+.cta-body {
+  margin: 0 0 $trellis-space-xl;
+  font-size: 1.15rem;
+  color: color-mix(in srgb, #ffffff 88%, transparent);
+}
+
+.cta-embed {
+  margin: 0 auto $trellis-space-md;
+  max-width: 460px;
+}
+
+// ── Prose page header (single / list) ────────────────────────────────────────
+
+.page-header {
+  margin-bottom: $trellis-space-xl;
+  padding-bottom: $trellis-space-lg;
+  border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: $trellis-space-md;
+  font-size: $trellis-font-size-sm;
+  font-weight: 600;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+  text-decoration: none;
+
+  &:hover { color: var(--trellis-primary, #{$trellis-primary-color}); }
+}
+
+.page-title {
+  margin: 0;
+}
+
+.section-description {
+  margin-top: $trellis-space-md;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+
+  p:last-child { margin-bottom: 0; }
+}
+
+// ── Section listing (list.html) ──────────────────────────────────────────────
+
+.post-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $trellis-space-lg;
+}
+
+.post-item {
+  margin: 0;
+  padding-bottom: $trellis-space-lg;
+  border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
+
+  &:last-child { border-bottom: none; }
+}
+
+.post-title {
+  margin: 0 0 $trellis-space-xs;
+  font-size: 1.3rem;
+
+  a {
+    color: var(--trellis-text, #{$trellis-text-color});
+    text-decoration: none;
+    &:hover { color: var(--trellis-primary, #{$trellis-primary-color}); }
+  }
+}
+
+.post-summary {
+  margin: 0;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+}
+
+.no-pages {
+  color: var(--trellis-muted, #{$trellis-muted-color});
+}

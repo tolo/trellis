@@ -1,0 +1,112 @@
+// Bloom Landing Theme — sass/_variables.scss
+// All SASS-representable theme params as $trellis-* variables with !default.
+//
+// The SASS bridge generates _theme_params.scss (from theme.yaml defaults merged
+// with the site's theme_params:) and imports it BEFORE this file's !default
+// declarations take effect, so bridge/site values always win. Never edit this
+// file to change site values — use theme_params: in trellis_site.yaml.
+//
+// Every $trellis-* below carries !default: omitting it would shadow the bridge
+// value and break site-level overrides.
+
+// ── Skin & Colors ────────────────────────────────────────────────────────────
+
+$trellis-skin: auto !default;             // light | dark | auto
+$trellis-primary-color: #6d28d9 !default; // links, buttons, active states
+$trellis-accent-color: #db2777 !default;  // hover states, highlights
+$trellis-text-color: #1a1523 !default;    // main body text
+$trellis-muted-color: #5b5568 !default;   // metadata, captions
+$trellis-bg-color: #ffffff !default;      // page background
+$trellis-surface-color: #f7f5fb !default; // cards, bands
+$trellis-border-color: #e7e3f0 !default;  // borders, dividers
+
+// ── Typography ───────────────────────────────────────────────────────────────
+
+$trellis-font-family: system-ui, -apple-system, sans-serif !default;
+$trellis-heading-font-family: null !default; // null inherits body font
+$trellis-code-font-family: ui-monospace, SFMono-Regular, monospace !default;
+
+// Derived: heading font with fallback to body font. (@if avoids the deprecated
+// if() builtin; @if shares the enclosing/root scope, so this updates the global
+// variable without !global.)
+$trellis-heading-font: $trellis-font-family;
+@if $trellis-heading-font-family {
+  $trellis-heading-font: $trellis-heading-font-family;
+}
+
+// Base font sizes and line heights
+$trellis-font-size-base: 1rem !default;
+$trellis-font-size-sm: 0.9375rem !default;
+$trellis-font-size-xs: 0.8125rem !default;
+$trellis-line-height: 1.65 !default;
+$trellis-heading-line-height: 1.15 !default;
+
+// ── Layout ───────────────────────────────────────────────────────────────────
+
+$trellis-max-width: 1120px !default;
+$trellis-border-radius: 16px !default;
+
+// Narrow measure for prose pages (single/list) and reading bands.
+$trellis-measure: 680px !default;
+
+// Spacing scale
+$trellis-space-xs: 0.25rem !default;
+$trellis-space-sm: 0.5rem !default;
+$trellis-space-md: 1rem !default;
+$trellis-space-lg: 1.5rem !default;
+$trellis-space-xl: 2rem !default;
+$trellis-space-2xl: 3rem !default;
+$trellis-space-3xl: 4.5rem !default;
+$trellis-space-4xl: 6rem !default;
+
+// ── Footer ───────────────────────────────────────────────────────────────────
+
+$trellis-footer-text: null !default;      // custom footer text (null = theme default)
+
+// ── Feature toggles ──────────────────────────────────────────────────────────
+// Boolean/enum params — SASS variable only (no CSS custom property), per the
+// Standard Params Contract. Declared here so the theme compiles standalone too.
+
+$trellis-show-powered-by: true !default;
+$trellis-show-rss-link: true !default;
+$trellis-syntax-highlighting: true !default;
+
+// ── Bloom-specific params ────────────────────────────────────────────────────
+
+$trellis-hero-align: center !default;          // center | split
+$trellis-accent-gradient-start: #6d28d9 !default;
+$trellis-accent-gradient-end: #db2777 !default;
+$trellis-pill-badges: true !default;
+$trellis-logo: null !default;
+
+// ── Navigation ───────────────────────────────────────────────────────────────
+// nav_links and social_links are list params — no SASS variable equivalent;
+// accessed only in templates via ${theme.nav_links} / ${theme.social_links}.
+
+// ── Accessibility ────────────────────────────────────────────────────────────
+
+$trellis-focus-ring-color: $trellis-primary-color !default;
+$trellis-focus-ring-width: 2px !default;
+$trellis-focus-ring-offset: 2px !default;
+
+// ── CSS Custom Properties ────────────────────────────────────────────────────
+// Emit :root custom properties so token colors and theme values can be overridden
+// at runtime without recompiling SASS. Color tokens here match the LIGHT skin;
+// the dark skin overrides them in main.scss under prefers-color-scheme.
+
+:root {
+  --trellis-primary: #{$trellis-primary-color};
+  --trellis-accent: #{$trellis-accent-color};
+  --trellis-text: #{$trellis-text-color};
+  --trellis-muted: #{$trellis-muted-color};
+  --trellis-bg: #{$trellis-bg-color};
+  --trellis-surface: #{$trellis-surface-color};
+  --trellis-border: #{$trellis-border-color};
+  --trellis-font: #{$trellis-font-family};
+  --trellis-heading-font: #{$trellis-heading-font};
+  --trellis-code-font: #{$trellis-code-font-family};
+  --trellis-max-width: #{$trellis-max-width};
+  --trellis-radius: #{$trellis-border-radius};
+  --trellis-gradient-start: #{$trellis-accent-gradient-start};
+  --trellis-gradient-end: #{$trellis-accent-gradient-end};
+}

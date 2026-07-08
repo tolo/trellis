@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<!-- Bloom Landing Theme — layouts/_default/single.html. A prose page (privacy,
+     support, press, changelog…): a narrow measure, page title, rendered Markdown,
+     and a "Back" link to home. Overrides the "content" block. -->
+<html tl:extends="layouts/base.html" lang="en">
+<head><title>Page</title></head>
+<body>
+  <main id="main-content" class="main-content" tl:define="content">
+    <div class="container measure">
+      <article class="page">
+        <header class="page-header">
+          <a class="back-link" href="/">&larr; Back</a>
+          <h1 class="page-title" tl:text="${page.title}">Page Title</h1>
+        </header>
+
+        <div class="prose" tl:utext="${page.content}">
+          <p>Page content renders here.</p>
+        </div>
+      </article>
+    </div>
+  </main>
+</body>
+</html>

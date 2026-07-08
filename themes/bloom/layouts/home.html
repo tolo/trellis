@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<!-- Bloom Landing Theme — layouts/home.html. The marketing landing page. Every
+     section is data-driven from the home page's front matter (${page.<field>})
+     and rendered ONLY when its data is present (tl:if), so a site controls the
+     whole page from content/_index.md with zero hand-authored output HTML.
+     This is the target that `layout: home` resolves to. -->
+<html tl:extends="layouts/base.html" lang="en">
+<head><title>Home</title></head>
+<body>
+  <main id="main-content" class="main-content" tl:define="content">
+
+    <!-- 1. HERO ─────────────────────────────────────────────────────────────
+         Split when a hero image is present AND hero_align=split; else centered.
+         Title supports multiple lines via a `|` YAML block (rendered as raw HTML
+         so line breaks survive). CTAs render as primary/ghost buttons. -->
+    <section class="hero" tl:if="${page.hero}" id="hero" aria-labelledby="hero-title"
+             tl:classappend="${page.hero.image} and ${theme.hero_align} == 'split' ? 'hero-split' : 'hero-center'">
+      <div class="container hero-inner">
+        <div class="hero-copy">
+          <p class="eyebrow" tl:if="${page.hero.eyebrow}"
+             tl:classappend="${theme.pill_badges} ? 'eyebrow-pill' : ''"
+             tl:text="${page.hero.eyebrow}">New</p>
+
+          <h1 id="hero-title" class="hero-title" tl:utext="${page.hero.title} ?: ${site.title}">Welcome</h1>
+
+          <p class="hero-subtitle" tl:if="${page.hero.subtitle}" tl:text="${page.hero.subtitle}">Subtitle</p>
+
+          <p class="hero-lede" tl:if="${page.hero.lede}" tl:text="${page.hero.lede}">Lede paragraph.</p>
+
+          <div class="hero-ctas" tl:if="${page.hero.ctas}">
+            <a tl:each="cta : ${page.hero.ctas}"
+               class="btn"
+               tl:classappend="${cta.style} == 'ghost' ? 'btn-ghost' : 'btn-primary'"
+               tl:href="${cta.href}"
+               tl:text="${cta.label}">Get started</a>
+          </div>
+        </div>
+
+        <div class="hero-media" tl:if="${page.hero.image}">
+          <img class="hero-image" tl:src="${page.hero.image}"
+               tl:attr="alt=${page.hero.image_alt} ?: ''" src="" alt="">
+        </div>
+      </div>
+    </section>
+
+    <!-- Page Markdown body — rendered after the hero when non-empty, as centered
+         prose. A content-driven home surfaces its body, not just the hero. -->
+    <section class="home-prose-band" tl:if="${page.content}">
+      <div class="container measure">
+        <div class="prose" tl:utext="${page.content}">Body content.</div>
+      </div>
+    </section>
+
+    <!-- 2. FEATURES ─────────────────────────────────────────────────────────
+         Responsive card grid: 3-col desktop, 2 tablet, 1 mobile. `icon` renders
+         as-is inside a styled circle; a leading "<svg" is treated as raw inline
+         SVG (tl:utext), otherwise it is escaped text (emoji / single char). -->
+    <section class="features" tl:if="${page.features}" id="features" aria-labelledby="features-title">
+      <div class="container">
+        <h2 id="features-title" class="section-heading sr-anchor">Features</h2>
+        <ul class="feature-grid">
+          <li class="feature-card" tl:each="f : ${page.features}">
+            <span class="feature-icon" aria-hidden="true">
+              <span tl:if="${f.icon} and #strings.startsWith(f.icon, '<svg')" tl:utext="${f.icon}">icon</span>
+              <span tl:unless="${f.icon} and #strings.startsWith(f.icon, '<svg')" tl:text="${f.icon}">★</span>
+            </span>
+            <h3 class="feature-title" tl:text="${f.title}">Feature</h3>
+            <p class="feature-body" tl:if="${f.body}" tl:text="${f.body}">Description.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 3. SHOWCASE ─────────────────────────────────────────────────────────
+         Section heading, then a fragment insert of partials/showcase.html.
+         The theme ships a default placeholder grid at that path; a site can
+         shadow it by placing its own layouts/partials/showcase.html (the SSG
+         CompositeLoader resolves site templates before theme templates). -->
+    <section class="showcase" tl:if="${page.showcase}" id="showcase" aria-labelledby="showcase-title">
+      <div class="container">
+        <div class="section-head">
+          <h2 id="showcase-title" class="section-heading" tl:text="${page.showcase.title}">Showcase</h2>
+          <p class="section-sub" tl:if="${page.showcase.subtitle}" tl:text="${page.showcase.subtitle}">Subtitle</p>
+        </div>
+        <div class="showcase-grid" tl:insert="~{layouts/partials/showcase.html :: showcase}">Showcase placeholder.</div>
+      </div>
+    </section>
+
+    <!-- 4. STORY SECTIONS ───────────────────────────────────────────────────
+         Alternating two-column story rows (text / visual), stacking on mobile.
+         `reverse: true` flips the column order on desktop. With no image, the
+         row renders as a full-width prose block. -->
+    <section class="stories" tl:if="${page.sections}" aria-label="Details">
+      <div class="container">
+        <div class="story" tl:each="s : ${page.sections}"
+             tl:classappend="${s.image} ? (${s.reverse} ? 'story-split story-reverse' : 'story-split') : 'story-full'">
+          <div class="story-copy">
+            <p class="eyebrow" tl:if="${s.eyebrow}"
+               tl:classappend="${theme.pill_badges} ? 'eyebrow-pill' : ''"
+               tl:text="${s.eyebrow}">Section</p>
+            <h2 class="story-title" tl:if="${s.title}" tl:text="${s.title}">Section title</h2>
+            <div class="story-body" tl:if="${s.body}" tl:text="${s.body}">Body text.</div>
+          </div>
+          <div class="story-media" tl:if="${s.image}">
+            <img class="story-image" tl:src="${s.image}"
+                 tl:attr="alt=${s.image_alt} ?: ''" src="" alt="">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. PRICING ──────────────────────────────────────────────────────────
+         Card row. The highlighted tier gets an accent border and a badge; badge
+         text comes from the optional `badge` field, defaulting to "Best value". -->
+    <section class="pricing" tl:if="${page.pricing}" id="pricing" aria-labelledby="pricing-title">
+      <div class="container">
+        <div class="section-head">
+          <h2 id="pricing-title" class="section-heading" tl:text="${page.pricing.title}">Pricing</h2>
+          <p class="section-sub" tl:if="${page.pricing.subtitle}" tl:text="${page.pricing.subtitle}">Subtitle</p>
+        </div>
+
+        <ul class="pricing-grid" tl:if="${page.pricing.tiers}">
+          <li class="price-card" tl:each="t : ${page.pricing.tiers}"
+              tl:classappend="${t.highlight} ? 'price-card-highlight' : ''">
+            <span class="price-badge" tl:if="${t.highlight}" tl:text="${t.badge} ?: 'Best value'">Best value</span>
+            <h3 class="price-name" tl:text="${t.name}">Tier</h3>
+            <p class="price-amount">
+              <span class="price-value" tl:text="${t.price}">$0</span>
+              <span class="price-period" tl:if="${t.period}" tl:text="${t.period}">/mo</span>
+            </p>
+            <p class="price-desc" tl:if="${t.description}" tl:text="${t.description}">Description.</p>
+            <ul class="price-features" tl:if="${t.features}">
+              <li tl:each="feat : ${t.features}" tl:text="${feat}">Feature</li>
+            </ul>
+            <a class="btn btn-primary price-cta" tl:if="${t.cta}"
+               tl:href="${t.cta.href}" tl:text="${t.cta.label}">Choose</a>
+          </li>
+        </ul>
+
+        <p class="pricing-note" tl:if="${page.pricing.note}" tl:text="${page.pricing.note}">Note.</p>
+      </div>
+    </section>
+
+    <!-- 6. FAQ ──────────────────────────────────────────────────────────────
+         Native <details>/<summary> accordion — no JavaScript. -->
+    <section class="faq" tl:if="${page.faq}" id="faq" aria-labelledby="faq-title">
+      <div class="container measure">
+        <h2 id="faq-title" class="section-heading" tl:text="${page.faq.title}">FAQ</h2>
+        <ul class="faq-list" tl:if="${page.faq.items}">
+          <li class="faq-item" tl:each="item : ${page.faq.items}">
+            <details>
+              <summary tl:text="${item.q}">Question?</summary>
+              <div class="faq-answer" tl:text="${item.a}">Answer.</div>
+            </details>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 7. CTA BAND ─────────────────────────────────────────────────────────
+         Full-width accent-tinted band. `html` (raw) can embed e.g. a newsletter
+         form; otherwise a single CTA button is shown. -->
+    <section class="cta-band" tl:if="${page.cta_band}" id="cta" aria-labelledby="cta-title">
+      <div class="container cta-inner">
+        <h2 id="cta-title" class="cta-title" tl:text="${page.cta_band.title}">Ready?</h2>
+        <p class="cta-body" tl:if="${page.cta_band.body}" tl:text="${page.cta_band.body}">Body.</p>
+        <div class="cta-embed" tl:if="${page.cta_band.html}" tl:utext="${page.cta_band.html}">form</div>
+        <a class="btn btn-invert" tl:if="${page.cta_band.cta}"
+           tl:href="${page.cta_band.cta.href}" tl:text="${page.cta_band.cta.label}">Get started</a>
+      </div>
+    </section>
+
+  </main>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<!-- Bloom Landing Theme — layouts/_default/list.html. Simple section listing:
+     section title/description, then a list of child pages (title + summary).
+     Overrides the "content" block; tolerates an empty page list. -->
+<html tl:extends="layouts/base.html" lang="en">
+<head><title>Section</title></head>
+<body>
+  <main id="main-content" class="main-content" tl:define="content">
+    <div class="container measure">
+      <header class="page-header">
+        <a class="back-link" href="/">&larr; Back</a>
+        <h1 class="page-title" tl:text="${page.title}">Section</h1>
+        <div class="section-description" tl:if="${page.content}"
+             tl:utext="${page.content}">Section description.</div>
+      </header>
+
+      <ul class="post-list" tl:if="${pages}">
+        <li class="post-item" tl:each="p : ${pages}">
+          <h2 class="post-title">
+            <a tl:href="${p.url}" tl:text="${p.title}">Page Title</a>
+          </h2>
+          <p class="post-summary" tl:if="${p.summary}" tl:text="${p.summary}">Summary.</p>
+        </li>
+      </ul>
+
+      <p class="no-pages" tl:unless="${pages}">No pages in this section yet.</p>
+    </div>
+  </main>
+</body>
+</html>

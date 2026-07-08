@@ -1,0 +1,142 @@
+// Bloom Landing Theme — sass/_layout.scss
+// Page structure: sticky header, container, section rhythm, footer, breakpoints.
+// Mobile-first: base styles target mobile; media queries add wider layouts.
+
+// ── Breakpoints ──────────────────────────────────────────────────────────────
+
+$bp-sm: 640px;   // large phone / small tablet — 2-col grids
+$bp-md: 900px;   // tablet / small laptop — split heroes/stories, 3-col grids
+$bp-lg: 1120px;  // desktop
+
+// ── Container ────────────────────────────────────────────────────────────────
+
+.container {
+  width: 100%;
+  max-width: var(--trellis-max-width, #{$trellis-max-width});
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: $trellis-space-lg;
+  padding-right: $trellis-space-lg;
+
+  @media (min-width: $bp-sm) {
+    padding-left: $trellis-space-xl;
+    padding-right: $trellis-space-xl;
+  }
+}
+
+// Narrow reading measure for prose pages and text-only sections.
+.measure {
+  max-width: $trellis-measure;
+}
+
+// ── Site header ──────────────────────────────────────────────────────────────
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: color-mix(in srgb, var(--trellis-bg, #{$trellis-bg-color}) 88%, transparent);
+  backdrop-filter: saturate(1.4) blur(8px);
+  border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
+}
+
+.site-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $trellis-space-md;
+  padding-top: $trellis-space-md;
+  padding-bottom: $trellis-space-md;
+}
+
+.site-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: $trellis-space-sm;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.site-logo {
+  display: block;
+  height: 1.75rem;
+  width: auto;
+}
+
+.site-title {
+  font-family: var(--trellis-heading-font, #{$trellis-heading-font});
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--trellis-text, #{$trellis-text-color});
+
+  &:hover { color: var(--trellis-primary, #{$trellis-primary-color}); }
+}
+
+.nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $trellis-space-xs;
+
+  a {
+    display: inline-block;
+    color: var(--trellis-muted, #{$trellis-muted-color});
+    font-size: $trellis-font-size-sm;
+    font-weight: 600;
+    padding: $trellis-space-xs $trellis-space-sm;
+    border-radius: 999px;
+    transition: color 0.15s ease, background-color 0.15s ease;
+
+    &:hover {
+      color: var(--trellis-primary, #{$trellis-primary-color});
+      background-color: var(--trellis-surface, #{$trellis-surface-color});
+    }
+  }
+}
+
+// ── Main content rhythm ──────────────────────────────────────────────────────
+// The home layout stacks full-bleed sections that each own their vertical
+// padding (see _components.scss: .hero, .features, .cta-band …), so .main-content
+// adds no padding of its own. Prose layouts (single/list) supply their own top
+// spacing via .page (below), keeping the shell layout-agnostic — the block model
+// keeps the parent <main class="main-content"> element, so a distinguishing
+// child class is not reliable.
+
+.main-content {
+  min-height: 60vh;
+}
+
+// Prose pages (single/list) — top/bottom breathing room around the article.
+// Home sections are full-bleed and own their padding, so this only matches the
+// narrow-measure container that the prose layouts wrap their content in.
+.main-content > .container.measure {
+  padding-top: $trellis-space-3xl;
+  padding-bottom: $trellis-space-4xl;
+}
+
+// ── Site footer ──────────────────────────────────────────────────────────────
+
+.site-footer {
+  border-top: 1px solid var(--trellis-border, #{$trellis-border-color});
+  padding-top: $trellis-space-xl;
+  padding-bottom: $trellis-space-xl;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+  font-size: $trellis-font-size-sm;
+}
+
+.footer-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $trellis-space-sm;
+  text-align: center;
+
+  @media (min-width: $bp-sm) {
+    flex-direction: row;
+    justify-content: space-between;
+    text-align: left;
+  }
+}

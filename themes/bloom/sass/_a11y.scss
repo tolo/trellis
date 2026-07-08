@@ -1,0 +1,70 @@
+// Bloom Landing Theme — sass/_a11y.scss
+// Accessibility: skip-to-content, screen-reader-only, focus-visible, reduced-motion.
+
+// ── Skip to content ───────────────────────────────────────────────────────────
+
+.skip-to-content {
+  position: absolute;
+  top: -100%;
+  left: $trellis-space-md;
+  z-index: 200;
+  padding: $trellis-space-sm $trellis-space-md;
+  background-color: var(--trellis-primary, #{$trellis-primary-color});
+  color: #ffffff;
+  font-weight: 700;
+  font-size: $trellis-font-size-sm;
+  border-radius: var(--trellis-radius, #{$trellis-border-radius});
+  text-decoration: none;
+  transition: top 0.1s ease;
+
+  &:focus {
+    top: $trellis-space-md;
+    outline: 2px solid var(--trellis-bg, #{$trellis-bg-color});
+    outline-offset: 2px;
+  }
+}
+
+// ── Screen reader only ────────────────────────────────────────────────────────
+
+// .sr-anchor is a visually hidden section heading kept in the DOM as a
+// landmark/anchor target; it shares the visually-hidden recipe with .sr-only.
+.sr-only,
+.sr-anchor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// ── Focus-visible outlines ────────────────────────────────────────────────────
+// Keyboard users get clear outlines; pointer users don't see unwanted rings.
+
+:focus-visible {
+  outline: $trellis-focus-ring-width solid $trellis-focus-ring-color;
+  outline-offset: $trellis-focus-ring-offset;
+  border-radius: var(--trellis-radius, #{$trellis-border-radius});
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+// ── Reduced motion ────────────────────────────────────────────────────────────
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

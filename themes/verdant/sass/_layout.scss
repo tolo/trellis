@@ -30,8 +30,16 @@ $bp-lg: 1024px;  // Desktop
   position: sticky;
   top: 0;
   z-index: 100;
+  // Translucent header with backdrop blur: content scrolling beneath shows
+  // through faintly, giving the page depth. Solid bg is the no-support fallback.
   background-color: var(--trellis-bg, #{$trellis-bg-color});
   border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
+
+  @supports (backdrop-filter: blur(8px)) {
+    background-color: color-mix(in srgb, var(--trellis-bg, #{$trellis-bg-color}) 82%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
 
   .container {
     display: flex;
@@ -43,11 +51,26 @@ $bp-lg: 1024px;  // Desktop
 }
 
 .site-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
   font-size: 1.25rem;
   font-weight: 700;
+  letter-spacing: -0.015em;
   color: var(--trellis-text, #{$trellis-text-color});
   text-decoration: none;
   flex-shrink: 0;
+  transition: color 0.15s ease;
+
+  // A small brand dot as a minimal logotype mark.
+  &::before {
+    content: '';
+    width: 0.5em;
+    height: 0.5em;
+    border-radius: 50%;
+    background-color: var(--trellis-primary, #{$trellis-primary-color});
+    box-shadow: 0 0 0 3px var(--trellis-tint-strong, #{$trellis-surface-color});
+  }
 
   &:hover {
     color: var(--trellis-primary, #{$trellis-primary-color});
@@ -70,6 +93,8 @@ $bp-lg: 1024px;  // Desktop
   padding-bottom: $trellis-space-xl;
   color: var(--trellis-muted, #{$trellis-muted-color});
   font-size: $trellis-font-size-sm;
+  // A quiet surface wash grounds the page end instead of trailing off into bg.
+  background-color: color-mix(in srgb, var(--trellis-surface, #{$trellis-surface-color}) 55%, var(--trellis-bg, #{$trellis-bg-color}));
 }
 
 .footer-inner {

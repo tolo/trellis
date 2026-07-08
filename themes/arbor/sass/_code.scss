@@ -21,12 +21,14 @@ code {
 pre {
   background-color: var(--trellis-surface, #{$trellis-surface-color});
   border: 1px solid var(--trellis-border, #{$trellis-border-color});
-  border-radius: $trellis-border-radius;
+  border-radius: calc(#{$trellis-border-radius} * 1.5);
   padding: $trellis-space-lg;
   overflow-x: auto;
   margin: $trellis-space-lg 0;
   line-height: 1.6;
   font-family: $trellis-code-font-family;
+  // No-JS depth; inside .code-block this is replaced by the inset accent below.
+  box-shadow: var(--trellis-shadow-sm, none);
 
   code {
     // Reset inline-code styles inside a block.
@@ -47,9 +49,10 @@ pre {
 .code-block {
   margin: $trellis-space-lg 0;
   border: 1px solid var(--trellis-border, #{$trellis-border-color});
-  border-radius: $trellis-border-radius;
+  border-radius: calc(#{$trellis-border-radius} * 1.5);
   overflow: hidden;
   background-color: var(--trellis-surface, #{$trellis-surface-color});
+  box-shadow: var(--trellis-shadow-sm, none);
 
   pre {
     margin: 0;
@@ -67,7 +70,8 @@ pre {
   gap: $trellis-space-md;
   padding: $trellis-space-xs $trellis-space-md;
   border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
-  background-color: var(--trellis-bg, #{$trellis-bg-color});
+  // Brand-tinted bar ties the code frame to the theme color.
+  background-color: var(--trellis-tint, var(--trellis-bg, #{$trellis-bg-color}));
 }
 
 .code-lang {

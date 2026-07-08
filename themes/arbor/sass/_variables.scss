@@ -119,4 +119,16 @@ $trellis-focus-ring-offset: 2px !default;
   --trellis-code-comment: #5b6470;     // 5.62:1 on #f6f8f6 (italic)
   --trellis-code-function: #0550ae;    // 7.12:1 on #f6f8f6
   --trellis-code-punctuation: #5b6470; // 5.62:1 on #f6f8f6
+
+  // Derived tints — mixed from the runtime tokens with color-mix(), so they
+  // track skin flips and site color overrides without extra params. Custom
+  // properties re-resolve at use time, so the dark-mode :root override in
+  // main.scss updates these automatically.
+  --trellis-tint: color-mix(in srgb, var(--trellis-primary) 6%, var(--trellis-bg));
+  --trellis-tint-strong: color-mix(in srgb, var(--trellis-primary) 13%, var(--trellis-bg));
+
+  // Soft elevation shadows (black-based: reads as depth in light, stays quiet
+  // in dark; the dark-mode block in main.scss deepens them).
+  --trellis-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05), 0 2px 8px -4px rgb(0 0 0 / 0.08);
+  --trellis-shadow-md: 0 2px 4px rgb(0 0 0 / 0.05), 0 12px 28px -16px rgb(0 0 0 / 0.18);
 }

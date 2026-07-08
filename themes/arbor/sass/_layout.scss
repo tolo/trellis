@@ -31,8 +31,16 @@ $bp-lg: 1200px;  // TOC column appears
   position: sticky;
   top: 0;
   z-index: 100;
+  // Translucent header with backdrop blur: content scrolling beneath shows
+  // through faintly, giving the page depth. Solid bg is the no-support fallback.
   background-color: var(--trellis-bg, #{$trellis-bg-color});
   border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
+
+  @supports (backdrop-filter: blur(8px)) {
+    background-color: color-mix(in srgb, var(--trellis-bg, #{$trellis-bg-color}) 82%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
 
   .container {
     display: flex;
@@ -143,6 +151,8 @@ $bp-lg: 1200px;  // TOC column appears
   padding-bottom: $trellis-space-xl;
   color: var(--trellis-muted, #{$trellis-muted-color});
   font-size: $trellis-font-size-sm;
+  // A quiet surface wash grounds the page end instead of trailing off into bg.
+  background-color: color-mix(in srgb, var(--trellis-surface, #{$trellis-surface-color}) 55%, var(--trellis-bg, #{$trellis-bg-color}));
 }
 
 .footer-inner {

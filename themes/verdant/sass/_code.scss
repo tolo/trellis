@@ -18,11 +18,12 @@ code {
 pre {
   background-color: var(--trellis-surface, #{$trellis-surface-color});
   border: 1px solid var(--trellis-border, #{$trellis-border-color});
-  border-radius: $trellis-border-radius;
+  border-radius: calc(#{$trellis-border-radius} * 1.5);
   padding: $trellis-space-lg;
   overflow-x: auto;
   margin: $trellis-space-lg 0;
   line-height: 1.6;
+  box-shadow: var(--trellis-shadow-sm, none);
 
   code {
     // Reset inline code styles inside a block

@@ -35,11 +35,14 @@ h6 {
   margin-top: $trellis-space-xl;
   margin-bottom: $trellis-space-sm;
   font-weight: 700;
+  text-wrap: balance;
 }
 
-h1 { font-size: 2rem; margin-top: 0; }
-h2 { font-size: 1.5rem; }
-h3 { font-size: 1.25rem; }
+// Display sizes tighten tracking and gain weight so headings anchor the page
+// instead of blending into body text.
+h1 { font-size: 2.25rem; margin-top: 0; font-weight: 800; letter-spacing: -0.025em; }
+h2 { font-size: 1.5rem; letter-spacing: -0.015em; }
+h3 { font-size: 1.25rem; letter-spacing: -0.008em; }
 h4 { font-size: 1.125rem; }
 h5,
 h6 { font-size: 1rem; }
@@ -53,12 +56,22 @@ p {
 a {
   color: var(--trellis-primary, #{$trellis-primary-color});
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-underline-offset: 3px;
+  // A softened underline at rest that fills in on hover gives prose links a
+  // quieter default without losing the affordance.
+  text-decoration-color: color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 35%, transparent);
+  text-decoration-thickness: 1.5px;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
 
   &:hover {
     color: var(--trellis-accent, #{$trellis-accent-color});
-    text-decoration: none;
+    text-decoration-color: currentColor;
   }
+}
+
+// Brand-tinted text selection.
+::selection {
+  background-color: color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 22%, var(--trellis-bg, #{$trellis-bg-color}));
 }
 
 // Nav and UI links — no underline (overridden in _components.scss)
@@ -119,10 +132,13 @@ img {
 
 blockquote {
   margin: $trellis-space-lg 0;
-  padding: $trellis-space-sm $trellis-space-lg;
-  border-left: 4px solid var(--trellis-primary, #{$trellis-primary-color});
-  background-color: var(--trellis-surface, #{$trellis-surface-color});
+  padding: $trellis-space-md $trellis-space-lg;
+  border-left: 3px solid var(--trellis-primary, #{$trellis-primary-color});
+  // Brand-tinted wash instead of the neutral surface — quotes read as
+  // highlights, not just indented text.
+  background-color: var(--trellis-tint, #{$trellis-surface-color});
   border-radius: 0 $trellis-border-radius $trellis-border-radius 0;
+  font-style: italic;
 
   p:last-child {
     margin-bottom: 0;

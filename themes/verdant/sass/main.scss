@@ -62,5 +62,10 @@
     --trellis-code-comment:     #6b7280;
     --trellis-code-function:    #93c5fd;
     --trellis-code-punctuation: #9ca3af;
+
+    // Deeper shadows for dark surfaces (the light-strength ones vanish).
+    // Tints (--trellis-tint*) recompute automatically from the tokens above.
+    --trellis-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4), 0 2px 8px -4px rgb(0 0 0 / 0.5);
+    --trellis-shadow-md: 0 2px 4px rgb(0 0 0 / 0.4), 0 12px 28px -16px rgb(0 0 0 / 0.6);
   }
 }

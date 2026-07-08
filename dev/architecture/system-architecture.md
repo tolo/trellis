@@ -431,10 +431,10 @@ Two deliverables ship in the repo root alongside the packages: the **`arbor`** d
 
 A documentation-oriented theme sitting beside the `verdant` blog theme (both are standard-params-contract themes). It consumes the SSG's navigation surfaces directly: a hierarchical sidebar from `${site.menu}` (active/active-trail highlighting resolved at render time), an in-page TOC from `${page.toc}`, a breadcrumb bar from `${page.breadcrumbs}`, and prev/next links from `${page.prev}`/`${page.next}`. A CLI-generated SASS **bridge wrapper** (`site/.trellis/build/bridge_main.scss`) `@import`s the theme's params + `sass/main.scss` so `trellis build` compiles the theme's stylesheet with the site's `theme_params` bound.
 
-**Vendored-JS discipline** — all client-side JS is vendored (committed), served same-origin, and pinned with a per-file Subresource Integrity `sha384-…` hash plus `crossorigin="anonymous" defer`. **No CDN, no `npm`/Node, no runtime fetch from an external host.** Two assets:
+**Vendored-JS discipline** — all client-side JS is vendored (committed) and served same-origin with `defer`; no Subresource Integrity hash is used, since for a same-origin script committed alongside the HTML that loads it an SRI hash guards nothing extra (anyone who can alter a served script can alter the served HTML). **No CDN, no `npm`/Node, no runtime fetch from an external host.** Two assets:
 
-- **Prism 1.29.0** syntax highlighter — core + explicit per-language grammar components (the remote-fetching autoloader is deliberately *not* used); language coverage `dart`/`html`/`css`/`yaml`/`bash`/`scss`/`markdown` over the `language-*` classes `trellis_site` already emits. Provenance and the 9 SRI hashes are recorded in `themes/arbor/VENDORED.md`.
-- **`search.js`** — a hand-authored, dependency-free vanilla-JS search client (no Lunr/Fuse/MiniSearch vendored library), chosen to keep the asset small and fully auditable while still satisfying the vendored + pinned + SRI discipline.
+- **Prism 1.29.0** syntax highlighter — core + explicit per-language grammar components (the remote-fetching autoloader is deliberately *not* used); language coverage `dart`/`html`/`css`/`yaml`/`bash`/`scss`/`markdown` over the `language-*` classes `trellis_site` already emits. Provenance is recorded in `themes/arbor/VENDORED.md`.
+- **`search.js`** — a hand-authored, dependency-free vanilla-JS search client (no Lunr/Fuse/MiniSearch vendored library), chosen to keep the asset small and fully auditable while still satisfying the same vendored, same-origin discipline.
 
 Both syntax highlighting and search are **progressive enhancements**: the docs are fully readable and navigable with JavaScript disabled.
 
@@ -444,7 +444,7 @@ The engine and the theme meet at one artifact — `search-index.json`:
 
 ```
 trellis_site build                         arbor theme (browser)
-  SearchIndexGenerator                       search.js (vendored, SRI-pinned)
+  SearchIndexGenerator                       search.js (vendored, same-origin)
   (search.enabled: true)                       │
         │  emits                                │  reads index URL from the shell's
         ▼                                       │  data-search-index attribute

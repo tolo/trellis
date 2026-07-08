@@ -19,7 +19,12 @@ class ServeCommand extends Command<int> {
   /// sending SIGINT to the test process.
   final Future<void>? stopSignal;
 
-  ServeCommand({this.stopSignal}) {
+  /// Base directory the served site is resolved from. Defaults to the process
+  /// current directory. Injected by tests so serving never depends on (or
+  /// mutates) the process-global working directory.
+  final String? workingDirectory;
+
+  ServeCommand({this.stopSignal, this.workingDirectory}) {
     argParser
       ..addOption('port', abbr: 'p', help: 'Port to listen on.', defaultsTo: '8080')
       ..addOption('output', abbr: 'o', help: 'Output directory to serve.', defaultsTo: 'output');
@@ -45,23 +50,24 @@ class ServeCommand extends Command<int> {
     }
 
     // Resolve output directory: honor config unless --output explicitly provided
+    final baseDir = workingDirectory ?? Directory.current.path;
     final outputOption = argResults!['output'] as String;
     final outputExplicit = argResults!.wasParsed('output');
     String outputDir;
     if (outputExplicit) {
-      outputDir = p.isAbsolute(outputOption) ? outputOption : p.join(Directory.current.path, outputOption);
+      outputDir = p.isAbsolute(outputOption) ? outputOption : p.join(baseDir, outputOption);
     } else {
       // Try loading config for default outputDir
-      final configPath = p.join(Directory.current.path, 'trellis_site.yaml');
+      final configPath = p.join(baseDir, 'trellis_site.yaml');
       if (File(configPath).existsSync()) {
         try {
           final siteConfig = SiteConfig.load(configPath);
           outputDir = siteConfig.outputDir;
         } on SiteConfigException {
-          outputDir = p.join(Directory.current.path, outputOption);
+          outputDir = p.join(baseDir, outputOption);
         }
       } else {
-        outputDir = p.join(Directory.current.path, outputOption);
+        outputDir = p.join(baseDir, outputOption);
       }
     }
 

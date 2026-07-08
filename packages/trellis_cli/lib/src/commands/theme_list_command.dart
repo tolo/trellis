@@ -9,6 +9,12 @@ import 'package:trellis_site/trellis_site.dart';
 /// Lists all installed themes (subdirectories of `themes/`) with a `*` marker
 /// on the active theme. Works even without a `trellis_site.yaml`.
 class ThemeListCommand extends Command<int> {
+  /// Base directory the site and its `themes/` are resolved from. Defaults to
+  /// the process current directory.
+  final String? workingDirectory;
+
+  ThemeListCommand({this.workingDirectory});
+
   @override
   String get name => 'list';
 
@@ -20,7 +26,8 @@ class ThemeListCommand extends Command<int> {
 
   @override
   Future<int> run() async {
-    final configPath = p.join(Directory.current.path, 'trellis_site.yaml');
+    final baseDir = workingDirectory ?? Directory.current.path;
+    final configPath = p.join(baseDir, 'trellis_site.yaml');
 
     String? activeTheme;
     if (File(configPath).existsSync()) {
@@ -32,7 +39,7 @@ class ThemeListCommand extends Command<int> {
       }
     }
 
-    final themesDir = Directory(p.join(Directory.current.path, 'themes'));
+    final themesDir = Directory(p.join(baseDir, 'themes'));
     if (!themesDir.existsSync()) {
       stdout.writeln('No themes installed.');
       return 0;

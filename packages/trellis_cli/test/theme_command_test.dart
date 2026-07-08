@@ -8,16 +8,12 @@ import 'package:trellis_cli/src/theme_config_updater.dart';
 
 void main() {
   late Directory tempDir;
-  late String originalDir;
 
   setUp(() {
     tempDir = Directory.systemTemp.createTempSync('trellis_theme_cmd_');
-    originalDir = Directory.current.path;
-    Directory.current = tempDir;
   });
 
   tearDown(() {
-    Directory.current = originalDir;
     tempDir.deleteSync(recursive: true);
   });
 
@@ -58,7 +54,7 @@ void main() {
     return dir;
   }
 
-  Future<int> run(List<String> args) => TrellisCli().run(args);
+  Future<int> run(List<String> args) => TrellisCli(workingDirectory: tempDir.path).run(args);
 
   // ─── ThemeConfigUpdater ───────────────────────────────────────────────────
 

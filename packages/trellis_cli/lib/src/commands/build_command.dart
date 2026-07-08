@@ -11,7 +11,12 @@ import 'package:trellis_site/trellis_site.dart';
 /// pipeline via [TrellisSite.build], compiles any SASS/SCSS files in the site's
 /// static directory, and prints a build summary.
 class BuildCommand extends Command<int> {
-  BuildCommand() {
+  /// Base directory the site is loaded from and built into. Defaults to the
+  /// process current directory. Injected by tests so builds never depend on (or
+  /// mutate) the process-global working directory.
+  final String? workingDirectory;
+
+  BuildCommand({this.workingDirectory}) {
     argParser
       ..addOption('output', abbr: 'o', help: 'Output directory.', defaultsTo: 'output')
       ..addOption('base-url', help: 'Override the base URL from trellis_site.yaml.')
@@ -37,10 +42,12 @@ class BuildCommand extends Command<int> {
     final baseUrlOverride = argResults!['base-url'] as String?;
     final pathPrefixOverride = argResults!['path-prefix'] as String?;
 
-    // Locate trellis_site.yaml in cwd
-    final configPath = p.join(Directory.current.path, 'trellis_site.yaml');
+    final baseDir = workingDirectory ?? Directory.current.path;
+
+    // Locate trellis_site.yaml in the working directory
+    final configPath = p.join(baseDir, 'trellis_site.yaml');
     if (!File(configPath).existsSync()) {
-      stderr.writeln('Error: trellis_site.yaml not found in ${Directory.current.path}');
+      stderr.writeln('Error: trellis_site.yaml not found in $baseDir');
       return 1;
     }
 
@@ -50,7 +57,7 @@ class BuildCommand extends Command<int> {
       final rawConfig = SiteConfig.load(configPath);
       final outputExplicit = argResults!.wasParsed('output');
       final outputDir = outputExplicit
-          ? (p.isAbsolute(outputOption) ? outputOption : p.join(Directory.current.path, outputOption))
+          ? (p.isAbsolute(outputOption) ? outputOption : p.join(baseDir, outputOption))
           : rawConfig.outputDir;
       final baseUrl = baseUrlOverride ?? rawConfig.baseUrl;
 

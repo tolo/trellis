@@ -10,12 +10,18 @@ import 'theme_update_command.dart';
 ///
 /// Manages theme installation, updates, inspection, and removal.
 class ThemeCommand extends Command<int> {
-  ThemeCommand() {
-    addSubcommand(ThemeAddCommand());
-    addSubcommand(ThemeUpdateCommand());
-    addSubcommand(ThemeListCommand());
-    addSubcommand(ThemeInfoCommand());
-    addSubcommand(ThemeRemoveCommand());
+  /// Base directory the site and its `themes/` are resolved from. Defaults to
+  /// the process current directory. Injected by tests and forwarded to every
+  /// subcommand so theme operations never depend on (or mutate) the
+  /// process-global working directory.
+  final String? workingDirectory;
+
+  ThemeCommand({this.workingDirectory}) {
+    addSubcommand(ThemeAddCommand(workingDirectory: workingDirectory));
+    addSubcommand(ThemeUpdateCommand(workingDirectory: workingDirectory));
+    addSubcommand(ThemeListCommand(workingDirectory: workingDirectory));
+    addSubcommand(ThemeInfoCommand(workingDirectory: workingDirectory));
+    addSubcommand(ThemeRemoveCommand(workingDirectory: workingDirectory));
   }
 
   @override

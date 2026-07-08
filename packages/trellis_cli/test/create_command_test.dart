@@ -7,21 +7,17 @@ import 'package:trellis_cli/trellis_cli.dart';
 void main() {
   group('CreateCommand', () {
     late Directory tempDir;
-    late String originalDir;
 
     setUp(() {
       tempDir = Directory.systemTemp.createTempSync('trellis_cli_test_');
-      originalDir = Directory.current.path;
-      Directory.current = tempDir;
     });
 
     tearDown(() {
-      Directory.current = originalDir;
       tempDir.deleteSync(recursive: true);
     });
 
     test('creates project with all expected files', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['create', 'my_test_app']);
       expect(result, 0);
 
@@ -47,33 +43,33 @@ void main() {
     });
 
     test('rejects invalid project name', () {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       expect(() => cli.run(['create', 'My-App']), throwsA(isA<UsageException>()));
     });
 
     test('rejects reserved word as project name', () {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       expect(() => cli.run(['create', 'class']), throwsA(isA<UsageException>()));
     });
 
     test('errors on existing directory', () async {
       Directory('${tempDir.path}/existing_app').createSync();
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       expect(() => cli.run(['create', 'existing_app']), throwsA(isA<UsageException>()));
     });
 
     test('errors when no project name given', () {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       expect(() => cli.run(['create']), throwsA(isA<UsageException>()));
     });
 
     test('errors when too many arguments', () {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       expect(() => cli.run(['create', 'foo', 'bar']), throwsA(isA<UsageException>()));
     });
 
     test('generated pubspec contains correct project name', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       await cli.run(['create', 'hello_world']);
 
       final pubspec = File('${tempDir.path}/hello_world/pubspec.yaml').readAsStringSync();
@@ -83,21 +79,17 @@ void main() {
 
   group('CreateCommand — blog template', () {
     late Directory tempDir;
-    late String originalDir;
 
     setUp(() {
       tempDir = Directory.systemTemp.createTempSync('trellis_blog_test_');
-      originalDir = Directory.current.path;
-      Directory.current = tempDir;
     });
 
     tearDown(() {
-      Directory.current = originalDir;
       tempDir.deleteSync(recursive: true);
     });
 
     test('--template blog creates project with expected files', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['create', '--template', 'blog', 'my_blog']);
       expect(result, 0);
 
@@ -128,14 +120,14 @@ void main() {
     });
 
     test('-t blog short flag creates blog project', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['create', '-t', 'blog', 'test_blog']);
       expect(result, 0);
       expect(File('${tempDir.path}/test_blog/trellis_site.yaml').existsSync(), isTrue);
     });
 
     test('--template blog next steps mentions trellis build and trellis serve', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       await cli.run(['create', '--template', 'blog', 'my_blog']);
       // The output mentions "trellis build" and "trellis serve" — tested via
       // the command completing without error and expected files existing.
@@ -144,12 +136,12 @@ void main() {
 
     test('--template blog with existing directory produces error', () {
       Directory('${tempDir.path}/existing_blog').createSync();
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       expect(() => cli.run(['create', '--template', 'blog', 'existing_blog']), throwsA(isA<UsageException>()));
     });
 
     test('--template htmx still works unchanged', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['create', '--template', 'htmx', 'my_htmx_app']);
       expect(result, 0);
       // HTMX project has pubspec.yaml with trellis_shelf
@@ -160,21 +152,17 @@ void main() {
 
   group('CreateCommand — dart_frog template', () {
     late Directory tempDir;
-    late String originalDir;
 
     setUp(() {
       tempDir = Directory.systemTemp.createTempSync('trellis_dart_frog_test_');
-      originalDir = Directory.current.path;
-      Directory.current = tempDir;
     });
 
     tearDown(() {
-      Directory.current = originalDir;
       tempDir.deleteSync(recursive: true);
     });
 
     test('--template dart_frog creates project with expected files', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['create', '--template', 'dart_frog', 'my_df_app']);
       expect(result, 0);
 
@@ -206,14 +194,14 @@ void main() {
     });
 
     test('-t dart_frog short flag creates Dart Frog project', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['create', '-t', 'dart_frog', 'short_flag_app']);
       expect(result, 0);
       expect(File('${tempDir.path}/short_flag_app/dart_frog.yaml').existsSync(), isTrue);
     });
 
     test('generated pubspec contains dart_frog and trellis_dart_frog', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       await cli.run(['create', '--template', 'dart_frog', 'df_pubspec_test']);
 
       final pubspec = File('${tempDir.path}/df_pubspec_test/pubspec.yaml').readAsStringSync();
@@ -223,19 +211,19 @@ void main() {
 
     test('--template dart_frog with existing directory produces error', () {
       Directory('${tempDir.path}/existing_df').createSync();
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       expect(() => cli.run(['create', '--template', 'dart_frog', 'existing_df']), throwsA(isA<UsageException>()));
     });
 
     test('--template blog still works unchanged after dart_frog addition', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['create', '--template', 'blog', 'my_blog_check']);
       expect(result, 0);
       expect(File('${tempDir.path}/my_blog_check/trellis_site.yaml').existsSync(), isTrue);
     });
 
     test('--template htmx still works unchanged after dart_frog addition', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['create', '--template', 'htmx', 'my_htmx_check']);
       expect(result, 0);
       final pubspec = File('${tempDir.path}/my_htmx_check/pubspec.yaml').readAsStringSync();
@@ -245,21 +233,17 @@ void main() {
 
   group('CreateCommand — relic template', () {
     late Directory tempDir;
-    late String originalDir;
 
     setUp(() {
       tempDir = Directory.systemTemp.createTempSync('trellis_relic_test_');
-      originalDir = Directory.current.path;
-      Directory.current = tempDir;
     });
 
     tearDown(() {
-      Directory.current = originalDir;
       tempDir.deleteSync(recursive: true);
     });
 
     test('--template relic creates project with expected files', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['create', '--template', 'relic', 'my_relic_app']);
       expect(result, 0);
 
@@ -284,14 +268,14 @@ void main() {
     });
 
     test('-t relic short flag creates Relic project', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['create', '-t', 'relic', 'short_flag_relic']);
       expect(result, 0);
       expect(File('${tempDir.path}/short_flag_relic/bin/server.dart').existsSync(), isTrue);
     });
 
     test('generated pubspec contains relic and trellis_relic', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       await cli.run(['create', '--template', 'relic', 'relic_pubspec_test']);
 
       final pubspec = File('${tempDir.path}/relic_pubspec_test/pubspec.yaml').readAsStringSync();
@@ -301,12 +285,12 @@ void main() {
 
     test('--template relic with existing directory produces error', () {
       Directory('${tempDir.path}/existing_relic').createSync();
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       expect(() => cli.run(['create', '--template', 'relic', 'existing_relic']), throwsA(isA<UsageException>()));
     });
 
     test('generated server configures CSP for HTMX CDN script', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       await cli.run(['create', '--template', 'relic', 'relic_csp_test']);
 
       final server = File('${tempDir.path}/relic_csp_test/bin/server.dart').readAsStringSync();

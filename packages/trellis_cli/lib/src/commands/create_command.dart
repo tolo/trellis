@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
+import 'package:path/path.dart' as p;
 
 import '../generator/blog_project_generator.dart';
 import '../generator/dart_frog_project_generator.dart';
@@ -17,7 +18,12 @@ import '../validators.dart';
 /// the Dart Frog + Trellis + HTMX template, the Relic + Trellis + HTMX
 /// template, or the theme scaffold template.
 class CreateCommand extends Command<int> {
-  CreateCommand() {
+  /// Base directory the project is scaffolded into. Defaults to the process
+  /// current directory. Injected by tests so scaffolding never depends on (or
+  /// mutates) the process-global working directory.
+  final String? workingDirectory;
+
+  CreateCommand({this.workingDirectory}) {
     argParser.addOption(
       'template',
       abbr: 't',
@@ -58,7 +64,8 @@ class CreateCommand extends Command<int> {
       usageException(error);
     }
 
-    final dir = Directory(projectName);
+    final baseDir = workingDirectory ?? Directory.current.path;
+    final dir = Directory(p.join(baseDir, projectName));
     if (dir.existsSync()) {
       usageException('Directory "$projectName" already exists.');
     }

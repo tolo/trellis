@@ -6,16 +6,12 @@ import 'package:trellis_cli/trellis_cli.dart';
 
 void main() {
   late Directory tempDir;
-  late String originalDir;
 
   setUp(() {
     tempDir = Directory.systemTemp.createTempSync('trellis_build_cmd_');
-    originalDir = Directory.current.path;
-    Directory.current = tempDir;
   });
 
   tearDown(() {
-    Directory.current = originalDir;
     tempDir.deleteSync(recursive: true);
   });
 
@@ -58,14 +54,14 @@ Hello world.
     // T01: valid site → exits 0, prints summary
     test('T01: builds valid site successfully', () async {
       minimalSite(tempDir);
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build']);
       expect(result, 0);
     });
 
     // T02: no trellis_site.yaml → exits 1, error mentions trellis_site.yaml
     test('T02: no trellis_site.yaml exits 1', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build']);
       expect(result, 1);
     });
@@ -73,7 +69,7 @@ Hello world.
     // T03: --output dist → output written to dist/
     test('T03: --output writes to custom directory', () async {
       minimalSite(tempDir, outputDir: 'output');
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build', '--output', 'dist']);
       expect(result, 0);
       expect(Directory(p.join(tempDir.path, 'dist')).existsSync(), isTrue);
@@ -107,7 +103,7 @@ See the [about page](/about/).
     // pathPrefix from config rewrites root-absolute content + literal links.
     test('T03b: pathPrefix from config prefixes root-absolute links', () async {
       linkSite(tempDir, pathPrefix: '/myprefix/');
-      final result = await TrellisCli().run(['build']);
+      final result = await TrellisCli(workingDirectory: tempDir.path).run(['build']);
       expect(result, 0);
       final html = File(p.join(tempDir.path, 'output', 'index.html')).readAsStringSync();
       expect(html, contains('href="/myprefix/about/"'), reason: 'content link prefixed');
@@ -120,7 +116,7 @@ See the [about page](/about/).
     // --path-prefix flag overrides (and normalizes) when config has none.
     test('T03c: --path-prefix override prefixes links', () async {
       linkSite(tempDir); // no pathPrefix in config
-      final result = await TrellisCli().run(['build', '--path-prefix', 'myprefix']);
+      final result = await TrellisCli(workingDirectory: tempDir.path).run(['build', '--path-prefix', 'myprefix']);
       expect(result, 0);
       final html = File(p.join(tempDir.path, 'output', 'index.html')).readAsStringSync();
       expect(html, contains('href="/myprefix/about/"'));
@@ -145,7 +141,7 @@ Draft content.
 <body><div tl:utext="\${page.content}">content</div></body>
 </html>
 ''');
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build', '--drafts']);
       expect(result, 0);
       // Draft page should appear in output when --drafts is set
@@ -156,7 +152,7 @@ Draft content.
     // T05: --verbose → exits 0
     test('T05: --verbose exits 0', () async {
       minimalSite(tempDir);
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build', '--verbose']);
       expect(result, 0);
     });
@@ -178,14 +174,14 @@ Content.
       // Provide home layout but NOT single/list — so page.md has no layout
       Directory(p.join(tempDir.path, 'layouts')).createSync(recursive: true);
       // No layout files at all → TemplateNotFoundException
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build']);
       expect(result, 1);
     });
 
     // T07: --help → exits 0
     test('T07: --help exits 0', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build', '--help']);
       expect(result, 0);
     });
@@ -198,7 +194,7 @@ Content.
 $primary: #3498db;
 .btn { color: $primary; }
 ''');
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build']);
       expect(result, 0);
       final cssPath = p.join(tempDir.path, 'output', 'main.css');
@@ -213,7 +209,7 @@ $primary: #3498db;
       File(p.join(tempDir.path, 'static', '_variables.scss')).writeAsStringSync(r'''
 $primary: #3498db;
 ''');
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build']);
       expect(result, 0);
       // Partial should not produce output file
@@ -223,7 +219,7 @@ $primary: #3498db;
     // --output shorthand -o
     test('short flag -o sets output directory', () async {
       minimalSite(tempDir);
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build', '-o', 'public']);
       expect(result, 0);
       expect(Directory(p.join(tempDir.path, 'public')).existsSync(), isTrue);
@@ -232,7 +228,7 @@ $primary: #3498db;
     // outputDir from config is honoured when --output is not passed
     test('honors outputDir from trellis_site.yaml when --output not specified', () async {
       minimalSite(tempDir, outputDir: 'dist');
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build']);
       expect(result, 0);
       expect(Directory(p.join(tempDir.path, 'dist')).existsSync(), isTrue);
@@ -308,7 +304,7 @@ theme_params:
   site_name: "Overridden Name"
 ''');
 
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build']);
       expect(result, 0);
 
@@ -411,7 +407,7 @@ theme_params:
         skinTheme(tempDir);
         useSkinTheme(tempDir, 'skin-theme', 'dark');
 
-        expect(await TrellisCli().run(['build']), 0);
+        expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
 
         final wrapper = File(p.join(tempDir.path, '.trellis', 'build', 'bridge_main.scss')).readAsStringSync();
         expect(wrapper, contains('_skins/_dark.scss'));
@@ -428,7 +424,7 @@ theme_params:
         skinTheme(tempDir);
         useSkinTheme(tempDir, 'skin-theme', 'light');
 
-        expect(await TrellisCli().run(['build']), 0);
+        expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
 
         final wrapper = File(p.join(tempDir.path, '.trellis', 'build', 'bridge_main.scss')).readAsStringSync();
         expect(wrapper, contains('_skins/_light.scss'));
@@ -440,7 +436,7 @@ theme_params:
         skinTheme(tempDir);
         useSkinTheme(tempDir, 'skin-theme', 'auto');
 
-        expect(await TrellisCli().run(['build']), 0);
+        expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
 
         final wrapper = File(p.join(tempDir.path, '.trellis', 'build', 'bridge_main.scss')).readAsStringSync();
         expect(wrapper, isNot(contains('_skins')));
@@ -453,11 +449,11 @@ theme_params:
         skinTheme(tempDir);
 
         useSkinTheme(tempDir, 'skin-theme', 'dark');
-        expect(await TrellisCli().run(['build']), 0);
+        expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
         final darkCss = File(p.join(tempDir.path, 'output', 'css', 'main.css')).readAsStringSync();
 
         useSkinTheme(tempDir, 'skin-theme', 'light');
-        expect(await TrellisCli().run(['build']), 0);
+        expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
         final lightCss = File(p.join(tempDir.path, 'output', 'css', 'main.css')).readAsStringSync();
 
         expect(darkCss, isNot(equals(lightCss)));
@@ -493,7 +489,7 @@ params:
 
         useSkinTheme(tempDir, 'no-skins', 'dark');
 
-        expect(await TrellisCli().run(['build']), 0);
+        expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
         final wrapper = File(p.join(tempDir.path, '.trellis', 'build', 'bridge_main.scss')).readAsStringSync();
         expect(wrapper, isNot(contains('_skins')));
         expect(File(p.join(tempDir.path, 'output', 'css', 'main.css')).existsSync(), isTrue);
@@ -524,8 +520,7 @@ params:
       Directory(p.join(siteDir.path, 'content')).createSync();
       File(p.join(siteDir.path, 'content', '_index.md')).writeAsStringSync('---\ntitle: Home\n---\nHi\n');
 
-      Directory.current = siteDir;
-      final result = await TrellisCli().run(['build']);
+      final result = await TrellisCli(workingDirectory: siteDir.path).run(['build']);
       expect(result, 0);
       final css = File(p.join(siteDir.path, 'output', 'css', 'main.css'));
       expect(css.existsSync(), isTrue, reason: 'theme SASS must compile for a relative theme path');
@@ -536,7 +531,7 @@ params:
     test('--base-url overrides baseUrl from config', () async {
       minimalSite(tempDir);
       // baseUrl in config is https://example.com (set by minimalSite)
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build', '--base-url', 'https://staging.example.com', '--verbose']);
       expect(result, 0);
       // Sitemap should contain the overridden base URL

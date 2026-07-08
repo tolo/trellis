@@ -13,7 +13,11 @@ import '../validators.dart';
 /// copy). Reads the theme's `theme.yaml`, then sets `theme:` in
 /// `trellis_site.yaml`.
 class ThemeAddCommand extends Command<int> {
-  ThemeAddCommand() {
+  /// Base directory the site and its `themes/` are resolved from. Defaults to
+  /// the process current directory.
+  final String? workingDirectory;
+
+  ThemeAddCommand({this.workingDirectory}) {
     argParser.addOption('ref', help: 'Git tag, branch, or commit to checkout.', valueHelp: 'tag');
   }
 
@@ -38,15 +42,17 @@ class ThemeAddCommand extends Command<int> {
     final source = argResults!.rest.first;
     final ref = argResults!['ref'] as String?;
 
+    final baseDir = workingDirectory ?? Directory.current.path;
+
     // Verify trellis_site.yaml exists
-    final configPath = p.join(Directory.current.path, 'trellis_site.yaml');
+    final configPath = p.join(baseDir, 'trellis_site.yaml');
     if (!File(configPath).existsSync()) {
-      stderr.writeln('Error: trellis_site.yaml not found in ${Directory.current.path}');
+      stderr.writeln('Error: trellis_site.yaml not found in $baseDir');
       return 1;
     }
 
     // Create themes/ directory if needed
-    final themesDir = p.join(Directory.current.path, 'themes');
+    final themesDir = p.join(baseDir, 'themes');
     Directory(themesDir).createSync(recursive: true);
 
     // Determine if source is a local path or git URL

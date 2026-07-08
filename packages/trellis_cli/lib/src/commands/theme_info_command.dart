@@ -9,6 +9,12 @@ import 'package:trellis_site/trellis_site.dart';
 /// Displays theme manifest metadata and all params with current (site-configured)
 /// and default values.
 class ThemeInfoCommand extends Command<int> {
+  /// Base directory the site and its `themes/` are resolved from. Defaults to
+  /// the process current directory.
+  final String? workingDirectory;
+
+  ThemeInfoCommand({this.workingDirectory});
+
   @override
   String get name => 'info';
 
@@ -25,7 +31,8 @@ class ThemeInfoCommand extends Command<int> {
     }
 
     final themeName = argResults!.rest.first;
-    final themeDir = p.join(Directory.current.path, 'themes', themeName);
+    final baseDir = workingDirectory ?? Directory.current.path;
+    final themeDir = p.join(baseDir, 'themes', themeName);
 
     if (!Directory(themeDir).existsSync()) {
       stderr.writeln("Error: Theme '$themeName' not found in themes/");
@@ -42,7 +49,7 @@ class ThemeInfoCommand extends Command<int> {
 
     // Load site config for current param values (only when this is the active theme)
     var currentParams = <String, dynamic>{};
-    final configPath = p.join(Directory.current.path, 'trellis_site.yaml');
+    final configPath = p.join(baseDir, 'trellis_site.yaml');
     if (File(configPath).existsSync()) {
       try {
         final config = SiteConfig.load(configPath);

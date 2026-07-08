@@ -15,12 +15,18 @@ class TrellisCli extends CommandRunner<int> {
   /// [serveStopSignal] is forwarded to [ServeCommand] to override the default
   /// SIGINT-based shutdown. Tests may inject a [Completer.future] here to
   /// stop the server without sending a process signal.
-  TrellisCli({Future<void>? serveStopSignal}) : super('trellis', 'Trellis SDK — build and serve static sites.') {
+  ///
+  /// [workingDirectory] is forwarded to every command as the base directory for
+  /// resolving scaffolds, sites, and themes. It defaults to the process current
+  /// directory (zero user-facing change); tests inject a temp directory so the
+  /// suite never mutates the process-global working directory.
+  TrellisCli({Future<void>? serveStopSignal, String? workingDirectory})
+    : super('trellis', 'Trellis SDK — build and serve static sites.') {
     argParser.addFlag('version', negatable: false, help: 'Print the CLI version.');
-    addCommand(CreateCommand());
-    addCommand(BuildCommand());
-    addCommand(ServeCommand(stopSignal: serveStopSignal));
-    addCommand(ThemeCommand());
+    addCommand(CreateCommand(workingDirectory: workingDirectory));
+    addCommand(BuildCommand(workingDirectory: workingDirectory));
+    addCommand(ServeCommand(stopSignal: serveStopSignal, workingDirectory: workingDirectory));
+    addCommand(ThemeCommand(workingDirectory: workingDirectory));
   }
 
   @override

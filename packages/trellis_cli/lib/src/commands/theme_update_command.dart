@@ -10,6 +10,12 @@ import 'package:trellis_site/trellis_site.dart';
 /// `git fetch` + `git checkout <ref>` (for pinned themes). If no name is
 /// given, updates the active theme from `trellis_site.yaml`.
 class ThemeUpdateCommand extends Command<int> {
+  /// Base directory the site and its `themes/` are resolved from. Defaults to
+  /// the process current directory.
+  final String? workingDirectory;
+
+  ThemeUpdateCommand({this.workingDirectory});
+
   @override
   String get name => 'update';
 
@@ -21,9 +27,10 @@ class ThemeUpdateCommand extends Command<int> {
 
   @override
   Future<int> run() async {
-    final configPath = p.join(Directory.current.path, 'trellis_site.yaml');
+    final baseDir = workingDirectory ?? Directory.current.path;
+    final configPath = p.join(baseDir, 'trellis_site.yaml');
     if (!File(configPath).existsSync()) {
-      stderr.writeln('Error: trellis_site.yaml not found in ${Directory.current.path}');
+      stderr.writeln('Error: trellis_site.yaml not found in $baseDir');
       return 1;
     }
 
@@ -35,7 +42,7 @@ class ThemeUpdateCommand extends Command<int> {
       return 1;
     }
 
-    final themeDir = p.join(Directory.current.path, 'themes', themeName);
+    final themeDir = p.join(baseDir, 'themes', themeName);
     if (!Directory(themeDir).existsSync()) {
       stderr.writeln("Error: Theme '$themeName' not found in themes/");
       return 1;

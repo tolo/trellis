@@ -42,7 +42,7 @@ After installing, set `theme:` in `trellis_site.yaml`:
 # trellis_site.yaml
 title: My Blog
 description: Notes about Dart and the web.
-base_url: https://example.com
+baseUrl: https://example.com
 taxonomies:
   - tags
 paginate: 10

@@ -404,7 +404,7 @@ The `example/` directory holds a minimal preview site so theme authors can test 
 # themes/verdant/example/trellis_site.yaml
 title: My Blog
 description: A sample blog powered by Trellis and the Verdant theme.
-base_url: http://localhost:4000
+baseUrl: http://localhost:4000
 author: Your Name
 
 # Use relative path to the theme directory

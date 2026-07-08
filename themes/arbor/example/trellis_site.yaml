@@ -1,6 +1,6 @@
 title: Arbor Docs
 description: Preview site for the Arbor documentation theme.
-base_url: http://localhost:8080
+baseUrl: http://localhost:8080
 author: Trellis Team
 
 # Theme resolution

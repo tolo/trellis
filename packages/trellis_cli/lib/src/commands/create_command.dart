@@ -83,7 +83,6 @@ class CreateCommand extends Command<int> {
       stdout.writeln('');
       stdout.writeln('Next steps:');
       stdout.writeln('  cd $projectName');
-      stdout.writeln('  dart pub get');
       stdout.writeln('  trellis build');
       stdout.writeln('  trellis serve');
     } else if (template == 'dart_frog') {

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:args/command_runner.dart';
 import 'package:test/test.dart';
@@ -126,12 +127,21 @@ void main() {
       expect(File('${tempDir.path}/test_blog/trellis_site.yaml').existsSync(), isTrue);
     });
 
-    test('--template blog next steps mentions trellis build and trellis serve', () async {
-      final cli = TrellisCli(workingDirectory: tempDir.path);
-      await cli.run(['create', '--template', 'blog', 'my_blog']);
-      // The output mentions "trellis build" and "trellis serve" — tested via
-      // the command completing without error and expected files existing.
-      expect(File('${tempDir.path}/my_blog/trellis_site.yaml').existsSync(), isTrue);
+    test('--template blog next steps omit Dart SDK package resolution', () async {
+      final binPath = await _trellisCliBinPath();
+      final result = await Process.run(Platform.resolvedExecutable, [
+        'run',
+        binPath,
+        'create',
+        '--template',
+        'blog',
+        'my_blog_output',
+      ], workingDirectory: tempDir.path);
+
+      expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+      expect(result.stdout, contains('  trellis build'));
+      expect(result.stdout, contains('  trellis serve'));
+      expect(result.stdout, isNot(contains('dart pub get')));
     });
 
     test('--template blog with existing directory produces error', () {
@@ -299,4 +309,13 @@ void main() {
       expect(server, contains('trellisSecurityHeaders(csp: csp)'));
     });
   });
+}
+
+Future<String> _trellisCliBinPath() async {
+  final packageUri = await Isolate.resolvePackageUri(Uri.parse('package:trellis_cli/trellis_cli.dart'));
+  if (packageUri == null || packageUri.scheme != 'file') {
+    throw StateError('Could not resolve package:trellis_cli/trellis_cli.dart');
+  }
+
+  return '${File(packageUri.toFilePath()).parent.parent.path}/bin/trellis.dart';
 }

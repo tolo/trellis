@@ -4,6 +4,7 @@ import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
 import 'package:trellis_site/trellis_site.dart';
 
+import '../process_runner.dart';
 import '../theme_config_updater.dart';
 import '../validators.dart';
 
@@ -17,9 +18,12 @@ class ThemeAddCommand extends Command<int> {
   /// the process current directory.
   final String? workingDirectory;
 
-  ThemeAddCommand({this.workingDirectory}) {
+  ThemeAddCommand({this.workingDirectory, ProcessRunner processRunner = runProcess})
+      : _processRunner = processRunner {
     argParser.addOption('ref', help: 'Git tag, branch, or commit to checkout.', valueHelp: 'tag');
   }
+
+  final ProcessRunner _processRunner;
 
   @override
   String get name => 'add';
@@ -137,10 +141,15 @@ class ThemeAddCommand extends Command<int> {
 
     final ProcessResult result;
     try {
-      result = await Process.run('git', cloneArgs);
-    } on ProcessException {
-      stderr.writeln('Error: git is required for theme commands but was not found on PATH — install git and retry.');
-      throw _ThemeAddException();
+      result = await _processRunner('git', cloneArgs);
+    } on ProcessException catch (e) {
+      // errorCode 2 == ENOENT (git missing from PATH); anything else is a genuine
+      // spawn failure and must not be misdiagnosed as missing git.
+      if (e.errorCode == 2) {
+        stderr.writeln('Error: git is required for theme commands but was not found on PATH - install git and retry.');
+        throw _ThemeAddException();
+      }
+      rethrow;
     }
     if (result.exitCode != 0) {
       stderr.writeln('Error: Failed to clone theme: ${result.stderr}');

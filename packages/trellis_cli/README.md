@@ -15,10 +15,18 @@ package. Pick whichever fits your workflow.
 brew install tolo/trellis/trellis
 ```
 
+### Scoop (Windows)
+
+```powershell
+scoop bucket add trellis https://github.com/tolo/scoop-trellis
+scoop install trellis
+```
+
 ### Manual download
 
-Grab the archive for your platform from the
-[latest release](https://github.com/tolo/trellis/releases/latest):
+Set `VERSION` to the current release number from the
+[latest release](https://github.com/tolo/trellis/releases/latest), then grab the
+archive for your platform. Do not include the leading `v` in `VERSION`.
 
 | Platform | Asset |
 |---|---|
@@ -35,20 +43,30 @@ and put it on your `PATH`.
 macOS / Linux:
 
 ```bash
-curl -LO https://github.com/tolo/trellis/releases/latest/download/trellis-v<version>-macos-arm64.tar.gz
-curl -LO https://github.com/tolo/trellis/releases/latest/download/SHA256SUMS.txt
+VERSION=0.9.1
+BASE=https://github.com/tolo/trellis/releases/download/v$VERSION
+ASSET=trellis-v$VERSION-macos-arm64.tar.gz
+curl -LO $BASE/$ASSET
+curl -LO $BASE/SHA256SUMS.txt
 shasum -a 256 -c SHA256SUMS.txt --ignore-missing
-tar -xzf trellis-v<version>-macos-arm64.tar.gz trellis
+tar -xzf $ASSET trellis
 sudo mv trellis /usr/local/bin/
 ```
 
 Windows (PowerShell):
 
 ```powershell
-Invoke-WebRequest https://github.com/tolo/trellis/releases/latest/download/trellis-v<version>-windows-x64.zip -OutFile trellis.zip
-Invoke-WebRequest https://github.com/tolo/trellis/releases/latest/download/SHA256SUMS.txt -OutFile SHA256SUMS.txt
-Get-FileHash trellis.zip -Algorithm SHA256   # compare against the matching line in SHA256SUMS.txt
-Expand-Archive trellis.zip -DestinationPath trellis-bin
+$Version = "0.9.1" # no leading "v"
+$Base = "https://github.com/tolo/trellis/releases/download/v$Version"
+$Asset = "trellis-v$Version-windows-x64.zip"
+Invoke-WebRequest "$Base/$Asset" -OutFile $Asset
+Invoke-WebRequest "$Base/SHA256SUMS.txt" -OutFile SHA256SUMS.txt
+$Match = Select-String -Path SHA256SUMS.txt -Pattern ([regex]::Escape($Asset) + '$')
+if (-not $Match) { throw "No checksum line for $Asset" }
+$Expected = ($Match.Line -split '\s+')[0]
+$Actual = (Get-FileHash $Asset -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($Actual -ne $Expected) { throw "Checksum mismatch for $Asset" }
+Expand-Archive $Asset -DestinationPath trellis-bin
 # Then move trellis-bin\trellis.exe onto your PATH.
 ```
 
@@ -91,7 +109,6 @@ Then open http://localhost:8080 in your browser.
 ```bash
 trellis create my_blog --template blog
 cd my_blog
-dart pub get
 trellis build
 trellis serve
 ```

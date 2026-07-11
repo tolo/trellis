@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+import 'package:trellis_cli/src/commands/theme_add_command.dart';
+import 'package:trellis_cli/src/commands/theme_update_command.dart';
 import 'package:trellis_cli/trellis_cli.dart';
 import 'package:trellis_cli/src/theme_config_updater.dart';
 
@@ -55,6 +57,11 @@ void main() {
   }
 
   Future<int> run(List<String> args) => TrellisCli(workingDirectory: tempDir.path).run(args);
+
+  Future<int> runSingleCommand(Command<int> command, List<String> args) {
+    final runner = CommandRunner<int>('trellis', 'test')..addCommand(command);
+    return runner.run(args).then((code) => code ?? 0);
+  }
 
   // ─── ThemeConfigUpdater ───────────────────────────────────────────────────
 
@@ -198,6 +205,24 @@ void main() {
       final exitCode = await run(['theme', 'add', localTheme.path]);
       expect(exitCode, 1);
     });
+
+    test('missing git returns actionable error code for git URL', () async {
+      writeConfig();
+      var invokedGit = false;
+      final command = ThemeAddCommand(
+        workingDirectory: tempDir.path,
+        processRunner: (executable, arguments) {
+          invokedGit = executable == 'git';
+          throw const ProcessException('git', ['clone'], 'No such file or directory', 2);
+        },
+      );
+
+      final exitCode = await runSingleCommand(command, ['add', 'https://github.com/example/trellis-theme-oak.git']);
+
+      expect(exitCode, 1);
+      expect(invokedGit, isTrue);
+      expect(Directory(p.join(tempDir.path, 'themes', 'oak')).existsSync(), isFalse);
+    });
   });
 
   // ─── trellis theme update ─────────────────────────────────────────────────
@@ -226,6 +251,25 @@ void main() {
     test('no trellis_site.yaml → error', () async {
       final exitCode = await run(['theme', 'update']);
       expect(exitCode, 1);
+    });
+
+    test('missing git returns actionable error code for git theme update', () async {
+      writeConfig(theme: 'my-theme');
+      final theme = writeTheme('my-theme');
+      Directory(p.join(theme.path, '.git')).createSync();
+      var invokedGit = false;
+      final command = ThemeUpdateCommand(
+        workingDirectory: tempDir.path,
+        processRunner: (executable, arguments) {
+          invokedGit = executable == 'git';
+          throw const ProcessException('git', ['pull'], 'No such file or directory', 2);
+        },
+      );
+
+      final exitCode = await runSingleCommand(command, ['update', 'my-theme']);
+
+      expect(exitCode, 1);
+      expect(invokedGit, isTrue);
     });
   });
 

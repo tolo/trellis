@@ -35,28 +35,9 @@
         rel="alternate" type="application/rss+xml"
         title="RSS Feed" tl:attr="href=${site.feeds.rss}">
 
-  <!-- Vendored syntax highlighter: Prism 1.29.0, same-origin, no CDN.
-       Order: core, clike base, then per-language components (dart extends clike;
-       markdown extends markup; scss extends css). Served from the output root;
-       see VENDORED.md for provenance. -->
-  <script tl:if="${theme.syntax_highlighting}"
-          tl:attr="src=${assetBase} + 'prism/prism-core.min.js'" defer></script>
-  <script tl:if="${theme.syntax_highlighting}"
-          tl:attr="src=${assetBase} + 'prism/prism-clike.min.js'" defer></script>
-  <script tl:if="${theme.syntax_highlighting}"
-          tl:attr="src=${assetBase} + 'prism/prism-markup.min.js'" defer></script>
-  <script tl:if="${theme.syntax_highlighting}"
-          tl:attr="src=${assetBase} + 'prism/prism-markdown.min.js'" defer></script>
-  <script tl:if="${theme.syntax_highlighting}"
-          tl:attr="src=${assetBase} + 'prism/prism-css.min.js'" defer></script>
-  <script tl:if="${theme.syntax_highlighting}"
-          tl:attr="src=${assetBase} + 'prism/prism-scss.min.js'" defer></script>
-  <script tl:if="${theme.syntax_highlighting}"
-          tl:attr="src=${assetBase} + 'prism/prism-dart.min.js'" defer></script>
-  <script tl:if="${theme.syntax_highlighting}"
-          tl:attr="src=${assetBase} + 'prism/prism-yaml.min.js'" defer></script>
-  <script tl:if="${theme.syntax_highlighting}"
-          tl:attr="src=${assetBase} + 'prism/prism-bash.min.js'" defer></script>
+  <!-- Syntax highlighting is baked into the built HTML at build time (ADR-010):
+       the SSG emits `.hljs-*` spans, styled by sass/_code.scss. No client-side
+       highlighter ships with the theme — code is colored with JavaScript off. -->
 
   <!-- Client-side search (S09): first-party, same-origin, no CDN.
        Reads the index URL from the shell's data-search-index attribute; on a
@@ -66,7 +47,7 @@
 
   <!-- Code-block enhancement (first-party, same-origin, no CDN): adds a language
        label and copy button to each code block. Progressive enhancement — code
-       stays fully readable without JS. Loaded after Prism (defer preserves order). -->
+       stays fully readable (and colored, via build-time hljs spans) without JS. -->
   <script tl:attr="src=${assetBase} + 'js/code-enhance.js'" defer></script>
 
   <!-- Extra head slot: child layouts inject additional tags here. -->

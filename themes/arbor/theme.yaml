@@ -124,11 +124,6 @@ params:
     default: true
     description: Display RSS/Atom feed link
 
-  syntax_highlighting:
-    type: boolean
-    default: true
-    description: Enable client-side syntax highlighting via the vendored Prism assets
-
   excerpt_length:
     type: int
     default: 160

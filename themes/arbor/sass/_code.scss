@@ -1,8 +1,9 @@
 // Arbor Docs Theme — sass/_code.scss
-// Inline code, code blocks (pre), and Prism.js token colors.
+// Inline code, code blocks (pre), and highlight.js token colors.
 // Token colors use CSS custom properties (--trellis-code-*) so they adapt to the
-// light/dark skin. The vendored Prism highlighter targets `pre code[class^="language-"]`
-// and emits `.token.*` spans, which this file styles.
+// light/dark skin. Highlighting is baked in at build time by the SSG (ADR-010),
+// which emits `.hljs-*` spans inside `pre > code[class^="language-"]`; this file
+// styles them. No client-side highlighter ships with the theme.
 
 // ── Inline code ───────────────────────────────────────────────────────────────
 
@@ -112,61 +113,82 @@ pre {
   }
 }
 
-// ── Syntax highlighting tokens (Prism.js) ──────────────────────────────────────
-// Reused unchanged with the vendored Prism assets. Colors reference the
-// --trellis-code-* custom properties so they flip with the active skin.
+// ── Syntax highlighting tokens (highlight.js `.hljs-*`) ─────────────────────────
+// Baked in at build time by the SSG (ADR-010). Colors reference the
+// --trellis-code-* custom properties so they flip with the active skin. The
+// selector→property mapping covers the full token-class set package:highlight
+// emits for the supported languages (research appendix §3–4); classes with no
+// explicit rule (e.g. `.hljs-subst` nested in a string, `.hljs-code`) inherit
+// their container color — a sensible fallback, never unstyled/broken.
 
 pre code {
-  .token.comment,
-  .token.prolog,
-  .token.doctype,
-  .token.cdata {
+  // Comments & block quotes.
+  .hljs-comment,
+  .hljs-quote {
     color: var(--trellis-code-comment);
     font-style: italic;
   }
 
-  .token.punctuation {
-    color: var(--trellis-code-punctuation);
-  }
-
-  .token.property,
-  .token.tag,
-  .token.boolean,
-  .token.number,
-  .token.constant,
-  .token.symbol {
-    color: var(--trellis-code-number);
-  }
-
-  .token.selector,
-  .token.attr-name,
-  .token.string,
-  .token.char,
-  .token.builtin {
-    color: var(--trellis-code-string);
-  }
-
-  .token.operator,
-  .token.entity,
-  .token.url {
-    color: var(--trellis-code-punctuation);
-  }
-
-  .token.atrule,
-  .token.attr-value,
-  .token.keyword {
+  // Keywords, control flow, tag & section names.
+  .hljs-keyword,
+  .hljs-meta-keyword,
+  .hljs-selector-tag,
+  .hljs-name,
+  .hljs-section {
     color: var(--trellis-code-keyword);
   }
 
-  .token.function,
-  .token.class-name {
+  // Types, built-ins, class & function titles.
+  .hljs-built_in,
+  .hljs-class,
+  .hljs-title,
+  .hljs-type {
     color: var(--trellis-code-function);
   }
 
-  .token.regex,
-  .token.important,
-  .token.variable {
+  // Strings, attributes, selectors, links, additions.
+  .hljs-string,
+  .hljs-attr,
+  .hljs-attribute,
+  .hljs-selector-class,
+  .hljs-selector-id,
+  .hljs-selector-pseudo,
+  .hljs-selector-attr,
+  .hljs-char,
+  .hljs-link,
+  .hljs-addition {
+    color: var(--trellis-code-string);
+  }
+
+  // Numbers, literals, constants, symbols, variables, regex.
+  .hljs-number,
+  .hljs-literal,
+  .hljs-symbol,
+  .hljs-bullet,
+  .hljs-variable,
+  .hljs-template-variable,
+  .hljs-regexp {
     color: var(--trellis-code-number);
+  }
+
+  // Punctuation, operators, interpolation, params, meta, tag brackets, deletions.
+  .hljs-punctuation,
+  .hljs-operator,
+  .hljs-subst,
+  .hljs-params,
+  .hljs-meta,
+  .hljs-tag,
+  .hljs-deletion {
+    color: var(--trellis-code-punctuation);
+  }
+
+  // Markdown text emphasis.
+  .hljs-emphasis {
+    font-style: italic;
+  }
+
+  .hljs-strong {
+    font-weight: 700;
   }
 }
 

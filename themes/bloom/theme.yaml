@@ -121,11 +121,6 @@ params:
     default: true
     description: Display RSS/Atom feed link
 
-  syntax_highlighting:
-    type: boolean
-    default: true
-    description: Enable code block container styles
-
   # === Bloom-Specific Params ===
 
   hero_align:

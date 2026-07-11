@@ -4,6 +4,7 @@
 /// Markdown-based static sites with Hugo-inspired conventions.
 library;
 
+export 'src/code_highlighter.dart';
 export 'src/content_discovery.dart';
 export 'src/feed_generator.dart';
 export 'src/front_matter_parser.dart';

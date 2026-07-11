@@ -84,7 +84,7 @@ $trellis-focus-ring-offset: 2px !default;
   --trellis-max-width: #{$trellis-max-width};
   --trellis-radius: #{$trellis-border-radius};
 
-  // Syntax highlighting token colors (Prism.js)
+  // Syntax highlighting token colors (highlight.js `.hljs-*`)
   --trellis-code-keyword: #8b5cf6;
   --trellis-code-string: #059669;
   --trellis-code-number: #d97706;

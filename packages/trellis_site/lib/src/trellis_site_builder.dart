@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:trellis/trellis.dart' hide TemplateNotFoundException;
 
+import 'code_highlighter.dart';
 import 'content_discovery.dart';
 import 'feed_generator.dart';
 import 'front_matter_parser.dart';
@@ -183,15 +184,21 @@ class TrellisSite {
       fmParser.parse(page, config.contentDir);
     }
 
+    // Build-time syntax highlighter (ADR-010) — shared by the page Markdown pass
+    // and the shortcode-body Markdown pass. `null` when highlighting is disabled,
+    // which makes both passes emit plain `<pre><code>` (highlight runs at step 4,
+    // before the step-6 path-prefix pass that already skips <pre>/<code>).
+    final codeHighlighter = config.highlightConfig.enabled ? const CodeHighlighter() : null;
+
     // 3.5. Process pre-Markdown shortcodes
-    final shortcodeProcessor = ShortcodeProcessor(siteDir: config.siteDir);
+    final shortcodeProcessor = ShortcodeProcessor(siteDir: config.siteDir, highlighter: codeHighlighter);
     for (final page in pages) {
       shortcodeProcessor.processPreMarkdown(page);
     }
 
     // 4. Render Markdown
     final excerptLength = mergedThemeParams?['excerpt_length'] as int?;
-    final mdRenderer = MarkdownRenderer(maxSummaryLength: excerptLength);
+    final mdRenderer = MarkdownRenderer(maxSummaryLength: excerptLength, highlighter: codeHighlighter);
     for (final page in pages) {
       mdRenderer.render(page);
     }

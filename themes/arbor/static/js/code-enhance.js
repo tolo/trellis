@@ -4,14 +4,14 @@
 // and a copy-to-clipboard button.
 //
 // Progressive enhancement: with JS disabled the code blocks are fully readable
-// (this only adds affordances). Safe to run whether or not the vendored Prism
-// highlighter is present — it reads the language from the `language-*` class and
-// the code from `textContent`, both available before or after tokenization.
+// (this only adds affordances). Independent of the tokenizer — it reads the
+// language from the `language-*` class and the code from `textContent`, both
+// present whether or not the SSG baked in build-time `.hljs-*` spans.
 (function () {
   'use strict';
 
-  // Friendly labels for the grammars Arbor vendors; anything else falls back to
-  // the uppercased class suffix.
+  // Friendly labels for common languages; anything else falls back to the
+  // uppercased class suffix.
   var LABELS = {
     dart: 'Dart',
     markup: 'HTML',

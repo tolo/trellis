@@ -35,60 +35,81 @@ pre {
   }
 }
 
-// ── Syntax highlighting tokens (Prism.js) ────────────────────────────────────
-// Token colors use CSS custom properties so they adapt to light/dark skin.
+// ── Syntax highlighting tokens (highlight.js `.hljs-*`) ───────────────────────
+// Baked in at build time by the SSG (ADR-010); no client-side highlighter ships
+// with the theme. Colors use CSS custom properties so they adapt to light/dark
+// skin. The selector→property mapping covers the full token-class set
+// package:highlight emits (research appendix §3–4); classes with no explicit
+// rule (e.g. `.hljs-subst` nested in a string) inherit their container color.
 
 pre code {
-  .token.comment,
-  .token.prolog,
-  .token.doctype,
-  .token.cdata {
+  // Comments & block quotes.
+  .hljs-comment,
+  .hljs-quote {
     color: var(--trellis-code-comment);
     font-style: italic;
   }
 
-  .token.punctuation {
-    color: var(--trellis-code-punctuation);
-  }
-
-  .token.property,
-  .token.tag,
-  .token.boolean,
-  .token.number,
-  .token.constant,
-  .token.symbol {
-    color: var(--trellis-code-number);
-  }
-
-  .token.selector,
-  .token.attr-name,
-  .token.string,
-  .token.char,
-  .token.builtin {
-    color: var(--trellis-code-string);
-  }
-
-  .token.operator,
-  .token.entity,
-  .token.url {
-    color: var(--trellis-code-punctuation);
-  }
-
-  .token.atrule,
-  .token.attr-value,
-  .token.keyword {
+  // Keywords, control flow, tag & section names.
+  .hljs-keyword,
+  .hljs-meta-keyword,
+  .hljs-selector-tag,
+  .hljs-name,
+  .hljs-section {
     color: var(--trellis-code-keyword);
   }
 
-  .token.function,
-  .token.class-name {
+  // Types, built-ins, class & function titles.
+  .hljs-built_in,
+  .hljs-class,
+  .hljs-title,
+  .hljs-type {
     color: var(--trellis-code-function);
   }
 
-  .token.regex,
-  .token.important,
-  .token.variable {
+  // Strings, attributes, selectors, links, additions.
+  .hljs-string,
+  .hljs-attr,
+  .hljs-attribute,
+  .hljs-selector-class,
+  .hljs-selector-id,
+  .hljs-selector-pseudo,
+  .hljs-selector-attr,
+  .hljs-char,
+  .hljs-link,
+  .hljs-addition {
+    color: var(--trellis-code-string);
+  }
+
+  // Numbers, literals, constants, symbols, variables, regex.
+  .hljs-number,
+  .hljs-literal,
+  .hljs-symbol,
+  .hljs-bullet,
+  .hljs-variable,
+  .hljs-template-variable,
+  .hljs-regexp {
     color: var(--trellis-code-number);
+  }
+
+  // Punctuation, operators, interpolation, params, meta, tag brackets, deletions.
+  .hljs-punctuation,
+  .hljs-operator,
+  .hljs-subst,
+  .hljs-params,
+  .hljs-meta,
+  .hljs-tag,
+  .hljs-deletion {
+    color: var(--trellis-code-punctuation);
+  }
+
+  // Markdown text emphasis.
+  .hljs-emphasis {
+    font-style: italic;
+  }
+
+  .hljs-strong {
+    font-weight: 700;
   }
 }
 

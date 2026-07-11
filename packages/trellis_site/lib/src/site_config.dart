@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
+import 'code_highlighter.dart';
 import 'feed_generator.dart';
 import 'search_index_generator.dart';
 import 'theme_config.dart';
@@ -83,6 +84,9 @@ class SiteConfig {
   /// Search index configuration. Default: disabled.
   final SearchConfig searchConfig;
 
+  /// Build-time syntax-highlighting configuration. Default: enabled.
+  final HighlightConfig highlightConfig;
+
   /// Theme configuration. `null` when no `theme:` is set in config.
   final ThemeConfig? themeConfig;
 
@@ -102,6 +106,7 @@ class SiteConfig {
     required this.params,
     this.feeds,
     this.searchConfig = const SearchConfig(),
+    this.highlightConfig = const HighlightConfig(),
     this.themeConfig,
   });
 
@@ -124,6 +129,7 @@ class SiteConfig {
     Map<String, dynamic> params = const {},
     FeedConfig? feeds,
     SearchConfig searchConfig = const SearchConfig(),
+    HighlightConfig highlightConfig = const HighlightConfig(),
     ThemeConfig? themeConfig,
   }) {
     String resolve(String? rel, String defaultName) {
@@ -147,6 +153,7 @@ class SiteConfig {
       params: params,
       feeds: feeds,
       searchConfig: searchConfig,
+      highlightConfig: highlightConfig,
       themeConfig: themeConfig,
     );
   }
@@ -201,6 +208,11 @@ class SiteConfig {
     final rawSearch = map['search'];
     final searchConfig = rawSearch is YamlMap ? SearchConfig.fromYaml(convertYamlMap(rawSearch)) : const SearchConfig();
 
+    final rawHighlight = map['highlight'];
+    final highlightConfig = rawHighlight is YamlMap
+        ? HighlightConfig.fromYaml(convertYamlMap(rawHighlight))
+        : const HighlightConfig();
+
     final themeConfig = ThemeConfig.fromYaml(map);
 
     final rawPathPrefix = map['pathPrefix'];
@@ -227,6 +239,7 @@ class SiteConfig {
       params: params,
       feeds: FeedConfig.fromYaml(map['feeds']),
       searchConfig: searchConfig,
+      highlightConfig: highlightConfig,
       themeConfig: themeConfig,
     );
   }

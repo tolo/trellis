@@ -74,7 +74,6 @@ $trellis-footer-text: null !default;     // custom footer text (null = theme def
 
 $trellis-show-powered-by: true !default;
 $trellis-show-rss-link: true !default;
-$trellis-syntax-highlighting: true !default;
 
 // Docs-specific toggles
 $trellis-show-sidebar: true !default;
@@ -111,7 +110,7 @@ $trellis-focus-ring-offset: 2px !default;
   --trellis-max-width: #{$trellis-max-width};
   --trellis-radius: #{$trellis-border-radius};
 
-  // Syntax highlighting token colors (Prism.js) — light-skin variants.
+  // Syntax highlighting token colors (highlight.js `.hljs-*`) — light-skin variants.
   // Each clears >= 4.5:1 on the light code-block surface (#f6f8f6).
   --trellis-code-keyword: #8250df;     // 4.73:1 on #f6f8f6
   --trellis-code-string: #0a6b43;      // 6.15:1 on #f6f8f6

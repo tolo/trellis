@@ -50,6 +50,35 @@ Hello world.
 ''');
   }
 
+  /// Creates a site with a `dart` fenced code block in its home page and a home
+  /// layout that renders `${page.content}`. [highlightEnabled] null omits the
+  /// `highlight:` block (defaults on); true/false writes it explicitly.
+  void highlightSite(Directory dir, {bool? highlightEnabled}) {
+    final highlightBlock = highlightEnabled == null ? '' : 'highlight:\n  enabled: $highlightEnabled\n';
+    File(p.join(dir.path, 'trellis_site.yaml')).writeAsStringSync('''
+title: Highlight Site
+baseUrl: https://example.com
+$highlightBlock''');
+    Directory(p.join(dir.path, 'content')).createSync();
+    File(p.join(dir.path, 'content', '_index.md')).writeAsStringSync('''
+---
+title: Home
+---
+
+```dart
+void main() {}
+```
+''');
+    Directory(p.join(dir.path, 'layouts')).createSync(recursive: true);
+    File(p.join(dir.path, 'layouts', 'home.html')).writeAsStringSync('''
+<!DOCTYPE html>
+<html>
+<head><title tl:text="\${page.title}">Title</title></head>
+<body><div tl:utext="\${page.content}">body</div></body>
+</html>
+''');
+  }
+
   group('BuildCommand', () {
     // T01: valid site → exits 0, prints summary
     test('T01: builds valid site successfully', () async {
@@ -538,6 +567,28 @@ params:
       final sitemapFile = File(p.join(tempDir.path, 'output', 'sitemap.xml'));
       expect(sitemapFile.existsSync(), isTrue);
       expect(sitemapFile.readAsStringSync(), contains('https://staging.example.com'));
+    });
+
+    // Build-time syntax highlighting (ADR-010): default on, honors an explicit
+    // `highlight: enabled: false` through the CLI (regression guard — the CLI
+    // reconstructs SiteConfig field-by-field and must thread highlightConfig).
+    test('highlights fenced code by default; ships no /prism/ assets', () async {
+      highlightSite(tempDir); // no highlight: block → defaults on
+      final result = await TrellisCli(workingDirectory: tempDir.path).run(['build']);
+      expect(result, 0);
+      final html = File(p.join(tempDir.path, 'output', 'index.html')).readAsStringSync();
+      expect(html, contains('class="hljs-'));
+      expect(html, contains('<code class="language-dart">'));
+      expect(html, isNot(contains('/prism/')));
+    });
+
+    test('highlight.enabled: false leaves code plain through the CLI (S08)', () async {
+      highlightSite(tempDir, highlightEnabled: false);
+      final result = await TrellisCli(workingDirectory: tempDir.path).run(['build']);
+      expect(result, 0);
+      final html = File(p.join(tempDir.path, 'output', 'index.html')).readAsStringSync();
+      expect(html, contains('<code class="language-dart">'));
+      expect(html, isNot(contains('hljs-')));
     });
   });
 }

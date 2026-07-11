@@ -2,16 +2,17 @@
 
 A documentation theme for the [Trellis](https://pub.dev/packages/trellis) SDK.
 Arbor renders the navigation a docs site needs: a hierarchical sidebar (from the
-content tree), an in-page table of contents, prev/next links, client-side syntax
+content tree), an in-page table of contents, prev/next links, build-time syntax
 highlighting, and a search UI shell — all with semantic landmarks, a
 skip-to-content link, WCAG 2.1 AA color contrast, and a responsive layout with a
 JavaScript-free collapsible mobile sidebar.
 
 Arbor is a sibling of the `verdant` blog theme and shares its conventions
-(manifest shape, SASS bridge, `tl:extends`/`tl:define` layout inheritance). It
-diverges on exactly one axis: the client-side highlighter and search script are
-**vendored, same-origin assets — never CDN-loaded** (see
-[`VENDORED.md`](VENDORED.md)).
+(manifest shape, SASS bridge, `tl:extends`/`tl:define` layout inheritance). Code
+is colored at build time (`.hljs-*` spans baked in by the SSG, ADR-010), so the
+theme ships no highlighter JS; the client-side scripts it does ship — the search
+UI and the code-block copy button — are **vendored, same-origin assets, never
+CDN-loaded** (see [`VENDORED.md`](VENDORED.md)).
 
 ## Features
 
@@ -21,11 +22,11 @@ diverges on exactly one axis: the client-side highlighter and search script are
   heading level.
 - **Prev/next page navigation** from `${page.prev}`/`${page.next}` (renders when
   those neighbors are available).
-- **Vendored syntax highlighting** — Prism 1.29.0 core + `dart`, `markup`/`html`,
-  `css`, `yaml`, `bash` grammars, served same-origin. No CDN, no npm, no
-  autoloader.
+- **Build-time syntax highlighting** — the SSG bakes `.hljs-*` spans into the
+  built HTML (ADR-010); the theme styles them via `sass/_code.scss` and ships no
+  highlighter JS. Code is colored with JavaScript disabled. No CDN, no npm.
 - **Progressive enhancement** — the docs are fully readable with JavaScript
-  disabled; highlighting and search never gate reading.
+  disabled; search and the copy button never gate reading.
 - **Light + dark skins** (and `auto`, following the OS preference), both passing
   WCAG 2.1 AA body-text contrast.
 - **Accessible + responsive** — semantic `<header>`/`<nav>`/`<main>`/`<footer>`
@@ -49,7 +50,6 @@ theme_params:
   skin: auto
   primary_color: "#0f7a4d"
   sidebar_title: "Guides"
-  syntax_highlighting: true
   show_search: true
 ```
 

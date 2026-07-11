@@ -76,6 +76,7 @@ class BuildCommand extends Command<int> {
         params: rawConfig.params,
         feeds: rawConfig.feeds,
         searchConfig: rawConfig.searchConfig,
+        highlightConfig: rawConfig.highlightConfig,
         themeConfig: rawConfig.themeConfig,
         // pathPrefix from config (or --path-prefix override); the constructor
         // re-normalizes, so passing the already-normalized config value is safe.

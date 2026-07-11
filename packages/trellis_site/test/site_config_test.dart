@@ -184,6 +184,36 @@ void main() {
       expect(config.searchConfig.enabled, isFalse);
     });
 
+    // Build-time syntax highlighting (ADR-010, TI01).
+    test('no highlight: section produces default (enabled) HighlightConfig', () {
+      final tempDir = Directory.systemTemp.createTempSync('site_cfg_hl_');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+      final configFile = File(p.join(tempDir.path, 'trellis_site.yaml'))..writeAsStringSync('title: No Highlight\n');
+
+      final config = SiteConfig.load(configFile.path);
+      expect(config.highlightConfig.enabled, isTrue);
+    });
+
+    test('highlight: { enabled: false } disables highlighting', () {
+      final tempDir = Directory.systemTemp.createTempSync('site_cfg_hl_');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+      final configFile = File(p.join(tempDir.path, 'trellis_site.yaml'))
+        ..writeAsStringSync('highlight:\n  enabled: false\n');
+
+      final config = SiteConfig.load(configFile.path);
+      expect(config.highlightConfig.enabled, isFalse);
+    });
+
+    test('highlight: { enabled: true } keeps highlighting enabled', () {
+      final tempDir = Directory.systemTemp.createTempSync('site_cfg_hl_');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+      final configFile = File(p.join(tempDir.path, 'trellis_site.yaml'))
+        ..writeAsStringSync('highlight:\n  enabled: true\n');
+
+      final config = SiteConfig.load(configFile.path);
+      expect(config.highlightConfig.enabled, isTrue);
+    });
+
     test('search: { enabled: true } produces enabled config with defaults', () {
       final tempDir = Directory.systemTemp.createTempSync('site_cfg_search_');
       addTearDown(() => tempDir.deleteSync(recursive: true));

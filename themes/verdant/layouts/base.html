@@ -46,12 +46,10 @@
         title="RSS Feed" tl:attr="href=${site.feeds.rss}">
 
   <!-- Verdant is the minimal, content-first blog theme and ships no client-side
-       highlighter — deliberately no external/runtime JS dependency (a CDN would
-       break the pure-Dart, no-external-deps, offline-capable static-site model).
-       Its _code.scss styles the Prism `.token.*` classes, so a site that wants
-       highlighted code can add a self-hosted highlighter and pick up the theme's
-       token colors — no CDN. (Arbor, the docs sibling, is the theme that vendors a
-       full highlighter; it is the one that lists `syntax-highlighting` as a feature.) -->
+       highlighter. Syntax highlighting is baked into the built HTML at build time
+       by the SSG (ADR-010): its _code.scss styles the emitted `.hljs-*` spans with
+       the theme's --trellis-code-* token colors, so code is colored with JS off,
+       no CDN and no runtime JS dependency. -->
 
   <!-- Extra head slot: child layouts or site override can inject additional tags -->
   <meta tl:define="head-extra">

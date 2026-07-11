@@ -1,8 +1,9 @@
 // Bloom Landing Theme — sass/_code.scss
 // Inline code and code blocks. Colors reference the --trellis-* custom
-// properties so they flip with the active skin. The syntax_highlighting param
-// gates whether a site enables a highlighter; the container styles below are
-// always safe defaults.
+// properties so they flip with the active skin. Bloom ships no token-color CSS:
+// build-time highlighting (ADR-010) still emits `.hljs-*` spans, but with no
+// --trellis-code-* colors defined they render plain/monochrome by design — the
+// landing theme's role. The container styles below are always safe defaults.
 
 code {
   font-family: var(--trellis-code-font, #{$trellis-code-font-family});

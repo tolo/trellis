@@ -91,10 +91,18 @@ $trellis-focus-ring-color: $trellis-primary-color !default;
 $trellis-focus-ring-width: 2px !default;
 $trellis-focus-ring-offset: 2px !default;
 
+// ── Syntax highlighting ─────────────────────────────────────────────────────
+
+$trellis-code-keyword: #8250df !default;
+$trellis-code-string: #0a6b43 !default;
+$trellis-code-number: #953800 !default;
+$trellis-code-comment: #5b6470 !default;
+$trellis-code-function: #0550ae !default;
+$trellis-code-punctuation: #5b6470 !default;
+
 // ── CSS Custom Properties ────────────────────────────────────────────────────
-// Emit :root custom properties so token colors and theme values can be overridden
-// at runtime without recompiling SASS. Color tokens here match the LIGHT skin;
-// the dark skin overrides them in main.scss under prefers-color-scheme.
+// Emit :root custom properties from the active compile-time skin. Auto mode uses
+// the light defaults here, then main.scss overrides them for OS dark mode.
 
 :root {
   --trellis-primary: #{$trellis-primary-color};
@@ -110,14 +118,13 @@ $trellis-focus-ring-offset: 2px !default;
   --trellis-max-width: #{$trellis-max-width};
   --trellis-radius: #{$trellis-border-radius};
 
-  // Syntax highlighting token colors (highlight.js `.hljs-*`) — light-skin variants.
-  // Each clears >= 4.5:1 on the light code-block surface (#f6f8f6).
-  --trellis-code-keyword: #8250df;     // 4.73:1 on #f6f8f6
-  --trellis-code-string: #0a6b43;      // 6.15:1 on #f6f8f6
-  --trellis-code-number: #953800;      // 6.92:1 on #f6f8f6
-  --trellis-code-comment: #5b6470;     // 5.62:1 on #f6f8f6 (italic)
-  --trellis-code-function: #0550ae;    // 7.12:1 on #f6f8f6
-  --trellis-code-punctuation: #5b6470; // 5.62:1 on #f6f8f6
+  // Syntax highlighting token colors (highlight.js `.hljs-*`).
+  --trellis-code-keyword: #{$trellis-code-keyword};
+  --trellis-code-string: #{$trellis-code-string};
+  --trellis-code-number: #{$trellis-code-number};
+  --trellis-code-comment: #{$trellis-code-comment};
+  --trellis-code-function: #{$trellis-code-function};
+  --trellis-code-punctuation: #{$trellis-code-punctuation};
 
   // Derived tints — mixed from the runtime tokens with color-mix(), so they
   // track skin flips and site color overrides without extra params. Custom

@@ -65,10 +65,18 @@ $trellis-focus-ring-color: $trellis-primary-color !default;
 $trellis-focus-ring-width: 2px !default;
 $trellis-focus-ring-offset: 2px !default;
 
+// ── Syntax highlighting ─────────────────────────────────────────────────────
+
+$trellis-code-keyword: #8b5cf6 !default;
+$trellis-code-string: #059669 !default;
+$trellis-code-number: #d97706 !default;
+$trellis-code-comment: #6b7280 !default;
+$trellis-code-function: #2563eb !default;
+$trellis-code-punctuation: #6b7280 !default;
+
 // ── CSS Custom Properties ────────────────────────────────────────────────────
-// Emit :root custom properties so runtime overrides are possible without
-// recompiling SASS. Templates can reference var(--trellis-*) in inline CSS,
-// and the SASS bridge emits these from merged theme params.
+// Emit :root custom properties from the active compile-time skin. Auto mode uses
+// the light defaults here, then main.scss overrides them for OS dark mode.
 
 :root {
   --trellis-primary: #{$trellis-primary-color};
@@ -85,12 +93,12 @@ $trellis-focus-ring-offset: 2px !default;
   --trellis-radius: #{$trellis-border-radius};
 
   // Syntax highlighting token colors (highlight.js `.hljs-*`)
-  --trellis-code-keyword: #8b5cf6;
-  --trellis-code-string: #059669;
-  --trellis-code-number: #d97706;
-  --trellis-code-comment: #6b7280;
-  --trellis-code-function: #{$trellis-primary-color};
-  --trellis-code-punctuation: #6b7280;
+  --trellis-code-keyword: #{$trellis-code-keyword};
+  --trellis-code-string: #{$trellis-code-string};
+  --trellis-code-number: #{$trellis-code-number};
+  --trellis-code-comment: #{$trellis-code-comment};
+  --trellis-code-function: #{$trellis-code-function};
+  --trellis-code-punctuation: #{$trellis-code-punctuation};
 
   // Derived tints — mixed from the runtime tokens with color-mix(), so they
   // track skin flips and site color overrides without extra params. Custom

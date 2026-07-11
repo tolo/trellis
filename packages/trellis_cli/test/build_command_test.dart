@@ -4,6 +4,8 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:trellis_cli/trellis_cli.dart';
 
+import '_workspace_root.dart';
+
 void main() {
   late Directory tempDir;
 
@@ -488,6 +490,57 @@ theme_params:
         expect(darkCss, isNot(equals(lightCss)));
         expect(darkCss, contains('#010203'));
         expect(lightCss, isNot(contains('#010203')));
+      });
+
+      test('official themes compile dark syntax tokens into the root palette', () async {
+        final workspaceRoot = (await findWorkspaceRoot()).path;
+        const expectedTokens = {
+          'arbor': {
+            'keyword': '#d2a8ff',
+            'string': '#7ee787',
+            'number': '#ffa657',
+            'comment': '#8b949e',
+            'function': '#79c0ff',
+            'punctuation': '#8b949e',
+          },
+          'verdant': {
+            'keyword': '#c4b5fd',
+            'string': '#6ee7b7',
+            'number': '#fcd34d',
+            'comment': '#6b7280',
+            'function': '#93c5fd',
+            'punctuation': '#9ca3af',
+          },
+        };
+
+        for (final entry in expectedTokens.entries) {
+          final siteDir = Directory(p.join(tempDir.path, entry.key))..createSync(recursive: true);
+          Directory(p.join(siteDir.path, 'content')).createSync();
+          File(p.join(siteDir.path, 'content', '_index.md')).writeAsStringSync('''
+---
+title: Home
+---
+```dart
+final value = 1;
+```
+''');
+          final themeDir = p.join(workspaceRoot, 'themes', entry.key);
+          final themeValue = p.relative(themeDir, from: p.join(siteDir.path, 'themes'));
+          File(p.join(siteDir.path, 'trellis_site.yaml')).writeAsStringSync('''
+title: Dark Theme Test
+baseUrl: https://example.com
+theme: $themeValue
+theme_params:
+  skin: dark
+''');
+
+          expect(await TrellisCli(workingDirectory: siteDir.path).run(['build']), 0);
+          final css = File(p.join(siteDir.path, 'output', 'css', 'main.css')).readAsStringSync();
+          final rootPalette = css.split('@media').first;
+          for (final token in entry.value.entries) {
+            expect(rootPalette, contains('--trellis-code-${token.key}: ${token.value}'), reason: entry.key);
+          }
+        }
       });
 
       test('theme without _skins/ files skips the skin import (no crash)', () async {

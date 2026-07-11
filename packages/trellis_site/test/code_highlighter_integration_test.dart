@@ -91,5 +91,42 @@ void main() {
       expect(prefixed, isNot(contains('/docs/x')));
       expect(prefixed, contains('"/x"'));
     });
+
+    test('full build highlights shortcode Markdown before path-prefix rewriting', () async {
+      final tmpDir = Directory.systemTemp.createTempSync('trellis_hl_build_');
+      addTearDown(() => tmpDir.deleteSync(recursive: true));
+
+      Directory(p.join(tmpDir.path, 'content')).createSync(recursive: true);
+      Directory(p.join(tmpDir.path, 'layouts', '_default')).createSync(recursive: true);
+      Directory(p.join(tmpDir.path, 'layouts', 'shortcodes')).createSync(recursive: true);
+      File(p.join(tmpDir.path, 'content', 'page.md')).writeAsStringSync('''
+---
+title: Page
+---
+See [docs](/guide).
+
+{{% callout %}}
+```html
+<a href="/x">x</a>
+```
+{{% /callout %}}
+''');
+      File(
+        p.join(tmpDir.path, 'layouts', '_default', 'single.html'),
+      ).writeAsStringSync('<!DOCTYPE html><html><body tl:utext="\${page.content}"></body></html>');
+      File(
+        p.join(tmpDir.path, 'layouts', 'shortcodes', 'callout.html'),
+      ).writeAsStringSync('<div class="callout" tl:utext="\${content}">x</div>');
+
+      final config = SiteConfig(siteDir: tmpDir.path, outputDir: p.join(tmpDir.path, 'output'), pathPrefix: '/docs/');
+      await TrellisSite(config).build();
+
+      final html = File(p.join(config.outputDir, 'page', 'index.html')).readAsStringSync();
+      expect(html, contains('class="language-html"'));
+      expect(html, contains('class="hljs-'));
+      expect(html, contains('href="/docs/guide"'));
+      expect(html, contains('"/x"'));
+      expect(html, isNot(contains('/docs/x')));
+    });
   });
 }

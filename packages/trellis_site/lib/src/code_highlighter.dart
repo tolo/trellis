@@ -100,15 +100,7 @@ class CodeHighlighter {
       if (openTag == null || closeTag == null) continue;
 
       // node.text decodes entities and drops tags → the raw fenced source.
-      // `package:highlight` is stale (ADR-010 Risks): a grammar for a recognized
-      // language may throw on pathological input. Contain it per block — a single
-      // block that fails to tokenize is left plain, never aborting the whole build.
-      final String highlighted;
-      try {
-        highlighted = hljs.highlight.parse(code.text, language: language).toHtml();
-      } on Object {
-        continue;
-      }
+      final highlighted = hljs.highlight.parse(code.text, language: language).toHtml();
       splices.add(_Splice(openTag.end.offset, closeTag.start.offset, highlighted));
     }
     if (splices.isEmpty) return html;

@@ -21,19 +21,73 @@ void main() {
       expect(result, contains(r'$trellis-bg: #ff000080 !default;'));
     });
 
-    test('string param generates unquote()-wrapped value', () {
+    test('string param generates interpolated value', () {
       final result = _generateSass({'font_family': 'system-ui, sans-serif'}, {'font_family': 'string'});
-      expect(result, contains(r'$trellis-font-family: unquote("system-ui, sans-serif") !default;'));
+      expect(result, contains(r'$trellis-font-family: #{"system-ui, sans-serif"} !default;'));
     });
 
     test('string param with double quote escapes it', () {
       final result = _generateSass({'label': 'say "hi"'}, {'label': 'string'});
-      expect(result, contains(r'$trellis-label: unquote("say \"hi\"") !default;'));
+      expect(result, contains(r'$trellis-label: #{"say \"hi\""} !default;'));
     });
 
     test('string param with backslash escapes it before quotes', () {
       final result = _generateSass({'path': r'C:\themes\verdant'}, {'path': 'string'});
-      expect(result, contains(r'$trellis-path: unquote("C:\\themes\\verdant") !default;'));
+      expect(result, contains(r'$trellis-path: #{"C:\\themes\\verdant"} !default;'));
+    });
+
+    test('string param with interpolation marker neutralizes it', () {
+      final result = _generateSass({'label': 'total #{1+1} items'}, {'label': 'string'});
+      expect(result, contains(r'$trellis-label: #{"total \#{1+1} items"} !default;'));
+    });
+
+    test('string param with newline escapes it to a CSS newline', () {
+      final result = _generateSass({'notice': 'line1\nline2'}, {'notice': 'string'});
+      expect(result, contains(r'$trellis-notice: #{"line1\a line2"} !default;'));
+    });
+
+    test('string param with form feed escapes it to a CSS newline (L8)', () {
+      // Form feed U+000C is a string-aborting newline in Dart Sass just like \n;
+      // it must map to the same `\a ` escape or a `\f`-carrying value aborts.
+      final result = _generateSass({'notice': 'line1\fline2'}, {'notice': 'string'});
+      expect(result, contains(r'$trellis-notice: #{"line1\a line2"} !default;'));
+    });
+
+    // Follow-up review hardening: every branch that can emit a raw (unescaped)
+    // value must not let an interpolation-shaped value slip through.
+
+    test('interpolation-shaped value of hex length is escaped, not passed raw (F-A)', () {
+      // `#{9}` is length 4 like a 3-digit hex — it must NOT take the hex fast-path.
+      final result = _generateSass({'v': '#{9}'}, {'v': 'string'});
+      expect(result, contains(r'$trellis-v: #{"\#{9}"} !default;'));
+      expect(result, isNot(contains(r'$trellis-v: #{9} !default;')));
+    });
+
+    test('genuine hex still passes through unquoted regardless of type (F-A guard)', () {
+      final result = _generateSass({'v': '#abc'}, {'v': 'string'});
+      expect(result, contains(r'$trellis-v: #abc !default;'));
+    });
+
+    test('color-typed value with interpolation marker is neutralized (F-C)', () {
+      final result = _generateSass({'brand': '#{1 + 1}'}, {'brand': 'color'});
+      expect(result, contains(r'$trellis-brand: #{"\#{1 + 1}"} !default;'));
+      expect(result, isNot(contains(r'$trellis-brand: #{1 + 1} !default;')));
+    });
+
+    test('color-typed named/function values still pass through unquoted (F-C guard)', () {
+      final result = _generateSass({'brand': 'rgb(0, 0, 0)', 'accent': 'red'}, {'brand': 'color', 'accent': 'color'});
+      expect(result, contains(r'$trellis-brand: rgb(0, 0, 0) !default;'));
+      expect(result, contains(r'$trellis-accent: red !default;'));
+    });
+
+    test('map key with double quote / interpolation marker is escaped (F-B)', () {
+      final result = _generateSass(
+        {
+          'sizes': <String, dynamic>{'a"#{1+1}': 'x'},
+        },
+        {'sizes': 'map'},
+      );
+      expect(result, contains(r'"a\"\#{1+1}": #{"x"}'));
     });
 
     test('boolean true param generates unquoted true', () {

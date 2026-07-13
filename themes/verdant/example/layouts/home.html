@@ -14,37 +14,42 @@
 
 <!-- Override the content block defined in theme's base.html -->
 <main tl:define="content">
+  <!-- Wrap in .container to match the theme's own layouts: the container centers
+       content and applies max-width + horizontal padding. Without it the body
+       renders flush to the viewport edge while the themed header stays centered. -->
+  <div class="container">
 
-  <!-- Hero section -->
-  <section class="hero">
-    <h1 tl:text="${theme.hero_title} ?: ${site.title}">My Blog</h1>
-    <p class="hero-description"
-       tl:if="${theme.hero_description} ?: ${site.description}"
-       tl:text="${theme.hero_description} ?: ${site.description}">
-      Blog description goes here.
-    </p>
-  </section>
+    <!-- Hero section -->
+    <section class="hero">
+      <h1 tl:text="${theme.hero_title} ?: ${site.title}">My Blog</h1>
+      <p class="hero-description"
+         tl:if="${theme.hero_description} ?: ${site.description}"
+         tl:text="${theme.hero_description} ?: ${site.description}">
+        Blog description goes here.
+      </p>
+    </section>
 
-  <!-- Recent posts -->
-  <section class="recent-posts">
-    <h2>Recent Posts</h2>
+    <!-- Recent posts -->
+    <section class="recent-posts">
+      <h2>Recent Posts</h2>
 
-    <ul class="post-list" tl:if="${pages}">
-      <li class="post-card" tl:each="p : ${pages}">
-        <h3 class="post-card-title">
-          <a tl:text="${p.title}" tl:href="@{${p.url}}">Post title</a>
-        </h3>
-        <p class="post-card-summary"
-           tl:if="${p.description}"
-           tl:text="${p.description}">
-          Post summary.
-        </p>
-      </li>
-    </ul>
+      <ul class="post-list" tl:if="${pages}">
+        <li class="post-card" tl:each="p : ${pages}">
+          <h3 class="post-card-title">
+            <a tl:text="${p.title}" tl:href="${p.url}">Post title</a>
+          </h3>
+          <p class="post-card-summary"
+             tl:if="${p.description}"
+             tl:text="${p.description}">
+            Post summary.
+          </p>
+        </li>
+      </ul>
 
-    <a class="all-posts-link" href="/posts/">All posts &rarr;</a>
-  </section>
+      <a class="all-posts-link" href="/posts/">All posts &rarr;</a>
+    </section>
 
+  </div>
 </main>
 
 </body>

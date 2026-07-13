@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- `trellis build` no longer prints Dart Sass's `@import` deprecation warning. The generated theme bridge and theme partials deliberately use `@import` (the `@use` migration is tracked as TD-006); the build now silences that one deprecation so build output stays clean. Other Sass warnings are unaffected.
+
+### Fixed
+
+- `trellis theme add`/`update` now exit 1 with an actionable error message when git cannot be spawned (missing git, or any other spawn failure such as `EACCES`), instead of surfacing an uncaught `ProcessException` stack trace.
+- `trellis theme add <local-path>` now skips symlinks — printing a `Skipped symlink:` notice — instead of recursing into self-referential example scaffolding links (e.g. `example/themes/<name> → ../..`), which could otherwise recurse unboundedly.
+- Scaffolded themes (`trellis create --template theme`) no longer include the retired `syntax_highlighting` param (ADR-010); the generated `theme.yaml` now declares the 18-param contract and highlighting is controlled via `trellis_site.yaml`'s `highlight:` block.
+
 ## 0.9.1
 
 ### Changed

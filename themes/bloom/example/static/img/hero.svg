@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-label="Sprout workspace preview">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6d28d9"/>
+      <stop offset="1" stop-color="#db2777"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="480" rx="24" fill="#f7f5fb"/>
+  <rect x="28" y="28" width="584" height="52" rx="12" fill="#ffffff" stroke="#e7e3f0"/>
+  <circle cx="56" cy="54" r="8" fill="url(#g)"/>
+  <rect x="80" y="47" width="180" height="14" rx="7" fill="#e7e3f0"/>
+  <rect x="28" y="104" width="180" height="348" rx="16" fill="#ffffff" stroke="#e7e3f0"/>
+  <rect x="52" y="132" width="120" height="12" rx="6" fill="#e7e3f0"/>
+  <rect x="52" y="160" width="132" height="12" rx="6" fill="#efe9fb"/>
+  <rect x="52" y="188" width="96" height="12" rx="6" fill="#efe9fb"/>
+  <rect x="52" y="216" width="128" height="12" rx="6" fill="#efe9fb"/>
+  <rect x="232" y="104" width="380" height="348" rx="16" fill="#ffffff" stroke="#e7e3f0"/>
+  <rect x="260" y="140" width="240" height="20" rx="10" fill="url(#g)"/>
+  <rect x="260" y="184" width="324" height="12" rx="6" fill="#e7e3f0"/>
+  <rect x="260" y="208" width="300" height="12" rx="6" fill="#e7e3f0"/>
+  <rect x="260" y="232" width="316" height="12" rx="6" fill="#e7e3f0"/>
+  <rect x="260" y="280" width="140" height="80" rx="12" fill="#efe9fb"/>
+  <rect x="420" y="280" width="140" height="80" rx="12" fill="#fbe9f2"/>
+</svg>

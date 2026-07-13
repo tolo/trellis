@@ -1,0 +1,22 @@
+// Bloom Landing Theme — sass/_skins/_light.scss
+// Light skin color overrides. Imported when skin: light (and as the base for
+// skin: auto). These match the default param values in theme.yaml.
+//
+// WCAG 2.1 AA contrast ratios (computed over sRGB, per WCAG relative luminance):
+//   On the page background (#ffffff):
+//     #1a1523 on #ffffff = 17.13:1  (body text — passes 4.5:1)
+//     #5b5568 on #ffffff =  7.16:1  (muted — passes 4.5:1)
+//     #6d28d9 on #ffffff =  6.99:1  (primary/links — passes 4.5:1)
+//     #db2777 on #ffffff =  4.55:1  (accent — passes 4.5:1)
+//   On the elevated surface (#f7f5fb — cards, bands):
+//     #1a1523 on #f7f5fb = 16.24:1  (body text — passes 4.5:1)
+//     #5b5568 on #f7f5fb =  6.79:1  (muted — passes 4.5:1)
+//     #6d28d9 on #f7f5fb =  6.63:1  (primary — passes 4.5:1)
+
+$trellis-text-color: #1a1523 !default;
+$trellis-muted-color: #5b5568 !default;
+$trellis-bg-color: #ffffff !default;
+$trellis-surface-color: #f7f5fb !default;
+$trellis-border-color: #e7e3f0 !default;
+$trellis-primary-color: #6d28d9 !default;
+$trellis-accent-color: #db2777 !default;

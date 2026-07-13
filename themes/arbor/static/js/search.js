@@ -3,8 +3,7 @@
  *
  * A self-contained, dependency-free search client over the site's generated
  * `search-index.json`. No npm, no build step, no external host — this file is
- * vendored (committed) and served same-origin with a per-file SRI hash; see
- * VENDORED.md.
+ * vendored (committed) and served same-origin; see VENDORED.md.
  *
  * Design constraints:
  *   - Progressive enhancement. Docs are fully readable and navigable with this

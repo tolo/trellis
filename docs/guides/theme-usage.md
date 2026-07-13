@@ -4,7 +4,7 @@ Trellis themes provide complete site designs that are fully configurable through
 
 Related docs:
 - [Theme Authoring Guide](theme-authoring.md) — how to create and publish themes
-- [Standard Params Contract](../reference/standard-params.md) — all 19 configurable standard params
+- [Standard Params Contract](../reference/standard-params.md) — all 18 configurable standard params
 
 
 ## Installing a Theme
@@ -42,7 +42,7 @@ After installing, set `theme:` in `trellis_site.yaml`:
 # trellis_site.yaml
 title: My Blog
 description: Notes about Dart and the web.
-base_url: https://example.com
+baseUrl: https://example.com
 taxonomies:
   - tags
 paginate: 10
@@ -72,9 +72,9 @@ theme_params:
 Any param not listed in `theme_params:` uses the theme's default from `theme.yaml`. You only need to specify what you want to change.
 
 
-## The 19 Standard Params
+## The 18 Standard Params
 
-Every official Trellis theme supports the same 19 standard params, grouped into six categories:
+Every official Trellis theme supports the same 18 standard params, grouped into six categories:
 
 | Category | Params |
 |---|---|
@@ -83,11 +83,11 @@ Every official Trellis theme supports the same 19 standard params, grouped into 
 | Layout | `max_width`, `border_radius` |
 | Navigation | `nav_links`, `social_links` |
 | Footer | `footer_text`, `show_powered_by` |
-| Features | `show_rss_link`, `syntax_highlighting` |
+| Features | `show_rss_link` |
 
-See the [Standard Params Contract](../reference/standard-params.md) for types, defaults, and descriptions of all 19 params.
+See the [Standard Params Contract](../reference/standard-params.md) for types, defaults, and descriptions of all 18 params.
 
-Themes may also define additional params beyond the 19 standard ones (e.g. Verdant adds `show_reading_time`, `hero_title`, `date_format`, etc.).
+Themes may also define additional params beyond the 18 standard ones (e.g. Verdant adds `show_reading_time`, `hero_title`, `date_format`, etc.).
 
 
 ## Customization Without Forking

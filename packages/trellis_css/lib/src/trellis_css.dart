@@ -35,15 +35,27 @@ class TrellisCss {
   /// [loadPaths] specifies directories to search when resolving
   /// `@use` and `@import` rules.
   ///
+  /// When [silenceImportDeprecation] is true, Dart Sass's `@import`-rule
+  /// deprecation warning is suppressed. Callers that deliberately rely on
+  /// `@import` (e.g. the SDK theme bridge — see TD-006) set this to keep build
+  /// output clean until the `@use` migration lands; the default surfaces the
+  /// warning so other consumers still see it.
+  ///
   /// Throws [SassCompilationException] if compilation fails (syntax error,
   /// missing file, unresolved import, etc.).
   static String compileSass(
     String path, {
     OutputStyle outputStyle = OutputStyle.expanded,
     List<String> loadPaths = const [],
+    bool silenceImportDeprecation = false,
   }) {
     try {
-      final result = sass.compileToResult(path, style: _mapOutputStyle(outputStyle), loadPaths: loadPaths);
+      final result = sass.compileToResult(
+        path,
+        style: _mapOutputStyle(outputStyle),
+        loadPaths: loadPaths,
+        silenceDeprecations: silenceImportDeprecation ? const [sass.Deprecation.import] : const [],
+      );
       return result.css;
     } on Object catch (e) {
       throw SassCompilationException.fromSassException(e);

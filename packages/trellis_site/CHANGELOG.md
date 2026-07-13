@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Per-page taxonomy term links (`${page.termLinks.<taxonomy>}`)**: every content page now exposes its *own* front-matter terms, per declared taxonomy, as a list of `{name, slug, url, count}` maps whose `url` is the canonical slugified term-page path (`/tags/hello-world/`) resolved from the same index that generates the term pages. Themes link tags via `${tag.url}` instead of string-building `/{taxonomy}/{rawTerm}/`. The key is present only when the taxonomy is declared and the page has terms, so templates not reading it are byte-for-byte unchanged; `${taxonomy.<name>}` remains the site-global term list.
+- **Build-time syntax highlighting (ADR-010)**: fenced Markdown code blocks are highlighted at build time by a new `CodeHighlighter` (backed by `package:highlight`), which emits highlight.js-style `.hljs-*` token spans directly into the built HTML — no client-side highlighter JS is shipped or fetched. Controlled by a new top-level `highlight:` key in `trellis_site.yaml`, **on by default**; set `enabled: false` under it to fall back to plain `<pre><code>`. Unknown or unspecified languages are left unhighlighted.
+
+### Changed
+
+- **Syntax-highlighting token CSS migrated from Prism `.token.*` to `.hljs-*`** (ADR-010) across the official themes, to match the new build-time output. The per-theme **`syntax_highlighting` param is retired** — highlighting is now controlled site-side via the `highlight:` config key, not per theme. Migration: replace `theme_params: { syntax_highlighting: false }` with `highlight: { enabled: false }` in `trellis_site.yaml`; the old param is now ignored with an `Unknown theme param` warning.
+
+### Fixed
+
+- **Theme SASS bridge hardening** (follow-up review of the 0.9.1 fix): string params are now emitted via SASS interpolation (`#{"..."}`) instead of the deprecated global `unquote()` (removed in Dart Sass 3.0.0), eliminating the `global-builtin` deprecation warnings 0.9.1 introduced. A SASS interpolation marker (`#{...}`) in a param value is neutralized to literal text — never evaluated — across **every** emit path: string values, the hex-color fast-path (now gated on a real hex pattern rather than string length, so an interpolation-shaped value like `#{9}` can no longer slip through raw and be evaluated), `color`-typed values, and map keys. Multiline (newline-containing) param values no longer abort the SASS compile (escaped as CSS `\a`). (Structural characters `;{}` in a value remain a separate, tracked robustness limitation — see TD-011.)
+- **Verdant `_default/single.html` tag pills broke the build for any tagged post.** The pills built each tag URL as `@{/tags/{tag}/}` — invalid Trellis URL-expression syntax (`@{...}` supports query params, not `{path}` templating) — so rendering a post with `show_tags` on threw an `ExpressionException` and aborted the build. Even had it parsed, interpolating the raw tag produced `/tags/Hello World/` while the term page lives at the slugified `/tags/hello-world/` — a 404 for any tag with uppercase, spaces, or punctuation. Pills now iterate `${page.termLinks.tags}` and link via each term's canonical `url`, matching the generated term page exactly. The bundled `example/` site now declares `taxonomies: [tags]` so its term pages are generated and the pills resolve.
+- **Verdant `example/` site was not buildable standalone.** Two problems, both now fixed to match the working `arbor` example: (1) `theme: ..` never resolved — theme resolution joins `<siteDir>/themes/<value>`, so `..` pointed at the example dir, not the theme; the example now ships a git-tracked `themes/verdant → ../..` symlink and sets `theme: verdant`. (2) The example's `home.html` override wrapped an already-complete page URL in a `@{...}` URL expression (`@{${p.url}}`), a parse error; it now links via `${p.url}` like the theme's own layout. `trellis build` on `themes/verdant/example` is green (8 pages, 0 broken links).
+
 ## 0.9.1
 
 ### Fixed

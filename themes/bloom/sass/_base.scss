@@ -1,0 +1,157 @@
+// Bloom Landing Theme — sass/_base.scss
+// Minimal reset, typography, and base element styles (also the prose defaults
+// used by single/list pages and the home Markdown band).
+
+// ── Reset ────────────────────────────────────────────────────────────────────
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  // Offset in-page anchor jumps so a heading isn't hidden under the sticky header.
+  scroll-padding-top: 5rem;
+}
+
+// Core surfaces reference the --trellis-* custom properties (with the compiled
+// SASS value as fallback) so `skin: auto` flips light/dark at runtime.
+body {
+  margin: 0;
+  font-family: var(--trellis-font, #{$trellis-font-family});
+  font-size: $trellis-font-size-base;
+  line-height: $trellis-line-height;
+  color: var(--trellis-text, #{$trellis-text-color});
+  background-color: var(--trellis-bg, #{$trellis-bg-color});
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// ── Typography ───────────────────────────────────────────────────────────────
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--trellis-heading-font, #{$trellis-heading-font});
+  line-height: $trellis-heading-line-height;
+  color: var(--trellis-text, #{$trellis-text-color});
+  margin-top: 0;
+  margin-bottom: $trellis-space-md;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  scroll-margin-top: 5rem;
+}
+
+h1 { font-size: clamp(2rem, 5vw, 3rem); }
+h2 { font-size: clamp(1.6rem, 3.5vw, 2.25rem); }
+h3 { font-size: 1.3rem; }
+h4 { font-size: 1.125rem; }
+h5,
+h6 { font-size: 1rem; }
+
+p {
+  margin: 0 0 $trellis-space-md;
+}
+
+// ── Links ────────────────────────────────────────────────────────────────────
+
+a {
+  color: var(--trellis-primary, #{$trellis-primary-color});
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:hover {
+    color: var(--trellis-accent, #{$trellis-accent-color});
+    text-decoration: none;
+  }
+}
+
+// Nav and UI links — no underline.
+nav a,
+.btn {
+  text-decoration: none;
+}
+
+// ── Lists ────────────────────────────────────────────────────────────────────
+
+ul,
+ol {
+  margin: 0 0 $trellis-space-md;
+  padding-left: $trellis-space-xl;
+}
+
+li {
+  margin-bottom: $trellis-space-xs;
+}
+
+// ── Inline elements ──────────────────────────────────────────────────────────
+
+strong { font-weight: 700; }
+em { font-style: italic; }
+small { font-size: $trellis-font-size-sm; }
+
+// ── Images ───────────────────────────────────────────────────────────────────
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+// ── Prose (rendered Markdown: single/list pages + home body band) ─────────────
+// A readable typographic default set for author-supplied content.
+
+.prose {
+  color: var(--trellis-text, #{$trellis-text-color});
+
+  > *:first-child { margin-top: 0; }
+  > *:last-child { margin-bottom: 0; }
+
+  h2 { margin-top: $trellis-space-2xl; }
+  h3 { margin-top: $trellis-space-xl; }
+
+  a { font-weight: 600; }
+
+  ul,
+  ol { margin-bottom: $trellis-space-md; }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--trellis-border, #{$trellis-border-color});
+    margin: $trellis-space-2xl 0;
+  }
+
+  blockquote {
+    margin: $trellis-space-lg 0;
+    padding: $trellis-space-sm $trellis-space-lg;
+    border-left: 4px solid var(--trellis-primary, #{$trellis-primary-color});
+    background-color: var(--trellis-surface, #{$trellis-surface-color});
+    border-radius: 0 var(--trellis-radius, #{$trellis-border-radius}) var(--trellis-radius, #{$trellis-border-radius}) 0;
+    color: var(--trellis-muted, #{$trellis-muted-color});
+
+    p:last-child { margin-bottom: 0; }
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: $trellis-space-lg;
+    font-size: $trellis-font-size-sm;
+  }
+
+  th,
+  td {
+    padding: $trellis-space-sm $trellis-space-md;
+    text-align: left;
+    border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
+  }
+
+  th {
+    font-weight: 700;
+    background-color: var(--trellis-surface, #{$trellis-surface-color});
+  }
+}

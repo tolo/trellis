@@ -16,7 +16,7 @@ features:
   - rss
 
 params:
-  # === Standard Params (19) ===
+  # === Standard Params (18) ===
 
   # Skin & Colors
   skin:
@@ -118,11 +118,6 @@ params:
     type: boolean
     default: true
     description: Display RSS/Atom feed link
-
-  syntax_highlighting:
-    type: boolean
-    default: true
-    description: Enable syntax highlighting for code blocks via Prism.js
 
   # === Blog-Specific Params (10) ===
 

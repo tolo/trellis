@@ -1,6 +1,8 @@
 # Standard Theme Params Contract
 
-All official Trellis themes **must** support the 19 core standard params defined in this document. This contract ensures site builders can switch themes and carry their `theme_params:` configuration without modification.
+All official Trellis themes **must** support the 18 core standard params defined in this document. This contract ensures site builders can switch themes and carry their `theme_params:` configuration without modification.
+
+> **Retired param.** A 19th param, `syntax_highlighting`, was removed by [ADR-010](../../dev/adrs/ADR-010-syntax-highlighting.md): syntax highlighting is now applied at build time by `trellis_site` and configured site-side via the `highlight:` key in `trellis_site.yaml`, not per theme. The old param is ignored.
 
 Related docs:
 - [Theme Authoring Guide](../guides/theme-authoring.md) — how to implement these params in a theme
@@ -20,7 +22,7 @@ Boolean, enum, and list params are template-only or SASS-only (see Type Referenc
 
 ## Complete Params Table
 
-All 19 standard params, with their SASS variable names and CSS custom property names:
+All 18 standard params, with their SASS variable names and CSS custom property names:
 
 | Param name | Type | Default | SASS variable | CSS custom property | Description |
 |---|---|---|---|---|---|
@@ -48,9 +50,16 @@ All 19 standard params, with their SASS variable names and CSS custom property n
 | `show_powered_by` | boolean | `true` | `$trellis-show-powered-by` | — | Show "Powered by Trellis" attribution |
 | **Features** | | | | | |
 | `show_rss_link` | boolean | `true` | `$trellis-show-rss-link` | — | Display RSS/Atom feed `<link>` in `<head>` |
-| `syntax_highlighting` | boolean | `true` | `$trellis-syntax-highlighting` | — | Enable syntax highlighting container styles |
 
 > Verified against `themes/verdant/theme.yaml` and `themes/verdant/sass/_variables.scss`.
+
+> **Defaults are per-theme.** The **Default** column shows the *reference* defaults
+> (the values the `verdant` theme ships). The contract fixes each param's **name,
+> type, and semantics** — not its default value. A theme may ship its own default
+> for any param, and most do: e.g. `arbor` uses `primary_color: "#0f7a4d"` and a
+> serif `heading_font_family` (`"Charter, Cambria, Georgia, ui-serif, serif"`),
+> while `bloom` ships a purple palette. `heading_font_family: null` still means
+> "inherit the body font" wherever a theme (or a site) sets it back to null.
 
 
 ## Categories
@@ -112,9 +121,9 @@ List params have no SASS or CSS custom property representation.
 
 `footer_text` is a free-form string displayed in the footer. `null` means the theme provides its own default text (or nothing). `show_powered_by` controls a "Powered by Trellis" attribution line.
 
-### Features (2 params)
+### Features (1 param)
 
-Boolean feature toggles. `show_rss_link` controls whether a `<link rel="alternate">` element is emitted in `<head>` (requires `feeds:` to be configured in `trellis_site.yaml`). `syntax_highlighting` enables the theme's code block container styling.
+`show_rss_link` controls whether a `<link rel="alternate">` element is emitted in `<head>` (requires `feeds:` to be configured in `trellis_site.yaml`).
 
 
 ## Type Reference
@@ -133,12 +142,19 @@ In templates: `${theme.primary_color}` (returns the hex string)
 
 ### `string`
 
-A free-form string. Font stacks, dimensions, and display text use this type. Emitted as a SASS variable and CSS custom property (unless `null`).
+A free-form string — font stacks, dimensions, and display text all use this type. Emitted as a SASS variable and a CSS custom property (unless `null`).
 
 ```yaml
 font_family: "system-ui, -apple-system, sans-serif"
+max_width: "800px"
 heading_font_family: null    # null omitted from CSS output
 ```
+
+The SASS variable is emitted **unquoted**: the generator interpolates the value (`#{"…"}`) rather than writing a bare quoted literal, so a theme can use the variable directly (`font-family: $trellis-font-family`, `max-width: $trellis-max-width`) and get valid CSS. (A quoted `"800px"` would win the bridge's `!default` and compile to the invalid `max-width: "800px"`, which browsers drop.) Embedded `"` and `\` are escaped, and a SASS interpolation marker `#{…}` in a value is emitted as literal text — never evaluated. Avoid the structural characters `;`, `{`, `}` in a value: they are **not** neutralized, so a string value carrying them compiles but silently corrupts the emitted CSS rather than failing loudly (only a raw `color`-typed value with the same characters aborts the compile). Tracked as TD-011.
+
+In SASS: `$trellis-font-family: #{"system-ui, -apple-system, sans-serif"} !default;` (compiles to the unquoted `system-ui, -apple-system, sans-serif`)
+In CSS: `--trellis-font-family: system-ui, -apple-system, sans-serif;`
+In templates: `${theme.font_family}` (returns the raw string)
 
 ### `boolean`
 
@@ -213,7 +229,7 @@ Template:           ${theme.primary_color}
 
 ## Adding Theme-Specific Params
 
-Themes may extend beyond the 19 standard params. Convention:
+Themes may extend beyond the 18 standard params. Convention:
 
 1. Place standard params first in `theme.yaml`, clearly marked
 2. Place theme-specific params in a separate block after the standard ones
@@ -221,14 +237,14 @@ Themes may extend beyond the 19 standard params. Convention:
 
 ```yaml
 params:
-  # === Standard Params (19) ===
+  # === Standard Params (18) ===
   skin:
     type: enum
     values: [light, dark, auto]
     default: auto
     description: Color scheme
 
-  # ... (other 18 standard params)
+  # ... (other 17 standard params)
 
   # === Blog-Specific Params ===
   show_reading_time:

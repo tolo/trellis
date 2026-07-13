@@ -7,16 +7,12 @@ import 'package:trellis_cli/trellis_cli.dart';
 
 void main() {
   late Directory tempDir;
-  late String originalDir;
 
   setUp(() {
     tempDir = Directory.systemTemp.createTempSync('trellis_serve_cmd_');
-    originalDir = Directory.current.path;
-    Directory.current = tempDir;
   });
 
   tearDown(() {
-    Directory.current = originalDir;
     tempDir.deleteSync(recursive: true);
   });
 
@@ -38,14 +34,14 @@ void main() {
   group('ServeCommand', () {
     // T08: --help exits 0
     test('T08: --help exits 0', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['serve', '--help']);
       expect(result, 0);
     });
 
     // T09: non-existent output dir → exits 1, message contains "does not exist" and "trellis build"
     test('T09: non-existent output dir exits 1', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['serve', '--output', 'nonexistent_dir']);
       expect(result, 1);
     });
@@ -53,7 +49,7 @@ void main() {
     // T10: invalid port (not a number) → exits 1
     test('T10: invalid port string exits 1', () async {
       minimalOutput();
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['serve', '--port', 'abc']);
       expect(result, 1);
     });
@@ -61,7 +57,7 @@ void main() {
     // T11: port 0 → exits 1 (out of range)
     test('T11: port 0 exits 1', () async {
       minimalOutput();
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['serve', '--port', '0']);
       expect(result, 1);
     });
@@ -69,7 +65,7 @@ void main() {
     // T12: port 65536 → exits 1 (out of range)
     test('T12: port 65536 exits 1', () async {
       minimalOutput();
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['serve', '--port', '65536']);
       expect(result, 1);
     });
@@ -79,7 +75,7 @@ void main() {
       minimalOutput();
       final port = await freePort();
       final stopCompleter = Completer<void>();
-      final cli = TrellisCli(serveStopSignal: stopCompleter.future);
+      final cli = TrellisCli(serveStopSignal: stopCompleter.future, workingDirectory: tempDir.path);
 
       final serveFuture = cli.run(['serve', '--port', '$port']);
 
@@ -105,7 +101,7 @@ void main() {
       minimalOutput();
       final port = await freePort();
       final stopCompleter = Completer<void>();
-      final cli = TrellisCli(serveStopSignal: stopCompleter.future);
+      final cli = TrellisCli(serveStopSignal: stopCompleter.future, workingDirectory: tempDir.path);
 
       final serveFuture = cli.run(['serve', '--port', '$port']);
 
@@ -132,7 +128,7 @@ void main() {
       File(p.join(aboutDir.path, 'index.html')).writeAsStringSync('<html><body>About</body></html>');
       final port = await freePort();
       final stopCompleter = Completer<void>();
-      final cli = TrellisCli(serveStopSignal: stopCompleter.future);
+      final cli = TrellisCli(serveStopSignal: stopCompleter.future, workingDirectory: tempDir.path);
 
       final serveFuture = cli.run(['serve', '--port', '$port']);
 
@@ -157,7 +153,7 @@ void main() {
       minimalOutput();
       final port = await freePort();
       final stopCompleter = Completer<void>();
-      final cli = TrellisCli(serveStopSignal: stopCompleter.future);
+      final cli = TrellisCli(serveStopSignal: stopCompleter.future, workingDirectory: tempDir.path);
 
       final serveFuture = cli.run(['serve', '-p', '$port']);
 

@@ -47,23 +47,35 @@
 // SASS variables are already compiled at this point; this block rewrites the
 // :root custom properties so components reading var(--trellis-*) flip to dark.
 // Values MUST match _skins/_dark.scss exactly.
-@media (prefers-color-scheme: dark) {
-  :root {
-    --trellis-text: #e6edf3;
-    --trellis-muted: #9aa5b1;
-    --trellis-bg: #0d1117;
-    --trellis-surface: #161b22;
-    --trellis-border: #2d333b;
-    --trellis-primary: #4ade80;
-    --trellis-accent: #6ee7a8;
+//
+// Gated on `$trellis-skin == auto` so it only emits for auto: under skin: light
+// it would wrongly flip a forced-light site dark for dark-OS visitors, and under
+// skin: dark the base :root is already dark (the CLI injects _skins/_dark.scss),
+// making the block redundant.
+@if $trellis-skin == auto {
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --trellis-text: #e6edf3;
+      --trellis-muted: #9aa5b1;
+      --trellis-bg: #0d1117;
+      --trellis-surface: #161b22;
+      --trellis-border: #2d333b;
+      --trellis-primary: #4ade80;
+      --trellis-accent: #6ee7a8;
 
-    // Syntax highlighting — lighter variants for dark surfaces (#161b22).
-    // Each clears >= 4.5:1 on the dark code-block surface.
-    --trellis-code-keyword: #d2a8ff;     // 8.88:1
-    --trellis-code-string: #7ee787;      // 11.26:1
-    --trellis-code-number: #ffa657;      // 8.93:1
-    --trellis-code-comment: #8b949e;     // 5.62:1 (italic)
-    --trellis-code-function: #79c0ff;    // 8.89:1
-    --trellis-code-punctuation: #8b949e; // 5.62:1
+      // Syntax highlighting — lighter variants for dark surfaces (#161b22).
+      // Each clears >= 4.5:1 on the dark code-block surface.
+      --trellis-code-keyword: #d2a8ff;     // 8.88:1
+      --trellis-code-string: #7ee787;      // 11.26:1
+      --trellis-code-number: #ffa657;      // 8.93:1
+      --trellis-code-comment: #8b949e;     // 5.62:1 (italic)
+      --trellis-code-function: #79c0ff;    // 8.89:1
+      --trellis-code-punctuation: #8b949e; // 5.62:1
+
+      // Deeper shadows for dark surfaces (the light-strength ones vanish).
+      // Tints (--trellis-tint*) recompute automatically from the tokens above.
+      --trellis-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4), 0 2px 8px -4px rgb(0 0 0 / 0.5);
+      --trellis-shadow-md: 0 2px 4px rgb(0 0 0 / 0.4), 0 12px 28px -16px rgb(0 0 0 / 0.6);
+    }
   }
 }

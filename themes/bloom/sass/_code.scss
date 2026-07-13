@@ -1,0 +1,36 @@
+// Bloom Landing Theme — sass/_code.scss
+// Inline code and code blocks. Colors reference the --trellis-* custom
+// properties so they flip with the active skin. Bloom ships no token-color CSS:
+// build-time highlighting (ADR-010) still emits `.hljs-*` spans, but with no
+// --trellis-code-* colors defined they render plain/monochrome by design — the
+// landing theme's role. The container styles below are always safe defaults.
+
+code {
+  font-family: var(--trellis-code-font, #{$trellis-code-font-family});
+  font-size: 0.875em;
+  background-color: var(--trellis-surface, #{$trellis-surface-color});
+  color: var(--trellis-text, #{$trellis-text-color});
+  padding: 0.15em 0.4em;
+  border-radius: 6px;
+  border: 1px solid var(--trellis-border, #{$trellis-border-color});
+}
+
+pre {
+  background-color: var(--trellis-surface, #{$trellis-surface-color});
+  border: 1px solid var(--trellis-border, #{$trellis-border-color});
+  border-radius: var(--trellis-radius, #{$trellis-border-radius});
+  padding: $trellis-space-lg;
+  overflow-x: auto;
+  margin: $trellis-space-lg 0;
+  line-height: 1.6;
+  font-family: var(--trellis-code-font, #{$trellis-code-font-family});
+
+  code {
+    // Reset inline-code styles inside a block.
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: $trellis-font-size-sm;
+    color: inherit;
+  }
+}

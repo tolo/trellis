@@ -10,6 +10,11 @@ environment:
   sdk: ^3.10.0
 
 dependencies:
+  # Build-time syntax highlighting (ADR-010): pure-Dart highlight.js port that
+  # emits `.hljs-*` HTML. Build-time only — never shipped to the browser.
+  highlight: ^0.7.0
+  # DOM parse/serialize for build-time code highlighting (entity round-tripping).
+  html: ^0.15.6
   markdown: ^7.3.0
   path: ^1.9.0
   trellis: ^0.9.1

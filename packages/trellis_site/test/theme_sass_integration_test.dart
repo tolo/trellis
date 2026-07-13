@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -37,7 +38,10 @@ void main() {
       expect(sassFile.existsSync(), isTrue);
       final content = sassFile.readAsStringSync();
       expect(content, contains(r'$trellis-primary-color: #2563eb !default;'));
-      expect(content, contains(r'$trellis-font-family: unquote("system-ui, sans-serif") !default;'));
+      expect(content, contains(r'$trellis-font-family: #{"system-ui, sans-serif"} !default;'));
+      // Guard the deprecation-free emission: the legacy global unquote() builtin
+      // (removed in Dart Sass 3.0.0, warns today) must not reappear.
+      expect(content, isNot(contains('unquote(')));
       expect(content, contains(r'$trellis-show-powered-by: true !default;'));
     });
 
@@ -149,6 +153,156 @@ body::before { content: \$trellis-hero-title; }
 
       expect(css, contains('content: Say "hello" to Trellis;'));
     });
+
+    test('compiled CSS: value containing a SASS interpolation marker is emitted literally, not evaluated', () {
+      final config = _generate(
+        siteDir: siteDir,
+        themeDir: themeDir,
+        params: {'skin': 'light', 'hero_title': r'total #{1 + 1} items'},
+        types: {'skin': 'enum', 'hero_title': 'string'},
+      );
+
+      final mainScss = File(p.join(themeDir, 'sass', 'main.scss'))..parent.createSync(recursive: true);
+      mainScss.writeAsStringSync('''
+@import "theme_params";
+body::before { content: \$trellis-hero-title; }
+''');
+
+      final css = TrellisCss.compileSass(mainScss.path, loadPaths: config.sassLoadPaths);
+
+      // The `#{1 + 1}` stays literal text — it must NOT evaluate to `total 2 items`.
+      expect(css, contains(r'content: total #{1 + 1} items;'));
+      expect(css, isNot(contains('total 2 items')));
+    });
+
+    test('compiled CSS: interpolation-shaped hex-length value is literal, not evaluated (F-A)', () {
+      final config = _generate(
+        siteDir: siteDir,
+        themeDir: themeDir,
+        params: {'skin': 'light', 'hero_title': r'#{9}'},
+        types: {'skin': 'enum', 'hero_title': 'string'},
+      );
+
+      final mainScss = File(p.join(themeDir, 'sass', 'main.scss'))..parent.createSync(recursive: true);
+      mainScss.writeAsStringSync('''
+@import "theme_params";
+body::before { content: \$trellis-hero-title; }
+''');
+
+      final css = TrellisCss.compileSass(mainScss.path, loadPaths: config.sassLoadPaths);
+
+      // `#{9}` is hex-length; the old length-only fast-path evaluated it to `9`.
+      expect(css, contains(r'content: #{9};'));
+      expect(css, isNot(contains('content: 9;')));
+    });
+
+    test('compiled CSS: color-typed interpolation value is literal, not evaluated (F-C)', () {
+      final config = _generate(
+        siteDir: siteDir,
+        themeDir: themeDir,
+        params: {'skin': 'light', 'brand_color': r'#{1 + 1}'},
+        types: {'skin': 'enum', 'brand_color': 'color'},
+      );
+
+      final mainScss = File(p.join(themeDir, 'sass', 'main.scss'))..parent.createSync(recursive: true);
+      mainScss.writeAsStringSync('''
+@import "theme_params";
+a { color: \$trellis-brand-color; }
+''');
+
+      final css = TrellisCss.compileSass(mainScss.path, loadPaths: config.sassLoadPaths);
+
+      // The `color` passthrough must neutralize interpolation, not evaluate it.
+      expect(css, contains(r'color: #{1 + 1};'));
+      expect(css, isNot(contains('color: 2;')));
+    });
+
+    test('compiled CSS: map with a hostile key compiles without breaking the literal (F-B)', () {
+      final config = _generate(
+        siteDir: siteDir,
+        themeDir: themeDir,
+        params: {
+          'skin': 'light',
+          'sizes': <String, dynamic>{'a"#{1+1}': 'x', 'norm': 'y'},
+        },
+        types: {'skin': 'enum', 'sizes': 'map'},
+      );
+
+      final mainScss = File(p.join(themeDir, 'sass', 'main.scss'))..parent.createSync(recursive: true);
+      mainScss.writeAsStringSync('''
+@import "theme_params";
+a { color: red; }
+''');
+
+      // An unescaped `"` in the key aborts the `@import` while parsing the map
+      // literal; a clean compile proves the hostile key was escaped and the map
+      // literal parsed intact.
+      final css = TrellisCss.compileSass(mainScss.path, loadPaths: config.sassLoadPaths);
+      expect(css, contains('color: red;'));
+    });
+
+    test('compiled CSS: multiline param value compiles without aborting (F-D)', () {
+      final config = _generate(
+        siteDir: siteDir,
+        themeDir: themeDir,
+        params: {'skin': 'light', 'notice': 'line1\nline2'},
+        types: {'skin': 'enum', 'notice': 'string'},
+      );
+
+      final mainScss = File(p.join(themeDir, 'sass', 'main.scss'))..parent.createSync(recursive: true);
+      mainScss.writeAsStringSync('''
+@import "theme_params";
+body::before { content: \$trellis-notice; }
+''');
+
+      // A raw newline aborts the SASS compile; the CSS `\a ` escape keeps it compiling.
+      final css = TrellisCss.compileSass(mainScss.path, loadPaths: config.sassLoadPaths);
+      expect(css, contains('line1'));
+      expect(css, contains('line2'));
+    });
+
+    test('compiled CSS: skin param gates the theme auto dark-mode @media block (M3 regression)', () async {
+      // M3: the bridge emits `$trellis-skin`, which a theme's main.scss uses to
+      // gate its `@media (prefers-color-scheme: dark)` block (`@if $trellis-skin
+      // == auto`). Compiling the shipped bloom theme through the bridge proves
+      // the gate end-to-end: skin=light must drop the dark media block; skin=auto
+      // must keep it. Before M3 the skin value was dead config and the block
+      // always emitted, so a forced-light site still flipped dark under a dark OS.
+      final bloomDir = p.join(await _repoRoot(), 'themes', 'bloom');
+
+      String compileBloom(String skin) {
+        final config = _generate(siteDir: siteDir, themeDir: bloomDir, params: {'skin': skin}, types: {'skin': 'enum'});
+        // Mirror the CLI wrapper: bridge params first, then the theme's entry point.
+        final entry = File(p.join(config.buildDir, '_skin_gate_probe.scss'))
+          ..writeAsStringSync('@import "theme_params";\n@import "main";\n');
+        return TrellisCss.compileSass(entry.path, loadPaths: config.sassLoadPaths);
+      }
+
+      expect(compileBloom('light'), isNot(contains('prefers-color-scheme')));
+      expect(compileBloom('auto'), contains('prefers-color-scheme'));
+    });
+
+    test('compiled CSS: form-feed param value compiles without aborting (L8)', () {
+      final config = _generate(
+        siteDir: siteDir,
+        themeDir: themeDir,
+        params: {'skin': 'light', 'notice': 'line1\fline2'},
+        types: {'skin': 'enum', 'notice': 'string'},
+      );
+
+      final mainScss = File(p.join(themeDir, 'sass', 'main.scss'))..parent.createSync(recursive: true);
+      mainScss.writeAsStringSync('''
+@import "theme_params";
+body::before { content: \$trellis-notice; }
+''');
+
+      // Form feed U+000C is a string-aborting newline in Dart Sass; before the L8
+      // fix a `\f`-carrying value aborted the compile. The `\a ` escape now keeps
+      // it compiling as literal text, same as the newline case above.
+      final css = TrellisCss.compileSass(mainScss.path, loadPaths: config.sassLoadPaths);
+      expect(css, contains('line1'));
+      expect(css, contains('line2'));
+    });
   });
 }
 
@@ -160,4 +314,20 @@ ThemeBuildConfig _generate({
 }) {
   const gen = ThemeSassGenerator();
   return gen.generate(mergedParams: params, paramTypes: types, siteDir: siteDir, themeDir: themeDir);
+}
+
+/// Resolves the monorepo root by walking up from this package until `themes/bloom`
+/// is found, so tests can compile a shipped theme regardless of the test CWD.
+Future<String> _repoRoot() async {
+  final uri = await Isolate.resolvePackageUri(Uri.parse('package:trellis_site/trellis_site.dart'));
+  if (uri == null || uri.scheme != 'file') {
+    throw StateError('Could not resolve package:trellis_site/trellis_site.dart');
+  }
+  var dir = Directory(p.dirname(uri.toFilePath()));
+  while (!Directory(p.join(dir.path, 'themes', 'bloom')).existsSync()) {
+    final parent = dir.parent;
+    if (parent.path == dir.path) throw StateError('Could not find repo root (themes/bloom) from ${uri.toFilePath()}');
+    dir = parent;
+  }
+  return dir.path;
 }

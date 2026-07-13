@@ -3,8 +3,9 @@ version: 1.0.0
 author: Trellis Team
 description: >-
   A documentation theme for Trellis. Hierarchical sidebar navigation, in-page
-  table of contents, prev/next links, and a vendored (no-CDN) client-side syntax
-  highlighter. Fully readable with JavaScript disabled.
+  table of contents, prev/next links, and build-time syntax highlighting (the
+  SSG bakes `.hljs-*` spans in — no highlighter JS shipped). Fully readable with
+  JavaScript disabled.
 min_trellis_version: 0.8.0
 screenshots:
   - screenshots/light.png
@@ -18,7 +19,7 @@ features:
   - search
 
 params:
-  # === Standard Params (19) ===
+  # === Standard Params (18) ===
   # Contract: docs/reference/standard-params.md. Every standard param is present
   # with the contract type. Non-null defaults required except optional strings
   # (heading_font_family, footer_text).
@@ -73,8 +74,8 @@ params:
 
   heading_font_family:
     type: string
-    default: null
-    description: Heading font stack (null inherits body)
+    default: "Charter, Cambria, Georgia, ui-serif, serif"
+    description: Heading font stack — Arbor's system-serif identity (set null to inherit the body font)
 
   code_font_family:
     type: string
@@ -123,11 +124,6 @@ params:
     type: boolean
     default: true
     description: Display RSS/Atom feed link
-
-  syntax_highlighting:
-    type: boolean
-    default: true
-    description: Enable client-side syntax highlighting via the vendored Prism assets
 
   excerpt_length:
     type: int

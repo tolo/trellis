@@ -20,7 +20,8 @@
     border-radius: $trellis-border-radius;
     transition: color 0.15s ease, background-color 0.15s ease;
 
-    &:hover {
+    &:hover,
+    &:focus-visible {
       color: var(--trellis-primary, #{$trellis-primary-color});
       background-color: var(--trellis-surface, #{$trellis-surface-color});
     }
@@ -75,6 +76,10 @@
   color: var(--trellis-muted, #{$trellis-muted-color});
 }
 
+.sidebar-link {
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
 .sidebar-link:hover {
   color: var(--trellis-text, #{$trellis-text-color});
   background-color: var(--trellis-surface, #{$trellis-surface-color});
@@ -87,10 +92,11 @@
   cursor: default;
 }
 
-// Active node — the page currently being viewed.
+// Active node — the page currently being viewed. Brand-tinted background makes
+// the current location pop without shouting.
 .sidebar-link.is-active {
   color: var(--trellis-primary, #{$trellis-primary-color});
-  background-color: var(--trellis-surface, #{$trellis-surface-color});
+  background-color: var(--trellis-tint-strong, #{$trellis-surface-color});
   font-weight: 600;
   box-shadow: inset 3px 0 0 var(--trellis-primary, #{$trellis-primary-color});
 }
@@ -168,9 +174,15 @@
   color: var(--trellis-text, #{$trellis-text-color});
   background-color: var(--trellis-bg, #{$trellis-bg-color});
   border: 1px solid var(--trellis-border, #{$trellis-border-color});
-  border-radius: $trellis-border-radius;
+  border-radius: 9999px;
+  box-shadow: var(--trellis-shadow-sm, none);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
   &::placeholder { color: var(--trellis-muted, #{$trellis-muted-color}); }
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 35%, var(--trellis-border, #{$trellis-border-color}));
+  }
 
   &:focus-visible {
     outline: 2px solid var(--trellis-primary, #{$trellis-primary-color});
@@ -282,7 +294,7 @@
   margin: 0 0 $trellis-space-xl;
   padding: $trellis-space-md $trellis-space-lg;
   border-left: 3px solid var(--trellis-primary, #{$trellis-primary-color});
-  background-color: var(--trellis-surface, #{$trellis-surface-color});
+  background-color: var(--trellis-tint, #{$trellis-surface-color});
   border-radius: 0 $trellis-border-radius $trellis-border-radius 0;
 
   .docs-toc {
@@ -316,14 +328,16 @@
   gap: $trellis-space-xs;
   padding: $trellis-space-md $trellis-space-lg;
   border: 1px solid var(--trellis-border, #{$trellis-border-color});
-  border-radius: $trellis-border-radius;
+  border-radius: calc(#{$trellis-border-radius} * 1.5);
   text-decoration: none;
   flex: 1 1 45%;
   min-width: 0;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 
   &:hover {
-    border-color: var(--trellis-primary, #{$trellis-primary-color});
-    background-color: var(--trellis-surface, #{$trellis-surface-color});
+    border-color: color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 45%, var(--trellis-border, #{$trellis-border-color}));
+    background-color: var(--trellis-tint, #{$trellis-surface-color});
+    box-shadow: var(--trellis-shadow-sm, none);
   }
 
   &.page-nav-next {
@@ -367,35 +381,68 @@
 
 // ── Hero (home) ──────────────────────────────────────────────────────────────
 
+// A soft brand-tinted panel with a radial glow in the corner — depth without
+// noise, recolored from --trellis-primary via the derived tints.
 .hero {
-  padding: $trellis-space-2xl 0;
-  margin-bottom: $trellis-space-2xl;
-  border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
+  position: relative;
+  padding: $trellis-space-2xl $trellis-space-xl;
+  margin: $trellis-space-lg 0 $trellis-space-2xl;
+  border: 1px solid color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 14%, var(--trellis-border, #{$trellis-border-color}));
+  border-radius: calc(#{$trellis-border-radius} * 2.5);
+  background:
+    radial-gradient(120% 160% at 88% -30%, var(--trellis-tint-strong, transparent), transparent 55%),
+    var(--trellis-tint, var(--trellis-surface, #{$trellis-surface-color}));
+
+  // A short brand-colored rule sits above the title as a quiet "eyebrow".
+  &::before {
+    content: '';
+    display: block;
+    width: 2.5rem;
+    height: 4px;
+    border-radius: 4px;
+    margin-bottom: $trellis-space-lg;
+    background: linear-gradient(
+      90deg,
+      var(--trellis-primary, #{$trellis-primary-color}),
+      var(--trellis-accent, #{$trellis-accent-color})
+    );
+  }
 
   h1 {
-    font-size: 2.5rem;
+    font-size: 2.75rem;
+    letter-spacing: -0.025em;
     margin-bottom: $trellis-space-md;
 
-    @media (min-width: $bp-sm) { font-size: 3rem; }
+    @media (min-width: $bp-sm) { font-size: 3.25rem; }
   }
 
   .hero-description {
-    font-size: 1.15rem;
+    font-size: 1.2rem;
+    line-height: 1.5;
     color: var(--trellis-muted, #{$trellis-muted-color});
     margin-bottom: $trellis-space-lg;
     max-width: 640px;
   }
 
   .hero-cta {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: $trellis-space-xs;
     padding: $trellis-space-sm $trellis-space-lg;
     background-color: var(--trellis-primary, #{$trellis-primary-color});
     color: var(--trellis-bg, #{$trellis-bg-color});
     font-weight: 600;
     text-decoration: none;
     border-radius: $trellis-border-radius;
+    // Resting shadow lifts the CTA off the tinted panel; hover raises it further.
+    box-shadow: 0 2px 8px -4px var(--trellis-primary, #{$trellis-primary-color});
+    transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 
-    &:hover { background-color: var(--trellis-accent, #{$trellis-accent-color}); }
+    &:hover {
+      background-color: var(--trellis-accent, #{$trellis-accent-color});
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px -8px var(--trellis-primary, #{$trellis-primary-color});
+    }
   }
 }
 
@@ -414,15 +461,41 @@
 }
 
 .doc-card {
+  position: relative;
   padding: $trellis-space-lg;
   border: 1px solid var(--trellis-border, #{$trellis-border-color});
-  border-radius: $trellis-border-radius;
+  border-radius: calc(#{$trellis-border-radius} * 1.5);
+  background-color: var(--trellis-bg, #{$trellis-bg-color});
+  box-shadow: var(--trellis-shadow-sm, none);
+  overflow: hidden;
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 
-  &:hover { border-color: var(--trellis-primary, #{$trellis-primary-color}); }
+  // Brand accent along the top edge, revealed on hover.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3px;
+    background: linear-gradient(
+      90deg,
+      var(--trellis-primary, #{$trellis-primary-color}),
+      var(--trellis-accent, #{$trellis-accent-color})
+    );
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 45%, var(--trellis-border, #{$trellis-border-color}));
+    transform: translateY(-2px);
+    box-shadow: var(--trellis-shadow-md, 0 10px 28px -16px var(--trellis-primary, #{$trellis-primary-color}));
+
+    &::before { opacity: 1; }
+  }
 
   .doc-card-title {
     margin: 0 0 $trellis-space-xs;
-    font-size: 1.15rem;
+    font-size: 1.2rem;
 
     a { color: var(--trellis-text, #{$trellis-text-color}); text-decoration: none; &:hover { color: var(--trellis-primary, #{$trellis-primary-color}); } }
   }

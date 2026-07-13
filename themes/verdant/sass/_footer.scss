@@ -11,13 +11,13 @@
 
 .footer-powered-by {
   // "Powered by Trellis" attribution
-  color: $trellis-muted-color;
+  color: var(--trellis-muted, #{$trellis-muted-color});
 
   a {
-    color: $trellis-muted-color;
+    color: var(--trellis-muted, #{$trellis-muted-color});
 
     &:hover {
-      color: $trellis-primary-color;
+      color: var(--trellis-primary, #{$trellis-primary-color});
     }
   }
 }
@@ -33,12 +33,12 @@
   margin: 0;
 
   a {
-    color: $trellis-muted-color;
+    color: var(--trellis-muted, #{$trellis-muted-color});
     font-size: $trellis-font-size-sm;
     text-decoration: none;
 
     &:hover {
-      color: $trellis-primary-color;
+      color: var(--trellis-primary, #{$trellis-primary-color});
     }
   }
 }

@@ -23,5 +23,4 @@ $trellis-border-radius: 6px !default;
 // Feature flags (SASS-only, not in CSS custom properties)
 $trellis-show-powered-by: true !default;
 $trellis-show-rss-link: true !default;
-$trellis-syntax-highlighting: true !default;
 ''';

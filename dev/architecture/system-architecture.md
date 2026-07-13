@@ -2,7 +2,7 @@
 
 Canonical reference for understanding the Trellis SDK architecture: how the packages compose, what each package is responsible for, the dependency graph, and how a request flows through the system.
 
-**Current through**: v0.7 (engine) / SDK Phase 3 (post `trellis_test` merge) + docs-site S01 (`trellis_site` weighted ordering + nested-section lineage) + docs-site S02 (`trellis_site` hierarchical `${site.menu}` navigation tree) + docs-site S03 (`trellis_site` URL path-prefix) + docs-site S04 (`arbor` docs theme) + docs-site S05 (top-level `site/` scaffold + marketing landing) + docs-site S06 (docs IA: getting-started + syntax reference) + docs-site S07 (GitHub Pages CI deploy + link-integrity gate) + docs-site S08 (`trellis_site` in-section `${page.prev}`/`${page.next}` neighbors) + docs-site S09 (vendored client-side search) + docs-site S10 (per-package guides + theme-authoring guide)
+**Current through**: v0.7 (engine) / SDK Phase 3 (post `trellis_test` merge) + docs-site S01 (`trellis_site` weighted ordering + nested-section lineage) + docs-site S02 (`trellis_site` hierarchical `${site.menu}` navigation tree) + docs-site S03 (`trellis_site` URL path-prefix) + docs-site S04 (`arbor` docs theme) + docs-site S05 (top-level `site/` scaffold + marketing landing) + docs-site S06 (docs IA: getting-started + syntax reference) + docs-site S07 (GitHub Pages CI deploy + link-integrity gate) + docs-site S08 (`trellis_site` in-section `${page.prev}`/`${page.next}` neighbors) + docs-site S09 (vendored client-side search) + docs-site S10 (per-package guides + theme-authoring guide) + `trellis_site` per-page `${page.termLinks}` (slug-safe taxonomy term links) + binary-distribution (CLI release pipeline + Homebrew tap + Scoop bucket) + syntax-highlighting ([ADR-010](../adrs/ADR-010-syntax-highlighting.md): build-time `.hljs-*` highlighting)
 
 ---
 
@@ -275,13 +275,14 @@ static/**         ──►  PageGenerator       (layout resolution, data cascad
 3. **Parse** front matter — YAML extraction, draft flagging
 4. **Shortcodes (pre-MD)** — `{{% name %}}` and `{{% name %}} content {{% /name %}}` processed before Markdown
 5. **Render** Markdown — GitHub-flavored via `package:markdown`, summary + TOC extraction
-6. **Shortcodes (post-MD)** — `<!-- tl:name -->` processed after Markdown
-7. **Taxonomies** — collect terms from front matter, generate virtual listing and term pages
-8. **Generate** HTML — priority-ordered layout resolution, 5-level data cascade, Trellis `renderFile()`
-9. **Static assets** — copy (skip `.scss`/`.sass`), copy bundle assets
-10. **Sitemap** — `sitemap.xml` with `<lastmod>` from date or mtime
-11. **Feeds** — Atom `feed.xml` (+ optional `rss.xml`) when `feeds:` config present; per-section feeds supported
-12. **Search index** — JSON array at configured path when `search.enabled: true`
+6. **Highlight** code (ADR-010) — build-time syntax highlighting woven into the Markdown render and both shortcode passes: when `highlight.enabled` (default), `CodeHighlighter` (`package:highlight`) rewrites each fenced `<pre><code class="language-x">` block into `.hljs-*` token spans; disabled or unknown-language blocks stay plain `<pre><code>`. No client-side highlighter JS ships — runs before path-prefix link rewriting in step 9
+7. **Shortcodes (post-MD)** — `<!-- tl:name -->` processed after Markdown
+8. **Taxonomies** — collect terms from front matter, generate virtual listing and term pages
+9. **Generate** HTML — priority-ordered layout resolution, 5-level data cascade, Trellis `renderFile()`, final path-prefix link rewriting
+10. **Static assets** — copy (skip `.scss`/`.sass`), copy bundle assets
+11. **Sitemap** — `sitemap.xml` with `<lastmod>` from date or mtime
+12. **Feeds** — Atom `feed.xml` (+ optional `rss.xml`) when `feeds:` config present; per-section feeds supported
+13. **Search index** — JSON array at configured path when `search.enabled: true`
 
 ### Layout Resolution Order
 
@@ -319,6 +320,10 @@ The content model is additive-nested: `Page.section` stays the top-level folder,
 ### In-Section Prev/Next
 
 `PageGenerator._resolvePrevNext(page, allPages)` supplies each **single doc page** with `${page.prev}`/`${page.next}` neighbor references (`{url, title}` maps). It holds **no** comparator or lineage filter of its own: it calls `orderedSectionPages(page.sectionPath, allPages)` — the same single ordering seam the `${pages}` listing and the `NavigationBuilder` menu tree consume — finds the page's index in that own-level sequence, and returns the flanking pages. Prev/next order therefore matches sidebar and list order by construction; a second sort here would be the only way they could diverge. Boundaries are handled by absence (no `prev` at index 0, no `next` at the last index, neither for a single-element section), and the keys attach **additively** onto the existing `pageToMap` output in `_buildContext` — each only when present. Attachment is gated to the non-list single-doc render branch (`PageKind.single` and not a list page), so section, home, and taxonomy pages (including single-kind taxonomy *term* pages, which are list pages via `termName`) receive neither key and keep their `paginator.dart` sequencing. The `arbor` theme's `_default/single.html` renders a `tl:if`-guarded region reading these values, so only the links that exist appear. Because attachment only adds keys (never mutates existing ones), a site whose templates do not reference `${page.prev}`/`${page.next}` is byte-for-byte unchanged.
+
+### Per-Page Term Links
+
+`TaxonomyCollector.termLinksForPage(page, index)` resolves each page's **own** front-matter terms to link maps, keyed by taxonomy, surfaced additively as `${page.termLinks.<taxonomy>}` (each entry `{name, slug, url, count}`). The `url`/`slug` come from the same collected `TaxonomyIndex` that `buildVirtualPages` emits the term pages from, so a pill link and its target term page share one canonical, slugified path **by construction** — never string-built as `/{taxonomy}/{rawTerm}/`, which 404s for any term needing slugification (uppercase, spaces, punctuation, e.g. `Hello World` → `/tags/hello-world/`). The builder injects `termLinks` into each non-draft content page's front matter after `collect` and before `buildVirtualPages`, gated on `taxonomies` being declared — so pills render only when the term pages they point at actually exist. `${taxonomy.<name>}` remains the site-global term list (all terms, for tag clouds/listing pages); `${page.termLinks.<name>}` is this page's subset. The `verdant` theme's `_default/single.html` iterates it (`tl:href="${tag.url}"`), mirroring how `tags/list.html` already links via each term's `${term.url}`. Pages with no declared taxonomy or no terms receive no key, so templates not reading it are byte-for-byte unchanged.
 
 ### URL Path-Prefix
 
@@ -427,12 +432,14 @@ Two deliverables ship in the repo root alongside the packages: the **`arbor`** d
 
 A documentation-oriented theme sitting beside the `verdant` blog theme (both are standard-params-contract themes). It consumes the SSG's navigation surfaces directly: a hierarchical sidebar from `${site.menu}` (active/active-trail highlighting resolved at render time), an in-page TOC from `${page.toc}`, a breadcrumb bar from `${page.breadcrumbs}`, and prev/next links from `${page.prev}`/`${page.next}`. A CLI-generated SASS **bridge wrapper** (`site/.trellis/build/bridge_main.scss`) `@import`s the theme's params + `sass/main.scss` so `trellis build` compiles the theme's stylesheet with the site's `theme_params` bound.
 
-**Vendored-JS discipline** — all client-side JS is vendored (committed), served same-origin, and pinned with a per-file Subresource Integrity `sha384-…` hash plus `crossorigin="anonymous" defer`. **No CDN, no `npm`/Node, no runtime fetch from an external host.** Two assets:
+**Build-time syntax highlighting (ADR-010)** — arbor ships **no** highlighter JS. `trellis_site` colors fenced code at build time (`CodeHighlighter`, `package:highlight`), baking `.hljs-*` token spans into the HTML; the theme carries only the matching token CSS (`sass/_code.scss`), so code is colored with JavaScript disabled. See [ADR-010](../adrs/ADR-010-syntax-highlighting.md).
 
-- **Prism 1.29.0** syntax highlighter — core + explicit per-language grammar components (the remote-fetching autoloader is deliberately *not* used); language coverage `dart`/`html`/`css`/`yaml`/`bash`/`scss`/`markdown` over the `language-*` classes `trellis_site` already emits. Provenance and the 9 SRI hashes are recorded in `themes/arbor/VENDORED.md`.
-- **`search.js`** — a hand-authored, dependency-free vanilla-JS search client (no Lunr/Fuse/MiniSearch vendored library), chosen to keep the asset small and fully auditable while still satisfying the vendored + pinned + SRI discipline.
+**Vendored-JS discipline** — the two remaining client-side scripts are both first-party (no third-party library), vendored (committed) and served same-origin with `defer`; no Subresource Integrity hash is used, since for a same-origin script committed alongside the HTML that loads it an SRI hash guards nothing extra (anyone who can alter a served script can alter the served HTML). **No CDN, no `npm`/Node, no runtime fetch from an external host.** Two assets:
 
-Both syntax highlighting and search are **progressive enhancements**: the docs are fully readable and navigable with JavaScript disabled.
+- **`search.js`** — a hand-authored, dependency-free vanilla-JS search client (no Lunr/Fuse/MiniSearch vendored library), chosen to keep the asset small and fully auditable while still satisfying the vendored, same-origin discipline.
+- **`code-enhance.js`** — adds a language label and copy button to each code block; reads the language from the `language-*` class and the code from `textContent`, so it is independent of the build-time tokenizer. Provenance for both is recorded in `themes/arbor/VENDORED.md`.
+
+Both search and the code copy button are **progressive enhancements**: the docs are fully readable and navigable with JavaScript disabled (and highlighting, being build-time, needs no client JS at all).
 
 ### Client-Side Search Flow (S09)
 
@@ -440,7 +447,7 @@ The engine and the theme meet at one artifact — `search-index.json`:
 
 ```
 trellis_site build                         arbor theme (browser)
-  SearchIndexGenerator                       search.js (vendored, SRI-pinned)
+  SearchIndexGenerator                       search.js (vendored, same-origin)
   (search.enabled: true)                       │
         │  emits                                │  reads index URL from the shell's
         ▼                                       │  data-search-index attribute
@@ -479,7 +486,7 @@ trellis/                          # monorepo root
 ├── starters/                     # project templates
 ├── themes/
 │   ├── verdant/                  # blog theme (default)
-│   └── arbor/                    # documentation theme (vendored Prism + search)
+│   └── arbor/                    # documentation theme (build-time highlighting + vendored search/copy JS)
 ├── site/                         # the Trellis docs/marketing site (built by trellis_cli)
 ├── examples/
 │   └── relic_app/                # Relic + Trellis + HTMX example
@@ -527,13 +534,18 @@ an FR10 portability regression guard.
 
 ### CLI distribution channels
 
-The `trellis` CLI ships through three channels, all keyed off the lockstep
+The `trellis` CLI ships through four channels, all keyed off the lockstep
 `vX.Y.Z` release tag (ADR-009). `.github/workflows/release-binaries.yml` compiles
 per-platform AOT binaries (macOS arm64/x64, Linux x64/arm64, Windows x64) and
 attaches them to the GitHub Release, then updates the Homebrew tap
-`tolo/homebrew-trellis` so `brew install tolo/trellis/trellis` resolves. The same
-tag drives `publish.yml`, which publishes the packages to pub.dev independently.
-The linux-arm64 binary is cross-compiled on an x64 runner (`--target-os/--target-arch`).
+`tolo/homebrew-trellis` so `brew install tolo/trellis/trellis` resolves. A parallel
+`scoop` job (post-publish) renders the Windows manifest with
+`tool/render_scoop_manifest.dart` and pushes it to the Scoop bucket repo
+`tolo/scoop-trellis`, so `scoop bucket add trellis https://github.com/tolo/scoop-trellis`
+then `scoop install trellis` resolves. The same tag drives `publish.yml`, which
+publishes the packages to pub.dev independently. The linux-arm64 binary is
+cross-compiled on an x64 runner (`--target-os/--target-arch`); both the Homebrew
+and Scoop jobs skip gracefully when `TAP_TOKEN` is absent.
 
 ---
 

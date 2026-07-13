@@ -23,12 +23,16 @@ $trellis-border-color: #e2e6e2 !default;  // borders, dividers
 // ── Typography ───────────────────────────────────────────────────────────────
 
 $trellis-font-family: system-ui, -apple-system, sans-serif !default;
-$trellis-heading-font-family: null !default; // null inherits body font
+// Arbor's identity: a system-serif heading stack (no web fonts, no CDN) paired
+// with the sans body and mono code. Quote-free names sidestep the SASS-bridge
+// value escaping. Set heading_font_family: null in theme_params to inherit the
+// body font instead (the standard "null = inherit body" contract still holds).
+$trellis-heading-font-family: Charter, Cambria, Georgia, ui-serif, serif !default;
 $trellis-code-font-family: ui-monospace, SFMono-Regular, monospace !default;
 
-// Derived: heading font with fallback to body font. (@if avoids the deprecated
-// if() builtin function; @if shares the enclosing/root scope, so this updates the
-// global variable without !global.)
+// Derived: heading font, falling back to the body font when the family is unset.
+// (@if avoids the deprecated if() builtin function; @if shares the enclosing/root
+// scope, so this updates the global variable without !global.)
 $trellis-heading-font: $trellis-font-family;
 @if $trellis-heading-font-family {
   $trellis-heading-font: $trellis-heading-font-family;
@@ -70,7 +74,6 @@ $trellis-footer-text: null !default;     // custom footer text (null = theme def
 
 $trellis-show-powered-by: true !default;
 $trellis-show-rss-link: true !default;
-$trellis-syntax-highlighting: true !default;
 
 // Docs-specific toggles
 $trellis-show-sidebar: true !default;
@@ -88,10 +91,18 @@ $trellis-focus-ring-color: $trellis-primary-color !default;
 $trellis-focus-ring-width: 2px !default;
 $trellis-focus-ring-offset: 2px !default;
 
+// ── Syntax highlighting ─────────────────────────────────────────────────────
+
+$trellis-code-keyword: #8250df !default;
+$trellis-code-string: #0a6b43 !default;
+$trellis-code-number: #953800 !default;
+$trellis-code-comment: #5b6470 !default;
+$trellis-code-function: #0550ae !default;
+$trellis-code-punctuation: #5b6470 !default;
+
 // ── CSS Custom Properties ────────────────────────────────────────────────────
-// Emit :root custom properties so token colors and theme values can be overridden
-// at runtime without recompiling SASS. Color tokens here match the LIGHT skin;
-// the dark skin overrides them in main.scss under prefers-color-scheme.
+// Emit :root custom properties from the active compile-time skin. Auto mode uses
+// the light defaults here, then main.scss overrides them for OS dark mode.
 
 :root {
   --trellis-primary: #{$trellis-primary-color};
@@ -107,12 +118,23 @@ $trellis-focus-ring-offset: 2px !default;
   --trellis-max-width: #{$trellis-max-width};
   --trellis-radius: #{$trellis-border-radius};
 
-  // Syntax highlighting token colors (Prism.js) — light-skin variants.
-  // Each clears >= 4.5:1 on the light code-block surface (#f6f8f6).
-  --trellis-code-keyword: #8250df;     // 4.73:1 on #f6f8f6
-  --trellis-code-string: #0a6b43;      // 6.15:1 on #f6f8f6
-  --trellis-code-number: #953800;      // 6.92:1 on #f6f8f6
-  --trellis-code-comment: #5b6470;     // 5.62:1 on #f6f8f6 (italic)
-  --trellis-code-function: #0550ae;    // 7.12:1 on #f6f8f6
-  --trellis-code-punctuation: #5b6470; // 5.62:1 on #f6f8f6
+  // Syntax highlighting token colors (highlight.js `.hljs-*`).
+  --trellis-code-keyword: #{$trellis-code-keyword};
+  --trellis-code-string: #{$trellis-code-string};
+  --trellis-code-number: #{$trellis-code-number};
+  --trellis-code-comment: #{$trellis-code-comment};
+  --trellis-code-function: #{$trellis-code-function};
+  --trellis-code-punctuation: #{$trellis-code-punctuation};
+
+  // Derived tints — mixed from the runtime tokens with color-mix(), so they
+  // track skin flips and site color overrides without extra params. Custom
+  // properties re-resolve at use time, so the dark-mode :root override in
+  // main.scss updates these automatically.
+  --trellis-tint: color-mix(in srgb, var(--trellis-primary) 6%, var(--trellis-bg));
+  --trellis-tint-strong: color-mix(in srgb, var(--trellis-primary) 13%, var(--trellis-bg));
+
+  // Soft elevation shadows (black-based: reads as depth in light, stays quiet
+  // in dark; the dark-mode block in main.scss deepens them).
+  --trellis-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05), 0 2px 8px -4px rgb(0 0 0 / 0.08);
+  --trellis-shadow-md: 0 2px 4px rgb(0 0 0 / 0.05), 0 12px 28px -16px rgb(0 0 0 / 0.18);
 }

@@ -35,54 +35,20 @@
         rel="alternate" type="application/rss+xml"
         title="RSS Feed" tl:attr="href=${site.feeds.rss}">
 
-  <!-- Vendored syntax highlighter: Prism 1.29.0, same-origin, per-file SRI, no CDN.
-       Order: core, clike base, then per-language components (dart extends clike;
-       markdown extends markup; scss extends css). Served from the output root;
-       see VENDORED.md. -->
-  <script tl:if="${theme.syntax_highlighting}"
-          tl:attr="src=${assetBase} + 'prism/prism-core.min.js'"
-          integrity="sha384-MXybTpajaBV0AkcBaCPT4KIvo0FzoCiWXgcihYsw4FUkEz0Pv3JGV6tk2G8vJtDc"
-          crossorigin="anonymous" defer></script>
-  <script tl:if="${theme.syntax_highlighting}"
-          tl:attr="src=${assetBase} + 'prism/prism-clike.min.js'"
-          integrity="sha384-7LHwxHIDSHTBleLmgDWZbC/IMJsfYfFVOihKhvsrxYW4j47YQcRwZja4ToFE3bA8"
-          crossorigin="anonymous" defer></script>
-  <script tl:if="${theme.syntax_highlighting}"
-          tl:attr="src=${assetBase} + 'prism/prism-markup.min.js'"
-          integrity="sha384-HkMr0bZB9kBW4iVtXn6nd35kO/L/dQtkkUBkL9swzTEDMdIe5ExJChVDSnC79aNA"
-          crossorigin="anonymous" defer></script>
-  <script tl:if="${theme.syntax_highlighting}"
-          tl:attr="src=${assetBase} + 'prism/prism-markdown.min.js'"
-          integrity="sha384-s888ApkYHxfPsp8n81g77Unl/0XYnYltLvWbwqKHcheRE8/dZPlT4IjW3mRGv/Hd"
-          crossorigin="anonymous" defer></script>
-  <script tl:if="${theme.syntax_highlighting}"
-          tl:attr="src=${assetBase} + 'prism/prism-css.min.js'"
-          integrity="sha384-0mV13Neu0xhJFylI+HV43C+XiR13bGSeL7D0/7e6hK7sJgvyvK6HVjeQwmvXTstY"
-          crossorigin="anonymous" defer></script>
-  <script tl:if="${theme.syntax_highlighting}"
-          tl:attr="src=${assetBase} + 'prism/prism-scss.min.js'"
-          integrity="sha384-kRWiSF1UhVO7HGkpK3GX+OGmVHxBjCBwRxc9EIP3tqScIgDEAizIeCWds1M6ratq"
-          crossorigin="anonymous" defer></script>
-  <script tl:if="${theme.syntax_highlighting}"
-          tl:attr="src=${assetBase} + 'prism/prism-dart.min.js'"
-          integrity="sha384-cfEVSC1pSQWFCAHLhuVkdGm1NrPSw0Jj4pAt0cnC/e9PP3eSnxKk77LgaFFSUqws"
-          crossorigin="anonymous" defer></script>
-  <script tl:if="${theme.syntax_highlighting}"
-          tl:attr="src=${assetBase} + 'prism/prism-yaml.min.js'"
-          integrity="sha384-AKAiycghK0jDCjD+aavMHzDkLzRR7Yzcwh3+xL/295cvyVMe+cxQfyQC8xxGGcI8"
-          crossorigin="anonymous" defer></script>
-  <script tl:if="${theme.syntax_highlighting}"
-          tl:attr="src=${assetBase} + 'prism/prism-bash.min.js'"
-          integrity="sha384-9WmlN8ABpoFSSHvBGGjhvB3E/D8UkNB9HpLJjBQFC2VSQsM1odiQDv4NbEo+7l15"
-          crossorigin="anonymous" defer></script>
+  <!-- Syntax highlighting is baked into the built HTML at build time (ADR-010):
+       the SSG emits `.hljs-*` spans, styled by sass/_code.scss. No client-side
+       highlighter ships with the theme — code is colored with JavaScript off. -->
 
-  <!-- Client-side search (S09): vendored, same-origin, per-file SRI, no CDN.
+  <!-- Client-side search (S09): first-party, same-origin, no CDN.
        Reads the index URL from the shell's data-search-index attribute; on a
        failed index fetch it hides the control so the page stays fully readable. -->
   <script tl:if="${theme.show_search}"
-          tl:attr="src=${assetBase} + 'js/search.js'"
-          integrity="sha384-39YMhumgS1xq8+xDAoRuz+/iuKgAJ+ivwijtWn0EXlf/VfgqUsmmuZY94XO7+aDG"
-          crossorigin="anonymous" defer></script>
+          tl:attr="src=${assetBase} + 'js/search.js'" defer></script>
+
+  <!-- Code-block enhancement (first-party, same-origin, no CDN): adds a language
+       label and copy button to each code block. Progressive enhancement — code
+       stays fully readable (and colored, via build-time hljs spans) without JS. -->
+  <script tl:attr="src=${assetBase} + 'js/code-enhance.js'" defer></script>
 
   <!-- Extra head slot: child layouts inject additional tags here. -->
   <meta tl:define="head-extra">
@@ -93,7 +59,17 @@
   <!-- Site header -->
   <header class="site-header" tl:define="site-header">
     <div class="container">
-      <a href="/" class="site-title" tl:text="${site.title}">Site Title</a>
+      <a href="/" class="site-title">
+        <!-- Arbor mark: a small sprout, decorative (aria-hidden). currentColor lets
+             it track the link color; the primary tint is set in CSS. -->
+        <svg class="site-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+             stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 21V9"/>
+          <path d="M12 13c0-3 2-5 6-5 0 3-2 5-6 5Z"/>
+          <path d="M12 11C12 8 10 6 6 6c0 3 2 5 6 5Z"/>
+        </svg>
+        <span class="site-title-text" tl:text="${site.title}">Site Title</span>
+      </a>
 
       <nav aria-label="Main navigation">
         <ul class="nav-list">

@@ -20,7 +20,6 @@ import '_workspace_root.dart';
 void main() {
   group('Blog starter E2E', () {
     late Directory projectDir;
-    late String originalDir;
 
     setUpAll(() async {
       // ── 1. Generate blog project ───────────────────────────────────────
@@ -57,18 +56,12 @@ dependency_overrides:
       expect(analyze.exitCode, 0, reason: 'dart analyze failed:\n${analyze.stdout}\n${analyze.stderr}');
 
       // ── 5. trellis build ───────────────────────────────────────────────
-      originalDir = Directory.current.path;
-      Directory.current = projectDir;
-      final buildResult = await TrellisCli().run(['build']);
-      Directory.current = originalDir;
+      final buildResult = await TrellisCli(workingDirectory: projectDir.path).run(['build']);
 
       expect(buildResult, 0, reason: 'trellis build should exit 0');
     });
 
     tearDownAll(() async {
-      if (Directory.current.path != originalDir) {
-        Directory.current = originalDir;
-      }
       await projectDir.parent.delete(recursive: true);
     });
 

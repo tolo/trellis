@@ -56,7 +56,7 @@ void main() {
       expect(content, contains('params:'));
     });
 
-    test('T04: theme.yaml contains all 19 standard param names', () {
+    test('T04: theme.yaml contains all 18 standard param names', () {
       final content = writer.files['theme.yaml']!;
       const expectedParams = [
         'skin',
@@ -77,11 +77,12 @@ void main() {
         'footer_text',
         'show_powered_by',
         'show_rss_link',
-        'syntax_highlighting',
       ];
       for (final param in expectedParams) {
         expect(content, contains(param), reason: 'theme.yaml should contain param: $param');
       }
+      // syntax_highlighting was retired by ADR-010; scaffolds must not emit it.
+      expect(content, isNot(contains('syntax_highlighting')), reason: 'retired param must be absent');
     });
 
     test('T05: theme.yaml includes project name', () {

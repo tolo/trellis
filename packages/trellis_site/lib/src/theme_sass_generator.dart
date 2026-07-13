@@ -129,44 +129,94 @@ String _generateSassVariables(Map<String, dynamic> params, Map<String, String> p
 /// `primary_color` → `trellis-primary-color`
 String _toSassName(String paramName) => 'trellis-${paramName.replaceAll('_', '-')}';
 
+/// Matches a genuine CSS hex color literal (`#rgb`, `#rrggbb`, `#rrggbbaa`).
+///
+/// The hex fast-path must gate on this pattern, not string length: a length-only
+/// check (`length == 4 || 7 || 9`) also matched interpolation-shaped values like
+/// `#{9}` (length 4) and passed them through raw, so SASS evaluated them —
+/// defeating the interpolation-injection defense the escaped branch provides.
+final _hexColorPattern = RegExp(r'^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$');
+
 /// Converts a param value to a SASS value string.
 ///
-/// String values are wrapped in SASS's legacy global `unquote()` rather than
-/// emitted as a quoted literal. A quoted `!default` value (e.g.
-/// `"system-ui, sans-serif"`) wins over the theme's own unquoted
+/// String values are emitted via SASS interpolation of a quoted literal —
+/// `#{"<escaped>"}` — rather than as a bare quoted literal. A quoted `!default`
+/// value (e.g. `"system-ui, sans-serif"`) wins over the theme's own unquoted
 /// `_variables.scss` default (since the bridge partial loads first) and
-/// produces invalid CSS like `font-family: "system-ui, sans-serif"`. Routing
-/// through `unquote()` keeps the variable a SASS string — so it still
-/// satisfies `!default` overriding — but its value is unquoted, matching what
-/// the theme authors would have written by hand.
+/// produces invalid CSS like `font-family: "system-ui, sans-serif"`.
+/// Interpolating the quoted string yields an *unquoted* SASS string — so it
+/// still satisfies `!default` overriding — but its value is unquoted, matching
+/// what the theme authors would have written by hand. Unlike the legacy global
+/// `unquote()`, interpolation emits no `global-builtin` deprecation warning
+/// (that builtin is removed in Dart Sass 3.0.0).
+///
+/// Values come from semi-trusted theme.yaml / site config. Every branch that
+/// emits raw (unescaped) — the hex fast-path and the `color` type hint —
+/// neutralizes SASS interpolation so a `#{...}` value cannot be *evaluated*
+/// (silent arbitrary-expression evaluation is the surprising hazard). Structural
+/// characters (`;{}`) are NOT neutralized here, and their effect differs by
+/// branch: in an interpolated **string** value they compile clean and silently
+/// corrupt the output CSS (`a; } html { background: red` closes the rule early
+/// and injects another), while a raw **color** value aborts the compile. These
+/// are build-time author config, not untrusted runtime input, so this is a
+/// robustness gap (a typo yields broken output or a cryptic abort), not an
+/// exploit — a single value-validation policy across all param types is tracked
+/// as tech debt (TD-011).
 String _toSassValue(dynamic value, String type) {
   if (value == null) return 'null';
   if (value is bool) return value.toString();
   if (value is num) return value.toString();
   if (value is String) {
-    // Colors (hex): pass through unquoted
-    if (value.startsWith('#') && (value.length == 4 || value.length == 7 || value.length == 9)) {
-      return value;
-    }
-    // Color type hint: pass through unquoted (named colors, rgb(), etc.)
-    if (type == 'color') return value;
-    return 'unquote("${_escapeSassString(value)}")';
+    // Genuine hex colors pass through unquoted (matched by pattern, not length,
+    // so interpolation-shaped values like `#{9}` don't slip through raw).
+    if (_hexColorPattern.hasMatch(value)) return value;
+    // Color type hint: pass named colors / rgb() / var() / etc. through
+    // unquoted, but neutralize an interpolation marker so a `#{...}` value is
+    // emitted literally instead of being evaluated. Structural chars (`;{}`) are
+    // still emitted raw here — in a color value they abort the SASS compile
+    // (loud, unlike the silent string-value corruption above); the broader
+    // value-validation policy is tracked as TD-011.
+    if (type == 'color') return value.contains('#{') ? '#{"${_escapeSassString(value)}"}' : value;
+    return '#{"${_escapeSassString(value)}"}';
   }
   if (value is List) {
     return '(${value.map((v) => _toSassValue(v, 'string')).join(', ')})';
   }
   if (value is Map) {
-    final entries = value.entries.map((e) => '"${e.key}": ${_toSassValue(e.value, 'string')}');
+    // Keys are escaped too — an unescaped `"` breaks the map literal and `#{`
+    // in a key would inject interpolation (same threat as string values).
+    final entries = value.entries.map(
+      (e) => '"${_escapeSassString(e.key.toString())}": ${_toSassValue(e.value, 'string')}',
+    );
     return '(${entries.join(', ')})';
   }
-  return 'unquote("${_escapeSassString(value.toString())}")';
+  return '#{"${_escapeSassString(value.toString())}"}';
 }
 
 /// Escapes a string for embedding inside a double-quoted SASS string literal.
 ///
-/// Backslashes must be escaped first so a pre-existing `\"` in the input
-/// isn't double-escaped into `\\"`.
-String _escapeSassString(String value) => value.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+/// Order matters:
+/// - Backslashes are escaped first so a pre-existing `\"` in the input isn't
+///   double-escaped into `\\"`, and so the escapes added below aren't
+///   themselves re-escaped.
+/// - `#{` is neutralized to `\#{` so a param value like `foo #{1+1}` is emitted
+///   as literal text instead of being evaluated as a SASS interpolation
+///   expression (values come from semi-trusted theme.yaml/site config; silent
+///   evaluation or an unclosed `#{` breaking the build is a robustness hazard).
+/// - Double quotes are escaped so they don't terminate the literal.
+/// - Raw newlines, carriage returns, and form feeds (U+000C) are illegal inside
+///   a SASS string literal (they abort compilation with "Expected \""); a CSS
+///   `\a ` escape keeps a multiline param value compiling as literal text. Form
+///   feed is a string-aborting newline too, so it maps to the same escape —
+///   omitting it would defeat the multiline guarantee for a `\f`-carrying value.
+String _escapeSassString(String value) => value
+    .replaceAll(r'\', r'\\')
+    .replaceAll(r'#{', r'\#{')
+    .replaceAll('"', r'\"')
+    .replaceAll('\r\n', r'\a ')
+    .replaceAll('\n', r'\a ')
+    .replaceAll('\r', r'\a ')
+    .replaceAll('\f', r'\a ');
 
 /// Generates CSS custom property declarations from merged theme params.
 ///
@@ -207,6 +257,15 @@ String _generateCssCustomProperties(Map<String, dynamic> params, Map<String, Str
 }
 
 /// Converts a param value to a CSS custom property value string.
+///
+/// This is the *second* emit sink alongside [_toSassValue]. Both the value here
+/// and the property name in [_generateCssCustomProperties] are written raw into
+/// `_theme_custom_props.css` — a plain CSS file *copied* (not SASS-compiled)
+/// into the built site. Unlike the SASS branch there is no escaping and no
+/// loud-failure compile gate, so a structural char (`;{}`) in a value or name
+/// silently corrupts the emitted CSS. Semi-trusted build-time config, not
+/// untrusted runtime input, so this is a robustness gap, not an exploit; the
+/// single cross-sink validation policy is tracked as TD-011.
 String _toCssValue(dynamic value) {
   if (value == null) return 'initial';
   if (value is num) return value.toString();

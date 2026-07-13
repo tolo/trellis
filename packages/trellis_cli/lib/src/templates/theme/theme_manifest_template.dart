@@ -1,4 +1,4 @@
-/// Generates theme.yaml with all 19 core standard params.
+/// Generates theme.yaml with all 18 core standard params.
 String themeManifestTemplate(String themeName) {
   return '''
 name: $themeName
@@ -112,11 +112,6 @@ params:
     type: boolean
     default: true
     description: Display RSS/Atom feed link
-
-  syntax_highlighting:
-    type: boolean
-    default: true
-    description: Enable syntax highlighting for code blocks
 
   # === Theme-Specific Params ===
   # Add your theme's custom params below.

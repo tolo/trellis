@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `TrellisCss.compileSass` gains a `silenceImportDeprecation` flag. When set, Dart Sass's `@import`-rule deprecation warning is suppressed for that compile — for callers that deliberately rely on `@import` (the SDK theme bridge; see TD-006) — while the default still surfaces the warning for other consumers.
+
 ## 0.9.1
 
 ### Changed

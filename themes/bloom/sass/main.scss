@@ -1,0 +1,67 @@
+// Bloom Landing Theme — sass/main.scss
+// Entry point for SASS compilation → compiled to output/css/main.css, served
+// at /css/main.css.
+//
+// Build pipeline (SASS bridge):
+//   1. The bridge generates _theme_params.scss with $trellis-* vars from merged
+//      theme params (theme.yaml defaults + site theme_params:).
+//   2. The CLI wraps this file so _theme_params.scss is imported first, so bridge
+//      values override every !default in _variables.scss.
+//
+// Skin loading:
+//   skin: light  → _skins/_light.scss imported first (matches the light defaults).
+//   skin: dark   → _skins/_dark.scss imported first; the dark palette applies.
+//   skin: auto   → no skin import; light params apply, and the @media block below
+//                  overrides the :root custom properties for OS dark mode at runtime.
+
+// ── Variables and tokens ──────────────────────────────────────────────────────
+@import 'variables';
+
+// ── Base styles ───────────────────────────────────────────────────────────────
+@import 'base';
+
+// ── Layout (header, containers, footer, breakpoints) ───────────────────────────
+@import 'layout';
+
+// ── Components (hero, features, showcase, stories, pricing, faq, cta band) ──────
+@import 'components';
+
+// ── Footer ──────────────────────────────────────────────────────────────────────
+@import 'footer';
+
+// ── Accessibility ─────────────────────────────────────────────────────────────
+@import 'a11y';
+
+// ── Code / syntax ─────────────────────────────────────────────────────────────
+@import 'code';
+
+// ── Auto skin: OS dark-mode override ──────────────────────────────────────────
+// Flips the :root custom properties to the dark palette under OS dark mode, so
+// components reading var(--trellis-*) go dark when skin: auto.
+//
+// Gated on `$trellis-skin == auto` so it only emits for auto: under skin: light
+// it would wrongly flip a forced-light site dark for dark-OS visitors, and under
+// skin: dark the base :root is already dark (the CLI injects _skins/_dark.scss),
+// making the block redundant.
+//
+// The dark values are written as LITERALS that MUST mirror _skins/_dark.scss.
+// They can't be #{$trellis-*-color} interpolations: under skin: auto the CLI
+// injects no _skins/ import, so those vars still hold the LIGHT palette here —
+// interpolating them would emit light values and defeat the flip. (A single
+// compile can't make one global SASS var light in the base :root yet dark here.)
+//
+// Gradient tokens are intentionally left to the base :root so a site's
+// accent_gradient_* overrides still carry into dark mode.
+@if $trellis-skin == auto {
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --trellis-text: #f3f0fa;
+      --trellis-muted: #a79fc0;
+      --trellis-bg: #120f1a;
+      --trellis-surface: #1c1730;
+      --trellis-border: #302a45;
+      --trellis-primary: #a78bfa;
+      --trellis-accent: #f472b6;
+    }
+  }
+}

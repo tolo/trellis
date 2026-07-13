@@ -61,3 +61,25 @@ for file in "${VERSION_CONSTANT_FILES[@]}"; do
   perl -pi -e "s/(const String \w+Version = ')[^']*(';)/\${1}${VERSION}\${2}/" "${file}"
   git add "${file}" 2>/dev/null || true
 done
+
+# READMEs holding a hardcoded example version in the manual-download snippets.
+# Melos only bumps pubspec.yaml, so without this the install instructions ship a
+# stale release number (e.g. a 0.10.0 README telling users to download 0.9.1).
+# The contract test asserts these stay current; it fails the repo-root test suite
+# (`dart test test/`), so run that before tagging. CI gating is tracked as TD-010.
+README_EXAMPLE_FILES=(
+  "${ROOT}/README.md"
+  "${ROOT}/packages/trellis_cli/README.md"
+)
+echo "Syncing README manual-download example versions to ${VERSION}..."
+for file in "${README_EXAMPLE_FILES[@]}"; do
+  [[ -f "${file}" ]] || continue
+  # Anchored to the exact snippet line shapes `VERSION=<semver>` (shell) and
+  # `$Version = "<semver>"` (PowerShell) so no other prose is touched. VERSION is
+  # passed via the environment so the single-quoted perl program can keep the
+  # literal `$Version` unescaped (perl reads `$ENV{VERSION}`, not a shell var).
+  VERSION="${VERSION}" perl -pi -e \
+    's/^VERSION=[0-9][0-9A-Za-z.+-]*$/VERSION=$ENV{VERSION}/;
+     s/(\$Version = ")[0-9][0-9A-Za-z.+-]*(")/$1$ENV{VERSION}$2/' "${file}"
+  git add "${file}" 2>/dev/null || true
+done

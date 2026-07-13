@@ -69,6 +69,11 @@ This file covers working **on** the SDK. For template syntax, see the
   `always_declare_return_types`, `prefer_final_locals` (see each package's `analysis_options.yaml`).
 - Comments explain *why*; fix or delete stale ones. Code is the source of truth.
 - Never reformat the whole repo — format only the files/dirs you touched.
+- **Asset sourcing (repo-wide)** — prefer self-contained, build-time output; then vendored, same-origin
+  assets; runtime CDN dependencies only as a last resort (a deliberate, documented exception, not a ban).
+  Covers shipped themes, `site/`, and `trellis_site` client assets (e.g. `search.js`). See the theme guide's
+  [Third-Party and Vendored Assets](docs/guides/theme-authoring.md#third-party-and-vendored-assets) section
+  and [ADR-010](dev/adrs/ADR-010-syntax-highlighting.md).
 
 
 ---

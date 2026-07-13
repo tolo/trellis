@@ -14,7 +14,6 @@ Add the theme to your site configuration:
 theme: arbor
 theme_params:
   skin: auto
-  syntax_highlighting: true
 ```
 
 ## Building the site
@@ -25,13 +24,13 @@ Run the Trellis CLI from your site directory:
 trellis build
 ```
 
-The build compiles the theme SASS, copies the vendored highlighter assets, and
-writes the output tree.
+The build compiles the theme SASS and highlights fenced code (build-time
+`.hljs-*` spans, ADR-010), then writes the output tree.
 
 ### Output layout
 
-The build writes HTML pages plus a `css/` directory and the vendored `prism/`
-scripts served from the output root.
+The build writes HTML pages plus a `css/` directory. Code is colored server-side,
+so no highlighter scripts are shipped.
 
 ## Next steps
 

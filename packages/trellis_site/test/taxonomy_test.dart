@@ -197,6 +197,86 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // termLinksForPage
+  // ---------------------------------------------------------------------------
+  group('TaxonomyCollector.termLinksForPage', () {
+    const collector = TaxonomyCollector();
+
+    test('resolves a non-slug-safe tag to its canonical slugified url', () {
+      final page = _page('/posts/a/', {
+        'tags': ['Hello World'],
+      });
+      final index = collector.collect(['tags'], [page]);
+      final links = collector.termLinksForPage(page, index);
+      final tag = links['tags']!.single;
+      expect(tag['name'], equals('hello world'));
+      expect(tag['slug'], equals('hello-world'));
+      // The link url must equal the generated term page path — not the raw tag.
+      expect(tag['url'], equals('/tags/hello-world/'));
+    });
+
+    test('link url matches the term url the collector emits for the page', () {
+      final page = _page('/posts/a/', {
+        'tags': ['C++ Programming'],
+      });
+      final index = collector.collect(['tags'], [page]);
+      final generatedUrl = index['tags']!.terms.single.url;
+      final linkUrl = collector.termLinksForPage(page, index)['tags']!.single['url'];
+      expect(linkUrl, equals(generatedUrl));
+    });
+
+    test('preserves front-matter order and deduplicates', () {
+      final page = _page('/posts/a/', {
+        'tags': ['web', 'Dart', 'dart'],
+      });
+      final index = collector.collect(['tags'], [page]);
+      final names = collector.termLinksForPage(page, index)['tags']!.map((t) => t['name']).toList();
+      expect(names, equals(['web', 'dart']));
+    });
+
+    test('carries the global term count', () {
+      final pages = [
+        _page('/posts/a/', {
+          'tags': ['dart'],
+        }),
+        _page('/posts/b/', {
+          'tags': ['dart'],
+        }),
+      ];
+      final index = collector.collect(['tags'], pages);
+      final links = collector.termLinksForPage(pages.first, index);
+      expect(links['tags']!.single['count'], equals(2));
+    });
+
+    test('only includes taxonomies present in the page front matter', () {
+      final page = _page('/posts/a/', {
+        'tags': ['dart'],
+        // no `categories`
+      });
+      final index = collector.collect(
+        ['tags', 'categories'],
+        [
+          page,
+          _page('/posts/b/', {
+            'categories': ['programming'],
+          }),
+        ],
+      );
+      final links = collector.termLinksForPage(page, index);
+      expect(links.keys, equals(['tags']));
+    });
+
+    test('returns an empty map for a page with no taxonomy terms', () {
+      final tagged = _page('/posts/a/', {
+        'tags': ['dart'],
+      });
+      final untagged = _page('/posts/b/', {'title': 'No tags'});
+      final index = collector.collect(['tags'], [tagged, untagged]);
+      expect(collector.termLinksForPage(untagged, index), isEmpty);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // buildVirtualPages
   // ---------------------------------------------------------------------------
   group('TaxonomyCollector.buildVirtualPages', () {
@@ -365,6 +445,81 @@ void main() {
       final result = await TrellisSite(config).build();
       // content: home + 3 posts; taxonomy: /tags/ + /tags/dart/ + /tags/web/ + /tags/tutorial/
       expect(result.pageCount, greaterThanOrEqualTo(7));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Regression: single-page tag pills link to the generated term page
+  // ---------------------------------------------------------------------------
+  //
+  // A single-page layout that links its tags via `${page.termLinks.tags}[].url`
+  // must point at the exact slugified term-page path the build emits — even for
+  // a tag needing slugification ("Hello World" → /tags/hello-world/). Building
+  // the URL from the raw tag (`/tags/{tag}/`) would 404. Uses the same pill
+  // pattern shipped in the Verdant theme's `_default/single.html`.
+  group('single-page term links resolve to generated term pages', () {
+    late Directory siteDir;
+    late Directory outputDir;
+
+    setUp(() {
+      siteDir = Directory.systemTemp.createTempSync('termlinks_site_');
+      outputDir = Directory.systemTemp.createTempSync('termlinks_out_');
+
+      Directory(p.join(siteDir.path, 'content', 'posts')).createSync(recursive: true);
+      final layouts = Directory(p.join(siteDir.path, 'layouts', '_default'))..createSync(recursive: true);
+      Directory(p.join(siteDir.path, 'layouts', 'tags')).createSync(recursive: true);
+
+      File(p.join(siteDir.path, 'content', '_index.md')).writeAsStringSync('---\ntitle: Home\n---\nHome.\n');
+      // A post carrying a NON-slug-safe tag alongside a slug-safe one.
+      File(
+        p.join(siteDir.path, 'content', 'posts', 'hello.md'),
+      ).writeAsStringSync('---\ntitle: Hello Post\ntags:\n  - Hello World\n  - dart\n---\nBody.\n');
+
+      // Single-page layout: pills link via the resolved term url (Verdant pattern).
+      File(p.join(layouts.path, 'single.html')).writeAsStringSync(
+        '<html><body>'
+        '<h1 tl:text="\${page.title}">T</h1>'
+        '<ul class="tags" tl:if="\${page.termLinks.tags}">'
+        '<li tl:each="tag : \${page.termLinks.tags}">'
+        '<a tl:href="\${tag.url}" tl:text="\${tag.name}">tag</a>'
+        '</li></ul>'
+        '</body></html>',
+      );
+      File(
+        p.join(siteDir.path, 'layouts', '_default', 'list.html'),
+      ).writeAsStringSync('<html><body><h1 tl:text="\${page.title}">T</h1></body></html>');
+      File(
+        p.join(siteDir.path, 'layouts', 'tags', 'single.html'),
+      ).writeAsStringSync('<html><body><h1 tl:text="\${page.title}">T</h1></body></html>');
+      File(
+        p.join(siteDir.path, 'layouts', 'home.html'),
+      ).writeAsStringSync('<html><body><h1 tl:text="\${page.title}">T</h1></body></html>');
+    });
+
+    tearDown(() {
+      if (siteDir.existsSync()) siteDir.deleteSync(recursive: true);
+      if (outputDir.existsSync()) outputDir.deleteSync(recursive: true);
+    });
+
+    SiteConfig config() => SiteConfig(siteDir: siteDir.path, outputDir: outputDir.path, taxonomies: ['tags']);
+
+    test('build succeeds for a tagged single page (no template crash)', () async {
+      await expectLater(TrellisSite(config()).build(), completes);
+    });
+
+    test('pill href equals the generated term-page path for a non-slug-safe tag', () async {
+      final cfg = config();
+      await TrellisSite(cfg).build();
+      final html = File(p.join(cfg.outputDir, 'posts', 'hello', 'index.html')).readAsStringSync();
+
+      // Links to the slugified term page — which is what the build emits.
+      expect(html, contains('href="/tags/hello-world/"'));
+      // Never the raw tag (encoded or not), which would 404.
+      expect(html, isNot(contains('/tags/Hello World/')));
+      expect(html, isNot(contains('/tags/Hello%20World/')));
+
+      // The target term page actually exists at the linked path.
+      expect(File(p.join(cfg.outputDir, 'tags', 'hello-world', 'index.html')).existsSync(), isTrue);
     });
   });
 }

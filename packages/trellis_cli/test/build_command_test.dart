@@ -4,18 +4,16 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:trellis_cli/trellis_cli.dart';
 
+import '_workspace_root.dart';
+
 void main() {
   late Directory tempDir;
-  late String originalDir;
 
   setUp(() {
     tempDir = Directory.systemTemp.createTempSync('trellis_build_cmd_');
-    originalDir = Directory.current.path;
-    Directory.current = tempDir;
   });
 
   tearDown(() {
-    Directory.current = originalDir;
     tempDir.deleteSync(recursive: true);
   });
 
@@ -54,18 +52,47 @@ Hello world.
 ''');
   }
 
+  /// Creates a site with a `dart` fenced code block in its home page and a home
+  /// layout that renders `${page.content}`. [highlightEnabled] null omits the
+  /// `highlight:` block (defaults on); true/false writes it explicitly.
+  void highlightSite(Directory dir, {bool? highlightEnabled}) {
+    final highlightBlock = highlightEnabled == null ? '' : 'highlight:\n  enabled: $highlightEnabled\n';
+    File(p.join(dir.path, 'trellis_site.yaml')).writeAsStringSync('''
+title: Highlight Site
+baseUrl: https://example.com
+$highlightBlock''');
+    Directory(p.join(dir.path, 'content')).createSync();
+    File(p.join(dir.path, 'content', '_index.md')).writeAsStringSync('''
+---
+title: Home
+---
+
+```dart
+void main() {}
+```
+''');
+    Directory(p.join(dir.path, 'layouts')).createSync(recursive: true);
+    File(p.join(dir.path, 'layouts', 'home.html')).writeAsStringSync('''
+<!DOCTYPE html>
+<html>
+<head><title tl:text="\${page.title}">Title</title></head>
+<body><div tl:utext="\${page.content}">body</div></body>
+</html>
+''');
+  }
+
   group('BuildCommand', () {
     // T01: valid site → exits 0, prints summary
     test('T01: builds valid site successfully', () async {
       minimalSite(tempDir);
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build']);
       expect(result, 0);
     });
 
     // T02: no trellis_site.yaml → exits 1, error mentions trellis_site.yaml
     test('T02: no trellis_site.yaml exits 1', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build']);
       expect(result, 1);
     });
@@ -73,7 +100,7 @@ Hello world.
     // T03: --output dist → output written to dist/
     test('T03: --output writes to custom directory', () async {
       minimalSite(tempDir, outputDir: 'output');
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build', '--output', 'dist']);
       expect(result, 0);
       expect(Directory(p.join(tempDir.path, 'dist')).existsSync(), isTrue);
@@ -107,7 +134,7 @@ See the [about page](/about/).
     // pathPrefix from config rewrites root-absolute content + literal links.
     test('T03b: pathPrefix from config prefixes root-absolute links', () async {
       linkSite(tempDir, pathPrefix: '/myprefix/');
-      final result = await TrellisCli().run(['build']);
+      final result = await TrellisCli(workingDirectory: tempDir.path).run(['build']);
       expect(result, 0);
       final html = File(p.join(tempDir.path, 'output', 'index.html')).readAsStringSync();
       expect(html, contains('href="/myprefix/about/"'), reason: 'content link prefixed');
@@ -120,7 +147,7 @@ See the [about page](/about/).
     // --path-prefix flag overrides (and normalizes) when config has none.
     test('T03c: --path-prefix override prefixes links', () async {
       linkSite(tempDir); // no pathPrefix in config
-      final result = await TrellisCli().run(['build', '--path-prefix', 'myprefix']);
+      final result = await TrellisCli(workingDirectory: tempDir.path).run(['build', '--path-prefix', 'myprefix']);
       expect(result, 0);
       final html = File(p.join(tempDir.path, 'output', 'index.html')).readAsStringSync();
       expect(html, contains('href="/myprefix/about/"'));
@@ -145,7 +172,7 @@ Draft content.
 <body><div tl:utext="\${page.content}">content</div></body>
 </html>
 ''');
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build', '--drafts']);
       expect(result, 0);
       // Draft page should appear in output when --drafts is set
@@ -156,7 +183,7 @@ Draft content.
     // T05: --verbose → exits 0
     test('T05: --verbose exits 0', () async {
       minimalSite(tempDir);
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build', '--verbose']);
       expect(result, 0);
     });
@@ -178,14 +205,14 @@ Content.
       // Provide home layout but NOT single/list — so page.md has no layout
       Directory(p.join(tempDir.path, 'layouts')).createSync(recursive: true);
       // No layout files at all → TemplateNotFoundException
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build']);
       expect(result, 1);
     });
 
     // T07: --help → exits 0
     test('T07: --help exits 0', () async {
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build', '--help']);
       expect(result, 0);
     });
@@ -198,7 +225,7 @@ Content.
 $primary: #3498db;
 .btn { color: $primary; }
 ''');
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build']);
       expect(result, 0);
       final cssPath = p.join(tempDir.path, 'output', 'main.css');
@@ -213,7 +240,7 @@ $primary: #3498db;
       File(p.join(tempDir.path, 'static', '_variables.scss')).writeAsStringSync(r'''
 $primary: #3498db;
 ''');
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build']);
       expect(result, 0);
       // Partial should not produce output file
@@ -223,7 +250,7 @@ $primary: #3498db;
     // --output shorthand -o
     test('short flag -o sets output directory', () async {
       minimalSite(tempDir);
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build', '-o', 'public']);
       expect(result, 0);
       expect(Directory(p.join(tempDir.path, 'public')).existsSync(), isTrue);
@@ -232,7 +259,7 @@ $primary: #3498db;
     // outputDir from config is honoured when --output is not passed
     test('honors outputDir from trellis_site.yaml when --output not specified', () async {
       minimalSite(tempDir, outputDir: 'dist');
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build']);
       expect(result, 0);
       expect(Directory(p.join(tempDir.path, 'dist')).existsSync(), isTrue);
@@ -308,7 +335,7 @@ theme_params:
   site_name: "Overridden Name"
 ''');
 
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build']);
       expect(result, 0);
 
@@ -411,7 +438,7 @@ theme_params:
         skinTheme(tempDir);
         useSkinTheme(tempDir, 'skin-theme', 'dark');
 
-        expect(await TrellisCli().run(['build']), 0);
+        expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
 
         final wrapper = File(p.join(tempDir.path, '.trellis', 'build', 'bridge_main.scss')).readAsStringSync();
         expect(wrapper, contains('_skins/_dark.scss'));
@@ -428,7 +455,7 @@ theme_params:
         skinTheme(tempDir);
         useSkinTheme(tempDir, 'skin-theme', 'light');
 
-        expect(await TrellisCli().run(['build']), 0);
+        expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
 
         final wrapper = File(p.join(tempDir.path, '.trellis', 'build', 'bridge_main.scss')).readAsStringSync();
         expect(wrapper, contains('_skins/_light.scss'));
@@ -440,7 +467,7 @@ theme_params:
         skinTheme(tempDir);
         useSkinTheme(tempDir, 'skin-theme', 'auto');
 
-        expect(await TrellisCli().run(['build']), 0);
+        expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
 
         final wrapper = File(p.join(tempDir.path, '.trellis', 'build', 'bridge_main.scss')).readAsStringSync();
         expect(wrapper, isNot(contains('_skins')));
@@ -453,16 +480,67 @@ theme_params:
         skinTheme(tempDir);
 
         useSkinTheme(tempDir, 'skin-theme', 'dark');
-        expect(await TrellisCli().run(['build']), 0);
+        expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
         final darkCss = File(p.join(tempDir.path, 'output', 'css', 'main.css')).readAsStringSync();
 
         useSkinTheme(tempDir, 'skin-theme', 'light');
-        expect(await TrellisCli().run(['build']), 0);
+        expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
         final lightCss = File(p.join(tempDir.path, 'output', 'css', 'main.css')).readAsStringSync();
 
         expect(darkCss, isNot(equals(lightCss)));
         expect(darkCss, contains('#010203'));
         expect(lightCss, isNot(contains('#010203')));
+      });
+
+      test('official themes compile dark syntax tokens into the root palette', () async {
+        final workspaceRoot = (await findWorkspaceRoot()).path;
+        const expectedTokens = {
+          'arbor': {
+            'keyword': '#d2a8ff',
+            'string': '#7ee787',
+            'number': '#ffa657',
+            'comment': '#8b949e',
+            'function': '#79c0ff',
+            'punctuation': '#8b949e',
+          },
+          'verdant': {
+            'keyword': '#c4b5fd',
+            'string': '#6ee7b7',
+            'number': '#fcd34d',
+            'comment': '#6b7280',
+            'function': '#93c5fd',
+            'punctuation': '#9ca3af',
+          },
+        };
+
+        for (final entry in expectedTokens.entries) {
+          final siteDir = Directory(p.join(tempDir.path, entry.key))..createSync(recursive: true);
+          Directory(p.join(siteDir.path, 'content')).createSync();
+          File(p.join(siteDir.path, 'content', '_index.md')).writeAsStringSync('''
+---
+title: Home
+---
+```dart
+final value = 1;
+```
+''');
+          final themeDir = p.join(workspaceRoot, 'themes', entry.key);
+          final themeValue = p.relative(themeDir, from: p.join(siteDir.path, 'themes'));
+          File(p.join(siteDir.path, 'trellis_site.yaml')).writeAsStringSync('''
+title: Dark Theme Test
+baseUrl: https://example.com
+theme: $themeValue
+theme_params:
+  skin: dark
+''');
+
+          expect(await TrellisCli(workingDirectory: siteDir.path).run(['build']), 0);
+          final css = File(p.join(siteDir.path, 'output', 'css', 'main.css')).readAsStringSync();
+          final rootPalette = css.split('@media').first;
+          for (final token in entry.value.entries) {
+            expect(rootPalette, contains('--trellis-code-${token.key}: ${token.value}'), reason: entry.key);
+          }
+        }
       });
 
       test('theme without _skins/ files skips the skin import (no crash)', () async {
@@ -493,7 +571,7 @@ params:
 
         useSkinTheme(tempDir, 'no-skins', 'dark');
 
-        expect(await TrellisCli().run(['build']), 0);
+        expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
         final wrapper = File(p.join(tempDir.path, '.trellis', 'build', 'bridge_main.scss')).readAsStringSync();
         expect(wrapper, isNot(contains('_skins')));
         expect(File(p.join(tempDir.path, 'output', 'css', 'main.css')).existsSync(), isTrue);
@@ -524,8 +602,7 @@ params:
       Directory(p.join(siteDir.path, 'content')).createSync();
       File(p.join(siteDir.path, 'content', '_index.md')).writeAsStringSync('---\ntitle: Home\n---\nHi\n');
 
-      Directory.current = siteDir;
-      final result = await TrellisCli().run(['build']);
+      final result = await TrellisCli(workingDirectory: siteDir.path).run(['build']);
       expect(result, 0);
       final css = File(p.join(siteDir.path, 'output', 'css', 'main.css'));
       expect(css.existsSync(), isTrue, reason: 'theme SASS must compile for a relative theme path');
@@ -536,13 +613,35 @@ params:
     test('--base-url overrides baseUrl from config', () async {
       minimalSite(tempDir);
       // baseUrl in config is https://example.com (set by minimalSite)
-      final cli = TrellisCli();
+      final cli = TrellisCli(workingDirectory: tempDir.path);
       final result = await cli.run(['build', '--base-url', 'https://staging.example.com', '--verbose']);
       expect(result, 0);
       // Sitemap should contain the overridden base URL
       final sitemapFile = File(p.join(tempDir.path, 'output', 'sitemap.xml'));
       expect(sitemapFile.existsSync(), isTrue);
       expect(sitemapFile.readAsStringSync(), contains('https://staging.example.com'));
+    });
+
+    // Build-time syntax highlighting (ADR-010): default on, honors an explicit
+    // `highlight: enabled: false` through the CLI (regression guard — the CLI
+    // reconstructs SiteConfig field-by-field and must thread highlightConfig).
+    test('highlights fenced code by default; ships no /prism/ assets', () async {
+      highlightSite(tempDir); // no highlight: block → defaults on
+      final result = await TrellisCli(workingDirectory: tempDir.path).run(['build']);
+      expect(result, 0);
+      final html = File(p.join(tempDir.path, 'output', 'index.html')).readAsStringSync();
+      expect(html, contains('class="hljs-'));
+      expect(html, contains('<code class="language-dart">'));
+      expect(html, isNot(contains('/prism/')));
+    });
+
+    test('highlight.enabled: false leaves code plain through the CLI (S08)', () async {
+      highlightSite(tempDir, highlightEnabled: false);
+      final result = await TrellisCli(workingDirectory: tempDir.path).run(['build']);
+      expect(result, 0);
+      final html = File(p.join(tempDir.path, 'output', 'index.html')).readAsStringSync();
+      expect(html, contains('<code class="language-dart">'));
+      expect(html, isNot(contains('hljs-')));
     });
   });
 }

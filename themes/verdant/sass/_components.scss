@@ -12,7 +12,7 @@
   gap: $trellis-space-sm;
 
   a {
-    color: $trellis-muted-color;
+    color: var(--trellis-muted, #{$trellis-muted-color});
     font-size: $trellis-font-size-sm;
     font-weight: 500;
     padding: $trellis-space-xs $trellis-space-sm;
@@ -20,21 +20,44 @@
     transition: color 0.15s ease, background-color 0.15s ease;
 
     &:hover {
-      color: $trellis-primary-color;
-      background-color: $trellis-surface-color;
+      color: var(--trellis-primary, #{$trellis-primary-color});
+      background-color: var(--trellis-surface, #{$trellis-surface-color});
     }
   }
 }
 
 // ── Hero section ─────────────────────────────────────────────────────────────
 
+// A soft brand-tinted panel with a radial glow in the corner — depth without
+// noise, and it recolors itself from --trellis-primary via the derived tints.
 .hero {
-  padding: $trellis-space-2xl 0;
-  margin-bottom: $trellis-space-2xl;
-  border-bottom: 1px solid $trellis-border-color;
+  position: relative;
+  padding: $trellis-space-2xl $trellis-space-xl;
+  margin: $trellis-space-lg 0 $trellis-space-2xl;
+  border: 1px solid color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 14%, var(--trellis-border, #{$trellis-border-color}));
+  border-radius: calc(#{$trellis-border-radius} * 2.5);
+  background:
+    radial-gradient(120% 160% at 88% -30%, var(--trellis-tint-strong, transparent), transparent 55%),
+    var(--trellis-tint, var(--trellis-surface, #{$trellis-surface-color}));
+
+  // Short gradient eyebrow rule above the title.
+  &::before {
+    content: '';
+    display: block;
+    width: 2.75rem;
+    height: 4px;
+    border-radius: 4px;
+    margin-bottom: $trellis-space-lg;
+    background: linear-gradient(
+      90deg,
+      var(--trellis-primary, #{$trellis-primary-color}),
+      var(--trellis-accent, #{$trellis-accent-color})
+    );
+  }
 
   h1 {
     font-size: 2.5rem;
+    letter-spacing: -0.03em;
     margin-bottom: $trellis-space-md;
 
     @media (min-width: 640px) {
@@ -43,8 +66,9 @@
   }
 
   .hero-description {
-    font-size: 1.1rem;
-    color: $trellis-muted-color;
+    font-size: 1.15rem;
+    line-height: 1.55;
+    color: var(--trellis-muted, #{$trellis-muted-color});
     margin-bottom: 0;
     max-width: 560px;
   }
@@ -57,10 +81,25 @@
     margin-bottom: $trellis-space-lg;
   }
 
+  // A quiet pill button: more presence than a bare link, less than a solid CTA.
   .all-posts-link {
     display: inline-block;
     margin-top: $trellis-space-lg;
-    font-weight: 500;
+    padding: $trellis-space-sm $trellis-space-lg;
+    font-weight: 600;
+    font-size: $trellis-font-size-sm;
+    text-decoration: none;
+    color: var(--trellis-primary, #{$trellis-primary-color});
+    background-color: var(--trellis-tint, #{$trellis-surface-color});
+    border: 1px solid color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 25%, transparent);
+    border-radius: 9999px;
+    transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover {
+      background-color: var(--trellis-primary, #{$trellis-primary-color});
+      color: var(--trellis-bg, #{$trellis-bg-color});
+      box-shadow: var(--trellis-shadow-sm, none);
+    }
   }
 }
 
@@ -76,7 +115,7 @@
 .post-card,
 .post-item {
   padding: $trellis-space-lg 0;
-  border-bottom: 1px solid $trellis-border-color;
+  border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
 
   &:first-child {
     padding-top: 0;
@@ -91,15 +130,20 @@
 .post-item-title {
   margin-top: 0;
   margin-bottom: $trellis-space-xs;
-  font-size: 1.2rem;
+  font-size: 1.35rem;
+  letter-spacing: -0.015em;
 
   a {
-    color: $trellis-text-color;
+    color: var(--trellis-text, #{$trellis-text-color});
     text-decoration: none;
+    transition: color 0.15s ease;
 
     &:hover {
-      color: $trellis-primary-color;
+      color: var(--trellis-primary, #{$trellis-primary-color});
       text-decoration: underline;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 4px;
+      text-decoration-color: color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 45%, transparent);
     }
   }
 }
@@ -107,11 +151,22 @@
 .post-card-summary,
 .post-item-summary {
   margin: $trellis-space-xs 0 0;
-  color: $trellis-muted-color;
+  color: var(--trellis-muted, #{$trellis-muted-color});
   font-size: 0.95rem;
 }
 
 // ── Post metadata bar ────────────────────────────────────────────────────────
+
+// Small-caps metadata gives listings and post headers an editorial rhythm.
+// Applied to the whole bar and to the standalone date in post cards.
+.post-meta,
+.post-meta-date {
+  font-size: $trellis-font-size-xs;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+}
 
 .post-meta {
   display: flex;
@@ -119,8 +174,6 @@
   align-items: center;
   gap: $trellis-space-md;
   margin-bottom: $trellis-space-md;
-  color: $trellis-muted-color;
-  font-size: $trellis-font-size-sm;
 }
 
 .post-meta-date {
@@ -141,11 +194,16 @@
 .post-header {
   margin-bottom: $trellis-space-xl;
   padding-bottom: $trellis-space-xl;
-  border-bottom: 1px solid $trellis-border-color;
+  border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
 
   .post-title {
     margin-top: 0;
     margin-bottom: $trellis-space-md;
+    font-size: 2.25rem;
+
+    @media (min-width: 640px) {
+      font-size: 2.6rem;
+    }
   }
 }
 
@@ -173,20 +231,22 @@
   padding: 0;
   margin: $trellis-space-sm 0;
 
+  // Brand-tinted pills — a spot of color that stays minimal because the tint
+  // is mixed from the theme's own primary.
   li a {
     display: inline-block;
-    background-color: $trellis-surface-color;
-    color: $trellis-primary-color;
-    padding: 0.2rem 0.6rem;
+    background-color: var(--trellis-tint-strong, #{$trellis-surface-color});
+    color: var(--trellis-primary, #{$trellis-primary-color});
+    padding: 0.2rem 0.65rem;
     border-radius: 9999px;
     font-size: $trellis-font-size-xs;
-    font-weight: 500;
+    font-weight: 600;
     text-decoration: none;
-    border: 1px solid $trellis-border-color;
-    transition: background-color 0.15s ease;
+    transition: background-color 0.15s ease, color 0.15s ease;
 
     &:hover {
-      background-color: $trellis-border-color;
+      background-color: var(--trellis-primary, #{$trellis-primary-color});
+      color: var(--trellis-bg, #{$trellis-bg-color});
     }
   }
 }
@@ -205,7 +265,7 @@
     font-size: $trellis-font-size-sm;
     font-weight: 500;
     text-decoration: none;
-    color: $trellis-primary-color;
+    color: var(--trellis-primary, #{$trellis-primary-color});
 
     &:hover {
       text-decoration: underline;
@@ -213,7 +273,7 @@
   }
 
   .tag-count {
-    color: $trellis-muted-color;
+    color: var(--trellis-muted, #{$trellis-muted-color});
     font-size: $trellis-font-size-xs;
   }
 }
@@ -238,13 +298,13 @@
   }
 
   .pagination-disabled {
-    color: $trellis-muted-color;
+    color: var(--trellis-muted, #{$trellis-muted-color});
     cursor: default;
     pointer-events: none;
   }
 
   .pagination-info {
-    color: $trellis-muted-color;
+    color: var(--trellis-muted, #{$trellis-muted-color});
     flex: 1;
     text-align: center;
   }
@@ -255,8 +315,8 @@
 .toc {
   margin-bottom: $trellis-space-xl;
   padding: $trellis-space-md $trellis-space-lg;
-  border-left: 3px solid $trellis-primary-color;
-  background-color: $trellis-surface-color;
+  border-left: 3px solid var(--trellis-primary, #{$trellis-primary-color});
+  background-color: var(--trellis-tint, #{$trellis-surface-color});
   border-radius: 0 $trellis-border-radius $trellis-border-radius 0;
 }
 
@@ -276,12 +336,12 @@
   }
 
   a {
-    color: $trellis-muted-color;
+    color: var(--trellis-muted, #{$trellis-muted-color});
     text-decoration: none;
     font-size: $trellis-font-size-sm;
 
     &:hover {
-      color: $trellis-primary-color;
+      color: var(--trellis-primary, #{$trellis-primary-color});
       text-decoration: underline;
     }
   }
@@ -292,7 +352,7 @@
 .post-nav {
   margin-top: $trellis-space-2xl;
   padding-top: $trellis-space-lg;
-  border-top: 1px solid $trellis-border-color;
+  border-top: 1px solid var(--trellis-border, #{$trellis-border-color});
 
   .back-link {
     font-size: $trellis-font-size-sm;

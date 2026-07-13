@@ -1,8 +1,9 @@
 // Arbor Docs Theme — sass/_code.scss
-// Inline code, code blocks (pre), and Prism.js token colors.
+// Inline code, code blocks (pre), and highlight.js token colors.
 // Token colors use CSS custom properties (--trellis-code-*) so they adapt to the
-// light/dark skin. The vendored Prism highlighter targets `pre code[class^="language-"]`
-// and emits `.token.*` spans, which this file styles.
+// light/dark skin. Highlighting is baked in at build time by the SSG (ADR-010),
+// which emits `.hljs-*` spans inside `pre > code[class^="language-"]`; this file
+// styles them. No client-side highlighter ships with the theme.
 
 // ── Inline code ───────────────────────────────────────────────────────────────
 
@@ -21,12 +22,14 @@ code {
 pre {
   background-color: var(--trellis-surface, #{$trellis-surface-color});
   border: 1px solid var(--trellis-border, #{$trellis-border-color});
-  border-radius: $trellis-border-radius;
+  border-radius: calc(#{$trellis-border-radius} * 1.5);
   padding: $trellis-space-lg;
   overflow-x: auto;
   margin: $trellis-space-lg 0;
   line-height: 1.6;
   font-family: $trellis-code-font-family;
+  // No-JS depth; inside .code-block this is replaced by the inset accent below.
+  box-shadow: var(--trellis-shadow-sm, none);
 
   code {
     // Reset inline-code styles inside a block.
@@ -38,61 +41,154 @@ pre {
   }
 }
 
-// ── Syntax highlighting tokens (Prism.js) ──────────────────────────────────────
-// Reused unchanged with the vendored Prism assets. Colors reference the
-// --trellis-code-* custom properties so they flip with the active skin.
+// ── Framed code block (progressive enhancement) ────────────────────────────────
+// static/js/code-enhance.js wraps each `pre > code[class*=language-]` in
+// .code-block with a .code-bar (language label + copy button). Without JS the
+// bare <pre> above stands on its own; with JS the frame merges the bar and pre
+// into one card, so the pre sheds its own border/radius/margin here.
+
+.code-block {
+  margin: $trellis-space-lg 0;
+  border: 1px solid var(--trellis-border, #{$trellis-border-color});
+  border-radius: calc(#{$trellis-border-radius} * 1.5);
+  overflow: hidden;
+  background-color: var(--trellis-surface, #{$trellis-surface-color});
+  box-shadow: var(--trellis-shadow-sm, none);
+
+  pre {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    // A hairline accent ties the code surface to the brand color.
+    box-shadow: inset 2px 0 0 var(--trellis-primary, #{$trellis-primary-color});
+  }
+}
+
+.code-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $trellis-space-md;
+  padding: $trellis-space-xs $trellis-space-md;
+  border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
+  // Brand-tinted bar ties the code frame to the theme color.
+  background-color: var(--trellis-tint, var(--trellis-bg, #{$trellis-bg-color}));
+}
+
+.code-lang {
+  font-family: $trellis-code-font-family;
+  font-size: $trellis-font-size-xs;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+}
+
+.code-copy {
+  font-family: $trellis-font-family;
+  font-size: $trellis-font-size-xs;
+  font-weight: 600;
+  line-height: 1;
+  padding: $trellis-space-xs $trellis-space-sm;
+  color: var(--trellis-muted, #{$trellis-muted-color});
+  background-color: transparent;
+  border: 1px solid var(--trellis-border, #{$trellis-border-color});
+  border-radius: $trellis-border-radius;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+
+  &:hover {
+    color: var(--trellis-primary, #{$trellis-primary-color});
+    border-color: var(--trellis-primary, #{$trellis-primary-color});
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--trellis-primary, #{$trellis-primary-color});
+    outline-offset: 2px;
+  }
+
+  &.is-copied {
+    color: var(--trellis-primary, #{$trellis-primary-color});
+    border-color: var(--trellis-primary, #{$trellis-primary-color});
+  }
+}
+
+// ── Syntax highlighting tokens (highlight.js `.hljs-*`) ─────────────────────────
+// Baked in at build time by the SSG (ADR-010). Colors reference the
+// --trellis-code-* custom properties so they flip with the active skin. The
+// selector→property mapping covers the full token-class set package:highlight
+// emits for the supported languages (research appendix §3–4); classes with no
+// explicit rule (e.g. `.hljs-subst` nested in a string, `.hljs-code`) inherit
+// their container color — a sensible fallback, never unstyled/broken.
 
 pre code {
-  .token.comment,
-  .token.prolog,
-  .token.doctype,
-  .token.cdata {
+  // Comments & block quotes.
+  .hljs-comment,
+  .hljs-quote {
     color: var(--trellis-code-comment);
     font-style: italic;
   }
 
-  .token.punctuation {
-    color: var(--trellis-code-punctuation);
-  }
-
-  .token.property,
-  .token.tag,
-  .token.boolean,
-  .token.number,
-  .token.constant,
-  .token.symbol {
-    color: var(--trellis-code-number);
-  }
-
-  .token.selector,
-  .token.attr-name,
-  .token.string,
-  .token.char,
-  .token.builtin {
-    color: var(--trellis-code-string);
-  }
-
-  .token.operator,
-  .token.entity,
-  .token.url {
-    color: var(--trellis-code-punctuation);
-  }
-
-  .token.atrule,
-  .token.attr-value,
-  .token.keyword {
+  // Keywords, control flow, tag & section names.
+  .hljs-keyword,
+  .hljs-meta-keyword,
+  .hljs-selector-tag,
+  .hljs-name,
+  .hljs-section {
     color: var(--trellis-code-keyword);
   }
 
-  .token.function,
-  .token.class-name {
+  // Types, built-ins, class & function titles.
+  .hljs-built_in,
+  .hljs-class,
+  .hljs-title,
+  .hljs-type {
     color: var(--trellis-code-function);
   }
 
-  .token.regex,
-  .token.important,
-  .token.variable {
+  // Strings, attributes, selectors, links, additions.
+  .hljs-string,
+  .hljs-attr,
+  .hljs-attribute,
+  .hljs-selector-class,
+  .hljs-selector-id,
+  .hljs-selector-pseudo,
+  .hljs-selector-attr,
+  .hljs-char,
+  .hljs-link,
+  .hljs-addition {
+    color: var(--trellis-code-string);
+  }
+
+  // Numbers, literals, constants, symbols, variables, regex.
+  .hljs-number,
+  .hljs-literal,
+  .hljs-symbol,
+  .hljs-bullet,
+  .hljs-variable,
+  .hljs-template-variable,
+  .hljs-regexp {
     color: var(--trellis-code-number);
+  }
+
+  // Punctuation, operators, interpolation, params, meta, tag brackets, deletions.
+  .hljs-punctuation,
+  .hljs-operator,
+  .hljs-subst,
+  .hljs-params,
+  .hljs-meta,
+  .hljs-tag,
+  .hljs-deletion {
+    color: var(--trellis-code-punctuation);
+  }
+
+  // Markdown text emphasis.
+  .hljs-emphasis {
+    font-style: italic;
+  }
+
+  .hljs-strong {
+    font-weight: 700;
   }
 }
 

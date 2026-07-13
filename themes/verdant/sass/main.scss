@@ -45,22 +45,34 @@
 // SASS variables are already compiled at this point; this block rewrites the
 // :root custom properties so runtime code and future CSS can reference them.
 // Values must match _skins/_dark.scss exactly.
-@media (prefers-color-scheme: dark) {
-  :root {
-    --trellis-text:    #f3f4f6;
-    --trellis-muted:   #9ca3af;
-    --trellis-bg:      #111827;
-    --trellis-surface: #1f2937;
-    --trellis-border:  #374151;
-    --trellis-primary: #3b82f6;
-    --trellis-accent:  #60a5fa;
+//
+// Gated on `$trellis-skin == auto` so it only emits for auto: under skin: light
+// it would wrongly flip a forced-light site dark for dark-OS visitors, and under
+// skin: dark the base :root is already dark (the CLI injects _skins/_dark.scss),
+// making the block redundant.
+@if $trellis-skin == auto {
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --trellis-text:    #f3f4f6;
+      --trellis-muted:   #9ca3af;
+      --trellis-bg:      #111827;
+      --trellis-surface: #1f2937;
+      --trellis-border:  #374151;
+      --trellis-primary: #3b82f6;
+      --trellis-accent:  #60a5fa;
 
-    // Syntax highlighting — lighter variants for dark backgrounds
-    --trellis-code-keyword:     #c4b5fd;
-    --trellis-code-string:      #6ee7b7;
-    --trellis-code-number:      #fcd34d;
-    --trellis-code-comment:     #6b7280;
-    --trellis-code-function:    #93c5fd;
-    --trellis-code-punctuation: #9ca3af;
+      // Syntax highlighting — lighter variants for dark backgrounds
+      --trellis-code-keyword:     #c4b5fd;
+      --trellis-code-string:      #6ee7b7;
+      --trellis-code-number:      #fcd34d;
+      --trellis-code-comment:     #6b7280;
+      --trellis-code-function:    #93c5fd;
+      --trellis-code-punctuation: #9ca3af;
+
+      // Deeper shadows for dark surfaces (the light-strength ones vanish).
+      // Tints (--trellis-tint*) recompute automatically from the tokens above.
+      --trellis-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4), 0 2px 8px -4px rgb(0 0 0 / 0.5);
+      --trellis-shadow-md: 0 2px 4px rgb(0 0 0 / 0.4), 0 12px 28px -16px rgb(0 0 0 / 0.6);
+    }
   }
 }

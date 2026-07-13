@@ -11,6 +11,12 @@ import '../theme_config_updater.dart';
 /// Deletes the theme directory, clears `theme:` from `trellis_site.yaml` if
 /// it was the active theme, and warns about any orphaned `theme_params:`.
 class ThemeRemoveCommand extends Command<int> {
+  /// Base directory the site and its `themes/` are resolved from. Defaults to
+  /// the process current directory.
+  final String? workingDirectory;
+
+  ThemeRemoveCommand({this.workingDirectory});
+
   @override
   String get name => 'remove';
 
@@ -27,7 +33,8 @@ class ThemeRemoveCommand extends Command<int> {
     }
 
     final themeName = argResults!.rest.first;
-    final themeDir = p.join(Directory.current.path, 'themes', themeName);
+    final baseDir = workingDirectory ?? Directory.current.path;
+    final themeDir = p.join(baseDir, 'themes', themeName);
 
     if (!Directory(themeDir).existsSync()) {
       stderr.writeln("Error: Theme '$themeName' not found in themes/");
@@ -38,7 +45,7 @@ class ThemeRemoveCommand extends Command<int> {
     Directory(themeDir).deleteSync(recursive: true);
 
     // Update config if this was the active theme
-    final configPath = p.join(Directory.current.path, 'trellis_site.yaml');
+    final configPath = p.join(baseDir, 'trellis_site.yaml');
     if (File(configPath).existsSync()) {
       try {
         final config = SiteConfig.load(configPath);

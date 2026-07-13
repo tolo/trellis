@@ -1,6 +1,6 @@
 ---
 title: Theme Authoring
-description: Create, test, and publish a Trellis theme – the theme.yaml manifest, tl:extends/tl:define layouts, the SASS bridge, and the 19-param standard contract.
+description: Create, test, and publish a Trellis theme – the theme.yaml manifest, tl:extends/tl:define layouts, the SASS bridge, and the 18-param standard contract.
 weight: 10
 ---
 
@@ -27,7 +27,7 @@ A theme has two audiences:
   navigation, and layout without touching your source.
 
 The standard-params contract (below) is what makes this work: because every
-theme supports the same 19 params, a site builder can switch themes and carry
+theme supports the same 18 params, a site builder can switch themes and carry
 their customizations across.
 
 ## Quick start
@@ -159,8 +159,8 @@ params:
 
 ## The standard-params contract
 
-The 19 standard params form a contract between themes and site builders. **Every
-theme must support all 19.** This is what lets site builders switch themes and
+The 18 standard params form a contract between themes and site builders. **Every
+theme must support all 18.** This is what lets site builders switch themes and
 carry their `theme_params:` customizations across.
 
 | Category | Params |
@@ -170,17 +170,17 @@ carry their `theme_params:` customizations across.
 | Layout | `max_width`, `border_radius` |
 | Navigation | `nav_links`, `social_links` |
 | Footer | `footer_text`, `show_powered_by` |
-| Features | `show_rss_link`, `syntax_highlighting` |
+| Features | `show_rss_link` |
 
 ### Theme-specific params
 
-Themes may add any number of params beyond the 19 standard ones. By convention,
+Themes may add any number of params beyond the 18 standard ones. By convention,
 place them after the standard block in `theme.yaml` with a comment separating
 them, and use `snake_case` names that do not clash with the standard params:
 
 ```yaml
 params:
-  # === Standard Params (19) ===
+  # === Standard Params (18) ===
   skin:
     ...
   # (other standard params)
@@ -452,11 +452,10 @@ locally without a real content site:
 # example/trellis_site.yaml
 title: My Blog
 description: A sample blog powered by Trellis and this theme.
-base_url: http://localhost:4000
-author: Your Name
+baseUrl: http://localhost:4000
 
-# Use a relative path to the theme directory
-theme: ..
+# Resolve the bundled theme by name (see the symlink note below).
+theme: mytheme
 
 theme_params:
   skin: auto
@@ -468,6 +467,12 @@ theme_params:
 
 paginate: 5
 ```
+
+The build resolves a theme by joining `<siteDir>/themes/<value>`, so the example
+needs a `themes/mytheme` entry. Because the example lives inside the theme, that
+entry is a relative symlink pointing back at the theme root – create it once with
+`ln -s ../.. example/themes/mytheme`. A bare `theme: ..` does not work: it
+resolves to the example directory itself, not the theme.
 
 Run the preview from the example directory:
 
@@ -505,7 +510,7 @@ theme galleries.
 
 ### Pre-publishing checklist
 
-- [ ] All 19 standard params present with correct types and non-null defaults
+- [ ] All 18 standard params present with correct types and non-null defaults
       (except optional strings).
 - [ ] All SASS variables use `!default`.
 - [ ] `screenshots/` paths match the `theme.yaml` screenshot entries.

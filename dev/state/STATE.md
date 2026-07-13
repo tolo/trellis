@@ -4,15 +4,16 @@
 
 ## Current Phase
 
-**Docs Site** — public front door (marketing landing + curated docs) built entirely with Trellis (`trellis_site` + the new `arbor` docs theme), plus the five docs-shaped engine features (completed 2026-07-06, in the working tree, uncommitted).
+**0.10.0 pre-release** (branch `feature/0.10.0`) — a multi-slice release hardening the SDK for distribution: binary distribution gains a **Scoop** channel (plus release-workflow hardening and conflict resolution); **build-time syntax highlighting** lands (ADR-010: `trellis_site` bakes `.hljs-*` spans at build time, retiring the vendored client-side Prism); the **`bloom`** landing theme ships alongside `verdant`/`arbor` polish; the theme **SASS-bridge** escaping is hardened; and **TD-009** (CLI CWD mutation) is resolved so the `trellis_cli` suite is parallel-safe.
 
-**Next up**: commit + squash-merge the docs-site work; a single **lockstep version bump** (`tool/version_lockstep.sh`, ADR-009) for the `trellis_site`/`trellis_cli` engine features before publish; then SDK Phase 5 — Full CSS Processing.
+**Next up**: address the outstanding 0.10.0 review findings, then cut **v0.10.0** with a single **lockstep version bump** (`tool/version_lockstep.sh`, ADR-009); then SDK Phase 5 — Full CSS Processing.
 
 ## Recent Completions
 
 | Phase | Completed | Key Deliverables |
 |-------|-----------|------------------|
-| Docs Site | 2026-07-06 | Engine: weighted ordering + nested sections + `orderedSectionPages` seam, `${site.menu}` nav tree (section-weight ordered), `pathPrefix` (with unprefixed on-disk layout + content-link rewriting), in-section prev/next; `arbor` docs theme (vendored Prism + SRI, WCAG-AA skins, responsive, search shell); `site/` (marketing landing + curated docs IA: getting-started, complete `tl:*` syntax reference, 8 package guides, theme-authoring); client-side search; GitHub Pages CI deploy + pure-Dart link-integrity checker. Deploy target: `tolo.github.io/trellis/` (`pathPrefix: /trellis/`). |
+| 0.10.0 (pre-release) | 2026-07-11 | Binary distribution: **Scoop** channel + release-workflow hardening (both tap jobs skip without `TAP_TOKEN`); build-time syntax highlighting (ADR-010: `CodeHighlighter`/`package:highlight`, `.hljs-*` spans, `highlight:` config key, vendored Prism removed); `bloom` landing theme + `verdant`/`arbor` polish; theme SASS-bridge escaping hardened; **TD-009** resolved (`ProcessRunner`, no CWD mutation → parallel-safe CLI suite). |
+| Docs Site | 2026-07-06 | Engine: weighted ordering + nested sections + `orderedSectionPages` seam, `${site.menu}` nav tree (section-weight ordered), `pathPrefix` (with unprefixed on-disk layout + content-link rewriting), in-section prev/next; `arbor` docs theme (build-time `.hljs-*` highlighting, WCAG-AA skins, responsive, search shell); `site/` (marketing landing + curated docs IA: getting-started, complete `tl:*` syntax reference, 8 package guides, theme-authoring); client-side search; GitHub Pages CI deploy + pure-Dart link-integrity checker. Deploy target: `tolo.github.io/trellis/` (`pathPrefix: /trellis/`). |
 | SDK Phase 4 | 2026-03-20 | Theme manifest + params, ThemeAwareLoader, SASS bridge, CLI theme commands, Verdant theme |
 | SDK Phase 3 | 2026-03-17 | trellis_dart_frog, trellis_relic, expression utility objects, RSS, search index |
 | SDK Phase 2 | 2026-03-16 | trellis_site (SSG), trellis_css, CLI build/serve, blog starter |
@@ -33,7 +34,7 @@
 
 ## Test Health
 
-~2,377 total tests across all packages (+ docs-site additions). After the docs-site work: `trellis_site` **754 pass / 1 fail** (the pre-existing `content_discovery_test` empty-dir failure, TD-002); `trellis_cli` **240 pass** serially (the `examples_smoke_test` is parallel-flaky — passes with `-j 1`); repo-root `test/` (`link_check` + `search_client`) 24 pass. `dart analyze --fatal-infos` clean across `trellis_site`, `trellis_cli`, and the new `tool/link_check.dart`. New Dart Sass 3.0 forward-compat tech-debt logged as TD-006 (`@import` in theme SASS + the bridge).
+On `feature/0.10.0`: `trellis_site` **835 pass / 0 fail**; `trellis_cli` **253 pass** at default concurrency (parallel-safe after **TD-009** removed the CWD mutation the `examples_smoke_test` flakiness traced to — no more `-j 1` workaround); repo-root `test/` **34 pass** (incl. the release-distribution contract tests). `dart analyze --fatal-infos` clean across the workspace. Dart Sass 3.0 forward-compat tech-debt remains logged as TD-006 (`@import` in theme SASS + the bridge).
 
 ## Blockers
 

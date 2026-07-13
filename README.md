@@ -61,14 +61,23 @@ ships as a self-contained binary (no Dart SDK required) and on pub.dev:
 # Homebrew (macOS / Linux)
 brew install tolo/trellis/trellis
 
-# Manual (macOS / Linux): download the archive + checksums, verify, extract the
-# binary, and put it on your PATH.
+# Scoop (Windows)
+scoop bucket add trellis https://github.com/tolo/scoop-trellis
+scoop install trellis
+
+# Manual (macOS / Linux): set VERSION to the current release number from
+# https://github.com/tolo/trellis/releases/latest, then download the archive +
+# checksums, verify, and extract the binary onto your PATH.
+# Do not include the leading "v" in VERSION.
 #   Assets: trellis-v<version>-{macos-arm64,macos-x64,linux-x64,linux-arm64}.tar.gz
 #           trellis-v<version>-windows-x64.zip  (+ aggregate SHA256SUMS.txt)
-curl -LO https://github.com/tolo/trellis/releases/latest/download/trellis-v<version>-macos-arm64.tar.gz
-curl -LO https://github.com/tolo/trellis/releases/latest/download/SHA256SUMS.txt
+VERSION=0.9.1
+BASE=https://github.com/tolo/trellis/releases/download/v$VERSION
+ASSET=trellis-v$VERSION-macos-arm64.tar.gz
+curl -LO $BASE/$ASSET
+curl -LO $BASE/SHA256SUMS.txt
 shasum -a 256 -c SHA256SUMS.txt --ignore-missing   # verify before extracting
-tar -xzf trellis-v<version>-macos-arm64.tar.gz trellis && sudo mv trellis /usr/local/bin/
+tar -xzf $ASSET trellis && sudo mv trellis /usr/local/bin/
 # Windows (PowerShell): Invoke-WebRequest the .zip + SHA256SUMS.txt, check with
 # Get-FileHash -Algorithm SHA256, then Expand-Archive. See packages/trellis_cli.
 
@@ -88,7 +97,7 @@ cd my_app && dart pub get && dart run bin/server.dart   # http://localhost:8080
 
 # Static site (Markdown + SSG)
 trellis create my_blog --template blog
-cd my_blog && dart pub get && trellis build && trellis serve
+cd my_blog && trellis build && trellis serve
 ```
 
 Available `trellis create` templates: `htmx` (default — Shelf + HTMX), `blog` (static site), `dart_frog`, `relic`, and `theme` (authoring an SSG theme).

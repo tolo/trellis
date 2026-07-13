@@ -4,6 +4,7 @@ import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
 import 'package:trellis_site/trellis_site.dart';
 
+import '../process_runner.dart';
 import '../theme_config_updater.dart';
 import '../validators.dart';
 
@@ -13,9 +14,15 @@ import '../validators.dart';
 /// copy). Reads the theme's `theme.yaml`, then sets `theme:` in
 /// `trellis_site.yaml`.
 class ThemeAddCommand extends Command<int> {
-  ThemeAddCommand() {
+  /// Base directory the site and its `themes/` are resolved from. Defaults to
+  /// the process current directory.
+  final String? workingDirectory;
+
+  ThemeAddCommand({this.workingDirectory, ProcessRunner processRunner = runProcess}) : _processRunner = processRunner {
     argParser.addOption('ref', help: 'Git tag, branch, or commit to checkout.', valueHelp: 'tag');
   }
+
+  final ProcessRunner _processRunner;
 
   @override
   String get name => 'add';
@@ -38,15 +45,17 @@ class ThemeAddCommand extends Command<int> {
     final source = argResults!.rest.first;
     final ref = argResults!['ref'] as String?;
 
+    final baseDir = workingDirectory ?? Directory.current.path;
+
     // Verify trellis_site.yaml exists
-    final configPath = p.join(Directory.current.path, 'trellis_site.yaml');
+    final configPath = p.join(baseDir, 'trellis_site.yaml');
     if (!File(configPath).existsSync()) {
-      stderr.writeln('Error: trellis_site.yaml not found in ${Directory.current.path}');
+      stderr.writeln('Error: trellis_site.yaml not found in $baseDir');
       return 1;
     }
 
     // Create themes/ directory if needed
-    final themesDir = p.join(Directory.current.path, 'themes');
+    final themesDir = p.join(baseDir, 'themes');
     Directory(themesDir).createSync(recursive: true);
 
     // Determine if source is a local path or git URL
@@ -124,16 +133,25 @@ class ThemeAddCommand extends Command<int> {
       throw _ThemeAddException();
     }
 
-    // Shallow clone
+    // Shallow clone. Unlike the local-path copy, symlinks are kept as git
+    // materializes them: git's own checkout is safe and non-recursing, so the
+    // skip in _copyDirectory (which only guards our own recursive copy) does
+    // not apply here.
     final cloneArgs = ['clone', '--depth', '1'];
     if (ref != null) cloneArgs.addAll(['--branch', ref]);
     cloneArgs.addAll([url, destDir]);
 
     final ProcessResult result;
     try {
-      result = await Process.run('git', cloneArgs);
-    } on ProcessException {
-      stderr.writeln('Error: git is required for theme commands but was not found on PATH — install git and retry.');
+      result = await _processRunner('git', cloneArgs);
+    } on ProcessException catch (e) {
+      if (e.errorCode == fileNotFoundErrorCode) {
+        stderr.writeln('Error: git is required for theme commands but was not found on PATH – install git and retry.');
+      } else {
+        // Any other spawn failure (e.g. EACCES) is genuine but not missing git:
+        // report it gracefully rather than letting it escape as a raw stack trace.
+        stderr.writeln('Error: git command failed: ${e.message}');
+      }
       throw _ThemeAddException();
     }
     if (result.exitCode != 0) {
@@ -145,19 +163,31 @@ class ThemeAddCommand extends Command<int> {
   }
 }
 
-/// Recursively copies [source] to [destination], excluding `.git/` directories.
-void _copyDirectory(Directory source, Directory destination) {
+/// Recursively copies [source] to [destination], excluding `.git/` directories
+/// and symlinks. [sourceRoot] is the top-level copy root, used to render
+/// skipped-symlink notices as paths relative to it (defaults to [source]).
+void _copyDirectory(Directory source, Directory destination, [Directory? sourceRoot]) {
+  final root = sourceRoot ?? source;
   destination.createSync(recursive: true);
-  for (final entity in source.listSync(recursive: false)) {
+  // followLinks: false + skipping Links: symlinks are skipped conservatively to
+  // avoid cycles from theme example scaffolding (e.g. example/themes/<name> →
+  // ../.. self-references that would otherwise recurse unboundedly). The per-link
+  // notice keeps the skip visible to users with legitimately symlinked assets.
+  for (final entity in source.listSync(recursive: false, followLinks: false)) {
     final basename = p.basename(entity.path);
     // Skip .git directory
     if (basename == '.git') continue;
+    if (entity is Link) {
+      final rel = p.relative(entity.path, from: root.path);
+      stdout.writeln('Skipped symlink: $rel (symlinks are not copied)');
+      continue;
+    }
 
     final newPath = p.join(destination.path, basename);
     if (entity is File) {
       entity.copySync(newPath);
     } else if (entity is Directory) {
-      _copyDirectory(entity, Directory(newPath));
+      _copyDirectory(entity, Directory(newPath), root);
     }
   }
 }

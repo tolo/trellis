@@ -3,21 +3,53 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+import 'package:trellis_cli/src/commands/theme_add_command.dart';
+import 'package:trellis_cli/src/commands/theme_update_command.dart';
 import 'package:trellis_cli/trellis_cli.dart';
 import 'package:trellis_cli/src/theme_config_updater.dart';
 
+/// Captures `dart:io` [stderr] writes during [body]. The theme commands write
+/// error messages straight to stderr (no injectable sink), so `IOOverrides` is
+/// the only capture seam. A minimal [Stdout] fake avoids implementing the full
+/// interface via `noSuchMethod`.
+Future<String> _captureStderr(Future<void> Function() body) async {
+  final buffer = StringBuffer();
+  await IOOverrides.runZoned(body, stderr: () => _BufferStdout(buffer));
+  return buffer.toString();
+}
+
+/// Captures `dart:io` [stdout] writes during [body]. The theme commands write
+/// notices (e.g. skipped-symlink warnings) straight to stdout, so `IOOverrides`
+/// is the capture seam, mirroring [_captureStderr].
+Future<String> _captureStdout(Future<void> Function() body) async {
+  final buffer = StringBuffer();
+  await IOOverrides.runZoned(body, stdout: () => _BufferStdout(buffer));
+  return buffer.toString();
+}
+
+class _BufferStdout implements Stdout {
+  _BufferStdout(this._buffer);
+
+  final StringBuffer _buffer;
+
+  @override
+  void writeln([Object? object = '']) => _buffer.writeln(object);
+
+  @override
+  void write(Object? object) => _buffer.write(object);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
 void main() {
   late Directory tempDir;
-  late String originalDir;
 
   setUp(() {
     tempDir = Directory.systemTemp.createTempSync('trellis_theme_cmd_');
-    originalDir = Directory.current.path;
-    Directory.current = tempDir;
   });
 
   tearDown(() {
-    Directory.current = originalDir;
     tempDir.deleteSync(recursive: true);
   });
 
@@ -58,7 +90,12 @@ void main() {
     return dir;
   }
 
-  Future<int> run(List<String> args) => TrellisCli().run(args);
+  Future<int> run(List<String> args) => TrellisCli(workingDirectory: tempDir.path).run(args);
+
+  Future<int> runSingleCommand(Command<int> command, List<String> args) {
+    final runner = CommandRunner<int>('trellis', 'test')..addCommand(command);
+    return runner.run(args).then((code) => code ?? 0);
+  }
 
   // ─── ThemeConfigUpdater ───────────────────────────────────────────────────
 
@@ -202,6 +239,78 @@ void main() {
       final exitCode = await run(['theme', 'add', localTheme.path]);
       expect(exitCode, 1);
     });
+
+    test('missing git returns actionable error code for git URL', () async {
+      writeConfig();
+      var invokedGit = false;
+      final command = ThemeAddCommand(
+        workingDirectory: tempDir.path,
+        processRunner: (executable, arguments) {
+          invokedGit = executable == 'git';
+          throw const ProcessException('git', ['clone'], 'No such file or directory', 2);
+        },
+      );
+
+      late int exitCode;
+      final stderrText = await _captureStderr(() async {
+        exitCode = await runSingleCommand(command, ['add', 'https://github.com/example/trellis-theme-oak.git']);
+      });
+
+      expect(exitCode, 1);
+      expect(invokedGit, isTrue);
+      expect(stderrText, contains('git is required'));
+      expect(Directory(p.join(tempDir.path, 'themes', 'oak')).existsSync(), isFalse);
+    });
+
+    test('non-missing-git ProcessException returns 1 without escaping', () async {
+      writeConfig();
+      final command = ThemeAddCommand(
+        workingDirectory: tempDir.path,
+        // errorCode 13 == EACCES: a genuine spawn failure, not missing git.
+        processRunner: (executable, arguments) {
+          throw const ProcessException('git', ['clone'], 'Permission denied', 13);
+        },
+      );
+
+      late int exitCode;
+      final stderrText = await _captureStderr(() async {
+        exitCode = await runSingleCommand(command, ['add', 'https://github.com/example/trellis-theme-oak.git']);
+      });
+
+      expect(exitCode, 1);
+      expect(stderrText, contains('git command failed'));
+    });
+
+    test('skips self-referential symlinks when copying local theme', () async {
+      writeConfig();
+      final localTheme = writeTheme('my-theme', inThemesDir: false);
+      // Mirror the official themes' example scaffolding: a self-referential
+      // symlink (example/self → theme root) that would recurse unboundedly if
+      // followed.
+      final exampleDir = Directory(p.join(localTheme.path, 'example'))..createSync();
+      try {
+        Link(p.join(exampleDir.path, 'self')).createSync(localTheme.path);
+      } on FileSystemException {
+        markTestSkipped('symlink creation not permitted on this platform');
+        return;
+      }
+
+      late int exitCode;
+      final stdoutText = await _captureStdout(() async {
+        exitCode = await run(['theme', 'add', localTheme.path]);
+      });
+
+      expect(exitCode, 0);
+      final installed = Directory(p.join(tempDir.path, 'themes', 'my-theme'));
+      expect(installed.existsSync(), isTrue);
+      expect(File(p.join(installed.path, 'theme.yaml')).existsSync(), isTrue);
+      // The cyclic symlink must not be materialized or recursed into.
+      final copiedSelf = p.join(installed.path, 'example', 'self');
+      expect(FileSystemEntity.isLinkSync(copiedSelf), isFalse);
+      expect(Directory(copiedSelf).existsSync(), isFalse);
+      // The skip is surfaced to the user, not silent.
+      expect(stdoutText, contains('Skipped symlink:'));
+    });
   });
 
   // ─── trellis theme update ─────────────────────────────────────────────────
@@ -230,6 +339,50 @@ void main() {
     test('no trellis_site.yaml → error', () async {
       final exitCode = await run(['theme', 'update']);
       expect(exitCode, 1);
+    });
+
+    test('missing git returns actionable error code for git theme update', () async {
+      writeConfig(theme: 'my-theme');
+      final theme = writeTheme('my-theme');
+      Directory(p.join(theme.path, '.git')).createSync();
+      var invokedGit = false;
+      final command = ThemeUpdateCommand(
+        workingDirectory: tempDir.path,
+        processRunner: (executable, arguments) {
+          invokedGit = executable == 'git';
+          throw const ProcessException('git', ['pull'], 'No such file or directory', 2);
+        },
+      );
+
+      late int exitCode;
+      final stderrText = await _captureStderr(() async {
+        exitCode = await runSingleCommand(command, ['update', 'my-theme']);
+      });
+
+      expect(exitCode, 1);
+      expect(invokedGit, isTrue);
+      expect(stderrText, contains('git is required'));
+    });
+
+    test('non-missing-git ProcessException returns 1 without escaping', () async {
+      writeConfig(theme: 'my-theme');
+      final theme = writeTheme('my-theme');
+      Directory(p.join(theme.path, '.git')).createSync();
+      final command = ThemeUpdateCommand(
+        workingDirectory: tempDir.path,
+        // errorCode 13 == EACCES: a genuine spawn failure, not missing git.
+        processRunner: (executable, arguments) {
+          throw const ProcessException('git', ['pull'], 'Permission denied', 13);
+        },
+      );
+
+      late int exitCode;
+      final stderrText = await _captureStderr(() async {
+        exitCode = await runSingleCommand(command, ['update', 'my-theme']);
+      });
+
+      expect(exitCode, 1);
+      expect(stderrText, contains('git command failed'));
     });
   });
 

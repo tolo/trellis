@@ -26,5 +26,5 @@ When serving from a subpath, set the path prefix so hand-written asset links
 resolve correctly.
 
 ```yaml
-path_prefix: /docs/
+pathPrefix: /docs/
 ```

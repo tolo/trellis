@@ -4,6 +4,7 @@ import 'package:markdown/markdown.dart' as md;
 import 'package:path/path.dart' as p;
 import 'package:trellis/trellis.dart';
 
+import 'code_highlighter.dart';
 import 'page.dart';
 import 'trellis_site_builder.dart' show BuildWarning;
 
@@ -25,17 +26,13 @@ final _contentPattern = RegExp(
 ///
 /// Pattern: `{{% name key="val" %}}`
 /// Groups: 1=name, 2=params string
-final _selfClosingPattern = RegExp(
-  r"""\{\{%\s*(\w+)((?:\s+\w+\s*=\s*(?:"[^"]*"|'[^']*'))*)\s*%\}\}""",
-);
+final _selfClosingPattern = RegExp(r"""\{\{%\s*(\w+)((?:\s+\w+\s*=\s*(?:"[^"]*"|'[^']*'))*)\s*%\}\}""");
 
 /// Matches an HTML comment shortcode (post-Markdown).
 ///
 /// Pattern: `<!-- tl:name key="val" -->`
 /// Groups: 1=name, 2=params string
-final _htmlCommentPattern = RegExp(
-  r"""<!--\s*tl:(\w+)((?:\s+\w+\s*=\s*(?:"[^"]*"|'[^']*'))*)\s*-->""",
-);
+final _htmlCommentPattern = RegExp(r"""<!--\s*tl:(\w+)((?:\s+\w+\s*=\s*(?:"[^"]*"|'[^']*'))*)\s*-->""");
 
 /// Matches individual key="value" or key='value' param pairs.
 ///
@@ -88,6 +85,10 @@ class ShortcodeProcessor {
   /// The site root directory (parent of `layouts/`).
   final String siteDir;
 
+  /// Build-time syntax highlighter applied to Markdown-rendered shortcode bodies,
+  /// or `null` when highlighting is disabled.
+  final CodeHighlighter? highlighter;
+
   /// Non-fatal warnings accumulated during shortcode processing.
   final List<BuildWarning> warnings = [];
 
@@ -95,7 +96,7 @@ class ShortcodeProcessor {
   late final String _shortcodesDir;
 
   /// Creates a [ShortcodeProcessor] for the site at [siteDir].
-  ShortcodeProcessor({required this.siteDir}) {
+  ShortcodeProcessor({required this.siteDir, this.highlighter}) {
     _engine = Trellis(loader: FileSystemLoader(siteDir));
     _shortcodesDir = p.join(siteDir, 'layouts', 'shortcodes');
   }
@@ -118,8 +119,11 @@ class ShortcodeProcessor {
       final paramsStr = match.group(2) ?? '';
       final innerContent = (match.group(3) ?? '').trim();
       final params = _parseParams(paramsStr);
-      // Render inner content as Markdown and inject as ${content}
-      params['content'] = md.markdownToHtml(innerContent, extensionSet: md.ExtensionSet.gitHubWeb);
+      // Render inner content as Markdown and inject as ${content}. Highlight its
+      // fenced code (ADR-010) on the same terms as top-level page Markdown.
+      var innerHtml = md.markdownToHtml(innerContent, extensionSet: md.ExtensionSet.gitHubWeb);
+      if (highlighter != null) innerHtml = highlighter!.highlightHtml(innerHtml);
+      params['content'] = innerHtml;
       return _renderShortcode(name, params) ?? match.group(0)!;
     });
 
@@ -156,10 +160,7 @@ class ShortcodeProcessor {
   String? _renderShortcode(String name, Map<String, dynamic> params) {
     final templateFile = File(p.join(_shortcodesDir, '$name.html'));
     if (!templateFile.existsSync()) {
-      warnings.add(BuildWarning(
-        'Shortcode template not found: $name',
-        context: 'layouts/shortcodes/$name.html',
-      ));
+      warnings.add(BuildWarning('Shortcode template not found: $name', context: 'layouts/shortcodes/$name.html'));
       return null;
     }
 
@@ -167,10 +168,7 @@ class ShortcodeProcessor {
       final source = templateFile.readAsStringSync();
       return _engine.render(source, params);
     } on Object catch (e) {
-      warnings.add(BuildWarning(
-        'Shortcode render error for "$name": $e',
-        context: 'layouts/shortcodes/$name.html',
-      ));
+      warnings.add(BuildWarning('Shortcode render error for "$name": $e', context: 'layouts/shortcodes/$name.html'));
       return null;
     }
   }

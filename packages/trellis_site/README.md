@@ -46,7 +46,7 @@ theme_params:
       url: /posts/
 ```
 
-All 19 standard params (colors, fonts, layout, nav, social links, feature toggles) are configurable without forking or editing the theme. Sites can also override individual layouts or `tl:define` blocks for deeper customization.
+All 18 standard params (colors, fonts, layout, nav, social links, feature toggles) are configurable without forking or editing the theme. Sites can also override individual layouts or `tl:define` blocks for deeper customization.
 
 See the [Theme Usage Guide](../../docs/guides/theme-usage.md) and [Standard Params Contract](../../docs/reference/standard-params.md) for full documentation.
 
@@ -124,6 +124,8 @@ search:
   enabled: true
   output: search-index.json
   fields: [title, summary, content, tags]
+highlight:
+  enabled: true
 ```
 
 ### Path prefix
@@ -437,6 +439,28 @@ Generated outputs:
 - `/{section}/feed.xml` and `/{section}/rss.xml` -- per-section feeds when `sections` are configured
 
 Templates can link to site-wide feeds via `${feeds.atom}` and `${feeds.rss}` when available. Pages with `feed: false` in front matter are excluded.
+
+## Syntax Highlighting
+
+Fenced Markdown code blocks are highlighted at **build time** (ADR-010): the
+generated HTML carries highlight.js-style `.hljs-*` token spans and ships **no**
+client-side highlighter JavaScript. Highlighting is **on by default**; set
+`enabled: false` to emit plain `<pre><code>` instead:
+
+```yaml
+highlight:
+  enabled: true   # default -- set false to disable
+```
+
+Only an explicit `enabled: false` turns it off; any other value leaves it on.
+`highlight:` must be a map -- a bare scalar such as `highlight: false` is
+ignored (highlighting stays on); disable it with `highlight:` plus
+`enabled: false`.
+Unknown or unspecified code-block languages are left unhighlighted (plain
+`<pre><code>`). Token colors come from the active theme's `.hljs-*` CSS.
+
+Migration: the old per-theme `syntax_highlighting` param is retired and is now
+ignored -- highlighting is controlled here via `highlight:`, not per theme.
 
 ## Search Index
 

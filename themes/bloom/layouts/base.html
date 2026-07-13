@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<!-- Bloom Landing Theme — layouts/base.html. Root layout: full HTML shell with
+     the four tl:define blocks (head-extra, site-header, content, site-footer).
+     Header carries the logo/site title + nav_links; footer carries footer_text,
+     social_links, and the optional "powered by Trellis" line. See README.md. -->
+<html lang="en">
+<!-- assetBase yields a root-absolute prefix for hand-written asset links: the
+     configured pathPrefix (e.g. /app/) when set, or / when served at the root.
+     Prefixing with pathPrefix alone would produce page-relative URLs at the root
+     (empty pathPrefix), which 404 on nested pages. -->
+<head tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- On the landing page page.title == site.title, so collapse to a single
+       title instead of the duplicated "Site — Site". -->
+  <title tl:text="${page.title} == ${site.title} ? ${site.title} : ${page.title} + ' — ' + ${site.title}">Page — Site</title>
+
+  <meta name="description"
+        tl:attr="content=${page.description} ?: ${page.summary} ?: ${site.description}">
+
+  <!-- Open Graph -->
+  <meta property="og:title" tl:attr="content=${page.title}">
+  <meta property="og:description"
+        tl:attr="content=${page.description} ?: ${page.summary} ?: ${site.description}">
+  <meta property="og:type" content="website">
+  <meta property="og:url" tl:attr="content=${site.baseUrl} + ${page.url}">
+
+  <!-- Theme CSS (compiled from sass/main.scss), root-absolute via assetBase. -->
+  <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/main.css'" href="/css/main.css">
+  <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/theme-props.css'" href="/css/theme-props.css">
+
+  <!-- RSS/Atom feed link — controlled by show_rss_link param -->
+  <link tl:if="${site.feeds.atom} and ${theme.show_rss_link}"
+        rel="alternate" type="application/atom+xml"
+        title="Atom Feed" tl:attr="href=${site.feeds.atom}">
+  <link tl:if="${site.feeds.rss} and ${theme.show_rss_link}"
+        rel="alternate" type="application/rss+xml"
+        title="RSS Feed" tl:attr="href=${site.feeds.rss}">
+
+  <!-- Extra head slot: child layouts inject additional tags here. -->
+  <meta tl:define="head-extra">
+</head>
+<body>
+  <a href="#main-content" class="skip-to-content">Skip to content</a>
+
+  <!-- Site header -->
+  <header class="site-header" tl:define="site-header"
+          tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
+    <div class="container site-header-inner">
+      <a href="/" class="site-brand">
+        <img class="site-logo" tl:if="${theme.logo}"
+             tl:attr="src=${assetBase} + ${theme.logo},alt=${site.title}" src="" alt="">
+        <span class="site-title" tl:unless="${theme.logo}" tl:text="${site.title}">Site Title</span>
+      </a>
+
+      <nav class="site-nav" aria-label="Main navigation">
+        <ul class="nav-list">
+          <li tl:each="link : ${theme.nav_links}">
+            <a tl:href="${link.url}" tl:text="${link.label}">Link</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main content region. Child layouts fill the "content" block. -->
+  <main id="main-content" class="main-content" tl:define="content">
+    <div class="container">
+      <p>Override the "content" block in a child layout.</p>
+    </div>
+  </main>
+
+  <!-- Site footer -->
+  <footer class="site-footer" tl:define="site-footer">
+    <div class="container">
+      <div class="footer-inner">
+
+        <ul class="social-links" tl:if="${theme.social_links}">
+          <li tl:each="link : ${theme.social_links}">
+            <a tl:href="${link.url}"
+               tl:text="${link.label} ?: ${link.platform}"
+               rel="noopener noreferrer"
+               target="_blank">Social</a>
+          </li>
+        </ul>
+
+        <p class="footer-text" tl:if="${theme.footer_text}" tl:text="${theme.footer_text}">
+          Custom footer text
+        </p>
+
+        <p class="footer-powered-by" tl:if="${theme.show_powered_by}">
+          Built with <a href="https://pub.dev/packages/trellis">Trellis</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -267,7 +267,7 @@ Fragment inclusions are tracked via an inclusion stack. If a fragment ID (templa
 
 | Loader | Source | Security | Dev Mode | `listTemplates()` |
 |---|---|---|---|---|
-| `FileSystemLoader` | Filesystem directory | Path traversal rejection, symlink boundary checks | `Directory.watch()` with extension filter — one native recursive watch on macOS/Windows, one watch per directory on Linux (dart:io ignores `recursive` there) | Yes (does not follow symlinks) |
+| `FileSystemLoader` | Filesystem directory | Path traversal rejection, symlink boundary checks | `Directory.watch()` with extension filter — one native recursive watch on macOS/Windows, one watch per directory on Linux/Android (dart:io ignores `recursive` there) | Yes (does not follow symlinks) |
 | `MapLoader` | `Map<String, String>` | N/A | N/A | Yes |
 | `AssetLoader` | `package:` URIs | Same as FileSystemLoader | N/A | No |
 | `CompositeLoader` | Delegate chain | Delegates to children | N/A | No |

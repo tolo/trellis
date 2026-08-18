@@ -10,7 +10,7 @@
 
 **0.10.2 in progress** (branch `feat/0.10.2`, not yet released) — patch: **TD-013** resolved — `FileSystemLoader` watches each template directory individually on Linux, so dev-mode hot reload now sees edits in sub-folders there (macOS/Windows unchanged); plus dev-watch hardening (rename/atomic-save reloads on Linux/Windows, once-only warning when the OS refuses a watch, `close()` leak fix) and `listTemplates()` no longer following symlinks (aligned with `load()`; in-tree alias names drop from enumeration — see CHANGELOG); plus the `trellis_cli` generated-app e2e twin binding/connecting via numeric loopback (**TD-015** files the remaining scaffold `'localhost'` bind). Cut with `tool/release.sh 0.10.2` on `main` after squash-merge.
 
-**Next up**: 0.11 — doc-site redesign & three new built-in themes (private `docs/specs/0.11/`, 5 stories spec-ready), then TD-006 SASS `@use` migration; later candidates: CSS processing, composition primitives, Trellis UI (private `docs/specs/0.next-*/`). Open follow-ups: TD-014 (date-only front matter timezone) and TD-015 (Shelf scaffold `'localhost'` bind).
+**Next up**: 0.11 — doc-site redesign & three new built-in themes (private `docs/specs/0.11/`, 5 stories spec-ready), then TD-006 SASS `@use` migration; later candidates: CSS processing, composition primitives, Trellis UI (private `docs/specs/0.next-*/`). Open follow-ups: TD-014 (date-only front matter timezone), TD-015 (Shelf scaffold `'localhost'` bind), and TD-016 (template enumeration abort-on-unreadable + validate CLI symlink divergence, filed by the 0.10.2 review).
 
 ## Recent Completions
 

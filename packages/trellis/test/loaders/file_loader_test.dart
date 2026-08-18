@@ -17,6 +17,17 @@ final String? _unwatchableDirSkip = !Platform.isLinux
 /// Exit code the fixture never produces itself, standing in for "still running when we gave up".
 const _fixtureTimedOut = -1;
 
+/// Waits until [changes] has been silent for [quiet]. A fixed sleep can under-wait a late emission
+/// on a loaded runner, letting it satisfy an assertion meant for a later, causally different event.
+Future<void> _drainUntilSilent(Stream<void> changes, {Duration quiet = const Duration(milliseconds: 300)}) async {
+  var lastEvent = DateTime.now();
+  final sub = changes.listen((_) => lastEvent = DateTime.now());
+  while (DateTime.now().difference(lastEvent) < quiet) {
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+  }
+  await sub.cancel();
+}
+
 /// Absolute path of the `trellis` package root, so a fixture path resolves regardless of the
 /// directory `dart test` was invoked from (the package dir under melos, the workspace root by hand).
 Future<String> _packageRoot() async {
@@ -346,7 +357,7 @@ void main() {
 
       // Edits inside the moved-in subtree are reported on every platform, i.e. it really is
       // watched. Let any arrival events drain first so the edit is what completes the future.
-      await Future<void>.delayed(const Duration(milliseconds: 300));
+      await _drainUntilSilent(loader.changes!);
       final edited = loader.changes!.first.timeout(const Duration(seconds: 5));
       await Future<void>.delayed(const Duration(milliseconds: 50));
       File('${tempDir.path}/moved/inner/page.html').writeAsStringSync('<p>Edited</p>');
@@ -364,12 +375,34 @@ void main() {
 
       await Future<void>.delayed(const Duration(milliseconds: 50));
       Directory('${tempDir.path}/old').renameSync('${tempDir.path}/renamed');
-      await Future<void>.delayed(const Duration(milliseconds: 300));
+      // The rename itself may scan-emit; wait for silence so the awaited emission below can only
+      // come from the new subdirectory being tracked.
+      await _drainUntilSilent(loader.changes!);
 
       final future = loader.changes!.first.timeout(const Duration(seconds: 5));
       Directory('${tempDir.path}/renamed/sub').createSync();
       File('${tempDir.path}/renamed/sub/page.html').writeAsStringSync('<p>New</p>');
       await expectLater(future, completes);
+    });
+
+    test('directory symlink created while watching is not adopted', () async {
+      // The initial walk skips directory symlinks (followLinks: false); a symlink arriving as a
+      // create event must be treated the same, or watching escapes the base boundary.
+      final outside = Directory('${tempDir.parent.path}/trellis_linked_${tempDir.path.hashCode}')..createSync();
+      final outsideFile = File('${outside.path}/page.html')..writeAsStringSync('<p>Out</p>');
+      addTearDown(() => outside.deleteSync(recursive: true));
+      loader = FileSystemLoader(tempDir.path, devMode: true);
+
+      var emitted = false;
+      final sub = loader.changes!.listen((_) => emitted = true);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      Link('${tempDir.path}/shared').createSync(outside.path);
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      emitted = false; // Only out-of-tree edits matter; adopting the link would report them below.
+      outsideFile.writeAsStringSync('<p>Changed</p>');
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      expect(emitted, isFalse);
+      await sub.cancel();
     });
 
     test('directory moved out stops emitting', () async {

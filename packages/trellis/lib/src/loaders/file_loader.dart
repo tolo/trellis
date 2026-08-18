@@ -67,7 +67,10 @@ final class FileSystemLoader implements TemplateLoader {
   /// directory can be created with content (`mkdir -p a/b` plus files, a checkout, a directory moved
   /// in) before its watch is installed, so those files would otherwise go unseen.
   void _watchSubtree(String path, {required bool emitIfTemplatesFound}) {
-    if (!Directory(path).existsSync()) return;
+    // Stat without following links: `Directory.existsSync`/`listSync` follow a symlink given as the
+    // walk root, which would adopt a subtree the walk itself (followLinks: false) deliberately
+    // skips — watching would then escape the base boundary that load() enforces.
+    if (FileSystemEntity.typeSync(path, followLinks: false) != FileSystemEntityType.directory) return;
     var templatesFound = false;
     final pending = [path];
     while (pending.isNotEmpty) {

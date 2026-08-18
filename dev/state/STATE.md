@@ -8,7 +8,9 @@
 
 **0.10.1 shipped 2026-08-18** — first release cut through [`dev/guidelines/RELEASE-RUNBOOK.md`](../guidelines/RELEASE-RUNBOOK.md) (`tool/release.sh` + the CI tag gate; both gates held for CI and released cleanly): `FragmentHost` typing for `ProcessorContext.domProcessor`, SSG prev/next perf, HTMX 2.0.10 scaffolds, push CI (`ci.yml`, TD-010), release tooling. The first ubuntu CI run surfaced two macOS-only assumptions (TZ-baked golden; Linux `recursive` watch gap → TD-013/TD-014).
 
-**Next up**: 0.11 — doc-site redesign & three new built-in themes (private `docs/specs/0.11/`, 5 stories spec-ready), then TD-006 SASS `@use` migration; later candidates: CSS processing, composition primitives, Trellis UI (private `docs/specs/0.next-*/`). Open follow-ups: TD-013 (Linux nested-template watch), TD-014 (date-only front matter timezone), and the `trellis_cli` generated-app e2e loopback twin.
+**0.10.2 in progress** (branch `feat/0.10.2`, not yet released) — patch: **TD-013** resolved — `FileSystemLoader` watches each template directory individually on Linux, so dev-mode hot reload now sees edits in sub-folders there (macOS/Windows unchanged); plus the `trellis_cli` generated-app e2e twin binding/connecting via numeric loopback (**TD-015** files the remaining scaffold `'localhost'` bind). Cut with `tool/release.sh 0.10.2` on `main` after squash-merge.
+
+**Next up**: 0.11 — doc-site redesign & three new built-in themes (private `docs/specs/0.11/`, 5 stories spec-ready), then TD-006 SASS `@use` migration; later candidates: CSS processing, composition primitives, Trellis UI (private `docs/specs/0.next-*/`). Open follow-ups: TD-014 (date-only front matter timezone) and TD-015 (Shelf scaffold `'localhost'` bind).
 
 ## Recent Completions
 

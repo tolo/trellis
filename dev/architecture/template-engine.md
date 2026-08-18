@@ -91,9 +91,9 @@ ProcessorPriority.highest           ← tl:with, tl:object, tl:if, tl:unless, tl
 ProcessorPriority.afterLocals       ← (open for custom processors)
 ProcessorPriority.afterConditionals ← tl:each
 ProcessorPriority.afterIteration    ← tl:insert, tl:replace
-ProcessorPriority.afterContent      ← tl:text, tl:utext, tl:inline
-ProcessorPriority.afterAttributes   ← tl:attr + shorthands (tl:href, tl:src, etc.)
-ProcessorPriority.afterRemoval      ← tl:remove
+ProcessorPriority.afterInclusion    ← tl:text, tl:utext, tl:inline
+ProcessorPriority.afterContent      ← tl:attr + shorthands (tl:href, tl:src, etc.)
+ProcessorPriority.afterAttributes   ← tl:remove
 ProcessorPriority.lowest            ← (open for custom processors)
 ```
 
@@ -131,11 +131,11 @@ Context-modifying processors (`tl:with`, `tl:object`) update `processorContext.v
 | 6 | `EachProcessor` | `each` | afterConditionals | Collection empty → element removed | Clones element per item; `autoProcessChildren=false` |
 | 7 | `InsertProcessor` | `insert` | afterIteration | Never | Loads fragment, inserts as children |
 | 8 | `ReplaceProcessor` | `replace` | afterIteration | Always (replaces element) | Loads fragment, replaces element |
-| 9 | `TextProcessor` | `text` | afterContent | Never | HTML-escapes value, replaces element text |
-| 10 | `UtextProcessor` | `utext` | afterContent | Never | Raw HTML insertion (no escaping) |
-| 11 | `InlineProcessor` | `inline` | afterContent | Never | `[[${expr}]]` escaped, `[(${expr})]` unescaped |
-| 12 | `AttrProcessor` | `attr` + shorthands | afterAttributes | Never | Sets/appends/removes attributes |
-| 13 | `RemoveProcessor` | `remove` | afterRemoval | Varies | Modes: `all`, `body`, `tag`, `all-but-first`, `none` |
+| 9 | `TextProcessor` | `text` | afterInclusion | Never | HTML-escapes value, replaces element text |
+| 10 | `UtextProcessor` | `utext` | afterInclusion | Never | Raw HTML insertion (no escaping) |
+| 11 | `InlineProcessor` | `inline` | afterInclusion | Never | `[[${expr}]]` escaped, `[(${expr})]` unescaped |
+| 12 | `AttrProcessor` | `attr` + shorthands | afterContent | Never | Sets/appends/removes attributes |
+| 13 | `RemoveProcessor` | `remove` | afterAttributes | Varies | Modes: `all`, `body`, `tag`, `all-but-first`, `none` |
 
 ---
 

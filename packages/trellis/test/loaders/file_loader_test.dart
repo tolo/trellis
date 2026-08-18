@@ -353,6 +353,25 @@ void main() {
       await expectLater(edited, completes);
     });
 
+    test('directory renamed in place keeps tracking new subdirectories', () async {
+      // A same-parent rename is the only move that arrives as a *paired* move event on Linux —
+      // cross-boundary moves surface as create/delete. Without rewatching, the old inode-bound
+      // watch keeps reporting stale pre-rename paths, so a directory created under the new name
+      // is never scanned or watched.
+      Directory('${tempDir.path}/old').createSync();
+      File('${tempDir.path}/old/page.html').writeAsStringSync('<p>v1</p>');
+      loader = FileSystemLoader(tempDir.path, devMode: true);
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      Directory('${tempDir.path}/old').renameSync('${tempDir.path}/renamed');
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      final future = loader.changes!.first.timeout(const Duration(seconds: 5));
+      Directory('${tempDir.path}/renamed/sub').createSync();
+      File('${tempDir.path}/renamed/sub/page.html').writeAsStringSync('<p>New</p>');
+      await expectLater(future, completes);
+    });
+
     test('directory moved out stops emitting', () async {
       // On Linux an inotify watch follows the inode, not the path: a watch the move handler fails
       // to cancel keeps reporting the moved directory's edits under its old in-tree path.

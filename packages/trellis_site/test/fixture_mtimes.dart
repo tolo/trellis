@@ -2,9 +2,11 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-/// The source-file mtime the byte-for-byte goldens (`test_fixtures/*_regression_golden.json`) were
-/// captured with: `<lastmod>2026-03-18</lastmod>` / `<updated>2026-03-18T07:25:45Z</updated>`.
-final DateTime buildSiteFixtureMtime = DateTime.utc(2026, 3, 18, 7, 25, 45);
+/// The source-file mtime the byte-for-byte goldens (`test_fixtures/*_regression_golden.json`) expect:
+/// `<lastmod>2026-03-18</lastmod>` / `<updated>2026-03-18T12:00:00Z</updated>`. Noon UTC, because the
+/// sitemap `<lastmod>` is the *local* calendar date of the mtime — midday keeps that date stable in every
+/// zone from UTC-11 to UTC+11 (a 07:25Z pin flipped to 03-17 in Anchorage/Hawaii).
+final DateTime buildSiteFixtureMtime = DateTime.utc(2026, 3, 18, 12);
 
 /// Pins the mtime of every content file in the `build_site` fixture to [buildSiteFixtureMtime].
 ///

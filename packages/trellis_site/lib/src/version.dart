@@ -1,4 +1,4 @@
 /// The current version of trellis_site.
 ///
 /// This must match the version in pubspec.yaml.
-const String siteVersion = '0.10.0';
+const String siteVersion = '0.10.1';

@@ -74,12 +74,14 @@ dependency_overrides:
       final booted = await bootServer(
         label: 'generated app server',
         start: (port) async {
-          await serverFile.writeAsString(
-            originalServerSource.replaceFirst(
-              "await shelf_io.serve(handler, 'localhost', 8080)",
-              "await shelf_io.serve(handler, InternetAddress('$_host'), $port)",
-            ),
+          final patched = originalServerSource.replaceFirst(
+            "await shelf_io.serve(handler, 'localhost', 8080)",
+            "await shelf_io.serve(handler, InternetAddress('$_host'), $port)",
           );
+          // replaceFirst no-ops silently on no-match; fail here by name instead of as an opaque
+          // boot timeout when the template's bind line changes (TD-015 plans exactly that).
+          expect(patched, isNot(originalServerSource), reason: 'bind-patch pattern no longer matches the template');
+          await serverFile.writeAsString(patched);
           return Process.start('dart', ['run', 'bin/server.dart'], workingDirectory: projectDir.path);
         },
         isReady: (port) => _waitForServer(_host, port),

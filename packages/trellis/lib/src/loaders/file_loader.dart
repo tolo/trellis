@@ -8,10 +8,10 @@ final _pathSepPattern = RegExp(r'[/\\]');
 
 /// Whether `Directory.watch(recursive: true)` actually recurses on this platform.
 ///
-/// dart:io implements watching with inotify on Linux, which reports events for the watched directory
-/// only — the `recursive` flag is silently ignored there. macOS (FSEvents) and Windows
-/// (`ReadDirectoryChangesW`) honour it.
-final bool _hasNativeRecursiveWatch = !Platform.isLinux;
+/// dart:io implements watching with inotify on Linux and Android, which reports events for the
+/// watched directory only — the `recursive` flag is silently ignored there. macOS (FSEvents) and
+/// Windows (`ReadDirectoryChangesW`) honour it.
+final bool _hasNativeRecursiveWatch = !(Platform.isLinux || Platform.isAndroid);
 
 /// Loads templates from the filesystem relative to a base directory.
 ///
@@ -117,7 +117,8 @@ final class FileSystemLoader implements TemplateLoader {
   /// silently, so it is worth one warning; further failures are almost certainly the same cause.
   void _onWatchError(String path, Object error, StreamSubscription<FileSystemEvent> subscription) {
     _dropWatch(path, subscription);
-    if (_watchErrorWarned || !Directory(path).existsSync()) return;
+    // The controller-null check keeps a watch dying mid-close() from warning after shutdown.
+    if (_changesController == null || _watchErrorWarned || !Directory(path).existsSync()) return;
     _watchErrorWarned = true;
     stderr.writeln(
       'Warning: Trellis dev-mode could not watch template directory "$path" ($error). Template changes '
@@ -132,7 +133,13 @@ final class FileSystemLoader implements TemplateLoader {
 
   void _onFileSystemEvent(FileSystemEvent event) {
     if (!_hasNativeRecursiveWatch) _syncWatches(event);
-    if (event.path.endsWith(extension)) _changesController?.add(null);
+    // A move event carries the source in `path`; a rename INTO a template name (atomic saves:
+    // write `page.html.tmp`, rename over `page.html`) is only visible on the destination. macOS
+    // never takes this branch — FSEvents reports renames as delete + create instead.
+    final isTemplateEvent =
+        event.path.endsWith(extension) ||
+        (event is FileSystemMoveEvent && (event.destination?.endsWith(extension) ?? false));
+    if (isTemplateEvent) _changesController?.add(null);
   }
 
   /// Keeps the per-directory watch set in step with directories appearing and disappearing while
@@ -208,8 +215,9 @@ final class FileSystemLoader implements TemplateLoader {
   /// without the configured [extension].
   ///
   /// Symlinks are not followed, so every name returned is one [load] will actually serve: a symlink
-  /// out of the tree would be rejected by the same boundary check [load] applies, and one pointing
-  /// back into it only duplicates a template already listed under its real path. This also matches
+  /// out of the tree would be rejected by the same boundary check [load] applies. A symlink pointing
+  /// back inside the tree is also omitted — its target stays listed under the real path, and [load]
+  /// still serves the alias name, but the alias itself no longer appears here. This also matches
   /// what dev-mode watching covers.
   List<String> listTemplates() {
     final templates =

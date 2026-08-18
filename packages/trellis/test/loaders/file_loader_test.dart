@@ -25,10 +25,11 @@ Future<String> _packageRoot() async {
 }
 
 /// Captures `dart:io` [stderr] writes during [body] — the loader's watch-failure warning has no
-/// injectable sink, so `IOOverrides` is the seam.
-Future<String> _captureStderr(Future<void> Function() body) async {
+/// injectable sink, so `IOOverrides` is the seam. [body] receives the live buffer so it can poll
+/// for expected output instead of guessing a delivery latency.
+Future<String> _captureStderr(Future<void> Function(StringBuffer captured) body) async {
   final buffer = StringBuffer();
-  await IOOverrides.runZoned(body, stderr: () => _BufferStdout(buffer));
+  await IOOverrides.runZoned(() => body(buffer), stderr: () => _BufferStdout(buffer));
   return buffer.toString();
 }
 
@@ -138,8 +139,8 @@ void main() {
       });
 
       test('listTemplates omits symlinks load() would reject', () {
-        // listTemplates() is the discovery half of load(): warmUpAll() and trellis_dev's validator
-        // load every name it returns, so a name that load() rejects turns into a spurious failure.
+        // listTemplates() is the discovery half of load(): warmUpAll() loads every name it returns,
+        // so a name that load() rejects turns into a spurious warm-up failure.
         final outside = Directory('${tempDir.parent.path}/trellis_outside_${tempDir.path.hashCode}');
         outside.createSync();
         addTearDown(() => outside.deleteSync(recursive: true));
@@ -151,6 +152,16 @@ void main() {
         expect(loader.listTemplates(), ['explicit', 'page', 'sub/nested']);
         expect(() => loader.load('escaping_file'), throwsA(isA<TemplateSecurityException>()));
         expect(() => loader.load('escaping_dir/secret'), throwsA(isA<TemplateSecurityException>()));
+      });
+
+      test('listTemplates omits in-tree symlink aliases load() still serves', () async {
+        // Deliberate trade, named in the 0.10.2 CHANGELOG: an alias name inside the tree stays
+        // loadable (its canonical path is within the base) but is no longer listed — the target
+        // itself remains listed under its real path.
+        Link('${tempDir.path}/alias.html').createSync('${tempDir.path}/page.html');
+
+        expect(loader.listTemplates(), ['explicit', 'page', 'sub/nested']);
+        expect(await loader.load('alias'), await loader.load('page'));
       });
 
       test('rejects prefix-collision sibling escape', () {
@@ -298,23 +309,120 @@ void main() {
       await expectLater(edited, completes);
     });
 
-    test('unwatchable directory warns once instead of failing silently', () async {
-      // A watch the OS refuses (here: an unreadable directory; in the wild: the inotify limit) caps
-      // hot reload for everything below it. Silence is what made TD-013 expensive, so it must warn.
-      final blocked = Directory('${tempDir.path}/blocked')..createSync();
-      File('${blocked.path}/page.html').writeAsStringSync('<p>Blocked</p>');
-      Process.runSync('chmod', ['000', blocked.path]);
-      addTearDown(() => Process.runSync('chmod', ['755', blocked.path]));
+    test('rename into a template name emits (atomic save)', () async {
+      // Editors and tools (sed -i, rsync) write `page.html.tmp` then rename it over `page.html`.
+      // On Linux/Windows that is one move event whose `path` is the source — only the destination
+      // carries the extension. macOS reports delete + create instead and never hits that path.
+      final tmp = File('${tempDir.path}/page.html.tmp')..writeAsStringSync('<p>v2</p>');
+      loader = FileSystemLoader(tempDir.path, devMode: true);
 
-      final warning = await _captureStderr(() async {
+      final future = loader.changes!.first.timeout(const Duration(seconds: 5));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      tmp.renameSync('${tempDir.path}/page.html');
+
+      await expectLater(future, completes);
+    });
+
+    test('directory moved in carrying templates emits and stays watched', () async {
+      final outside = Directory('${tempDir.parent.path}/trellis_movein_${tempDir.path.hashCode}');
+      Directory('${outside.path}/inner').createSync(recursive: true);
+      File('${outside.path}/inner/page.html').writeAsStringSync('<p>Moved</p>');
+      addTearDown(() {
+        if (outside.existsSync()) outside.deleteSync(recursive: true);
+      });
+      loader = FileSystemLoader(tempDir.path, devMode: true);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      if (Platform.isLinux) {
+        // The arriving subtree is itself a change (it carries a template). Only the per-directory
+        // path can see that: FSEvents reports just a directory-level create for the moved root, so
+        // the native platforms stay silent until the first edit inside (pre-existing behaviour).
+        final arrived = loader.changes!.first.timeout(const Duration(seconds: 5));
+        outside.renameSync('${tempDir.path}/moved');
+        await expectLater(arrived, completes);
+      } else {
+        outside.renameSync('${tempDir.path}/moved');
+      }
+
+      // Edits inside the moved-in subtree are reported on every platform, i.e. it really is
+      // watched. Let any arrival events drain first so the edit is what completes the future.
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      final edited = loader.changes!.first.timeout(const Duration(seconds: 5));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      File('${tempDir.path}/moved/inner/page.html').writeAsStringSync('<p>Edited</p>');
+      await expectLater(edited, completes);
+    });
+
+    test('directory moved out stops emitting', () async {
+      // On Linux an inotify watch follows the inode, not the path: a watch the move handler fails
+      // to cancel keeps reporting the moved directory's edits under its old in-tree path.
+      Directory('${tempDir.path}/gone/inner').createSync(recursive: true);
+      File('${tempDir.path}/gone/inner/page.html').writeAsStringSync('<p>Here</p>');
+      final outside = Directory('${tempDir.parent.path}/trellis_moveout_${tempDir.path.hashCode}');
+      addTearDown(() {
+        if (outside.existsSync()) outside.deleteSync(recursive: true);
+      });
+      loader = FileSystemLoader(tempDir.path, devMode: true);
+
+      var emitted = false;
+      final sub = loader.changes!.listen((_) => emitted = true);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      Directory('${tempDir.path}/gone').renameSync(outside.path);
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      emitted = false; // Only edits at the new, out-of-tree location must stay silent.
+      File('${outside.path}/inner/page.html').writeAsStringSync('<p>Away</p>');
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      expect(emitted, isFalse);
+      await sub.cancel();
+    });
+
+    test('deleting a directory leaves prefix-sharing siblings watched', () async {
+      // Watches are dropped by path prefix on delete; a naive startsWith would also cancel
+      // `subling` when `sub` is deleted.
+      Directory('${tempDir.path}/sub').createSync();
+      final siblingFile = File('${tempDir.path}/subling/page.html')
+        ..parent.createSync()
+        ..writeAsStringSync('<p>Sib</p>');
+      loader = FileSystemLoader(tempDir.path, devMode: true);
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      Directory('${tempDir.path}/sub').deleteSync();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final future = loader.changes!.first.timeout(const Duration(seconds: 5));
+      siblingFile.writeAsStringSync('<p>Still watched</p>');
+      await expectLater(future, completes);
+    });
+
+    test('unwatchable directory warns once instead of failing silently', () async {
+      // A watch the OS refuses (here: unreadable directories; in the wild: the inotify limit) caps
+      // hot reload for everything below it. Silence is what made TD-013 expensive, so it must warn —
+      // once, not once per directory: the real trigger is thousands of them at the limit.
+      final blockedA = Directory('${tempDir.path}/blocked_a')..createSync();
+      final blockedB = Directory('${tempDir.path}/blocked_b')..createSync();
+      File('${blockedA.path}/page.html').writeAsStringSync('<p>Blocked</p>');
+      Process.runSync('chmod', ['000', blockedA.path]);
+      Process.runSync('chmod', ['000', blockedB.path]);
+      addTearDown(() {
+        Process.runSync('chmod', ['755', blockedA.path]);
+        Process.runSync('chmod', ['755', blockedB.path]);
+      });
+
+      final warning = await _captureStderr((captured) async {
         loader = FileSystemLoader(tempDir.path, devMode: true);
-        // The watch error surfaces asynchronously, on the stream rather than from the constructor.
+        // The watch errors surface asynchronously, on the streams rather than from the constructor;
+        // poll instead of assuming a delivery latency, then leave room for a (buggy) second warning.
+        final deadline = DateTime.now().add(const Duration(seconds: 5));
+        while (!captured.toString().contains('could not watch') && DateTime.now().isBefore(deadline)) {
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+        }
         await Future<void>.delayed(const Duration(milliseconds: 200));
       });
 
       expect(warning, contains('could not watch template directory'));
-      expect(warning, contains('blocked'));
+      expect(warning, contains('blocked_'));
       expect(warning, contains('max_user_watches'));
+      expect('could not watch'.allMatches(warning).length, 1, reason: 'must warn once, not once per directory');
     }, skip: _unwatchableDirSkip);
 
     test('close() releases every watch, not just the base one', () async {
@@ -340,14 +448,18 @@ void main() {
           return _fixtureTimedOut;
         },
       );
+      // kill() (on the timeout path) closes the streams, so these complete either way.
+      final out = await stdoutText;
+      final err = await stderrText;
       expect(
         exitCode,
         0,
         reason: exitCode == _fixtureTimedOut
-            ? 'fixture never exited — a watch outlived close() and kept the VM alive'
-            : 'fixture exited $exitCode:\n${await stderrText}',
+            ? 'fixture never exited — a watch outlived close() and kept the VM alive.\n'
+                  'stdout: $out\nstderr: $err'
+            : 'fixture exited $exitCode:\nstdout: $out\nstderr: $err',
       );
-      expect(await stdoutText, contains('closed'));
+      expect(out, contains('closed'));
     }, timeout: const Timeout(Duration(seconds: 90)));
 
     test('close() stops nested-directory events too', () async {

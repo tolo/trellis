@@ -11,7 +11,8 @@ Request makeRequest() {
   return req;
 }
 
-Handler okHandler(String body) => (request) async => Response(200, body: Body.fromString(body));
+Handler okHandler(String body) =>
+    (request) async => Response(200, body: Body.fromString(body));
 
 void main() {
   group('CspBuilder', () {
@@ -45,27 +46,19 @@ void main() {
     });
 
     test('null directives are omitted', () {
-      final csp = CspBuilder(
-        objectSrc: null,
-        frameAncestors: null,
-      ).build();
+      final csp = CspBuilder(objectSrc: null, frameAncestors: null).build();
       expect(csp, isNot(contains('object-src')));
       expect(csp, isNot(contains('frame-ancestors')));
     });
 
     test('optional connect-src and font-src are included when set', () {
-      final csp = CspBuilder(
-        connectSrc: "'self' ws:",
-        fontSrc: "'self' data:",
-      ).build();
+      final csp = CspBuilder(connectSrc: "'self' ws:", fontSrc: "'self' data:").build();
       expect(csp, contains("connect-src 'self' ws:"));
       expect(csp, contains("font-src 'self' data:"));
     });
 
     test('custom directives are appended', () {
-      final csp = CspBuilder(
-        custom: {'report-uri': '/csp-report'},
-      ).build();
+      final csp = CspBuilder(custom: {'report-uri': '/csp-report'}).build();
       expect(csp, contains('report-uri /csp-report'));
     });
 
@@ -110,10 +103,7 @@ void main() {
       final middleware = trellisSecurityHeaders();
       final handler = middleware(okHandler('ok'));
       final result = await handler(makeRequest()) as Response;
-      expect(
-        result.headers['Referrer-Policy']?.first,
-        equals('strict-origin-when-cross-origin'),
-      );
+      expect(result.headers['Referrer-Policy']?.first, equals('strict-origin-when-cross-origin'));
     });
 
     test('adds X-XSS-Protection: 0 by default', () async {
@@ -139,15 +129,10 @@ void main() {
     });
 
     test('custom CspBuilder override works', () async {
-      final middleware = trellisSecurityHeaders(
-        csp: CspBuilder(scriptSrc: "'self' 'unsafe-inline'"),
-      );
+      final middleware = trellisSecurityHeaders(csp: CspBuilder(scriptSrc: "'self' 'unsafe-inline'"));
       final handler = middleware(okHandler('ok'));
       final result = await handler(makeRequest()) as Response;
-      expect(
-        result.headers['Content-Security-Policy']?.first,
-        contains("script-src 'self' 'unsafe-inline'"),
-      );
+      expect(result.headers['Content-Security-Policy']?.first, contains("script-src 'self' 'unsafe-inline'"));
     });
 
     test('enableCsp: false omits CSP header', () async {

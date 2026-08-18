@@ -28,15 +28,15 @@ late String _shortcodeSiteDir;
 
 /// Creates a [Page] with the given [rawContent] for unit tests.
 Page _makePage(String rawContent) => Page(
-      sourcePath: 'test/page.md',
-      url: '/test/',
-      section: 'test',
-      kind: PageKind.single,
-      isDraft: false,
-      isBundle: false,
-      bundleAssets: const [],
-      rawContent: rawContent,
-    );
+  sourcePath: 'test/page.md',
+  url: '/test/',
+  section: 'test',
+  kind: PageKind.single,
+  isDraft: false,
+  isBundle: false,
+  bundleAssets: const [],
+  rawContent: rawContent,
+);
 
 void main() {
   setUpAll(() async {
@@ -61,9 +61,7 @@ void main() {
     });
 
     test('multiple named params passed correctly', () {
-      final (:processor, :siteDir) = _buildSite({
-        'embed': '<a tl:attr="href=\${url}" tl:text="\${title}">link</a>',
-      });
+      final (:processor, :siteDir) = _buildSite({'embed': '<a tl:attr="href=\${url}" tl:text="\${title}">link</a>'});
       final page = _makePage('{{% embed url="https://example.com" title="Hello World" %}}');
       processor.processPreMarkdown(page);
       expect(page.rawContent, contains('https://example.com'));
@@ -71,9 +69,7 @@ void main() {
     });
 
     test('single-quoted params parsed correctly', () {
-      final (:processor, :siteDir) = _buildSite({
-        'note': '<aside tl:text="\${type}">note</aside>',
-      });
+      final (:processor, :siteDir) = _buildSite({'note': '<aside tl:text="\${type}">note</aside>'});
       final page = _makePage("{{% note type='info' %}}");
       processor.processPreMarkdown(page);
       expect(page.rawContent, contains('info'));
@@ -142,9 +138,7 @@ void main() {
 
   group('ShortcodeProcessor — content shortcodes', () {
     test('inner content rendered as Markdown and available as \${content}', () {
-      final (:processor, :siteDir) = _buildSite({
-        'callout': '<div tl:utext="\${content}">x</div>',
-      });
+      final (:processor, :siteDir) = _buildSite({'callout': '<div tl:utext="\${content}">x</div>'});
       final page = _makePage('{{% callout %}}\n**bold text**\n{{% /callout %}}');
       processor.processPreMarkdown(page);
       expect(page.rawContent, contains('<strong>bold text</strong>'));
@@ -176,10 +170,7 @@ void main() {
     });
 
     test('content shortcode and self-closing in same document both processed', () {
-      final (:processor, :siteDir) = _buildSite({
-        'callout': '<div tl:utext="\${content}">x</div>',
-        'hr': '<hr />',
-      });
+      final (:processor, :siteDir) = _buildSite({'callout': '<div tl:utext="\${content}">x</div>', 'hr': '<hr />'});
       final page = _makePage('{{% callout %}}\nHello\n{{% /callout %}}\n{{% hr %}}');
       processor.processPreMarkdown(page);
       expect(page.rawContent, contains('Hello'));
@@ -201,9 +192,7 @@ void main() {
 
   group('ShortcodeProcessor — HTML comment shortcodes', () {
     test('basic comment shortcode replaced after Markdown rendering', () {
-      final (:processor, :siteDir) = _buildSite({
-        'badge': '<span tl:text="\${label}">x</span>',
-      });
+      final (:processor, :siteDir) = _buildSite({'badge': '<span tl:text="\${label}">x</span>'});
       final page = _makePage('');
       page.content = '<p>Some text.</p>\n<!-- tl:badge label="new" -->\n<p>More.</p>';
       processor.processPostMarkdown(page);
@@ -212,9 +201,7 @@ void main() {
     });
 
     test('multiple params in comment shortcode', () {
-      final (:processor, :siteDir) = _buildSite({
-        'link': '<a tl:attr="href=\${url}" tl:text="\${label}">x</a>',
-      });
+      final (:processor, :siteDir) = _buildSite({'link': '<a tl:attr="href=\${url}" tl:text="\${label}">x</a>'});
       final page = _makePage('');
       page.content = '<!-- tl:link url="https://example.com" label="Click" -->';
       processor.processPostMarkdown(page);
@@ -264,9 +251,7 @@ void main() {
     });
 
     test('template with tl:utext renders unescaped content', () {
-      final (:processor, :siteDir) = _buildSite({
-        'html': '<div tl:utext="\${body}">x</div>',
-      });
+      final (:processor, :siteDir) = _buildSite({'html': '<div tl:utext="\${body}">x</div>'});
       final page = _makePage('{{% html body="<em>hi</em>" %}}');
       processor.processPreMarkdown(page);
       expect(page.rawContent, contains('<em>hi</em>'));
@@ -350,8 +335,7 @@ void main() {
       );
 
       final result = await TrellisSite(config).build();
-      final html =
-          File(p.join(outputDir, 'posts', 'with-shortcodes', 'index.html')).readAsStringSync();
+      final html = File(p.join(outputDir, 'posts', 'with-shortcodes', 'index.html')).readAsStringSync();
 
       // The youtube shortcode should be resolved to an iframe
       expect(html, contains('youtube.com/embed/dQw4w9WgXcQ'));
@@ -371,8 +355,7 @@ void main() {
       );
 
       await TrellisSite(config).build();
-      final html = File(p.join(outputDir, 'posts', 'with-comment-shortcode', 'index.html'))
-          .readAsStringSync();
+      final html = File(p.join(outputDir, 'posts', 'with-comment-shortcode', 'index.html')).readAsStringSync();
 
       // The badge shortcode should be rendered
       expect(html, contains('>new<'));
@@ -389,12 +372,12 @@ void main() {
       Directory(p.join(tmpDir, 'layouts', 'shortcodes')).createSync(recursive: true);
       // Empty shortcodes dir — template is missing
 
-      File(p.join(tmpDir, 'content', 'page.md')).writeAsStringSync(
-        '---\ntitle: Page\n---\n\n{{% missing_template %}}\n',
-      );
-      File(p.join(tmpDir, 'layouts', '_default', 'single.html')).writeAsStringSync(
-        '<!DOCTYPE html><html><body tl:utext="\${page.content}"></body></html>',
-      );
+      File(
+        p.join(tmpDir, 'content', 'page.md'),
+      ).writeAsStringSync('---\ntitle: Page\n---\n\n{{% missing_template %}}\n');
+      File(
+        p.join(tmpDir, 'layouts', '_default', 'single.html'),
+      ).writeAsStringSync('<!DOCTYPE html><html><body tl:utext="\${page.content}"></body></html>');
 
       final config = SiteConfig(siteDir: tmpDir, outputDir: p.join(tmpDir, 'output'));
       final result = await TrellisSite(config).build();

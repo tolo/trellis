@@ -51,6 +51,7 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
 - **Expression cache lives on `Trellis`, not `ExpressionEvaluator`**: Evaluator instances are stateless and recreated per render. Cache on the engine persists across renders.
 - **`warmUp()` counts newly cached sources, not template names**: Duplicate names or identical source content don't inflate the `loaded` count.
 - **`matcher` is a runtime dependency, not dev**: `package:trellis/testing.dart` exports matcher-based APIs, so `matcher` must be a regular dependency even though it's only used in tests by consumers.
+- **Remote-AOT cannot use `AssetLoader` package-source lookup without deployed sources**: Embed or materialize assets instead.
 
 ## File Watching (Dev Mode)
 
@@ -74,6 +75,11 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
 
 - **`FileSystemLoader` validates directory existence at construction**: Tests using `Trellis()` no-arg constructor need a `MapLoader({})` instead, or the test directory must exist.
 - **`IOOverrides` CAN capture stderr**: `IOOverrides.runZoned(stderr: ...)` with a small `noSuchMethod`-based `Stdout` fake (`_BufferStdout`) captures writes reliably, even across async gaps.
+- **A test server on a hard-coded port is shared state across *processes***: the E2E suites pinned 19080/19081/19082, so two concurrent `dart test` runs (two terminals, or CI alongside a local run) drove **one** server. The tell is an incrementing-counter assertion seeing `2` where it expects `1` — which reads like a logic bug, not contention. `dart_frog_e2e_test` also `lsof`+`kill`ed its fixed port, reaping the other run's server mid-request. Allocate per run (`test/_e2e_server.dart` `bootServer`), and only ever kill by a port this run allocated.
+- **Binding port 0 to "find a free port" is TOCTOU, not a reservation**: `ServerSocket.bind(…, 0)` then closing returns a port nothing holds — anything can claim it before the server binds. Retry the whole boot on a fresh port rather than trusting the first pick.
+- **Never `listen((_) {})` a test server's stdout/stderr**: discarding it leaves a failed boot reporting only "did not become ready", with the actual cause (port in use, compile error, missing dependency) thrown away. Buffer it and put it in the failure message.
+- **Reproduce a flake before claiming it fixed**: the port collision was invisible across 12 consecutive isolated runs and 100% reproducible with two concurrent ones. A rare flake usually means the trigger is environmental (parallelism, shared ports/paths/CWD) — find the condition that makes it deterministic, then reuse that as the regression check.
+- **`$?` after a pipeline is the *last* command's status**: `dart test … | tail; echo $?` reports `tail`'s exit code, so a failing command reads as success. Capture output first, or use `PIPESTATUS`/`set -o pipefail`. This produced a wrong conclusion about `dart test --tags=<tag>`, which exits **79** (not 0) when no test carries the tag.
 
 ## Themes & SSG (docs-site)
 
@@ -91,4 +97,9 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
 ## Release & Publishing
 
 - **Hotfixes still get reviewed**: fresh-context adversarial review of the fix diff BEFORE tag push, every release incl. hotfixes – the 0.9.1 SASS-quoting hotfix shipped unreviewed with 4 real issues.
+- **`dart test`/`dart analyze` at the workspace root do NOT cover the packages**: in a Dart workspace the root `dart test` runs only the root `test/` dir (34 tests) — not the ~1500 package tests. A CI job written that way is green while testing almost nothing. Drive per-package work through melos (`melos exec --dir-exists=test -- dart test`). Note `dart analyze` at root *does* span the workspace, so the two commands differ — don't generalize from one to the other.
+- **melos scripts that use `exec:` need melos on PATH**: `dart run melos` fails inside them with `/bin/sh: melos: command not found`, because the script shells out to a `melos` binary. CI must `dart pub global activate melos` and add `~/.pub-cache/bin` to PATH, even though melos is already a root dev_dependency.
+- **`melos run <script>` prompts for package selection and dies on a non-TTY**: it exits with `StdinException: Error getting terminal echo mode` in CI. Pass `--no-select`.
+- **`dart test --tags=<tag>` exits 79 where nothing carries the tag**: fanned out across packages (only `trellis_cli` has `e2e` tags), a tag-filtered run fails every other package. Either scope to the packages that have the tag, or run the full suite and let `--exclude-tags` do the narrowing on the fast tier.
+- **`dart format` gates must cover the examples too**: `examples/*` are workspace members, so `packages/*/lib packages/*/test` misses them — `examples/todo_app` had drifted unnoticed. `melos run format:check` spans every member.
 - **Retiring a theme param/asset requires a multi-surface propagation sweep**: the 0.10.0 review found the syntax_highlighting retirement (ADR-010) landed in code+themes but left 8 stale spots (5 independent reviewers): the standard-params contract ("19 params" count claim), the CLI theme scaffolder templates + its test (`packages/trellis_cli/lib/src/templates/`), arbor's `theme.yaml` description, both theme-authoring doc copies (`docs/guides` + `site/content`), and `dev/architecture/`. Before closing a retirement, grep the retired symbol repo-wide – incl. `docs/`, `site/content/`, CLI templates, `themes/*/theme.yaml`, `dev/architecture/` – and check count claims ("N params") near the removal site.

@@ -16,9 +16,10 @@ import 'processors/fragment_processor.dart';
 ///
 /// Uses a sorted list of [Processor] instances [D01]. Built-in processors are
 /// registered in the exact v0.2 pipeline order to maintain behavioral parity.
-final class DomProcessor {
+final class DomProcessor implements FragmentHost {
   final String prefix;
   final String separator;
+  @override
   final ExpressionEvaluator evaluator;
   final TemplateLoader loader;
 
@@ -178,9 +179,11 @@ final class DomProcessor {
   }
 
   /// Query the stored document by CSS selector (for same-file CSS selector fragment targeting).
+  @override
   Element? querySelectorFromDoc(String selector) => _document?.querySelector(selector);
 
   /// Look up a same-file fragment by name from the pre-collected registry.
+  @override
   (Element, List<String>)? lookupFragment(String name) {
     for (final registry in _fragmentRegistryStack.reversed) {
       final found = registry[name];
@@ -189,10 +192,12 @@ final class DomProcessor {
     return _fragmentRegistry[name];
   }
 
+  @override
   void pushFragmentRegistry(Map<String, (Element, List<String>)> registry) {
     _fragmentRegistryStack.add(registry);
   }
 
+  @override
   void popFragmentRegistry() {
     _fragmentRegistryStack.removeLast();
   }
@@ -310,6 +315,7 @@ final class DomProcessor {
   }
 
   /// Process included fragment content with depth guard and cycle detection.
+  @override
   void processFragmentContent(Element element, Map<String, dynamic> context, {String? fragmentId}) {
     if (_fragmentDepth >= maxFragmentDepth) {
       throw TemplateException('Fragment inclusion depth exceeded (max: $maxFragmentDepth)');

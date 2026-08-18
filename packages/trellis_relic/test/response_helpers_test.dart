@@ -33,12 +33,7 @@ void main() {
   group('renderPage', () {
     test('renders full page with correct content', () async {
       final req = makeRequest();
-      final response = await renderPage(
-        req,
-        engine,
-        'page',
-        {'title': 'Hello', 'msg': 'World', 'side': 'Nav'},
-      );
+      final response = await renderPage(req, engine, 'page', {'title': 'Hello', 'msg': 'World', 'side': 'Nav'});
       final body = await response.readAsString();
       expect(body, contains('Hello'));
       expect(body, contains('<html'));
@@ -52,14 +47,16 @@ void main() {
     });
 
     test('renders fragment for HTMX request when htmxFragment specified', () async {
-      final req = makeRequest(headers: {'HX-Request': ['true']});
-      final response = await renderPage(
-        req,
-        engine,
-        'page',
-        {'title': 'T', 'msg': 'FragContent', 'side': 'S'},
-        htmxFragment: 'content',
+      final req = makeRequest(
+        headers: {
+          'HX-Request': ['true'],
+        },
       );
+      final response = await renderPage(req, engine, 'page', {
+        'title': 'T',
+        'msg': 'FragContent',
+        'side': 'S',
+      }, htmxFragment: 'content');
       final body = await response.readAsString();
       expect(body, contains('FragContent'));
       expect(body, isNot(contains('<html')));
@@ -67,19 +64,21 @@ void main() {
 
     test('renders full page for non-HTMX request even when htmxFragment specified', () async {
       final req = makeRequest();
-      final response = await renderPage(
-        req,
-        engine,
-        'page',
-        {'title': 'T', 'msg': 'M', 'side': 'S'},
-        htmxFragment: 'content',
-      );
+      final response = await renderPage(req, engine, 'page', {
+        'title': 'T',
+        'msg': 'M',
+        'side': 'S',
+      }, htmxFragment: 'content');
       final body = await response.readAsString();
       expect(body, contains('<html'));
     });
 
     test('renders full page when htmxFragment is null (HTMX request)', () async {
-      final req = makeRequest(headers: {'HX-Request': ['true']});
+      final req = makeRequest(
+        headers: {
+          'HX-Request': ['true'],
+        },
+      );
       final response = await renderPage(req, engine, 'page', {'title': 'T', 'msg': 'M', 'side': 'S'});
       final body = await response.readAsString();
       expect(body, contains('<html'));
@@ -89,13 +88,11 @@ void main() {
   group('renderFragment', () {
     test('renders single named fragment', () async {
       final req = makeRequest();
-      final response = await renderFragment(
-        req,
-        engine,
-        'page',
-        'content',
-        {'title': 'T', 'msg': 'FragMsg', 'side': 'S'},
-      );
+      final response = await renderFragment(req, engine, 'page', 'content', {
+        'title': 'T',
+        'msg': 'FragMsg',
+        'side': 'S',
+      });
       final body = await response.readAsString();
       expect(body, contains('FragMsg'));
     });

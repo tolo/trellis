@@ -9,31 +9,74 @@ void main() {
     });
 
     test('map value in base, not overridden — preserved', () {
-      final result = ThemeParamMerger.deepMerge({'a': {'b': 1}}, {});
-      expect(result, equals({'a': {'b': 1}}));
+      final result = ThemeParamMerger.deepMerge({
+        'a': {'b': 1},
+      }, {});
+      expect(
+        result,
+        equals({
+          'a': {'b': 1},
+        }),
+      );
     });
 
     test('recursive map merge', () {
       final result = ThemeParamMerger.deepMerge(
-        {'a': {'b': 1, 'c': 2}},
-        {'a': {'b': 3}},
+        {
+          'a': {'b': 1, 'c': 2},
+        },
+        {
+          'a': {'b': 3},
+        },
       );
-      expect(result, equals({'a': {'b': 3, 'c': 2}}));
+      expect(
+        result,
+        equals({
+          'a': {'b': 3, 'c': 2},
+        }),
+      );
     });
 
     test('list replaces entirely — not merged', () {
-      final result = ThemeParamMerger.deepMerge({'a': [1, 2]}, {'a': [3]});
-      expect(result, equals({'a': [3]}));
+      final result = ThemeParamMerger.deepMerge(
+        {
+          'a': [1, 2],
+        },
+        {
+          'a': [3],
+        },
+      );
+      expect(
+        result,
+        equals({
+          'a': [3],
+        }),
+      );
     });
 
     test('scalar replaces map', () {
-      final result = ThemeParamMerger.deepMerge({'a': {'b': 1}}, {'a': 'flat'});
+      final result = ThemeParamMerger.deepMerge(
+        {
+          'a': {'b': 1},
+        },
+        {'a': 'flat'},
+      );
       expect(result, equals({'a': 'flat'}));
     });
 
     test('map replaces scalar', () {
-      final result = ThemeParamMerger.deepMerge({'a': 'flat'}, {'a': {'b': 1}});
-      expect(result, equals({'a': {'b': 1}}));
+      final result = ThemeParamMerger.deepMerge(
+        {'a': 'flat'},
+        {
+          'a': {'b': 1},
+        },
+      );
+      expect(
+        result,
+        equals({
+          'a': {'b': 1},
+        }),
+      );
     });
 
     test('override adds new keys not in base', () {
@@ -123,10 +166,7 @@ void main() {
     });
 
     test('stores params and warnings', () {
-      const result = ThemeParamMergeResult(
-        params: {'a': 1},
-        warnings: ["Unknown theme param 'x' — ignored"],
-      );
+      const result = ThemeParamMergeResult(params: {'a': 1}, warnings: ["Unknown theme param 'x' — ignored"]);
       expect(result.params['a'], equals(1));
       expect(result.warnings, hasLength(1));
     });

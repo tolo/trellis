@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.10.1
+
+### Breaking
+
+- `ProcessorContext.domProcessor` is now typed `FragmentHost` (non-nullable) instead of `dynamic`. **This is a source break for code that constructs `ProcessorContext` directly** — a `null` or duck-typed stub that compiled against 0.10.0 no longer does. Shipped as a patch deliberately: Trellis is pre-1.0 with no known external users, `ProcessorContext` is documented as something a `Processor` *receives* (never constructs), and `package:trellis/testing.dart` is the supported test path. If you do construct one, pass a `FragmentHost` implementation.
+
+### Added
+
+- `FragmentHost` — the narrow fragment-resolution contract (`evaluator`, `processFragmentContent`, `querySelectorFromDoc`, `lookupFragment`, `pushFragmentRegistry`, `popFragmentRegistry`) implemented by the engine's DOM processor. Declared `abstract interface class`, so future members can be added without breaking implementers.
+
+### Changed
+
+- Fragment-aware processors now get static checking on `context.domProcessor` rather than unchecked dynamic dispatch; the internal `as DomProcessor` cast is gone.
+
 ## 0.10.0
 
 ### Changed

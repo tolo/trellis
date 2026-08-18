@@ -15,13 +15,13 @@ import 'dart:io';
 import 'package:test/test.dart';
 import 'package:trellis_cli/trellis_cli.dart';
 
+import '_e2e_server.dart';
 import '_workspace_root.dart';
-
-const _port = 19082;
 
 void main() {
   group('Relic starter E2E', () {
     late Directory projectDir;
+    late int port;
     Process? serverProcess;
 
     setUpAll(() async {
@@ -54,18 +54,25 @@ dependency_overrides:
       final analyze = await Process.run('dart', ['analyze', '--fatal-infos'], workingDirectory: projectDir.path);
       expect(analyze.exitCode, 0, reason: 'dart analyze failed:\n${analyze.stdout}\n${analyze.stderr}');
 
+      // The port is compiled into the generated source, so each attempt
+      // re-patches from the pristine text rather than the previous patch.
       final serverFile = File('${projectDir.path}/bin/server.dart');
-      final serverContent = (await serverFile.readAsString()).replaceFirst('port: 8080', 'port: $_port');
-      await serverFile.writeAsString(serverContent);
+      final originalServerSource = await serverFile.readAsString();
 
-      serverProcess = await Process.start('dart', ['run', 'bin/server.dart'], workingDirectory: projectDir.path);
-      final started = await _waitForServer('localhost', _port);
-      expect(started, isTrue, reason: 'Relic server did not start within timeout');
+      final booted = await bootServer(
+        label: 'Relic server',
+        start: (port) async {
+          await serverFile.writeAsString(originalServerSource.replaceFirst('port: 8080', 'port: $port'));
+          return Process.start('dart', ['run', 'bin/server.dart'], workingDirectory: projectDir.path);
+        },
+        isReady: (port) => _waitForServer('localhost', port),
+      );
+      serverProcess = booted.process;
+      port = booted.port;
     });
 
     tearDownAll(() async {
-      serverProcess?.kill();
-      await serverProcess?.exitCode.timeout(const Duration(seconds: 5), onTimeout: () => -1);
+      await stopServer(serverProcess);
       await projectDir.parent.delete(recursive: true);
     });
 
@@ -76,27 +83,27 @@ dependency_overrides:
     });
 
     test('GET / returns 200', () async {
-      final res = await _get('http://localhost:$_port/');
+      final res = await _get('http://localhost:$port/');
       expect(res.statusCode, 200);
       expect(res.body, contains('<!DOCTYPE html>'));
     });
 
     test('GET /about returns 200', () async {
-      final res = await _get('http://localhost:$_port/about');
+      final res = await _get('http://localhost:$port/about');
       expect(res.statusCode, 200);
       expect(res.body, contains('About This App'));
       expect(res.body, contains('<!DOCTYPE html>'));
     });
 
     test('GET /about returns fragment for HTMX navigation', () async {
-      final res = await _get('http://localhost:$_port/about', headers: {'HX-Request': 'true'});
+      final res = await _get('http://localhost:$port/about', headers: {'HX-Request': 'true'});
       expect(res.statusCode, 200);
       expect(res.body, contains('About This App'));
       expect(res.body, isNot(contains('<!DOCTYPE html>')));
     });
 
     test('POST /counter/increment returns 200', () async {
-      final res = await _post('http://localhost:$_port/counter/increment', body: '', headers: {'HX-Request': 'true'});
+      final res = await _post('http://localhost:$port/counter/increment', body: '', headers: {'HX-Request': 'true'});
       expect(res.statusCode, 200);
       expect(res.body, contains('counter-value'));
       expect(res.body, contains('>1<'));

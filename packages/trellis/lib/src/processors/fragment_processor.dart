@@ -4,7 +4,6 @@ import 'package:html/parser.dart' as html_parser;
 import '../evaluator.dart';
 import '../exceptions.dart';
 import '../loaders/template_loader.dart';
-import '../processor.dart';
 import '../processor_api.dart';
 import '../utils/binding_parser.dart';
 
@@ -64,7 +63,7 @@ void _applyFragment(
   Element clone,
   Map<String, dynamic> context,
   void Function(Element, Map<String, dynamic>, {String? fragmentId}) processCallback,
-  DomProcessor domProcessor,
+  FragmentHost domProcessor,
   String attrPrefix, {
   String? fragmentId,
 }) {
@@ -78,7 +77,7 @@ void _applyFragment(
 }
 
 /// Resolve a fragment by name — same-file or cross-file.
-_ResolvedFragment _resolveFragment(String value, String attrPrefix, TemplateLoader loader, DomProcessor domProcessor) {
+_ResolvedFragment _resolveFragment(String value, String attrPrefix, TemplateLoader loader, FragmentHost domProcessor) {
   final crossMatch = _crossFilePattern.firstMatch(value);
   if (crossMatch != null) {
     final templateName = crossMatch.group(1)!;
@@ -91,7 +90,7 @@ _ResolvedFragment _resolveFragment(String value, String attrPrefix, TemplateLoad
 }
 
 /// Find fragment in the pre-collected registry, with CSS selector fallback.
-_ResolvedFragment _resolveSameFile(String name, DomProcessor domProcessor) {
+_ResolvedFragment _resolveSameFile(String name, FragmentHost domProcessor) {
   // CSS selector (#id, .class) — always use querySelector
   if (_isCssSelector(name)) {
     final found = domProcessor.querySelectorFromDoc(name);
@@ -178,7 +177,7 @@ bool _isTagName(String ref) => _tagNamePattern.hasMatch(ref);
 
 /// Resolve, bind, clone, and process a fragment invocation.
 Element _resolveAndProcess(String value, ProcessorContext context) {
-  final dp = context.domProcessor as DomProcessor;
+  final dp = context.domProcessor;
   final attrPrefix = context.attrPrefix;
   final (_, argExprs) = _parseFragmentInvocation(value);
   final resolved = _resolveFragment(value, attrPrefix, context.loader, dp);

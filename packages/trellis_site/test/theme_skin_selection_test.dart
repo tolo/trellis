@@ -14,11 +14,7 @@ void main() {
       expect(
         () => SkinMode.parse('foo'),
         throwsA(
-          isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            "Unknown skin 'foo'. Available: light, dark, auto",
-          ),
+          isA<ArgumentError>().having((e) => e.message, 'message', "Unknown skin 'foo'. Available: light, dark, auto"),
         ),
       );
     });
@@ -59,10 +55,5 @@ void main() {
 
 ThemeBuildConfig _generate(String siteDir, String? themeDir, String skin) {
   const gen = ThemeSassGenerator();
-  return gen.generate(
-    mergedParams: {'skin': skin},
-    paramTypes: {'skin': 'enum'},
-    siteDir: siteDir,
-    themeDir: themeDir,
-  );
+  return gen.generate(mergedParams: {'skin': skin}, paramTypes: {'skin': 'enum'}, siteDir: siteDir, themeDir: themeDir);
 }

@@ -69,17 +69,11 @@ theme_params:
     });
 
     test('theme: as non-string throws SiteConfigException', () {
-      expect(
-        () => loadFromYaml('theme: 123\n'),
-        throwsA(isA<SiteConfigException>()),
-      );
+      expect(() => loadFromYaml('theme: 123\n'), throwsA(isA<SiteConfigException>()));
     });
 
     test('theme: as empty string throws SiteConfigException', () {
-      expect(
-        () => loadFromYaml("theme: ''\n"),
-        throwsA(isA<SiteConfigException>()),
-      );
+      expect(() => loadFromYaml("theme: ''\n"), throwsA(isA<SiteConfigException>()));
     });
 
     test('theme_params: absent produces empty params map', () {

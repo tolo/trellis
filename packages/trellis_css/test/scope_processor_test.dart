@@ -248,15 +248,8 @@ void main() {
 
       test('T18: no warning callback (default) — tl:scope outside fragment does not throw', () {
         // Default behaviour: warnings silently dropped (no stderr, no exception)
-        final engine = Trellis(
-          loader: MapLoader({}),
-          cache: false,
-          dialects: [CssDialect()],
-        );
-        expect(
-          () => engine.render('<style tl:scope>h1{}</style>', <String, dynamic>{}),
-          returnsNormally,
-        );
+        final engine = Trellis(loader: MapLoader({}), cache: false, dialects: [CssDialect()]);
+        expect(() => engine.render('<style tl:scope>h1{}</style>', <String, dynamic>{}), returnsNormally);
       });
 
       test('T14: fragment with multiple direct children — rendering completes and scope class added', () {

@@ -10,6 +10,7 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
+import '_e2e_server.dart';
 import '_workspace_root.dart';
 
 void main() {
@@ -32,25 +33,31 @@ void main() {
   }, timeout: const Timeout(Duration(minutes: 6)));
 }
 
-Future<void> _runShelfApp(Directory workspaceRoot) async {
-  final port = await _allocateFreePort();
-  final appDir = Directory('${workspaceRoot.path}/examples/shelf_app');
-  final process = await Process.start(
-    'dart',
-    ['run', 'bin/server.dart'],
-    workingDirectory: appDir.path,
-    environment: {...Platform.environment, 'PORT': '$port'},
+/// Boots an example app that reads its port from the `PORT` environment
+/// variable (every example except dart_frog_app, which takes a CLI flag).
+Future<BootedServer> _bootEnvPortApp(Directory appDir, {required String label, required String bodyContains}) {
+  return bootServer(
+    label: label,
+    start: (port) => Process.start(
+      'dart',
+      ['run', 'bin/server.dart'],
+      workingDirectory: appDir.path,
+      environment: {...Platform.environment, 'PORT': '$port'},
+    ),
+    isReady: (port) => _waitForHttpOk('http://localhost:$port/', bodyContains: bodyContains),
   );
-  process.stdout.transform(utf8.decoder).listen((_) {});
-  process.stderr.transform(utf8.decoder).listen((_) {});
+}
+
+Future<void> _runShelfApp(Directory workspaceRoot) async {
+  final server = await _bootEnvPortApp(
+    Directory('${workspaceRoot.path}/examples/shelf_app'),
+    label: 'shelf_app',
+    bodyContains: 'Trellis + Shelf',
+  );
+  final process = server.process;
+  final port = server.port;
 
   try {
-    expect(
-      await _waitForHttpOk('http://localhost:$port/', bodyContains: 'Trellis + Shelf'),
-      isTrue,
-      reason: 'shelf_app did not become ready',
-    );
-
     final home = await _get('http://localhost:$port/');
     expect(home.statusCode, 200);
 
@@ -73,30 +80,20 @@ Future<void> _runShelfApp(Directory workspaceRoot) async {
     expect(increment.statusCode, 200);
     expect(increment.body, contains('counter-value'));
   } finally {
-    process.kill();
-    await process.exitCode.timeout(const Duration(seconds: 5), onTimeout: () => -1);
+    await stopServer(process);
   }
 }
 
 Future<void> _runRelicApp(Directory workspaceRoot) async {
-  final port = await _allocateFreePort();
-  final appDir = Directory('${workspaceRoot.path}/examples/relic_app');
-  final process = await Process.start(
-    'dart',
-    ['run', 'bin/server.dart'],
-    workingDirectory: appDir.path,
-    environment: {...Platform.environment, 'PORT': '$port'},
+  final server = await _bootEnvPortApp(
+    Directory('${workspaceRoot.path}/examples/relic_app'),
+    label: 'relic_app',
+    bodyContains: 'Trellis + Relic',
   );
-  process.stdout.transform(utf8.decoder).listen((_) {});
-  process.stderr.transform(utf8.decoder).listen((_) {});
+  final process = server.process;
+  final port = server.port;
 
   try {
-    expect(
-      await _waitForHttpOk('http://localhost:$port/', bodyContains: 'Trellis + Relic'),
-      isTrue,
-      reason: 'relic_app did not become ready',
-    );
-
     final home = await _get('http://localhost:$port/');
     expect(home.statusCode, 200);
 
@@ -111,14 +108,11 @@ Future<void> _runRelicApp(Directory workspaceRoot) async {
     expect(increment.statusCode, 200);
     expect(increment.body, contains('counter-value'));
   } finally {
-    process.kill();
-    await process.exitCode.timeout(const Duration(seconds: 5), onTimeout: () => -1);
+    await stopServer(process);
   }
 }
 
 Future<void> _runDartFrogApp(Directory workspaceRoot) async {
-  final port = await _allocateFreePort();
-  final vmServicePort = await _allocateFreePort();
   final homeDir = Platform.environment['HOME'];
   final dartFrogExecutable = homeDir != null ? '$homeDir/.pub-cache/bin/dart_frog' : 'dart_frog';
   if (!File(dartFrogExecutable).existsSync()) {
@@ -127,24 +121,24 @@ Future<void> _runDartFrogApp(Directory workspaceRoot) async {
   }
 
   final appDir = Directory('${workspaceRoot.path}/examples/dart_frog_app');
-  final process = await Process.start(dartFrogExecutable, [
-    'dev',
-    '--port',
-    '$port',
-    '--dart-vm-service-port',
-    '$vmServicePort',
-  ], workingDirectory: appDir.path);
+  final server = await bootServer(
+    label: 'dart_frog_app',
+    start: (port) async {
+      final vmServicePort = await allocateFreePort();
+      return Process.start(dartFrogExecutable, [
+        'dev',
+        '--port',
+        '$port',
+        '--dart-vm-service-port',
+        '$vmServicePort',
+      ], workingDirectory: appDir.path);
+    },
+    isReady: (port) => _waitForHttpOk('http://localhost:$port/', bodyContains: 'Trellis + Dart Frog'),
+  );
+  final process = server.process;
+  final port = server.port;
 
   try {
-    process.stdout.transform(utf8.decoder).listen((_) {});
-    process.stderr.transform(utf8.decoder).listen((_) {});
-
-    expect(
-      await _waitForHttpOk('http://localhost:$port/', bodyContains: 'Trellis + Dart Frog'),
-      isTrue,
-      reason: 'dart_frog_app did not become ready',
-    );
-
     final home = await _get('http://localhost:$port/');
     expect(home.statusCode, 200);
 
@@ -172,30 +166,20 @@ Future<void> _runDartFrogApp(Directory workspaceRoot) async {
     expect(increment.statusCode, 200);
     expect(increment.body, contains('counter-value'));
   } finally {
-    process.kill();
-    await process.exitCode.timeout(const Duration(seconds: 5), onTimeout: () => -1);
+    await stopServer(process);
   }
 }
 
 Future<void> _runTodoApp(Directory workspaceRoot) async {
-  final port = await _allocateFreePort();
-  final appDir = Directory('${workspaceRoot.path}/examples/todo_app');
-  final process = await Process.start(
-    'dart',
-    ['run', 'bin/server.dart'],
-    workingDirectory: appDir.path,
-    environment: {...Platform.environment, 'PORT': '$port'},
+  final server = await _bootEnvPortApp(
+    Directory('${workspaceRoot.path}/examples/todo_app'),
+    label: 'todo_app',
+    bodyContains: 'Trellis Todo',
   );
-  process.stdout.transform(utf8.decoder).listen((_) {});
-  process.stderr.transform(utf8.decoder).listen((_) {});
+  final process = server.process;
+  final port = server.port;
 
   try {
-    expect(
-      await _waitForHttpOk('http://localhost:$port/', bodyContains: 'Trellis Todo'),
-      isTrue,
-      reason: 'todo_app did not become ready',
-    );
-
     final home = await _get('http://localhost:$port/');
     expect(home.statusCode, 200);
 
@@ -203,8 +187,7 @@ Future<void> _runTodoApp(Directory workspaceRoot) async {
     expect(selectedList.statusCode, 200);
     expect(selectedList.body, contains('Personal'));
   } finally {
-    process.kill();
-    await process.exitCode.timeout(const Duration(seconds: 5), onTimeout: () => -1);
+    await stopServer(process);
   }
 }
 
@@ -224,15 +207,6 @@ Future<bool> _waitForHttpOk(String url, {Duration timeout = const Duration(secon
     await Future<void>.delayed(const Duration(milliseconds: 300));
   }
   return false;
-}
-
-Future<int> _allocateFreePort() async {
-  final socket = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
-  try {
-    return socket.port;
-  } finally {
-    await socket.close();
-  }
 }
 
 Future<_Response> _get(String url, {Map<String, String> headers = const {}}) async {

@@ -1,25 +1,57 @@
 #!/usr/bin/env bash
 #
-# Lockstep release for the Trellis SDK.
+# Lockstep release for the Trellis SDK — see usage() below and ADR-009.
 #
-# Bumps EVERY publishable package to the same version in a single `melos version`
-# pass. Melos also rewrites the inter-package dependency constraints (e.g. the
-# `trellis: ^x.y.z` in each satellite) to match, in the same run.
-#
-# Trellis versions all SDK packages in lockstep — see ADR-009. Melos has no
-# native lockstep mode, so this script enforces it by handing `melos version` an
-# explicit version for every package at once.
-#
-# Usage:
-#   tool/version_lockstep.sh <version> [extra melos flags...]
-#
-# Examples:
-#   tool/version_lockstep.sh 0.9.0                      # bump all packages to 0.9.0
-#   tool/version_lockstep.sh 0.9.0 --no-git-tag-version # ...without git tags
+# Melos has no native lockstep mode, so this script enforces it by handing
+# `melos version` an explicit version for every package at once.
 #
 set -euo pipefail
 
-VERSION="${1:?Usage: tool/version_lockstep.sh <version> [extra melos flags...]}"
+usage() {
+  cat <<'EOF'
+Lockstep release for the Trellis SDK (ADR-009).
+
+Usage:
+  tool/version_lockstep.sh <version> [extra melos flags...]
+  tool/version_lockstep.sh --help
+
+Bumps EVERY publishable package to the same version in a single `melos version`
+pass. Melos also rewrites the inter-package dependency constraints (e.g. the
+`trellis: ^x.y.z` in each satellite) to match, in the same run. The script then
+syncs the hardcoded version constants and README download examples.
+
+The flags a real release needs are built in — run it with just the version:
+  --no-changelog           packages keep hand-written CHANGELOG.md files; melos
+                           would otherwise stack generated entries on top
+  --no-git-commit-version  the release is one hand-made
+                           `chore(release): trellis SDK <version>` commit plus a
+                           single `vX.Y.Z` tag (ADR-009). Melos would instead make
+                           its own commit and per-package tags, which fire
+                           publish.yml / release-binaries.yml once pushed.
+                           Implies --no-git-tag-version.
+  --yes                    skip melos's Y/n prompt, which hangs non-interactive runs
+
+Extra flags are passed to `melos version` after the built-ins, so `--changelog`
+or `--git-commit-version` re-enable melos's own defaults (last flag wins).
+
+Examples:
+  tool/version_lockstep.sh 0.11.0              # cut the 0.11.0 lockstep bump
+  tool/version_lockstep.sh 0.11.0 --changelog  # ...letting melos write changelogs
+EOF
+}
+
+case "${1:-}" in
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  '')
+    usage >&2
+    exit 1
+    ;;
+esac
+
+VERSION="$1"
 shift
 
 # Every publishable package. Keep in sync with the `workspace:` list in
@@ -50,8 +82,16 @@ for pkg in "${PACKAGES[@]}"; do
   ARGS+=("--manual-version" "${pkg}:${VERSION}")
 done
 
+# Flags every real release needs (see usage()). They come before "$@" so callers
+# can still override the negatable ones — package:args takes the last occurrence.
+RELEASE_FLAGS=(--no-changelog --no-git-commit-version --yes)
+
+CMD=(dart run melos version "${RELEASE_FLAGS[@]}" "${ARGS[@]}" "$@")
 echo "Releasing Trellis SDK ${VERSION} (lockstep) across ${#PACKAGES[@]} packages..."
-dart run melos version "${ARGS[@]}" "$@"
+# Echoed because --yes removes melos's confirmation prompt: this is the operator's
+# last look at what actually runs.
+echo "+ ${CMD[*]}"
+"${CMD[@]}"
 
 echo "Syncing version.dart constants to ${VERSION}..."
 for file in "${VERSION_CONSTANT_FILES[@]}"; do

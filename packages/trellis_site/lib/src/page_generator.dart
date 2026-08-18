@@ -87,6 +87,11 @@ class PageGenerator {
 
   late final Trellis _engine;
 
+  /// Per-`sectionPath` memo of [orderedSectionPages], valid for one
+  /// [generateAll] pass. Cleared at the start of every pass so a reused
+  /// generator never serves an ordering computed from an earlier page set.
+  final Map<String, List<Page>> _sectionOrderCache = {};
+
   /// Creates a [PageGenerator].
   ///
   /// [layoutsDir] defaults to `path.join(siteDir, 'layouts')`.
@@ -122,6 +127,7 @@ class PageGenerator {
   ///
   /// Returns the total number of output HTML files written (including all paginated pages).
   Future<int> generateAll(List<Page> pages) async {
+    _sectionOrderCache.clear();
     final globalData = _loadGlobalData();
     final nonDraftPages = pages.where((pg) => !pg.isDraft).toList();
     _collectWeightWarnings(nonDraftPages);
@@ -378,8 +384,17 @@ class PageGenerator {
   /// the last index, and a single-element sequence yields neither key. When
   /// [page] is not found in the sequence (defensive; should not occur for a
   /// single doc page), an empty map is returned.
+  ///
+  /// The section ordering is memoized per `sectionPath` for the duration of one
+  /// [generateAll] pass. Without that, every single page re-sorted its whole
+  /// section: O(k · n log n) per section, which the scale benchmark
+  /// (`benchmark/site_scale_benchmark.dart`) showed breaching the 5 s build NFR
+  /// at ~4000 posts in a single flat section (8.4 s) – see TD-007.
   Map<String, Map<String, dynamic>> _resolvePrevNext(Page page, List<Page> allPages) {
-    final ordered = orderedSectionPages(page.sectionPath, allPages);
+    final ordered = _sectionOrderCache.putIfAbsent(
+      page.sectionPath,
+      () => orderedSectionPages(page.sectionPath, allPages),
+    );
     final index = ordered.indexWhere((pg) => identical(pg, page) || pg.url == page.url);
     if (index < 0) return const {};
 

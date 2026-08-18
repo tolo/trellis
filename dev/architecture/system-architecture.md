@@ -131,6 +131,14 @@ A typical request through a Trellis SDK application:
 
 When the browser makes an HTMX request (`HX-Request: true`), the handler returns only the targeted fragment instead of the full page. `renderFragment()` extracts and processes a single `tl:fragment` from the template. `renderFragments()` returns multiple fragments for OOB (out-of-band) swaps.
 
+**Version policy and coupling boundary (ADR-011)** — the core engine is
+hypermedia-agnostic: `hx-*` attributes pass through untouched and `renderFragments()`
+is generic concatenation. All HTMX protocol coupling is four request-header reads
+(`HX-Request`, `HX-Target`, `HX-Trigger`, `HX-Boosted`) confined to the three optional
+adapter packages. Scaffolded projects pin the HTMX `latest` dist-tag (2.x) from a single
+constant, `trellis_cli`'s `htmx_asset.dart`; the HTMX 4 migration is deferred pending an
+explicit trigger. See [ADR-011](../adrs/ADR-011-htmx-version-policy.md).
+
 ### Dev-Mode Hot Reload (trellis_dev)
 
 In development, a parallel SSE connection keeps the browser updated:

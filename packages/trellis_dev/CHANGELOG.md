@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.1
+
+### Changed
+
+- Lockstep version bump to keep all Trellis SDK packages on a single shared version. No functional changes in this package.
+
 ## 0.10.0
 
 ### Changed

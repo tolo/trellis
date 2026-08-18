@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.10.1
+
+### Changed
+
+- Scaffolded projects now load HTMX 2.0.10 (was 2.0.8). The version, its Subresource Integrity hash, and the `<script>` tag itself come from a single constant (`src/templates/htmx_asset.dart`) instead of being copy-pasted into each layout, so future bumps are one edit. HTMX 4 adoption is deferred — see ADR-011 for the version policy and its revisit trigger.
+
+### Fixed
+
+- The Relic scaffold's HTMX `<script>` tag now carries `integrity` and `crossorigin` attributes, matching the Shelf and Dart Frog scaffolds. Generated Relic projects previously loaded HTMX from the CDN without Subresource Integrity. The `relic_app` and `todo_app` examples, which had the same gap, are SRI-pinned too, and a test asserts every example carries the current hash.
+
 ## 0.10.0
 
 ### Changed

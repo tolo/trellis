@@ -161,11 +161,7 @@ void main() {
       setUp(() {
         page = makePage(
           url: '/posts/hello/',
-          frontMatter: {
-            'title': 'Hello World',
-            'date': DateTime.utc(2026, 3, 15),
-            'author': 'Jane Doe',
-          },
+          frontMatter: {'title': 'Hello World', 'date': DateTime.utc(2026, 3, 15), 'author': 'Jane Doe'},
           summary: 'A first post.',
           content: '<p>Full content here.</p>',
         );
@@ -216,10 +212,7 @@ void main() {
       });
 
       test('feed <updated> equals newest entry date', () {
-        expect(
-          gen.generateAtom([page]),
-          contains('<updated>2026-03-15T00:00:00Z</updated>'),
-        );
+        expect(gen.generateAtom([page]), contains('<updated>2026-03-15T00:00:00Z</updated>'));
       });
     });
 
@@ -313,10 +306,7 @@ void main() {
         final g = makeGenerator(config: const FeedConfig(limit: 2));
         final pages = List.generate(
           5,
-          (i) => makePage(
-            url: '/posts/p$i/',
-            frontMatter: {'title': 'Page $i', 'date': DateTime.utc(2026, 1, i + 1)},
-          ),
+          (i) => makePage(url: '/posts/p$i/', frontMatter: {'title': 'Page $i', 'date': DateTime.utc(2026, 1, i + 1)}),
         );
         final xml = g.generateAtom(pages);
         expect('<entry>'.allMatches(xml).length, equals(2));
@@ -432,10 +422,7 @@ void main() {
       });
 
       test('contains rss 2.0 element with atom namespace', () {
-        expect(
-          gen.generateRss([]),
-          contains('<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">'),
-        );
+        expect(gen.generateRss([]), contains('<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">'));
       });
 
       test('ends with </rss>', () {
@@ -483,10 +470,7 @@ void main() {
       setUp(() {
         page = makePage(
           url: '/posts/hello/',
-          frontMatter: {
-            'title': 'Hello World',
-            'date': DateTime.utc(2026, 3, 15),
-          },
+          frontMatter: {'title': 'Hello World', 'date': DateTime.utc(2026, 3, 15)},
           summary: 'A first post.',
           content: '<p>Full content.</p>',
         );
@@ -506,10 +490,7 @@ void main() {
       });
 
       test('item contains <guid isPermaLink="true">', () {
-        expect(
-          gen.generateRss([page]),
-          contains('<guid isPermaLink="true">https://example.com/posts/hello/</guid>'),
-        );
+        expect(gen.generateRss([page]), contains('<guid isPermaLink="true">https://example.com/posts/hello/</guid>'));
       });
 
       test('item contains <pubDate> in RFC 822 format', () {
@@ -535,10 +516,7 @@ void main() {
       test('lastBuildDate uses RFC 822 format', () {
         final page = makePage(frontMatter: {'date': DateTime.utc(2026, 3, 15)});
         final xml = gen.generateRss([page]);
-        expect(
-          xml,
-          matches(RegExp(r'<lastBuildDate>\w{3}, \d{2} \w{3} 2026 \d{2}:\d{2}:\d{2} GMT</lastBuildDate>')),
-        );
+        expect(xml, matches(RegExp(r'<lastBuildDate>\w{3}, \d{2} \w{3} 2026 \d{2}:\d{2}:\d{2} GMT</lastBuildDate>')));
       });
 
       test('month names are English', () {
@@ -673,10 +651,7 @@ void main() {
   // ──────────────────────────────────────────────────
   group('SiteConfig feeds', () {
     test('factory constructor accepts feeds parameter', () {
-      final config = SiteConfig(
-        siteDir: '/my/site',
-        feeds: const FeedConfig(atom: true, rss: true),
-      );
+      final config = SiteConfig(siteDir: '/my/site', feeds: const FeedConfig(atom: true, rss: true));
       expect(config.feeds, isNotNull);
       expect(config.feeds!.rss, isTrue);
     });
@@ -706,19 +681,13 @@ void main() {
   // ──────────────────────────────────────────────────
   group('template context feeds injection', () {
     test('SiteConfig with atom-only feeds has feeds.atom set', () {
-      final config = SiteConfig(
-        siteDir: '/my/site',
-        feeds: const FeedConfig(atom: true, rss: false),
-      );
+      final config = SiteConfig(siteDir: '/my/site', feeds: const FeedConfig(atom: true, rss: false));
       expect(config.feeds!.atom, isTrue);
       expect(config.feeds!.rss, isFalse);
     });
 
     test('SiteConfig with rss enabled has feeds.rss set', () {
-      final config = SiteConfig(
-        siteDir: '/my/site',
-        feeds: const FeedConfig(atom: true, rss: true),
-      );
+      final config = SiteConfig(siteDir: '/my/site', feeds: const FeedConfig(atom: true, rss: true));
       expect(config.feeds!.rss, isTrue);
     });
 

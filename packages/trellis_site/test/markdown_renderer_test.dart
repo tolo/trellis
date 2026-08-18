@@ -229,9 +229,7 @@ void main() {
     group('summary truncation (maxSummaryLength)', () {
       test('truncates long auto-generated summary at word boundary', () {
         final truncatingRenderer = MarkdownRenderer(maxSummaryLength: 20);
-        final page = makePageWithContent(
-          'This is a fairly long paragraph that should be truncated.',
-        );
+        final page = makePageWithContent('This is a fairly long paragraph that should be truncated.');
         truncatingRenderer.render(page);
         expect(page.summary.length, lessThanOrEqualTo(21)); // 20 + ellipsis
         expect(page.summary, endsWith('\u2026'));
@@ -257,14 +255,9 @@ void main() {
 
       test('null maxSummaryLength preserves full paragraph', () {
         const noTruncation = MarkdownRenderer();
-        final page = makePageWithContent(
-          'This is a fairly long paragraph that should not be truncated at all.',
-        );
+        final page = makePageWithContent('This is a fairly long paragraph that should not be truncated at all.');
         noTruncation.render(page);
-        expect(
-          page.summary,
-          'This is a fairly long paragraph that should not be truncated at all.',
-        );
+        expect(page.summary, 'This is a fairly long paragraph that should not be truncated at all.');
       });
 
       test('strips HTML tags before truncating', () {

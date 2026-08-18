@@ -15,14 +15,13 @@ import 'dart:io';
 import 'package:test/test.dart';
 import 'package:trellis_cli/trellis_cli.dart';
 
+import '_e2e_server.dart';
 import '_workspace_root.dart';
-
-/// Port used for the generated app server; chosen to avoid collisions with 8080.
-const _kPort = 19080;
 
 void main() {
   group('Generated app E2E', () {
     late Directory projectDir;
+    late int port;
     Process? serverProcess;
 
     setUpAll(() async {
@@ -53,49 +52,56 @@ dependency_overrides:
 ''';
       await pubspecFile.writeAsString(pubspecContent + overrides);
 
-      // ── 3. Patch server port to avoid collision with default 8080 ──────
-      final serverFile = File('${projectDir.path}/bin/server.dart');
-      final serverContent = (await serverFile.readAsString()).replaceFirst(
-        "await shelf_io.serve(handler, 'localhost', 8080)",
-        "await shelf_io.serve(handler, 'localhost', $_kPort)",
-      );
-      await serverFile.writeAsString(serverContent);
-
-      // ── 4. dart pub get ────────────────────────────────────────────────
+      // ── 3. dart pub get ────────────────────────────────────────────────
       final pubGet = await Process.run('dart', ['pub', 'get'], workingDirectory: projectDir.path);
       expect(pubGet.exitCode, 0, reason: 'dart pub get failed:\n${pubGet.stdout}\n${pubGet.stderr}');
 
-      // ── 5. dart analyze ────────────────────────────────────────────────
+      // ── 4. dart analyze ────────────────────────────────────────────────
       final analyze = await Process.run('dart', ['analyze', '--fatal-infos'], workingDirectory: projectDir.path);
       expect(analyze.exitCode, 0, reason: 'dart analyze failed:\n${analyze.stdout}\n${analyze.stderr}');
 
-      // ── 6. Boot server ─────────────────────────────────────────────────
-      serverProcess = await Process.start('dart', ['run', 'bin/server.dart'], workingDirectory: projectDir.path);
+      // ── 5. Boot server on its own port ─────────────────────────────────
+      // The port is compiled into the generated source, so each attempt
+      // re-patches from the pristine text rather than the previous patch.
+      final serverFile = File('${projectDir.path}/bin/server.dart');
+      final originalServerSource = await serverFile.readAsString();
 
-      final started = await _waitForServer('localhost', _kPort);
-      expect(started, isTrue, reason: 'Server did not start within timeout');
+      final booted = await bootServer(
+        label: 'generated app server',
+        start: (port) async {
+          await serverFile.writeAsString(
+            originalServerSource.replaceFirst(
+              "await shelf_io.serve(handler, 'localhost', 8080)",
+              "await shelf_io.serve(handler, 'localhost', $port)",
+            ),
+          );
+          return Process.start('dart', ['run', 'bin/server.dart'], workingDirectory: projectDir.path);
+        },
+        isReady: (port) => _waitForServer('localhost', port),
+      );
+      serverProcess = booted.process;
+      port = booted.port;
     });
 
     tearDownAll(() async {
-      serverProcess?.kill();
-      await serverProcess?.exitCode.timeout(const Duration(seconds: 5), onTimeout: () => -1);
+      await stopServer(serverProcess);
       await projectDir.parent.delete(recursive: true);
     });
 
     test('GET / returns 200', () async {
-      final res = await _get('http://localhost:$_kPort/');
+      final res = await _get('http://localhost:$port/');
       expect(res.statusCode, 200);
     });
 
     test('GET /about returns 200', () async {
-      final res = await _get('http://localhost:$_kPort/about');
+      final res = await _get('http://localhost:$port/about');
       expect(res.statusCode, 200);
       expect(res.body, contains('About This App'));
       expect(res.body, contains('<!DOCTYPE html>'));
     });
 
     test('GET /about returns fragment for HTMX navigation', () async {
-      final res = await _get('http://localhost:$_kPort/about', headers: {'HX-Request': 'true'});
+      final res = await _get('http://localhost:$port/about', headers: {'HX-Request': 'true'});
       expect(res.statusCode, 200);
       expect(res.body, contains('About This App'));
       expect(res.body, isNot(contains('<!DOCTYPE html>')));
@@ -103,7 +109,7 @@ dependency_overrides:
 
     test('POST /counter/increment with valid CSRF token returns 200', () async {
       // Obtain a CSRF cookie from an initial GET.
-      final getRes = await _get('http://localhost:$_kPort/');
+      final getRes = await _get('http://localhost:$port/');
       expect(getRes.statusCode, 200);
 
       final cookieValue = _extractCsrfCookieValue(getRes.setCookieHeader);
@@ -113,7 +119,7 @@ dependency_overrides:
       final rawToken = cookieValue!.split('.').first;
 
       final postRes = await _post(
-        'http://localhost:$_kPort/counter/increment',
+        'http://localhost:$port/counter/increment',
         body: '_csrf=$rawToken',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -128,7 +134,7 @@ dependency_overrides:
 
     test('POST /counter/increment without CSRF token returns 403', () async {
       final postRes = await _post(
-        'http://localhost:$_kPort/counter/increment',
+        'http://localhost:$port/counter/increment',
         body: '',
         headers: {'Content-Type': 'application/x-www-form-urlencoded', 'HX-Request': 'true'},
       );
@@ -136,7 +142,7 @@ dependency_overrides:
     });
 
     test('security headers include the generated CSP policy', () async {
-      final uri = Uri.parse('http://localhost:$_kPort/');
+      final uri = Uri.parse('http://localhost:$port/');
       final client = HttpClient();
       try {
         final request = await client.getUrl(uri);

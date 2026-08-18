@@ -54,8 +54,8 @@ void main() {
   group('theme static asset merging', () {
     test('theme static/ files appear in output after copy', () {
       File(p.join(themeDir.path, 'static', 'theme.css'))
-          ..parent.createSync(recursive: true)
-          ..writeAsStringSync('body { color: red; }');
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('body { color: red; }');
 
       copyThemeStatic(p.join(themeDir.path, 'static'));
 
@@ -65,11 +65,11 @@ void main() {
 
     test('site static/ file at same path overwrites theme file', () {
       File(p.join(themeDir.path, 'static', 'images', 'logo.png'))
-          ..parent.createSync(recursive: true)
-          ..writeAsStringSync('theme-logo');
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('theme-logo');
       File(p.join(siteDir.path, 'static', 'images', 'logo.png'))
-          ..parent.createSync(recursive: true)
-          ..writeAsStringSync('site-logo');
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('site-logo');
 
       // Mimic pipeline order: theme first, site second
       copyThemeStatic(p.join(themeDir.path, 'static'));
@@ -81,8 +81,8 @@ void main() {
 
     test('theme static/ file with no site conflict appears in output', () {
       File(p.join(themeDir.path, 'static', 'fonts', 'font.woff2'))
-          ..parent.createSync(recursive: true)
-          ..writeAsStringSync('font-data');
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('font-data');
 
       copyThemeStatic(p.join(themeDir.path, 'static'));
       copySiteStatic(p.join(siteDir.path, 'static')); // siteDir has no static/
@@ -93,11 +93,11 @@ void main() {
 
     test('.scss files in theme static/ are skipped', () {
       File(p.join(themeDir.path, 'static', 'style.scss'))
-          ..parent.createSync(recursive: true)
-          ..writeAsStringSync('body { color: blue; }');
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('body { color: blue; }');
       File(p.join(themeDir.path, 'static', 'theme.css'))
-          ..parent.createSync(recursive: true)
-          ..writeAsStringSync('/* compiled */');
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('/* compiled */');
 
       copyThemeStatic(p.join(themeDir.path, 'static'));
 
@@ -107,8 +107,8 @@ void main() {
 
     test('.sass files in theme static/ are also skipped', () {
       File(p.join(themeDir.path, 'static', 'style.sass'))
-          ..parent.createSync(recursive: true)
-          ..writeAsStringSync('body\n  color: blue');
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('body\n  color: blue');
 
       copyThemeStatic(p.join(themeDir.path, 'static'));
 

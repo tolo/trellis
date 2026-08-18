@@ -6,19 +6,9 @@ class TodoList {
   String color;
   int position;
 
-  TodoList({
-    required this.id,
-    required this.name,
-    this.color = '#4a9eff',
-    this.position = 0,
-  });
+  TodoList({required this.id, required this.name, this.color = '#4a9eff', this.position = 0});
 
-  Map<String, dynamic> toMap() => {
-    'id': id,
-    'name': name,
-    'color': color,
-    'position': position,
-  };
+  Map<String, dynamic> toMap() => {'id': id, 'name': name, 'color': color, 'position': position};
 }
 
 class Todo {
@@ -42,8 +32,7 @@ class Todo {
     this.position = 0,
   });
 
-  bool get isOverdue =>
-      dueDate != null && !isCompleted && dueDate!.isBefore(DateTime.now());
+  bool get isOverdue => dueDate != null && !isCompleted && dueDate!.isBefore(DateTime.now());
 
   Map<String, dynamic> toMap() => {
     'id': id,

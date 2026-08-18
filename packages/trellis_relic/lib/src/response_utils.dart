@@ -8,8 +8,5 @@ import 'package:relic/relic.dart';
 /// return htmlResponse('Not Found', statusCode: 404);
 /// ```
 Response htmlResponse(String html, {int statusCode = 200}) {
-  return Response(
-    statusCode,
-    body: Body.fromString(html, mimeType: MimeType.html),
-  );
+  return Response(statusCode, body: Body.fromString(html, mimeType: MimeType.html));
 }

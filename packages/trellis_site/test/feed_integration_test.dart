@@ -15,10 +15,7 @@ void main() {
   });
 
   /// Creates an isolated output dir and a SiteConfig with feeds enabled.
-  SiteConfig isolatedFeedConfig({
-    FeedConfig? feeds,
-    String baseUrl = 'https://example.com',
-  }) {
+  SiteConfig isolatedFeedConfig({FeedConfig? feeds, String baseUrl = 'https://example.com'}) {
     final outputDir = Directory.systemTemp.createTempSync('feed_integ_').path;
     addTearDown(() => Directory(outputDir).deleteSync(recursive: true));
     return SiteConfig(
@@ -116,20 +113,14 @@ void main() {
       final config = isolatedFeedConfig(feeds: const FeedConfig(sections: ['nonexistent']));
       final result = await TrellisSite(config).build();
       expect(result.hasWarnings, isTrue);
-      expect(
-        result.warnings.any((w) => w.toString().contains('nonexistent')),
-        isTrue,
-      );
+      expect(result.warnings.any((w) => w.toString().contains('nonexistent')), isTrue);
     });
 
     test('known section does not emit BuildWarning', () async {
       final config = isolatedFeedConfig(feeds: const FeedConfig(sections: ['posts']));
       final result = await TrellisSite(config).build();
       // Should not warn about 'posts' — it exists in content
-      expect(
-        result.warnings.any((w) => w.toString().contains("unknown section 'posts'")),
-        isFalse,
-      );
+      expect(result.warnings.any((w) => w.toString().contains("unknown section 'posts'")), isFalse);
     });
   });
 

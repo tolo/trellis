@@ -148,7 +148,11 @@ Middleware trellisCsrf({
         // Preserve existing Set-Cookie headers from inner handlers.
         final existingSetCookie = response.headers['set-cookie'];
         if (existingSetCookie != null) {
-          return response.change(headers: {'set-cookie': <String>[existingSetCookie, cookie]});
+          return response.change(
+            headers: {
+              'set-cookie': <String>[existingSetCookie, cookie],
+            },
+          );
         }
         return response.change(headers: {'set-cookie': cookie});
       }

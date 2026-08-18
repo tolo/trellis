@@ -33,6 +33,38 @@ abstract class Processor {
   bool process(Element element, String value, ProcessorContext context);
 }
 
+/// The fragment-resolution surface a processor may use, implemented by the
+/// engine's DOM processor.
+///
+/// Exists so [ProcessorContext.domProcessor] can be typed without exposing the
+/// whole `DomProcessor`: fragment processors need these six members and
+/// nothing else. `ProcessorContext` is public API while `DomProcessor` is not,
+/// so this narrow contract is what crosses the boundary.
+abstract interface class FragmentHost {
+  /// The evaluator used to bind fragment arguments.
+  ExpressionEvaluator get evaluator;
+
+  /// Processes a fragment's cloned content, enforcing depth and cycle limits.
+  ///
+  /// [fragmentId] identifies the invocation for cycle detection.
+  void processFragmentContent(Element element, Map<String, dynamic> context, {String? fragmentId});
+
+  /// Queries the stored document by CSS selector, for same-file selector-based
+  /// fragment targeting.
+  Element? querySelectorFromDoc(String selector);
+
+  /// Looks up a same-file fragment by name, innermost pushed registry first.
+  ///
+  /// Returns the fragment element and its declared parameter names.
+  (Element, List<String>)? lookupFragment(String name);
+
+  /// Pushes a fragment registry, shadowing outer ones for nested resolution.
+  void pushFragmentRegistry(Map<String, (Element, List<String>)> registry);
+
+  /// Pops the most recently pushed fragment registry.
+  void popFragmentRegistry();
+}
+
 /// Context passed to processors during execution [D09].
 /// Provides limited API — ExpressionEvaluator remains internal.
 class ProcessorContext {
@@ -55,9 +87,8 @@ class ProcessorContext {
 
   final void Function(Element, Map<String, dynamic>) _processChildren;
 
-  /// Reference to DomProcessor for fragment-related operations (package-private).
-  /// Typed as dynamic to avoid circular import; cast in processor implementations.
-  final dynamic domProcessor;
+  /// Fragment-resolution operations provided by the engine's DOM processor.
+  final FragmentHost domProcessor;
 
   /// Reference to the template loader.
   final TemplateLoader loader;

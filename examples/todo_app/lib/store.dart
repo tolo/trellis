@@ -19,12 +19,7 @@ class TodoStore {
   TodoList? getList(int id) => _lists[id];
 
   TodoList createList(String name, {String? color}) {
-    final list = TodoList(
-      id: _nextListId++,
-      name: name,
-      color: color ?? '#4a9eff',
-      position: _lists.length,
-    );
+    final list = TodoList(id: _nextListId++, name: name, color: color ?? '#4a9eff', position: _lists.length);
     _lists[list.id] = list;
     return list;
   }
@@ -51,13 +46,7 @@ class TodoStore {
 
   Todo? getTodo(int id) => _todos[id];
 
-  Todo createTodo(
-    int listId,
-    String title, {
-    String priority = 'medium',
-    DateTime? dueDate,
-    String? notes,
-  }) {
+  Todo createTodo(int listId, String title, {String priority = 'medium', DateTime? dueDate, String? notes}) {
     final listTodos = todosForList(listId);
     final todo = Todo(
       id: _nextTodoId++,
@@ -97,11 +86,9 @@ class TodoStore {
     _todos.remove(id);
   }
 
-  int todoCount(int listId) =>
-      _todos.values.where((t) => t.listId == listId).length;
+  int todoCount(int listId) => _todos.values.where((t) => t.listId == listId).length;
 
-  int completedCount(int listId) =>
-      _todos.values.where((t) => t.listId == listId && t.isCompleted).length;
+  int completedCount(int listId) => _todos.values.where((t) => t.listId == listId && t.isCompleted).length;
 
   // Pre-populate with demo data.
   void seed() {
@@ -111,20 +98,11 @@ class TodoStore {
 
     createTodo(work.id, 'Review pull request', priority: 'high');
     createTodo(work.id, 'Update project documentation');
-    createTodo(
-      work.id,
-      'Prepare sprint demo',
-      priority: 'high',
-      dueDate: DateTime.now().add(const Duration(days: 2)),
-    );
+    createTodo(work.id, 'Prepare sprint demo', priority: 'high', dueDate: DateTime.now().add(const Duration(days: 2)));
     createTodo(work.id, 'Refactor auth module', priority: 'low');
 
     createTodo(personal.id, 'Go for a run');
-    createTodo(
-      personal.id,
-      'Read chapter 5',
-      dueDate: DateTime.now().add(const Duration(days: 5)),
-    );
+    createTodo(personal.id, 'Read chapter 5', dueDate: DateTime.now().add(const Duration(days: 5)));
     createTodo(
       personal.id,
       'Call dentist',

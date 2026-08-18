@@ -59,46 +59,23 @@ void main() async {
 
   final router = Router()
     ..get('/', (Request req) => appPage(req, engine, store))
-    ..get(
-      '/lists/<id>',
-      (Request req, String id) => selectList(req, engine, store, id),
-    )
+    ..get('/lists/<id>', (Request req, String id) => selectList(req, engine, store, id))
     ..post('/todos', (Request req) => createTodo(req, engine, store))
-    ..put(
-      '/todos/<id>/toggle',
-      (Request req, String id) => toggleTodo(req, engine, store, id),
-    )
-    ..put(
-      '/todos/<id>',
-      (Request req, String id) => updateTodo(req, engine, store, id),
-    )
-    ..delete(
-      '/todos/<id>',
-      (Request req, String id) => deleteTodo(req, engine, store, id),
-    )
+    ..put('/todos/<id>/toggle', (Request req, String id) => toggleTodo(req, engine, store, id))
+    ..put('/todos/<id>', (Request req, String id) => updateTodo(req, engine, store, id))
+    ..delete('/todos/<id>', (Request req, String id) => deleteTodo(req, engine, store, id))
     ..post('/lists', (Request req) => createList(req, engine, store))
-    ..put(
-      '/lists/<id>',
-      (Request req, String id) => updateList(req, engine, store, id),
-    )
-    ..delete(
-      '/lists/<id>',
-      (Request req, String id) => deleteList(req, engine, store, id),
-    )
+    ..put('/lists/<id>', (Request req, String id) => updateList(req, engine, store, id))
+    ..delete('/lists/<id>', (Request req, String id) => deleteList(req, engine, store, id))
     ..get('/search', (Request req) => searchTodos(req, engine, store));
 
   // Cascade tries each handler in order: static files first (CSS, images, etc.),
   // then the app router. This means requests for /styles.css are served directly
   // from disk without passing through the router.
-  final staticHandler = createStaticHandler(
-    staticDir,
-    defaultDocument: 'index.html',
-  );
+  final staticHandler = createStaticHandler(staticDir, defaultDocument: 'index.html');
   final cascade = Cascade().add(staticHandler).add(router.call);
 
-  final handler = const Pipeline()
-      .addMiddleware(logRequests())
-      .addHandler(cascade.handler);
+  final handler = const Pipeline().addMiddleware(logRequests()).addHandler(cascade.handler);
 
   final server = await shelf_io.serve(handler, 'localhost', port);
   print('Todo app running at http://localhost:${server.port}');

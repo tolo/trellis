@@ -15,7 +15,11 @@ Request makeRequest({Map<String, Iterable<String>>? headers}) {
 void main() {
   group('isHtmxRequest', () {
     test('returns true when HX-Request is "true"', () {
-      final req = makeRequest(headers: {'HX-Request': ['true']});
+      final req = makeRequest(
+        headers: {
+          'HX-Request': ['true'],
+        },
+      );
       expect(isHtmxRequest(req), isTrue);
     });
 
@@ -25,14 +29,22 @@ void main() {
     });
 
     test('returns false when HX-Request has a different value', () {
-      final req = makeRequest(headers: {'HX-Request': ['1']});
+      final req = makeRequest(
+        headers: {
+          'HX-Request': ['1'],
+        },
+      );
       expect(isHtmxRequest(req), isFalse);
     });
   });
 
   group('htmxTarget', () {
     test('returns target value when present', () {
-      final req = makeRequest(headers: {'HX-Target': ['main-content']});
+      final req = makeRequest(
+        headers: {
+          'HX-Target': ['main-content'],
+        },
+      );
       expect(htmxTarget(req), equals('main-content'));
     });
 
@@ -44,7 +56,11 @@ void main() {
 
   group('htmxTrigger', () {
     test('returns trigger value when present', () {
-      final req = makeRequest(headers: {'HX-Trigger': ['submit-btn']});
+      final req = makeRequest(
+        headers: {
+          'HX-Trigger': ['submit-btn'],
+        },
+      );
       expect(htmxTrigger(req), equals('submit-btn'));
     });
 
@@ -56,7 +72,11 @@ void main() {
 
   group('isHtmxBoosted', () {
     test('returns true when HX-Boosted is "true"', () {
-      final req = makeRequest(headers: {'HX-Boosted': ['true']});
+      final req = makeRequest(
+        headers: {
+          'HX-Boosted': ['true'],
+        },
+      );
       expect(isHtmxBoosted(req), isTrue);
     });
 
@@ -66,19 +86,25 @@ void main() {
     });
 
     test('returns false when HX-Boosted has a different value', () {
-      final req = makeRequest(headers: {'HX-Boosted': ['false']});
+      final req = makeRequest(
+        headers: {
+          'HX-Boosted': ['false'],
+        },
+      );
       expect(isHtmxBoosted(req), isFalse);
     });
   });
 
   group('combined HTMX headers', () {
     test('all HTMX headers work together on a single request', () {
-      final req = makeRequest(headers: {
-        'HX-Request': ['true'],
-        'HX-Target': ['content'],
-        'HX-Trigger': ['btn'],
-        'HX-Boosted': ['true'],
-      });
+      final req = makeRequest(
+        headers: {
+          'HX-Request': ['true'],
+          'HX-Target': ['content'],
+          'HX-Trigger': ['btn'],
+          'HX-Boosted': ['true'],
+        },
+      );
       expect(isHtmxRequest(req), isTrue);
       expect(htmxTarget(req), equals('content'));
       expect(htmxTrigger(req), equals('btn'));

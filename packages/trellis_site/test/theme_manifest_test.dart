@@ -149,13 +149,7 @@ void main() {
     test('missing theme directory throws ThemeManifestException with "not found"', () {
       expect(
         () => ThemeManifest.load('/no/such/theme/dir'),
-        throwsA(
-          isA<ThemeManifestException>().having(
-            (e) => e.message,
-            'message',
-            contains('not found'),
-          ),
-        ),
+        throwsA(isA<ThemeManifestException>().having((e) => e.message, 'message', contains('not found'))),
       );
     });
 
@@ -165,26 +159,14 @@ void main() {
 
       expect(
         () => ThemeManifest.load(tempDir.path),
-        throwsA(
-          isA<ThemeManifestException>().having(
-            (e) => e.message,
-            'message',
-            contains('manifest not found'),
-          ),
-        ),
+        throwsA(isA<ThemeManifestException>().having((e) => e.message, 'message', contains('manifest not found'))),
       );
     });
 
     test('malformed YAML throws ThemeManifestException with "Invalid YAML"', () {
       expect(
         () => ThemeManifest.load(malformedThemeDir()),
-        throwsA(
-          isA<ThemeManifestException>().having(
-            (e) => e.message,
-            'message',
-            contains('Invalid YAML'),
-          ),
-        ),
+        throwsA(isA<ThemeManifestException>().having((e) => e.message, 'message', contains('Invalid YAML'))),
       );
     });
 
@@ -196,11 +178,7 @@ void main() {
       expect(
         () => ThemeManifest.load(tempDir.path),
         throwsA(
-          isA<ThemeManifestException>().having(
-            (e) => e.message,
-            'message',
-            contains('missing required field: name'),
-          ),
+          isA<ThemeManifestException>().having((e) => e.message, 'message', contains('missing required field: name')),
         ),
       );
     });

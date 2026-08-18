@@ -15,20 +15,16 @@ import 'dart:io';
 import 'package:test/test.dart';
 import 'package:trellis_cli/trellis_cli.dart';
 
+import '_e2e_server.dart';
 import '_workspace_root.dart';
-
-const _port = 19081;
-const _vmServicePort = 19181;
 
 void main() {
   group('Dart Frog starter E2E', () {
     late Directory projectDir;
+    late int port;
     Process? serverProcess;
-    final outputBuffer = StringBuffer();
 
     setUpAll(() async {
-      await _killListenersOnPort(_port);
-
       final tempDir = await Directory.systemTemp.createTemp('trellis_df_e2e_');
       const projectName = 'e2e_dart_frog_app';
       final appDir = Directory('${tempDir.path}/$projectName');
@@ -74,28 +70,32 @@ dependency_overrides:
         );
       }
 
-      serverProcess = await Process.start(dartFrogExecutable, [
-        'dev',
-        '--port',
-        '$_port',
-        '--dart-vm-service-port',
-        '$_vmServicePort',
-      ], workingDirectory: projectDir.path);
-      serverProcess!.stdout.transform(utf8.decoder).listen(outputBuffer.write);
-      serverProcess!.stderr.transform(utf8.decoder).listen(outputBuffer.write);
-
-      final started = await _waitForHttpOk(
-        'http://localhost:$_port/',
-        timeout: const Duration(seconds: 45),
-        bodyContains: 'Dart Frog',
+      final booted = await bootServer(
+        label: 'dart_frog dev',
+        start: (port) async {
+          final vmServicePort = await allocateFreePort();
+          return Process.start(dartFrogExecutable, [
+            'dev',
+            '--port',
+            '$port',
+            '--dart-vm-service-port',
+            '$vmServicePort',
+          ], workingDirectory: projectDir.path);
+        },
+        isReady: (port) =>
+            _waitForHttpOk('http://localhost:$port/', timeout: const Duration(seconds: 45), bodyContains: 'Dart Frog'),
       );
-      expect(started, isTrue, reason: 'dart_frog dev did not become ready within timeout\n$outputBuffer');
+      serverProcess = booted.process;
+      port = booted.port;
     });
 
     tearDownAll(() async {
-      serverProcess?.kill();
-      await serverProcess?.exitCode.timeout(const Duration(seconds: 5), onTimeout: () => -1);
-      await _killListenersOnPort(_port);
+      await stopServer(serverProcess);
+      // `dart_frog dev` supervises a child VM that outlives the parent kill;
+      // reap whatever still holds our port. Safe only because the port is
+      // allocated per run — this used to target a fixed port and would kill
+      // an unrelated process (or a concurrent run's server).
+      await _killListenersOnPort(port);
       await projectDir.parent.delete(recursive: true);
     });
 
@@ -111,27 +111,27 @@ dependency_overrides:
     });
 
     test('GET / returns 200', () async {
-      final res = await _get('http://localhost:$_port/');
+      final res = await _get('http://localhost:$port/');
       expect(res.statusCode, 200);
       expect(res.body, contains('<!DOCTYPE html>'));
     });
 
     test('GET /about returns 200', () async {
-      final res = await _get('http://localhost:$_port/about');
+      final res = await _get('http://localhost:$port/about');
       expect(res.statusCode, 200);
       expect(res.body, contains('About This App'));
       expect(res.body, contains('<!DOCTYPE html>'));
     });
 
     test('GET /about returns fragment for HTMX navigation', () async {
-      final res = await _get('http://localhost:$_port/about', headers: {'HX-Request': 'true'});
+      final res = await _get('http://localhost:$port/about', headers: {'HX-Request': 'true'});
       expect(res.statusCode, 200);
       expect(res.body, contains('About This App'));
       expect(res.body, isNot(contains('<!DOCTYPE html>')));
     });
 
     test('POST /counter/increment with valid CSRF token returns 200', () async {
-      final getRes = await _get('http://localhost:$_port/');
+      final getRes = await _get('http://localhost:$port/');
       expect(getRes.statusCode, 200);
 
       final cookieValue = _extractCsrfCookieValue(getRes.setCookieHeader);
@@ -139,7 +139,7 @@ dependency_overrides:
 
       final rawToken = cookieValue!.split('.').first;
       final postRes = await _post(
-        'http://localhost:$_port/counter/increment',
+        'http://localhost:$port/counter/increment',
         body: '_csrf=$rawToken',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

@@ -1,3 +1,5 @@
+import '../htmx_asset.dart';
+
 /// Generates the templates/base.html content for a Relic + Trellis project.
 ///
 /// Uses template inheritance (`tl:define`) and HTMX for client-side navigation.
@@ -10,7 +12,7 @@ String relicBaseLayoutTemplate(String projectName) =>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title tl:text="\${pageTitle}">$projectName</title>
-  <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"></script>
+  ${htmxScriptTag()}
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>

@@ -34,18 +34,12 @@ import 'store.dart';
 //     0 is falsy) is the correct pattern for empty-collection guards in Trellis.
 Map<String, dynamic> _buildContext(TodoStore store, {int? activeListId}) {
   final lists = store.allLists();
-  final activeList = activeListId != null
-      ? store.getList(activeListId)
-      : (lists.isNotEmpty ? lists.first : null);
+  final activeList = activeListId != null ? store.getList(activeListId) : (lists.isNotEmpty ? lists.first : null);
 
-  final todos = activeList != null
-      ? store.todosForList(activeList.id)
-      : <Todo>[];
+  final todos = activeList != null ? store.todosForList(activeList.id) : <Todo>[];
 
   return {
-    'title': activeList != null
-        ? '${activeList.name} — Trellis Todo'
-        : 'Trellis Todo',
+    'title': activeList != null ? '${activeList.name} — Trellis Todo' : 'Trellis Todo',
     'lists': lists
         .map(
           (l) => {
@@ -67,46 +61,26 @@ Map<String, dynamic> _buildContext(TodoStore store, {int? activeListId}) {
 // Used to decide between a full-page render and a fragment-only response.
 bool _isHtmx(Request request) => request.headers['hx-request'] == 'true';
 
-Response _html(String body, {int statusCode = 200}) => Response(
-  statusCode,
-  body: body,
-  headers: {'content-type': 'text/html; charset=utf-8'},
-);
+Response _html(String body, {int statusCode = 200}) =>
+    Response(statusCode, body: body, headers: {'content-type': 'text/html; charset=utf-8'});
 
 // Renders the `todo-list` fragment plus the `sidebar` as an OOB fragment.
 // Used for todo CRUD operations where only the list content and sidebar counts change.
-Future<String> _renderTodoListFragments(
-  Trellis engine,
-  Map<String, dynamic> context,
-) async {
+Future<String> _renderTodoListFragments(Trellis engine, Map<String, dynamic> context) async {
   final source = await engine.loader.load('app.html');
-  return engine.renderFragments(
-    source,
-    fragments: ['todo-list', 'sidebar'],
-    context: context,
-  );
+  return engine.renderFragments(source, fragments: ['todo-list', 'sidebar'], context: context);
 }
 
 // Renders the `main-content` fragment plus the `sidebar` as an OOB fragment.
 // Used when the active list changes so the header, color bar and forms are refreshed.
-Future<String> _renderMainContentFragments(
-  Trellis engine,
-  Map<String, dynamic> context,
-) async {
+Future<String> _renderMainContentFragments(Trellis engine, Map<String, dynamic> context) async {
   final source = await engine.loader.load('app.html');
-  return engine.renderFragments(
-    source,
-    fragments: ['main-content', 'sidebar'],
-    context: context,
-  );
+  return engine.renderFragments(source, fragments: ['main-content', 'sidebar'], context: context);
 }
 
 // Renders only the `todo-list` fragment (no sidebar OOB).
 // Used for search results — the sidebar counts don't change during a search.
-Future<String> _renderTodoListFragment(
-  Trellis engine,
-  Map<String, dynamic> context,
-) async {
+Future<String> _renderTodoListFragment(Trellis engine, Map<String, dynamic> context) async {
   final source = await engine.loader.load('app.html');
   return engine.renderFragment(source, fragment: 'todo-list', context: context);
 }
@@ -116,11 +90,7 @@ Future<String> _renderTodoListFragment(
 // When accessed directly (no HX-Request header) the full page is rendered.
 // When HTMX navigates here (e.g. after a redirect), only the main-content +
 // sidebar fragments are returned for an in-place swap.
-Future<Response> appPage(
-  Request request,
-  Trellis engine,
-  TodoStore store,
-) async {
+Future<Response> appPage(Request request, Trellis engine, TodoStore store) async {
   final listIdParam = request.url.queryParameters['list'];
   final listId = listIdParam != null ? int.tryParse(listIdParam) : null;
   final context = _buildContext(store, activeListId: listId);
@@ -135,12 +105,7 @@ Future<Response> appPage(
 }
 
 // GET /lists/:id -- Select a list (HTMX partial swap).
-Future<Response> selectList(
-  Request request,
-  Trellis engine,
-  TodoStore store,
-  String id,
-) async {
+Future<Response> selectList(Request request, Trellis engine, TodoStore store, String id) async {
   final listId = int.tryParse(id);
   if (listId == null) return Response(400, body: 'Invalid list ID');
 
@@ -150,11 +115,7 @@ Future<Response> selectList(
 }
 
 // POST /todos -- Create a new todo.
-Future<Response> createTodo(
-  Request request,
-  Trellis engine,
-  TodoStore store,
-) async {
+Future<Response> createTodo(Request request, Trellis engine, TodoStore store) async {
   final body = await request.readAsString();
   final params = Uri.splitQueryString(body);
 
@@ -174,12 +135,7 @@ Future<Response> createTodo(
 }
 
 // PUT /todos/:id/toggle -- Toggle a todo's completed state.
-Future<Response> toggleTodo(
-  Request request,
-  Trellis engine,
-  TodoStore store,
-  String id,
-) async {
+Future<Response> toggleTodo(Request request, Trellis engine, TodoStore store, String id) async {
   final todoId = int.tryParse(id);
   if (todoId == null) return Response(400, body: 'Invalid todo ID');
 
@@ -194,12 +150,7 @@ Future<Response> toggleTodo(
 }
 
 // DELETE /todos/:id -- Delete a todo.
-Future<Response> deleteTodo(
-  Request request,
-  Trellis engine,
-  TodoStore store,
-  String id,
-) async {
+Future<Response> deleteTodo(Request request, Trellis engine, TodoStore store, String id) async {
   final todoId = int.tryParse(id);
   if (todoId == null) return Response(400, body: 'Invalid todo ID');
 
@@ -215,11 +166,7 @@ Future<Response> deleteTodo(
 }
 
 // POST /lists -- Create a new list.
-Future<Response> createList(
-  Request request,
-  Trellis engine,
-  TodoStore store,
-) async {
+Future<Response> createList(Request request, Trellis engine, TodoStore store) async {
   final body = await request.readAsString();
   final params = Uri.splitQueryString(body);
 
@@ -237,12 +184,7 @@ Future<Response> createList(
 }
 
 // DELETE /lists/:id -- Delete a list and all its todos.
-Future<Response> deleteList(
-  Request request,
-  Trellis engine,
-  TodoStore store,
-  String id,
-) async {
+Future<Response> deleteList(Request request, Trellis engine, TodoStore store, String id) async {
   final listId = int.tryParse(id);
   if (listId == null) return Response(400, body: 'Invalid list ID');
 
@@ -255,12 +197,7 @@ Future<Response> deleteList(
 }
 
 // PUT /todos/:id -- Update a todo's title, priority and due date.
-Future<Response> updateTodo(
-  Request request,
-  Trellis engine,
-  TodoStore store,
-  String id,
-) async {
+Future<Response> updateTodo(Request request, Trellis engine, TodoStore store, String id) async {
   final todoId = int.tryParse(id);
   if (todoId == null) return Response(400, body: 'Invalid todo ID');
 
@@ -279,17 +216,9 @@ Future<Response> updateTodo(
   final dueDateStr = params['dueDate']?.trim();
   // An empty dueDate string means "clear the due date"; null means not provided.
   // updateDueDate: true tells the store to always apply the value (even null).
-  final dueDate = (dueDateStr != null && dueDateStr.isNotEmpty)
-      ? DateTime.tryParse(dueDateStr)
-      : null;
+  final dueDate = (dueDateStr != null && dueDateStr.isNotEmpty) ? DateTime.tryParse(dueDateStr) : null;
 
-  store.updateTodo(
-    todoId,
-    title: title,
-    priority: priority,
-    dueDate: dueDate,
-    updateDueDate: true,
-  );
+  store.updateTodo(todoId, title: title, priority: priority, dueDate: dueDate, updateDueDate: true);
 
   final context = _buildContext(store, activeListId: todo.listId);
   final html = await _renderTodoListFragments(engine, context);
@@ -297,12 +226,7 @@ Future<Response> updateTodo(
 }
 
 // PUT /lists/:id -- Update a list's name and color.
-Future<Response> updateList(
-  Request request,
-  Trellis engine,
-  TodoStore store,
-  String id,
-) async {
+Future<Response> updateList(Request request, Trellis engine, TodoStore store, String id) async {
   final listId = int.tryParse(id);
   if (listId == null) return Response(400, body: 'Invalid list ID');
 
@@ -327,11 +251,7 @@ Future<Response> updateList(
 // Filtering is applied to the already-built context rather than in the store,
 // keeping the store query-free. Note that `todoCount` must be updated alongside
 // `todos` so the empty-state condition (`tl:unless="${todoCount}"`) stays correct.
-Future<Response> searchTodos(
-  Request request,
-  Trellis engine,
-  TodoStore store,
-) async {
+Future<Response> searchTodos(Request request, Trellis engine, TodoStore store) async {
   final query = (request.url.queryParameters['q'] ?? '').trim().toLowerCase();
   final listIdParam = request.url.queryParameters['list'];
   final listId = listIdParam != null ? int.tryParse(listIdParam) : null;
@@ -340,9 +260,7 @@ Future<Response> searchTodos(
 
   if (query.isNotEmpty) {
     final todos = context['todos'] as List;
-    final filtered = todos
-        .where((t) => (t['title'] as String).toLowerCase().contains(query))
-        .toList();
+    final filtered = todos.where((t) => (t['title'] as String).toLowerCase().contains(query)).toList();
     context['todos'] = filtered;
     context['todoCount'] = filtered.length;
     context['searchQuery'] = query;

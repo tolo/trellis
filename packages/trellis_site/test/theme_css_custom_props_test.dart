@@ -33,14 +33,21 @@ void main() {
 
     test('list param is excluded from CSS output', () {
       final result = _generateCss(
-        {'nav_links': <dynamic>['a', 'b']},
+        {
+          'nav_links': <dynamic>['a', 'b'],
+        },
         {'nav_links': 'list'},
       );
       expect(result, isNot(contains('--trellis-nav-links')));
     });
 
     test('map param is excluded from CSS output', () {
-      final result = _generateCss({'colors': <String, dynamic>{'a': 'b'}}, {'colors': 'map'});
+      final result = _generateCss(
+        {
+          'colors': <String, dynamic>{'a': 'b'},
+        },
+        {'colors': 'map'},
+      );
       expect(result, isNot(contains('--trellis-colors')));
     });
 

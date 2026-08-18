@@ -62,10 +62,7 @@ void main() {
 
     test('load() template not in site or theme throws TemplateNotFoundException', () async {
       final loader = ThemeAwareLoader.forTheme(siteDir: siteDir.path, themeDir: themeDir.path);
-      await expectLater(
-        loader.load('layouts/nonexistent.html'),
-        throwsA(isA<TemplateNotFoundException>()),
-      );
+      await expectLater(loader.load('layouts/nonexistent.html'), throwsA(isA<TemplateNotFoundException>()));
     });
 
     test('loadSync() unprefixed name resolves via site-first', () {
@@ -98,13 +95,7 @@ void main() {
       final loader = ThemeAwareLoader.noTheme(siteDir: siteDir.path);
       await expectLater(
         loader.load('theme:layouts/base.html'),
-        throwsA(
-          isA<TemplateException>().having(
-            (e) => e.message,
-            'message',
-            contains('No theme is configured'),
-          ),
-        ),
+        throwsA(isA<TemplateException>().having((e) => e.message, 'message', contains('No theme is configured'))),
       );
     });
 
@@ -112,22 +103,13 @@ void main() {
       final loader = ThemeAwareLoader.noTheme(siteDir: siteDir.path);
       expect(
         () => loader.loadSync('theme:layouts/base.html'),
-        throwsA(
-          isA<TemplateException>().having(
-            (e) => e.message,
-            'message',
-            contains('No theme is configured'),
-          ),
-        ),
+        throwsA(isA<TemplateException>().having((e) => e.message, 'message', contains('No theme is configured'))),
       );
     });
 
     test('load() template not in site throws TemplateNotFoundException', () async {
       final loader = ThemeAwareLoader.noTheme(siteDir: siteDir.path);
-      await expectLater(
-        loader.load('layouts/theme_only.html'),
-        throwsA(isA<TemplateNotFoundException>()),
-      );
+      await expectLater(loader.load('layouts/theme_only.html'), throwsA(isA<TemplateNotFoundException>()));
     });
   });
 }

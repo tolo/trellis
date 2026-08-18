@@ -76,7 +76,9 @@ void main() {
       Directory(p.join(tempDir.path, 'content')).createSync();
       Directory(p.join(tempDir.path, 'layouts')).createSync();
       File(p.join(tempDir.path, 'content', '_index.md')).writeAsStringSync('---\ntitle: Home\n---\nHello\n');
-      File(p.join(tempDir.path, 'layouts', 'home.html')).writeAsStringSync('<html><body><h1 tl:text="\${page.title}">T</h1></body></html>');
+      File(
+        p.join(tempDir.path, 'layouts', 'home.html'),
+      ).writeAsStringSync('<html><body><h1 tl:text="\${page.title}">T</h1></body></html>');
 
       final config = SiteConfig(siteDir: tempDir.path, outputDir: tempOutput.path);
       final site = TrellisSite(config);
@@ -91,11 +93,15 @@ void main() {
 
       // Set up minimal site with a theme
       final themeDir = Directory(p.join(tempDir.path, 'themes', 'mytheme'))..createSync(recursive: true);
-      File(p.join(themeDir.path, 'theme.yaml')).writeAsStringSync('name: mytheme\nversion: 1.0.0\nparams:\n  skin:\n    default: light\n');
+      File(
+        p.join(themeDir.path, 'theme.yaml'),
+      ).writeAsStringSync('name: mytheme\nversion: 1.0.0\nparams:\n  skin:\n    default: light\n');
       Directory(p.join(tempDir.path, 'content')).createSync();
       Directory(p.join(tempDir.path, 'layouts')).createSync();
       File(p.join(tempDir.path, 'content', '_index.md')).writeAsStringSync('---\ntitle: Home\n---\n');
-      File(p.join(tempDir.path, 'layouts', 'home.html')).writeAsStringSync('<html><body><h1 tl:text="\${page.title}">T</h1></body></html>');
+      File(
+        p.join(tempDir.path, 'layouts', 'home.html'),
+      ).writeAsStringSync('<html><body><h1 tl:text="\${page.title}">T</h1></body></html>');
 
       final config = SiteConfig(
         siteDir: tempDir.path,

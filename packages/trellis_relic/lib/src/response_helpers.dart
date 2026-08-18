@@ -23,13 +23,7 @@ Future<Response> renderPage(
   String? htmxFragment,
 }) async {
   if (htmxFragment != null && isHtmxRequest(request)) {
-    return htmlResponse(
-      await engine.renderFileFragment(
-        template,
-        fragment: htmxFragment,
-        context: context,
-      ),
-    );
+    return htmlResponse(await engine.renderFileFragment(template, fragment: htmxFragment, context: context));
   }
   return htmlResponse(await engine.renderFile(template, context));
 }
@@ -49,13 +43,7 @@ Future<Response> renderFragment(
   String fragment,
   Map<String, dynamic> context,
 ) async {
-  return htmlResponse(
-    await engine.renderFileFragment(
-      template,
-      fragment: fragment,
-      context: context,
-    ),
-  );
+  return htmlResponse(await engine.renderFileFragment(template, fragment: fragment, context: context));
 }
 
 /// Renders multiple named fragments concatenated for HTMX out-of-band swaps.
@@ -73,11 +61,5 @@ Future<Response> renderOobFragments(
   List<String> fragments,
   Map<String, dynamic> context,
 ) async {
-  return htmlResponse(
-    await engine.renderFileFragments(
-      template,
-      fragments: fragments,
-      context: context,
-    ),
-  );
+  return htmlResponse(await engine.renderFileFragments(template, fragments: fragments, context: context));
 }

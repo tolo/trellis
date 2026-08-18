@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.10.1
+
+### Fixed
+
+- Build time no longer grows quadratically with the number of pages in a single section. `${page.prev}`/`${page.next}` resolution re-sorted the whole section for every page it rendered, so a flat blog with thousands of posts in one section slowed sharply (a 4000-post section spent ~8 s on neighbour resolution alone; 2000 posts ~1.9 s). The section ordering is now computed once per build pass. A full build of a 2000-post flat blog now spends ~350 ms in total page generation. Sites with pages spread across many sections were barely affected and see no change.
+
+### Added
+
+- `benchmark/site_scale_benchmark.dart` – a scale benchmark for the page-generation hot paths, run by hand when touching `orderedSectionPages`, prev/next resolution, or `NavigationBuilder`. Reports growth ratios across site sizes so superlinear behaviour is visible, includes the flat single-section worst case, and times a full `generateAll` on that worst case so the memoized path is measured where it lives.
+
 ## 0.10.0
 
 ### Added

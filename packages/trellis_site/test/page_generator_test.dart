@@ -898,4 +898,81 @@ void main() {
       expect(leafUrls, ['/docs/guides/advanced/a/', '/docs/guides/advanced/b/']);
     });
   });
+
+  group('TD-007 — prev/next section ordering is memoized per generateAll pass', () {
+    // Flat single-section blog of [count] posts with strictly increasing dates,
+    // so the canonical (date-desc) order is fully determined and every
+    // neighbour is checkable.
+    List<Page> flatBlog(int count) {
+      final base = DateTime(2024, 1, 1);
+      return [
+        makePage(
+          sourcePath: 'blog/_index.md',
+          url: '/blog/',
+          section: 'blog',
+          sectionPath: 'blog',
+          kind: PageKind.section,
+          frontMatter: {'title': 'Blog'},
+        ),
+        for (var i = 0; i < count; i++)
+          makePage(
+            sourcePath: 'blog/post$i.md',
+            url: '/blog/post$i/',
+            section: 'blog',
+            sectionPath: 'blog',
+            frontMatter: {
+              'title': 'Post $i',
+              'date': base.add(Duration(days: i)).toIso8601String(),
+            },
+            content: '<p>x</p>',
+          ),
+      ];
+    }
+
+    test('memoized ordering yields the same neighbours as the unmemoized primitive', () async {
+      // The memo must be a pure cache: every page's prev/next must equal what a
+      // fresh orderedSectionPages call gives. Checked across a whole flat section
+      // so an off-by-one at either boundary or a stale slot in the middle surfaces.
+      const count = 60;
+      final pages = flatBlog(count);
+      final outputDir = tempOutputDir();
+      await PageGenerator(siteDir: contextEchoSiteDir(), outputDir: outputDir).generateAll(pages);
+
+      final expected = orderedSectionPages('blog', pages);
+      for (var i = 0; i < expected.length; i++) {
+        final rel = expected[i].url.replaceAll(RegExp(r'^/|/$'), '');
+        final html = File(p.join(outputDir, rel, 'index.html')).readAsStringSync();
+        if (i > 0) {
+          expect(html, contains('href="${expected[i - 1].url}"'), reason: 'prev of ${expected[i].url}');
+        } else {
+          expect(html, isNot(contains('class="prev"')), reason: 'first page has no prev');
+        }
+        if (i < expected.length - 1) {
+          expect(html, contains('href="${expected[i + 1].url}"'), reason: 'next of ${expected[i].url}');
+        } else {
+          expect(html, isNot(contains('class="next"')), reason: 'last page has no next');
+        }
+      }
+    });
+
+    test('a reused generator recomputes ordering for a changed page set on the next pass', () async {
+      // The cache is scoped to one pass. If it leaked across passes, a second
+      // generateAll on a different page set would render neighbours from the
+      // first set – a silent stale-data bug no single-pass test can catch.
+      final generator = PageGenerator(siteDir: contextEchoSiteDir(), outputDir: tempOutputDir());
+
+      // post0 < post1 < post2 by date → date-desc order is post2, post1, post0.
+      final first = flatBlog(3);
+      await generator.generateAll(first);
+
+      // Second pass drops post1. post2's `next` must now be post0, not the
+      // post1 a leaked first-pass cache would still hold.
+      final second = first.where((pg) => pg.url != '/blog/post1/').toList();
+      await generator.generateAll(second);
+
+      final post2 = File(p.join(generator.outputDir, 'blog', 'post2', 'index.html')).readAsStringSync();
+      expect(post2, contains('href="/blog/post0/"'), reason: 'next must reflect the second page set');
+      expect(post2, isNot(contains('href="/blog/post1/"')), reason: 'stale ordering from pass 1 leaked');
+    });
+  });
 }

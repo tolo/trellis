@@ -65,11 +65,7 @@ class FeedResult {
   /// Non-fatal warnings (e.g. unknown section names).
   final List<String> warnings;
 
-  const FeedResult({
-    required this.fileCount,
-    required this.feedUrls,
-    this.warnings = const [],
-  });
+  const FeedResult({required this.fileCount, required this.feedUrls, this.warnings = const []});
 }
 
 /// Generates Atom (RFC 4287) and optionally RSS 2.0 feeds for a static site.
@@ -109,20 +105,7 @@ class FeedGenerator {
   final String? siteAuthor;
 
   static const _rfc822Days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  static const _rfc822Months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
+  static const _rfc822Months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   const FeedGenerator({
     required this.config,
@@ -142,7 +125,9 @@ class FeedGenerator {
     final feedTitle = _feedTitle(section: section);
     final selfUrl = section != null ? _buildUrl('/$section/feed.xml') : _buildUrl('/feed.xml');
     final siteUrl = _buildUrl('/');
-    final updated = entries.isNotEmpty ? _formatRfc3339(_resolveDateTime(entries.first)) : _formatRfc3339(DateTime.now().toUtc());
+    final updated = entries.isNotEmpty
+        ? _formatRfc3339(_resolveDateTime(entries.first))
+        : _formatRfc3339(DateTime.now().toUtc());
 
     final buf = StringBuffer()
       ..writeln('<?xml version="1.0" encoding="UTF-8"?>')
@@ -209,9 +194,7 @@ class FeedGenerator {
       ..writeln('    <title>${_escapeXml(feedTitle)}</title>')
       ..writeln('    <description>${_escapeXml(siteDescription)}</description>')
       ..writeln('    <link>${_escapeXml(siteUrl)}</link>')
-      ..writeln(
-        '    <atom:link href="${_escapeXml(selfUrl)}" rel="self" type="application/rss+xml"/>',
-      )
+      ..writeln('    <atom:link href="${_escapeXml(selfUrl)}" rel="self" type="application/rss+xml"/>')
       ..writeln('    <lastBuildDate>$lastBuildDate</lastBuildDate>')
       ..writeln('    <generator>Trellis Site</generator>');
 

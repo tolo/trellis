@@ -1,0 +1,133 @@
+name: CI
+
+# Gates main and every feature branch before a release tag can be cut.
+#
+# Until this existed, nothing ran `dart analyze` or `dart test` on push: the
+# first automated check fired at tag time (publish.yml, release-binaries.yml),
+# so a broken merge surfaced only once a release was already in flight, and the
+# binary pipeline would build whatever happened to be on main (TD-010).
+#
+# Runs the melos scripts declared in the root pubspec (ADR-007) rather than a
+# bare `dart analyze`/`dart test`. In a Dart workspace those root commands only
+# cover the root `test/` directory — the ~1500 package tests are not picked up,
+# so a hand-rolled gate would pass while testing almost nothing.
+#
+# Two tiers, because the E2E suites are the expensive part:
+#   * check — analyze + format + unit tests, on every push. Fast feedback.
+#   * e2e   — the E2E-tagged suites, on main and on demand. They generate
+#             projects, run `pub get` and `analyze` inside each, activate the
+#             dart_frog CLI, and boot real servers.
+# Feature branches get the fast tier; main additionally gets E2E.
+#
+# This workflow is ADVISORY for releases, not a hard gate: publish.yml and
+# release-binaries.yml trigger on the `vX.Y.Z` tag push with no dependency on
+# this run. The release procedure (CLAUDE.md, ADR-009) is therefore: merge to
+# main, wait for this run to go green, THEN push the tag. Wiring the tag
+# workflows to require this check is a follow-up.
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Supersede in-flight runs for the same feature-branch ref; the newest commit
+# is the one that matters. NOT on main: a follow-up push there must not cancel
+# the run that gates the release commit, or that commit ends up with no
+# completed check at all.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+# Melos scripts use `exec:`, which shells out to `melos` on PATH — `dart run
+# melos` is not enough. Constraint matches the root pubspec dev_dependency.
+#
+# The Dart SDK is pinned because `format:check` is a hard gate and formatter
+# output is SDK-versioned: an unpinned `stable` would let a Dart release turn
+# CI red on an unrelated commit (that is how 22 files drifted in the first
+# place). Bump deliberately, together with the packages' `sdk:` constraints.
+env:
+  MELOS_VERSION: ^7.4.0
+  DART_SDK: 3.13.0
+
+jobs:
+  check:
+    name: Analyze, format, unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ env.DART_SDK }}
+
+      - name: Activate melos
+        run: |
+          dart pub global activate melos "$MELOS_VERSION"
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+      - name: Bootstrap workspace
+        run: dart pub get
+
+      # melos `analyze` script: `dart analyze --fatal-infos` per package.
+      - name: Analyze
+        run: melos run --no-select analyze
+
+      # Formatting is a gate, not advice: the workspace carried 22 drifted
+      # files before this job existed.
+      - name: Check formatting
+        run: melos run --no-select format:check
+
+      # Excludes @Tags(['e2e']); the e2e job covers those.
+      - name: Unit tests
+        run: melos exec --dir-exists=test -- dart test --exclude-tags=e2e
+
+      # The workspace ROOT is not a melos member, so `melos exec` skips it —
+      # yet it carries the release-distribution contract test, the docs-site
+      # link check, and tool/ (build_release, Homebrew/Scoop renderers). That
+      # is exactly the pipeline TD-010 said was ungated, so cover it here.
+      - name: Root workspace tests
+        run: dart test
+
+      - name: Check root formatting
+        run: dart format --output=none --set-exit-if-changed tool test
+
+  e2e:
+    name: E2E suites
+    # Feature branches stop at `check`; main pays for the full suite.
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ env.DART_SDK }}
+
+      - name: Activate melos
+        run: |
+          dart pub global activate melos "$MELOS_VERSION"
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+      - name: Bootstrap workspace
+        run: dart pub get
+
+      # The dart_frog E2E suites activate this themselves when missing; doing it
+      # up front keeps the cost out of the per-test timeouts.
+      - name: Activate dart_frog CLI
+        run: dart pub global activate dart_frog_cli 1.2.6
+
+      # Full suite, not `--tags=e2e`: `dart test --tags=<tag>` exits 79 in a
+      # package where nothing carries the tag, and only trellis_cli has E2E
+      # tests. Re-running the unit tests here is cheap next to the E2E cost.
+      - name: Full suite
+        run: melos exec --dir-exists=test -- dart test

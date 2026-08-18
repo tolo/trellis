@@ -47,11 +47,11 @@ void main() {
   group('resolveLayout() — site-first, theme-fallback', () {
     test('site layout overrides theme layout at same path', () {
       File(p.join(siteLayouts.path, '_default', 'single.html'))
-          ..parent.createSync(recursive: true)
-          ..writeAsStringSync('<p>site-single</p>');
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('<p>site-single</p>');
       File(p.join(themeLayouts.path, '_default', 'single.html'))
-          ..parent.createSync(recursive: true)
-          ..writeAsStringSync('<p>theme-single</p>');
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('<p>theme-single</p>');
 
       final generator = makeGenerator();
       final result = generator.resolveLayout(makePage('about'));
@@ -64,8 +64,8 @@ void main() {
 
     test('theme layout used as fallback when site does not have it', () {
       File(p.join(themeLayouts.path, '_default', 'single.html'))
-          ..parent.createSync(recursive: true)
-          ..writeAsStringSync('<p>theme-single</p>');
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('<p>theme-single</p>');
 
       final generator = makeGenerator();
       final result = generator.resolveLayout(makePage('about'));
@@ -83,8 +83,8 @@ void main() {
 
     test('home page falls back to theme _default/list.html when no home layout', () {
       File(p.join(themeLayouts.path, '_default', 'list.html'))
-          ..parent.createSync(recursive: true)
-          ..writeAsStringSync('<p>theme-list</p>');
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('<p>theme-list</p>');
 
       final generator = makeGenerator();
       final homePage = makePage('', kind: PageKind.home);
@@ -95,12 +95,12 @@ void main() {
     test('layout candidate priority preserved across site and theme', () {
       // Only provide a less-specific fallback in the theme
       File(p.join(themeLayouts.path, '_default', 'single.html'))
-          ..parent.createSync(recursive: true)
-          ..writeAsStringSync('<p>theme-default</p>');
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('<p>theme-default</p>');
       // Site has a more specific section layout
       File(p.join(siteLayouts.path, 'posts', 'single.html'))
-          ..parent.createSync(recursive: true)
-          ..writeAsStringSync('<p>site-posts</p>');
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('<p>site-posts</p>');
 
       final generator = makeGenerator();
       final page = makePage('post', section: 'posts');
@@ -117,10 +117,7 @@ void main() {
           isA<TemplateNotFoundException>().having(
             (e) => e.tried,
             'tried',
-            allOf(
-              anyElement(contains(siteLayouts.path)),
-              anyElement(contains(themeLayouts.path)),
-            ),
+            allOf(anyElement(contains(siteLayouts.path)), anyElement(contains(themeLayouts.path))),
           ),
         ),
       );
@@ -128,8 +125,8 @@ void main() {
 
     test('site without theme — resolution works as before (single layoutsDir)', () {
       File(p.join(siteLayouts.path, '_default', 'single.html'))
-          ..parent.createSync(recursive: true)
-          ..writeAsStringSync('<p>site-single</p>');
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('<p>site-single</p>');
 
       final generator = makeGenerator(withTheme: false);
       final result = generator.resolveLayout(makePage('about'));
@@ -141,19 +138,15 @@ void main() {
       expect(
         () => generator.resolveLayout(makePage('about')),
         throwsA(
-          isA<TemplateNotFoundException>().having(
-            (e) => e.tried,
-            'tried',
-            everyElement(contains(siteLayouts.path)),
-          ),
+          isA<TemplateNotFoundException>().having((e) => e.tried, 'tried', everyElement(contains(siteLayouts.path))),
         ),
       );
     });
 
     test('resolveLayout() returns template name not absolute path', () {
       File(p.join(themeLayouts.path, '_default', 'single.html'))
-          ..parent.createSync(recursive: true)
-          ..writeAsStringSync('<p>theme-single</p>');
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('<p>theme-single</p>');
 
       final generator = makeGenerator();
       final result = generator.resolveLayout(makePage('about'));

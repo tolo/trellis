@@ -6,9 +6,9 @@
 
 **0.10.0** (shipped 2026-07-25 from branch `feature/0.10.0`) — a multi-slice release hardening the SDK for distribution: binary distribution gains a **Scoop** channel (plus release-workflow hardening and conflict resolution); **build-time syntax highlighting** lands (ADR-010: `trellis_site` bakes `.hljs-*` spans at build time, retiring the vendored client-side Prism); the **`bloom`** landing theme ships alongside `verdant`/`arbor` polish; the theme **SASS-bridge** escaping is hardened; and **TD-009** (CLI CWD mutation) is resolved so the `trellis_cli` suite is parallel-safe.
 
-**0.10.1** (branch `feature/0.10.1`, review-complete) is the follow-up patch: `FragmentHost` typing for `ProcessorContext.domProcessor`, push CI (`ci.yml`, TD-010), release-review fixes.
+**0.10.1 shipped 2026-08-18** — first release cut through [`dev/guidelines/RELEASE-RUNBOOK.md`](../guidelines/RELEASE-RUNBOOK.md) (`tool/release.sh` + the CI tag gate; both gates held for CI and released cleanly): `FragmentHost` typing for `ProcessorContext.domProcessor`, SSG prev/next perf, HTMX 2.0.10 scaffolds, push CI (`ci.yml`, TD-010), release tooling. The first ubuntu CI run surfaced two macOS-only assumptions (TZ-baked golden; Linux `recursive` watch gap → TD-013/TD-014).
 
-**Next up**: cut **v0.10.1** per [`dev/guidelines/RELEASE-RUNBOOK.md`](../guidelines/RELEASE-RUNBOOK.md) (squash-merge → CI green → `tool/release.sh 0.10.1` on `main` → push the tag); then SDK Phase 5 — Full CSS Processing.
+**Next up**: SDK Phase 5 — Full CSS Processing; open follow-ups TD-013 (Linux nested-template watch), TD-014 (date-only front matter timezone), and the `trellis_cli` generated-app e2e loopback twin.
 
 ## Recent Completions
 
@@ -27,6 +27,7 @@
 - **v0.9.0 published 2026-07-07** (docs-site engine features + arbor theme + skin-forcing fix); docs site live at `www.leafnode.se/trellis/` (the account-level custom domain applies to project pages; `tolo.github.io/trellis/` 301s there).
 - **v0.9.1** (2026-07-07): patch release fixing the theme SASS bridge quoting string params into invalid CSS (serif-fallback fonts, unconstrained layout on every bridge-built theme) + `version_lockstep.sh`/melos `workspaceChangelog` fix.
 - **v0.10.0** (2026-07-25): build-time syntax highlighting (ADR-010), Scoop distribution channel, `bloom` theme + theme polish, TD-009.
+- **v0.10.1** (2026-08-18): `FragmentHost` contract (source-break for direct `ProcessorContext` construction, deliberate), SSG prev/next perf, HTMX 2.0.10 scaffolds, push CI + release gate/tooling. Verified with `tool/verify_release.sh 0.10.1`: pub.dev ×8, Release + 11 assets, Homebrew, Scoop.
 - Releases follow `dev/guidelines/RELEASE-RUNBOOK.md`: `tool/release.sh` (lockstep bump, gate, release commit, local tag), then one push; publish is OIDC tag-triggered (`publish.yml`, global `vX.Y.Z` tag per ADR-009) behind the CI release gate (`release-gate.yml`).
 - The 4 `examples/*` packages + root workspace correctly carry `publish_to: none`.
 

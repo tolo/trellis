@@ -2,7 +2,7 @@
 
 Canonical reference for the internal architecture of the core `trellis` template engine package. Covers the render pipeline, processor model, expression evaluation, caching, fragment system, and extension points.
 
-**Current through**: SDK Phase 1 (S06)
+**Current through**: SDK Phase 1 (S06) + 0.10.2 (`FileSystemLoader` per-directory dev-mode watching on Linux)
 
 ---
 
@@ -267,7 +267,7 @@ Fragment inclusions are tracked via an inclusion stack. If a fragment ID (templa
 
 | Loader | Source | Security | Dev Mode | `listTemplates()` |
 |---|---|---|---|---|
-| `FileSystemLoader` | Filesystem directory | Path traversal rejection, symlink boundary checks | `Directory.watch()` with extension filter | Yes |
+| `FileSystemLoader` | Filesystem directory | Path traversal rejection, symlink boundary checks | `Directory.watch()` with extension filter — one native recursive watch on macOS/Windows, one watch per directory on Linux (dart:io ignores `recursive` there) | Yes |
 | `MapLoader` | `Map<String, String>` | N/A | N/A | Yes |
 | `AssetLoader` | `package:` URIs | Same as FileSystemLoader | N/A | No |
 | `CompositeLoader` | Delegate chain | Delegates to children | N/A | No |

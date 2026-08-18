@@ -205,24 +205,54 @@ void main() {
       await loader.close();
     });
 
-    test(
-      'nested subdirectory file change detected',
-      () async {
-        final subDir = Directory('${tempDir.path}/deep/nested');
-        subDir.createSync(recursive: true);
-        File('${subDir.path}/page.html').writeAsStringSync('<p>Nested</p>');
-        loader = FileSystemLoader(tempDir.path, devMode: true);
+    // Nested watching is the platform gap TD-013 closed: dart:io's `recursive: true` is a no-op on
+    // Linux (inotify), so the loader watches each directory itself there. These three tests are the
+    // regression guard and must pass on every OS.
+    test('nested subdirectory file change detected', () async {
+      final subDir = Directory('${tempDir.path}/deep/nested');
+      subDir.createSync(recursive: true);
+      File('${subDir.path}/page.html').writeAsStringSync('<p>Nested</p>');
+      loader = FileSystemLoader(tempDir.path, devMode: true);
 
-        final future = loader.changes!.first.timeout(const Duration(seconds: 2));
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-        File('${subDir.path}/page.html').writeAsStringSync('<p>Updated</p>');
+      final future = loader.changes!.first.timeout(const Duration(seconds: 5));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      File('${subDir.path}/page.html').writeAsStringSync('<p>Updated</p>');
 
-        await expectLater(future, completes);
-      },
-      // dart:io `Directory.watch(recursive: true)` is documented as NOT supported on Linux
-      // (inotify): nested edits are never reported there, so this can only pass on macOS/Windows.
-      // The product gap (dev-mode reload misses nested templates on Linux) is TD-013.
-      skip: Platform.isLinux ? 'Directory.watch(recursive: true) is unsupported on Linux (dart:io); TD-013' : false,
-    );
+      await expectLater(future, completes);
+    });
+
+    test('subdirectory created after watching starts is watched', () async {
+      loader = FileSystemLoader(tempDir.path, devMode: true);
+
+      // The new subtree itself is a change (it arrives carrying a template)…
+      final created = loader.changes!.first.timeout(const Duration(seconds: 5));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      final lateDir = Directory('${tempDir.path}/late/deep')..createSync(recursive: true);
+      final lateFile = File('${lateDir.path}/page.html')..writeAsStringSync('<p>Late</p>');
+      await expectLater(created, completes);
+
+      // …and edits inside it keep being reported, i.e. it really is watched, not just scanned once.
+      final edited = loader.changes!.first.timeout(const Duration(seconds: 5));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      lateFile.writeAsStringSync('<p>Updated</p>');
+
+      await expectLater(edited, completes);
+    });
+
+    test('close() stops nested-directory events too', () async {
+      final subDir = Directory('${tempDir.path}/deep/nested')..createSync(recursive: true);
+      final nestedFile = File('${subDir.path}/page.html')..writeAsStringSync('<p>Nested</p>');
+      loader = FileSystemLoader(tempDir.path, devMode: true);
+
+      var emitted = false;
+      final sub = loader.changes!.listen((_) => emitted = true);
+      await loader.close();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      nestedFile.writeAsStringSync('<p>Changed</p>');
+      File('${tempDir.path}/root.html').writeAsStringSync('<p>Root</p>');
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      expect(emitted, isFalse);
+      await sub.cancel();
+    });
   });
 }

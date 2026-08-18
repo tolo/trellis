@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.2
+
+### Fixed
+
+- Dev-mode template watching now sees changes in **nested** template directories on Linux. `FileSystemLoader(devMode: true)` relied on `Directory.watch(recursive: true)`, which dart:io implements with inotify on Linux — where the `recursive` flag is silently ignored, so hot reload only ever noticed edits directly in the template root. On Linux the loader now watches each directory in the tree itself, adding watches for directories that appear later (including ones created or moved in already carrying templates) and dropping them when they go away. macOS and Windows keep the single native recursive watch. No API change.
+
 ## 0.10.1
 
 ### Breaking

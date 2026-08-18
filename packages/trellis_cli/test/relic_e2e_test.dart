@@ -18,6 +18,9 @@ import 'package:trellis_cli/trellis_cli.dart';
 import '_e2e_server.dart';
 import '_workspace_root.dart';
 
+/// Numeric loopback host every client connects to; the Relic template binds `anyIPv4`, which covers it.
+final String _host = e2eLoopback.address;
+
 void main() {
   group('Relic starter E2E', () {
     late Directory projectDir;
@@ -65,7 +68,7 @@ dependency_overrides:
           await serverFile.writeAsString(originalServerSource.replaceFirst('port: 8080', 'port: $port'));
           return Process.start('dart', ['run', 'bin/server.dart'], workingDirectory: projectDir.path);
         },
-        isReady: (port) => _waitForServer('localhost', port),
+        isReady: (port) => _waitForServer(_host, port),
       );
       serverProcess = booted.process;
       port = booted.port;
@@ -83,27 +86,27 @@ dependency_overrides:
     });
 
     test('GET / returns 200', () async {
-      final res = await _get('http://localhost:$port/');
+      final res = await _get('http://$_host:$port/');
       expect(res.statusCode, 200);
       expect(res.body, contains('<!DOCTYPE html>'));
     });
 
     test('GET /about returns 200', () async {
-      final res = await _get('http://localhost:$port/about');
+      final res = await _get('http://$_host:$port/about');
       expect(res.statusCode, 200);
       expect(res.body, contains('About This App'));
       expect(res.body, contains('<!DOCTYPE html>'));
     });
 
     test('GET /about returns fragment for HTMX navigation', () async {
-      final res = await _get('http://localhost:$port/about', headers: {'HX-Request': 'true'});
+      final res = await _get('http://$_host:$port/about', headers: {'HX-Request': 'true'});
       expect(res.statusCode, 200);
       expect(res.body, contains('About This App'));
       expect(res.body, isNot(contains('<!DOCTYPE html>')));
     });
 
     test('POST /counter/increment returns 200', () async {
-      final res = await _post('http://localhost:$port/counter/increment', body: '', headers: {'HX-Request': 'true'});
+      final res = await _post('http://$_host:$port/counter/increment', body: '', headers: {'HX-Request': 'true'});
       expect(res.statusCode, 200);
       expect(res.body, contains('counter-value'));
       expect(res.body, contains('>1<'));

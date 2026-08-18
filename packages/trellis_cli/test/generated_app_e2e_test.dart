@@ -18,6 +18,9 @@ import 'package:trellis_cli/trellis_cli.dart';
 import '_e2e_server.dart';
 import '_workspace_root.dart';
 
+/// Numeric loopback host – bound by the patched server and connected to by every client.
+final String _host = e2eLoopback.address;
+
 void main() {
   group('Generated app E2E', () {
     late Directory projectDir;
@@ -63,6 +66,8 @@ dependency_overrides:
       // ── 5. Boot server on its own port ─────────────────────────────────
       // The port is compiled into the generated source, so each attempt
       // re-patches from the pristine text rather than the previous patch.
+      // The template binds 'localhost' (IPv6-only on macOS); patch in the
+      // numeric loopback the client connects to – see [e2eLoopback].
       final serverFile = File('${projectDir.path}/bin/server.dart');
       final originalServerSource = await serverFile.readAsString();
 
@@ -72,12 +77,12 @@ dependency_overrides:
           await serverFile.writeAsString(
             originalServerSource.replaceFirst(
               "await shelf_io.serve(handler, 'localhost', 8080)",
-              "await shelf_io.serve(handler, 'localhost', $port)",
+              "await shelf_io.serve(handler, InternetAddress('$_host'), $port)",
             ),
           );
           return Process.start('dart', ['run', 'bin/server.dart'], workingDirectory: projectDir.path);
         },
-        isReady: (port) => _waitForServer('localhost', port),
+        isReady: (port) => _waitForServer(_host, port),
       );
       serverProcess = booted.process;
       port = booted.port;
@@ -89,19 +94,19 @@ dependency_overrides:
     });
 
     test('GET / returns 200', () async {
-      final res = await _get('http://localhost:$port/');
+      final res = await _get('http://$_host:$port/');
       expect(res.statusCode, 200);
     });
 
     test('GET /about returns 200', () async {
-      final res = await _get('http://localhost:$port/about');
+      final res = await _get('http://$_host:$port/about');
       expect(res.statusCode, 200);
       expect(res.body, contains('About This App'));
       expect(res.body, contains('<!DOCTYPE html>'));
     });
 
     test('GET /about returns fragment for HTMX navigation', () async {
-      final res = await _get('http://localhost:$port/about', headers: {'HX-Request': 'true'});
+      final res = await _get('http://$_host:$port/about', headers: {'HX-Request': 'true'});
       expect(res.statusCode, 200);
       expect(res.body, contains('About This App'));
       expect(res.body, isNot(contains('<!DOCTYPE html>')));
@@ -109,7 +114,7 @@ dependency_overrides:
 
     test('POST /counter/increment with valid CSRF token returns 200', () async {
       // Obtain a CSRF cookie from an initial GET.
-      final getRes = await _get('http://localhost:$port/');
+      final getRes = await _get('http://$_host:$port/');
       expect(getRes.statusCode, 200);
 
       final cookieValue = _extractCsrfCookieValue(getRes.setCookieHeader);
@@ -119,7 +124,7 @@ dependency_overrides:
       final rawToken = cookieValue!.split('.').first;
 
       final postRes = await _post(
-        'http://localhost:$port/counter/increment',
+        'http://$_host:$port/counter/increment',
         body: '_csrf=$rawToken',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -134,7 +139,7 @@ dependency_overrides:
 
     test('POST /counter/increment without CSRF token returns 403', () async {
       final postRes = await _post(
-        'http://localhost:$port/counter/increment',
+        'http://$_host:$port/counter/increment',
         body: '',
         headers: {'Content-Type': 'application/x-www-form-urlencoded', 'HX-Request': 'true'},
       );
@@ -142,7 +147,7 @@ dependency_overrides:
     });
 
     test('security headers include the generated CSP policy', () async {
-      final uri = Uri.parse('http://localhost:$port/');
+      final uri = Uri.parse('http://$_host:$port/');
       final client = HttpClient();
       try {
         final request = await client.getUrl(uri);

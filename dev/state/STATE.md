@@ -8,7 +8,7 @@
 
 **0.10.1 shipped 2026-08-18** — first release cut through [`dev/guidelines/RELEASE-RUNBOOK.md`](../guidelines/RELEASE-RUNBOOK.md) (`tool/release.sh` + the CI tag gate; both gates held for CI and released cleanly): `FragmentHost` typing for `ProcessorContext.domProcessor`, SSG prev/next perf, HTMX 2.0.10 scaffolds, push CI (`ci.yml`, TD-010), release tooling. The first ubuntu CI run surfaced two macOS-only assumptions (TZ-baked golden; Linux `recursive` watch gap → TD-013/TD-014).
 
-**Next up**: SDK Phase 5 — Full CSS Processing; open follow-ups TD-013 (Linux nested-template watch), TD-014 (date-only front matter timezone), and the `trellis_cli` generated-app e2e loopback twin.
+**Next up**: 0.11 — doc-site redesign & three new built-in themes (private `docs/specs/0.11/`, 5 stories spec-ready), then TD-006 SASS `@use` migration; later candidates: CSS processing, composition primitives, Trellis UI (private `docs/specs/0.next-*/`). Open follow-ups: TD-013 (Linux nested-template watch), TD-014 (date-only front matter timezone), and the `trellis_cli` generated-app e2e loopback twin.
 
 ## Recent Completions
 

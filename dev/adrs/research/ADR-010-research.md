@@ -160,9 +160,9 @@ highlighter JS across every theme.
 
 ## Corroborating Signals
 
-- The Phase 5 CSS-purger design already safelists `/^hljs-/`
-  (`docs/specs/sdk-phase5/prd-draft.md`, private repo) — downstream tooling was
-  already designed around highlight.js classes, not Prism's `.token.*`.
+- The planned CSS-purger design (private CSS-processing draft) already safelists
+  `/^hljs-/` — downstream tooling was already designed around highlight.js
+  classes, not Prism's `.token.*`.
 - The incumbent Prism grammar set was sized to the **doc-site's fixed language
   list** and paired with a since-removed SRI discipline — a sunk-cost artifact, not
   a general highlighting decision.

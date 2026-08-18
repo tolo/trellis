@@ -31,6 +31,9 @@ final class FileSystemLoader implements TemplateLoader {
   /// tree on Linux — see [_hasNativeRecursiveWatch].
   final Map<String, StreamSubscription<FileSystemEvent>> _watchSubscriptions = {};
 
+  /// Guards [_onWatchError] so an exhausted watch budget warns once, not once per directory.
+  bool _watchErrorWarned = false;
+
   /// A broadcast stream that emits an event whenever a template file changes.
   ///
   /// Returns `null` when [devMode] is `false`.
@@ -65,15 +68,27 @@ final class FileSystemLoader implements TemplateLoader {
   /// in) before its watch is installed, so those files would otherwise go unseen.
   void _watchSubtree(String path, {required bool emitIfTemplatesFound}) {
     if (!Directory(path).existsSync()) return;
-    // Install the parent watch before listing, so a directory created during the walk is still
-    // reported (as a create event) rather than falling into the gap.
-    _watchDirectory(path, recursive: false);
     var templatesFound = false;
-    for (final entity in Directory(path).listSync(recursive: true, followLinks: false)) {
-      if (entity is Directory) {
-        _watchDirectory(entity.path, recursive: false);
-      } else if (entity.path.endsWith(extension)) {
-        templatesFound = true;
+    final pending = [path];
+    while (pending.isNotEmpty) {
+      final directory = pending.removeLast();
+      // Watch before listing, so a directory created during the walk still arrives as a create event
+      // instead of falling into the gap between the two.
+      _watchDirectory(directory, recursive: false);
+      final List<FileSystemEntity> entries;
+      try {
+        entries = Directory(directory).listSync(followLinks: false);
+      } on FileSystemException {
+        // Removed mid-walk, or unreadable. One directory refusing to be read must not abandon the
+        // rest of the tree, which a single `listSync(recursive: true)` would do.
+        continue;
+      }
+      for (final entity in entries) {
+        if (entity is Directory) {
+          pending.add(entity.path);
+        } else if (entity.path.endsWith(extension)) {
+          templatesFound = true;
+        }
       }
     }
     if (templatesFound && emitIfTemplatesFound) _changesController?.add(null);
@@ -86,13 +101,29 @@ final class FileSystemLoader implements TemplateLoader {
         .watch(recursive: recursive)
         .listen(
           _onFileSystemEvent,
-          // A directory can vanish between being listed and being watched; per-directory watches are
-          // bookkeeping, so drop the dead one instead of surfacing an error the dev server can't act on.
-          // The native recursive watch keeps its unhandled-error behaviour.
-          onError: recursive ? null : (Object _) => _dropWatch(path, subscription),
+          // Per-directory watches are bookkeeping: drop a dead one rather than surfacing an error the
+          // dev server can't act on. The native recursive watch keeps its unhandled-error behaviour.
+          onError: recursive ? null : (Object error) => _onWatchError(path, error, subscription),
           onDone: () => _dropWatch(path, subscription),
         );
     _watchSubscriptions[path] = subscription;
+  }
+
+  /// Handles a per-directory watch failing to start or dying.
+  ///
+  /// A directory that vanished between being listed and being watched is routine and silent. One that
+  /// is still there means the OS refused the watch — on Linux almost always the per-user inotify limit
+  /// (`fs.inotify.max_user_watches`), which a large template tree can exhaust. That caps hot reload
+  /// silently, so it is worth one warning; further failures are almost certainly the same cause.
+  void _onWatchError(String path, Object error, StreamSubscription<FileSystemEvent> subscription) {
+    _dropWatch(path, subscription);
+    if (_watchErrorWarned || !Directory(path).existsSync()) return;
+    _watchErrorWarned = true;
+    stderr.writeln(
+      'Warning: Trellis dev-mode could not watch template directory "$path" ($error). Template changes '
+      'below it will not trigger a reload. On Linux this is usually the inotify watch limit — raise '
+      '"fs.inotify.max_user_watches" or point the loader at a smaller template tree.',
+    );
   }
 
   void _dropWatch(String path, StreamSubscription<FileSystemEvent> subscription) {
@@ -138,13 +169,17 @@ final class FileSystemLoader implements TemplateLoader {
   ///
   /// Safe to call multiple times — subsequent calls are no-ops.
   Future<void> close() async {
+    // Drop the controller first: cancelling is asynchronous, and an event delivered by a not-yet-
+    // cancelled watch while we await would otherwise add to a closing controller — or, for a directory
+    // create, install a fresh watch that this snapshot no longer covers.
+    final controller = _changesController;
+    _changesController = null;
     final subscriptions = _watchSubscriptions.values.toList();
     _watchSubscriptions.clear();
     for (final subscription in subscriptions) {
       await subscription.cancel();
     }
-    await _changesController?.close();
-    _changesController = null;
+    await controller?.close();
   }
 
   @override
@@ -171,10 +206,15 @@ final class FileSystemLoader implements TemplateLoader {
   ///
   /// Returned names match [load] input format: relative to [basePath] and
   /// without the configured [extension].
+  ///
+  /// Symlinks are not followed, so every name returned is one [load] will actually serve: a symlink
+  /// out of the tree would be rejected by the same boundary check [load] applies, and one pointing
+  /// back into it only duplicates a template already listed under its real path. This also matches
+  /// what dev-mode watching covers.
   List<String> listTemplates() {
     final templates =
         Directory(_canonicalBase)
-            .listSync(recursive: true)
+            .listSync(recursive: true, followLinks: false)
             .whereType<File>()
             .map((file) => file.path)
             .where((path) => path.endsWith(extension))

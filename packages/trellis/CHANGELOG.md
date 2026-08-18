@@ -5,6 +5,9 @@
 ### Fixed
 
 - Dev-mode template watching now sees changes in **nested** template directories on Linux. `FileSystemLoader(devMode: true)` relied on `Directory.watch(recursive: true)`, which dart:io implements with inotify on Linux — where the `recursive` flag is silently ignored, so hot reload only ever noticed edits directly in the template root. On Linux the loader now watches each directory in the tree itself, adding watches for directories that appear later (including ones created or moved in already carrying templates) and dropping them when they go away. macOS and Windows keep the single native recursive watch. No API change.
+- A template directory the OS refuses to watch — most often Linux's `fs.inotify.max_user_watches` limit on a large template tree — now prints one warning naming the directory, instead of capping hot reload silently. A directory that is merely unreadable no longer stops the rest of the tree from being watched.
+- `close()` on a dev-mode `FileSystemLoader` can no longer leave a watch behind: an event arriving while it was cancelling could install a new directory watch that the shutdown had already passed by.
+- `listTemplates()` no longer follows symlinks, so every name it returns is one `load()` will actually serve. It previously listed templates reached through a symlink out of the template tree, which `load()` then rejected as a boundary escape — turning up as spurious failures from `warmUpAll()` and in `trellis_dev`'s validator. A symlink pointing back inside the tree only duplicated a template already listed under its real path.
 
 ## 0.10.1
 

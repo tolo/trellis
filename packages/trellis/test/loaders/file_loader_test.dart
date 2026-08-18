@@ -1,8 +1,51 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:test/test.dart';
 import 'package:trellis/trellis.dart';
+
+/// Why the unwatchable-directory test cannot run here, or `null` when it can: only Linux takes the
+/// per-directory watch path, and root ignores the directory permissions the test relies on to make the
+/// OS refuse a watch.
+final String? _unwatchableDirSkip = !Platform.isLinux
+    ? 'per-directory watching, and this failure mode, are Linux-only'
+    : Process.runSync('id', ['-u']).stdout.toString().trim() == '0'
+    ? 'running as root — directory permissions do not stop root from watching'
+    : null;
+
+/// Exit code the fixture never produces itself, standing in for "still running when we gave up".
+const _fixtureTimedOut = -1;
+
+/// Absolute path of the `trellis` package root, so a fixture path resolves regardless of the
+/// directory `dart test` was invoked from (the package dir under melos, the workspace root by hand).
+Future<String> _packageRoot() async {
+  final libUri = await Isolate.resolvePackageUri(Uri.parse('package:trellis/trellis.dart'));
+  return libUri == null ? Directory.current.path : File.fromUri(libUri).parent.parent.path;
+}
+
+/// Captures `dart:io` [stderr] writes during [body] — the loader's watch-failure warning has no
+/// injectable sink, so `IOOverrides` is the seam.
+Future<String> _captureStderr(Future<void> Function() body) async {
+  final buffer = StringBuffer();
+  await IOOverrides.runZoned(body, stderr: () => _BufferStdout(buffer));
+  return buffer.toString();
+}
+
+class _BufferStdout implements Stdout {
+  _BufferStdout(this._buffer);
+
+  final StringBuffer _buffer;
+
+  @override
+  void writeln([Object? object = '']) => _buffer.writeln(object);
+
+  @override
+  void write(Object? object) => _buffer.write(object);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
 
 void main() {
   group('FileSystemLoader', () {
@@ -92,6 +135,22 @@ void main() {
         link.createSync(outsideFile.path);
 
         expect(() => loader.load('escape'), throwsA(isA<TemplateSecurityException>()));
+      });
+
+      test('listTemplates omits symlinks load() would reject', () {
+        // listTemplates() is the discovery half of load(): warmUpAll() and trellis_dev's validator
+        // load every name it returns, so a name that load() rejects turns into a spurious failure.
+        final outside = Directory('${tempDir.parent.path}/trellis_outside_${tempDir.path.hashCode}');
+        outside.createSync();
+        addTearDown(() => outside.deleteSync(recursive: true));
+        File('${outside.path}/secret.html').writeAsStringSync('SECRET');
+
+        Link('${tempDir.path}/escaping_file.html').createSync('${outside.path}/secret.html');
+        Link('${tempDir.path}/escaping_dir').createSync(outside.path);
+
+        expect(loader.listTemplates(), ['explicit', 'page', 'sub/nested']);
+        expect(() => loader.load('escaping_file'), throwsA(isA<TemplateSecurityException>()));
+        expect(() => loader.load('escaping_dir/secret'), throwsA(isA<TemplateSecurityException>()));
       });
 
       test('rejects prefix-collision sibling escape', () {
@@ -238,6 +297,58 @@ void main() {
 
       await expectLater(edited, completes);
     });
+
+    test('unwatchable directory warns once instead of failing silently', () async {
+      // A watch the OS refuses (here: an unreadable directory; in the wild: the inotify limit) caps
+      // hot reload for everything below it. Silence is what made TD-013 expensive, so it must warn.
+      final blocked = Directory('${tempDir.path}/blocked')..createSync();
+      File('${blocked.path}/page.html').writeAsStringSync('<p>Blocked</p>');
+      Process.runSync('chmod', ['000', blocked.path]);
+      addTearDown(() => Process.runSync('chmod', ['755', blocked.path]));
+
+      final warning = await _captureStderr(() async {
+        loader = FileSystemLoader(tempDir.path, devMode: true);
+        // The watch error surfaces asynchronously, on the stream rather than from the constructor.
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      });
+
+      expect(warning, contains('could not watch template directory'));
+      expect(warning, contains('blocked'));
+      expect(warning, contains('max_user_watches'));
+    }, skip: _unwatchableDirSkip);
+
+    test('close() releases every watch, not just the base one', () async {
+      // Proven out of process: a live watch keeps the VM alive, so a subscription `close()` missed
+      // shows up as a fixture that never exits. In-process the leak is invisible — `close()` drops the
+      // controller, so a leaked watch has nothing to emit into.
+      Directory('${tempDir.path}/deep/nested').createSync(recursive: true);
+      File('${tempDir.path}/deep/nested/page.html').writeAsStringSync('<p>Nested</p>');
+      loader = FileSystemLoader(tempDir.path); // devMode: false — the fixture owns the watching.
+
+      final fixture = await Process.start('dart', [
+        'run',
+        'test/loaders/close_releases_watches_fixture.dart',
+        tempDir.path,
+      ], workingDirectory: await _packageRoot());
+      final stdoutText = fixture.stdout.transform(const SystemEncoding().decoder).join();
+      final stderrText = fixture.stderr.transform(const SystemEncoding().decoder).join();
+
+      final exitCode = await fixture.exitCode.timeout(
+        const Duration(seconds: 60),
+        onTimeout: () {
+          fixture.kill();
+          return _fixtureTimedOut;
+        },
+      );
+      expect(
+        exitCode,
+        0,
+        reason: exitCode == _fixtureTimedOut
+            ? 'fixture never exited — a watch outlived close() and kept the VM alive'
+            : 'fixture exited $exitCode:\n${await stderrText}',
+      );
+      expect(await stdoutText, contains('closed'));
+    }, timeout: const Timeout(Duration(seconds: 90)));
 
     test('close() stops nested-directory events too', () async {
       final subDir = Directory('${tempDir.path}/deep/nested')..createSync(recursive: true);

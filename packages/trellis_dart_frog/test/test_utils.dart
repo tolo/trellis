@@ -1,10 +1,17 @@
+import 'dart:io';
+
 import 'package:dart_frog/dart_frog.dart';
 import 'package:http/http.dart' as http;
 
 /// Starts a test server with the given handler, runs [callback], then closes.
+///
+/// Binds a concrete loopback address and connects to that same address, never the `localhost` name:
+/// `HttpServer.bind('localhost')` listens on the first resolved address only (`::1` on macOS) while
+/// `Socket.connect('localhost')` tries IPv4 first, so an unrelated process listening on
+/// `127.0.0.1:<same ephemeral port>` receives the request instead – wrong response or a hang.
 Future<T> withServer<T>(Handler handler, Future<T> Function(Uri baseUri) callback) async {
-  final server = await serve(handler, 'localhost', 0);
-  final baseUri = Uri.parse('http://localhost:${server.port}');
+  final server = await serve(handler, InternetAddress.loopbackIPv4, 0);
+  final baseUri = Uri(scheme: 'http', host: server.address.address, port: server.port);
   try {
     return await callback(baseUri);
   } finally {

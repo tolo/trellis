@@ -4,6 +4,8 @@ import 'dart:isolate';
 
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+
+import 'fixture_mtimes.dart';
 import 'package:trellis/trellis.dart';
 import 'package:trellis_site/trellis_site.dart';
 
@@ -21,6 +23,7 @@ void main() {
   setUpAll(() async {
     final packageUri = await Isolate.resolvePackageUri(Uri.parse('package:trellis_site/'));
     packageRoot = p.dirname(packageUri!.toFilePath());
+    pinBuildSiteFixtureMtimes(p.join(packageRoot, 'test', 'test_fixtures'));
   });
 
   String fixture(String name) => p.join(packageRoot, 'test', 'test_fixtures', name);

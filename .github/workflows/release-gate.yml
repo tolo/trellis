@@ -1,0 +1,46 @@
+name: Release gate
+
+# Reusable first job of the two tag-triggered release workflows (publish.yml,
+# release-binaries.yml): refuses to let them run unless ci.yml concluded
+# `success` for the tagged commit AND that commit is on main.
+#
+# Why: pushing a `vX.Y.Z` tag IS the publish (pub.dev via OIDC, GitHub Release,
+# Homebrew/Scoop taps), and main has no branch protection, so nothing else
+# stops a red build from shipping. The publish job in publish.yml is itself an
+# upstream reusable workflow — no steps can be added inside it — hence a
+# separate job that the real first job `needs:`. Same shape in release-binaries.
+#
+# The release commit and its tag are pushed together (tool/release.sh prints
+# `git push origin main vX.Y.Z`), so CI is normally still running when this
+# starts: the gate waits for it (bounded), then asserts the conclusion.
+# On failure, fix or re-run CI until green and re-run the failed release
+# workflow from the Actions tab — the tag needs no change.
+#
+# See dev/guidelines/RELEASE-RUNBOOK.md.
+
+on:
+  workflow_call:
+
+jobs:
+  gate:
+    name: Require green CI on the tagged commit
+    runs-on: ubuntu-latest
+    # Must exceed tool/require_green_ci.sh's wait (CI_GATE_TIMEOUT_MINUTES,
+    # default 75) so the script's own message is what fails the job.
+    timeout-minutes: 80
+    permissions:
+      actions: read # list ci.yml runs for the commit
+      contents: read # resolve tag -> commit, compare against main, checkout
+    steps:
+      - name: Checkout (tool/ only)
+        # SHA-pinned like release-binaries.yml (see its header for the update process): this job
+        # is the rail in front of an irreversible publish.
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          sparse-checkout: tool
+
+      - name: Require green CI on the tagged commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: tool/require_green_ci.sh "$GITHUB_REF_NAME"

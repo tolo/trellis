@@ -82,9 +82,10 @@ This file covers working **on** the SDK. For template syntax, see the
 ## Workflow Rules
 
 - **Squash merge to `main`** (`git merge --squash`). Stay on the current branch unless told otherwise.
-- **Lockstep versioning (ADR-009).** All publishable packages share one version and release together.
-  Cut releases with [`tool/version_lockstep.sh <version>`](tool/version_lockstep.sh) — never bump a
-  single package on its own. Pre-1.0: minor for features, patch for fixes, applied to the whole SDK.
+- **Lockstep versioning (ADR-009).** All publishable packages share one version and release together — never
+  bump a single package on its own. Pre-1.0: minor for features, patch for fixes, applied to the whole SDK.
+- **Releases follow [`dev/guidelines/RELEASE-RUNBOOK.md`](dev/guidelines/RELEASE-RUNBOOK.md):** review → squash-merge →
+  CI green → `tool/release.sh X.Y.Z` on `main` → push the tag (the one manual, irreversible step). Nothing else.
 - **Keep architecture docs current.** When a change adds/modifies/removes a subsystem, protocol, or
   pipeline stage, update the affected doc in `dev/architecture/` in the same change and bump its
   "Current through" marker. Don't defer.

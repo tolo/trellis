@@ -49,9 +49,9 @@ void main() {
 
     test('README manual-download example version tracks the trellis_cli package version', () {
       // Guards M16: melos bumps pubspecs but not the hardcoded example version in the
-      // manual-download snippets. Passes today (all 0.9.1). This repo-root contract test
-      // (run via `dart test test/`, not CI — CI gating is tracked as TD-010) fails after a
-      // lockstep bump if version_lockstep.sh's README rewrite is skipped or broken.
+      // manual-download snippets. This repo-root contract test (run by ci.yml's `check`
+      // job and by tool/release.sh) fails after a lockstep bump if version_lockstep.sh's
+      // README rewrite is skipped or broken.
       final pubspec = readWorkspaceFile('packages/trellis_cli/pubspec.yaml');
       final pkgVersion = RegExp(r'^version:\s*(\S+)', multiLine: true).firstMatch(pubspec)?.group(1);
       expect(pkgVersion, isNotNull, reason: 'no version: line in trellis_cli/pubspec.yaml');
@@ -72,6 +72,76 @@ void main() {
       for (final version in exampleVersions) {
         expect(version, pkgVersion, reason: 'stale README example version; run tool/version_lockstep.sh to sync');
       }
+    });
+  });
+
+  group('release gate contracts', () {
+    // Pushing a `vX.Y.Z` tag IS the publish (pub.dev cannot unpublish) and main
+    // has no branch protection, so the tag workflows carry their own gate: a
+    // first job (release-gate.yml) that requires a green ci.yml run for the
+    // tagged commit. These assert the wiring stays in place — dropping a
+    // `needs:` would silently return to "a red build can publish".
+    test('publish.yml gates every package publish on the release gate', () {
+      final workflow = readWorkspaceFile('.github/workflows/publish.yml');
+
+      expect(_jobBlock(workflow, 'ci-gate'), contains('uses: ./.github/workflows/release-gate.yml'));
+      expect(_jobBlock(workflow, 'publish'), contains('needs: ci-gate'));
+    });
+
+    test('release-binaries.yml gates its first job on the release gate and verifies at the end', () {
+      final workflow = readWorkspaceFile('.github/workflows/release-binaries.yml');
+
+      expect(_jobBlock(workflow, 'ci-gate'), contains('uses: ./.github/workflows/release-gate.yml'));
+      expect(_jobBlock(workflow, 'version'), contains('needs: ci-gate'));
+      expect(_jobBlock(workflow, 'verify'), contains('tool/verify_release.sh'));
+    });
+
+    test('every job in both tag workflows is downstream of the gate', () {
+      // The gate only helps if nothing runs beside it: a job added later without
+      // `needs:` would start on the raw tag push, ungated. Transitive chains
+      // (build -> version -> ci-gate) are fine; a missing `needs:` is not.
+      for (final path in ['.github/workflows/publish.yml', '.github/workflows/release-binaries.yml']) {
+        final workflow = readWorkspaceFile(path);
+        final jobIds = RegExp(
+          r'^  ([\w-]+):$',
+          multiLine: true,
+        ).allMatches(_jobsSection(workflow)).map((m) => m.group(1)!);
+        expect(jobIds, contains('ci-gate'), reason: '$path has no ci-gate job');
+        for (final jobId in jobIds.where((id) => id != 'ci-gate')) {
+          expect(
+            _jobBlock(workflow, jobId),
+            matches(RegExp(r'^    needs:', multiLine: true)),
+            reason: '$path job `$jobId` has no `needs:` — it would run on the tag push without the gate',
+          );
+        }
+      }
+    });
+
+    test('release-gate.yml is a reusable workflow that runs the shared gate script', () {
+      final workflow = readWorkspaceFile('.github/workflows/release-gate.yml');
+
+      expect(workflow, contains('workflow_call:'));
+      expect(workflow, contains('tool/require_green_ci.sh "\$GITHUB_REF_NAME"'));
+    });
+
+    test('ci.yml and release-binaries.yml pin the same Dart SDK', () {
+      // CI's analyze/format/test evidence only speaks for the release toolchain
+      // if both use the same SDK; and release-binaries must take it from the
+      // single `env.DART_SDK`, not a per-job literal that can drift.
+      String pin(String path) {
+        final match = RegExp(r'^\s*DART_SDK:\s*(\S+)', multiLine: true).firstMatch(readWorkspaceFile(path));
+        expect(match, isNotNull, reason: 'no DART_SDK env in $path');
+        return match!.group(1)!;
+      }
+
+      expect(pin('.github/workflows/release-binaries.yml'), pin('.github/workflows/ci.yml'));
+      final releaseWorkflow = readWorkspaceFile('.github/workflows/release-binaries.yml');
+      expect(
+        RegExp(r'^\s*sdk:\s*[0-9]', multiLine: true).hasMatch(releaseWorkflow),
+        isFalse,
+        reason: r'release-binaries.yml has a literal `sdk:` pin; use `sdk: ${{ env.DART_SDK }}`',
+      );
+      expect(releaseWorkflow, contains(r'sdk: ${{ env.DART_SDK }}'));
     });
   });
 
@@ -140,6 +210,13 @@ void main() {
       expect(autoUrl, contains(r'$version'));
     });
   });
+}
+
+/// The `jobs:` section of a GitHub Actions [workflow] (from `jobs:` to end of
+/// file), so job-id scans do not pick up same-indent keys elsewhere.
+String _jobsSection(String workflow) {
+  final jobs = RegExp(r'^jobs:$', multiLine: true).firstMatch(workflow);
+  return jobs == null ? '' : workflow.substring(jobs.end);
 }
 
 /// Extracts a single top-level job block (keyed by [jobId] under `jobs:`) from a

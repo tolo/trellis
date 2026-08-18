@@ -59,11 +59,12 @@ Packages remain independently *publishable* (ADR-004 stands); only their *versio
 Melos 7 has **no native lockstep mode** — it versions independently even with Conventional Commits. Lockstep is therefore enforced by policy + tooling:
 
 - **`tool/version_lockstep.sh <version>`** drives a single `melos version` pass with an explicit `--manual-version <pkg>:<version>` for every publishable package. Melos rewrites inter-package constraints (`trellis: ^x.y.z` etc.) in the same run. The flags a release needs — `--no-changelog` (packages keep hand-written changelogs), `--no-git-commit-version` (commit and tag are made by hand, see below), `--yes` (no interactive prompt) — are built into the script; run it with `--help` for details.
+- **`tool/release.sh <version>`** wraps it end to end on `main`: preconditions (clean tree, `HEAD == origin/main`, changelogs, green CI), the lockstep bump, the local gate, the `chore(release): trellis SDK <version>` commit and the local `vX.Y.Z` tag — then stops and prints the push command. The full procedure, guards and rollback reality are in `dev/guidelines/RELEASE-RUNBOOK.md`.
 - The `melos.command.version` block in root `pubspec.yaml` pins releases to `main` and links commits. It sets `workspaceChangelog: false` — packages keep hand-written per-package changelogs, and the default workspace-level CHANGELOG would abort `version_lockstep.sh` (see the comment on that key).
 
 ### Git tagging
 
-Releases use a **single global tag per release** (`vX.Y.Z`, e.g. `v0.8.0`), continuing the pre-monorepo convention — one SDK version means one tag. Do **not** use Melos's default *per-package* tag format (`trellis-vX.Y.Z`, `trellis_shelf-vX.Y.Z`, …): under lockstep every package shares the version, so per-package tags are pure noise. `version_lockstep.sh` therefore passes `--no-git-commit-version` (which implies `--no-git-tag-version`): the release is one hand-made `chore(release): trellis SDK <version>` commit plus `git tag vX.Y.Z && git push origin vX.Y.Z`. Pushing that tag is the publish trigger (`publish.yml`, `release-binaries.yml`), so melos-created tags would fire those workflows prematurely. A tag points at the commit whose published source matches that version (i.e. the actual release HEAD, not necessarily the version-bump commit).
+Releases use a **single global tag per release** (`vX.Y.Z`, e.g. `v0.8.0`), continuing the pre-monorepo convention — one SDK version means one tag. Do **not** use Melos's default *per-package* tag format (`trellis-vX.Y.Z`, `trellis_shelf-vX.Y.Z`, …): under lockstep every package shares the version, so per-package tags are pure noise. `version_lockstep.sh` therefore passes `--no-git-commit-version` (which implies `--no-git-tag-version`): the release is one `chore(release): trellis SDK <version>` commit plus a `vX.Y.Z` tag — both made locally by `tool/release.sh`, then pushed together with `git push --atomic origin main vX.Y.Z`. Pushing that tag is the publish trigger (`publish.yml`, `release-binaries.yml`), so melos-created tags would fire those workflows prematurely. Both workflows start with a release gate (`release-gate.yml`) that refuses to run unless `ci.yml` is green for the tagged commit and the commit is on `main`. A tag points at the commit whose published source matches that version (i.e. the actual release HEAD, not necessarily the version-bump commit).
 
 ### Re-evaluation trigger
 
@@ -81,7 +82,7 @@ Revisit at **core 1.0.0**. After 1.0, `^1.x` provides proper compatible-range ca
 - Lockstep is a manual policy, not a Melos-enforced invariant — discipline (and the release script) must be followed
 
 ### Neutral
-- `tool/version_lockstep.sh` is the canonical release entry point; ad-hoc `melos version` per package is disallowed while lockstep is in force
+- `tool/release.sh` is the canonical release entry point (it drives `tool/version_lockstep.sh`); ad-hoc `melos version` per package is disallowed while lockstep is in force
 - This ADR refines, but does not reverse, ADR-004 (independent publishability) and ADR-007 (Melos tooling)
 
 ## Related

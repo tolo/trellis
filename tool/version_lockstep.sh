@@ -105,8 +105,8 @@ done
 # READMEs holding a hardcoded example version in the manual-download snippets.
 # Melos only bumps pubspec.yaml, so without this the install instructions ship a
 # stale release number (e.g. a 0.10.0 README telling users to download 0.9.1).
-# The contract test asserts these stay current; it fails the repo-root test suite
-# (`dart test test/`), so run that before tagging. CI gating is tracked as TD-010.
+# The root contract test asserts these stay current; ci.yml and tool/release.sh
+# both run it (root `dart test`) — see dev/guidelines/RELEASE-RUNBOOK.md.
 README_EXAMPLE_FILES=(
   "${ROOT}/README.md"
   "${ROOT}/packages/trellis_cli/README.md"

@@ -9,8 +9,12 @@ name: Publish to pub.dev
 # tag pattern `v{{version}}`) for its job to succeed.
 #
 # Lockstep (ADR-009): all packages share one version, so a single `vX.Y.Z` tag
-# matches `v{{version}}` for every package. Cut releases with
-# tool/version_lockstep.sh, then push the tag.
+# matches `v{{version}}` for every package. Cut releases with tool/release.sh
+# and push the tag it prints — see dev/guidelines/RELEASE-RUNBOOK.md.
+#
+# Nothing publishes unless `ci-gate` passes: CI must be green for the tagged
+# commit and the commit must be on main (release-gate.yml). pub.dev cannot
+# unpublish, so this is the last rail before an irreversible step.
 
 on:
   push:
@@ -18,8 +22,15 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
+  ci-gate:
+    uses: ./.github/workflows/release-gate.yml
+    permissions:
+      actions: read
+      contents: read
+
   publish:
     name: ${{ matrix.package }}
+    needs: ci-gate
     strategy:
       # Publish every package even if one fails — pub.dev tolerates a satellite
       # whose core dependency is still mid-publish, and a failed job can be

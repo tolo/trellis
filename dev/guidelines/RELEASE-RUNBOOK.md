@@ -1,0 +1,122 @@
+# Release Runbook — Trellis SDK
+
+One release = one lockstep version for all 8 packages (ADR-009), one `chore(release)` commit on `main`, one `vX.Y.Z`
+tag. **Pushing the tag is the publish** (pub.dev via OIDC, GitHub Release + binaries, Homebrew/Scoop) and pub.dev
+cannot unpublish — so everything before the push is automated and rails-guarded, and the push is the one deliberate
+human action. Steps are in execution order; each names the guard that enforces it and what to do if it fails.
+
+## 0. On the feature branch — before asking for a merge
+
+- **Changelogs.** Every `packages/*/CHANGELOG.md` gets a hand-written `## X.Y.Z` section (Added/Changed/Fixed;
+  `### Breaking` when it applies). Packages with no functional change get the lockstep note verbatim
+  (see `packages/trellis_css/CHANGELOG.md` `## 0.10.1`):
+  `Lockstep version bump to keep all Trellis SDK packages on a single shared version. No functional changes in this package.`
+  Guard: `tool/release.sh` refuses to bump if any package lacks the section.
+- **Do not bump versions on the branch.** Pubspecs stay at the previous version until step 4; `melos version` is
+  restricted to `main` (root `pubspec.yaml` → `melos.command.version.branch`) and `tool/version_lockstep.sh` throws
+  `RestrictedBranchException` and changes nothing anywhere else.
+- **Local gate = CI's `check` tier**, from the workspace root:
+  ```bash
+  melos run --no-select analyze
+  melos run --no-select format:check
+  melos exec --dir-exists=test -- dart test --exclude-tags=e2e
+  dart test                                                    # root suite: release/distribution contracts, tool/
+  dart format --output=none --set-exit-if-changed tool test
+  ```
+  Root `dart test` alone covers only the root suite; `melos exec` alone skips the root — run both. Push the branch:
+  `ci.yml` runs the same tier on every branch (E2E on `main` only).
+- `dart pub publish --dry-run` in every package whose public API changed (0 warnings).
+
+## 1. Fresh-context adversarial review — not optional
+
+Review `git diff main...<branch>` in a fresh context (`andthen:review`, adversarial/critic mode; route review agents to
+Opus). Address every finding, commit, re-run the local gate. Guard: discipline only — nothing automates this. Why:
+the 0.9.1 hotfix shipped unreviewed with 4 real issues (`dev/state/LEARNINGS.md` § Release & Publishing).
+
+## 2. Squash-merge to `main` and push
+
+```bash
+git switch main && git pull --ff-only
+git merge --squash <branch> && git commit          # one commit, one-line subject, e.g. "0.10.1: <summary>"
+git push origin main
+```
+Guard: `CLAUDE.md` Workflow Rules (squash only). `ci.yml` starts on the push: `check` + `e2e` on `main`.
+
+## 3. Wait for CI green on `main`
+
+```bash
+gh run watch          # or: gh run list --workflow=ci.yml --branch=main --limit 1
+```
+Guard: `tool/release.sh` (step 4) calls `tool/require_green_ci.sh` for `origin/main` HEAD and refuses to bump unless
+that run is `success` (it waits while the run is in flight). If CI is red: fix on a branch, back to step 1.
+
+## 4. Prepare the release on `main` — `tool/release.sh`
+
+```bash
+tool/release.sh X.Y.Z --dry-run   # rehearsal: same checks + bump + gate + a temporary commit, then unwinds everything
+tool/release.sh X.Y.Z
+```
+It refuses unless: on `main`, tree clean, `HEAD == origin/main`, every changelog has `## X.Y.Z`, CI green for HEAD.
+Then: `tool/version_lockstep.sh X.Y.Z` (one `melos version` pass: 8 pubspecs + inter-package constraints, 2
+`version.dart` constants, 2 README download examples) → asserts **only** those files changed → local gate (step 0's
+five commands) → commit `chore(release): trellis SDK X.Y.Z` → `dart pub publish --dry-run` ×8 (commit is undone if
+one fails) → `git tag vX.Y.Z` → prints the push command. **Nothing is pushed.**
+
+Check the commit: `git show --stat HEAD` — 12 files (8 `pubspec.yaml`, 2 `lib/src/version.dart`, `README.md`,
+`packages/trellis_cli/README.md`).
+
+If it fails: the message says which check; the bump stays in the working tree for inspection — discard it with
+`git restore --staged --worktree .` (discards **all** uncommitted changes; the tree was clean before the bump, so only
+the bump is lost) and fix on a branch (step 1). An interrupt between commit and tag unwinds the commit. Re-running is
+safe: an existing release commit and/or tag for X.Y.Z is detected and the push command is printed again instead of
+bumping twice.
+
+## 5. Push — the one deliberate action
+
+```bash
+git push --atomic origin main vX.Y.Z
+```
+`--atomic`: if someone pushed `main` meanwhile, the tag is rejected together with `main` instead of landing on a commit
+that is not on `origin/main`. This publishes. It fires `ci.yml` (release commit), `publish.yml` (pub.dev, one job per
+package) and `release-binaries.yml` (binaries → GitHub Release → Homebrew/Scoop). Watch with `gh run watch` /
+`gh run list`.
+
+Guards after the push:
+- **Release gate** (`release-gate.yml`, first job of both tag workflows): waits for `ci.yml` on the tagged commit and
+  refuses to run unless it concluded `success` **and** the commit is on `main`. A red build cannot publish.
+- **Version cross-check** (`release-binaries.yml` → `version` job, `tool/read_version.dart`): tag == pubspec ==
+  `cliVersion`, or nothing is built.
+- Publish jobs are independent (`fail-fast: false`); pub.dev refuses to re-publish an existing version, so re-running
+  a failed job is safe.
+
+## 6. Verify
+
+```bash
+tool/verify_release.sh X.Y.Z --wait 20
+```
+pub.dev ×8, GitHub Release published with 11 assets (5 binaries + 5 `.sha256` + `SHA256SUMS.txt`), Homebrew formula,
+Scoop manifest. The same script runs as the last job (`verify`) of `release-binaries.yml`, so a half-published release
+is red in the run. Then update `dev/state/STATE.md` (Published Versions).
+
+## 7. If something is red after the push
+
+| Symptom | Do |
+|---|---|
+| Release gate failed: CI red on the release commit | Nothing was published. Fix on a branch (step 1), squash-merge, wait for CI green; then move the tag by hand to the fixed commit: `git tag -f vX.Y.Z && git push -f origin vX.Y.Z` (versions are already bumped, so `tool/release.sh` refuses; ADR-009: the tag points at the actual release HEAD, not necessarily the bump commit). |
+| Release gate failed: CI still running / flaky job / `cancelled` | A queued (not yet started) `main` run is cancelled by GitHub when two more pushes to `main` queue behind it. Re-run that CI run (or the flaky job) until green, then **re-run the failed release workflow from the Actions tab** — the tag needs no change. |
+| One `publish.yml` package job failed | Actions tab → Re-run failed jobs. Check the package's pub.dev Admin tab has automated publishing enabled (`tolo/trellis`, `v{{version}}`). |
+| `release-binaries.yml` partial | Re-run failed jobs: release creation and asset upload (`--clobber`) are idempotent. Tap jobs skip silently without `TAP_TOKEN`. |
+
+## 8. Rollback reality
+
+- **pub.dev has no unpublish and no delete.** Within **7 days** of publishing, a version can be **retracted** on the
+  package's pub.dev **Admin tab** (web only — no CLI): existing `pubspec.lock`s keep resolving it, new resolutions
+  skip it. After 7 days: nothing. Either way the remedy is a new patch release through this runbook.
+- The GitHub Release and the tag can be deleted, but that does not touch pub.dev — do not look for a delete button.
+- Retracting or deleting does not undo the Homebrew/Scoop updates; those move on the next release.
+
+## Not enabled: platform-level protection
+
+`main` has no branch protection. Enabling *Require status checks to pass* with `CI / Analyze, format, unit tests` on
+`main` (GitHub → Settings → Branches → Add rule) would make step 3 unskippable at the platform level; the release gate
+above works without it and remains the rail for the tag workflows either way.

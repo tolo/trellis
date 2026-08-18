@@ -4,9 +4,11 @@
 
 ## Current Phase
 
-**0.10.0 pre-release** (branch `feature/0.10.0`) — a multi-slice release hardening the SDK for distribution: binary distribution gains a **Scoop** channel (plus release-workflow hardening and conflict resolution); **build-time syntax highlighting** lands (ADR-010: `trellis_site` bakes `.hljs-*` spans at build time, retiring the vendored client-side Prism); the **`bloom`** landing theme ships alongside `verdant`/`arbor` polish; the theme **SASS-bridge** escaping is hardened; and **TD-009** (CLI CWD mutation) is resolved so the `trellis_cli` suite is parallel-safe.
+**0.10.0** (shipped 2026-07-25 from branch `feature/0.10.0`) — a multi-slice release hardening the SDK for distribution: binary distribution gains a **Scoop** channel (plus release-workflow hardening and conflict resolution); **build-time syntax highlighting** lands (ADR-010: `trellis_site` bakes `.hljs-*` spans at build time, retiring the vendored client-side Prism); the **`bloom`** landing theme ships alongside `verdant`/`arbor` polish; the theme **SASS-bridge** escaping is hardened; and **TD-009** (CLI CWD mutation) is resolved so the `trellis_cli` suite is parallel-safe.
 
-**Next up**: address the outstanding 0.10.0 review findings, then cut **v0.10.0** with a single **lockstep version bump** (`tool/version_lockstep.sh`, ADR-009); then SDK Phase 5 — Full CSS Processing.
+**0.10.1** (branch `feature/0.10.1`, review-complete) is the follow-up patch: `FragmentHost` typing for `ProcessorContext.domProcessor`, push CI (`ci.yml`, TD-010), release-review fixes.
+
+**Next up**: cut **v0.10.1** per [`dev/guidelines/RELEASE-RUNBOOK.md`](../guidelines/RELEASE-RUNBOOK.md) (squash-merge → CI green → `tool/release.sh 0.10.1` on `main` → push the tag); then SDK Phase 5 — Full CSS Processing.
 
 ## Recent Completions
 
@@ -24,7 +26,8 @@
 - **Published on pub.dev: v0.8.2** (all 8 SDK packages, lockstep per ADR-009; verified against the pub.dev API 2026-07-07): `trellis`, `trellis_shelf`, `trellis_dev`, `trellis_cli`, `trellis_css`, `trellis_site`, `trellis_dart_frog`, `trellis_relic`.
 - **v0.9.0 published 2026-07-07** (docs-site engine features + arbor theme + skin-forcing fix); docs site live at `www.leafnode.se/trellis/` (the account-level custom domain applies to project pages; `tolo.github.io/trellis/` 301s there).
 - **v0.9.1** (2026-07-07): patch release fixing the theme SASS bridge quoting string params into invalid CSS (serif-fallback fonts, unconstrained layout on every bridge-built theme) + `version_lockstep.sh`/melos `workspaceChangelog` fix.
-- Releases are cut with `tool/version_lockstep.sh` (single `melos version` pass); publish is OIDC tag-triggered (`publish.yml`, global `vX.Y.Z` tag per ADR-009).
+- **v0.10.0** (2026-07-25): build-time syntax highlighting (ADR-010), Scoop distribution channel, `bloom` theme + theme polish, TD-009.
+- Releases follow `dev/guidelines/RELEASE-RUNBOOK.md`: `tool/release.sh` (lockstep bump, gate, release commit, local tag), then one push; publish is OIDC tag-triggered (`publish.yml`, global `vX.Y.Z` tag per ADR-009) behind the CI release gate (`release-gate.yml`).
 - The 4 `examples/*` packages + root workspace correctly carry `publish_to: none`.
 
 ## Decisions

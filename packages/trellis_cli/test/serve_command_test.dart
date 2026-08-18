@@ -84,7 +84,7 @@ void main() {
 
       final client = HttpClient();
       try {
-        final request = await client.get('localhost', port, '/');
+        final request = await client.get(InternetAddress.loopbackIPv4.address, port, '/');
         final response = await request.close();
         expect(response.statusCode, 200);
       } finally {
@@ -109,7 +109,7 @@ void main() {
 
       final client = HttpClient();
       try {
-        final request = await client.get('localhost', port, '/');
+        final request = await client.get(InternetAddress.loopbackIPv4.address, port, '/');
         final response = await request.close();
         expect(response.statusCode, 200);
       } finally {
@@ -136,7 +136,7 @@ void main() {
 
       final client = HttpClient();
       try {
-        final request = await client.get('localhost', port, '/about/');
+        final request = await client.get(InternetAddress.loopbackIPv4.address, port, '/about/');
         final response = await request.close();
         expect(response.statusCode, 200);
       } finally {
@@ -161,7 +161,7 @@ void main() {
 
       final client = HttpClient();
       try {
-        final request = await client.get('localhost', port, '/');
+        final request = await client.get(InternetAddress.loopbackIPv4.address, port, '/');
         final response = await request.close();
         expect(response.statusCode, 200);
       } finally {

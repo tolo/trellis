@@ -11,6 +11,12 @@ name: Release Binaries
 #
 # Both the Homebrew tap and the Scoop bucket updates are skipped automatically when
 # TAP_TOKEN is not configured.
+#
+# Nothing runs unless `ci-gate` passes: CI must be green for the tagged commit
+# and the commit must be on main (release-gate.yml). The final `verify` job
+# checks the published result end to end (pub.dev, Release assets, taps) so a
+# half-published release is visible in this run, not discovered later.
+# See dev/guidelines/RELEASE-RUNBOOK.md.
 
 on:
   push:
@@ -23,10 +29,21 @@ permissions:
 env:
   HOMEBREW_TAP_REPO: tolo/homebrew-trellis
   SCOOP_TAP_REPO: tolo/scoop-trellis
+  # Pinned so release binaries are reproducible, and the SAME pin as ci.yml so
+  # the analyze/format/test evidence CI produced applies to the toolchain that
+  # compiles the release. The root contract test fails if the two drift.
+  DART_SDK: 3.13.0
 
 jobs:
+  ci-gate:
+    uses: ./.github/workflows/release-gate.yml
+    permissions:
+      actions: read
+      contents: read
+
   version:
     name: Resolve version
+    needs: ci-gate
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.read.outputs.version }}
@@ -35,10 +52,9 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Setup Dart
-        # Pinned so release binaries are reproducible; 3.12.1 = locally verified toolchain.
         uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1
         with:
-          sdk: 3.12.1
+          sdk: ${{ env.DART_SDK }}
 
       - name: Install dependencies
         run: dart pub get
@@ -90,10 +106,9 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Setup Dart
-        # Pinned so release binaries are reproducible; 3.12.1 = locally verified toolchain.
         uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1
         with:
-          sdk: 3.12.1
+          sdk: ${{ env.DART_SDK }}
 
       - name: Install dependencies
         run: dart pub get
@@ -225,10 +240,9 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Setup Dart
-        # Pinned so release binaries are reproducible; 3.12.1 = locally verified toolchain.
         uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1
         with:
-          sdk: 3.12.1
+          sdk: ${{ env.DART_SDK }}
 
       - name: Install dependencies
         run: dart pub get
@@ -284,10 +298,9 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Setup Dart
-        # Pinned so release binaries are reproducible; 3.12.1 = locally verified toolchain.
         uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1
         with:
-          sdk: 3.12.1
+          sdk: ${{ env.DART_SDK }}
 
       - name: Install dependencies
         run: dart pub get
@@ -332,3 +345,30 @@ jobs:
             git commit -m "trellis ${VERSION}"
             git push
           fi
+
+  verify:
+    name: Verify release is fully published
+    needs: [version, homebrew, scoop]
+    runs-on: ubuntu-latest
+    # publish.yml (pub.dev) runs in parallel with this workflow and is not a
+    # dependency, so give it time; the wait is bounded and the job goes red if
+    # anything is still missing — a half-published release shows up here.
+    timeout-minutes: 30
+    steps:
+      - name: Checkout (tool/ only)
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          sparse-checkout: tool
+
+      - name: Verify pub.dev, GitHub Release assets, and taps
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.version.outputs.version }}
+          # The tap jobs skip themselves without TAP_TOKEN; do not report that as a failure.
+          HAS_TAP_TOKEN: ${{ secrets.TAP_TOKEN != '' }}
+        run: |
+          TAP_FLAG=""
+          if [ "$HAS_TAP_TOKEN" != "true" ]; then TAP_FLAG="--no-taps"; fi
+          # shellcheck disable=SC2086 # TAP_FLAG is empty or one flag
+          tool/verify_release.sh "$VERSION" --wait 20 $TAP_FLAG

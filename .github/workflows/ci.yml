@@ -19,11 +19,17 @@ name: CI
 #             dart_frog CLI, and boot real servers.
 # Feature branches get the fast tier; main additionally gets E2E.
 #
-# This workflow is ADVISORY for releases, not a hard gate: publish.yml and
-# release-binaries.yml trigger on the `vX.Y.Z` tag push with no dependency on
-# this run. The release procedure (CLAUDE.md, ADR-009) is therefore: merge to
-# main, wait for this run to go green, THEN push the tag. Wiring the tag
-# workflows to require this check is a follow-up.
+# This workflow is the release gate: publish.yml and release-binaries.yml
+# (triggered by the `vX.Y.Z` tag push) refuse to run unless THIS workflow
+# concluded `success` for the tagged commit on main — release-gate.yml queries
+# the run for that SHA (tool/require_green_ci.sh) and waits for it if it is
+# still in flight. Renaming this file breaks that lookup (it keys on `ci.yml`).
+# The concurrency rule below never cancels a *running* main check; note GitHub
+# still cancels a *pending* (queued, not started) run when a newer one queues
+# behind it, so a release commit's run can end `cancelled` if two more pushes
+# to main follow quickly — the gate then fails and the fix is to re-run that CI
+# run, then re-run the release workflow. Release procedure:
+# dev/guidelines/RELEASE-RUNBOOK.md.
 
 on:
   push:

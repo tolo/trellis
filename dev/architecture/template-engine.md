@@ -2,7 +2,7 @@
 
 Canonical reference for the internal architecture of the core `trellis` template engine package. Covers the render pipeline, processor model, expression evaluation, caching, fragment system, and extension points.
 
-**Current through**: SDK Phase 1 (S06)
+**Current through**: SDK Phase 1 (S06) + 0.10.2 (`FileSystemLoader` per-directory dev-mode watching on Linux; symlink-free `listTemplates()`)
 
 ---
 
@@ -91,9 +91,9 @@ ProcessorPriority.highest           ← tl:with, tl:object, tl:if, tl:unless, tl
 ProcessorPriority.afterLocals       ← (open for custom processors)
 ProcessorPriority.afterConditionals ← tl:each
 ProcessorPriority.afterIteration    ← tl:insert, tl:replace
-ProcessorPriority.afterContent      ← tl:text, tl:utext, tl:inline
-ProcessorPriority.afterAttributes   ← tl:attr + shorthands (tl:href, tl:src, etc.)
-ProcessorPriority.afterRemoval      ← tl:remove
+ProcessorPriority.afterInclusion    ← tl:text, tl:utext, tl:inline
+ProcessorPriority.afterContent      ← tl:attr + shorthands (tl:href, tl:src, etc.)
+ProcessorPriority.afterAttributes   ← tl:remove
 ProcessorPriority.lowest            ← (open for custom processors)
 ```
 
@@ -131,11 +131,11 @@ Context-modifying processors (`tl:with`, `tl:object`) update `processorContext.v
 | 6 | `EachProcessor` | `each` | afterConditionals | Collection empty → element removed | Clones element per item; `autoProcessChildren=false` |
 | 7 | `InsertProcessor` | `insert` | afterIteration | Never | Loads fragment, inserts as children |
 | 8 | `ReplaceProcessor` | `replace` | afterIteration | Always (replaces element) | Loads fragment, replaces element |
-| 9 | `TextProcessor` | `text` | afterContent | Never | HTML-escapes value, replaces element text |
-| 10 | `UtextProcessor` | `utext` | afterContent | Never | Raw HTML insertion (no escaping) |
-| 11 | `InlineProcessor` | `inline` | afterContent | Never | `[[${expr}]]` escaped, `[(${expr})]` unescaped |
-| 12 | `AttrProcessor` | `attr` + shorthands | afterAttributes | Never | Sets/appends/removes attributes |
-| 13 | `RemoveProcessor` | `remove` | afterRemoval | Varies | Modes: `all`, `body`, `tag`, `all-but-first`, `none` |
+| 9 | `TextProcessor` | `text` | afterInclusion | Never | HTML-escapes value, replaces element text |
+| 10 | `UtextProcessor` | `utext` | afterInclusion | Never | Raw HTML insertion (no escaping) |
+| 11 | `InlineProcessor` | `inline` | afterInclusion | Never | `[[${expr}]]` escaped, `[(${expr})]` unescaped |
+| 12 | `AttrProcessor` | `attr` + shorthands | afterContent | Never | Sets/appends/removes attributes |
+| 13 | `RemoveProcessor` | `remove` | afterAttributes | Varies | Modes: `all`, `body`, `tag`, `all-but-first`, `none` |
 
 ---
 
@@ -267,7 +267,7 @@ Fragment inclusions are tracked via an inclusion stack. If a fragment ID (templa
 
 | Loader | Source | Security | Dev Mode | `listTemplates()` |
 |---|---|---|---|---|
-| `FileSystemLoader` | Filesystem directory | Path traversal rejection, symlink boundary checks | `Directory.watch()` with extension filter | Yes |
+| `FileSystemLoader` | Filesystem directory | Path traversal rejection, symlink boundary checks | `Directory.watch()` with extension filter — one native recursive watch on macOS/Windows, one watch per directory on Linux/Android (dart:io ignores `recursive` there) | Yes (does not follow symlinks) |
 | `MapLoader` | `Map<String, String>` | N/A | N/A | Yes |
 | `AssetLoader` | `package:` URIs | Same as FileSystemLoader | N/A | No |
 | `CompositeLoader` | Delegate chain | Delegates to children | N/A | No |

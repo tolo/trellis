@@ -9,13 +9,22 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
-/// Asks the OS for an unused loopback port.
+/// The loopback address every E2E server binds and every E2E client connects to.
+///
+/// Numeric on both sides, never `'localhost'`: a server bound by name listens on
+/// the first resolved address only (`::1` on macOS) while clients reach
+/// `127.0.0.1` first, and ephemeral ports are per address family – so a foreign
+/// listener on `127.0.0.1:<same port>` would receive the request instead. See
+/// `dev/state/LEARNINGS.md` § Testing.
+final InternetAddress e2eLoopback = InternetAddress.loopbackIPv4;
+
+/// Asks the OS for an unused port on [e2eLoopback].
 ///
 /// Inherently racy: the port is free when returned, but nothing holds it, so
 /// another process can claim it before the server binds. Callers go through
 /// [bootServer], whose retry absorbs that race.
 Future<int> allocateFreePort() async {
-  final socket = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+  final socket = await ServerSocket.bind(e2eLoopback, 0);
   try {
     return socket.port;
   } finally {

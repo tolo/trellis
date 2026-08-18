@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 ///
 /// Binds a concrete loopback address and connects to that same address, never the `localhost` name:
 /// `HttpServer.bind('localhost')` listens on the first resolved address only (`::1` on macOS) while
-/// `Socket.connect('localhost')` tries IPv4 first, so an unrelated process listening on
+/// `Socket.connect('localhost')` reaches IPv4 first at connect time, so an unrelated process listening on
 /// `127.0.0.1:<same ephemeral port>` receives the request instead – wrong response or a hang.
 Future<T> withServer<T>(Handler handler, Future<T> Function(Uri baseUri) callback) async {
   final server = await serve(handler, InternetAddress.loopbackIPv4, 0);

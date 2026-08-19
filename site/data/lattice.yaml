@@ -1,0 +1,62 @@
+code_showcase:
+  title: Open it in a browser. Then render it.
+  body: A Trellis template is valid HTML with tl:* attributes. Preview it directly, then bind data at render time.
+  template_label: templates/greeting.html
+  template_source: |-
+    <h1 tl:text="${greeting}">Hello, prototype!</h1>
+    <p tl:if="${signedIn}">Welcome back.</p>
+  output_label: Rendered HTML
+  output_source: |-
+    <h1>Hello from Dart!</h1>
+    <p>Welcome back.</p>
+why:
+  title: Why Trellis
+  body: A compact stack that keeps the browser, server, and deployment model simple.
+  cells:
+    - title: Natural HTML templates
+      body: Open every template directly in a browser before the server exists.
+    - title: HTMX-first fragments
+      body: Serve complete pages and focused fragments from the same templates.
+    - title: Pure-Dart toolchain
+      body: Build HTML, Markdown, and SASS without Node.js or an external build chain.
+    - title: Single-binary deploy
+      body: Compile the application and its server-rendering stack into one artifact.
+demo:
+  title: One file, two views
+  body: The same template is a prototype on disk and a live page when rendered with data.
+  template_source: |-
+    <article tl:each="post : ${posts}">
+      <h2 tl:text="${post.title}">Title</h2>
+      <p tl:text="${post.summary}">Summary</p>
+    </article>
+  prototype_title: Title
+  prototype_body: Summary
+  rendered_title: Fragments over frameworks
+  rendered_body: Server-rendered pages stay simple, accessible, and fast.
+showcase:
+  title: Built-in themes, grown in the same garden
+  body: Pick a design, set one line of configuration, and publish. Browse every installed design from Themes.
+  link_label: All themes →
+  link_url: /docs/themes/gallery/
+  cards:
+    - name: Arbor
+      description: Documentation with sidebar navigation and search.
+      config: "theme: arbor"
+      accent: green
+      screenshot_light: themes/arbor/light.png
+      screenshot_dark: themes/arbor/dark.png
+      alt: Arbor documentation theme
+    - name: Bloom
+      description: A bold product landing page.
+      config: "theme: bloom"
+      accent: purple
+      screenshot_light: themes/bloom/light.png
+      screenshot_dark: themes/bloom/dark.png
+      alt: Bloom product theme
+    - name: Verdant
+      description: A comfortable content-first blog.
+      config: "theme: verdant"
+      accent: blue
+      screenshot_light: themes/verdant/light.png
+      screenshot_dark: themes/verdant/dark.png
+      alt: Verdant blog theme

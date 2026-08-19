@@ -80,6 +80,9 @@ jobs:
       - name: Bootstrap workspace
         run: dart pub get
 
+      - name: Check generated theme gallery
+        run: dart run tool/generate_theme_gallery.dart --check
+
       # melos `analyze` script: `dart analyze --fatal-infos` per package.
       - name: Analyze
         run: melos run --no-select analyze

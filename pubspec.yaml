@@ -17,13 +17,14 @@ workspace:
   - examples/dart_frog_app
 dev_dependencies:
   melos: ^7.4.0
-  # For the docs-site link-integrity checker (tool/link_check.dart) and its test.
-  # The workspace root is publish_to: none, so these are dev-only tooling deps,
-  # not runtime dependencies of any published package. `html` is already resolved
-  # in the workspace (trellis, trellis_css) — no new transitive dependency.
+  # For docs-site root tooling and its tests: html/path drive link_check.dart,
+  # while yaml drives generate_theme_gallery.dart. The workspace root is
+  # publish_to: none, so none becomes a published package runtime dependency.
+  # All three are already resolved elsewhere in the workspace.
   html: ^0.15.6
   path: ^1.9.0
   test: ^1.25.0
+  yaml: ^3.1.3
   # SHA-256 for tool/build_release.dart artifact sidecars. Already resolved
   # transitively in the workspace — declared here so tool/ can import it.
   crypto: ^3.0.0

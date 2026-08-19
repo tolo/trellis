@@ -1,5 +1,7 @@
 title: Trellis
-description: A pure-Dart SDK for building server-rendered web applications and static sites — natural HTML templates, HTMX-first fragments, and a single-binary deploy.
+description: >-
+  A pure-Dart SDK for building server-rendered web applications and static sites — natural HTML templates,
+  HTMX-first fragments, and a single-binary deploy.
 baseUrl: https://tolo.github.io
 
 # Live deploy target: GitHub Project Pages sub-path https://tolo.github.io/trellis/.
@@ -9,22 +11,62 @@ baseUrl: https://tolo.github.io
 # is just clearing this to '' (and pointing baseUrl at the new host) — no code change.
 pathPrefix: /trellis/
 
-# Docs theme (S04). Resolved as p.join(siteDir, 'themes', <value>) then canonicalized.
-# site/ is a direct child of the repo root, so ../../themes/arbor escapes site/ and
-# lands on <repo>/themes/arbor. This escape depth is correct ONLY while site/ lives
-# at <repo>/site/.
-theme: ../../themes/arbor
+# site/ is a direct child of the repo root, so this normalized relative path
+# resolves to the reusable Lattice theme without copying or forking it.
+theme: ../../themes/lattice
 
 theme_params:
   skin: auto
-  # Hero title/description come from site.title/site.description (home.html falls
-  # back to them); arbor declares no hero_* params, so setting them here would warn.
   nav_links:
     - label: Home
       url: /
     - label: Docs
       url: /docs/
+    - label: Themes
+      url: /docs/themes/gallery/
   footer_text: "Trellis — MIT licensed."
+  show_powered_by: true
+  show_rss_link: false
+  show_sidebar: true
+  show_toc: true
+  show_prev_next: true
+  show_search: true
+  toc_title: On this page
+  sidebar_title: Documentation
+  excerpt_length: 160
+  hero_eyebrow: Server-rendered Dart
+  hero_headlines:
+    - prefix: "Templates that are just HTML. A stack that's "
+      emphasis: just Dart
+      suffix: "."
+    - prefix: "Grow web apps in "
+      emphasis: pure Dart
+      suffix: ". No Node required."
+    - prefix: "Dart plus templates that are "
+      emphasis: just HTML
+      suffix: "."
+  hero_lede: >-
+    Trellis renders natural HTML templates and grows into a complete SDK for server-rendered apps and static sites.
+    HTMX-first fragments, no Node.js, and a single-binary deploy.
+  hero_cta_primary_label: Read the docs
+  hero_cta_primary_url: /docs/
+  hero_cta_secondary_label: View on GitHub
+  hero_cta_secondary_url: https://github.com/tolo/trellis
+  terminal_card_lines:
+    - dart pub add trellis
+    - trellis create my_site
+    - trellis serve
+  show_terminal_card: true
+  show_code_showcase: true
+  show_why_grid: true
+  show_demo: true
+  show_themes_showcase: true
+  show_cta: true
+  cta_title: One dependency away
+  cta_body: Start with the engine or scaffold a complete themed site.
+  cta_commands:
+    - dart pub add trellis
+    - dart pub global activate trellis_cli
 
 # Search (S09). Enabled: emits search-index.json consumed by the vendored
 # client-side search script. `fields` lists the keys each index entry carries

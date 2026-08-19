@@ -6,7 +6,7 @@ Last Updated: 2026-08-19
 
 ## Current Phase
 
-**Phase 1: Core theme** — 0.11 implementation is On Track on `feat/0.11`; S01 delivers the reusable Lattice theme before the site migration and optional-theme phases.
+**Phase 2: Site relaunch and gallery** — 0.11 implementation is On Track on `feat/0.11`; S01 is complete and S02 is migrating the documentation site to Lattice with a count-neutral themes gallery.
 
 ## Recent Completions
 

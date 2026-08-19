@@ -1,0 +1,3 @@
+/.trellis/
+/output/*
+!/output/.gitkeep

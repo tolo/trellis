@@ -1,0 +1,57 @@
+$trellis-skin: auto !default;
+$trellis-primary-color: #2e7d4f !default;
+$trellis-accent-color: #6e9b45 !default;
+$trellis-text-color: #1c2b21 !default;
+$trellis-muted-color: #47584c !default;
+$trellis-bg-color: #fbfaf5 !default;
+$trellis-surface-color: #ffffff !default;
+$trellis-border-color: #e7e3d4 !default;
+$trellis-font-family:
+  Instrument Sans,
+  -apple-system,
+  sans-serif !default;
+$trellis-heading-font-family: Fraunces, Georgia, serif !default;
+$trellis-code-font-family:
+  Spline Sans Mono,
+  ui-monospace,
+  monospace !default;
+$trellis-max-width: 1056px !default;
+$trellis-border-radius: 8px !default;
+$trellis-footer-text: null !default;
+$trellis-show-powered-by: true !default;
+$trellis-show-rss-link: true !default;
+$trellis-show-sidebar: true !default;
+$trellis-show-toc: true !default;
+$trellis-show-prev-next: true !default;
+$trellis-show-search: true !default;
+
+:root {
+  --leaf: #{$trellis-primary-color};
+  --leaf-hover: color-mix(in srgb, #{$trellis-primary-color} 70%, #000);
+  --on-leaf: #fff;
+  --tendril: #{$trellis-accent-color};
+  --paper: #{$trellis-bg-color};
+  --card: #{$trellis-surface-color};
+  --ink: #{$trellis-text-color};
+  --ink-soft: #{$trellis-muted-color};
+  --lattice: #{$trellis-border-color};
+  --lattice-strong: color-mix(
+    in srgb,
+    #{$trellis-border-color} 75%,
+    #{$trellis-text-color}
+  );
+  --display: #{$trellis-heading-font-family};
+  --body: #{$trellis-font-family};
+  --mono: #{$trellis-code-font-family};
+  --content-width: #{$trellis-max-width};
+  --radius: #{$trellis-border-radius};
+  --tint: color-mix(in srgb, var(--leaf) 5%, var(--paper));
+  --foot-bg: color-mix(in srgb, var(--leaf) 8%, var(--paper));
+  --start-bg: color-mix(in srgb, var(--leaf) 48%, #0b2115);
+  --chrome-bg: color-mix(in srgb, var(--paper) 88%, var(--lattice));
+  --chip-bg: color-mix(in srgb, var(--leaf) 8%, var(--paper));
+  --syntax-keyword: #7a3ca6;
+  --syntax-string: #256b43;
+  --shadow: rgb(28 43 33 / 0.12);
+  color-scheme: light;
+}

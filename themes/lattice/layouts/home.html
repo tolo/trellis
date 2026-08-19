@@ -1,0 +1,188 @@
+<!doctype html>
+<html tl:extends="layouts/base.html" lang="en">
+  <head>
+    <title>Home</title>
+  </head>
+  <body>
+    <main
+      id="main-content"
+      class="home"
+      tl:define="content"
+      tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}"
+    >
+      <section class="hero-section">
+        <div class="wrap hero-cols">
+          <div class="hero-copy">
+            <div class="hero-vine" aria-hidden="true">
+              <svg viewBox="0 0 90 420">
+                <path class="vine-stem" d="M60 410C8 330 78 260 30 190C4 150 22 76 67 12" />
+                <path class="vine-leaf" d="M37 315c-26-4-34-19-32-36 23 1 36 13 32 36Z" />
+                <path class="vine-leaf" d="M48 246c25-7 39-1 47 15-20 10-37 5-47-15Z" />
+                <path class="vine-leaf" d="M27 167c-21-7-29-21-24-37 21 4 31 17 24 37Z" />
+                <path class="vine-leaf" d="M48 92c22-8 37-3 45 12-18 11-34 7-45-12Z" />
+              </svg>
+            </div>
+            <p class="eyebrow" tl:text="${theme.hero_eyebrow}">Eyebrow</p>
+            <div class="headline-slot" data-headline-slot>
+              <h1 data-headline>
+                <span
+                  class="headline-entry is-active"
+                  tl:if="${#lists.size(theme.hero_headlines)} == 0"
+                  tl:attr="data-prefix=${site.title},data-emphasis='',data-suffix=''"
+                >
+                  <span tl:text="${site.title}">Site title</span>
+                </span>
+                <span
+                  class="headline-entry"
+                  tl:each="headline, state : ${theme.hero_headlines}"
+                  tl:classappend="${state.first} ? 'is-active' : ''"
+                  tl:attr="data-prefix=${headline.prefix},data-emphasis=${headline.emphasis},data-suffix=${headline.suffix}"
+                >
+                  <span tl:text="${headline.prefix}">Prefix</span><em tl:text="${headline.emphasis}">emphasis</em
+                  ><span tl:text="${headline.suffix}">suffix</span>
+                </span>
+              </h1>
+            </div>
+            <p class="lede" tl:text="${theme.hero_lede}">Introduction</p>
+            <div class="cta-row">
+              <a
+                class="button button-primary"
+                tl:if="${theme.hero_cta_primary_label != ''}"
+                tl:href="${theme.hero_cta_primary_url}"
+                tl:text="${theme.hero_cta_primary_label}"
+                >Primary action</a
+              >
+              <a
+                class="button button-secondary"
+                tl:if="${theme.hero_cta_secondary_label != ''}"
+                tl:href="${theme.hero_cta_secondary_url}"
+                tl:text="${theme.hero_cta_secondary_label}"
+                >Secondary action</a
+              >
+            </div>
+          </div>
+          <section class="terminal" tl:if="${theme.show_terminal_card}" aria-label="Quick start commands">
+            <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i><span>terminal</span></div>
+            <pre><code><span tl:each="line : ${theme.terminal_card_lines}"><b>$</b> <span tl:text="${line}">command</span>
+</span></code></pre>
+          </section>
+        </div>
+      </section>
+
+      <section class="home-content" tl:if="${page.content}">
+        <div class="wrap prose" tl:utext="${page.content}">Content</div>
+      </section>
+
+      <section tl:if="${theme.show_code_showcase}" aria-labelledby="lattice-code-title">
+        <div class="wrap">
+          <header class="section-heading">
+            <h2 id="lattice-code-title" tl:text="${data.lattice.code_showcase.title}">Code</h2>
+            <p tl:text="${data.lattice.code_showcase.body}">Description</p>
+          </header>
+          <div class="code-duo">
+            <div class="pane">
+              <div class="pane-bar" tl:text="${data.lattice.code_showcase.template_label}">Template</div>
+              <pre><code tl:text="${data.lattice.code_showcase.template_source}">Template source</code></pre>
+            </div>
+            <span class="duo-arrow" aria-hidden="true">→</span>
+            <div class="pane">
+              <div class="pane-bar" tl:text="${data.lattice.code_showcase.output_label}">Output</div>
+              <pre><code tl:text="${data.lattice.code_showcase.output_source}">Output source</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tinted" tl:if="${theme.show_why_grid}" aria-labelledby="lattice-why-title">
+        <div class="wrap">
+          <header class="section-heading">
+            <h2 id="lattice-why-title" tl:text="${data.lattice.why.title}">Why</h2>
+            <p tl:text="${data.lattice.why.body}">Description</p>
+          </header>
+          <div class="why-grid">
+            <article class="why-cell" tl:each="cell : ${data.lattice.why.cells}">
+              <span class="leaf-mark" aria-hidden="true">✦</span>
+              <h3 tl:text="${cell.title}">Benefit</h3>
+              <p tl:text="${cell.body}">Body</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section tl:if="${theme.show_demo}" aria-labelledby="lattice-demo-title">
+        <div class="wrap">
+          <header class="section-heading">
+            <h2 id="lattice-demo-title" tl:text="${data.lattice.demo.title}">Demo</h2>
+            <p tl:text="${data.lattice.demo.body}">Description</p>
+          </header>
+          <div class="demo" data-demo-view="prototype">
+            <div class="demo-bar">
+              <span>one template · two views</span>
+              <div class="demo-toggle" role="group" aria-label="Demo view">
+                <button type="button" data-demo-button="prototype" aria-pressed="true">Preview</button>
+                <button type="button" data-demo-button="rendered" aria-pressed="false">Rendered</button>
+              </div>
+            </div>
+            <div class="demo-panes">
+              <div class="demo-source">
+                <pre><code tl:text="${data.lattice.demo.template_source}">Template</code></pre>
+              </div>
+              <div class="demo-output">
+                <div data-demo-panel="prototype">
+                  <h3 tl:text="${data.lattice.demo.prototype_title}">Title</h3>
+                  <p tl:text="${data.lattice.demo.prototype_body}">Body</p>
+                </div>
+                <div data-demo-panel="rendered" hidden>
+                  <h3 tl:text="${data.lattice.demo.rendered_title}">Title</h3>
+                  <p tl:text="${data.lattice.demo.rendered_body}">Body</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tinted" tl:if="${theme.show_themes_showcase}" aria-labelledby="lattice-showcase-title">
+        <div class="wrap">
+          <header class="section-heading">
+            <h2 id="lattice-showcase-title" tl:text="${data.lattice.showcase.title}">Themes</h2>
+            <p tl:text="${data.lattice.showcase.body}">Description</p>
+          </header>
+          <div class="themes-grid">
+            <article
+              class="theme-card"
+              tl:each="card : ${data.lattice.showcase.cards}"
+              tl:attr="data-accent=${card.accent}"
+            >
+              <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+              <img
+                loading="lazy"
+                tl:attr="src=${assetBase} + ${card.screenshot_light},data-light=${assetBase} + ${card.screenshot_light},data-dark=${assetBase} + ${card.screenshot_dark},alt=${card.alt}"
+              />
+              <div class="theme-meta">
+                <h3 tl:text="${card.name}">Theme</h3>
+                <p tl:text="${card.description}">Description</p>
+                <code tl:text="${card.config}">theme: name</code>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="closing-section" tl:if="${theme.show_cta}" aria-labelledby="lattice-cta-title">
+        <div class="wrap">
+          <div class="closing">
+            <h2 id="lattice-cta-title" tl:text="${theme.cta_title}">Get started</h2>
+            <p tl:text="${theme.cta_body}">Description</p>
+            <div class="commands">
+              <div class="command" tl:each="command, state : ${theme.cta_commands}">
+                <code tl:text="${command}">command</code>
+                <button type="button" tl:attr="data-copy-command=${state.index}" aria-label="Copy command">Copy</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

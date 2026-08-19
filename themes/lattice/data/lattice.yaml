@@ -1,0 +1,66 @@
+code_showcase:
+  title: Natural templates, real output
+  body: Valid HTML stays useful as a prototype and becomes a data-driven server response.
+  template_label: templates/greeting.html
+  template_source: |-
+    <h1 tl:text="${greeting}">Hello, prototype!</h1>
+    <p tl:if="${signedIn}">Welcome back.</p>
+  output_label: Rendered HTML
+  output_source: |-
+    <h1>Hello from Dart!</h1>
+    <p>Welcome back.</p>
+why:
+  title: Why Trellis?
+  body: A compact stack that keeps the browser, server, and deployment model simple.
+  cells:
+    - title: Natural HTML
+      body: Open every template directly in a browser before the server exists.
+    - title: Fragment first
+      body: Return complete pages or focused HTMX fragments from the same engine.
+    - title: Pure Dart
+      body: Build, test, and deploy without a Node.js toolchain.
+    - title: Single-binary deploy
+      body: Compile the application and its server-rendering stack into one artifact.
+demo:
+  title: One file, two views
+  body: The same template is a prototype on disk and a live page when rendered with data.
+  template_source: |-
+    <article tl:each="post : ${posts}">
+      <h2 tl:text="${post.title}">Title</h2>
+      <p tl:text="${post.summary}">Summary</p>
+    </article>
+  prototype_title: Title
+  prototype_body: Summary
+  rendered_title: Fragments over frameworks
+  rendered_body: Server-rendered pages stay simple and fast.
+showcase:
+  title: Built-in themes, grown in the same garden
+  body: Pick a design, set one line of configuration, and publish.
+  cards:
+    - {
+        name: Arbor,
+        description: Documentation with sidebar navigation and search.,
+        config: "theme: arbor",
+        accent: green,
+        screenshot_light: "showcase/arbor-light.svg",
+        screenshot_dark: "showcase/arbor-dark.svg",
+        alt: "Arbor documentation theme",
+      }
+    - {
+        name: Bloom,
+        description: A bold product landing page.,
+        config: "theme: bloom",
+        accent: purple,
+        screenshot_light: "showcase/bloom-light.svg",
+        screenshot_dark: "showcase/bloom-dark.svg",
+        alt: "Bloom product theme",
+      }
+    - {
+        name: Verdant,
+        description: A comfortable content-first blog.,
+        config: "theme: verdant",
+        accent: blue,
+        screenshot_light: "showcase/verdant-light.svg",
+        screenshot_dark: "showcase/verdant-dark.svg",
+        alt: "Verdant blog theme",
+      }

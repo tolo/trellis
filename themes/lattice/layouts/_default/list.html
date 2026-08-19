@@ -1,0 +1,24 @@
+<!doctype html>
+<html tl:extends="layouts/base.html" lang="en">
+  <head>
+    <title>Section</title>
+  </head>
+  <body>
+    <main id="main-content" class="docs-main-region" tl:define="content">
+      <div class="wrap docs-shell">
+        <div tl:if="${theme.show_sidebar} and ${site.menu}" tl:replace="~{layouts/base.html :: sidebar}"></div>
+        <section class="doc section-list">
+          <h1 tl:text="${page.title}">Section</h1>
+          <div class="prose" tl:if="${page.content}" tl:utext="${page.content}">Description</div>
+          <ul class="card-list" tl:if="${#lists.size(pages)} > 0">
+            <li class="doc-card" tl:each="p : ${pages}">
+              <h2><a tl:href="${p.url}" tl:text="${p.title}">Page</a></h2>
+              <p tl:if="${p.summary}" tl:text="${p.summary}">Summary</p>
+            </li>
+          </ul>
+          <p tl:if="${#lists.size(pages)} == 0">No pages in this section yet.</p>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

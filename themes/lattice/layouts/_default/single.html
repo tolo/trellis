@@ -1,0 +1,42 @@
+<!doctype html>
+<html tl:extends="layouts/base.html" lang="en">
+  <head>
+    <title>Doc</title>
+  </head>
+  <body>
+    <main id="main-content" class="docs-main-region" tl:define="content">
+      <div class="wrap docs-shell">
+        <div tl:if="${theme.show_sidebar} and ${site.menu}" tl:replace="~{layouts/base.html :: sidebar}"></div>
+        <article class="doc">
+          <nav class="breadcrumb" tl:if="${page.breadcrumbs}" aria-label="Breadcrumb">
+            <ul>
+              <li><a href="/">Home</a></li>
+              <li tl:each="crumb : ${page.breadcrumbs}">
+                <a tl:if="${crumb.url != ''}" tl:href="${crumb.url}" tl:text="${crumb.title}">Section</a
+                ><span tl:unless="${crumb.url != ''}" tl:text="${crumb.title}">Section</span>
+              </li>
+            </ul>
+          </nav>
+          <h1 class="doc-title" tl:text="${page.title}">Title</h1>
+          <div class="toc-inline" tl:if="${theme.show_toc} and ${#lists.size(page.toc)} > 0">
+            <div tl:replace="~{layouts/base.html :: toc}"></div>
+          </div>
+          <div class="doc-content prose" tl:utext="${page.content}">Content</div>
+          <nav
+            class="page-nav"
+            tl:if="${theme.show_prev_next} and (${page.prev} or ${page.next})"
+            aria-label="Page navigation"
+          >
+            <a tl:if="${page.prev}" tl:href="${page.prev.url}"
+              ><small>Previous</small><span tl:text="${page.prev.title}">Previous</span></a
+            >
+            <a tl:if="${page.next}" tl:href="${page.next.url}"
+              ><small>Next</small><span tl:text="${page.next.title}">Next</span></a
+            >
+          </nav>
+        </article>
+        <div tl:if="${theme.show_toc} and ${#lists.size(page.toc)} > 0" tl:replace="~{layouts/base.html :: toc}"></div>
+      </div>
+    </main>
+  </body>
+</html>

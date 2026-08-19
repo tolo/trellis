@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en" tl:attr="data-skin=${theme.skin}">
+  <head tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title tl:text="${page.title} + ' — ' + ${site.title}">Page — Site</title>
+    <meta name="description" tl:attr="content=${page.description} ?: ${page.summary} ?: ${site.description}" />
+    <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/main.css'" href="/css/main.css" />
+    <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/theme-props.css'" href="/css/theme-props.css" />
+    <link rel="icon" tl:attr="href=${assetBase} + 'favicon.svg'" href="/favicon.svg" type="image/svg+xml" />
+    <link
+      tl:if="${site.feeds.atom} and ${theme.show_rss_link}"
+      rel="alternate"
+      type="application/atom+xml"
+      tl:attr="href=${site.feeds.atom}"
+    />
+    <script tl:if="${theme.skin} == 'auto'">
+      (function () {
+        var saved = null;
+        try {
+          saved = localStorage.getItem("trellis-theme");
+        } catch (_) {}
+        document.documentElement.dataset.theme =
+          saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      })();
+    </script>
+    <script tl:if="${theme.show_search}" tl:attr="src=${assetBase} + 'js/search.js'" defer></script>
+    <script tl:attr="src=${assetBase} + 'js/lattice.js'" defer></script>
+    <meta tl:define="head-extra" />
+  </head>
+  <body tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
+    <a class="skip-to-content" href="#main-content">Skip to content</a>
+    <div class="background-lattice" aria-hidden="true"></div>
+    <header class="site-header" tl:define="site-header">
+      <div class="wrap nav">
+        <a class="wordmark" href="/" tl:href="${assetBase}">
+          <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+            <path
+              d="M5 28 27 6M3 17 15 5M17 29 29 17M8 25c8-1 13-6 14-14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            />
+          </svg>
+          <span tl:text="${site.title}">Site title</span>
+        </a>
+        <div class="nav-right">
+          <nav aria-label="Main navigation">
+            <ul class="nav-links">
+              <li tl:each="link : ${theme.nav_links}"><a tl:href="${link.url}" tl:text="${link.label}">Link</a></li>
+            </ul>
+          </nav>
+          <button
+            tl:if="${theme.skin} == 'auto'"
+            class="mode-toggle"
+            type="button"
+            data-lattice-theme-toggle
+            aria-label="Switch color mode"
+          >
+            <span aria-hidden="true">◐</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content" tl:define="content">
+      <div class="wrap"><p>Override content.</p></div>
+
+      <details class="sidebar-disclosure" open tl:fragment="sidebar">
+        <summary class="sidebar-toggle" tl:text="${theme.sidebar_title}">Documentation</summary>
+        <div class="docs-sidebar">
+          <div
+            class="search-shell"
+            tl:if="${theme.show_search}"
+            tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}"
+            tl:attr="data-search-index=${assetBase} + 'search-index.json'"
+          >
+            <label class="sr-only" for="lattice-docs-search">Search documentation</label>
+            <input
+              id="lattice-docs-search"
+              class="search-input"
+              type="search"
+              placeholder="Search…"
+              autocomplete="off"
+              data-lattice-search
+              disabled
+            />
+            <ul class="search-results" data-lattice-search-results hidden></ul>
+          </div>
+          <nav class="sidebar-nav" tl:attr="aria-label=${theme.sidebar_title}">
+            <p class="sidebar-title" tl:text="${theme.sidebar_title}">Documentation</p>
+            <ul class="sidebar-tree">
+              <li class="sidebar-item" tl:each="n1 : ${site.menu}">
+                <a
+                  class="sidebar-link"
+                  tl:if="${n1.url != ''}"
+                  tl:href="${n1.url}"
+                  tl:text="${n1.title}"
+                  tl:classappend="${n1.url == page.url} ? 'is-active' : ''"
+                  tl:attr="aria-current=${n1.url == page.url} ? 'page' : _"
+                  >Page</a
+                >
+                <span class="sidebar-label" tl:unless="${n1.url != ''}" tl:text="${n1.title}">Section</span>
+                <ul class="sidebar-subtree" tl:if="${n1.children}">
+                  <li class="sidebar-item" tl:each="n2 : ${n1.children}">
+                    <a
+                      class="sidebar-link"
+                      tl:if="${n2.url != ''}"
+                      tl:href="${n2.url}"
+                      tl:text="${n2.title}"
+                      tl:classappend="${n2.url == page.url} ? 'is-active' : ''"
+                      tl:attr="aria-current=${n2.url == page.url} ? 'page' : _"
+                      >Page</a
+                    >
+                    <span class="sidebar-label" tl:unless="${n2.url != ''}" tl:text="${n2.title}">Section</span>
+                    <ul class="sidebar-subtree" tl:if="${n2.children}">
+                      <li class="sidebar-item" tl:each="n3 : ${n2.children}">
+                        <a
+                          class="sidebar-link"
+                          tl:if="${n3.url != ''}"
+                          tl:href="${n3.url}"
+                          tl:text="${n3.title}"
+                          tl:classappend="${n3.url == page.url} ? 'is-active' : ''"
+                          tl:attr="aria-current=${n3.url == page.url} ? 'page' : _"
+                          >Page</a
+                        >
+                        <span class="sidebar-label" tl:unless="${n3.url != ''}" tl:text="${n3.title}">Section</span>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </details>
+
+      <aside class="docs-toc" tl:fragment="toc">
+        <nav aria-label="Table of contents">
+          <p class="toc-title" tl:text="${theme.toc_title}">On this page</p>
+          <ul class="toc-list">
+            <li tl:each="entry : ${page.toc}" tl:attr="class='toc-item toc-level-' + ${entry.level}">
+              <a tl:href="'#' + ${entry.id}" tl:text="${entry.text}">Heading</a>
+            </li>
+          </ul>
+        </nav>
+      </aside>
+    </main>
+
+    <footer class="site-footer" tl:define="site-footer">
+      <div class="wrap footer-inner">
+        <p tl:if="${theme.footer_text != null} and ${theme.footer_text != ''}" tl:text="${theme.footer_text}">Footer</p>
+        <ul class="social-links" tl:if="${#lists.size(theme.social_links)} > 0">
+          <li tl:each="link : ${theme.social_links}">
+            <a tl:href="${link.url}" tl:text="${link.label} ?: ${link.platform}" rel="noopener noreferrer">Social</a>
+          </li>
+        </ul>
+        <p tl:if="${theme.show_powered_by}">Built with <a href="https://pub.dev/packages/trellis">Trellis</a></p>
+      </div>
+    </footer>
+  </body>
+</html>

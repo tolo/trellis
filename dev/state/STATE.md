@@ -6,7 +6,7 @@ Last Updated: 2026-08-19
 
 ## Current Phase
 
-**Phase 2: Site relaunch and gallery** — 0.11 implementation is On Track on `feat/0.11`; S01 is complete and S02 is migrating the documentation site to Lattice with a count-neutral themes gallery.
+**Phase 3: Optional themes** — 0.11 implementation is On Track on `feat/0.11`; the Lattice-powered site and count-neutral gallery are complete, and Folio and Meadow are being implemented serially for cross-repository attribution.
 
 ## Recent Completions
 

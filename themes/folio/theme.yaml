@@ -1,0 +1,45 @@
+name: folio
+version: 1.0.0
+author: Trellis Team
+description: A bookish field-guide documentation theme with semantic figures and sidenotes.
+min_trellis_version: 0.10.0
+screenshots:
+  - screenshots/light.png
+  - screenshots/dark.png
+features: [docs, dark-mode, responsive, accessible, syntax-highlighting, search]
+
+params:
+  skin: {type: enum, values: [light, dark, auto], default: auto, description: Color scheme}
+  primary_color: {type: color, default: "#315f46", description: Green ink used for links and active states}
+  accent_color: {type: color, default: "#912f27", description: Rubrication used for labels and annotations}
+  text_color: {type: color, default: "#17291f", description: Main ink color}
+  muted_color: {type: color, default: "#59695e", description: Secondary ink color}
+  bg_color: {type: color, default: "#f2f1e8", description: Chart-paper background}
+  surface_color: {type: color, default: "#fbfaf4", description: Raised paper surface}
+  border_color: {type: color, default: "#bdc4b6", description: Rules and dividers}
+  font_family: {type: string, default: "EB Garamond, Iowan Old Style, Georgia, serif", description: Body font stack}
+  heading_font_family:
+    type: string
+    default: "EB Garamond, Iowan Old Style, Georgia, serif"
+    description: Heading font stack
+  code_font_family: {type: string, default: "IBM Plex Mono, SFMono-Regular, monospace", description: Code font stack}
+  max_width: {type: string, default: "1180px", description: Maximum shell width}
+  border_radius: {type: string, default: "2px", description: Global corner radius}
+  nav_links:
+    type: list
+    default: [{label: Home, url: /}, {label: Docs, url: /docs/}]
+    description: Header navigation links
+  social_links: {type: list, default: [], description: Social links}
+  footer_text: {type: string, default: null, description: Optional footer text}
+  show_powered_by: {type: boolean, default: true, description: Show Trellis attribution}
+  show_rss_link: {type: boolean, default: true, description: Show feed discovery links}
+  excerpt_length: {type: int, default: 160, description: Generated excerpt length}
+  show_sidebar: {type: boolean, default: true, description: Show hierarchical navigation}
+  show_toc: {type: boolean, default: true, description: Show the page table of contents}
+  show_prev_next: {type: boolean, default: true, description: Show neighboring pages}
+  show_search: {type: boolean, default: true, description: Show client-side search}
+  toc_title: {type: string, default: "Field index", description: Table of contents heading}
+  sidebar_title: {type: string, default: "Contents", description: Sidebar heading}
+  plate_label: {type: string, default: "Plate", description: Label before numbered figure captions}
+  show_plate_numbers: {type: boolean, default: true, description: Number semantic Folio figures}
+  show_sidenotes: {type: boolean, default: true, description: Display semantic Folio sidenotes}

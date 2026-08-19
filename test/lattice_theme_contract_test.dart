@@ -34,6 +34,8 @@ void main() {
     };
     const docsParams = {'show_sidebar', 'show_toc', 'show_prev_next', 'show_search', 'toc_title', 'sidebar_title'};
     const latticeParams = {
+      'logo',
+      'favicon',
       'excerpt_length',
       'hero_eyebrow',
       'hero_headlines',
@@ -59,6 +61,8 @@ void main() {
     expect(manifest.features.where({'docs', 'landing', 'blog'}.contains), ['docs']);
     expect(manifest.params.keys.toSet(), standardParams.union(docsParams).union(latticeParams));
     expect(manifest.params['excerpt_length']!.defaultValue, 160);
+    expect(manifest.params['logo']!.defaultValue, isNull);
+    expect(manifest.params['favicon']!.defaultValue, 'favicon.svg');
     expect(manifest.screenshots, ['screenshots/light.png', 'screenshots/dark.png']);
 
     final headlines = manifest.params['hero_headlines']!.defaultValue as List<dynamic>;
@@ -66,6 +70,21 @@ void main() {
       expect((headline as Map<String, dynamic>).keys.toSet(), {'prefix', 'emphasis', 'suffix'});
       expect(headline.values, everyElement(isA<String>()));
     }
+
+    final terminal = manifest.params['terminal_card_lines']!.defaultValue as List<dynamic>;
+    expect(terminal, hasLength(5));
+    for (final dynamic line in terminal) {
+      expect((line as Map<String, dynamic>).keys.toSet(), {'prefix', 'text', 'kind'});
+      expect(line['kind'], anyOf('command', 'output'));
+    }
+    expect(
+      terminal.map((dynamic line) => (line as Map<String, dynamic>)['text']),
+      contains(contains('trellis create')),
+    );
+    expect(
+      terminal.map((dynamic line) => (line as Map<String, dynamic>)['text']),
+      everyElement(isNot(contains('trellis new'))),
+    );
   });
 
   test('S03/TI05 showcase screenshot tails are prefix-relative and joined exactly once', () {
@@ -114,18 +133,32 @@ $trellis-border-radius: 0;
     expect(light.toLowerCase(), contains('--leaf: #7a4fbf'));
     expect(dark.toLowerCase(), contains('--leaf: #6fbf8b'));
     expect(dark, contains('--on-leaf: #0d1710'));
-    expect(dark, contains('--syntax-keyword: #c792ea'));
+    expect(dark, contains('--syntax-keyword: #b48bd9'));
   });
 
   test('S04-S06/TI06 progressive enhancement avoids innerHTML and obeys reduced motion', () {
     final script = File(p.join(themeDir, 'static', 'js', 'lattice.js')).readAsStringSync();
     final styles = File(p.join(themeDir, 'sass', 'main.scss')).readAsStringSync();
+    final home = File(p.join(themeDir, 'layouts', 'home.html')).readAsStringSync();
     expect(script, isNot(contains('innerHTML')));
     expect(script, contains("matchMedia('(prefers-reduced-motion: reduce)')"));
     expect(script, contains('document.createTextNode'));
     expect(script, contains('localStorage.setItem'));
     expect(script, contains('document.hidden'));
-    expect(styles, contains('@media (max-width: 1180px)'));
+    expect(script, contains('document.fonts.ready.then(fitHeadline)'));
+    expect(script, contains("headline.style.setProperty('--headline-fit-scale'"));
+    expect(script, contains("headline.classList.add('is-fading')"));
+    expect(script, contains('}, 500)'));
+    expect(styles, contains('height: calc(var(--h1-size) * 1.08 * 2)'));
+    expect(styles, isNot(contains('min-height: 145px')));
+    expect(styles, contains('h1.fit-1'));
+    expect(styles, contains('h1.fit-2'));
+    expect(styles, contains('h1.fit-3'));
+    expect(styles, contains('h1.fit-initial'));
+    expect(styles, contains('overflow: hidden'));
+    expect(home, contains('class="fit-initial" data-headline'));
+    expect(styles, contains('@media (min-width: 1180px)'));
+    expect(styles, contains('@media (max-width: 1199px)'));
     expect(styles, contains('@media (max-width: 900px)'));
   });
 
@@ -135,14 +168,34 @@ $trellis-border-radius: 0;
 
     final motion = result['motion']! as Map<String, dynamic>;
     expect(motion['immediate'], 'Server first');
-    expect(motion['afterFirstInterval'], 'Client second');
+    expect(motion['atFadeStart'], {'text': 'Server first', 'fading': true});
+    expect(motion['afterFade'], {'text': 'Client second', 'fading': false});
     expect(motion['intervalDelay'], 6500);
     expect(motion['intervalCount'], 1);
+    expect(motion['fadeDelay'], 500);
+    expect(motion['timeoutCount'], 1);
 
     final reducedMotion = result['reducedMotion']! as Map<String, dynamic>;
     expect(reducedMotion['immediate'], 'Server first');
-    expect(reducedMotion['afterFirstInterval'], 'Server first');
+    expect(reducedMotion['atFadeStart'], {'text': 'Server first', 'fading': false});
+    expect(reducedMotion['afterFade'], {'text': 'Server first', 'fading': false});
     expect(reducedMotion['intervalCount'], 0);
+    expect(reducedMotion['timeoutCount'], 0);
+
+    final empty = result['empty']! as Map<String, dynamic>;
+    final single = result['single']! as Map<String, dynamic>;
+    expect(empty['immediate'], 'Server first');
+    expect(empty['intervalCount'], 0);
+    expect(single['immediate'], 'Server first');
+    expect(single['intervalCount'], 0);
+
+    final long = result['long']! as Map<String, dynamic>;
+    expect(long['fontReadyHandlerCount'], 1);
+    for (final stageName in ['beforeFonts', 'afterFonts']) {
+      final stage = long[stageName]! as Map<String, dynamic>;
+      expect(stage['contentHeight'] as int, lessThanOrEqualTo(stage['slotHeight'] as int), reason: stageName);
+      expect(stage['scale'], isNotEmpty, reason: stageName);
+    }
   });
 
   test('S01-S07/TI08 bridged example builds cleanly with complete rendered pages', () async {
@@ -265,11 +318,31 @@ $trellis-border-radius: 0;
       'static/fonts/OFL-Fraunces.txt',
       'static/fonts/OFL-Instrument-Sans.txt',
       'static/fonts/OFL-Spline-Sans-Mono.txt',
+      'static/trellis-logo.png',
+      'static/trellis-mark.png',
       'screenshots/light.png',
       'screenshots/dark.png',
     ]) {
       expect(File(p.join(themeDir, asset)).existsSync(), isTrue, reason: asset);
     }
+
+    final canonicalLogo = File(p.join(Directory.current.path, 'assets', 'logo-with-text.png')).readAsBytesSync();
+    final themeLogo = File(p.join(themeDir, 'static', 'trellis-logo.png')).readAsBytesSync();
+    expect(themeLogo, canonicalLogo, reason: 'the Trellis site must use the canonical wordmark bytes');
+
+    final mark = File(p.join(themeDir, 'static', 'trellis-mark.png')).readAsBytesSync();
+    expect(mark.take(8), [137, 80, 78, 71, 13, 10, 26, 10]);
+    expect(_readUint32(mark, 16), _readUint32(mark, 20), reason: 'the Trellis favicon crop must be square');
+    for (final screenshot in ['screenshots/light.png', 'screenshots/dark.png']) {
+      final bytes = File(p.join(themeDir, screenshot)).readAsBytesSync();
+      expect(bytes.take(8), [137, 80, 78, 71, 13, 10, 26, 10], reason: screenshot);
+      expect(_readUint32(bytes, 16), 1280, reason: screenshot);
+      expect(_readUint32(bytes, 20), 800, reason: screenshot);
+    }
+
+    final siteConfig = File(p.join(Directory.current.path, 'site', 'trellis_site.yaml')).readAsStringSync();
+    expect(siteConfig, contains('logo: trellis-logo.png'));
+    expect(siteConfig, contains('favicon: trellis-mark.png'));
 
     final manifest = ThemeManifest.load(themeDir);
     final readme = File(p.join(themeDir, 'README.md')).readAsStringSync();
@@ -281,10 +354,16 @@ $trellis-border-radius: 0;
     final base = File(p.join(themeDir, 'layouts', 'base.html')).readAsStringSync();
     final list = File(p.join(themeDir, 'layouts', '_default', 'list.html')).readAsStringSync();
     expect(base, contains(r'${#lists.size(theme.social_links)} > 0'));
+    expect(base, contains(r"${assetBase} + ${theme.logo}"));
+    expect(base, contains(r"${assetBase} + ${theme.favicon}"));
+    expect(base, isNot(contains('M5 28 27 6')));
     expect(list, contains(r'${#lists.size(pages)} > 0'));
     expect(list, contains(r'${#lists.size(pages)} == 0'));
   });
 }
+
+int _readUint32(List<int> bytes, int offset) =>
+    (bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3];
 
 Future<Map<String, dynamic>?> _runNodeHarness(String mode, String scriptPath) async {
   try {

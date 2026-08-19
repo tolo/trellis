@@ -14,7 +14,8 @@ theme_params:
   max_width: "1056px"
 ```
 
-Lattice implements all 18 standard params, Arbor's docs params, and the following Lattice-specific surface.
+Lattice implements all 18 standard params, two branding params, Arbor's docs params, and the following
+Lattice-specific surface.
 
 ### Standard params
 
@@ -33,6 +34,8 @@ Lattice implements all 18 standard params, Arbor's docs params, and the followin
 | `code_font_family`    | Spline Sans Mono stack | Code font stack                             |
 | `max_width`           | `1056px`               | Maximum content width                       |
 | `border_radius`       | `8px`                  | Global corner radius                        |
+| `logo`                | unset                  | Optional prefix-relative header logo        |
+| `favicon`             | `favicon.svg`          | Prefix-relative browser icon                |
 | `nav_links`           | Home and Docs          | Header links                                |
 | `social_links`        | `[]`                   | Footer social links                         |
 | `footer_text`         | unset                  | Optional footer copy                        |
@@ -62,7 +65,7 @@ Lattice implements all 18 standard params, Arbor's docs params, and the followin
 | `hero_cta_primary_url`     | `/docs/`               | Primary CTA URL               |
 | `hero_cta_secondary_label` | `View on GitHub`       | Secondary CTA label           |
 | `hero_cta_secondary_url`   | Trellis repository     | Secondary CTA URL             |
-| `terminal_card_lines`      | Three commands         | Hero terminal commands        |
+| `terminal_card_lines`      | Five entries           | Structured terminal narrative |
 | `show_terminal_card`       | `true`                 | Hero terminal visibility      |
 | `show_code_showcase`       | `true`                 | Code section visibility       |
 | `show_why_grid`            | `true`                 | Benefits section visibility   |
@@ -95,9 +98,16 @@ values render a link after the cards when both are non-empty. Showcase `screensh
 values are prefix-relative tails without a leading slash; the layout prepends the rendered asset base exactly once.
 
 `hero_headlines` is a list of maps with exactly `prefix`, `emphasis`, and `suffix` strings. The server and JavaScript
-escape all three values and create only the `<em>` wrapper. Multiline template source belongs in `data/lattice.yaml`,
-not `theme_params`, because theme params also pass through the SASS bridge. An empty headline list falls back to the
-configured site title; a single entry remains static.
+escape all three values and create only the `<em>` wrapper. The heading crossfades inside a fixed-height slot, fits
+long entries down without changing surrounding geometry, and remains on the server-rendered first entry when reduced
+motion is requested. Multiline template source belongs in `data/lattice.yaml`, not `theme_params`, because theme
+params also pass through the SASS bridge. An empty headline list falls back to the configured site title; a single
+entry remains static. `terminal_card_lines` entries have `prefix`, `text`, and `kind` (`command` or `output`) fields.
+
+`logo` and `favicon` are asset tails resolved through the configured path prefix. They let a site supply one coherent
+identity without hardcoding Trellis branding into reusable Lattice markup. The bundled Trellis wordmark and its exact
+favicon crop are available as `trellis-logo.png` and `trellis-mark.png`; the Trellis documentation site opts into them
+explicitly.
 
 ## Assets and accessibility
 

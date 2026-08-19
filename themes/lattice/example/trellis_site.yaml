@@ -4,6 +4,8 @@ baseUrl: http://localhost:8080
 theme: lattice
 theme_params:
   skin: auto
+  logo: null
+  favicon: favicon.svg
   sidebar_title: Documentation
   toc_title: On this page
   show_search: true

@@ -1,29 +1,40 @@
 code_showcase:
-  title: Natural templates, real output
-  body: Valid HTML stays useful as a prototype and becomes a data-driven server response.
-  template_label: templates/greeting.html
+  title: Open it in a browser. Then render it.
+  body: >-
+    A Trellis template is valid HTML with tl:* attributes. Designers preview the file directly; the engine binds your
+    data at render time.
+  template_label: posts.html
   template_source: |-
-    <h1 tl:text="${greeting}">Hello, prototype!</h1>
-    <p tl:if="${signedIn}">Welcome back.</p>
-  output_label: Rendered HTML
+    <article tl:each="post : ${posts}">
+      <h2 tl:text="${post.title}">Title</h2>
+      <p tl:text="${post.summary}">Summary</p>
+      <a tl:href="@{/posts(id=${post.id})}">
+        Read more</a>
+    </article>
+  output_label: output
   output_source: |-
-    <h1>Hello from Dart!</h1>
-    <p>Welcome back.</p>
+    <article>
+      <h2>Growing season</h2>
+      <p>Server-rendered Dart, start to finish.</p>
+      <a href="/posts?id=42">Read more</a>
+    </article>
+    <article>…</article>
 why:
-  title: Why Trellis?
-  body: A compact stack that keeps the browser, server, and deployment model simple.
+  title: Why Trellis
+  body: Use just the engine, or the whole trellis — composable packages that share one version and grow together.
   cells:
-    - title: Natural HTML
-      body: Open every template directly in a browser before the server exists.
-    - title: Fragment first
-      body: Return complete pages or focused HTMX fragments from the same engine.
-    - title: Pure Dart
-      body: Build, test, and deploy without a Node.js toolchain.
+    - title: Natural HTML templates
+      body: Templates are valid HTML. Browsers render them as prototypes and designers open them directly.
+    - title: HTMX-first fragments
+      body: tl:fragment and renderFragment() map directly to HTMX partial responses.
+    - title: Pure-Dart toolchain
+      body: HTML, Markdown, and SASS are Dart packages. No Node.js, no webpack.
     - title: Single-binary deploy
-      body: Compile the application and its server-rendering stack into one artifact.
+      body: dart compile exe produces one file with instant startup and tiny containers.
 demo:
   title: One file, two views
-  body: The same template is a prototype on disk and a live page when rendered with data.
+  body: >-
+    Proof, not promise — the same posts.html is a clickable prototype on your desk and a live page in production.
   template_source: |-
     <article tl:each="post : ${posts}">
       <h2 tl:text="${post.title}">Title</h2>
@@ -32,7 +43,14 @@ demo:
   prototype_title: Title
   prototype_body: Summary
   rendered_title: Fragments over frameworks
-  rendered_body: Server-rendered pages stay simple and fast.
+  rendered_body: Why HTMX and server rendering beat a client bundle for most apps.
+  rendered_posts:
+    - title: Fragments over frameworks
+      body: Why HTMX and server rendering beat a client bundle for most apps.
+    - title: One binary, zero Node
+      body: Deploying a Dart web app in a compact container image.
+    - title: Templates you can open
+      body: Prototyping pages with no server running at all.
 showcase:
   title: Built-in themes, grown in the same garden
   body: Pick a design, set one line of configuration, and publish.
@@ -41,7 +59,7 @@ showcase:
   cards:
     - {
         name: Arbor,
-        description: Documentation with sidebar navigation and search.,
+        description: Documentation sites — sidebar navigation, in-page TOC, search, syntax highlighting.,
         config: "theme: arbor",
         accent: green,
         screenshot_light: "showcase/arbor-light.svg",
@@ -50,7 +68,7 @@ showcase:
       }
     - {
         name: Bloom,
-        description: A bold product landing page.,
+        description: Product landing pages — bold hero, feature sections, pricing, FAQ.,
         config: "theme: bloom",
         accent: purple,
         screenshot_light: "showcase/bloom-light.svg",
@@ -59,7 +77,7 @@ showcase:
       }
     - {
         name: Verdant,
-        description: A comfortable content-first blog.,
+        description: Blogs — post lists, tags, archives, comfortable reading measure.,
         config: "theme: verdant",
         accent: blue,
         screenshot_light: "showcase/verdant-light.svg",

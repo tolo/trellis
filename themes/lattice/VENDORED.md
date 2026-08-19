@@ -25,6 +25,8 @@ the server-rendered page and do not own content needed for reading or navigation
 
 ## First-party artwork
 
-The SVG theme-card previews under `static/showcase/` and `static/favicon.svg` are original artwork shipped with
-Lattice. The canonical gallery images are `screenshots/light.png` and `screenshots/dark.png`, captured from the
-bridged example.
+The SVG theme-card previews under `static/showcase/` and the reusable fallback `static/favicon.svg` are original
+artwork shipped with Lattice. `static/trellis-logo.png` is the first-party Trellis wordmark, copied byte-for-byte from
+the repository's canonical `assets/logo-with-text.png`; `static/trellis-mark.png` is a square favicon crop of that same
+source. The canonical gallery images are `screenshots/light.png` and `screenshots/dark.png`, captured from the bridged
+example.

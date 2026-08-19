@@ -17,15 +17,26 @@ theme: ../../themes/lattice
 
 theme_params:
   skin: auto
+  logo: trellis-logo.png
+  favicon: trellis-mark.png
   nav_links:
-    - label: Home
-      url: /
     - label: Docs
       url: /docs/
+    - label: Packages
+      url: /docs/packages/
     - label: Themes
       url: /docs/themes/gallery/
+    - label: GitHub
+      url: https://github.com/tolo/trellis
   footer_text: "Trellis — MIT licensed."
-  show_powered_by: true
+  social_links:
+    - label: GitHub
+      url: https://github.com/tolo/trellis
+    - label: pub.dev
+      url: https://pub.dev/packages/trellis
+    - label: Docs
+      url: /docs/
+  show_powered_by: false
   show_rss_link: false
   show_sidebar: true
   show_toc: true
@@ -34,7 +45,7 @@ theme_params:
   toc_title: On this page
   sidebar_title: Documentation
   excerpt_length: 160
-  hero_eyebrow: Server-rendered Dart
+  hero_eyebrow: Pure-Dart web SDK
   hero_headlines:
     - prefix: "Templates that are just HTML. A stack that's "
       emphasis: just Dart
@@ -45,17 +56,35 @@ theme_params:
     - prefix: "Dart plus templates that are "
       emphasis: just HTML
       suffix: "."
+    - prefix: "Valid HTML in. Server-rendered "
+      emphasis: Dart
+      suffix: " out."
+    - prefix: "One language, one binary — "
+      emphasis: the whole garden
+      suffix: "."
   hero_lede: >-
-    Trellis renders natural HTML templates and grows into a complete SDK for server-rendered apps and static sites.
-    HTMX-first fragments, no Node.js, and a single-binary deploy.
-  hero_cta_primary_label: Read the docs
-  hero_cta_primary_url: /docs/
-  hero_cta_secondary_label: View on GitHub
-  hero_cta_secondary_url: https://github.com/tolo/trellis
+    Trellis renders natural HTML templates — valid markup your browser opens as a prototype — and grows into a full
+    SDK for server-rendered apps and static sites. HTMX-first fragments, no Node.js, and a single-binary deploy.
+  hero_cta_primary_label: Get started
+  hero_cta_primary_url: /docs/getting-started/
+  hero_cta_secondary_label: Read the docs
+  hero_cta_secondary_url: /docs/
   terminal_card_lines:
-    - dart pub add trellis
-    - trellis create my_site
-    - trellis serve
+    - prefix: "$"
+      text: dart pub add trellis
+      kind: command
+    - prefix: "+"
+      text: trellis 0.11.0 — one dependency
+      kind: output
+    - prefix: "$"
+      text: trellis create my_app && cd my_app
+      kind: command
+    - prefix: "✓"
+      text: "created Shelf + HTMX starter"
+      kind: output
+    - prefix: "➜"
+      text: dart run bin/server.dart → :8080
+      kind: output
   show_terminal_card: true
   show_code_showcase: true
   show_why_grid: true
@@ -63,7 +92,7 @@ theme_params:
   show_themes_showcase: true
   show_cta: true
   cta_title: One dependency away
-  cta_body: Start with the engine or scaffold a complete themed site.
+  cta_body: Add the engine to any Dart project, or scaffold a full themed site with trellis_cli — planted in seconds.
   cta_commands:
     - dart pub add trellis
     - dart pub global activate trellis_cli

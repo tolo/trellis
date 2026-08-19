@@ -3,11 +3,13 @@
   <head tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title tl:text="${page.title} + ' — ' + ${site.title}">Page — Site</title>
+    <title tl:text="${page.title} == ${site.title} ? ${site.title} : ${page.title} + ' — ' + ${site.title}">
+      Page — Site
+    </title>
     <meta name="description" tl:attr="content=${page.description} ?: ${page.summary} ?: ${site.description}" />
     <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/main.css'" href="/css/main.css" />
     <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/theme-props.css'" href="/css/theme-props.css" />
-    <link rel="icon" tl:attr="href=${assetBase} + 'favicon.svg'" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" tl:attr="href=${assetBase} + ${theme.favicon}" href="/favicon.svg" />
     <link
       tl:if="${site.feeds.atom} and ${theme.show_rss_link}"
       rel="alternate"
@@ -30,26 +32,54 @@
   </head>
   <body tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
     <a class="skip-to-content" href="#main-content">Skip to content</a>
-    <div class="background-lattice" aria-hidden="true"></div>
+    <div class="background-lattice" aria-hidden="true">
+      <svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+        <g stroke="currentColor" stroke-width="1.25">
+          <g transform="rotate(45 800 500)">
+            <path
+              d="M-600-450H2200 M-600-320H2200 M-600-190H2200 M-600-60H2200 M-600 70H2200
+                 M-600 200H2200 M-600 330H2200 M-600 460H2200 M-600 590H2200 M-600 720H2200
+                 M-600 850H2200 M-600 980H2200 M-600 1110H2200 M-600 1240H2200 M-600 1370H2200"
+            />
+          </g>
+          <g transform="rotate(-45 800 500)">
+            <path
+              d="M-600-450H2200 M-600-320H2200 M-600-190H2200 M-600-60H2200 M-600 70H2200
+                 M-600 200H2200 M-600 330H2200 M-600 460H2200 M-600 590H2200 M-600 720H2200
+                 M-600 850H2200 M-600 980H2200 M-600 1110H2200 M-600 1240H2200 M-600 1370H2200"
+            />
+          </g>
+        </g>
+      </svg>
+    </div>
     <header class="site-header" tl:define="site-header">
       <div class="wrap nav">
-        <a class="wordmark" href="/" tl:href="${assetBase}">
-          <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
-            <path
-              d="M5 28 27 6M3 17 15 5M17 29 29 17M8 25c8-1 13-6 14-14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            />
-          </svg>
-          <span tl:text="${site.title}">Site title</span>
+        <a class="wordmark" href="/" tl:href="${assetBase}" tl:attr="aria-label=${site.title} + ' home'">
+          <img
+            class="trellis-logo"
+            tl:if="${theme.logo} != null and ${theme.logo} != ''"
+            tl:attr="src=${assetBase} + ${theme.logo},alt=${site.title}"
+            src="/trellis-logo.png"
+            alt="Trellis"
+          />
+          <span tl:unless="${theme.logo} != null and ${theme.logo} != ''" tl:text="${site.title}">Site title</span>
         </a>
         <div class="nav-right">
-          <nav aria-label="Main navigation">
+          <nav class="desktop-nav" aria-label="Main navigation">
             <ul class="nav-links">
               <li tl:each="link : ${theme.nav_links}"><a tl:href="${link.url}" tl:text="${link.label}">Link</a></li>
             </ul>
           </nav>
+          <details class="mobile-nav">
+            <summary>Menu</summary>
+            <nav aria-label="Mobile navigation">
+              <ul>
+                <li tl:each="link : ${theme.nav_links}">
+                  <a tl:href="${link.url}" tl:text="${link.label}">Link</a>
+                </li>
+              </ul>
+            </nav>
+          </details>
           <button
             tl:if="${theme.skin} == 'auto'"
             class="mode-toggle"
@@ -57,7 +87,24 @@
             data-lattice-theme-toggle
             aria-label="Switch color mode"
           >
-            <span aria-hidden="true">◐</span>
+            <svg class="moon" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <svg class="sun" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="2" />
+              <path
+                d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3 7 7M17 17l1.7 1.7M18.7 5.3 17 7M7 17l-1.7 1.7"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+            </svg>
           </button>
         </div>
       </div>

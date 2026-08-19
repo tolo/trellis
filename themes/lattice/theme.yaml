@@ -41,6 +41,8 @@ params:
   sidebar_title: { type: string, default: "Documentation", description: Sidebar label }
 
   # Lattice params.
+  logo: { type: string, default: null, description: Optional prefix-relative header logo path }
+  favicon: { type: string, default: "favicon.svg", description: Prefix-relative favicon path }
   excerpt_length: { type: int, default: 160, description: Plain-text generated-summary length }
   hero_eyebrow: { type: string, default: "Server-rendered Dart", description: Hero eyebrow }
   hero_headlines:
@@ -63,8 +65,15 @@ params:
   terminal_card_lines:
     {
       type: list,
-      default: ["dart pub add trellis", "trellis create my_site", "trellis serve"],
-      description: Hero terminal commands,
+      default:
+        [
+          { prefix: "$", text: "dart pub add trellis", kind: command },
+          { prefix: "+", text: "trellis 0.11.0 — one dependency", kind: output },
+          { prefix: "$", text: "trellis create my_app && cd my_app", kind: command },
+          { prefix: "✓", text: "created Shelf + HTMX starter", kind: output },
+          { prefix: "➜", text: "dart run bin/server.dart → :8080", kind: output },
+        ],
+      description: "Hero terminal entries [{prefix, text, kind}]",
     }
   show_terminal_card: { type: boolean, default: true, description: Show hero terminal card }
   show_code_showcase: { type: boolean, default: true, description: Show code showcase }

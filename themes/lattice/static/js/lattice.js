@@ -25,6 +25,17 @@
     });
   }
 
+  var docsSidebar = document.querySelector('[data-docs-sidebar]');
+  if (docsSidebar) {
+    var sidebarBreakpoint = window.matchMedia('(max-width: 700px)');
+    function syncSidebar(event) {
+      docsSidebar.open = !event.matches;
+    }
+    syncSidebar(sidebarBreakpoint);
+    if (typeof sidebarBreakpoint.addEventListener === 'function')
+      sidebarBreakpoint.addEventListener('change', syncSidebar);
+  }
+
   var headline = document.querySelector('[data-headline]');
   if (headline) {
     var headlineText = document.querySelector('[data-headline-text]');

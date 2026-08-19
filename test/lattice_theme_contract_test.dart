@@ -191,6 +191,50 @@ $trellis-border-radius: 0;
     expect(closingRule!.group(1), isNot(contains('padding')));
   });
 
+  test('subpage shell provides spacing, utility type, and compact navigation', () async {
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    expect(css, matches(RegExp(r'\.docs-shell\s*\{[^}]*padding-block:\s*64px 96px', dotAll: true)));
+    expect(
+      css,
+      matches(
+        RegExp(
+          r'\.doc > h1\s*\{[^}]*font-family:\s*var\(--body\)[^}]*font-size:\s*clamp\(34px, 3\.2vw, 46px\)',
+          dotAll: true,
+        ),
+      ),
+    );
+    expect(css, isNot(matches(RegExp(r'^h1\s*\{', multiLine: true))));
+    expect(css, matches(RegExp(r'\.breadcrumb ul\s*\{[^}]*display:\s*flex', dotAll: true)));
+    expect(
+      css,
+      matches(
+        RegExp(
+          r'@media \(max-width: 700px\)\s*\{.*?'
+          r'\.docs-shell\s*\{[^}]*padding-block:\s*32px 64px',
+          dotAll: true,
+        ),
+      ),
+    );
+
+    final base = File(p.join(themeDir, 'layouts', 'base.html')).readAsStringSync();
+    expect(base, contains('class="sidebar-disclosure" open data-docs-sidebar'));
+
+    final result = await _runNodeHarness('lattice', p.join(themeDir, 'static', 'js', 'lattice.js'));
+    if (result == null) return;
+    expect((result['motion']! as Map<String, dynamic>)['sidebar'], {
+      'initial': true,
+      'afterCrossing': false,
+      'afterReturn': true,
+      'listenerCount': 1,
+    });
+    expect((result['sidebarMobile']! as Map<String, dynamic>)['sidebar'], {
+      'initial': false,
+      'afterCrossing': true,
+      'afterReturn': false,
+      'listenerCount': 1,
+    });
+  });
+
   test('S04/TI06 headline waits for the interval and stays static with reduced motion', () async {
     final result = await _runNodeHarness('lattice', p.join(themeDir, 'static', 'js', 'lattice.js'));
     if (result == null) return;

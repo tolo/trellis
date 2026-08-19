@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html tl:extends="layouts/base.html" lang="en">
+<head><title>Home</title></head>
+<body>
+<main id="main-content" tl:define="content">
+  <section class="hero" tl:if="${page.hero}">
+    <div class="wrap hero-grid"
+         tl:classappend="${page.hero.media} and ${theme.hero_align} == 'split' ? 'hero-split' : 'hero-center'">
+      <div class="hero-copy">
+        <span class="eyebrow" tl:if="${page.hero.eyebrow} != null and ${page.hero.eyebrow} != ''"
+              tl:classappend="${theme.pill_badges} ? 'eyebrow-pill' : ''" tl:text="${page.hero.eyebrow}">Release</span>
+        <h1 data-headline>
+          <span tl:text="${page.hero.headline.prefix}">Prefix</span>
+          <span class="marker" tl:text="${page.hero.headline.emphasis}">emphasis</span>
+          <span tl:if="${page.hero.headline.suffix} != null and ${page.hero.headline.suffix} != ''"
+                tl:text="${page.hero.headline.suffix}">suffix</span>
+        </h1>
+        <p class="hero-lede" tl:if="${page.hero.lede} != null and ${page.hero.lede} != ''"
+           tl:text="${page.hero.lede}">Lede</p>
+        <div class="hero-actions" tl:if="${page.hero.ctas}">
+          <a class="button" tl:each="cta : ${page.hero.ctas}"
+             tl:classappend="${cta.style} == 'secondary' ? 'button-secondary' : 'button-primary'"
+             tl:href="${cta.href}" tl:text="${cta.label}">Action</a>
+        </div>
+      </div>
+      <figure class="hero-art" tl:if="${page.hero.media}" tl:attr="aria-label=${page.hero.media.alt}">
+        <svg viewBox="0 0 520 520" fill="none" role="img" aria-hidden="true">
+          <rect x="38" y="40" width="442" height="438" rx="42" fill="var(--meadow-surface)"
+                stroke="var(--meadow-ink)" stroke-width="5"></rect>
+          <g stroke="var(--meadow-leaf)" stroke-width="4" stroke-linecap="round" opacity=".58">
+            <path d="M80 102 410 432M33 174 334 475M171 40l309 309M350 40 43 347M458 109 111 456M270 40 40 270"></path>
+          </g>
+          <g aria-hidden="true">
+            <path d="M249 177c17-21 37-18 50 1-17 20-36 18-50-1Z" fill="var(--meadow-leaf)"></path>
+            <path d="M325 288c18-22 39-18 53 2-18 19-39 17-53-2Z" fill="var(--meadow-leaf)"></path>
+            <circle cx="414" cy="132" r="21" fill="var(--meadow-sun)" stroke="var(--meadow-ink)" stroke-width="4"></circle>
+            <circle cx="414" cy="132" r="8" fill="var(--meadow-coral)"></circle>
+          </g>
+          <g class="bloom-pop"><rect x="72" y="82" width="176" height="102" rx="18" fill="var(--meadow-sky-soft)"
+             stroke="var(--meadow-ink)" stroke-width="3"></rect><circle cx="101" cy="113" r="12"
+             fill="var(--meadow-sky)"></circle><path d="M124 108h85M124 125h63M91 152h116"
+             stroke="var(--meadow-ink)" stroke-width="7" stroke-linecap="round" opacity=".72"></path></g>
+          <g class="bloom-pop"><rect x="278" y="206" width="164" height="112" rx="18"
+             fill="var(--meadow-bloom-soft)" stroke="var(--meadow-ink)" stroke-width="3"></rect>
+             <circle cx="308" cy="238" r="12" fill="var(--meadow-bloom)"></circle></g>
+          <g class="bloom-pop"><rect x="95" y="321" width="235" height="102" rx="19"
+             fill="var(--meadow-lime)" stroke="var(--meadow-ink)" stroke-width="4"></rect>
+             <path d="M128 355h161M128 377h118" stroke="#14251a" stroke-width="8" stroke-linecap="round"></path></g>
+        </svg>
+      </figure>
+    </div>
+  </section>
+
+  <section class="home-prose" tl:if="${page.content} != null and ${page.content} != ''">
+    <div class="wrap prose" tl:utext="${page.content}">Body.</div>
+  </section>
+
+  <aside class="proof-strip" tl:if="${page.proof}" aria-label="Product highlights">
+    <ul class="wrap proof-list"><li tl:each="item : ${page.proof.items}"><strong tl:text="${item.value}">Value</strong>
+      <span tl:text="${item.label}">Label</span></li></ul>
+  </aside>
+
+  <section class="section" id="features" tl:if="${page.features}">
+    <div class="wrap">
+      <header class="section-head"><span class="kicker lime" tl:text="${page.features.eyebrow}">Features</span>
+        <h2 tl:text="${page.features.title}">Title</h2><p tl:if="${page.features.body}"
+        tl:text="${page.features.body}">Body</p></header>
+      <div class="feature-grid">
+        <article class="feature-card" tl:each="item : ${page.features.items}"><span class="feature-icon"
+          aria-hidden="true" tl:text="${item.icon}">Icon</span><h3 tl:text="${item.title}">Title</h3>
+          <p tl:text="${item.body}">Body</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section signal-section" id="workflow" tl:if="${page.workflow}">
+    <div class="wrap signal-grid"><div><header class="section-head"><span class="kicker sky"
+      tl:text="${page.workflow.eyebrow}">Workflow</span><h2 tl:text="${page.workflow.title}">Title</h2>
+      <p tl:text="${page.workflow.body}">Body</p></header><ul class="signal-stack">
+      <li class="signal-card" tl:each="signal : ${page.workflow.signals}"><span class="signal-avatar"
+        tl:text="${signal.initials}">AB</span><div><strong tl:text="${signal.name} + ' · ' + ${signal.source}">Source</strong>
+        <p tl:text="${signal.text}">Signal</p></div><span class="signal-tag" tl:text="${signal.tag}">Tag</span></li>
+      </ul></div><article class="insight-card"><span class="insight-label"
+      tl:text="${page.workflow.insight.label}">Insight</span><h3 tl:text="${page.workflow.insight.title}">Title</h3>
+      <p tl:text="${page.workflow.insight.body}">Body</p><div class="meter" role="progressbar" aria-label="Opportunity confidence"
+      aria-valuemin="0" aria-valuemax="100"
+      tl:attr="aria-valuenow=${page.workflow.insight.confidence},style='--confidence: ' + ${page.workflow.insight.confidence} + '%'">
+      <span></span></div>
+      </article></div>
+  </section>
+
+  <section class="section template-section" id="use-cases" tl:if="${page.use_cases}">
+    <div class="wrap"><header class="section-head"><span class="kicker bloom" tl:text="${page.use_cases.eyebrow}">Use cases</span>
+      <h2 tl:text="${page.use_cases.title}">Title</h2><p tl:text="${page.use_cases.body}">Body</p></header>
+      <div class="template-grid"><a class="template-card" tl:each="item : ${page.use_cases.items}"
+        tl:href="${item.href}"><div class="template-card-inner"><span class="template-number"
+        tl:text="${item.label}">Label</span><div class="template-window" aria-hidden="true"></div>
+        <h3 tl:text="${item.title}">Title</h3><p tl:text="${item.body}">Body</p></div></a></div>
+    </div>
+  </section>
+
+  <aside class="quote-band" tl:if="${page.quote}"><div class="wrap quote-card"><span class="quote-mark"
+    aria-hidden="true">“</span><div><blockquote tl:text="${page.quote.text}">Quote</blockquote>
+    <footer tl:text="${page.quote.attribution}">Attribution</footer></div></div></aside>
+
+  <section class="section start" id="start" tl:if="${page.cta}"><div class="wrap"><header class="section-head">
+    <span class="kicker lime" tl:text="${page.cta.eyebrow}">Start</span><h2 tl:text="${page.cta.title}">Title</h2>
+    <p tl:text="${page.cta.body}">Body</p></header><div class="terminal"><div class="terminal-top">
+    <span aria-hidden="true">● ● ●</span><span>kiteframe · quickstart</span></div>
+    <div class="command-row"><span class="prompt" aria-hidden="true">$</span><code class="command"
+    id="install-command" tl:text="${page.cta.command}">command</code><button class="copy-button" type="button"
+    data-copy hidden>Copy</button></div></div><p class="start-note" tl:text="${page.cta.note}">Note</p></div></section>
+</main>
+</body>
+</html>

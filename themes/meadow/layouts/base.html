@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title tl:text="${page.title} == ${site.title} ? ${site.title} : ${page.title} + ' – ' + ${site.title}">Page – Site</title>
+  <meta name="description" tl:attr="content=${page.description} ?: ${page.summary} ?: ${site.description}">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/main.css'" href="/css/main.css">
+  <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/theme-props.css'" href="/css/theme-props.css">
+  <script tl:if="${theme.skin} == 'auto'">
+    try { document.documentElement.dataset.skin = localStorage.getItem('meadow-skin') || ''; } catch (_) {}
+  </script>
+  <link tl:if="${site.feeds.atom} and ${theme.show_rss_link}" rel="alternate" type="application/atom+xml"
+        title="Atom Feed" tl:attr="href=${site.feeds.atom}">
+  <link tl:if="${site.feeds.rss} and ${theme.show_rss_link}" rel="alternate" type="application/rss+xml"
+        title="RSS Feed" tl:attr="href=${site.feeds.rss}">
+  <script tl:attr="src=${assetBase} + 'js/meadow.js'" defer></script>
+  <meta tl:define="head-extra">
+</head>
+<body id="top">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="site-nav" tl:define="site-header">
+    <div class="wrap nav-inner">
+      <a class="brand" tl:href="${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}" href="/"
+         tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
+        <img class="site-logo" tl:if="${theme.logo} != null and ${theme.logo} != ''"
+             tl:attr="src=${assetBase} + ${theme.logo},alt=${site.title}" src="" alt="">
+        <svg class="brand-mark" tl:unless="${theme.logo} != null and ${theme.logo} != ''"
+             viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <path d="M5 27V8M16 27V4M27 27V8M5 12h22M5 21h22" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round"></path>
+          <circle cx="16" cy="12" r="4" fill="var(--meadow-lime)" stroke="currentColor" stroke-width="2"></circle>
+          <circle cx="27" cy="21" r="3" fill="var(--meadow-sun)" stroke="currentColor" stroke-width="2"></circle>
+        </svg>
+        <span tl:text="${site.title}">Site title</span>
+      </a>
+      <nav class="desktop-nav" aria-label="Primary navigation"
+           tl:with="homeBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
+        <a tl:each="link : ${theme.nav_links}"
+           tl:href="${#strings.startsWith(link.url, '#')} ? ${homeBase} + ${link.url} : ${link.url}"
+           tl:text="${link.label}">Link</a>
+      </nav>
+      <div class="nav-actions">
+        <button tl:if="${theme.skin} == 'auto'" class="icon-button" type="button" data-meadow-skin-toggle
+                aria-label="Change color scheme" aria-pressed="false" hidden>Theme</button>
+        <a class="nav-cta" tl:if="${page.hero} and ${page.hero.ctas}"
+           tl:href="${page.hero.ctas[0].href}" tl:text="${page.hero.ctas[0].label}">Start</a>
+        <details class="mobile-menu">
+          <summary aria-label="Open navigation menu">Menu</summary>
+          <nav aria-label="Mobile navigation" tl:with="homeBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
+            <a tl:each="link : ${theme.nav_links}"
+               tl:href="${#strings.startsWith(link.url, '#')} ? ${homeBase} + ${link.url} : ${link.url}"
+               tl:text="${link.label}">Link</a>
+          </nav>
+        </details>
+      </div>
+    </div>
+  </header>
+  <main id="main-content" tl:define="content"><div class="wrap"><p>Override content.</p></div></main>
+  <footer class="site-footer" tl:define="site-footer">
+    <div class="wrap footer-inner">
+      <a class="brand" tl:href="${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}" href="/"
+         tl:text="${site.title}">Site title</a>
+      <span tl:if="${theme.footer_text} != null and ${theme.footer_text} != ''" tl:text="${theme.footer_text}">Footer</span>
+      <nav class="footer-links" aria-label="Footer navigation"
+           tl:with="homeBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
+        <a tl:each="link : ${theme.nav_links}"
+           tl:href="${#strings.startsWith(link.url, '#')} ? ${homeBase} + ${link.url} : ${link.url}"
+           tl:text="${link.label}">Link</a>
+        <a tl:each="link : ${theme.social_links}" tl:href="${link.url}"
+           tl:text="${link.label} ?: ${link.platform}">Social</a>
+        <a href="#top">Back to top ↑</a>
+      </nav>
+      <span class="footer-powered-by" tl:if="${theme.show_powered_by}">
+        Built with <a href="https://pub.dev/packages/trellis">Trellis</a>
+      </span>
+    </div>
+  </footer>
+</body>
+</html>

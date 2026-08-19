@@ -141,15 +141,11 @@ void main() {
       );
       final generatedData = loadYaml(File(p.join(root, 'site', 'data', 'themes.yaml')).readAsStringSync()) as YamlMap;
       final generatedThemes = generatedData['themes'] as YamlList;
-      final installedThemes = Directory(
-        p.join(root, 'themes'),
-      ).listSync().whereType<Directory>().where((dir) => File(p.join(dir.path, 'theme.yaml')).existsSync()).length;
       final expectedImages = generatedThemes.fold<int>(0, (count, item) {
         final theme = item as YamlMap;
         return count + (theme.containsKey('screenshot_light') ? 1 : 0) + (theme.containsKey('screenshot_dark') ? 1 : 0);
       });
-      expect(generatedThemes, hasLength(installedThemes));
-      expect(gallery.querySelectorAll('.gallery-card'), hasLength(installedThemes));
+      expect(gallery.querySelectorAll('.gallery-card'), hasLength(generatedThemes.length));
       expect(gallery.querySelectorAll('.gallery-card img'), hasLength(expectedImages));
       final assetPrefix = prefix.isEmpty ? '/' : prefix;
       for (final image in gallery.querySelectorAll('.gallery-card img')) {

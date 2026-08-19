@@ -41,7 +41,7 @@ owner review and the separate 0.11.0 version bump, tag, and publication remain p
 ## Test Health
 
 On `feat/0.11`: all eight package test suites pass (one existing Linux-only skip in `trellis`), the repo-root suite
-passes **74/74**, and workspace analyze and format gates pass across all 12 packages. Root and `/trellis/` docs builds
+passes **77/77**, and workspace analyze and format gates pass across all 12 packages. Root and `/trellis/` docs builds
 each produce 27 pages and 37 static files with 1,143 internal references and no broken links. Dart Sass 3.0
 forward-compat tech debt remains logged as TD-006 (`@import` in theme SASS + the bridge).
 

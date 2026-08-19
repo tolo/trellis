@@ -79,6 +79,8 @@ void main() {
     final home = File(p.join(themeDir, 'layouts', 'home.html')).readAsStringSync();
     expect(home, contains(r'${assetBase} + ${card.screenshot_light}'));
     expect(home, contains(r'${assetBase} + ${card.screenshot_dark}'));
+    expect(home, contains(r'${data.lattice.showcase.link_label}'));
+    expect(home, contains(r'${data.lattice.showcase.link_url}'));
   });
 
   test('S02-S05/TI03 bridged overrides preserve shared geometry and dark palette ownership', () {

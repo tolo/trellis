@@ -90,8 +90,9 @@ The dark palette is deliberately theme-owned. Font stacks, `max_width`, and `bor
 ## Structured home data
 
 `data/lattice.yaml` owns `code_showcase`, `why`, `demo`, and `showcase`. A site's `data/lattice.yaml` replaces that
-file as a whole, so provide every shape when overriding it. Showcase `screenshot_light` and `screenshot_dark` values
-are prefix-relative tails without a leading slash; the layout prepends the rendered asset base exactly once.
+file as a whole, so provide every shape when overriding it. Optional `showcase.link_label` and `showcase.link_url`
+values render a link after the cards when both are non-empty. Showcase `screenshot_light` and `screenshot_dark`
+values are prefix-relative tails without a leading slash; the layout prepends the rendered asset base exactly once.
 
 `hero_headlines` is a list of maps with exactly `prefix`, `emphasis`, and `suffix` strings. The server and JavaScript
 escape all three values and create only the `<em>` wrapper. Multiline template source belongs in `data/lattice.yaml`,

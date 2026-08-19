@@ -36,6 +36,8 @@ demo:
 showcase:
   title: Built-in themes, grown in the same garden
   body: Pick a design, set one line of configuration, and publish.
+  link_label: ""
+  link_url: ""
   cards:
     - {
         name: Arbor,

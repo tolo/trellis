@@ -447,6 +447,10 @@ code {
   border-radius: 5px;
   background: var(--chip-bg);
 }
+.showcase-link {
+  margin: 32px 0 0;
+  text-align: center;
+}
 .closing-section {
   border: 0;
 }
@@ -582,11 +586,26 @@ code {
 .prose img {
   max-width: 100%;
 }
+.prose :not(pre) > code {
+  overflow-wrap: anywhere;
+}
+.prose table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+}
+.prose th,
+.prose td {
+  overflow-wrap: anywhere;
+}
 .prose pre {
+  overflow: visible;
+  overflow-wrap: anywhere;
   margin-block: 24px;
   border: 1px solid var(--lattice);
   border-radius: var(--radius);
   background: var(--card);
+  white-space: pre-wrap;
 }
 .hljs-keyword,
 .hljs-name,
@@ -715,8 +734,7 @@ code {
     justify-self: center;
   }
   .code-duo pre,
-  .demo-source pre,
-  .prose pre {
+  .demo-source pre {
     overflow: visible;
     overflow-wrap: anywhere;
     white-space: pre-wrap;

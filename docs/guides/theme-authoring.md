@@ -151,6 +151,15 @@ The 18 standard params form a contract between themes and site builders. Every t
 
 See the [Standard Params Contract](../reference/standard-params.md) for the full specification.
 
+| Category | Params |
+|---|---|
+| Skin & Colors | `skin`, `primary_color`, `accent_color`, `text_color`, `muted_color`, `bg_color`, `surface_color`, `border_color` |
+| Typography | `font_family`, `heading_font_family`, `code_font_family` |
+| Layout | `max_width`, `border_radius` |
+| Navigation | `nav_links`, `social_links` |
+| Footer | `footer_text`, `show_powered_by` |
+| Features | `show_rss_link` |
+
 ### Theme-Specific Params
 
 Themes may add any number of additional params beyond the 18 standard ones. Convention: place them after the standard block in `theme.yaml` with a comment separating them.
@@ -170,6 +179,20 @@ params:
 ```
 
 Naming convention for theme-specific params: use `snake_case`, and avoid names that clash with standard params.
+
+`excerpt_length` is an optional, theme-specific content-rendering param. Themes that use generated summaries can declare it
+as an `int`; it controls the plain-text summary length. It is not part of the 18 standard params.
+
+
+## Theme Data Files
+
+A theme can provide YAML data files under `data/` for structured content that belongs to the theme rather than to a
+parameter. For example, `data/navigation.yaml` is available to layouts as `${data.navigation.*}`. The filename stem becomes
+the key below `${data}`.
+
+Theme data is a fallback. Trellis loads the theme's files first, then the site's `data/*.yaml` files. When both provide the
+same stem, the site file replaces the complete theme value – nested maps and lists are not deep-merged. Files with different
+stems remain available together. This lets a theme ship useful defaults while a site owns any deliberate replacement.
 
 
 ## SASS Integration
@@ -423,7 +446,7 @@ theme_params:
 paginate: 5
 ```
 
-The build resolves a theme by joining `<siteDir>/themes/<value>`, so the example needs a `themes/verdant` entry. Because the example lives *inside* the theme, that entry is a relative symlink pointing back at the theme root — create it once with `ln -s ../.. example/themes/verdant`. All three official themes ship this layout. (A bare `theme: ..` does **not** work: it resolves to the example directory itself, not the theme.)
+The build resolves a theme by joining `<siteDir>/themes/<value>`, so the example needs a `themes/verdant` entry. Because the example lives *inside* the theme, that entry is a relative symlink pointing back at the theme root — create it once with `ln -s ../.. example/themes/verdant`. Official themes ship this layout. (A bare `theme: ..` does **not** work: it resolves to the example directory itself, not the theme.)
 
 Run the preview:
 
@@ -499,7 +522,7 @@ The official Verdant theme implements all patterns in this guide:
 
 | Pattern | Verdant file |
 |---|---|
-| Full manifest: 18 standard + 10 theme-specific params | `themes/verdant/theme.yaml` |
+| Full manifest: 18 standard + theme-specific params | `themes/verdant/theme.yaml` |
 | `_variables.scss` with `!default` | `themes/verdant/sass/_variables.scss` |
 | Light and dark skin files | `themes/verdant/sass/_skins/` |
 | `main.scss` with auto skin media query | `themes/verdant/sass/main.scss` |

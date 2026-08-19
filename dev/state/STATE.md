@@ -6,14 +6,15 @@ Last Updated: 2026-08-19
 
 ## Current Phase
 
-**Phase 4: Release collateral** — 0.11 implementation is On Track on `feat/0.11`; Lattice, the redesigned site and
-count-neutral gallery, Folio, and Meadow are complete. Final gallery regeneration, documentation, architecture,
-changelogs, and release-readiness checks are in progress.
+**0.11 implementation complete** — Lattice, the redesigned site and six-theme generated gallery, Folio, Meadow,
+authoring guidance, architecture, and unreleased lockstep changelog collateral are complete on `feat/0.11`. Post-plan
+owner review and the separate 0.11.0 version bump, tag, and publication remain pending.
 
 ## Recent Completions
 
 | Phase | Completed | Key Deliverables |
 |-------|-----------|------------------|
+| 0.11.0 (implementation) | 2026-08-19 | Lattice docs theme and Lattice-powered site; deterministic six-theme gallery; Folio reference theme; Meadow product-landing theme; theme-data authoring guidance; architecture and unreleased 0.11.0 changelog collateral. Owner review and release remain pending. |
 | 0.10.0 (pre-release) | 2026-07-11 | Binary distribution: **Scoop** channel + release-workflow hardening (both tap jobs skip without `TAP_TOKEN`); build-time syntax highlighting (ADR-010: `CodeHighlighter`/`package:highlight`, `.hljs-*` spans, `highlight:` config key, vendored Prism removed); `bloom` landing theme + `verdant`/`arbor` polish; theme SASS-bridge escaping hardened; **TD-009** resolved (`ProcessRunner`, no CWD mutation → parallel-safe CLI suite). |
 | Docs Site | 2026-07-06 | Engine: weighted ordering + nested sections + `orderedSectionPages` seam, `${site.menu}` nav tree (section-weight ordered), `pathPrefix` (with unprefixed on-disk layout + content-link rewriting), in-section prev/next; `arbor` docs theme (build-time `.hljs-*` highlighting, WCAG-AA skins, responsive, search shell); `site/` (marketing landing + curated docs IA: getting-started, complete `tl:*` syntax reference, 8 package guides, theme-authoring); client-side search; GitHub Pages CI deploy + pure-Dart link-integrity checker. Deploy target: `tolo.github.io/trellis/` (`pathPrefix: /trellis/`). |
 | SDK Phase 4 | 2026-03-20 | Theme manifest + params, ThemeAwareLoader, SASS bridge, CLI theme commands, Verdant theme |
@@ -39,7 +40,10 @@ changelogs, and release-readiness checks are in progress.
 
 ## Test Health
 
-On `feature/0.10.0`: `trellis_site` **835 pass / 0 fail**; `trellis_cli` **253 pass** at default concurrency (parallel-safe after **TD-009** removed the CWD mutation the `examples_smoke_test` flakiness traced to — no more `-j 1` workaround); repo-root `test/` **34 pass** (incl. the release-distribution contract tests). `dart analyze --fatal-infos` clean across the workspace. Dart Sass 3.0 forward-compat tech-debt remains logged as TD-006 (`@import` in theme SASS + the bridge).
+On `feat/0.11`: all eight package test suites pass (one existing Linux-only skip in `trellis`), the repo-root suite
+passes **74/74**, and workspace analyze and format gates pass across all 12 packages. Root and `/trellis/` docs builds
+each produce 27 pages and 37 static files with 1,143 internal references and no broken links. Dart Sass 3.0
+forward-compat tech debt remains logged as TD-006 (`@import` in theme SASS + the bridge).
 
 ## Blockers
 

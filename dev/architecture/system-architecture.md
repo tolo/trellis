@@ -2,7 +2,9 @@
 
 Canonical reference for understanding the Trellis SDK architecture: how the packages compose, what each package is responsible for, the dependency graph, and how a request flows through the system.
 
-**Current through**: v0.7 (engine) / SDK Phase 3 (post `trellis_test` merge) + docs-site S01 (`trellis_site` weighted ordering + nested-section lineage) + docs-site S02 (`trellis_site` hierarchical `${site.menu}` navigation tree) + docs-site S03 (`trellis_site` URL path-prefix) + docs-site S04 (`arbor` docs theme) + docs-site S05 (top-level `site/` scaffold + marketing landing) + docs-site S06 (docs IA: getting-started + syntax reference) + docs-site S07 (GitHub Pages CI deploy + link-integrity gate) + docs-site S08 (`trellis_site` in-section `${page.prev}`/`${page.next}` neighbors) + docs-site S09 (vendored client-side search) + docs-site S10 (per-package guides + theme-authoring guide) + `trellis_site` per-page `${page.termLinks}` (slug-safe taxonomy term links) + binary-distribution (CLI release pipeline + Homebrew tap + Scoop bucket) + syntax-highlighting ([ADR-010](../adrs/ADR-010-syntax-highlighting.md): build-time `.hljs-*` highlighting)
+**Current through**: v0.10.2 SDK + the unreleased 0.11 implementation milestone (Lattice theme, Lattice-powered
+docs site and generated themes gallery, Folio theme, Meadow theme, and documented theme-data fallback). No 0.11 version
+bump, tag, publication, or deployment is recorded here.
 
 ---
 
@@ -18,18 +20,18 @@ Trellis is a Dart toolkit for building server-rendered web applications and stat
 
 ## Package Responsibilities
 
-### Current (v0.7 / SDK Phase 3)
+### Current (v0.10.2, lockstep)
 
 | Package | Responsibility | Dependencies | Status |
 |---|---|---|---|
-| **`trellis`** | HTML template engine: parsing, expression evaluation (incl. utility objects), processor pipeline, fragment rendering, caching, validation, template inheritance, contextual escaping. Also includes testing utilities via `testing.dart` (test engine factory, CSS-selector matchers, snapshot golden file testing, fragment helpers). | `package:html` | v0.7.0 (unpublished) |
-| **`trellis_shelf`** | Shelf middleware: engine injection, HTMX helpers, security defaults (CSRF, CSP), response builders | `trellis`, `shelf`, `crypto` | v0.1.0 (unpublished) |
-| **`trellis_dart_frog`** | Dart Frog integration: `trellisProvider()` DI middleware, response helpers (`renderPage`, `renderFragment`, `renderOobFragments`), HTMX detection, CSRF/security middleware bridged from `trellis_shelf` | `trellis`, `trellis_shelf`, `dart_frog` | v0.1.0 (unpublished) |
-| **`trellis_relic`** | Serverpod Relic integration: response helpers with explicit engine passing, HTMX detection, `trellisSecurityHeaders()` middleware. No CSRF (Relic form parser gap). | `trellis`, `relic` | v0.1.0 (unpublished) |
-| **`trellis_dev`** | Dev tools: SSE browser hot reload, script injection middleware | `trellis`, `shelf` | v0.1.0 (unpublished) |
-| **`trellis_css`** | CSS processing: Dart-native SASS/SCSS compilation via `package:sass`, `tl:scope` fragment-scoped CSS via CSS `@scope` | `trellis`, `sass`, `html` | v0.1.0 (unpublished) |
-| **`trellis_site`** | Static site generation: content discovery, front matter, Markdown, taxonomies, pagination, sitemap, shortcodes, data cascade, Atom/RSS feed generation, JSON search index | `trellis`, `markdown`, `yaml` | v0.1.0 (unpublished) |
-| **`trellis_cli`** | CLI tool: `trellis create` (htmx + blog + dart_frog + relic templates), `trellis build` (SSG pipeline + SASS), `trellis serve` (local preview server) | `args`, `shelf`, `shelf_static`, `trellis_css`, `trellis_site` | v0.2.0 (unpublished) |
+| **`trellis`** | HTML template engine: parsing, expression evaluation (incl. utility objects), processor pipeline, fragment rendering, caching, validation, template inheritance, contextual escaping. Also includes testing utilities via `testing.dart` (test engine factory, CSS-selector matchers, snapshot golden file testing, fragment helpers). | `package:html` | v0.10.2 (published) |
+| **`trellis_shelf`** | Shelf middleware: engine injection, HTMX helpers, security defaults (CSRF, CSP), response builders | `trellis`, `shelf`, `crypto` | v0.10.2 (published) |
+| **`trellis_dart_frog`** | Dart Frog integration: `trellisProvider()` DI middleware, response helpers (`renderPage`, `renderFragment`, `renderOobFragments`), HTMX detection, CSRF/security middleware bridged from `trellis_shelf` | `trellis`, `trellis_shelf`, `dart_frog` | v0.10.2 (published) |
+| **`trellis_relic`** | Serverpod Relic integration: response helpers with explicit engine passing, HTMX detection, `trellisSecurityHeaders()` middleware. No CSRF (Relic form parser gap). | `trellis`, `relic` | v0.10.2 (published) |
+| **`trellis_dev`** | Dev tools: SSE browser hot reload, script injection middleware | `trellis`, `shelf` | v0.10.2 (published) |
+| **`trellis_css`** | CSS processing: Dart-native SASS/SCSS compilation via `package:sass`, `tl:scope` fragment-scoped CSS via CSS `@scope` | `trellis`, `sass`, `html` | v0.10.2 (published) |
+| **`trellis_site`** | Static site generation: content discovery, front matter, Markdown, taxonomies, pagination, sitemap, shortcodes, data cascade, Atom/RSS feed generation, JSON search index | `trellis`, `markdown`, `yaml` | v0.10.2 (published) |
+| **`trellis_cli`** | CLI tool: `trellis create` (htmx + blog + dart_frog + relic templates), `trellis build` (SSG pipeline + SASS), `trellis serve` (local preview server) | `args`, `shelf`, `shelf_static`, `trellis_css`, `trellis_site` | v0.10.2 (published) |
 | ~~`trellis_test`~~ | *Merged into `trellis` core as `testing.dart` entry point (2026-03-18)* | — | — |
 
 ---
@@ -307,6 +309,11 @@ static/**         ──►  PageGenerator       (layout resolution, data cascad
 3. Section front matter (from `_index.md`)
 4. Page front matter
 
+Global data has its own theme/site precedence. A theme's `data/*.yaml` files load first as fallbacks; the site's
+`data/*.yaml` files load second. The filename stem becomes the key below `${data}` (`navigation.yaml` →
+`${data.navigation}`), and a site file replaces the complete theme value at the same stem rather than deep-merging it.
+Non-overlapping stems from both sources remain available.
+
 ### Pagination
 
 List pages (section, home, taxonomy term) are automatically paginated when `paginate` is set in config. Templates access `${pagination.page}`, `${pagination.totalPages}`, `${pagination.hasNext}`, `${pagination.prevUrl}`, `${pagination.nextUrl}`.
@@ -432,13 +439,15 @@ No CSRF support (Relic lacks a form body parser). Middleware only fires for matc
 
 ---
 
-## Docs Theme & Site (docs-site S04–S10)
+## Themes & Docs Site (through the 0.11 implementation milestone)
 
-Two deliverables ship in the repo root alongside the packages: the **`arbor`** documentation theme (`themes/arbor/`) and the **Trellis docs site** (`site/`). Neither is a publishable package — `arbor` is an installable theme consumed via a `theme:` reference, and `site/` is content built by `trellis_cli`.
+Themes ship in `themes/` alongside the packages, and the **Trellis docs site** lives in `site/`. Themes are installable
+assets consumed through a `theme:` reference; neither themes nor the site are publishable packages. The site is content
+built by `trellis_cli`.
 
 ### Arbor Docs Theme (`themes/arbor/`)
 
-A documentation-oriented theme sitting beside the `verdant` blog theme (both are standard-params-contract themes). It consumes the SSG's navigation surfaces directly: a hierarchical sidebar from `${site.menu}` (active/active-trail highlighting resolved at render time), an in-page TOC from `${page.toc}`, a breadcrumb bar from `${page.breadcrumbs}`, and prev/next links from `${page.prev}`/`${page.next}`. A CLI-generated SASS **bridge wrapper** (`site/.trellis/build/bridge_main.scss`) `@import`s the theme's params + `sass/main.scss` so `trellis build` compiles the theme's stylesheet with the site's `theme_params` bound.
+A documentation-oriented theme sitting beside the `verdant` blog theme (both are standard-params-contract themes). It consumes the SSG's navigation surfaces directly: a hierarchical sidebar from `${site.menu}` (active/active-trail highlighting resolved at render time), an in-page TOC from `${page.toc}`, a breadcrumb bar from `${page.breadcrumbs}`, and prev/next links from `${page.prev}`/`${page.next}`. A CLI-generated SASS **bridge wrapper** in the consuming site's `.trellis/build/` directory `@import`s the selected theme's params + `sass/main.scss` so `trellis build` compiles the theme's stylesheet with the site's `theme_params` bound.
 
 **Build-time syntax highlighting (ADR-010)** — arbor ships **no** highlighter JS. `trellis_site` colors fenced code at build time (`CodeHighlighter`, `package:highlight`), baking `.hljs-*` token spans into the HTML; the theme carries only the matching token CSS (`sass/_code.scss`), so code is colored with JavaScript disabled. See [ADR-010](../adrs/ADR-010-syntax-highlighting.md).
 
@@ -449,12 +458,19 @@ A documentation-oriented theme sitting beside the `verdant` blog theme (both are
 
 Both search and the code copy button are **progressive enhancements**: the docs are fully readable and navigable with JavaScript disabled (and highlighting, being build-time, needs no client JS at all).
 
+### Lattice Docs Theme (`themes/lattice/`)
+
+Lattice carries the same documentation-navigation contracts as Arbor and adds a content-driven home surface. Its theme
+data provides default `lattice.yaml` landing content; a consuming site's same-stem file replaces that value as one unit.
+The repository's `site/` selects Lattice and supplies its own landing data, while retaining the theme's sidebar, TOC,
+breadcrumbs, prev/next navigation, search client, and build-time code highlighting.
+
 ### Client-Side Search Flow (S09)
 
 The engine and the theme meet at one artifact — `search-index.json`:
 
 ```
-trellis_site build                         arbor theme (browser)
+trellis_site build                         selected theme (browser)
   SearchIndexGenerator                       search.js (vendored, same-origin)
   (search.enabled: true)                       │
         │  emits                                │  reads index URL from the shell's
@@ -471,7 +487,24 @@ The `<input>` ships `disabled` in the static HTML and is enabled only after the 
 
 ### Docs Site (`site/`)
 
-The `site/` tree is the Trellis marketing landing + documentation IA (getting-started, the full `tl:*` syntax reference, and a per-package guide for each SDK package plus theme authoring). It carries no `pubspec` of its own; `trellis build` reads `site/trellis_site.yaml` from the working directory, which wires `theme: ../../themes/arbor` (a relative escape resolving to `<repo>/themes/arbor`), `search.enabled: true`, and the deploy target. It is published to GitHub Pages by the workflow described under [Deployment Model](#docs-site-static-github-pages) — built under `pathPrefix: /trellis/`, gated on the link-integrity check.
+The `site/` tree is the Trellis marketing landing + documentation IA (getting-started, the full `tl:*` syntax reference,
+and a per-package guide for each SDK package plus theme authoring). It carries no `pubspec` of its own; `trellis build`
+reads `site/trellis_site.yaml` from the working directory, which wires `theme: ../../themes/lattice` (a relative escape
+resolving to `<repo>/themes/lattice`), `search.enabled: true`, and the deploy target. Lattice's theme data supplies landing
+defaults, while the site's same-stem data replaces them wholesale. The generated themes gallery reads
+`site/data/themes.yaml` and site-owned screenshot copies under `site/static/themes/`; its inventory is regenerated from
+installed theme manifests. The GitHub Pages workflow described under
+[Deployment Model](#docs-site-static-github-pages) is configured to build the site under `pathPrefix: /trellis/` and gate
+publication on the link-integrity check.
+
+### Delivered Theme Inventory
+
+- **`verdant`** – minimal blog theme.
+- **`arbor`** – documentation theme with hierarchical navigation and build-time highlighting.
+- **`bloom`** – bold product/marketing landing theme.
+- **`lattice`** – garden-inspired documentation theme with the content-driven home surface used by `site/`.
+- **`folio`** – bookish documentation/reference theme with semantic figures and sidenotes.
+- **`meadow`** – fresh product-landing theme with content-driven marketing sections.
 
 ---
 
@@ -493,9 +526,13 @@ trellis/                          # monorepo root
 │   └── trellis_cli/              # CLI (create, build, serve)
 ├── starters/                     # project templates
 ├── themes/
-│   ├── verdant/                  # blog theme (default)
-│   └── arbor/                    # documentation theme (build-time highlighting + vendored search/copy JS)
-├── site/                         # the Trellis docs/marketing site (built by trellis_cli)
+│   ├── arbor/                    # documentation theme
+│   ├── bloom/                    # product/marketing landing theme
+│   ├── folio/                    # bookish documentation/reference theme
+│   ├── lattice/                  # docs + expressive home theme used by site/
+│   ├── meadow/                   # product landing theme
+│   └── verdant/                  # minimal blog theme
+├── site/                         # the Lattice-powered docs/marketing site (built by trellis_cli)
 ├── examples/
 │   └── relic_app/                # Relic + Trellis + HTMX example
 └── docs/                         # guides, API docs

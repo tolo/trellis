@@ -14,7 +14,7 @@ theme_params:
   max_width: "1056px"
 ```
 
-Lattice implements all 18 standard params, Arbor's six docs params, and the following Lattice-specific surface.
+Lattice implements all 18 standard params, Arbor's docs params, and the following Lattice-specific surface.
 
 ### Standard params
 

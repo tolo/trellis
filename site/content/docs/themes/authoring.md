@@ -192,6 +192,23 @@ params:
     description: Show estimated reading time on posts
 ```
 
+`excerpt_length` is an optional, theme-specific content-rendering param. Themes
+that use generated summaries can declare it as an `int`; it controls the
+plain-text summary length. It is not part of the 18 standard params.
+
+## Theme data files
+
+A theme can provide YAML data files under `data/` for structured content that
+belongs to the theme rather than to a parameter. For example,
+`data/navigation.yaml` is available to layouts as `${data.navigation.*}`. The
+filename stem becomes the key below `${data}`.
+
+Theme data is a fallback. Trellis loads the theme's files first, then the site's
+`data/*.yaml` files. When both provide the same stem, the site file replaces the
+complete theme value – nested maps and lists are not deep-merged. Files with
+different stems remain available together. This lets a theme ship useful
+defaults while a site owns any deliberate replacement.
+
 ## SASS integration
 
 ### _variables.scss – the param bridge

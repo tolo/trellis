@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.11.0
+
+### Added
+
+- **Lattice theme and Lattice-powered Trellis site** – a reusable garden-inspired documentation theme now powers the
+  redesigned project site, including its content-driven landing page and complete documentation navigation.
+- **Generated themes gallery** – the site inventory is generated deterministically from every installed theme manifest,
+  with prefix-relative metadata and site-owned copies of each available declared light and dark screenshot.
+- **Folio theme** – a bookish documentation and reference theme with semantic figures, captions, and sidenotes.
+- **Meadow theme** – a product-landing theme with content-driven marketing sections and resilient card/copy layouts.
+
+### Documentation
+
+- Theme authoring now documents theme `data/*.yaml` fallback, site whole-file precedence by filename stem,
+  `${data.<stem>.*}` access, and optional theme-specific `excerpt_length` without changing the 18 standard params.
+
 ## 0.10.2
 
 ### Changed

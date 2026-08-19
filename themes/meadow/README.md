@@ -14,7 +14,7 @@ copy, 2–6 features, split layout without media, each optional section absent, 
 
 ## Params
 
-Meadow implements all 18 [standard params](../../docs/reference/standard-params.md) plus eight landing params:
+Meadow implements all 18 [standard params](../../docs/reference/standard-params.md) plus the landing params below:
 
 | Param | Type | Default | Purpose |
 |---|---|---|---|

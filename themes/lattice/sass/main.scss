@@ -414,6 +414,9 @@ h1.fit-3 {
 .window-bar i:nth-child(3) {
   background: var(--tendril);
 }
+.window-bar span {
+  margin-left: 8px;
+}
 pre {
   overflow: auto;
   margin: 0;
@@ -438,6 +441,9 @@ code {
 }
 .terminal-line[data-kind="output"] {
   color: var(--ink-soft);
+}
+.terminal-line[data-kind="output"] + .terminal-line[data-kind="command"] {
+  margin-top: 26px;
 }
 .terminal-prompt {
   color: var(--leaf);
@@ -744,7 +750,6 @@ code {
   text-align: center;
 }
 .closing-section {
-  padding-top: 0 !important;
   border: 0;
 }
 .closing {

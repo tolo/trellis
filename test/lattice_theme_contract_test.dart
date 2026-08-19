@@ -162,6 +162,35 @@ $trellis-border-radius: 0;
     expect(styles, contains('@media (max-width: 900px)'));
   });
 
+  test('owner spacing polish keeps terminal groups legible and centers the closing card', () {
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    expect(css, matches(RegExp(r'\.window-bar span\s*\{[^}]*margin-left:\s*8px', dotAll: true)));
+    expect(
+      css,
+      matches(
+        RegExp(
+          r'\.terminal-line\[data-kind=output\]\s*\+\s*'
+          r'\.terminal-line\[data-kind=command\]\s*\{[^}]*margin-top:\s*26px',
+          dotAll: true,
+        ),
+      ),
+    );
+    expect(css, matches(RegExp(r'#main-content > section\s*\{[^}]*padding-block:\s*84px', dotAll: true)));
+    expect(
+      css,
+      matches(
+        RegExp(
+          r'@media \(max-width: 700px\)\s*\{.*?'
+          r'#main-content > section\s*\{[^}]*padding-block:\s*64px',
+          dotAll: true,
+        ),
+      ),
+    );
+    final closingRule = RegExp(r'\.closing-section\s*\{([^}]*)\}').firstMatch(css);
+    expect(closingRule, isNotNull);
+    expect(closingRule!.group(1), isNot(contains('padding')));
+  });
+
   test('S04/TI06 headline waits for the interval and stays static with reduced motion', () async {
     final result = await _runNodeHarness('lattice', p.join(themeDir, 'static', 'js', 'lattice.js'));
     if (result == null) return;

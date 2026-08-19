@@ -1,16 +1,12 @@
 # Project State — Trellis SDK
 
+Last Updated: 2026-08-19
+
 > Cross-session state tracking. Updated at phase boundaries and when significant context changes.
 
 ## Current Phase
 
-**0.10.0** (shipped 2026-07-25 from branch `feature/0.10.0`) — a multi-slice release hardening the SDK for distribution: binary distribution gains a **Scoop** channel (plus release-workflow hardening and conflict resolution); **build-time syntax highlighting** lands (ADR-010: `trellis_site` bakes `.hljs-*` spans at build time, retiring the vendored client-side Prism); the **`bloom`** landing theme ships alongside `verdant`/`arbor` polish; the theme **SASS-bridge** escaping is hardened; and **TD-009** (CLI CWD mutation) is resolved so the `trellis_cli` suite is parallel-safe.
-
-**0.10.1 shipped 2026-08-18** — first release cut through [`dev/guidelines/RELEASE-RUNBOOK.md`](../guidelines/RELEASE-RUNBOOK.md) (`tool/release.sh` + the CI tag gate; both gates held for CI and released cleanly): `FragmentHost` typing for `ProcessorContext.domProcessor`, SSG prev/next perf, HTMX 2.0.10 scaffolds, push CI (`ci.yml`, TD-010), release tooling. The first ubuntu CI run surfaced two macOS-only assumptions (TZ-baked golden; Linux `recursive` watch gap → TD-013/TD-014).
-
-**0.10.2 shipped 2026-08-18** — patch: **TD-013** resolved — `FileSystemLoader` watches each template directory individually on Linux, so dev-mode hot reload now sees edits in sub-folders there (macOS/Windows unchanged); plus dev-watch hardening (rename/atomic-save reloads on Linux/Windows, once-only warning when the OS refuses a watch, `close()` leak fix, no adoption of runtime-created directory symlinks) and `listTemplates()` no longer following symlinks (aligned with `load()`; in-tree alias names drop from enumeration — see CHANGELOG); plus the `trellis_cli` generated-app e2e twin binding/connecting via numeric loopback (**TD-015** files the remaining scaffold `'localhost'` bind). Hardening items came out of a 4-round adversarial review→remediate loop (report in `.agent_temp/reviews/`, findings recorded in LEARNINGS/TD-016). ADR-014 (component composition primitives, Proposed) landed with the merge.
-
-**Next up**: 0.11 — doc-site redesign & three new built-in themes (private `docs/specs/0.11/`, 5 stories spec-ready), then TD-006 SASS `@use` migration; later candidates: CSS processing, composition primitives, Trellis UI (private `docs/specs/0.next-*/`). Open follow-ups: TD-014 (date-only front matter timezone), TD-015 (Shelf scaffold `'localhost'` bind), and TD-016 (template enumeration abort-on-unreadable + validate CLI symlink divergence, filed by the 0.10.2 review).
+**Phase 1: Core theme** — 0.11 implementation is On Track on `feat/0.11`; S01 delivers the reusable Lattice theme before the site migration and optional-theme phases.
 
 ## Recent Completions
 

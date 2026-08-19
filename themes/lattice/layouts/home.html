@@ -158,7 +158,8 @@
               <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
               <img
                 loading="lazy"
-                tl:attr="src=${assetBase} + ${card.screenshot_light},data-light=${assetBase} + ${card.screenshot_light},data-dark=${assetBase} + ${card.screenshot_dark},alt=${card.alt}"
+                tl:with="screenshot=${theme.skin} == 'dark' ? ${card.screenshot_dark} : ${card.screenshot_light}"
+                tl:attr="src=${assetBase} + ${screenshot},data-light=${assetBase} + ${card.screenshot_light},data-dark=${assetBase} + ${card.screenshot_dark},alt=${card.alt}"
               />
               <div class="theme-meta">
                 <h3 tl:text="${card.name}">Theme</h3>

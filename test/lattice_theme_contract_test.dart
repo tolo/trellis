@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:html/parser.dart' as html_parser;
@@ -128,6 +129,22 @@ $trellis-border-radius: 0;
     expect(styles, contains('@media (max-width: 900px)'));
   });
 
+  test('S04/TI06 headline waits for the interval and stays static with reduced motion', () async {
+    final result = await _runNodeHarness('lattice', p.join(themeDir, 'static', 'js', 'lattice.js'));
+    if (result == null) return;
+
+    final motion = result['motion']! as Map<String, dynamic>;
+    expect(motion['immediate'], 'Server first');
+    expect(motion['afterFirstInterval'], 'Client second');
+    expect(motion['intervalDelay'], 6500);
+    expect(motion['intervalCount'], 1);
+
+    final reducedMotion = result['reducedMotion']! as Map<String, dynamic>;
+    expect(reducedMotion['immediate'], 'Server first');
+    expect(reducedMotion['afterFirstInterval'], 'Server first');
+    expect(reducedMotion['intervalCount'], 0);
+  });
+
   test('S01-S07/TI08 bridged example builds cleanly with complete rendered pages', () async {
     final config = SiteConfig.load(p.join(themeDir, 'example', 'trellis_site.yaml'));
     final result = await TrellisSite(config).build();
@@ -172,6 +189,7 @@ $trellis-border-radius: 0;
         expect(document.querySelector('.docs-toc'), isNull, reason: page.path);
       }
     }
+    _expectShowcaseSources(File(p.join(output, 'index.html')).readAsStringSync(), dark: false);
   });
 
   test('S03-S05/TI08 sub-path build prefixes URLs once without nesting output', () async {
@@ -203,9 +221,35 @@ $trellis-border-radius: 0;
       expect(directiveAttributes, isEmpty, reason: file.path);
     }
     final home = File(p.join(config.outputDir, 'index.html')).readAsStringSync();
+    _expectShowcaseSources(home, dark: false);
     expect(home, contains('src="/trellis/showcase/arbor-light.svg"'));
     expect(home, contains('data-dark="/trellis/showcase/arbor-dark.svg"'));
     expect(home, contains('src="/trellis/js/lattice.js"'));
+  });
+
+  test('forced skins select showcase sources server-side at root and sub-path', () async {
+    final sourceConfig = File(p.join(themeDir, 'example', 'trellis_site.yaml')).readAsStringSync();
+    for (final skin in ['light', 'dark']) {
+      for (final prefix in ['', '/trellis/']) {
+        final tempDir = Directory.systemTemp.createTempSync('lattice_forced_skin_contract_');
+        addTearDown(() => tempDir.deleteSync(recursive: true));
+        _copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
+        Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
+        Link(p.join(tempDir.path, 'themes', 'lattice')).createSync(themeDir);
+        var configSource = sourceConfig.replaceFirst('skin: auto', 'skin: $skin');
+        if (prefix.isNotEmpty) configSource = '$configSource\npathPrefix: $prefix\n';
+        File(p.join(tempDir.path, 'trellis_site.yaml')).writeAsStringSync(configSource);
+
+        final config = SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
+        final result = await TrellisSite(config).build();
+        expect(result.warnings, isEmpty, reason: '$skin $prefix');
+        final home = File(p.join(config.outputDir, 'index.html')).readAsStringSync();
+        _expectShowcaseSources(home, dark: skin == 'dark');
+        expect(home, isNot(contains('data-lattice-theme-toggle')), reason: '$skin $prefix');
+        expect(home, isNot(contains('localStorage')), reason: '$skin $prefix');
+        expect(home, isNot(contains('/trellis/trellis/')), reason: '$skin $prefix');
+      }
+    }
   });
 
   test('TI02 and TI09 documented local assets exist', () {
@@ -240,6 +284,28 @@ $trellis-border-radius: 0;
     expect(list, contains(r'${#lists.size(pages)} > 0'));
     expect(list, contains(r'${#lists.size(pages)} == 0'));
   });
+}
+
+Future<Map<String, dynamic>?> _runNodeHarness(String mode, String scriptPath) async {
+  try {
+    final harnessPath = p.join(Directory.current.path, 'test', 'theme_client_behavior_harness.js');
+    final result = await Process.run('node', [harnessPath, mode, scriptPath]);
+    expect(result.exitCode, 0, reason: 'theme client harness failed: ${result.stderr}');
+    return jsonDecode(result.stdout as String) as Map<String, dynamic>;
+  } on ProcessException {
+    markTestSkipped('system node not found – theme client behavioral harness skipped');
+    return null;
+  }
+}
+
+void _expectShowcaseSources(String source, {required bool dark}) {
+  final images = html_parser.parse(source).querySelectorAll('.theme-card img[data-light][data-dark]');
+  expect(images, isNotEmpty);
+  for (final image in images) {
+    final expected = image.attributes[dark ? 'data-dark' : 'data-light'];
+    expect(image.attributes['src'], expected);
+    expect(expected, startsWith('/'));
+  }
 }
 
 void _copyDirectory(Directory source, Directory destination) {

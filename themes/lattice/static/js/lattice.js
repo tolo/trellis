@@ -41,8 +41,6 @@
       headline.appendChild(document.createTextNode(entry.dataset.suffix || ''));
     }
     if (entries.length > 1 && !reducedMotion.matches) {
-      headlineIndex = 1;
-      showHeadline(headlineIndex);
       headline.addEventListener('mouseenter', function () {
         paused = true;
       });

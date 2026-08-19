@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:html/parser.dart' as html_parser;
@@ -299,8 +300,49 @@ $trellis-show-sidenotes: false;
     expect(css, isNot(contains(":root[data-skin='dark']")));
 
     final skinScript = File(p.join(themeDir, 'static', 'js', 'folio.js')).readAsStringSync();
-    expect(skinScript.indexOf('apply(stored())'), lessThan(skinScript.indexOf("button.addEventListener('click'")));
+    expect(skinScript.indexOf('sync()'), lessThan(skinScript.indexOf("button.addEventListener('click'")));
     expect(skinScript, contains("media.matches ? 'dark' : 'light'"));
+  });
+
+  test('S05/TI05 auto skin control follows OS only without a stored choice', () async {
+    final result = await _runNodeHarness('folio', p.join(themeDir, 'static', 'js', 'folio.js'));
+    if (result == null) return;
+
+    final osDark = result['osDark']! as Map<String, dynamic>;
+    expect(osDark['initial'], {'skin': '', 'pressed': 'true'});
+    expect(osDark['afterMediaChange'], {'skin': '', 'pressed': 'false'});
+    expect(osDark['persisted'], isEmpty);
+
+    final storedLight = result['storedLight']! as Map<String, dynamic>;
+    expect(storedLight['initial'], {'skin': 'light', 'pressed': 'false'});
+    expect(storedLight['afterMediaChange'], {'skin': 'light', 'pressed': 'false'});
+    expect(storedLight['persisted'], isEmpty);
+
+    final storedDark = result['storedDark']! as Map<String, dynamic>;
+    expect(storedDark['initial'], {'skin': 'dark', 'pressed': 'true'});
+    expect(storedDark['afterMediaChange'], {'skin': 'dark', 'pressed': 'true'});
+    expect(storedDark['persisted'], isEmpty);
+
+    final click = result['click']! as Map<String, dynamic>;
+    expect(click['skin'], 'dark');
+    expect(click['pressed'], 'true');
+    expect(click['persisted'], [
+      {'key': 'folio-skin', 'value': 'dark'},
+    ]);
+
+    final failedLight = result['failedLight']! as Map<String, dynamic>;
+    expect(failedLight['initial'], {'skin': '', 'pressed': 'true'});
+    expect(failedLight['click'], {'skin': 'light', 'pressed': 'false', 'persisted': []});
+    expect(failedLight['afterOsLight'], {'skin': 'light', 'pressed': 'false'});
+    expect(failedLight['afterOsDark'], {'skin': 'light', 'pressed': 'false'});
+    expect(failedLight['persisted'], isEmpty);
+
+    final failedDark = result['failedDark']! as Map<String, dynamic>;
+    expect(failedDark['initial'], {'skin': '', 'pressed': 'false'});
+    expect(failedDark['click'], {'skin': 'dark', 'pressed': 'true', 'persisted': []});
+    expect(failedDark['afterOsDark'], {'skin': 'dark', 'pressed': 'true'});
+    expect(failedDark['afterOsLight'], {'skin': 'dark', 'pressed': 'true'});
+    expect(failedDark['persisted'], isEmpty);
   });
 
   test('S07 TI08 publishability collateral and local assets are complete', () {
@@ -339,6 +381,18 @@ $trellis-show-sidenotes: false;
 
 int _readUint32(List<int> bytes, int offset) =>
     (bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3];
+
+Future<Map<String, dynamic>?> _runNodeHarness(String mode, String scriptPath) async {
+  try {
+    final harnessPath = p.join(Directory.current.path, 'test', 'theme_client_behavior_harness.js');
+    final result = await Process.run('node', [harnessPath, mode, scriptPath]);
+    expect(result.exitCode, 0, reason: 'theme client harness failed: ${result.stderr}');
+    return jsonDecode(result.stdout as String) as Map<String, dynamic>;
+  } on ProcessException {
+    markTestSkipped('system node not found – theme client behavioral harness skipped');
+    return null;
+  }
+}
 
 void _copyDirectory(Directory source, Directory destination) {
   destination.createSync(recursive: true);

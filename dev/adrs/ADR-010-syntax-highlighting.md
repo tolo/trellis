@@ -100,9 +100,9 @@ The current approach: vendor Prism core + one grammar per language, style `.toke
 ## Weighted Trade-off Analysis
 
 Structured comparison (scores 1–5 × weight; only criteria that discriminate — pure
-Dart / no-npm / no-JS-build is a **gate all three pass**, not a weighted axis). See
-the [trade-off report](../../../trellis-private/docs/research/08-syntax-highlighting-tradeoff.md)
-(private) for the full derivation.
+Dart / no-npm / no-JS-build is a **gate all three pass**, not a weighted axis). The public digest is the
+[ADR-010 research appendix](research/ADR-010-research.md); the full derivation lives in the private
+planning repo (`docs/research/08-syntax-highlighting-tradeoff.md`, maintainer-only).
 
 | Criterion (weight) | A: Build-time Dart | B: Client hljs | C: Client Prism |
 |---|---|---|---|
@@ -315,7 +315,7 @@ zero-JS output were confirmed with the maintainer.
 
 ## References
 - Research: [ADR-010 research appendix](research/ADR-010-research.md)
-- Trade-off report (weighted matrix + framework analysis): [`docs/research/08-syntax-highlighting-tradeoff.md`](../../../trellis-private/docs/research/08-syntax-highlighting-tradeoff.md) (private)
+- Trade-off report (weighted matrix + framework analysis) – private planning repo, canonical: `docs/research/08-syntax-highlighting-tradeoff.md`
 - `package:highlight`: https://pub.dev/packages/highlight
 - highlight.js CSS class reference: https://highlightjs.readthedocs.io/en/latest/css-classes-reference.html
 - Hugo syntax highlighting (Chroma, build-time): https://gohugo.io/content-management/syntax-highlighting/

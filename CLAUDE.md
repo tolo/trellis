@@ -42,6 +42,13 @@ This file covers working **on** the SDK. For template syntax, see the
 
 > Planning docs (Product, Roadmap, Specs/PRDs, Research, Product Backlog) are maintained in a
 > **separate private repo** and are not in this repository. The rows below cover what lives here.
+>
+> **Where requirements history lives.** Each release has exactly one durable requirements document: the private
+> `docs/specs/<version>/prd.md`. Plans, per-story specs (FIS), clarifications, mockups and review reports are
+> working material with a bounded life – they are deleted at release prep, once the PRD has been consolidated into
+> the complete record of the cycle (requirements, every story's outcome, deviations, tech debt opened/closed).
+> In *this* repository the durable record of behaviour is `packages/*/CHANGELOG.md`, with `dev/adrs/` for decisions
+> and `dev/architecture/` for design.
 
 | Document Type        | Location                                | Notes                                                |
 |----------------------|-----------------------------------------|------------------------------------------------------|
@@ -89,6 +96,11 @@ This file covers working **on** the SDK. For template syntax, see the
 - **Keep architecture docs current.** When a change adds/modifies/removes a subsystem, protocol, or
   pipeline stage, update the affected doc in `dev/architecture/` in the same change and bump its
   "Current through" marker. Don't defer.
+- **Files here stand alone.** ADRs, `dev/state/`, and architecture docs must be readable without the private
+  planning repo: never link or cite a `trellis-private/` path, a `docs/specs/...` path, or a plan/FIS/mockup – all
+  of those are pruned at release prep. Refer to a release by version fact ("decided for 0.11", "shipped in 0.9")
+  and link the CHANGELOG or an ADR; keep distilled research as an appendix under `dev/adrs/research/`. Provenance
+  a maintainer can resolve privately goes in unlinked form: `PRD <version>, story <id>`.
 - When dogfooding Trellis in `examples/`, follow the
   [template agent guide](packages/trellis/doc/trellis-for-agents.md).
 

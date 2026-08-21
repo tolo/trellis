@@ -24,6 +24,19 @@ Moving to a custom root domain later is a **config edit, not a code change**: cl
 `pathPrefix` to `''` (or drop it) and point `baseUrl` at the new host. Nothing in the
 deploy workflow hardcodes the domain.
 
+## Preview locally
+
+From the repository root, [`tool/serve_docs.sh`](../tool/serve_docs.sh) builds a
+root-served variant and serves it at `http://localhost:8765`:
+
+```sh
+tool/serve_docs.sh
+```
+
+Pass a different port as the only argument when needed, for example
+`tool/serve_docs.sh 9000`. Stop the server with Ctrl-C. Rerun the script after
+changing site content, layouts, or theme assets.
+
 ## Build locally
 
 From this directory (`site/`):

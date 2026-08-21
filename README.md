@@ -149,6 +149,18 @@ melos run test          # run tests in all packages (ordered by dependency)
 melos run format:check  # check formatting
 ```
 
+**Documentation site preview** (from the repository root):
+
+```bash
+tool/serve_docs.sh       # builds and serves http://localhost:8765
+tool/serve_docs.sh 9000  # optional custom port
+```
+
+This creates a root-served snapshot rather than watching source files. Stop it
+with Ctrl-C and rerun the command after changes. See the
+[docs-site README](site/README.md#preview-locally) for the production sub-path
+and link-checking workflow.
+
 **CI-safe alternatives** (no global Melos required):
 
 ```bash

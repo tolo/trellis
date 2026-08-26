@@ -21,17 +21,20 @@
             <!-- Breadcrumb from the structured section lineage; optional. Each
                  crumb carries a section title (label) and prefixed url (href). -->
             <nav class="breadcrumb" tl:if="${page.breadcrumbs}" aria-label="Breadcrumb">
-              <ul class="list-unstyled breadcrumb">
+              <ul class="breadcrumb-list">
                 <li><a tl:href="${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}" href="/">Home</a></li>
                 <li tl:each="crumb : ${page.breadcrumbs}">
                   <a tl:if="${crumb.url != ''}" tl:href="${crumb.url}" tl:text="${crumb.title}">section</a>
                   <span tl:unless="${crumb.url != ''}" tl:text="${crumb.title}">section</span>
                 </li>
+                <!-- The trail ends on the page itself, marked as the current step. -->
+                <li aria-current="page" tl:text="${page.title}">This page</li>
               </ul>
             </nav>
 
             <header class="doc-header">
               <h1 class="doc-title" tl:text="${page.title}">Doc Title</h1>
+              <p class="lede" tl:if="${page.description}" tl:text="${page.description}">Standfirst.</p>
             </header>
 
             <!-- Inline TOC for narrow viewports (CSS hides it once the TOC column

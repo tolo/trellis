@@ -22,13 +22,20 @@ params:
     type: string
     default: "EB Garamond, Iowan Old Style, Georgia, serif"
     description: Heading font stack
-  code_font_family: {type: string, default: "IBM Plex Mono, SFMono-Regular, monospace", description: Code font stack}
+  code_font_family:
+    type: string
+    default: "SFMono-Regular, Consolas, Liberation Mono, monospace"
+    description: Code font stack
   max_width: {type: string, default: "1180px", description: Maximum shell width}
   border_radius: {type: string, default: "2px", description: Global corner radius}
   nav_links:
     type: list
     default: [{label: Home, url: /}, {label: Docs, url: /docs/}]
     description: Header navigation links
+  logo:
+    type: string
+    default: null
+    description: Optional prefix-relative header logo path, replacing the built-in mark
   social_links: {type: list, default: [], description: Social links}
   footer_text: {type: string, default: null, description: Optional footer text}
   show_powered_by: {type: boolean, default: true, description: Show Trellis attribution}

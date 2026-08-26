@@ -11,23 +11,31 @@
       <!-- Hero copy comes entirely from standard site/page data. -->
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-copy">
-          <p class="rubric" tl:text="${site.title}">Site title</p>
+          <p class="rubric hero-kicker" tl:text="${site.title}">Site title</p>
           <h1 id="hero-title" tl:text="${page.title}">Field guide</h1>
           <p class="hero-description"
              tl:if="${page.description} ?: ${site.description}"
              tl:text="${page.description} ?: ${site.description}">
             Site description.
           </p>
-          <nav class="hero-actions" aria-label="Featured destinations">
-            <span tl:each="link : ${theme.nav_links}">
-              <a tl:with="prefix=${site.pathPrefix}, local=${#strings.startsWith(link.url, '/')}"
-                 tl:href="${prefix} != '' and ${local} ? ${prefix} + ${#strings.substring(link.url, 1)} : ${link.url}"
-                 tl:text="${link.label}">Destination</a>
-            </span>
+          <!-- Hero calls to action come from the page's own front matter, so the
+               landing can point somewhere other than the header navigation. Local
+               root-relative targets are joined with pathPrefix exactly once. -->
+          <nav class="hero-actions" tl:if="${page.hero.ctas}" aria-label="Featured destinations">
+            <a class="button" tl:each="cta : ${page.hero.ctas}"
+               tl:classappend="${cta.style} == 'secondary' ? 'button-secondary' : 'button-primary'"
+               tl:with="prefix=${site.pathPrefix}, local=${#strings.startsWith(cta.href, '/')}"
+               tl:href="${prefix} != '' and ${local} ? ${prefix} + ${#strings.substring(cta.href, 1)} : ${cta.href}"
+               tl:text="${cta.label}">Destination</a>
           </nav>
         </div>
-        <div class="hero-plate" aria-hidden="true">
-          <svg viewBox="0 0 360 440" role="img">
+        <figure class="hero-plate"
+                tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
+          <!-- page.hero.image mounts the site's own specimen; the drawn engraving is the
+               fallback so a landing with no artwork still renders a complete plate. -->
+          <img class="engraving" tl:if="${page.hero.image}"
+               tl:attr="src=${assetBase} + ${page.hero.image.src},alt=${page.hero.image.alt} ?: ''" src="" alt="">
+          <svg class="engraving" tl:unless="${page.hero.image}" viewBox="0 0 360 440" aria-hidden="true">
             <path class="plate-stem" d="M176 382c5-102 18-194 54-292"/>
             <path class="plate-leaf" d="M205 195c47-73 105-78 122-67-18 63-66 92-122 67Z"/>
             <path class="plate-leaf" d="M188 270c-55-58-109-50-128-34 29 55 78 71 128 34Z"/>
@@ -35,7 +43,9 @@
             <circle class="plate-seed" cx="108" cy="172" r="15"/>
             <circle class="plate-seed" cx="285" cy="275" r="11"/>
           </svg>
-        </div>
+          <figcaption class="plate-caption" tl:if="${page.hero.caption}"
+                      tl:text="${page.hero.caption}">Specimen caption.</figcaption>
+        </figure>
       </section>
 
       <!-- Page body — the landing's Markdown content (pitch, differentiators,

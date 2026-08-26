@@ -63,10 +63,15 @@
   <!-- Site header -->
   <header class="site-header" tl:define="site-header">
     <div class="container">
-      <a tl:href="${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}" href="/" class="site-title">
+      <a tl:href="${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}" href="/" class="site-title"
+         tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
+        <!-- A site-supplied logo replaces the built-in mark when the param is set. -->
+        <img class="site-logo" tl:if="${theme.logo} != null and ${theme.logo} != ''"
+             tl:attr="src=${assetBase} + ${theme.logo},alt=${site.title}" src="" alt="">
         <!-- Folio mark: a small sprout, decorative (aria-hidden). currentColor lets
              it track the link color; the primary tint is set in CSS. -->
-        <svg class="site-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+        <svg class="site-mark" tl:unless="${theme.logo} != null and ${theme.logo} != ''"
+             viewBox="0 0 24 24" fill="none" aria-hidden="true"
              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 21V9"/>
           <path d="M12 13c0-3 2-5 6-5 0 3-2 5-6 5Z"/>
@@ -112,7 +117,7 @@
             <div class="search-shell" tl:if="${theme.show_search}"
                  tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}"
                  tl:attr="data-search-index=${assetBase} + 'search-index.json'">
-              <label class="sr-only" for="docs-search">Search documentation</label>
+              <label class="search-label" for="docs-search">Search documentation</label>
               <input type="search" id="docs-search" class="search-input"
                      placeholder="Search…" autocomplete="off"
                      data-arbor-search disabled>
@@ -136,7 +141,7 @@
                   <span class="sidebar-label" tl:unless="${n1.url != ''}" tl:text="${n1.title}">L1</span>
 
                   <!-- Level 2 -->
-                  <ul class="sidebar-subtree" tl:if="${n1.children}">
+                  <ul class="sidebar-subtree" tl:if="${#lists.size(n1.children)} > 0">
                     <li class="sidebar-item" tl:each="n2 : ${n1.children}">
                       <a class="sidebar-link"
                          tl:if="${n2.url != ''}"
@@ -149,7 +154,7 @@
                       <span class="sidebar-label" tl:unless="${n2.url != ''}" tl:text="${n2.title}">L2</span>
 
                       <!-- Level 3 -->
-                      <ul class="sidebar-subtree" tl:if="${n2.children}">
+                      <ul class="sidebar-subtree" tl:if="${#lists.size(n2.children)} > 0">
                         <li class="sidebar-item" tl:each="n3 : ${n2.children}">
                           <a class="sidebar-link"
                              tl:if="${n3.url != ''}"

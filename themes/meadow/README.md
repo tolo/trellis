@@ -49,7 +49,7 @@ Meadow implements all 18 [standard params](../../docs/reference/standard-params.
 
 | Block | Fields |
 |---|---|
-| `hero` | escaped `eyebrow`, `headline.{prefix,emphasis,suffix}`, `lede`, `ctas[].{label,href,style}`, optional `media.alt` |
+| `hero` | escaped `eyebrow`, `headline.{prefix,emphasis,suffix}`, `lede`, `ctas[].{label,href,style}`, optional `media.{src,alt}` |
 | `proof` | `items[].{value,label}` |
 | `features` | `eyebrow`, `title`, `body`, `items[].{icon,title,body}` |
 | `workflow` | `eyebrow`, `title`, `body`, `signals[].{initials,name,source,text,tag}`, `insight.{label,title,body,confidence}` |
@@ -57,8 +57,10 @@ Meadow implements all 18 [standard params](../../docs/reference/standard-params.
 | `quote` | `text`, `attribution` |
 | `cta` | `eyebrow`, `title`, `body`, `command`, `note` |
 
-Only `headline.emphasis` receives Meadow's theme-owned marker. Supplying `hero.media` enables the theme-owned trellis
-illustration; without it, a split hero centers and reserves no media gap. Markdown below front matter renders once.
+Only `headline.emphasis` receives Meadow's theme-owned marker. Supplying `hero.media` enables the illustration slot;
+without it, a split hero centers and reserves no media gap. Add `media.src` — a prefix-relative image path — to mount
+your own artwork there; with only `media.alt` the theme-owned trellis drawing is used. Markdown below front matter
+renders once.
 Each optional block may be omitted independently and removes its wrapper and spacing.
 
 Feature lists support exactly the authored 2–6 cards, cycling four treatments in a three-column desktop and

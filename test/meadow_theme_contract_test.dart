@@ -116,6 +116,15 @@ void main() {
     for (final param in manifest.params.keys) {
       expect(readme, contains('`$param`'), reason: param);
     }
+    // Font payload ships to every deployed site, so it is budgeted. Bricolage keeps opsz because
+    // optical sizing moves it at display sizes; the rest are wght-only. The unused axes cost 86KB.
+    final fontBytes = Directory(p.join(themeDir, 'static', 'fonts'))
+        .listSync()
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.woff2'))
+        .fold<int>(0, (sum, f) => sum + f.lengthSync());
+    expect(fontBytes, lessThanOrEqualTo(160 * 1024), reason: '$fontBytes bytes');
+
     for (final screenshot in manifest.screenshots) {
       final bytes = File(p.join(themeDir, screenshot)).readAsBytesSync();
       expect(bytes.take(8), [137, 80, 78, 71, 13, 10, 26, 10], reason: screenshot);
@@ -171,6 +180,20 @@ $trellis-border-radius: 7px;
     expect(light, contains('@media (prefers-color-scheme: dark)'));
     expect(light, contains('data-skin=dark'));
     expect(light, contains('@media (prefers-reduced-motion: reduce)'));
+    // One rotated marker drives both skins; dark widens its inset instead of swapping in a flat block.
+    expect(RegExp(r'\.marker::before\s*\{[^}]*inset: 54% -0\.08em 0\.02em').hasMatch(light), isTrue);
+    expect(light, contains('rotate(-1.7deg)'));
+    expect(RegExp(r'\.marker::before\s*\{[^}]*inset: -0\.02em -0\.1em -0\.05em').hasMatch(dark), isTrue);
+    expect(RegExp(r'\.marker::before\s*\{[^}]*display: none').hasMatch(dark), isFalse);
+    // The header CTA has no room beside the burger, so it leaves with the desktop nav.
+    expect(RegExp(r'\.desktop-nav, \.nav-cta\s*\{\s*display: none;').hasMatch(light), isTrue);
+    // `anywhere` broke the brand and menu labels mid-word; only the terminal command still needs it.
+    expect(RegExp(r'^body \{[^}]*overflow-wrap: break-word', multiLine: true).hasMatch(light), isTrue);
+    expect(RegExp(r'^body \{[^}]*overflow-wrap: anywhere', multiLine: true).hasMatch(light), isFalse);
+    // Tilt stays gentle and the title takes the slack, so all three card titles share a baseline.
+    expect(RegExp(r'\.template-card-inner\s*\{[^}]*flex-direction: column').hasMatch(light), isTrue);
+    expect(RegExp(r'\.template-card h3\s*\{[^}]*margin: auto 0 8px').hasMatch(light), isTrue);
+    expect(light, isNot(contains('translateY(-8px) rotate(1.6deg)')));
     expect(dark.toLowerCase(), contains('--meadow-paper: #0f1c14'));
     expect(dark, isNot(contains('@media (prefers-color-scheme: dark)')));
 
@@ -272,10 +295,13 @@ $trellis-border-radius: 7px;
     expect(gridRules.first.group(1), contains('grid-template-columns:repeat(3,minmax(0,1fr))'));
     expect(gridRules[1].group(1), contains('grid-template-columns:repeat(2,minmax(0,1fr))'));
     expect(gridRules.last.group(1), contains('grid-template-columns:1fr'));
+    // One base treatment plus the narrow-viewport padding override; neither pins a height.
     final cardRules = RegExp(r'\.feature-card\s*\{([^}]*)\}').allMatches(css).toList();
-    expect(cardRules, hasLength(1));
-    expect(cardRules.single.group(1), contains('min-width:0'));
-    expect(cardRules.single.group(1), isNot(matches(RegExp(r'(^|;)\s*height\s*:'))));
+    expect(cardRules, hasLength(2));
+    expect(cardRules.first.group(1), contains('min-width:0'));
+    for (final rule in cardRules) {
+      expect(rule.group(1), isNot(matches(RegExp(r'(^|;)\s*height\s*:'))));
+    }
 
     final short = await _buildFixture(themeDir, 'copy-short');
     expect(short.querySelector('[data-headline]')!.text.replaceAll(RegExp(r'\s+'), ' ').trim(), 'Ship today.');
@@ -292,6 +318,15 @@ $trellis-border-radius: 7px;
       'Start with the template engine, add static-site generation and server integrations when needed, and keep every '
       'layer in Dart without introducing a client framework or Node-based build chain.',
     );
+
+    // hero.media.src mounts the site's own artwork; hero.media with only `alt` keeps the drawn scene.
+    final heroImage = await _buildFixture(themeDir, 'hero-image');
+    final art = heroImage.querySelector('.hero-art img')!;
+    expect(art.attributes['src'], '/art/hero.webp');
+    expect(art.attributes['alt'], 'Product screenshot');
+    expect(heroImage.querySelector('.hero-art svg'), isNull, reason: 'drawn trellis must step aside');
+    final drawn = await _buildFixture(themeDir, 'copy-short');
+    expect(drawn.querySelector('.hero-art img'), isNull);
 
     final noMedia = await _buildFixture(themeDir, 'no-media');
     expect(noMedia.querySelector('.hero-grid')!.classes, contains('hero-center'));

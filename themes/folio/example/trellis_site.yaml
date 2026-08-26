@@ -14,7 +14,7 @@ theme_params:
   border_color: "#bdc4b6"
   font_family: "EB Garamond, Iowan Old Style, Georgia, serif"
   heading_font_family: "EB Garamond, Iowan Old Style, Georgia, serif"
-  code_font_family: "IBM Plex Mono, SFMono-Regular, monospace"
+  code_font_family: "SFMono-Regular, Consolas, Liberation Mono, monospace"
   max_width: "1180px"
   border_radius: "2px"
   nav_links: [{label: Home, url: /}, {label: Entries, url: /docs/}]

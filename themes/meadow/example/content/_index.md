@@ -47,7 +47,7 @@ workflow:
 use_cases:
   eyebrow: Built for the whole loop
   title: Listen, decide, and share – without changing tools at every step.
-  body: Tilted-card energy stays safely below the sticky navigation.
+  body: Every step keeps its evidence attached, so the next team picks up where the last one left off.
   items:
     - {label: 01 · LISTEN, title: Research hub, body: Capture raw notes and observations with their context intact., href: "#start"}
     - {label: 02 · DECIDE, title: Opportunity map, body: Compare evidence and confidence before a promise is made., href: "#start"}

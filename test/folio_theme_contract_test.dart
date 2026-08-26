@@ -27,6 +27,7 @@ void main() {
       'max_width',
       'border_radius',
       'nav_links',
+      'logo',
       'social_links',
       'footer_text',
       'show_powered_by',
@@ -108,6 +109,7 @@ $trellis-show-plate-numbers: false;
 $trellis-show-sidenotes: false;
 ''');
     expect(apparatusOff, isNot(contains('.folio-plate::before')));
+    expect(apparatusOff, isNot(contains('.hero-plate::before')));
     expect(apparatusOff, contains('.folio-sidenote'));
     expect(apparatusOff, contains('display: none'));
 
@@ -152,7 +154,22 @@ $trellis-show-sidenotes: false;
     expect(css, isNot(contains('--folio-width: "')));
     expect(css, contains('counter-increment: folio-plates'));
     expect(RegExp(r'\.docs-shell > \.docs-toc\s*\{\s*display: none;').hasMatch(css), isTrue);
-    expect(css, contains('.hero-actions span + span a'));
+    expect(css, contains('.button-secondary'));
+    // A short last card row must not leave the grid rule dangling: every card owns its own border.
+    expect(RegExp(r'\.card-list\s*\{[^}]*gap: 18px').hasMatch(css), isTrue);
+    expect(RegExp(r'\.doc-card\s*\{[^}]*border: 1px solid').hasMatch(css), isTrue);
+    // Absent sidebar or TOC collapses its track instead of reserving a dead column.
+    expect(RegExp(r'\.docs-shell\s*\{[^}]*grid-template-columns: auto minmax\(0, 1fr\) auto').hasMatch(css), isTrue);
+    expect(css, contains('.breadcrumb-list'));
+    expect(css, contains('.hero-plate::before'));
+    // One variable face spans 400-600, so headings get real weight instead of synthesised bold,
+    // and size-adjust lifts EB Garamond's small x-height to the metrics the mockup was drawn in.
+    expect(RegExp(r'@font-face\s*\{[^}]*font-weight: 400 600').hasMatch(css), isTrue);
+    expect(RegExp(r'@font-face\s*\{[^}]*size-adjust: 118%').hasMatch(css), isTrue);
+    expect(css, isNot(contains('IBM Plex Mono')));
+    // Leaf entries must not emit a bare subtree; nesting is indentation, not stacked rules.
+    expect(RegExp(r'\.sidebar-subtree\s*\{[^}]*border-left').hasMatch(css), isFalse);
+    expect(css, contains('.sidebar-tree > .sidebar-item > .sidebar-link'));
     expect(css, contains('.search-shell.search-unavailable'));
     expect(css, contains('min-block-size: 44px'));
 
@@ -184,9 +201,22 @@ $trellis-show-sidenotes: false;
     expect(apparatus.querySelector('.toc-title')!.text, 'Field index');
     expect(apparatus.querySelector('.search-shell'), isNotNull);
     expect(apparatus.querySelector('.page-nav'), isNotNull);
+    // The trail ends on the current page, inline, rather than stopping at its parent section.
+    expect(apparatus.querySelectorAll('.breadcrumb-list li').map((li) => li.text.trim()), [
+      'Home',
+      'Documentation',
+      'Semantic apparatus',
+    ]);
+    expect(apparatus.querySelector('.breadcrumb-list [aria-current="page"]')!.text.trim(), 'Semantic apparatus');
 
     final home = html_parser.parse(File(p.join(config.outputDir, 'index.html')).readAsStringSync());
-    expect(home.querySelectorAll('.hero-actions a').map((link) => link.text.trim()), ['Home', 'Entries']);
+    expect(home.querySelectorAll('.hero-actions a').map((link) => link.text.trim()), [
+      'Open the manual',
+      'Browse specimens',
+    ]);
+    expect(home.querySelector('.hero-actions a')!.classes, contains('button-primary'));
+    expect(home.querySelectorAll('.hero-actions a').last.classes, contains('button-secondary'));
+    expect(home.querySelector('.plate-caption')!.text.trim(), startsWith('Sea lavender'));
     expect(home.querySelector('.social-links')!.text, contains('Source'));
     expect(home.querySelector('.footer-text')!.text, contains('Observations arranged with Folio'));
     expect(home.querySelector('.footer-powered-by'), isNotNull);
@@ -230,7 +260,7 @@ $trellis-show-sidenotes: false;
         .whereType<String>()
         .where((url) => url.startsWith('/'));
     expect(docsRootUrls, everyElement(startsWith('/trellis/')));
-    for (final asset in ['search-index.json', 'fonts/eb-garamond-latin.woff2', 'fonts/ibm-plex-mono-latin.woff2']) {
+    for (final asset in ['search-index.json', 'fonts/eb-garamond-latin.woff2']) {
       expect(File(p.join(config.outputDir, asset)).existsSync(), isTrue, reason: asset);
     }
   });
@@ -345,6 +375,49 @@ $trellis-show-sidenotes: false;
     expect(failedDark['persisted'], isEmpty);
   });
 
+  test('site-supplied logo and hero image replace the built-in artwork, prefix-joined', () async {
+    final tempDir = Directory.systemTemp.createTempSync('folio_artwork_contract_');
+    addTearDown(() => tempDir.deleteSync(recursive: true));
+    _copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
+    Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
+    Link(p.join(tempDir.path, 'themes', 'folio')).createSync(themeDir);
+
+    // Mount a site-supplied specimen on the plate and a site-supplied header mark.
+    final index = File(p.join(tempDir.path, 'content', '_index.md'));
+    index.writeAsStringSync(
+      index.readAsStringSync().replaceFirst(
+        'hero:\n',
+        'hero:\n  image: {src: art/specimen.webp, alt: Pressed sea lavender}\n',
+      ),
+    );
+    final source = File(p.join(themeDir, 'example', 'trellis_site.yaml')).readAsStringSync();
+    File(p.join(tempDir.path, 'trellis_site.yaml')).writeAsStringSync(
+      '$source\npathPrefix: /trellis/\n'.replaceFirst('  skin: auto', '  skin: auto\n  logo: brand/mark.svg'),
+    );
+
+    final config = SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
+    final result = await TrellisSite(config).build();
+    expect(result.warnings, isEmpty);
+    final home = html_parser.parse(File(p.join(config.outputDir, 'index.html')).readAsStringSync());
+
+    final plate = home.querySelector('.hero-plate img.engraving')!;
+    expect(plate.attributes['src'], '/trellis/art/specimen.webp');
+    expect(plate.attributes['alt'], 'Pressed sea lavender');
+    expect(home.querySelector('.hero-plate svg.engraving'), isNull, reason: 'drawn engraving must step aside');
+
+    final logo = home.querySelector('.site-title img.site-logo')!;
+    expect(logo.attributes['src'], '/trellis/brand/mark.svg');
+    expect(logo.attributes['alt'], 'Littoral Field Notes');
+    expect(home.querySelector('.site-title svg.site-mark'), isNull, reason: 'built-in sprout must step aside');
+
+    // Unset keys keep the theme's own artwork rather than emitting an empty <img>.
+    final plain = html_parser.parse(File(p.join(themeDir, 'example', 'output', 'index.html')).readAsStringSync());
+    expect(plain.querySelector('.hero-plate svg.engraving'), isNotNull);
+    expect(plain.querySelector('.hero-plate img.engraving'), isNull);
+    expect(plain.querySelector('.site-title svg.site-mark'), isNotNull);
+    expect(plain.querySelector('.site-title img.site-logo'), isNull);
+  });
+
   test('S07 TI08 publishability collateral and local assets are complete', () {
     final manifest = ThemeManifest.load(themeDir);
     final readme = File(p.join(themeDir, 'README.md')).readAsStringSync();
@@ -355,14 +428,20 @@ $trellis-show-sidenotes: false;
       'static/js/folio.js',
       'static/js/search.js',
       'static/fonts/eb-garamond-latin.woff2',
-      'static/fonts/ibm-plex-mono-latin.woff2',
       'static/fonts/OFL-EB-Garamond.txt',
-      'static/fonts/OFL-IBM-Plex-Mono.txt',
       'screenshots/light.png',
       'screenshots/dark.png',
     ]) {
       expect(File(p.join(themeDir, asset)).existsSync(), isTrue, reason: asset);
     }
+    // Code font is the system stack the mockup uses, so no monospace file is vendored.
+    expect(Directory(p.join(themeDir, 'static', 'fonts')).listSync().map((e) => p.basename(e.path)).toSet(), {
+      'eb-garamond-latin.woff2',
+      'OFL-EB-Garamond.txt',
+    });
+    // Font payload is a budgeted part of every deployed site; hold it under 50KB.
+    final fontBytes = File(p.join(themeDir, 'static', 'fonts', 'eb-garamond-latin.woff2')).lengthSync();
+    expect(fontBytes, lessThan(50 * 1024), reason: '$fontBytes bytes');
     for (final screenshot in ['screenshots/light.png', 'screenshots/dark.png']) {
       final bytes = File(p.join(themeDir, screenshot)).readAsBytesSync();
       expect(bytes.take(8), [137, 80, 78, 71, 13, 10, 26, 10], reason: screenshot);
@@ -375,7 +454,6 @@ $trellis-show-sidenotes: false;
       File(p.join(themeDir, 'static', 'fonts', 'OFL-EB-Garamond.txt')).readAsStringSync(),
       contains('EB Garamond'),
     );
-    expect(File(p.join(themeDir, 'static', 'fonts', 'OFL-IBM-Plex-Mono.txt')).readAsStringSync(), contains('IBM'));
   });
 }
 

@@ -1,5 +1,5 @@
 ---
-title: Kiteframe
+title: Meadow
 layout: home
 hero:
   headline: {prefix: Ship, emphasis: today., suffix: ""}
@@ -10,5 +10,5 @@ features:
   title: Clear choices.
   body: Ready.
   items: [{icon: ✦, title: Fast, body: Ready now.}, {icon: ✓, title: Clear, body: Ship today.}]
-cta: {eyebrow: Start, title: Ready., body: Begin now., command: dart pub add kiteframe_sdk, note: Local and fast.}
+cta: {eyebrow: Start, title: Ready., body: Begin now., command: dart pub add meadow_sdk, note: Local and fast.}
 ---

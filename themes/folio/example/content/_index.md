@@ -1,5 +1,5 @@
 ---
-title: Littoral records
+title: Folio records
 layout: home
 description: A reusable field guide for careful observations and long-form reference.
 featured:

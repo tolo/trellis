@@ -1,9 +1,9 @@
 ---
-title: About Kiteframe
+title: About Meadow
 description: A readable single page in the Meadow shell.
 ---
 
-Kiteframe keeps evidence close to product decisions.
+Meadow keeps evidence close to product decisions.
 
 ```dart
 final signal = 'customer context';

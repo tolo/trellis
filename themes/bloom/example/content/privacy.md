@@ -1,6 +1,6 @@
 ---
 title: Privacy
-description: How Sprout handles your data — the short, honest version.
+description: How Bloom handles your data — the short, honest version.
 ---
 
 ## The short version
@@ -10,7 +10,7 @@ We can't read them, we don't sell them, and we never train anything on them.
 
 ## What we collect
 
-When you use Sprout without an account, we collect **nothing**. No telemetry, no
+When you use Bloom without an account, we collect **nothing**. No telemetry, no
 analytics, no phone-home.
 
 If you opt into encrypted sync, we store an end-to-end encrypted blob so your

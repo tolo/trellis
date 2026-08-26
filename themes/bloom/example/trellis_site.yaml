@@ -1,4 +1,4 @@
-title: Sprout
+title: Bloom
 description: The calm note-taking app that grows with your ideas.
 baseUrl: http://localhost:8080
 
@@ -34,5 +34,5 @@ theme_params:
     - platform: Mastodon
       url: https://mastodon.social/
       label: Mastodon
-  footer_text: "© 2026 Sprout Labs"
+  footer_text: "© 2026 Bloom Labs"
   show_powered_by: true

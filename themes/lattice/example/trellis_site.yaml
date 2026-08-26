@@ -1,5 +1,5 @@
-title: Lattice Preview
-description: A reusable Lattice theme preview.
+title: Lattice
+description: A garden-inspired documentation theme with an expressive home page.
 baseUrl: http://localhost:8080
 theme: lattice
 theme_params:
@@ -11,8 +11,39 @@ theme_params:
   show_search: true
   show_toc: true
   show_sidebar: true
-  nav_links: [{ label: Home, url: / }, { label: Docs, url: /docs/ }]
-  footer_text: "Lattice preview"
+  show_prev_next: true
+  nav_links:
+    - { label: Home, url: / }
+    - { label: Docs, url: /docs/ }
+    - { label: Guides, url: /docs/guides/ }
+    - { label: Reference, url: /docs/reference/ }
+  footer_text: "Lattice — a Trellis theme."
+  social_links:
+    - { label: GitHub, url: https://github.com/tolo/trellis }
+    - { label: pub.dev, url: https://pub.dev/packages/trellis }
+  hero_eyebrow: Documentation theme
+  hero_headlines:
+    - prefix: "A home page with room to "
+      emphasis: explain
+      suffix: "."
+    - prefix: "Docs that stay "
+      emphasis: readable
+      suffix: " at any depth."
+    - prefix: "One theme, from landing to "
+      emphasis: reference
+      suffix: "."
+  hero_lede: >-
+    Lattice pairs an expressive landing page with a complete documentation surface — searchable section tree,
+    in-page contents, previous and next travel — so a project needs one theme rather than two.
+  hero_cta_primary_label: Read the docs
+  hero_cta_primary_url: /docs/
+  hero_cta_secondary_label: View on GitHub
+  hero_cta_secondary_url: https://github.com/tolo/trellis
+  terminal_card_lines:
+    - { prefix: "$", text: "trellis create my_docs --theme lattice", kind: command }
+    - { prefix: "\u2713", text: "content/ layouts/ trellis_site.yaml", kind: output }
+    - { prefix: "$", text: "trellis serve", kind: command }
+    - { prefix: "\u2192", text: "http://localhost:8080", kind: output }
 search:
   enabled: true
   fields: [title, summary, content]

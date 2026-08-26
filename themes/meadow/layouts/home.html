@@ -111,7 +111,8 @@
   <section class="section start" id="start" tl:if="${page.cta}"><div class="wrap"><header class="section-head">
     <span class="kicker lime" tl:text="${page.cta.eyebrow}">Start</span><h2 tl:text="${page.cta.title}">Title</h2>
     <p tl:text="${page.cta.body}">Body</p></header><div class="terminal"><div class="terminal-top">
-    <span aria-hidden="true">● ● ●</span><span>kiteframe · quickstart</span></div>
+    <span aria-hidden="true">● ● ●</span><span
+    tl:text="${page.cta.terminal_label} ?: ${site.title}">Terminal</span></div>
     <div class="command-row"><span class="prompt" aria-hidden="true">$</span><code class="command"
     id="install-command" tl:text="${page.cta.command}">command</code><button class="copy-button" type="button"
     data-copy hidden>Copy</button></div></div><p class="start-note" tl:text="${page.cta.note}">Note</p></div></section>

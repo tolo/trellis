@@ -1,5 +1,5 @@
 ---
-title: Kiteframe
+title: Meadow
 layout: home
 hero:
   headline:
@@ -20,6 +20,6 @@ cta:
   eyebrow: Developer-friendly
   title: Bring the complete workflow into the tools your growing team already uses.
   body: Start with the SDK and add only what the product needs.
-  command: dart pub add kiteframe_sdk
+  command: dart pub add meadow_sdk
   note: No client framework or Node-based build chain required.
 ---

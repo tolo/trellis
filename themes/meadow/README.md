@@ -55,12 +55,13 @@ Meadow implements all 18 [standard params](../../docs/reference/standard-params.
 | `workflow` | `eyebrow`, `title`, `body`, `signals[].{initials,name,source,text,tag}`, `insight.{label,title,body,confidence}` |
 | `use_cases` | `eyebrow`, `title`, `body`, `items[].{label,title,body,href}` |
 | `quote` | `text`, `attribution` |
-| `cta` | `eyebrow`, `title`, `body`, `command`, `note` |
+| `cta` | `eyebrow`, `title`, `body`, `command`, `note`, optional `terminal_label` |
 
 Only `headline.emphasis` receives Meadow's theme-owned marker. Supplying `hero.media` enables the illustration slot;
 without it, a split hero centers and reserves no media gap. Add `media.src` — a prefix-relative image path — to mount
 your own artwork there; with only `media.alt` the theme-owned trellis drawing is used. Markdown below front matter
-renders once.
+renders once. `cta.terminal_label` names the terminal chrome and falls back to the site title, so no demo brand
+is baked into the layout.
 Each optional block may be omitted independently and removes its wrapper and spacing.
 
 Feature lists support exactly the authored 2–6 cards, cycling four treatments in a three-column desktop and

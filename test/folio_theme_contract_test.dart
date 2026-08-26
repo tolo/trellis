@@ -407,7 +407,7 @@ $trellis-show-sidenotes: false;
 
     final logo = home.querySelector('.site-title img.site-logo')!;
     expect(logo.attributes['src'], '/trellis/brand/mark.svg');
-    expect(logo.attributes['alt'], 'Littoral Field Notes');
+    expect(logo.attributes['alt'], 'Folio Field Notes');
     expect(home.querySelector('.site-title svg.site-mark'), isNull, reason: 'built-in sprout must step aside');
 
     // Unset keys keep the theme's own artwork rather than emitting an empty <img>.

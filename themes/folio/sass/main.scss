@@ -244,14 +244,48 @@ img.engraving { object-fit: cover; }
   stroke-width: 4;
 }
 .home-content { padding-block: 52px; }
-.featured { padding-block: 88px; border-top: 1px solid var(--folio-rule-strong); }
+.section, .featured { padding-block: 88px; border-top: 1px solid var(--folio-rule-strong); }
 /* Section head: rubric label in a fixed column beside the heading and its standfirst. */
 .section-head { display: grid; grid-template-columns: 150px 1fr; gap: 28px; margin-bottom: 45px; }
 .section-head > div { min-width: 0; }
 .section-head p { max-width: 670px; margin: 20px 0 0; color: var(--folio-ink-soft); }
 .home-content .prose { max-width: 690px; }
-.featured h2 { margin: 0 0 28px; font: 500 clamp(2.35rem, 5vw, 4rem)/1 var(--folio-serif); letter-spacing: -.035em; }
+.section-head h2 {
+  max-width: 780px;
+  margin: 0;
+  font: 500 clamp(2.35rem, 5vw, 4.7rem)/1.02 var(--folio-serif);
+  letter-spacing: -.035em;
+}
 /* Each card owns all four edges: a short last row leaves no dangling rule. */
+/* Apparatus showcase: a mounted specimen beside its margin note. */
+.apparatus-grid {
+  counter-reset: folio-plates;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 270px;
+  gap: 34px;
+  align-items: start;
+}
+.apparatus-grid > * { min-width: 0; }
+.apparatus-grid .folio-plate { margin: 0; }
+
+/* Numbered characteristics, ruled rather than boxed. */
+.principles { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--folio-rule-strong); }
+.principle { padding: 28px 28px 32px 0; border-bottom: 1px solid var(--folio-rule); }
+.principle + .principle { padding-left: 28px; border-left: 1px solid var(--folio-rule); }
+.principle h3 { margin: 9px 0 13px; font: 500 1.65rem/1.02 var(--folio-serif); }
+.principle p { margin: 0; color: var(--folio-ink-soft); font-size: .94rem; }
+
+/* Manual band: a raised full-width block introducing the documentation surface. */
+.manual-band {
+  padding-block: 90px;
+  border-block: 1px solid var(--folio-rule-strong);
+  background: var(--folio-surface);
+}
+.manual-intro { display: flex; align-items: end; justify-content: space-between; gap: 30px; }
+.manual-intro h2 { margin: 8px 0 0; font: 500 clamp(2.6rem, 5vw, 4.6rem)/1.02 var(--folio-serif); letter-spacing: -.04em; }
+.manual-intro p { max-width: 430px; margin: 0; color: var(--folio-ink-soft); }
+.manual-intro .button { flex: 0 0 auto; }
+
 .card-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -483,6 +517,12 @@ code { font-family: var(--folio-mono); }
   .site-header nav { order: 1; width: 100%; }
   .nav-list { flex-wrap: wrap; gap: 0 18px; }
   .hero, .docs-shell { grid-template-columns: 1fr; }
+  .section-head { grid-template-columns: 1fr; gap: 10px; }
+  .apparatus-grid, .principles { grid-template-columns: 1fr; }
+  .principle, .principle + .principle { padding: 24px 0; border-left: 0; }
+  .manual-band { padding-block: 64px; }
+  .manual-intro { align-items: start; flex-direction: column; }
+  .folio-sidenote { border: 0; border-top: 2px solid var(--folio-rubric); padding: 18px 0 0; }
   .hero { min-height: 0; padding-block: 65px; }
   .hero-plate { width: min(390px, 92%); margin-inline: auto; transform: none; }
   .home-content { padding-block: 40px; }

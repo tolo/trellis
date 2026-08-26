@@ -55,6 +55,46 @@
         <div class="prose" tl:utext="${page.content}">Body content.</div>
       </section>
 
+      <!-- Apparatus showcase — a mounted specimen beside its margin note. Absent
+           front matter removes the whole section. -->
+      <section class="section apparatus" tl:if="${page.apparatus}" aria-labelledby="apparatus-heading">
+        <header class="section-head">
+          <p class="rubric" tl:text="${page.apparatus.label}">Label</p>
+          <div>
+            <h2 id="apparatus-heading" tl:text="${page.apparatus.title}">Title</h2>
+            <p tl:if="${page.apparatus.body}" tl:text="${page.apparatus.body}">Standfirst.</p>
+          </div>
+        </header>
+        <div class="apparatus-grid">
+          <figure class="folio-plate" tl:if="${page.apparatus.plate}">
+            <div class="plate-frame"><pre tabindex="0"><code
+              tl:text="${page.apparatus.plate.code}">Specimen</code></pre></div>
+            <figcaption tl:if="${page.apparatus.plate.caption}"
+                        tl:text="${page.apparatus.plate.caption}">Caption.</figcaption>
+          </figure>
+          <aside class="folio-sidenote" tl:if="${page.apparatus.sidenote}">
+            <span class="rubric" tl:if="${page.apparatus.sidenote.label}"
+                  tl:text="${page.apparatus.sidenote.label}">Note</span>
+            <p tl:each="line : ${page.apparatus.sidenote.body}" tl:text="${line}">Note text.</p>
+          </aside>
+        </div>
+      </section>
+
+      <!-- Characteristics — numbered principles, ruled rather than boxed. -->
+      <section class="section" tl:if="${page.principles}" aria-labelledby="principles-heading">
+        <header class="section-head">
+          <p class="rubric" tl:text="${page.principles.label}">Label</p>
+          <div><h2 id="principles-heading" tl:text="${page.principles.title}">Title</h2></div>
+        </header>
+        <div class="principles">
+          <article class="principle" tl:each="item : ${page.principles.items}">
+            <span class="rubric" tl:text="${item.number}">01</span>
+            <h3 tl:text="${item.title}">Principle</h3>
+            <p tl:text="${item.body}">Body.</p>
+          </article>
+        </div>
+      </section>
+
       <!-- Featured pages — the page list is injected by the SSG pipeline. -->
       <section class="featured" aria-labelledby="featured-heading">
         <!-- Section head: rubric label beside the heading and an optional standfirst,
@@ -82,6 +122,22 @@
       </section>
 
     </div>
+
+    <!-- Manual band — a full-width introduction to the documentation surface. -->
+    <section class="manual-band" tl:if="${page.manual}" aria-labelledby="manual-heading">
+      <div class="container manual-intro">
+        <div>
+          <p class="rubric" tl:text="${page.manual.label}">Label</p>
+          <h2 id="manual-heading" tl:text="${page.manual.title}">Title</h2>
+        </div>
+        <p tl:if="${page.manual.body}" tl:text="${page.manual.body}">Standfirst.</p>
+        <a class="button" tl:if="${page.manual.cta}"
+           tl:with="prefix=${site.pathPrefix}, local=${#strings.startsWith(page.manual.cta.href, '/')}"
+           tl:href="${prefix} != '' and ${local} ? ${prefix} + ${#strings.substring(page.manual.cta.href, 1)}
+             : ${page.manual.cta.href}"
+           tl:text="${page.manual.cta.label}">Open</a>
+      </div>
+    </section>
   </main>
 </body>
 </html>

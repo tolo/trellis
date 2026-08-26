@@ -57,7 +57,15 @@
 
       <!-- Featured pages — the page list is injected by the SSG pipeline. -->
       <section class="featured" aria-labelledby="featured-heading">
-        <h2 id="featured-heading">Explore</h2>
+        <!-- Section head: rubric label beside the heading and an optional standfirst,
+             all from the landing page's own front matter. -->
+        <header class="section-head">
+          <p class="rubric" tl:text="${page.featured.label} ?: 'Contents'">Contents</p>
+          <div>
+            <h2 id="featured-heading" tl:text="${page.featured.title} ?: 'Explore'">Explore</h2>
+            <p tl:if="${page.featured.body}" tl:text="${page.featured.body}">Standfirst.</p>
+          </div>
+        </header>
 
         <ul class="card-list" tl:if="${pages}">
           <li class="doc-card" tl:each="p : ${pages}">

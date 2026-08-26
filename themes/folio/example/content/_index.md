@@ -2,6 +2,11 @@
 title: Littoral records
 layout: home
 description: A reusable field guide for careful observations and long-form reference.
+featured:
+  label: Field apparatus
+  title: Content keeps its natural shape.
+  body: Figures, captions, and sidenotes remain semantic page content. The theme adds hierarchy and
+    notation without inventing a private content model.
 hero:
   caption: Sea lavender, recorded after the spring tide. Graphite and green ink.
   ctas:

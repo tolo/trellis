@@ -51,6 +51,12 @@ $trellis-show-sidenotes: true !default;
   --folio-width: #{$trellis-max-width};
   --folio-radius: #{$trellis-border-radius};
   --folio-grid: color-mix(in srgb, var(--folio-green) 6%, transparent);
+  /* Mid-tone ink for secondary prose; --folio-muted stays the faintest level. */
+  --folio-ink-soft: color-mix(in srgb, var(--folio-ink) 40%, var(--folio-muted));
+  /* Structural rules (frames, shell, masthead) sit darker than interior dividers. */
+  --folio-rule-strong: color-mix(in srgb, var(--folio-rule) 30%, var(--folio-muted));
+  --folio-paper-wash: color-mix(in srgb, var(--folio-green) 8%, var(--folio-paper));
+  --folio-rubric-wash: color-mix(in srgb, var(--folio-rubric) 10%, var(--folio-paper));
 }
 
 @if $trellis-skin == auto {
@@ -96,9 +102,14 @@ summary:focus-visible {
   color: var(--folio-paper);
 }
 .skip-to-content:focus { transform: translateY(0); }
+/* Sticky masthead with the paper showing through, as in the design. */
 .site-header {
-  border-bottom: 1px solid var(--folio-rule);
-  background: color-mix(in srgb, var(--folio-paper) 92%, transparent);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid var(--folio-rule-strong);
+  background: color-mix(in srgb, var(--folio-paper) 94%, transparent);
+  backdrop-filter: blur(12px);
 }
 .site-header .container,
 .footer-inner {
@@ -159,11 +170,11 @@ h1, h2, h3 { font-weight: 500; line-height: 1.02; text-wrap: balance; }
   font: 500 clamp(2.6rem, 5vw, 4.5rem)/1.02 var(--folio-serif);
   letter-spacing: -.04em;
 }
-.lede { max-width: 690px; margin: 0 0 38px; color: var(--folio-muted); font-size: 1.15rem; }
+.lede { max-width: 690px; margin: 0 0 38px; color: var(--folio-ink-soft); font-size: 1.15rem; }
 /* The rubric eyebrow carries a short measuring rule, as on a specimen sheet. */
 .hero-kicker { display: flex; align-items: center; gap: 12px; }
 .hero-kicker::after { flex: 0 0 auto; width: 84px; border-top: 1px solid var(--folio-rubric); content: ''; }
-.hero-description { max-width: 650px; color: var(--folio-muted); font-size: clamp(1.18rem, 2vw, 1.45rem); }
+.hero-description { max-width: 650px; color: var(--folio-ink-soft); font-size: clamp(1.18rem, 2vw, 1.45rem); }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
 .button {
   display: inline-flex;
@@ -190,7 +201,7 @@ h1, h2, h3 { font-weight: 500; line-height: 1.02; text-wrap: balance; }
 .hero-plate {
   position: relative;
   margin: 0;
-  border: 1px solid var(--folio-rule);
+  border: 1px solid var(--folio-rule-strong);
   border-radius: var(--folio-radius);
   padding: 16px;
   background: var(--folio-surface);
@@ -216,11 +227,11 @@ h1, h2, h3 { font-weight: 500; line-height: 1.02; text-wrap: balance; }
   display: block;
   width: 100%;
   aspect-ratio: 4 / 5;
-  background: color-mix(in srgb, var(--folio-green) 8%, var(--folio-paper));
+  background: var(--folio-paper-wash);
   color: var(--folio-green);
 }
 img.engraving { object-fit: cover; }
-.plate-caption { margin: 13px 4px 0; color: var(--folio-muted); font-size: .9rem; font-style: italic; }
+.plate-caption { margin: 13px 4px 0; color: var(--folio-ink-soft); font-size: .9rem; font-style: italic; }
 .plate-stem, .plate-leaf { fill: none; stroke: var(--folio-green); stroke-linecap: round; stroke-linejoin: round; }
 .plate-stem { stroke-width: 7; }
 .plate-leaf {
@@ -233,7 +244,11 @@ img.engraving { object-fit: cover; }
   stroke-width: 4;
 }
 .home-content { padding-block: 52px; }
-.featured { padding-block: 88px; border-top: 1px solid var(--folio-rule); }
+.featured { padding-block: 88px; border-top: 1px solid var(--folio-rule-strong); }
+/* Section head: rubric label in a fixed column beside the heading and its standfirst. */
+.section-head { display: grid; grid-template-columns: 150px 1fr; gap: 28px; margin-bottom: 45px; }
+.section-head > div { min-width: 0; }
+.section-head p { max-width: 670px; margin: 20px 0 0; color: var(--folio-ink-soft); }
 .home-content .prose { max-width: 690px; }
 .featured h2 { margin: 0 0 28px; font: 500 clamp(2.35rem, 5vw, 4rem)/1 var(--folio-serif); letter-spacing: -.035em; }
 /* Each card owns all four edges: a short last row leaves no dangling rule. */
@@ -256,14 +271,14 @@ img.engraving { object-fit: cover; }
 .doc-card-title { margin: 0 0 10px; font: 500 1.35rem/1.15 var(--folio-serif); }
 .doc-card-title a { text-decoration: none; }
 .doc-card-title a:hover, .doc-card-title a:focus-visible { text-decoration: underline; }
-.doc-card-summary { margin: 0; color: var(--folio-muted); font-size: .95rem; }
-.no-pages { color: var(--folio-muted); font-style: italic; }
+.doc-card-summary { margin: 0; color: var(--folio-ink-soft); font-size: .95rem; }
+.no-pages { color: var(--folio-ink-soft); font-style: italic; }
 .docs-shell {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   flex: 1 0 auto;
   min-height: 70vh;
-  border: 1px solid var(--folio-rule);
+  border: 1px solid var(--folio-rule-strong);
   background: var(--folio-paper);
   box-shadow: 0 18px 50px rgb(35 51 39 / 10%);
 }
@@ -272,7 +287,7 @@ img.engraving { object-fit: cover; }
 .sidebar-disclosure,
 .docs-toc {
   padding: 26px 22px;
-  background: color-mix(in srgb, var(--folio-green) 8%, var(--folio-paper));
+  background: var(--folio-paper-wash);
 }
 .sidebar-disclosure { border-right: 1px solid var(--folio-rule); }
 .docs-toc { border-left: 1px solid var(--folio-rule); }
@@ -280,7 +295,7 @@ img.engraving { object-fit: cover; }
 .search-label {
   display: block;
   margin-bottom: 8px;
-  color: var(--folio-muted);
+  color: var(--folio-ink-soft);
   font: 700 .67rem var(--folio-mono);
   letter-spacing: .1em;
   text-transform: uppercase;
@@ -288,9 +303,9 @@ img.engraving { object-fit: cover; }
 .search-input {
   width: 100%;
   min-height: 44px;
-  border: 1px solid var(--folio-rule);
+  border: 1px solid var(--folio-rule-strong);
   border-radius: var(--folio-radius);
-  padding: 8px;
+  padding: 8px 10px;
   color: inherit;
   background: var(--folio-surface);
 }
@@ -321,17 +336,20 @@ img.engraving { object-fit: cover; }
 .sidebar-link, .toc-list a {
   display: block;
   padding: 5px 7px;
-  color: var(--folio-muted);
+  color: var(--folio-ink-soft);
   text-decoration: none;
   font-size: .87rem;
   line-height: 1.3;
 }
-.sidebar-link.is-active { color: var(--folio-surface); background: var(--folio-green); }
 .sidebar-link:hover { color: var(--folio-rubric); }
-.sidebar-link.is-active:hover { color: var(--folio-surface); }
+.sidebar-tree .sidebar-link.is-active,
+.sidebar-tree .sidebar-link.is-active:hover {
+  color: var(--folio-surface);
+  background: var(--folio-green);
+}
 /* Top-level entries head a section, so they read as rubric labels rather than peers of
    the pages beneath them. They stay links when the section has its own page. */
-.sidebar-tree > .sidebar-item > .sidebar-link,
+.sidebar-tree > .sidebar-item > .sidebar-link:not(.is-active),
 .sidebar-tree > .sidebar-item > .sidebar-label {
   display: block;
   padding: 5px 7px 5px 0;
@@ -356,15 +374,22 @@ img.engraving { object-fit: cover; }
 .folio-plate {
   counter-increment: folio-plates;
   margin: 32px 0;
-  border: 1px solid var(--folio-rule);
+  border: 1px solid var(--folio-rule-strong);
   border-radius: var(--folio-radius);
-  padding: clamp(18px, 4vw, 40px);
+  padding: 12px;
   background: var(--folio-surface);
+  box-shadow: 0 18px 50px rgb(35 51 39 / 10%);
 }
+.folio-plate > :not(figcaption) {
+  display: block;
+  border: 1px solid var(--folio-rule);
+  padding: clamp(20px, 4vw, 42px);
+}
+.folio-plate > img { max-width: 100%; height: auto; }
 @if $trellis-show-plate-numbers {
   .folio-plate::before {
     display: block;
-    margin-bottom: 12px;
+    margin: 0 7px 12px;
     content: '#{$trellis-plate-label} ' counter(folio-plates, upper-roman) '.';
     color: var(--folio-rubric);
     font: 700 .72rem var(--folio-mono);
@@ -372,16 +397,33 @@ img.engraving { object-fit: cover; }
     text-transform: uppercase;
   }
 }
-.folio-plate figcaption { margin-top: 13px; color: var(--folio-muted); font-style: italic; }
+.folio-plate figcaption { margin: 13px 7px 3px; color: var(--folio-ink-soft); font-size: .91rem; font-style: italic; }
 @if $trellis-show-sidenotes {
   .folio-sidenote {
     margin: 28px 0;
     border-left: 2px solid var(--folio-rubric);
     padding: 18px 0 18px 22px;
-    color: var(--folio-muted);
+    color: var(--folio-ink-soft);
+    font-size: .92rem;
   }
+  .folio-sidenote p { margin: 9px 0 0; }
+  .folio-sidenote code { color: var(--folio-rubric); }
 }
 @else { .folio-sidenote { display: none; } }
+.folio-note {
+  margin: 28px 0;
+  border-left: 3px solid var(--folio-rubric);
+  padding: 18px 21px;
+  color: var(--folio-ink-soft);
+  background: var(--folio-rubric-wash);
+}
+.folio-note > strong:first-child {
+  display: block;
+  color: var(--folio-rubric);
+  font: 700 .72rem var(--folio-mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
 pre {
   overflow: auto;
   border: 1px solid var(--folio-rule);
@@ -417,7 +459,18 @@ code { font-family: var(--folio-mono); }
 .page-nav-next, .pagination-next { text-align: right; }
 .pagination-disabled { color: var(--folio-muted); }
 .pagination-info { color: var(--folio-muted); font: .7rem var(--folio-mono); letter-spacing: .09em; text-transform: uppercase; }
-.site-footer { border-top: 1px solid var(--folio-rule); }
+.site-footer { border-top: 1px solid var(--folio-rule-strong); }
+.footer-inner {
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding-block: 60px;
+  color: var(--folio-ink-soft);
+  text-align: center;
+}
+.footer-text { max-width: 580px; margin: 0; }
+.social-links { justify-content: center; gap: 22px; font-size: .86rem; }
+.footer-powered-by { margin: 0; font-size: .86rem; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
 @media (max-width: 1000px) {
   .sidebar-disclosure { width: 190px; }

@@ -249,7 +249,7 @@ img.engraving { object-fit: cover; }
 /* Section head: rubric label in a fixed column beside the heading and its standfirst. */
 .section-head { display: grid; grid-template-columns: 150px 1fr; gap: 28px; margin-bottom: 45px; }
 .section-head > div { min-width: 0; }
-.section-head p { max-width: 670px; margin: 20px 0 0; color: var(--folio-ink-soft); }
+.section-head > div > p { max-width: 670px; margin: 20px 0 0; color: var(--folio-ink-soft); }
 .home-content .prose { max-width: 690px; }
 .section-head h2 {
   max-width: 780px;
@@ -283,7 +283,7 @@ img.engraving { object-fit: cover; }
 }
 .manual-intro { display: flex; align-items: end; justify-content: space-between; gap: 30px; }
 .manual-intro h2 { margin: 8px 0 0; font: 500 clamp(2.6rem, 5vw, 4.6rem)/1.02 var(--folio-serif); letter-spacing: -.04em; }
-.manual-intro p { max-width: 430px; margin: 0; color: var(--folio-ink-soft); }
+.manual-intro > p { max-width: 430px; margin: 0; color: var(--folio-ink-soft); }
 .manual-intro .button { flex: 0 0 auto; }
 
 .card-list {
@@ -423,6 +423,13 @@ img.engraving { object-fit: cover; }
   padding: clamp(20px, 4vw, 42px);
 }
 .folio-plate > img { max-width: 100%; height: auto; }
+.folio-plate pre {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: none;
+}
 @if $trellis-show-plate-numbers {
   .folio-plate::before {
     display: block;

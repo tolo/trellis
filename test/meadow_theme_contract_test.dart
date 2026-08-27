@@ -294,8 +294,32 @@ $trellis-border-radius: 7px;
     // The desktop rule reset a border no rule sets.
     expect(RegExp(r'\.proof-list[^{]*\{[^}]*border-left').hasMatch(light), isFalse);
     // `pill_badges` had no implementation: the pill radius was hardcoded on every `.eyebrow`.
-    expect(RegExp(r'\.eyebrow, \.kicker\s*\{[^}]*border-radius: 8px').hasMatch(light), isTrue);
+    expect(RegExp(r'\.eyebrow, \.kicker\s*\{[^}]*border-radius: 8px;').hasMatch(light), isTrue);
     expect(RegExp(r'\.kicker, \.eyebrow-pill\s*\{\s*border-radius: 999px;').hasMatch(light), isTrue);
+    // Every class a layout appends must have a rule that selects it. `pill_badges` shipped as a
+    // documented no-op for exactly this reason - `.eyebrow-pill` was emitted and never styled - so
+    // the set is derived from the templates rather than listed here, and a class added later is
+    // covered without anyone remembering to extend this test.
+    final appended = <String>{};
+    for (final layout in Directory(
+      p.join(themeDir, 'layouts'),
+    ).listSync(recursive: true).whereType<File>().where((file) => file.path.endsWith('.html'))) {
+      for (final attribute in RegExp('tl:classappend="([^"]*)"').allMatches(layout.readAsStringSync())) {
+        // Only the ternary branches name classes; `== 'split'` is a comparison operand.
+        for (final branch in RegExp(r"[?:]\s*'([^']*)'").allMatches(attribute.group(1)!)) {
+          appended.addAll(branch.group(1)!.split(' ').where((name) => name.isNotEmpty));
+        }
+      }
+    }
+    expect(appended, containsAll(const ['eyebrow-pill', 'signal-grid-solo']));
+    for (final name in appended) {
+      // The lookahead stops a longer selector - `.signal-grid-solo-x` - from satisfying the search.
+      expect(
+        RegExp('\\.${RegExp.escape(name)}(?=[\\s,{:.\\[])').hasMatch(light),
+        isTrue,
+        reason: '$name is appended by a layout but no rule selects it',
+      );
+    }
     // Highlight.js bakes these classes into fenced blocks at build time (ADR-010); unstyled means a
     // monochrome code block on a theme that ships a Markdown layout.
     final styledTokens = RegExp(

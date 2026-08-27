@@ -58,7 +58,8 @@ trellis build --path-prefix '' --output output-root
 A green `trellis build` is **not** proof of a working site — a wrong-base-path link
 emits valid HTML and no build error but a dead link in production. The pure-Dart
 checker at [`../tool/link_check.dart`](../tool/link_check.dart) is the real gate: it
-walks the built output, resolves every internal `href`/`src`/`srcset` against the
+walks the built output, resolves every internal `href`/`src`/`srcset` — plus the
+`data-light`/`data-dark` attributes themes use to swap assets per skin — against the
 output filesystem the way a static host serves it, and exits non-zero on any broken
 reference. External URLs (`http(s):`, `//host`, `mailto:`, `tel:`, `data:`) and pure
 in-page anchors (`#frag`) are never reported.

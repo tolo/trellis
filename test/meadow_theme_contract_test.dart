@@ -276,7 +276,21 @@ $trellis-border-radius: 7px;
     // it reuses `hero.ctas[0].label`, which a landing page may make a sentence.
     expect(RegExp(r'\.desktop-nav, \.nav-cta\s*\{\s*display: none;').hasMatch(light), isTrue);
     expect(RegExp(r'\.nav-cta\s*\{[^}]*max-width: 220px').hasMatch(light), isTrue);
-    expect(RegExp(r'\.nav-cta span\s*\{[^}]*text-overflow: ellipsis;').hasMatch(light), isTrue);
+    // Truncation needs all three declarations, not just `text-overflow`. Rendered with the 53-char
+    // copy-long label: a visible `overflow` lets the label escape the pill by 251px across the page,
+    // and a wrapping `white-space` drives `.nav-inner` from 72px to 95px - M9's original defect.
+    // Asserted against those failures rather than pinning one accepted value, so the treatment can
+    // change (`clip` for `hidden`, `pre` for `nowrap`) but cannot become nothing.
+    final ctaLabel = _declarations(light, '.nav-cta span');
+    expect(ctaLabel['text-overflow'], 'ellipsis');
+    expect(ctaLabel['overflow'], allOf(isNotNull, isNot('visible')));
+    expect(ctaLabel['white-space'], allOf(isNotNull, isNot('normal')));
+    // The attribution is the last flex item and cannot shrink, so without wrapping it pushes the
+    // document 6px past a 768px viewport - measured, and the reason the rule exists.
+    expect(_declarations(light, '.footer-inner')['flex-wrap'], 'wrap');
+    // An auto track grows to max-content, so an uncapped tag collapses the message column to 0px
+    // (measured 304px -> 0px at 1024px). The cap may be tuned; it may not be removed.
+    expect(_declarations(light, '.signal-tag')['max-width'], isNotNull);
     // `anywhere` broke the brand and menu labels mid-word, so `body` keeps `break-word`. Page copy
     // needs `anywhere` because `break-word` does not shrink a box's min-content size, and a track
     // sized from min-content is what pushes an unbreakable token past the viewport.
@@ -809,6 +823,21 @@ const result = {};
 for (const file of process.argv.slice(2)) result[file.split('/').pop()] = axes(file);
 process.stdout.write(JSON.stringify(result));
 ''';
+
+/// Declarations of the first rule matching [selector], as property -> value.
+///
+/// Splitting on `;` avoids the prefix traps of matching a declaration with a substring regex:
+/// `overflow:` would otherwise match inside `text-overflow:`, and `column` inside `column-reverse`.
+Map<String, String> _declarations(String css, String selector) {
+  final body = RegExp('${RegExp.escape(selector)}\\s*\\{([^}]*)\\}').firstMatch(css)?.group(1) ?? '';
+  return {
+    for (final declaration in body.split(';'))
+      if (declaration.contains(':'))
+        declaration.substring(0, declaration.indexOf(':')).trim(): declaration
+            .substring(declaration.indexOf(':') + 1)
+            .trim(),
+  };
+}
 
 int _readUint32(List<int> bytes, int offset) =>
     (bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3];

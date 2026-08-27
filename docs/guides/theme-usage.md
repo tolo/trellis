@@ -9,26 +9,41 @@ Related docs:
 
 ## Installing a Theme
 
-### From a Git URL
+### A Built-in Theme
+
+The six themes that ship with Trellis (`arbor`, `bloom`, `folio`, `lattice`, `meadow`, `verdant`) live under `themes/<name>/` in the [tolo/trellis](https://github.com/tolo/trellis) repository. `--theme <name>` installs one of them out of that repository:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis-theme-verdant
+trellis theme add https://github.com/tolo/trellis --theme lattice
 ```
 
-This clones the theme into `themes/verdant/` and sets `theme: verdant` in `trellis_site.yaml`.
+This copies `themes/lattice/` into your site's `themes/lattice/` and sets `theme: lattice` in `trellis_site.yaml`. Browse the [themes gallery](https://tolo.github.io/trellis/docs/themes/gallery/) to pick one.
+
+### From a Single-Theme Git Repository
+
+When a theme is the whole repository, omit `--theme` — the theme name is derived from the repository name:
+
+```bash
+trellis theme add https://github.com/yourname/trellis-theme-orchard
+```
+
+This clones the repository into `themes/orchard/` and sets `theme: orchard`.
 
 ### Pinning to a Version
 
 ```bash
-trellis theme add https://github.com/tolo/trellis-theme-verdant --ref v1.0.0
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
 ```
 
-Use `--ref` to pin to a git tag, branch, or commit SHA. Recommended for production sites.
+Use `--ref` to pin to a git tag or branch. Recommended for production sites.
 
 ### From a Local Path (development)
 
 ```bash
 trellis theme add ./path/to/my-theme
+
+# Or one theme out of a local multi-theme checkout
+trellis theme add ../trellis --theme lattice
 ```
 
 Useful when authoring a theme alongside a site, or testing before publishing to git.
@@ -205,14 +220,16 @@ Because site SASS takes precedence over theme SASS, these values override the th
 trellis theme update
 
 # Update a specific theme
-trellis theme update verdant
+trellis theme update orchard
 ```
+
+`trellis theme update` runs `git pull` inside the installed theme, so it only works for themes installed from a single-theme repository. A theme installed with `--theme <name>` carries no git metadata — remove and re-add it instead.
 
 If you need to change the pinned version, remove and re-add with a new `--ref`:
 
 ```bash
-trellis theme remove verdant
-trellis theme add https://github.com/tolo/trellis-theme-verdant --ref v2.0.0
+trellis theme remove lattice
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.12.0
 ```
 
 

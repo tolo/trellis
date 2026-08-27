@@ -25,6 +25,10 @@
 
 - Theme authoring now documents theme `data/*.yaml` fallback, site whole-file precedence by filename stem,
   `${data.<stem>.*}` access, and optional theme-specific `excerpt_length` without changing the 18 standard params.
+- The theme guides now document a theme-install command that works (`trellis theme add <url> --theme <name>`, no
+  per-theme repositories) and the three `theme.yaml` rules the gallery generator enforces as a CI gate: the `name`
+  charset, `name` equalling its containing directory name, and exactly one `docs|landing|blog` archetype tag in
+  `features`.
 
 ## 0.10.2
 

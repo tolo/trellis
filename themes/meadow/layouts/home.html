@@ -79,16 +79,23 @@
   </section>
 
   <section class="section signal-section" id="workflow" tl:if="${page.workflow}">
-    <div class="wrap signal-grid"><div><header class="section-head"><span class="kicker sky"
+    <div class="wrap signal-grid" tl:classappend="${page.workflow.insight} ? '' : 'signal-grid-solo'">
+      <div><header class="section-head"><span class="kicker sky"
       tl:text="${page.workflow.eyebrow}">Workflow</span><h2 tl:text="${page.workflow.title}">Title</h2>
-      <p tl:text="${page.workflow.body}">Body</p></header><ul class="signal-stack">
+      <p tl:if="${page.workflow.body}" tl:text="${page.workflow.body}">Body</p></header>
+      <ul class="signal-stack"
+          tl:if="${page.workflow.signals} != null and ${#lists.size(page.workflow.signals)} > 0">
       <li class="signal-card" tl:each="signal : ${page.workflow.signals}"><span class="signal-avatar"
         tl:text="${signal.initials}">AB</span><div><strong tl:text="${signal.name} + ' · ' + ${signal.source}">Source</strong>
         <p tl:text="${signal.text}">Signal</p></div><span class="signal-tag" tl:text="${signal.tag}">Tag</span></li>
-      </ul></div><article class="insight-card"><span class="insight-label"
-      tl:text="${page.workflow.insight.label}">Insight</span><h3 tl:text="${page.workflow.insight.title}">Title</h3>
-      <p tl:text="${page.workflow.insight.body}">Body</p><div class="meter" role="progressbar" aria-label="Opportunity confidence"
-      aria-valuemin="0" aria-valuemax="100"
+      </ul></div><article class="insight-card" tl:if="${page.workflow.insight}"><span class="insight-label"
+      tl:if="${page.workflow.insight.label}" tl:text="${page.workflow.insight.label}">Insight</span>
+      <h3 tl:if="${page.workflow.insight.title}" tl:text="${page.workflow.insight.title}">Title</h3>
+      <p tl:if="${page.workflow.insight.body}" tl:text="${page.workflow.insight.body}">Body</p>
+      <!-- A missing confidence interpolates an empty value into `--confidence`, which makes the
+           clamp invalid: the width is dropped and the block-level span fills the whole meter. -->
+      <div class="meter" role="progressbar" aria-label="Opportunity confidence"
+      tl:if="${page.workflow.insight.confidence}" aria-valuemin="0" aria-valuemax="100"
       tl:attr="aria-valuenow=${page.workflow.insight.confidence},style='--confidence: ' + ${page.workflow.insight.confidence} + '%'">
       <span></span></div>
       </article></div>

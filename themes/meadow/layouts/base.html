@@ -6,7 +6,8 @@
   <meta name="color-scheme" content="light dark">
   <title tl:text="${page.title} == ${site.title} ? ${site.title} : ${page.title} + ' – ' + ${site.title}">Page – Site</title>
   <meta name="description" tl:attr="content=${page.description} ?: ${page.summary} ?: ${site.description}">
-  <link rel="icon" href="data:,">
+  <link rel="icon" tl:if="${theme.favicon} != null and ${theme.favicon} != ''"
+        tl:attr="href=${assetBase} + ${theme.favicon}" href="/favicon.svg">
   <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/main.css'" href="/css/main.css">
   <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/theme-props.css'" href="/css/theme-props.css">
   <script tl:if="${theme.skin} == 'auto'">
@@ -46,7 +47,7 @@
         <button tl:if="${theme.skin} == 'auto'" class="icon-button" type="button" data-meadow-skin-toggle
                 aria-label="Change color scheme" aria-pressed="false" hidden>Theme</button>
         <a class="nav-cta" tl:if="${page.hero} and ${page.hero.ctas}"
-           tl:href="${page.hero.ctas[0].href}" tl:text="${page.hero.ctas[0].label}">Start</a>
+           tl:href="${page.hero.ctas[0].href}"><span tl:text="${page.hero.ctas[0].label}">Start</span></a>
         <details class="mobile-menu">
           <summary aria-label="Open navigation menu">Menu</summary>
           <nav aria-label="Mobile navigation" tl:with="homeBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">

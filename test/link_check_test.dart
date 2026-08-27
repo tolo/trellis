@@ -133,6 +133,56 @@ void main() {
       expect(result.broken, hasLength(1));
       expect(result.broken.single.toString(), contains('/../secret.html'));
     });
+
+    test('a missing asset named only by data-dark is reported', () {
+      // The docs landing page swaps theme screenshots client-side: the light
+      // variant is the img's src, the dark variant reaches the browser only as
+      // data-dark. Without data attributes in scope the dark file could go
+      // missing and ship a live 404 with the checker still green.
+      final dir = _fixture({
+        'index.html': _page(
+          '<img src="/themes/arbor/light.png" data-light="/themes/arbor/light.png" '
+          'data-dark="/themes/arbor/dark.png" alt="Arbor">',
+        ),
+        'themes/arbor/light.png': 'PNG',
+      });
+      addTearDown(() => dir.deleteSync(recursive: true));
+
+      final result = checkLinks(dir.path);
+
+      expect(result.broken, hasLength(1));
+      expect(result.broken.single.toString(), contains('/themes/arbor/dark.png'));
+    });
+
+    test('resolving data-light/data-dark assets are counted, not reported', () {
+      final dir = _fixture({
+        'index.html': _page(
+          '<img src="/themes/arbor/light.png" data-light="/themes/arbor/light.png" '
+          'data-dark="/themes/arbor/dark.png" alt="Arbor">',
+        ),
+        'themes/arbor/light.png': 'PNG',
+        'themes/arbor/dark.png': 'PNG',
+      });
+      addTearDown(() => dir.deleteSync(recursive: true));
+
+      final result = checkLinks(dir.path);
+
+      expect(result.broken, isEmpty);
+      // src + data-light + data-dark.
+      expect(result.refsChecked, 3);
+    });
+
+    test('non-asset data attributes stay out of scope', () {
+      // Most data-* attributes carry state, not URLs; treating them as
+      // references would turn every widget flag into a spurious broken link.
+      final dir = _fixture({'index.html': _page('<div data-docs-sidebar="/not/a/link" data-skin="auto"></div>')});
+      addTearDown(() => dir.deleteSync(recursive: true));
+
+      final result = checkLinks(dir.path);
+
+      expect(result.broken, isEmpty);
+      expect(result.refsChecked, 0);
+    });
   });
 
   group('checkLinks (--base-path /trellis/)', () {

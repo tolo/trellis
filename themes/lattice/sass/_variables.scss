@@ -57,11 +57,16 @@ $trellis-show-search: true !default;
   --conf-bg: #f2f0e4;
   --wash-a: rgb(46 125 79 / 0.06);
   --wash-b: rgb(110 155 69 / 0.05);
+  // Code tokens. Every value clears WCAG AA (4.5:1) against --card, the surface both
+  // the home-page panes and docs code blocks sit on. --syntax-dim carries punctuation
+  // (brackets, operators), which is read text, not decoration.
   --syntax-tag: #8a6b2e;
   --syntax-attribute: #6f634c;
   --syntax-string: #3e6b8f;
   --syntax-keyword: #7a4e9e;
-  --syntax-dim: #a9a493;
+  --syntax-number: #a3452f;
+  --syntax-function: #1f6f6a;
+  --syntax-dim: #786f5e;
   --shadow-soft: rgb(28 43 33 / 0.05);
   --shadow: rgb(28 43 33 / 0.12);
   --bg-lattice: #d8d3be;

@@ -7,9 +7,10 @@
  *
  * Design constraints:
  *   - Progressive enhancement. Docs are fully readable and navigable with this
- *     script absent or disabled. The <input> ships `disabled` in the static
- *     HTML and is enabled only after the index has loaded successfully; if the
- *     fetch fails the whole control is hidden and the page is unaffected.
+ *     script absent or disabled. The `.search-shell` ships `hidden` and the
+ *     <input> ships `disabled` in the static HTML; both are lifted only after
+ *     the index has loaded successfully. A page where this script never ran, or
+ *     where the index fetch failed, therefore shows no dead search control.
  *   - Same-origin only. The index URL is not hardcoded here (the static file
  *     cannot interpolate the site's pathPrefix). It is read from the shell's
  *     `data-search-index` attribute, which the layout computes with pathPrefix.
@@ -23,7 +24,7 @@
  * Shell hooks (from the S04 layout):
  *   [data-arbor-search]          the search <input> (ships disabled)
  *   [data-arbor-search-results]  the results <ul> (ships hidden)
- *   [data-search-index]          on the .search-shell container: index URL
+ *   [data-search-index]          on the .search-shell container (ships hidden): index URL
  */
 (function () {
   'use strict';
@@ -43,12 +44,12 @@
     return;
   }
 
-  // Hide/disable the control and give up cleanly. Called on any failure so the
-  // search box is never left as a broken, interactive-but-nonfunctional input.
+  // Keep the control hidden and inert. Called on any failure so the search box is
+  // never revealed as a broken, interactive-but-nonfunctional input.
   function disableSearch() {
     input.disabled = true;
     input.setAttribute('aria-disabled', 'true');
-    if (shell && shell.classList) shell.classList.add('search-unavailable');
+    if (shell) shell.hidden = true;
     clearResults();
   }
 
@@ -75,6 +76,7 @@
     });
 
   function activate(entries) {
+    if (shell) shell.hidden = false;
     input.disabled = false;
     input.removeAttribute('aria-disabled');
     input.addEventListener('input', function () {

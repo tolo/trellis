@@ -1,30 +1,97 @@
 # Vendored assets – Lattice
 
-Last reviewed: 2026-08-19.
+Last reviewed: 2026-08-27.
 
 Every runtime asset is committed with the theme and served same-origin. No page performs a CDN or third-party request.
 
 ## Fonts
 
-| Asset                                        | Source and license                                                                                 | Fallback                |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------- |
-| `static/fonts/fraunces-latin*.woff2`         | [Fraunces v38](https://fonts.gstatic.com/s/fraunces/v38/), SIL Open Font License 1.1               | Georgia, serif          |
-| `static/fonts/instrument-sans-latin*.woff2`  | [Instrument Sans v4](https://fonts.gstatic.com/s/instrumentsans/v4/), SIL Open Font License 1.1    | system sans-serif       |
-| `static/fonts/spline-sans-mono-latin*.woff2` | [Spline Sans Mono v13](https://fonts.gstatic.com/s/splinesansmono/v13/), SIL Open Font License 1.1 | ui-monospace, monospace |
+Every face is generated from a pinned `google/fonts` blob by `tool/subset_fonts.py`. Run
+`python3 tool/subset_fonts.py --verify` to re-derive all eleven SDK font files and fail on any drift from the
+committed bytes; `--write` regenerates them. Both hashes below are checked by that command.
 
-The corresponding OFL text is stored beside each font. Files contain the latin/latin-ext coverage used by the theme
-and are loaded with `font-display: swap`.
+Upstream commit: [`ade3d15`](https://github.com/google/fonts/tree/ade3d1533e06b2b1462ffcde8e08b129627ca360/ofl),
+fetched 2026-08-27. Toolchain: fonttools 4.63.0, brotli 1.2.0.
 
-Each file carries only the variable axes the theme actually renders. Fraunces keeps `opsz` as well as `wght`: the
-headline sets `font-variation-settings: "opsz" 100`, and automatic optical sizing moves the axis at display sizes, so
-instantiating it out widens the headline by roughly 19%. Instrument Sans and Spline Sans Mono keep `wght` only —
-Fraunces' `SOFT`/`WONK` and Instrument Sans' `wdth` are unused and instantiated at their defaults. Dropping them cut
-the set from 359,412 to 225,200 bytes (133,820 served for latin-only content) with byte-identical metrics at every
-weight the theme uses.
+| Shipped file                             | Bytes  | Upstream        | Output SHA-256 |
+| ---------------------------------------- | ------ | --------------- | -------------- |
+| `fonts/fraunces-latin.woff2`             | 69,620 | Fraunces        | `6522c36d54be` |
+| `fonts/fraunces-latin-ext.woff2`         | 58,724 | Fraunces        | `1284a99a8e71` |
+| `fonts/fraunces-italic-latin.woff2`      | 43,256 | Fraunces Italic | `3b741b314ef4` |
+| `fonts/instrument-sans-latin.woff2`      | 29,696 | Instrument Sans | `4a59ce2e8216` |
+| `fonts/instrument-sans-latin-ext.woff2`  | 10,732 | Instrument Sans | `85949406008d` |
+| `fonts/spline-sans-mono-latin.woff2`     | 36,012 | Spline Sans Mono| `3f72e1f08739` |
+| `fonts/spline-sans-mono-latin-ext.woff2` | 19,984 | Spline Sans Mono| `7f80c96ef3a2` |
 
-SHA-256 (Latin / Latin-ext): Fraunces `48282a…a64e43` / `f12008…fa40e2`; Instrument Sans
-`6219bc…ca2311` / `21fac8…cfe3e0`; Spline Sans Mono
-`2b193a…77e9ec` / `bde42c…ebc8d6`.
+Upstream blobs, all under `ofl/` at that commit:
+
+- Fraunces 1.000 – `fraunces/Fraunces[SOFT,WONK,opsz,wght].ttf`, SHA-256 `177ff6c0f14e`
+- Fraunces Italic 1.000 – `fraunces/Fraunces-Italic[SOFT,WONK,opsz,wght].ttf`, SHA-256 `b24448c43702`
+- Instrument Sans 1.000 – `instrumentsans/InstrumentSans[wdth,wght].ttf`, SHA-256 `b24f18125848`
+- Spline Sans Mono 1.004 – `splinesansmono/SplineSansMono[wght].ttf`, SHA-256 `e20c1df32aa2`
+
+268,024 bytes in the repository; 135,328 fetched by a page whose content is latin-only, since each family splits on
+`unicode-range` and the italic loads only where italic Fraunces is actually rendered. Fallbacks are Georgia/serif for
+Fraunces, the system sans for Instrument Sans and `ui-monospace, monospace` for Spline Sans Mono; every face uses
+`font-display: swap`.
+
+### How each file is cut
+
+The upright faces keep only the axes the theme renders. Fraunces keeps `opsz` alongside `wght` because the headline
+sets `font-variation-settings: "opsz" 100` and CSS `font-optical-sizing` defaults to `auto`, so the browser drives the
+axis from font-size; instantiating it out pins the axis at its low default and widens display text by roughly 19%.
+Fraunces' `SOFT`/`WONK` and Instrument Sans' `wdth` are unused and pinned at their defaults.
+
+The exact commands, per family (`<LATIN>` and `<LATIN_EXT>` are the two constants in `tool/subset_fonts.py`):
+
+```
+fonttools varLib.instancer -o inst.ttf --no-recalc-timestamp <upstream>.ttf SOFT=0 WONK=1
+fonttools subset inst.ttf --output-file=fraunces-latin.woff2 --flavor=woff2 --unicodes=<LATIN> \
+    --no-hinting --name-IDs=* --layout-features+=pnum,tnum --no-recalc-timestamp
+```
+
+`--no-recalc-timestamp` is load-bearing on both steps: without it each run stamps a new `head.modified` and the output
+hash changes. `--name-IDs=*` keeps the embedded OFL notice (name IDs 13/14) and the `fvar` instance names.
+
+### Italic
+
+The approved A3 mockup loads `Fraunces:ital,opsz,wght@1,9..144,500`, and `main.scss` sets `font-style: italic` on the
+hero's emphasised word. With no italic face the browser shears the upright, which is most visible at the hero's
+38–64px. One instance is vendored — `wght` pinned to 500, `opsz` kept because the headline drives it, `SOFT`/`WONK`
+instanced out:
+
+```
+fonttools varLib.instancer -o inst.ttf --no-recalc-timestamp \
+    Fraunces-Italic[SOFT,WONK,opsz,wght].ttf SOFT=0 WONK=1 wght=500
+```
+
+Latin only. Emphasis inside latin-ext text still falls back to the sheared upright; a latin-ext italic measures
+36,652 bytes and was judged not worth it.
+
+Because the face carries weight 500 alone, an `<em>` inside an h2 or h3 — which Fraunces renders at 600 — gets a
+synthetic bold. The hero, the one case the mockup specifies, is exactly 500 and is unaffected. Removing the h2/h3 case
+means vendoring the full-`wght` variable italic at 84,140 bytes instead of 43,256, a 15% payload increase for a
+construction the design does not use. Left as is deliberately.
+
+### unicode-range
+
+Each upright family ships a latin and a latin-ext file, so both need a `unicode-range` to stop latin-only pages
+downloading the extended one. The declared ranges are the Google Fonts `latin` and `latin-ext` definitions, with
+`latin` widened by the combining marks (`U+0300-0303`, `U+0309`, `U+0323`), the horizontal arrows (`U+2190`,
+`U+2192`) and `U+0102` — all present in the subsets and all absent from Google's `latin`.
+
+The invariant is that every codepoint present in either file falls inside the union of the two ranges. A range that
+does not cover its own file's contents makes the browser refuse the webfont for those characters and drop to the
+system font per glyph, mid-word. Where the two overlap the `latin` face wins, being declared second, and it holds the
+overlapping glyphs. Folio and Meadow declare no `unicode-range` because they ship one file per family: with nothing to
+gate, a range there could only ever exclude.
+
+## Licensing
+
+Fraunces, Instrument Sans and Spline Sans Mono are all SIL Open Font License 1.1, and the licence text sits beside
+each font as `static/fonts/OFL-*.txt`. None of the three declares a Reserved Font Name in its copyright notice, so
+OFL §3 places no naming restriction on these modified, subsetted copies. Re-verified against the upstream `OFL.txt`
+files on 2026-08-27.
 
 ## First-party JavaScript
 

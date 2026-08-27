@@ -6,7 +6,6 @@
   <body>
     <main
       id="main-content"
-      class="home"
       tabindex="-1"
       tl:define="content"
       tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}"
@@ -57,7 +56,7 @@
               <div class="hero-copy">
                 <p class="eyebrow" tl:text="${theme.hero_eyebrow}">Eyebrow</p>
                 <div class="headline-slot" data-headline-slot>
-                  <h1 id="headline" class="fit-initial" data-headline>
+                  <h1 id="headline" data-headline>
                     <span class="headline-text" data-headline-text>
                       <span
                         class="headline-entry is-active"
@@ -98,7 +97,7 @@
                   >
                 </div>
               </div>
-              <section class="terminal" tl:if="${theme.show_terminal_card}" aria-label="Trellis quick start">
+              <section class="terminal" tl:if="${theme.show_terminal_card}" aria-label="Quick start">
                 <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i><span>getting started</span></div>
                 <pre aria-hidden="true"><code><span
                     class="terminal-line"
@@ -119,7 +118,15 @@
         <div class="wrap prose" tl:utext="${page.content}">Content</div>
       </section>
 
-      <section class="tinted" tl:if="${theme.show_code_showcase}" aria-labelledby="lattice-code-title">
+      <!-- Every home section below is gated on BOTH its theme toggle and its data. The toggles are
+           deep-merged params (default true) while data/lattice.yaml is replaced by filename stem, so a
+           site that overrides one block would otherwise publish the others as empty shells: a labelled
+           but empty <h2>, no cells, blank code panes — and the build still reports success. -->
+      <section
+        class="tinted"
+        tl:if="${theme.show_code_showcase} and ${data.lattice.code_showcase}"
+        aria-labelledby="lattice-code-title"
+      >
         <div class="wrap">
           <header class="section-heading">
             <h2 id="lattice-code-title" tl:text="${data.lattice.code_showcase.title}">Code</h2>
@@ -131,10 +138,9 @@
                 <span tl:text="${data.lattice.code_showcase.template_label}">Template</span>
                 <span class="pane-tag">valid html</span>
               </div>
-              <pre><code
-                  data-lattice-code
-                  tl:text="${data.lattice.code_showcase.template_source}"
-                >Template source</code></pre>
+              <!-- Pre-marked token spans from the data file, not a client-side tokenizer (ADR-010):
+                   the panes are coloured with JavaScript off. -->
+              <pre><code tl:utext="${data.lattice.code_showcase.template_html}">Template source</code></pre>
             </div>
             <span class="duo-arrow" aria-hidden="true"><b>→</b><small>engine.render()</small></span>
             <div class="pane">
@@ -142,16 +148,17 @@
                 <span tl:text="${data.lattice.code_showcase.output_label}">Output</span>
                 <span class="pane-tag">rendered</span>
               </div>
-              <pre><code
-                  data-lattice-code
-                  tl:text="${data.lattice.code_showcase.output_source}"
-                >Output source</code></pre>
+              <pre><code tl:utext="${data.lattice.code_showcase.output_html}">Output source</code></pre>
             </div>
           </div>
         </div>
       </section>
 
-      <section tl:if="${theme.show_why_grid}" aria-labelledby="lattice-why-title">
+      <!-- The block guard runs first: #lists.size(null) is null, and comparing null throws. -->
+      <section
+        tl:if="${theme.show_why_grid} and ${data.lattice.why} and ${#lists.size(data.lattice.why.cells)} > 0"
+        aria-labelledby="lattice-why-title"
+      >
         <div class="wrap">
           <header class="section-heading">
             <h2 id="lattice-why-title" tl:text="${data.lattice.why.title}">Why</h2>
@@ -176,7 +183,7 @@
         </div>
       </section>
 
-      <section tl:if="${theme.show_demo}" aria-labelledby="lattice-demo-title">
+      <section tl:if="${theme.show_demo} and ${data.lattice.demo}" aria-labelledby="lattice-demo-title">
         <div class="wrap">
           <header class="section-heading">
             <h2 id="lattice-demo-title" tl:text="${data.lattice.demo.title}">Demo</h2>
@@ -198,7 +205,7 @@
             <div class="demo-panes">
               <div class="demo-source">
                 <p class="demo-label"><b>posts.html</b> — the template you write</p>
-                <pre><code data-lattice-code tl:text="${data.lattice.demo.template_source}">Template</code></pre>
+                <pre><code tl:utext="${data.lattice.demo.template_html}">Template</code></pre>
               </div>
               <div class="demo-output">
                 <div data-demo-panel="prototype">
@@ -231,7 +238,12 @@
         </div>
       </section>
 
-      <section class="tinted" tl:if="${theme.show_themes_showcase}" aria-labelledby="lattice-showcase-title">
+      <section
+        class="tinted"
+        tl:if="${theme.show_themes_showcase} and ${data.lattice.showcase} and
+               ${#lists.size(data.lattice.showcase.cards)} > 0"
+        aria-labelledby="lattice-showcase-title"
+      >
         <div class="wrap">
           <header class="section-heading">
             <h2 id="lattice-showcase-title" tl:text="${data.lattice.showcase.title}">Themes</h2>
@@ -277,7 +289,15 @@
             <div class="commands">
               <div class="command" tl:each="command, state : ${theme.cta_commands}">
                 <code tl:text="${command}">command</code>
-                <button type="button" tl:attr="data-copy-command=${state.index}" aria-label="Copy command">Copy</button>
+                <!-- Hidden until lattice.js confirms a usable Clipboard API; the command stays selectable. -->
+                <button
+                  type="button"
+                  tl:attr="data-copy-command=${state.index}"
+                  aria-label="Copy command"
+                  hidden
+                >
+                  Copy
+                </button>
               </div>
             </div>
           </div>

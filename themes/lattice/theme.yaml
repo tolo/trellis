@@ -44,34 +44,38 @@ params:
   logo: { type: string, default: null, description: Optional prefix-relative header logo path }
   favicon: { type: string, default: "favicon.svg", description: Prefix-relative favicon path }
   excerpt_length: { type: int, default: 160, description: Plain-text generated-summary length }
-  hero_eyebrow: { type: string, default: "Server-rendered Dart", description: Hero eyebrow }
+  # Home-page copy. Defaults are content-neutral placeholders that render a
+  # coherent page but name no product — a site that installs Lattice and sets
+  # nothing must not publish someone else's pitch. Keep release version numbers
+  # out of them: theme defaults are outside tool/version_lockstep.sh.
+  hero_eyebrow: { type: string, default: "Your tagline here", description: Hero eyebrow }
   hero_headlines:
     type: list
     default:
-      - { prefix: "Templates that are just HTML. A stack that's ", emphasis: "just Dart", suffix: "." }
-      - { prefix: "Grow web apps in ", emphasis: "pure Dart", suffix: ". No Node required." }
+      - { prefix: "Say what your project ", emphasis: "actually does", suffix: "." }
+      - { prefix: "Then show it in ", emphasis: "one screen", suffix: "." }
     description: "Headline entries [{prefix, emphasis, suffix}]"
   hero_lede:
     {
       type: string,
-      default: "Natural HTML templates for server-rendered Dart applications and static sites.",
+      default: "One or two sentences describing what you build and who it is for.",
       description: Hero introduction,
     }
   hero_cta_primary_label: { type: string, default: "Read the docs", description: Primary hero CTA label }
   hero_cta_primary_url: { type: string, default: "/docs/", description: Primary hero CTA URL }
-  hero_cta_secondary_label: { type: string, default: "View on GitHub", description: Secondary hero CTA label }
+  hero_cta_secondary_label: { type: string, default: "Get started", description: Secondary hero CTA label }
   hero_cta_secondary_url:
-    { type: string, default: "https://github.com/tolo/trellis", description: Secondary hero CTA URL }
+    { type: string, default: "/docs/getting-started/", description: Secondary hero CTA URL }
   terminal_card_lines:
     {
       type: list,
       default:
         [
-          { prefix: "$", text: "dart pub add trellis", kind: command },
-          { prefix: "+", text: "trellis 0.11.0 — one dependency", kind: output },
-          { prefix: "$", text: "trellis create my_app && cd my_app", kind: command },
-          { prefix: "✓", text: "created Shelf + HTMX starter", kind: output },
-          { prefix: "➜", text: "dart run bin/server.dart → :8080", kind: output },
+          { prefix: "$", text: "your-cli init my-project", kind: command },
+          { prefix: "✓", text: "project scaffolded", kind: output },
+          { prefix: "$", text: "your-cli dev", kind: command },
+          { prefix: "✓", text: "watching for changes", kind: output },
+          { prefix: "➜", text: "http://localhost:8080", kind: output },
         ],
       description: "Hero terminal entries [{prefix, text, kind}]",
     }
@@ -81,16 +85,16 @@ params:
   show_demo: { type: boolean, default: true, description: Show two-view demo }
   show_themes_showcase: { type: boolean, default: true, description: Show theme cards }
   show_cta: { type: boolean, default: true, description: Show closing CTA }
-  cta_title: { type: string, default: "One dependency away", description: Closing CTA title }
+  cta_title: { type: string, default: "Ready when you are", description: Closing CTA title }
   cta_body:
     {
       type: string,
-      default: "Start with the engine or scaffold a complete themed site.",
+      default: "Two commands to go from nothing to a running site.",
       description: Closing CTA body,
     }
   cta_commands:
     {
       type: list,
-      default: ["dart pub add trellis", "dart pub global activate trellis_cli"],
+      default: ["your-cli init my-project", "your-cli dev"],
       description: Closing CTA commands,
     }

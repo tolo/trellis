@@ -10,7 +10,9 @@ From `themes/meadow/example`, run `trellis build`, then serve `output/`. To prev
 content, copy the example to a temporary directory, replace only `content/_index.md` with the chosen
 `fixtures/<name>/_index.md`, retain the `themes/meadow` link, and run `trellis build` there. Use
 `trellis_site.subpath.yaml` as the temporary config to verify a `/trellis/` deployment. Fixtures cover short and long
-copy, 2–6 features, split layout without media, each optional section absent, and all optional sections absent.
+copy, 2–6 features, split layout without media, each optional section absent, all optional sections absent, a
+`workflow` block whose optional `insight` is absent, an `insight` with neither signals nor a confidence, and an
+unbreakable 72-character token in every text container.
 
 ## Params
 
@@ -38,8 +40,9 @@ Meadow implements all 18 [standard params](../../docs/reference/standard-params.
 | `show_rss_link` | boolean | `true` | Emit feed discovery links when feeds exist |
 | `excerpt_length` | int | `160` | Plain-text list summary length |
 | `hero_align` | `center \| split` | `split` | Hero composition; absent media always centers |
-| `pill_badges` | boolean | `true` | Rounded eyebrow labels |
+| `pill_badges` | boolean | `true` | Fully rounded hero eyebrow; `false` leaves the 8px badge radius |
 | `logo` | string/null | `null` | Optional theme-local logo path |
+| `favicon` | string/null | `favicon.svg` | Prefix-relative browser icon; `null` emits no `rel="icon"` |
 | `sky_color` | color | `#69b9ea` | Sky card accent |
 | `sun_color` | color | `#ffd367` | Sun card accent |
 | `bloom_color` | color | `#cf91ef` | Bloom card accent |

@@ -21,7 +21,8 @@
           <!-- Hero calls to action come from the page's own front matter, so the
                landing can point somewhere other than the header navigation. Local
                root-relative targets are joined with pathPrefix exactly once. -->
-          <nav class="hero-actions" tl:if="${page.hero.ctas}" aria-label="Featured destinations">
+          <nav class="hero-actions" aria-label="Featured destinations"
+               tl:if="${page.hero.ctas} != null and ${#lists.size(page.hero.ctas)} > 0">
             <a class="button" tl:each="cta : ${page.hero.ctas}"
                tl:classappend="${cta.style} == 'secondary' ? 'button-secondary' : 'button-primary'"
                tl:with="prefix=${site.pathPrefix}, local=${#strings.startsWith(cta.href, '/')}"
@@ -32,9 +33,13 @@
         <figure class="hero-plate"
                 tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
           <!-- page.hero.image mounts the site's own specimen; the drawn engraving is the
-               fallback so a landing with no artwork still renders a complete plate. -->
+               fallback so a landing with no artwork still renders a complete plate.
+               assetBase already ends in a slash, so a root-relative src sheds its own
+               leading slash — plain concatenation would emit a //host-relative URL. -->
           <img class="engraving" tl:if="${page.hero.image}"
-               tl:attr="src=${assetBase} + ${page.hero.image.src},alt=${page.hero.image.alt} ?: ''" src="" alt="">
+               tl:with="platePath=${#strings.startsWith(page.hero.image.src, '/')}
+                 ? ${#strings.substring(page.hero.image.src, 1)} : ${page.hero.image.src}"
+               tl:attr="src=${assetBase} + ${platePath},alt=${page.hero.image.alt} ?: ''" src="" alt="">
           <svg class="engraving" tl:unless="${page.hero.image}" viewBox="0 0 360 440" aria-hidden="true">
             <path class="plate-stem" d="M176 382c5-102 18-194 54-292"/>
             <path class="plate-leaf" d="M205 195c47-73 105-78 122-67-18 63-66 92-122 67Z"/>
@@ -43,7 +48,8 @@
             <circle class="plate-seed" cx="108" cy="172" r="15"/>
             <circle class="plate-seed" cx="285" cy="275" r="11"/>
           </svg>
-          <figcaption class="plate-caption" tl:if="${page.hero.caption}"
+          <figcaption class="plate-caption"
+                      tl:if="${page.hero.caption} != null and ${page.hero.caption} != ''"
                       tl:text="${page.hero.caption}">Specimen caption.</figcaption>
         </figure>
       </section>
@@ -107,7 +113,7 @@
           </div>
         </header>
 
-        <ul class="card-list" tl:if="${pages}">
+        <ul class="card-list" tl:if="${#lists.size(pages)} > 0">
           <li class="doc-card" tl:each="p : ${pages}">
             <h3 class="doc-card-title">
               <a tl:href="${p.url}" tl:text="${p.title}">Page Title</a>

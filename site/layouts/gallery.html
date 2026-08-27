@@ -2,16 +2,21 @@
 <html tl:extends="theme:layouts/base.html" lang="en">
   <head>
     <title>Built-in Themes</title>
+    <!-- tl:define replaces the base block element's *children*, so the override
+         has to be a container: a bare <link tl:define="head-extra"> would
+         contribute nothing and the stylesheet would silently never load. -->
+    <tl:block tl:define="head-extra">
+      <link
+        rel="stylesheet"
+        tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}"
+        tl:attr="href=${assetBase} + 'gallery.css'"
+        href="/gallery.css"
+      />
+    </tl:block>
   </head>
   <body>
-    <main
-      id="main-content"
-      class="docs-main-region"
-      tl:define="content"
-      tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}"
-    >
-      <link rel="stylesheet" tl:attr="href=${assetBase} + 'gallery.css'" href="/gallery.css" />
-      <div class="wrap docs-shell">
+    <main id="main-content" tl:define="content" tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
+      <div class="wrap docs-shell gallery-shell">
         <div tl:if="${theme.show_sidebar} and ${site.menu}" tl:replace="~{theme:layouts/base.html :: sidebar}"></div>
         <article class="doc gallery-page">
           <nav class="breadcrumb" aria-label="Breadcrumb">

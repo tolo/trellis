@@ -58,13 +58,13 @@ Lattice-specific surface.
 | Param                      | Default                | Purpose                       |
 | -------------------------- | ---------------------- | ----------------------------- |
 | `excerpt_length`           | `160`                  | Generated summary length      |
-| `hero_eyebrow`             | `Server-rendered Dart` | Hero eyebrow                  |
+| `hero_eyebrow`             | `Your tagline here`    | Hero eyebrow                  |
 | `hero_headlines`           | Two entries            | Structured rotating headlines |
-| `hero_lede`                | Theme introduction     | Hero supporting copy          |
+| `hero_lede`                | Placeholder sentence   | Hero supporting copy          |
 | `hero_cta_primary_label`   | `Read the docs`        | Primary CTA label             |
 | `hero_cta_primary_url`     | `/docs/`               | Primary CTA URL               |
-| `hero_cta_secondary_label` | `View on GitHub`       | Secondary CTA label           |
-| `hero_cta_secondary_url`   | Trellis repository     | Secondary CTA URL             |
+| `hero_cta_secondary_label` | `Get started`          | Secondary CTA label           |
+| `hero_cta_secondary_url`   | `/docs/getting-started/` | Secondary CTA URL           |
 | `terminal_card_lines`      | Five entries           | Structured terminal narrative |
 | `show_terminal_card`       | `true`                 | Hero terminal visibility      |
 | `show_code_showcase`       | `true`                 | Code section visibility       |
@@ -72,8 +72,8 @@ Lattice-specific surface.
 | `show_demo`                | `true`                 | Two-view demo visibility      |
 | `show_themes_showcase`     | `true`                 | Theme cards visibility        |
 | `show_cta`                 | `true`                 | Closing CTA visibility        |
-| `cta_title`                | `One dependency away`  | Closing CTA heading           |
-| `cta_body`                 | Theme introduction     | Closing CTA body              |
+| `cta_title`                | `Ready when you are`   | Closing CTA heading           |
+| `cta_body`                 | Placeholder sentence   | Closing CTA body              |
 | `cta_commands`             | Two commands           | Closing CTA commands          |
 
 Light-skin color tokens map as follows:
@@ -93,9 +93,33 @@ The dark palette is deliberately theme-owned. Font stacks, `max_width`, and `bor
 ## Structured home data
 
 `data/lattice.yaml` owns `code_showcase`, `why`, `demo`, and `showcase`. A site's `data/lattice.yaml` replaces that
-file as a whole, so provide every shape when overriding it. Optional `showcase.link_label` and `showcase.link_url`
-values render a link after the cards when both are non-empty. Showcase `screenshot_light` and `screenshot_dark`
-values are prefix-relative tails without a leading slash; the layout prepends the rendered asset base exactly once.
+file as a whole, so provide every shape when overriding it. Each home section renders only when both its
+`show_*` param and its data block are present, so a partial override drops the unsupplied sections instead of
+publishing them as empty headings. Optional `showcase.link_label` and `showcase.link_url` values render a link after
+the cards when both are non-empty. Showcase `screenshot_light` and `screenshot_dark` values are prefix-relative tails
+without a leading slash; the layout prepends the rendered asset base exactly once.
+
+The theme's own defaults are content-neutral placeholders — Lattice ships a shape, not a pitch. Replace them with
+your own copy; nothing in them names a product or bakes in a release version.
+
+### Pre-marked code panes
+
+`code_showcase.template_html`, `code_showcase.output_html`, and `demo.template_html` are **HTML**, rendered with
+`tl:utext`. No client-side highlighter ships in an official theme (ADR-010), so the panes carry their token spans
+from the data file and stay coloured with JavaScript off. Escape `<`, `>`, and `&`, and wrap tokens in the classes
+the theme styles:
+
+| Class     | Covers                                     |
+| --------- | ------------------------------------------ |
+| `t-tag`   | Element names                              |
+| `t-attr`  | Plain attribute names                      |
+| `t-tl`    | `tl:*` attribute names (highlighted chip)  |
+| `t-str`   | Attribute value strings                    |
+| `t-expr`  | `${...}` expressions inside a string       |
+| `t-dim`   | Angle brackets and slashes                 |
+
+Markdown code fences elsewhere on a site are highlighted at build time by the SSG and styled through the
+`.hljs-*` map instead; both maps clear WCAG AA against the code surface in each skin.
 
 `hero_headlines` is a list of maps with exactly `prefix`, `emphasis`, and `suffix` strings. The server and JavaScript
 escape all three values and create only the `<em>` wrapper. The heading crossfades inside a fixed-height slot, fits
@@ -112,9 +136,12 @@ explicitly.
 ## Assets and accessibility
 
 All runtime assets are same-origin. Fonts use documented system fallbacks and `font-display: swap`; JavaScript only
-adds theme choice, headline rotation, demo switching, copy buttons, and search. Without JavaScript the first headline,
-both demo panes' default content, docs, and navigation remain readable. Reduced-motion mode disables rotation,
-transitions, smooth scrolling, and card lift. See [VENDORED.md](VENDORED.md) for provenance.
+adds theme choice, headline fitting and rotation, demo switching, copy buttons, and search. Controls that JavaScript
+cannot back are server-rendered `hidden` and revealed once the capability exists: the skin toggle, and the copy
+buttons (which need a secure context for the Clipboard API). Without JavaScript the first headline renders at its
+full designed size, code panes stay coloured, and both demo panes' default content, docs, and navigation remain
+readable. Reduced-motion is tracked live — turning it on stops the headline rotation without a reload — and also
+disables transitions, smooth scrolling, and card lift. See [VENDORED.md](VENDORED.md) for provenance.
 
 ## Preview
 

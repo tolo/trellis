@@ -9,15 +9,23 @@
     try { return localStorage.getItem('folio-skin') || ''; } catch (_) { return ''; }
   };
   let explicit = stored();
+  // The control names the edition currently in force, as the masthead badge does in
+  // the design; the accessible name stays the action (aria-label on the element).
+  const mark = (dark) => {
+    button.setAttribute('aria-pressed', String(dark));
+    button.textContent = dark ? 'Night edition' : 'Light folio';
+  };
   const apply = (skin) => {
     document.documentElement.dataset.skin = skin;
-    button.setAttribute('aria-pressed', String(skin === 'dark'));
+    mark(skin === 'dark');
   };
   const sync = () => {
     document.documentElement.dataset.skin = explicit;
-    button.setAttribute('aria-pressed', String((explicit || (media.matches ? 'dark' : 'light')) === 'dark'));
+    mark((explicit || (media.matches ? 'dark' : 'light')) === 'dark');
   };
 
+  // Ships hidden: with no JavaScript the button could not change anything.
+  button.hidden = false;
   sync();
   button.addEventListener('click', () => {
     const current = explicit || (media.matches ? 'dark' : 'light');

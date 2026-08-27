@@ -6,6 +6,15 @@ import 'package:yaml/yaml.dart';
 
 const _recognizedArchetypes = <String>{'docs', 'landing', 'blog'};
 const _regenerationCommand = 'dart run tool/generate_theme_gallery.dart';
+const _manifestRulesDoc = 'see docs/guides/theme-authoring.md, "Name and archetype rules"';
+
+/// Header written into `site/data/themes.yaml`, so a contributor who edits the
+/// file by hand reads why CI rejected it before they read the CI log.
+const _generatedHeader =
+    '# GENERATED FILE – do not edit by hand.\n'
+    '# Generator: tool/generate_theme_gallery.dart\n'
+    '# Source:    themes/<name>/theme.yaml\n'
+    '# Regenerate with: $_regenerationCommand\n';
 
 const _usage = '''
 Generate committed theme-gallery metadata and screenshot copies.
@@ -161,7 +170,14 @@ final class ThemeGalleryGenerator {
 
   _ThemeEntry _readTheme(Directory themeDir) {
     final manifestPath = p.join(themeDir.path, 'theme.yaml');
-    final document = loadYaml(File(manifestPath).readAsStringSync());
+    final Object? document;
+    try {
+      document = loadYaml(File(manifestPath).readAsStringSync());
+    } on YamlException catch (error) {
+      // Unwrapped, this escapes main's catch clauses as an unhandled exception
+      // with no theme name — useless when one of several manifests is broken.
+      throw ThemeGalleryException('${p.basename(themeDir.path)}: theme.yaml is not valid YAML: ${error.message}');
+    }
     if (document is! YamlMap) {
       throw ThemeGalleryException('${p.basename(themeDir.path)}: theme.yaml must contain a map');
     }
@@ -171,16 +187,30 @@ final class ThemeGalleryGenerator {
     final portableName = RegExp(r'^[a-z0-9][a-z0-9_-]*$');
     if (name != directoryName || !portableName.hasMatch(name)) {
       throw ThemeGalleryException(
-        '$name: theme name must equal its containing directory name "$directoryName" and be a portable path segment',
+        '$name: theme name must equal its containing directory name "$directoryName" and be a portable path segment '
+        'matching ${portableName.pattern} ($_manifestRulesDoc)',
       );
     }
+    if (!File(p.join(themeDir.path, 'README.md')).existsSync()) {
+      // Every gallery card links to themes/<name>/README.md, so a theme without
+      // one ships a dead link that no link checker sees (the URL is external).
+      throw ThemeGalleryException('$name: themes/$directoryName/README.md is missing; every gallery card links to it');
+    }
     final description = _requiredString(document, 'description', themeDir);
+    if (description.contains('`')) {
+      // The gallery renders description with tl:text, so backticks would reach
+      // the card as literal characters rather than as code formatting.
+      throw ThemeGalleryException(
+        '$name: theme.yaml description must be plain prose; the gallery renders it as text, so `backticks` show up '
+        'literally on the card',
+      );
+    }
     final features = _stringList(document['features'], name, 'features');
     final occurrences = features.where(_recognizedArchetypes.contains).toList();
     if (occurrences.length != 1) {
       throw ThemeGalleryException(
         '$name: recognized archetype occurrences found [${occurrences.join(', ')}]; '
-        'features must contain exactly one occurrence from docs|landing|blog',
+        'features must contain exactly one occurrence from docs|landing|blog ($_manifestRulesDoc)',
       );
     }
 
@@ -191,6 +221,10 @@ final class ThemeGalleryGenerator {
     for (final relativePath in declaredScreenshots) {
       final variant = p.basenameWithoutExtension(relativePath).toLowerCase();
       if (variant != 'light' && variant != 'dark') {
+        warningSink(
+          'theme_gallery: WARNING – $name declared screenshot $relativePath with an unrecognized variant '
+          '"$variant"; only light and dark reach the gallery, so it is ignored',
+        );
         continue;
       }
       final sourcePath = p.normalize(p.join(themeDir.path, relativePath));
@@ -311,7 +345,7 @@ List<String> _stringList(Object? value, String themeName, String field) {
 }
 
 String _encodeYaml(List<_ThemeEntry> entries) {
-  final buffer = StringBuffer('themes:\n');
+  final buffer = StringBuffer(_generatedHeader)..write('themes:\n');
   for (final entry in entries) {
     buffer
       ..writeln('  - name: ${jsonEncode(entry.name)}')

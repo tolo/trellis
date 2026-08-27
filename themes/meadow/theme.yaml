@@ -45,6 +45,7 @@ params:
   hero_align: {type: enum, values: [center, split], default: split, description: Hero composition}
   pill_badges: {type: boolean, default: true, description: Render labels as pills}
   logo: {type: string, default: null, description: Optional logo asset path}
+  favicon: {type: string, default: "favicon.svg", description: Prefix-relative browser icon path}
   sky_color: {type: color, default: "#69b9ea", description: Sky feature-card color}
   sun_color: {type: color, default: "#ffd367", description: Sun feature-card color}
   bloom_color: {type: color, default: "#cf91ef", description: Bloom feature-card color}

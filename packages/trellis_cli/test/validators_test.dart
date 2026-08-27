@@ -73,4 +73,32 @@ void main() {
       expect(themeNameFromUrl('https://gitlab.com/org/sub/trellis-theme-custom.git'), 'custom');
     });
   });
+
+  group('validateThemeName', () {
+    test('accepts the names the theme gallery generator accepts', () {
+      for (final name in <String>['lattice', 'folio', 'my-theme', 'theme_2', '0x']) {
+        expect(validateThemeName(name), isNull, reason: name);
+      }
+    });
+
+    test('rejects values that would escape or rename the destination directory', () {
+      for (final name in <String>[
+        '',
+        '..',
+        '../../etc',
+        '/etc/passwd',
+        'a/b',
+        r'a\\b',
+        'Verdant',
+        '-lead',
+        '.hidden',
+      ]) {
+        expect(validateThemeName(name), isNotNull, reason: name);
+      }
+    });
+
+    test('names the offending value so the operator can see what was rejected', () {
+      expect(validateThemeName('../escape'), contains('"../escape"'));
+    });
+  });
 }

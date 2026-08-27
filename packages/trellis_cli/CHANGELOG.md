@@ -2,9 +2,16 @@
 
 ## 0.11.0
 
-### Changed
+### Added
 
-- Lockstep version bump to keep all Trellis SDK packages on a single shared version. No functional changes in this package.
+- `trellis theme add <url-or-path> --theme <name>` installs a single theme out of a source that carries several, copying
+  only its `themes/<name>/` directory into the site. This is how the built-in themes are distributed – they live under
+  `themes/` in the `tolo/trellis` repository, not in one repository each – so `trellis theme add
+  https://github.com/tolo/trellis --theme lattice` now works and the themes gallery's `theme: <name>` hint is reachable.
+  `--ref` pins the subdirectory install to a tag or branch; the theme name is validated against the same charset the
+  theme manifest requires, so a `--theme` value cannot escape the destination; the temporary clone is removed on every
+  path. Whole-repository and local-path installs are unchanged. A theme installed this way carries no git metadata, so
+  `trellis theme update` does not apply to it – remove and re-add instead.
 
 ## 0.10.2
 

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:html/dom.dart';
@@ -41,6 +42,7 @@ void main() {
       'sun_color',
       'bloom_color',
       'coral_color',
+      'favicon',
     };
 
     expect(manifest.name, 'meadow');
@@ -74,6 +76,7 @@ void main() {
       'sun_color': 'color',
       'bloom_color': 'color',
       'coral_color': 'color',
+      'favicon': 'string',
     };
     for (final entry in expectedTypes.entries) {
       expect(manifest.params[entry.key]!.type, entry.value, reason: entry.key);
@@ -99,6 +102,7 @@ void main() {
       'sun_color': '#ffd367',
       'bloom_color': '#cf91ef',
       'coral_color': '#fb907b',
+      'favicon': 'favicon.svg',
     };
     for (final entry in scalarDefaults.entries) {
       expect(manifest.params[entry.key]!.defaultValue, entry.value, reason: entry.key);
@@ -118,11 +122,25 @@ void main() {
     }
     // Font payload ships to every deployed site, so it is budgeted. Bricolage keeps opsz because
     // optical sizing moves it at display sizes; the rest are wght-only. The unused axes cost 86KB.
-    final fontBytes = Directory(p.join(themeDir, 'static', 'fonts'))
-        .listSync()
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.woff2'))
-        .fold<int>(0, (sum, f) => sum + f.lengthSync());
+    // The cap alone is satisfied by an empty or truncated file, so each face also has to carry the
+    // WOFF2 signature and clear a floor.
+    final fontFiles =
+        Directory(
+            p.join(themeDir, 'static', 'fonts'),
+          ).listSync().whereType<File>().where((f) => f.path.endsWith('.woff2')).toList()
+          ..sort((a, b) => a.path.compareTo(b.path));
+    expect(fontFiles.map((f) => p.basename(f.path)), [
+      'bricolage-grotesque-latin.woff2',
+      'jetbrains-mono-latin.woff2',
+      'schibsted-grotesk-latin.woff2',
+    ]);
+    var fontBytes = 0;
+    for (final file in fontFiles) {
+      final bytes = file.readAsBytesSync();
+      expect(bytes.take(4), [0x77, 0x4F, 0x46, 0x32], reason: 'wOF2 signature: ${p.basename(file.path)}');
+      expect(bytes.length, greaterThanOrEqualTo(16 * 1024), reason: '${p.basename(file.path)} ${bytes.length} bytes');
+      fontBytes += bytes.length;
+    }
     expect(fontBytes, lessThanOrEqualTo(160 * 1024), reason: '$fontBytes bytes');
 
     for (final screenshot in manifest.screenshots) {
@@ -132,6 +150,54 @@ void main() {
       expect(_readUint32(bytes, 20), 800, reason: screenshot);
     }
     expect(File(p.join(themeDir, 'example', '.gitignore')).readAsStringSync(), contains('output/'));
+  });
+
+  test('S05 TI08 declared and requested font weights exist in the shipped faces', () async {
+    final scss = File(p.join(themeDir, 'sass', 'main.scss')).readAsStringSync();
+    final variables = File(p.join(themeDir, 'sass', '_variables.scss')).readAsStringSync();
+
+    // Each --meadow-* stack fronts one vendored family; the rest of the stack is fallbacks.
+    final stacks = <String, String>{};
+    for (final entry in {
+      '--meadow-display': r'$trellis-heading-font-family',
+      '--meadow-body': r'$trellis-font-family',
+      '--meadow-mono': r'$trellis-code-font-family',
+    }.entries) {
+      final declaration = RegExp('${RegExp.escape(entry.value)}: (.+) !default;').firstMatch(variables)!;
+      stacks[entry.key] = declaration.group(1)!.split(',').first.trim();
+    }
+
+    final faces = <String, ({String file, int min, int max})>{};
+    for (final block in RegExp(r'@font-face \{([^}]*)\}').allMatches(scss)) {
+      final body = block.group(1)!;
+      final range = RegExp(r'font-weight: (\d{3}) (\d{3});').firstMatch(body)!;
+      faces[RegExp("font-family: '([^']+)'").firstMatch(body)!.group(1)!] = (
+        file: RegExp(r"src: url\('\.\./fonts/([^']+)'\)").firstMatch(body)!.group(1)!,
+        min: int.parse(range.group(1)!),
+        max: int.parse(range.group(2)!),
+      );
+    }
+    expect(faces.keys, unorderedEquals(stacks.values));
+
+    final axes = await _fontAxes(faces.values.map((f) => f.file).toList(), themeDir);
+    if (axes == null) return;
+    for (final entry in faces.entries) {
+      final wght = (axes[entry.value.file] as Map<String, dynamic>?)?['wght'] as List<dynamic>?;
+      expect(wght, isNotNull, reason: '${entry.key} carries no wght axis');
+      // Declaring a range the file does not carry makes the browser synthesise the missing weights
+      // (folio's faux bold); declaring less than the file carries silently clamps every request past
+      // the edge instead (meadow's JetBrains Mono). Both render a weight nobody asked for.
+      expect(entry.value.min, greaterThanOrEqualTo(wght!.first as num), reason: entry.key);
+      expect(entry.value.max, lessThanOrEqualTo(wght.last as num), reason: entry.key);
+    }
+
+    final byVariable = {for (final entry in stacks.entries) entry.key: faces[entry.value]!};
+    final requests = RegExp(r'font: (\d{3}) [^;]*var\((--meadow-(?:display|body|mono))\)').allMatches(scss);
+    expect(requests, hasLength(greaterThan(10)));
+    for (final request in requests) {
+      final face = byVariable[request.group(2)!]!;
+      expect(int.parse(request.group(1)!), inInclusiveRange(face.min, face.max), reason: request.group(0));
+    }
   });
 
   test('S01/S06 TI04/TI05 one dark source drives forced and auto skins', () {
@@ -180,19 +246,93 @@ $trellis-border-radius: 7px;
     expect(light, contains('@media (prefers-color-scheme: dark)'));
     expect(light, contains('data-skin=dark'));
     expect(light, contains('@media (prefers-reduced-motion: reduce)'));
-    // One rotated marker drives both skins; dark widens its inset instead of swapping in a flat block.
-    expect(RegExp(r'\.marker::before\s*\{[^}]*inset: 54% -0\.08em 0\.02em').hasMatch(light), isTrue);
-    expect(light, contains('rotate(-1.7deg)'));
-    expect(RegExp(r'\.marker::before\s*\{[^}]*inset: -0\.02em -0\.1em -0\.05em').hasMatch(dark), isTrue);
-    expect(RegExp(r'\.marker::before\s*\{[^}]*display: none').hasMatch(dark), isFalse);
-    // The header CTA has no room beside the burger, so it leaves with the desktop nav.
+    // The marker is a background on the inline box, not an absolutely-positioned ::before, so a
+    // wrapped emphasis gets one band per line fragment instead of one box sized to the whole run.
+    expect(light, isNot(contains('.marker::before')));
+    expect(dark, isNot(contains('.marker::before')));
+    expect(RegExp(r'\.marker\s*\{[^}]*box-decoration-break: clone').hasMatch(light), isTrue);
+    expect(RegExp(r'\.marker\s*\{[^}]*white-space').hasMatch(light), isFalse);
+    expect(RegExp(r'\.marker\s*\{[^}]*white-space').hasMatch(dark), isFalse);
+    // Light keeps the mockup's band over the lower 46%, tilted by the gradient angle rather than by
+    // a transform; dark still covers the whole inline box. Both keep the mockup's irregular radii.
+    expect(
+      RegExp(
+        r'\.marker\s*\{[^}]*linear-gradient\(178\.3deg, transparent 0 50%, var\(--meadow-lime\) 50% 100%\)'
+        r'[^}]*background-size: 100% 92%',
+      ).hasMatch(light),
+      isTrue,
+    );
+    expect(RegExp(r'\.marker\s*\{[^}]*border-radius: 0\.16em 0\.32em 0\.14em 0\.24em').hasMatch(light), isTrue);
+    expect(RegExp(r'\.marker\s*\{[^}]*border-radius: 0\.28em 0\.16em 0\.25em 0\.13em').hasMatch(dark), isTrue);
+    expect(RegExp(r'\.marker\s*\{[^}]*background-size: 100% 100%').hasMatch(dark), isTrue);
+    // The header CTA has no room beside the burger, so it leaves with the desktop nav. Above that
+    // it reuses `hero.ctas[0].label`, which a landing page may make a sentence.
     expect(RegExp(r'\.desktop-nav, \.nav-cta\s*\{\s*display: none;').hasMatch(light), isTrue);
-    // `anywhere` broke the brand and menu labels mid-word; only the terminal command still needs it.
+    expect(RegExp(r'\.nav-cta\s*\{[^}]*max-width: 220px').hasMatch(light), isTrue);
+    expect(RegExp(r'\.nav-cta span\s*\{[^}]*text-overflow: ellipsis').hasMatch(light), isTrue);
+    // `anywhere` broke the brand and menu labels mid-word, so `body` keeps `break-word`. Page copy
+    // needs `anywhere` because `break-word` does not shrink a box's min-content size, and a track
+    // sized from min-content is what pushes an unbreakable token past the viewport.
     expect(RegExp(r'^body \{[^}]*overflow-wrap: break-word', multiLine: true).hasMatch(light), isTrue);
     expect(RegExp(r'^body \{[^}]*overflow-wrap: anywhere', multiLine: true).hasMatch(light), isFalse);
-    // Tilt stays gentle and the title takes the slack, so all three card titles share a baseline.
+    expect(RegExp(r'^main \* \{\s*overflow-wrap: anywhere;', multiLine: true).hasMatch(light), isTrue);
+    // `1fr` is `minmax(auto, 1fr)`: the track floor is the item's min-content size, so a long token
+    // widens the track past its grid. Both skins compile the same tracks.
+    for (final selector in ['.signal-card', '.quote-card']) {
+      final blocks = RegExp('${RegExp.escape(selector)}\\s*\\{([^}]*)\\}').allMatches(light).toList();
+      expect(blocks, isNotEmpty, reason: selector);
+      var declared = 0;
+      for (final block in blocks) {
+        final columns = RegExp(r'grid-template-columns: ([^;]*);').firstMatch(block.group(1)!);
+        if (columns == null) continue;
+        declared++;
+        final tracks = columns.group(1)!.replaceAll('minmax(0, 1fr)', 'flex');
+        expect(tracks, isNot(contains('1fr')), reason: '$selector: ${columns.group(1)}');
+      }
+      expect(declared, greaterThanOrEqualTo(2), reason: selector);
+    }
+    // The desktop rule reset a border no rule sets.
+    expect(RegExp(r'\.proof-list[^{]*\{[^}]*border-left').hasMatch(light), isFalse);
+    // `pill_badges` had no implementation: the pill radius was hardcoded on every `.eyebrow`.
+    expect(RegExp(r'\.eyebrow, \.kicker\s*\{[^}]*border-radius: 8px').hasMatch(light), isTrue);
+    expect(RegExp(r'\.kicker, \.eyebrow-pill\s*\{\s*border-radius: 999px;').hasMatch(light), isTrue);
+    // Highlight.js bakes these classes into fenced blocks at build time (ADR-010); unstyled means a
+    // monochrome code block on a theme that ships a Markdown layout.
+    final styledTokens = RegExp(
+      r'\.prose pre code \.hljs-([a-z_-]+)',
+    ).allMatches(light).map((m) => m.group(1)!).toSet();
+    expect(
+      styledTokens,
+      containsAll(const <String>[
+        'attr',
+        'attribute',
+        'built_in',
+        'bullet',
+        'class',
+        'comment',
+        'keyword',
+        'literal',
+        'meta',
+        'meta-keyword',
+        'name',
+        'number',
+        'section',
+        'selector-pseudo',
+        'string',
+        'strong',
+        'subst',
+        'symbol',
+        'tag',
+        'title',
+        'variable',
+      ]),
+    );
+    // The auto block-start margin bottom-anchors the title+body block inside a stretched flex
+    // column, so the cards' bottom edges align and their heights match. Titles coincide only when
+    // the bodies wrap to the same number of lines.
     expect(RegExp(r'\.template-card-inner\s*\{[^}]*flex-direction: column').hasMatch(light), isTrue);
-    expect(RegExp(r'\.template-card h3\s*\{[^}]*margin: auto 0 8px').hasMatch(light), isTrue);
+    expect(RegExp(r'\.template-card-inner\s*\{[^}]*height: 100%').hasMatch(light), isTrue);
+    expect(RegExp(r'\.template-card h3\s*\{\s*margin: auto 0 8px').hasMatch(light), isTrue);
     expect(light, isNot(contains('translateY(-8px) rotate(1.6deg)')));
     expect(dark.toLowerCase(), contains('--meadow-paper: #0f1c14'));
     expect(dark, isNot(contains('@media (prefers-color-scheme: dark)')));
@@ -228,6 +368,18 @@ $trellis-border-radius: 7px;
     expect(homeSource, isNot(contains(r'${')));
     expect(homeSource, isNot(contains('tl:')));
     expect(homeSource, contains('src="/js/meadow.js"'));
+    // `href="data:,"` did not just fail to set an icon, it suppressed the default /favicon.ico
+    // request, so dropping a file in static/ did not help either.
+    expect(homeSource, contains('<link rel="icon" href="/favicon.svg">'));
+    // The header CTA reuses the hero label verbatim; the span is what the ellipsis needs.
+    final navCta = home.querySelector('.nav-cta span');
+    expect(navCta, isNotNull);
+    expect(navCta!.text, home.querySelector('.hero-actions .button')!.text);
+    // `margin: auto 0 8px` on the title only bottom-anchors the title+body block while the body is
+    // the last child of the flex column.
+    for (final card in home.querySelectorAll('.template-card-inner')) {
+      expect(card.children.map((child) => child.localName), ['span', 'div', 'h3', 'p']);
+    }
 
     final listSource = File(p.join(config.outputDir, 'notes', 'index.html')).readAsStringSync();
     expect(listSource, isNot(contains('&lt;code&gt;')));
@@ -254,6 +406,7 @@ $trellis-border-radius: 7px;
       'fonts/OFL-Schibsted-Grotesk.txt',
       'fonts/OFL-JetBrains-Mono.txt',
       'js/meadow.js',
+      'favicon.svg',
     ];
     for (final asset in assetFiles) {
       expect(File(p.join(config.outputDir, asset)).existsSync(), isTrue, reason: asset);
@@ -358,6 +511,49 @@ $trellis-border-radius: 7px;
     final meter = authoredMeter.querySelector('.meter')!;
     expect(meter.attributes['aria-valuenow'], '42');
     expect(meter.attributes['style'], contains('--confidence: 42%'));
+
+    // A present block may still have absent optional fields. Unguarded, the insight card emitted an
+    // empty span/h3/p and `--confidence: null%` - an invalid clamp, so the width was dropped and the
+    // block-level span filled the meter: a full bar for a value that does not exist.
+    final partial = await _buildFixture(themeDir, 'partial-workflow');
+    expect(partial.querySelector('#workflow'), isNotNull);
+    expect(partial.querySelectorAll('.signal-card'), hasLength(1));
+    expect(partial.querySelector('.insight-card'), isNull);
+    expect(partial.querySelector('.meter'), isNull);
+    // With no insight card the second track would still reserve its 320px minimum.
+    expect(partial.querySelector('.signal-grid')!.classes, contains('signal-grid-solo'));
+
+    // The mirror case: an insight with no signal list and no confidence. `#lists.size(null)` returns
+    // null and `null > 0` throws, so the list guard has to test for null first and let `and`
+    // short-circuit; an unguarded meter would render `--confidence: null%` and a full bar.
+    final partialInsight = await _buildFixture(themeDir, 'partial-insight');
+    expect(partialInsight.querySelector('.insight-card'), isNotNull);
+    expect(partialInsight.querySelector('.signal-stack'), isNull);
+    expect(partialInsight.querySelector('.meter'), isNull);
+    expect(partialInsight.querySelector('.insight-card p'), isNull);
+    expect(partialInsight.querySelector('.insight-label')!.text, 'Opportunity');
+
+    // Interpolated absent values reach the page as the literal `null`; no fixture may produce one.
+    for (final fixture in Directory(p.join(themeDir, 'example', 'fixtures')).listSync().whereType<Directory>()) {
+      final name = p.basename(fixture.path);
+      final document = await _buildFixture(themeDir, name);
+      expect(document.outerHtml, isNot(contains('null')), reason: name);
+    }
+
+    // `pill_badges` was documented and unimplemented: the class was emitted and never selected.
+    final pill = await _buildFixture(themeDir, 'long-token', params: {'pill_badges': true});
+    expect(pill.querySelector('.eyebrow')!.classes, contains('eyebrow-pill'));
+    final square = await _buildFixture(themeDir, 'long-token', params: {'pill_badges': false});
+    expect(square.querySelector('.eyebrow')!.classes, isNot(contains('eyebrow-pill')));
+    expect(square.querySelector('.kicker'), isNotNull);
+
+    // A site that ships its own /favicon.ico needs the theme to emit no icon link at all.
+    final noIcon = await _buildFixture(themeDir, 'copy-short', params: {'favicon': null});
+    expect(noIcon.querySelector('link[rel="icon"]'), isNull);
+    expect(
+      (await _buildFixture(themeDir, 'copy-short')).querySelector('link[rel="icon"]')!.attributes['href'],
+      '/favicon.svg',
+    );
   });
 
   test('S06/S07 TI05/TI06 prefix and progressive-enhancement contracts hold', () async {
@@ -392,13 +588,191 @@ $trellis-border-radius: 7px;
     final forced = await _buildFixture(themeDir, 'no-optionals', skin: 'dark');
     expect(forced.querySelector('[data-meadow-skin-toggle]'), isNull);
     expect(forced.head!.text, isNot(contains('localStorage.getItem')));
+
+    // A bare <details> overlay does not close on Escape or on a click elsewhere, and its summary
+    // keeps announcing "Open navigation menu" while it is open. Driven against a DOM stub because
+    // the assertion is about behaviour, not about the source containing the word "Escape".
+    final menu = await _runMenuHarness(p.join(themeDir, 'static', 'js', 'meadow.js'));
+    if (menu == null) return;
+    expect(menu['initial'], {'open': false, 'label': 'Open navigation menu'});
+    expect(menu['opened'], {'open': true, 'label': 'Close navigation menu'});
+    expect(menu['otherKey'], {'open': true}, reason: 'only Escape closes it');
+    expect(menu['escaped'], {'open': false, 'label': 'Open navigation menu', 'focused': 1});
+    expect(menu['insideClick'], {'open': true}, reason: 'a click on the menu itself must not close it');
+    expect(menu['outsideClick'], {'open': false, 'label': 'Open navigation menu'});
   });
 }
+
+/// Drives `meadow.js` against a DOM stub and reports the mobile menu's state after each step.
+Future<Map<String, dynamic>?> _runMenuHarness(String scriptPath) async {
+  final tempDir = Directory.systemTemp.createTempSync('meadow_menu_');
+  addTearDown(() => tempDir.deleteSync(recursive: true));
+  final harness = File(p.join(tempDir.path, 'menu.js'))..writeAsStringSync(_menuHarness);
+  try {
+    final result = await Process.run('node', [harness.path, scriptPath]);
+    expect(result.exitCode, 0, reason: 'menu harness failed: ${result.stderr}');
+    return jsonDecode(result.stdout as String) as Map<String, dynamic>;
+  } on ProcessException {
+    markTestSkipped('system node not found - mobile menu behavioural harness skipped');
+    return null;
+  }
+}
+
+const _menuHarness = r'''
+'use strict';
+const fs = require('fs');
+const vm = require('vm');
+
+function element(tag) {
+  const attributes = {};
+  const listeners = {};
+  return {
+    tag,
+    focused: 0,
+    children: [],
+    setAttribute(name, value) { attributes[name] = String(value); },
+    getAttribute(name) { return name in attributes ? attributes[name] : null; },
+    focus() { this.focused++; },
+    addEventListener(type, fn) { (listeners[type] = listeners[type] || []).push(fn); },
+    dispatch(type) { (listeners[type] || []).forEach((fn) => fn({})); },
+    querySelector() { return null; },
+    contains(node) { return node === this || this.children.indexOf(node) !== -1; },
+  };
+}
+
+const summary = element('summary');
+summary.setAttribute('aria-label', 'Open navigation menu');
+const menu = element('details');
+menu.children.push(summary);
+menu.querySelector = (selector) => (selector === 'summary' ? summary : null);
+let isOpen = false;
+Object.defineProperty(menu, 'open', {
+  get() { return isOpen; },
+  set(value) { isOpen = !!value; menu.dispatch('toggle'); },
+});
+
+const documentListeners = {};
+const context = {
+  window: { matchMedia: () => ({ matches: false, addEventListener() {} }), isSecureContext: false },
+  document: {
+    documentElement: { dataset: {} },
+    querySelector: (selector) => (selector === '.mobile-menu' ? menu : null),
+    getElementById: () => null,
+    addEventListener(type, fn) { (documentListeners[type] = documentListeners[type] || []).push(fn); },
+  },
+  navigator: {},
+  localStorage: { getItem: () => null, setItem() {} },
+};
+context.window.document = context.document;
+vm.createContext(context);
+vm.runInContext(fs.readFileSync(process.argv[2], 'utf8'), context, { filename: process.argv[2] });
+
+const fire = (type, event) => (documentListeners[type] || []).forEach((fn) => fn(event));
+const label = () => summary.getAttribute('aria-label');
+const steps = {};
+steps.initial = { open: menu.open, label: label() };
+menu.open = true;
+steps.opened = { open: menu.open, label: label() };
+fire('keydown', { key: 'a' });
+steps.otherKey = { open: menu.open };
+fire('keydown', { key: 'Escape' });
+steps.escaped = { open: menu.open, label: label(), focused: summary.focused };
+menu.open = true;
+fire('pointerdown', { target: summary });
+steps.insideClick = { open: menu.open };
+fire('pointerdown', { target: element('main') });
+steps.outsideClick = { open: menu.open, label: label() };
+process.stdout.write(JSON.stringify(steps));
+''';
+
+/// Variation axes of each `themes/meadow/static/fonts/<file>`, keyed by file name then axis tag.
+///
+/// WOFF2 keeps its table directory uncompressed and concatenates the table data into a single
+/// brotli stream, so `fvar` is found by summing the lengths of the tables ahead of it. Dart has no
+/// brotli decoder; node does, and the suite already treats it as an optional tool.
+Future<Map<String, dynamic>?> _fontAxes(List<String> files, String themeDir) async {
+  final tempDir = Directory.systemTemp.createTempSync('meadow_fvar_');
+  addTearDown(() => tempDir.deleteSync(recursive: true));
+  final script = File(p.join(tempDir.path, 'fvar.js'))..writeAsStringSync(_fvarScript);
+  try {
+    final result = await Process.run('node', [
+      script.path,
+      for (final file in files) p.join(themeDir, 'static', 'fonts', file),
+    ]);
+    expect(result.exitCode, 0, reason: 'fvar reader failed: ${result.stderr}');
+    return jsonDecode(result.stdout as String) as Map<String, dynamic>;
+  } on ProcessException {
+    markTestSkipped('system node not found - font axis check skipped');
+    return null;
+  }
+}
+
+const _fvarScript = r'''
+'use strict';
+const fs = require('fs');
+const zlib = require('zlib');
+const KNOWN = ['cmap','head','hhea','hmtx','maxp','name','OS/2','post','cvt ','fpgm','glyf','loca',
+  'prep','CFF ','VORG','EBDT','EBLC','gasp','hdmx','kern','LTSH','PCLT','VDMX','vhea','vmtx','BASE',
+  'GDEF','GPOS','GSUB','EBSC','JSTF','MATH','CBDT','CBLC','COLR','CPAL','SVG ','sbix','acnt','avar',
+  'bdat','bloc','bsln','cvar','fdsc','feat','fmtx','fvar','gvar','hsty','just','lcar','mort','morx',
+  'opbd','prop','trak','Zapf','Silf','Glat','Gloc','Feat','Sill'];
+function base128(buf, at) {
+  let value = 0;
+  for (let i = 0; i < 5; i++) {
+    const byte = buf[at + i];
+    value = (value << 7) | (byte & 0x7f);
+    if ((byte & 0x80) === 0) return [value >>> 0, at + i + 1];
+  }
+  throw new Error('bad UIntBase128');
+}
+function axes(file) {
+  const buf = fs.readFileSync(file);
+  if (buf.toString('latin1', 0, 4) !== 'wOF2') throw new Error(file + ': not WOFF2');
+  const numTables = buf.readUInt16BE(12);
+  let at = 48;
+  const dir = [];
+  for (let i = 0; i < numTables; i++) {
+    const flags = buf[at++];
+    let tag;
+    if ((flags & 0x3f) === 0x3f) { tag = buf.toString('latin1', at, at + 4); at += 4; }
+    else { tag = KNOWN[flags & 0x3f]; }
+    let length;
+    [length, at] = base128(buf, at);
+    if ((tag === 'glyf' || tag === 'loca') && ((flags >> 6) & 0x3) !== 3) [length, at] = base128(buf, at);
+    dir.push({ tag, length });
+  }
+  const tables = zlib.brotliDecompressSync(buf.subarray(at));
+  let offset = 0;
+  const out = {};
+  for (const entry of dir) {
+    if (entry.tag === 'fvar') {
+      const axisOffset = tables.readUInt16BE(offset + 4);
+      const axisCount = tables.readUInt16BE(offset + 8);
+      const axisSize = tables.readUInt16BE(offset + 10);
+      for (let i = 0; i < axisCount; i++) {
+        const a = offset + axisOffset + i * axisSize;
+        out[tables.toString('latin1', a, a + 4)] =
+          [tables.readInt32BE(a + 4) / 65536, tables.readInt32BE(a + 12) / 65536];
+      }
+    }
+    offset += entry.length;
+  }
+  return out;
+}
+const result = {};
+for (const file of process.argv.slice(2)) result[file.split('/').pop()] = axes(file);
+process.stdout.write(JSON.stringify(result));
+''';
 
 int _readUint32(List<int> bytes, int offset) =>
     (bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3];
 
-Future<Document> _buildFixture(String themeDir, String fixture, {String skin = 'auto'}) async {
+Future<Document> _buildFixture(
+  String themeDir,
+  String fixture, {
+  String skin = 'auto',
+  Map<String, Object?> params = const {},
+}) async {
   final tempDir = Directory.systemTemp.createTempSync('meadow_fixture_');
   final contentDir = Directory(p.join(tempDir.path, 'content'))..createSync(recursive: true);
   File(p.join(themeDir, 'example', 'fixtures', fixture, '_index.md')).copySync(p.join(contentDir.path, '_index.md'));
@@ -412,7 +786,7 @@ theme: meadow
 theme_params:
   skin: $skin
   excerpt_length: 160
-''');
+${params.entries.map((e) => '  ${e.key}: ${e.value}\n').join()}''');
   final config = SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
   final result = await TrellisSite(config).build();
   expect(result.warnings, isEmpty, reason: fixture);

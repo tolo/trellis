@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:html/dom.dart' show Document;
 import 'package:html/parser.dart' as html_parser;
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -170,12 +171,62 @@ $trellis-show-sidenotes: false;
     // Leaf entries must not emit a bare subtree; nesting is indentation, not stacked rules.
     expect(RegExp(r'\.sidebar-subtree\s*\{[^}]*border-left').hasMatch(css), isFalse);
     expect(css, contains('.sidebar-tree > .sidebar-item > .sidebar-link'));
-    expect(css, contains('.search-shell.search-unavailable'));
-    expect(css, contains('min-block-size: 44px'));
+    // The mobile disclosure caps its own tree; an unscoped 46vh would clip the article too.
+    expect(RegExp(r'\.sidebar-disclosure\[open\] > \.docs-sidebar\s*\{[^}]*max-height: 46vh').hasMatch(css), isTrue);
+    // Touch targets belong to the interactive controls, not to whatever rule happens to carry 44px.
+    expect(
+      RegExp(r'\.nav-list a,[^{]*\.sidebar-link,[^{]*\.toc-list a\s*\{[^}]*min-block-size: 44px').hasMatch(css),
+      isTrue,
+    );
+    // Trail and colophon links clear the 24px minimum target (WCAG 2.5.8) at every width.
+    expect(
+      RegExp(
+        r'\.breadcrumb-list a,\s*\.social-links a,\s*\.footer-powered-by a\s*\{[^}]*padding-block: 6px',
+      ).hasMatch(css),
+      isTrue,
+    );
+    // The hero is the mockup's: a centred two-column band, not the 830px stack it replaced.
+    expect(RegExp(r'\.hero\s*\{[^}]*align-items: center').hasMatch(css), isTrue);
+    expect(RegExp(r'\.hero\s*\{[^}]*min-height: 650px').hasMatch(css), isTrue);
+    // The chart-paper grid tracks the active green; a literal would stay light-mode in the dark skin.
+    expect(css, contains('--folio-grid: color-mix(in srgb, var(--folio-green)'));
+    // flex: 1 0 auto inside the 100vh body column already reaches the footer; a vh floor over-reserves.
+    expect(RegExp(r'\.docs-shell\s*\{[^}]*min-height:').hasMatch(css), isFalse);
+    // Search results are styled and capped; the script builds all four hooks.
+    for (final rule in ['.search-result-link', '.search-result-title', '.search-result-snippet', '.search-empty']) {
+      expect(css, contains(rule), reason: rule);
+    }
+    expect(RegExp(r'\.search-results\s*\{[^}]*max-height: 320px').hasMatch(css), isTrue);
+    // An ancestor of the current page is marked; the class is computed in all three tree levels.
+    expect(css, contains('.sidebar-link.is-active-trail'));
+    // Only the wrapped case sheds the inner frame — a <pre> mounted straight on the plate keeps it.
+    expect(css, contains('.folio-plate .plate-frame pre'));
+    expect(RegExp(r'(^|[\s,}])\.folio-plate pre\s*\{').hasMatch(css), isFalse);
+    // Article code wraps rather than clipping: the SSG emits <pre> with no tabindex (WCAG 2.1.1).
+    expect(RegExp(r'(^|[\s,}])pre\s*\{[^}]*white-space: pre-wrap').hasMatch(css), isTrue);
+    // The rubric label heads its own line above the neighbour's title.
+    expect(RegExp(r'\.page-nav-label\s*\{[^}]*display: block').hasMatch(css), isTrue);
+    // Masthead navigation is small caps; the underline would fight the tracking.
+    expect(RegExp(r'\.nav-list a\s*\{[^}]*text-decoration: none').hasMatch(css), isTrue);
+    // The edition control and the mobile disclosure summary share the mono-caps rubric voice.
+    for (final selector in ['skin-toggle', 'sidebar-toggle']) {
+      expect(RegExp('\\.$selector[^{]*\\{[^}]*text-transform: uppercase').hasMatch(css), isTrue, reason: selector);
+    }
+    // Every rule in the sheet is reachable from a layout or from authored page content.
+    expect(css, isNot(contains('.sr-only')));
+    expect(css, isNot(contains('search-unavailable')));
 
     final htmlFiles = Directory(
       config.outputDir,
-    ).listSync(recursive: true).whereType<File>().where((file) => file.path.endsWith('.html'));
+    ).listSync(recursive: true).whereType<File>().where((file) => file.path.endsWith('.html')).toList();
+    // Every highlight token the build actually emits has to be a token the sheet colours,
+    // or most of a code sample renders as plain body text.
+    final emittedTokens = {
+      for (final file in htmlFiles) ...RegExp(r'hljs-[a-z_-]+').allMatches(file.readAsStringSync()).map((m) => m[0]!),
+    };
+    final styledTokens = RegExp(r'\.(hljs-[a-z_-]+)').allMatches(css).map((m) => m[1]!).toSet();
+    expect(emittedTokens, isNotEmpty);
+    expect(emittedTokens.difference(styledTokens), isEmpty, reason: 'unstyled tokens in the built HTML');
     for (final file in htmlFiles) {
       final source = file.readAsStringSync();
       final document = html_parser.parse(source);
@@ -199,7 +250,11 @@ $trellis-show-sidenotes: false;
     expect(apparatus.querySelector('aside.folio-sidenote'), isNotNull);
     expect(apparatus.querySelector('.sidebar-title')!.text, 'Contents');
     expect(apparatus.querySelector('.toc-title')!.text, 'Field index');
-    expect(apparatus.querySelector('.search-shell'), isNotNull);
+    // Both enhanced controls ship hidden: with no JavaScript neither can do anything, and a
+    // permanently disabled search box in the sidebar is worse than no search box.
+    expect(apparatus.querySelector('.search-shell')!.attributes, contains('hidden'));
+    expect(apparatus.querySelector('.search-input')!.attributes, contains('disabled'));
+    expect(apparatus.querySelector('.skin-toggle')!.attributes, contains('hidden'));
     expect(apparatus.querySelector('.page-nav'), isNotNull);
     // The trail ends on the current page, inline, rather than stopping at its parent section.
     expect(apparatus.querySelectorAll('.breadcrumb-list li').map((li) => li.text.trim()), [
@@ -326,12 +381,19 @@ $trellis-show-sidenotes: false;
       );
     final css = TrellisCss.compileSass(wrapper.path, loadPaths: bridge.sassLoadPaths, silenceImportDeprecation: true);
     expect(css, contains('--folio-paper: #111a14'));
+    // A forced skin never emits the folio-dark mixin, so the code pigments have to arrive
+    // through the skin partial rather than through the media query.
+    expect(css, contains('--folio-code-number: #d9a86a'));
+    expect(css, contains('--folio-code-function: #97b8dd'));
     expect(css, isNot(contains('@media (prefers-color-scheme: dark)')));
     expect(css, isNot(contains(":root[data-skin='dark']")));
 
     final skinScript = File(p.join(themeDir, 'static', 'js', 'folio.js')).readAsStringSync();
     expect(skinScript.indexOf('sync()'), lessThan(skinScript.indexOf("button.addEventListener('click'")));
     expect(skinScript, contains("media.matches ? 'dark' : 'light'"));
+    // Both scripts reveal the control they drive; the layout ships it hidden.
+    expect(skinScript, contains('button.hidden = false'));
+    expect(File(p.join(themeDir, 'static', 'js', 'search.js')).readAsStringSync(), contains('shell.hidden = false'));
   });
 
   test('S05/TI05 auto skin control follows OS only without a stored choice', () async {
@@ -376,46 +438,66 @@ $trellis-show-sidenotes: false;
   });
 
   test('site-supplied logo and hero image replace the built-in artwork, prefix-joined', () async {
-    final tempDir = Directory.systemTemp.createTempSync('folio_artwork_contract_');
-    addTearDown(() => tempDir.deleteSync(recursive: true));
-    _copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
-    Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
-    Link(p.join(tempDir.path, 'themes', 'folio')).createSync(themeDir);
-
-    // Mount a site-supplied specimen on the plate and a site-supplied header mark.
-    final index = File(p.join(tempDir.path, 'content', '_index.md'));
-    index.writeAsStringSync(
-      index.readAsStringSync().replaceFirst(
-        'hero:\n',
-        'hero:\n  image: {src: art/specimen.webp, alt: Pressed sea lavender}\n',
+    Future<Document> artwork(String label, String imageSrc, String logo, {String pathPrefix = ''}) => _buildVariant(
+      themeDir,
+      label,
+      index: (source) =>
+          source.replaceFirst('hero:\n', 'hero:\n  image: {src: $imageSrc, alt: Pressed sea lavender}\n'),
+      config: (source) => '$source${pathPrefix.isEmpty ? '' : '\npathPrefix: $pathPrefix\n'}'.replaceFirst(
+        '  skin: auto',
+        '  skin: auto\n  logo: "$logo"',
       ),
     );
-    final source = File(p.join(themeDir, 'example', 'trellis_site.yaml')).readAsStringSync();
-    File(p.join(tempDir.path, 'trellis_site.yaml')).writeAsStringSync(
-      '$source\npathPrefix: /trellis/\n'.replaceFirst('  skin: auto', '  skin: auto\n  logo: brand/mark.svg'),
-    );
 
-    final config = SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
-    final result = await TrellisSite(config).build();
-    expect(result.warnings, isEmpty);
-    final home = html_parser.parse(File(p.join(config.outputDir, 'index.html')).readAsStringSync());
+    // A path written with or without its own leading slash joins pathPrefix exactly once.
+    // Naive concatenation turns "/x" into "//x", which the browser resolves against a
+    // host named x — a request to a foreign origin derived from site config.
+    const cases = {
+      'plain-prefixed': ('art/specimen.webp', 'brand/mark.svg', '/trellis/', '/trellis/'),
+      'rooted-prefixed': ('/art/specimen.webp', '/brand/mark.svg', '/trellis/', '/trellis/'),
+      'plain-root': ('art/specimen.webp', 'brand/mark.svg', '', '/'),
+      'rooted-root': ('/art/specimen.webp', '/brand/mark.svg', '', '/'),
+    };
+    for (final entry in cases.entries) {
+      final (imageSrc, logo, pathPrefix, expected) = entry.value;
+      final home = await artwork(entry.key, imageSrc, logo, pathPrefix: pathPrefix);
 
-    final plate = home.querySelector('.hero-plate img.engraving')!;
-    expect(plate.attributes['src'], '/trellis/art/specimen.webp');
-    expect(plate.attributes['alt'], 'Pressed sea lavender');
-    expect(home.querySelector('.hero-plate svg.engraving'), isNull, reason: 'drawn engraving must step aside');
+      final plate = home.querySelector('.hero-plate img.engraving')!;
+      expect(plate.attributes['src'], '${expected}art/specimen.webp', reason: entry.key);
+      expect(plate.attributes['alt'], 'Pressed sea lavender', reason: entry.key);
+      expect(home.querySelector('.hero-plate svg.engraving'), isNull, reason: 'drawn engraving must step aside');
 
-    final logo = home.querySelector('.site-title img.site-logo')!;
-    expect(logo.attributes['src'], '/trellis/brand/mark.svg');
-    expect(logo.attributes['alt'], 'Folio Field Notes');
-    expect(home.querySelector('.site-title svg.site-mark'), isNull, reason: 'built-in sprout must step aside');
+      final logoImage = home.querySelector('.site-title img.site-logo')!;
+      expect(logoImage.attributes['src'], '${expected}brand/mark.svg', reason: entry.key);
+      expect(logoImage.attributes['alt'], 'Folio Field Notes', reason: entry.key);
+      expect(home.querySelector('.site-title svg.site-mark'), isNull, reason: 'built-in sprout must step aside');
+    }
 
     // Unset keys keep the theme's own artwork rather than emitting an empty <img>.
-    final plain = html_parser.parse(File(p.join(themeDir, 'example', 'output', 'index.html')).readAsStringSync());
+    final plain = await _buildVariant(themeDir, 'no-artwork');
     expect(plain.querySelector('.hero-plate svg.engraving'), isNotNull);
     expect(plain.querySelector('.hero-plate img.engraving'), isNull);
     expect(plain.querySelector('.site-title svg.site-mark'), isNotNull);
     expect(plain.querySelector('.site-title img.site-logo'), isNull);
+  });
+
+  test('empty lists and blank strings remove their region instead of leaving it empty', () async {
+    // Truthiness is not emptiness: an empty list and a blank string are both truthy here, so a
+    // bare tl:if leaves an empty ARIA landmark, an empty <figcaption>, and an empty card grid
+    // sitting next to the "no entries" state it contradicts.
+    final home = await _buildVariant(
+      themeDir,
+      'empty-regions',
+      index: (source) => source
+          .replaceFirst(RegExp(r'  ctas:\n(    - .*\n)+'), '  ctas: []\n')
+          .replaceFirst(RegExp('  caption: .*\n'), '  caption: ""\n'),
+      // Only the landing page remains, so the featured list has nothing to show.
+      keepOnly: '_index.md',
+    );
+    expect(home.querySelector('.hero-actions'), isNull);
+    expect(home.querySelector('.plate-caption'), isNull);
+    expect(home.querySelector('.card-list'), isNull);
+    expect(home.querySelector('.no-pages'), isNotNull);
   });
 
   test('S07 TI08 publishability collateral and local assets are complete', () {
@@ -450,11 +532,56 @@ $trellis-show-sidenotes: false;
     }
     expect(readme, contains('<figure class="folio-plate">'));
     expect(readme, contains('<aside class="folio-sidenote">'));
+    // Every content-authored class the sheet styles is documented, or it is undiscoverable.
+    expect(readme, contains('plate-frame'));
+    expect(readme, contains('folio-note'));
     expect(
       File(p.join(themeDir, 'static', 'fonts', 'OFL-EB-Garamond.txt')).readAsStringSync(),
       contains('EB Garamond'),
     );
+    // Folio has no _code.scss; the comment used to point contributors at arbor's file.
+    final base = File(p.join(themeDir, 'layouts', 'base.html')).readAsStringSync();
+    expect(base, isNot(contains('_code.scss')));
+    for (final reference in RegExp(r'sass/[\w/]+\.scss').allMatches(base).map((m) => m[0]!)) {
+      expect(File(p.join(themeDir, reference)).existsSync(), isTrue, reason: reference);
+    }
   });
+}
+
+/// Build the bundled example into its own temp directory, optionally rewriting the landing
+/// page's front matter or `trellis_site.yaml` first, and return the parsed home page.
+///
+/// Each variant owns its output tree: reading a sibling test's build artifact would make the
+/// suite order-dependent and would fail outright on a clean checkout.
+Future<Document> _buildVariant(
+  String themeDir,
+  String label, {
+  String Function(String source)? index,
+  String Function(String source)? config,
+  String? keepOnly,
+}) async {
+  final tempDir = Directory.systemTemp.createTempSync('folio_${label}_contract_');
+  addTearDown(() => tempDir.deleteSync(recursive: true));
+  _copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
+  if (keepOnly != null) {
+    for (final entity in Directory(p.join(tempDir.path, 'content')).listSync()) {
+      if (p.basename(entity.path) != keepOnly) entity.deleteSync(recursive: true);
+    }
+  }
+  Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
+  Link(p.join(tempDir.path, 'themes', 'folio')).createSync(themeDir);
+
+  if (index != null) {
+    final indexFile = File(p.join(tempDir.path, 'content', '_index.md'));
+    indexFile.writeAsStringSync(index(indexFile.readAsStringSync()));
+  }
+  final source = File(p.join(themeDir, 'example', 'trellis_site.yaml')).readAsStringSync();
+  File(p.join(tempDir.path, 'trellis_site.yaml')).writeAsStringSync(config == null ? source : config(source));
+
+  final siteConfig = SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
+  final result = await TrellisSite(siteConfig).build();
+  expect(result.warnings, isEmpty, reason: label);
+  return html_parser.parse(File(p.join(siteConfig.outputDir, 'index.html')).readAsStringSync());
 }
 
 int _readUint32(List<int> bytes, int offset) =>

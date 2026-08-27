@@ -27,6 +27,21 @@ Future<String> _captureStdout(Future<void> Function() body) async {
   return buffer.toString();
 }
 
+/// Redirects [Directory.systemTemp] into a sandbox and captures [stderr], so a
+/// test can assert both the message and that no temporary clone survived.
+final class _SandboxOverrides extends IOOverrides {
+  _SandboxOverrides({required this.sandbox, required this.errorBuffer});
+
+  final Directory sandbox;
+  final StringBuffer errorBuffer;
+
+  @override
+  Directory getSystemTempDirectory() => sandbox;
+
+  @override
+  Stdout get stderr => _BufferStdout(errorBuffer);
+}
+
 class _BufferStdout implements Stdout {
   _BufferStdout(this._buffer);
 
@@ -95,6 +110,34 @@ void main() {
   Future<int> runSingleCommand(Command<int> command, List<String> args) {
     final runner = CommandRunner<int>('trellis', 'test')..addCommand(command);
     return runner.run(args).then((code) => code ?? 0);
+  }
+
+  /// Runs `git` inside [repo], failing the test on a non-zero exit.
+  Future<void> git(Directory repo, List<String> args) async {
+    final result = await Process.run('git', <String>[
+      '-c',
+      'user.email=test@example.com',
+      '-c',
+      'user.name=Trellis Test',
+      ...args,
+    ], workingDirectory: repo.path);
+    expect(result.exitCode, 0, reason: 'git ${args.join(' ')} failed: ${result.stderr}');
+  }
+
+  /// Builds a multi-theme repository (`themes/<name>/theme.yaml` per entry) and
+  /// returns its `file://` URL, which `theme add` treats as a git remote.
+  Future<String> writeMultiThemeRepo(List<String> names, {String marker = 'v1'}) async {
+    final repo = Directory(p.join(tempDir.path, 'monorepo'))..createSync(recursive: true);
+    await git(repo, <String>['init', '-b', 'main']);
+    for (final name in names) {
+      final themeDir = Directory(p.join(repo.path, 'themes', name))..createSync(recursive: true);
+      File(p.join(themeDir.path, 'theme.yaml')).writeAsStringSync('name: $name\nversion: 1.0.0\n');
+      File(p.join(themeDir.path, 'marker.txt')).writeAsStringSync(marker);
+    }
+    File(p.join(repo.path, 'README.md')).writeAsStringSync('# monorepo\n');
+    await git(repo, <String>['add', '-A']);
+    await git(repo, <String>['commit', '-m', 'themes']);
+    return Uri.file(repo.path).toString();
   }
 
   // ─── ThemeConfigUpdater ───────────────────────────────────────────────────
@@ -310,6 +353,117 @@ void main() {
       expect(Directory(copiedSelf).existsSync(), isFalse);
       // The skip is surfaced to the user, not silent.
       expect(stdoutText, contains('Skipped symlink:'));
+    });
+  });
+
+  // ─── trellis theme add --theme (multi-theme source) ──────────────────────
+
+  group('trellis theme add --theme', () {
+    /// Runs `theme add` with [Directory.systemTemp] pointed at a sandbox, and
+    /// asserts the sandbox is empty afterwards — the clone must not survive the
+    /// command on any path.
+    Future<({int exitCode, String errorOutput})> addSandboxed(List<String> args) async {
+      final sandbox = Directory(p.join(tempDir.path, 'io-temp'))..createSync(recursive: true);
+      final buffer = StringBuffer();
+      late int exitCode;
+      await IOOverrides.runWithIOOverrides(() async {
+        exitCode = await run(<String>['theme', 'add', ...args]);
+      }, _SandboxOverrides(sandbox: sandbox, errorBuffer: buffer));
+      expect(sandbox.listSync(), isEmpty, reason: 'theme add left a temporary clone behind');
+      return (exitCode: exitCode, errorOutput: buffer.toString());
+    }
+
+    test('installs only the named subdirectory from a multi-theme repository', () async {
+      writeConfig();
+      final url = await writeMultiThemeRepo(<String>['lattice', 'folio']);
+
+      final result = await addSandboxed(<String>[url, '--theme', 'lattice']);
+
+      expect(result.exitCode, 0);
+      expect(File(p.join(tempDir.path, 'themes', 'lattice', 'theme.yaml')).existsSync(), isTrue);
+      // The sibling theme and the repository root stay out of the site: the
+      // install must be the theme, not the repo that carries it.
+      expect(Directory(p.join(tempDir.path, 'themes', 'folio')).existsSync(), isFalse);
+      expect(Directory(p.join(tempDir.path, 'themes', 'lattice', 'themes')).existsSync(), isFalse);
+      expect(File(p.join(tempDir.path, 'themes', 'lattice', 'README.md')).existsSync(), isFalse);
+      expect(File(p.join(tempDir.path, 'trellis_site.yaml')).readAsStringSync(), contains('theme: lattice'));
+    });
+
+    test('--ref pins the subdirectory install to a tag', () async {
+      writeConfig();
+      final url = await writeMultiThemeRepo(<String>['lattice']);
+      final repo = Directory(p.join(tempDir.path, 'monorepo'));
+      await git(repo, <String>['tag', 'v1.0.0']);
+      File(p.join(repo.path, 'themes', 'lattice', 'marker.txt')).writeAsStringSync('v2');
+      await git(repo, <String>['add', '-A']);
+      await git(repo, <String>['commit', '-m', 'second']);
+
+      final result = await addSandboxed(<String>[url, '--theme', 'lattice', '--ref', 'v1.0.0']);
+
+      expect(result.exitCode, 0);
+      expect(File(p.join(tempDir.path, 'themes', 'lattice', 'marker.txt')).readAsStringSync(), 'v1');
+      expect(File(p.join(tempDir.path, 'trellis_site.yaml')).readAsStringSync(), contains('theme_ref: v1.0.0'));
+    });
+
+    test('a subdirectory that does not exist fails with an actionable, theme-naming error', () async {
+      writeConfig();
+      final url = await writeMultiThemeRepo(<String>['lattice']);
+
+      final result = await addSandboxed(<String>[url, '--theme', 'nosuch']);
+
+      expect(result.exitCode, 1);
+      expect(result.errorOutput, allOf(contains("'nosuch'"), contains('themes/nosuch/theme.yaml')));
+      expect(Directory(p.join(tempDir.path, 'themes', 'nosuch')).existsSync(), isFalse);
+    });
+
+    test('a traversal or absolute --theme value is rejected before any clone', () async {
+      Set<String> treeOf(Directory dir) => dir
+          .listSync(recursive: true, followLinks: false)
+          .map((entity) => p.relative(entity.path, from: dir.path))
+          .toSet();
+
+      for (final payload in <String>['../../etc', '/etc/passwd', 'a/../../b', '..']) {
+        writeConfig();
+        final before = treeOf(tempDir);
+        var invokedGit = false;
+        final command = ThemeAddCommand(
+          workingDirectory: tempDir.path,
+          processRunner: (executable, arguments) async {
+            invokedGit = true;
+            return ProcessResult(0, 0, '', '');
+          },
+        );
+
+        late int exitCode;
+        final stderrText = await _captureStderr(() async {
+          exitCode = await runSingleCommand(command, <String>[
+            'add',
+            'https://github.com/tolo/trellis',
+            '--theme',
+            payload,
+          ]);
+        });
+
+        expect(exitCode, 1, reason: payload);
+        expect(invokedGit, isFalse, reason: 'cloning before validating $payload wastes work and widens the surface');
+        expect(stderrText, contains('is not valid'), reason: payload);
+        // Nothing materialized anywhere under the site — an empty `themes/` is
+        // the only directory the command is allowed to have created.
+        expect(treeOf(tempDir).difference(before).where((path) => path != 'themes'), isEmpty, reason: payload);
+      }
+    });
+
+    test('installs from a local multi-theme checkout', () async {
+      writeConfig();
+      final checkout = Directory(p.join(tempDir.path, 'checkout'));
+      final themeDir = Directory(p.join(checkout.path, 'themes', 'meadow'))..createSync(recursive: true);
+      File(p.join(themeDir.path, 'theme.yaml')).writeAsStringSync('name: meadow\nversion: 1.0.0\n');
+
+      final exitCode = await run(<String>['theme', 'add', checkout.path, '--theme', 'meadow']);
+
+      expect(exitCode, 0);
+      expect(File(p.join(tempDir.path, 'themes', 'meadow', 'theme.yaml')).existsSync(), isTrue);
+      expect(File(p.join(tempDir.path, 'trellis_site.yaml')).readAsStringSync(), contains('theme: meadow'));
     });
   });
 

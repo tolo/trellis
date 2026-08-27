@@ -150,14 +150,19 @@ Installs a theme from a git URL or local path.
 
 Options:
 
-- `--ref`: pin to a git tag, branch, or commit SHA (recommended for production).
+- `--theme`: install one theme out of a multi-theme source, from its
+  `themes/<name>/` directory.
+- `--ref`: pin to a git tag or branch (recommended for production).
 
 ```bash
-# Install from git
-trellis theme add https://github.com/tolo/trellis-theme-verdant
+# Install a built-in theme out of the Trellis repository
+trellis theme add https://github.com/tolo/trellis --theme lattice
+
+# Install a single-theme repository (name derived from the repository)
+trellis theme add https://github.com/yourname/trellis-theme-orchard
 
 # Pin to a specific release
-trellis theme add https://github.com/tolo/trellis-theme-verdant --ref v1.0.0
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
 
 # Install from a local path (theme development)
 trellis theme add ./path/to/my-theme
@@ -172,8 +177,12 @@ given).
 
 ```bash
 trellis theme update
-trellis theme update verdant
+trellis theme update orchard
 ```
+
+`theme update` runs `git pull` in the installed theme, so it applies to themes
+installed from a single-theme repository. A theme installed with `--theme`
+carries no git metadata – remove and re-add it instead.
 
 ### `trellis theme list`
 

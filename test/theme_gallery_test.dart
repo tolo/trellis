@@ -25,17 +25,19 @@ void main() {
     String directory, {
     String? name,
     String features = 'docs, dark-mode',
+    String? description,
     bool lightExists = true,
     bool darkExists = true,
     bool declareScreenshots = true,
+    bool readme = true,
+    List<String>? screenshotPaths,
   }) {
     final themeDir = Directory(p.join(root.path, 'themes', directory))..createSync(recursive: true);
-    final screenshotsYaml = declareScreenshots
-        ? 'screenshots:\n  - screenshots/light.png\n  - screenshots/dark.png\n'
-        : '';
+    final declared = screenshotPaths ?? const <String>['screenshots/light.png', 'screenshots/dark.png'];
+    final screenshotsYaml = declareScreenshots ? 'screenshots:\n${declared.map((path) => '  - $path\n').join()}' : '';
     File(p.join(themeDir.path, 'theme.yaml')).writeAsStringSync('''
 name: ${name ?? directory}
-description: Description for ${name ?? directory}
+description: ${description ?? 'Description for ${name ?? directory}'}
 features: [$features]
 $screenshotsYaml
 ''');
@@ -49,7 +51,9 @@ $screenshotsYaml
         ..parent.createSync(recursive: true)
         ..writeAsBytesSync(<int>[2, directory.length]);
     }
-    File(p.join(themeDir.path, 'README.md')).writeAsStringSync('# ${name ?? directory}\n');
+    if (readme) {
+      File(p.join(themeDir.path, 'README.md')).writeAsStringSync('# ${name ?? directory}\n');
+    }
   }
 
   ThemeGalleryGenerator generator() => ThemeGalleryGenerator(root.path, warningSink: warnings.add);
@@ -283,6 +287,76 @@ $screenshotsYaml
     expect(generator().check().problems.join('\n'), contains('site/static'));
   });
 
+  test('D2 a theme without a README fails, naming it — the gallery links every card to one', () {
+    addTheme('noreadme', readme: false);
+    final sentinel = File(p.join(root.path, 'site', 'data', 'themes.yaml'))
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync('sentinel\n');
+
+    expect(
+      generator().write,
+      throwsA(
+        isA<ThemeGalleryException>()
+            .having((error) => error.toString(), 'message', contains('noreadme'))
+            .having((error) => error.toString(), 'message', contains('README.md')),
+      ),
+    );
+    expect(sentinel.readAsStringSync(), 'sentinel\n');
+  });
+
+  test('D7 an unparseable manifest fails as a named gallery error, not a raw YamlException', () {
+    addTheme('broken');
+    File(p.join(root.path, 'themes', 'broken', 'theme.yaml')).writeAsStringSync('name: broken\ndescription: a: b: c\n');
+
+    expect(
+      generator().write,
+      throwsA(
+        isA<ThemeGalleryException>()
+            .having((error) => error.toString(), 'message', contains('broken'))
+            .having((error) => error.toString(), 'message', contains('not valid YAML')),
+      ),
+    );
+  });
+
+  test('D7 a description containing backticks is rejected — the card renders it as text', () {
+    addTheme('ticks', description: 'A theme that bakes `.hljs-*` spans in');
+
+    expect(
+      generator().write,
+      throwsA(
+        isA<ThemeGalleryException>()
+            .having((error) => error.toString(), 'message', contains('ticks'))
+            .having((error) => error.toString(), 'message', contains('plain prose')),
+      ),
+    );
+  });
+
+  test('D7 a declared screenshot with an unrecognized variant warns instead of vanishing', () {
+    addTheme('extra', screenshotPaths: <String>['screenshots/light.png', 'screenshots/mobile.png']);
+    File(p.join(root.path, 'themes', 'extra', 'screenshots', 'mobile.png')).writeAsBytesSync(<int>[7]);
+
+    generator().write();
+
+    expect(warnings.single, allOf(contains('extra'), contains('screenshots/mobile.png'), contains('mobile')));
+    final data = loadYaml(File(p.join(root.path, 'site', 'data', 'themes.yaml')).readAsStringSync()) as YamlMap;
+    final entry = (data['themes'] as YamlList).single as YamlMap;
+    expect(entry['screenshot_light'], 'themes/extra/light.png');
+    expect(entry.containsKey('screenshot_dark'), isFalse);
+  });
+
+  test('D7 generated metadata carries a header naming the generator and the regeneration command', () {
+    addTheme('alpha');
+
+    generator().write();
+
+    final text = File(p.join(root.path, 'site', 'data', 'themes.yaml')).readAsStringSync();
+    expect(text, startsWith('# GENERATED FILE'));
+    expect(text, contains('tool/generate_theme_gallery.dart'));
+    expect(text, contains('themes/<name>/theme.yaml'));
+    // The header must not break the consumer: the site reads this as data.
+    expect(((loadYaml(text) as YamlMap)['themes'] as YamlList).single, isA<YamlMap>());
+  });
+
   test('S05/S07 CLI exits non-zero with actionable validation and drift output', () async {
     addTheme('alpha');
     final toolPath = p.join(Directory.current.path, 'tool', 'generate_theme_gallery.dart');
@@ -308,5 +382,56 @@ screenshots: []
       '${invalid.stdout}${invalid.stderr}',
       allOf(contains('alpha'), contains('[docs, blog]'), contains('exactly one')),
     );
+  });
+
+  group('repository gallery wiring', () {
+    final repoRoot = Directory.current.path;
+
+    /// The theme the docs site renders with, resolved the way the SSG resolves
+    /// `theme:` — against `<siteDir>/themes/`.
+    Directory siteTheme() {
+      final config = loadYaml(File(p.join(repoRoot, 'site', 'trellis_site.yaml')).readAsStringSync()) as YamlMap;
+      return Directory(p.normalize(p.join(repoRoot, 'site', 'themes', config['theme'] as String)));
+    }
+
+    test('D7 gallery.md names every generated theme, so site search can find them', () {
+      // The gallery's substance lives in the layout and site/data/themes.yaml,
+      // neither of which the search index reads: a theme name that appears only
+      // there returns no hit for anyone searching the docs site.
+      final body = File(p.join(repoRoot, 'site', 'content', 'docs', 'themes', 'gallery.md')).readAsStringSync();
+      final data = loadYaml(File(p.join(repoRoot, 'site', 'data', 'themes.yaml')).readAsStringSync()) as YamlMap;
+      final names = [for (final entry in data['themes'] as YamlList) (entry as YamlMap)['name'] as String];
+
+      expect(names, isNotEmpty);
+      for (final name in names) {
+        expect(body.toLowerCase(), contains(name), reason: '$name is missing from gallery.md');
+      }
+      // The PRD requires count-free headings; a spelled-out total would drift
+      // the moment a theme is added or removed.
+      expect(body, isNot(matches(RegExp(r'\b(three|four|five|six|seven)\b', caseSensitive: false))));
+    });
+
+    test('D4 every custom property gallery.css reads is declared by the site theme', () {
+      // gallery.css deliberately consumes Lattice's skin-aware tokens rather
+      // than the static --trellis-* param bridge. Nothing in the build fails if
+      // one is renamed — the page just loses its borders, background or radius.
+      final css = File(p.join(repoRoot, 'site', 'static', 'gallery.css')).readAsStringSync();
+      final consumed = RegExp(r'var\(\s*(--[a-z0-9-]+)').allMatches(css).map((m) => m.group(1)!).toSet();
+      expect(consumed, isNotEmpty);
+
+      final theme = siteTheme();
+      final declared = <String>{};
+      for (final file in theme.listSync(recursive: true, followLinks: false).whereType<File>()) {
+        if (p.extension(file.path) != '.scss') continue;
+        declared.addAll(
+          RegExp(
+            r'^\s*(--[a-z0-9-]+)\s*:',
+            multiLine: true,
+          ).allMatches(file.readAsStringSync()).map((m) => m.group(1)!),
+        );
+      }
+
+      expect(consumed.difference(declared), isEmpty, reason: 'undeclared in ${p.basename(theme.path)}');
+    });
   });
 }

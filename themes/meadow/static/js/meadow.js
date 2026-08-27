@@ -39,6 +39,24 @@
     if (media && media.addEventListener) media.addEventListener('change', syncSkinButton);
   }
 
+  // A bare <details> overlay stays open on Escape and on a click elsewhere on the page, and its
+  // summary keeps announcing "Open navigation menu" while it is open.
+  var mobileMenu = document.querySelector('.mobile-menu');
+  var mobileSummary = mobileMenu && mobileMenu.querySelector('summary');
+  if (mobileMenu && mobileSummary) {
+    mobileMenu.addEventListener('toggle', function () {
+      mobileSummary.setAttribute('aria-label', mobileMenu.open ? 'Close navigation menu' : 'Open navigation menu');
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape' || !mobileMenu.open) return;
+      mobileMenu.open = false;
+      mobileSummary.focus();
+    });
+    document.addEventListener('pointerdown', function (event) {
+      if (mobileMenu.open && !mobileMenu.contains(event.target)) mobileMenu.open = false;
+    });
+  }
+
   var copyButton = document.querySelector('[data-copy]');
   if (!copyButton || !navigator.clipboard || !window.isSecureContext) return;
   copyButton.hidden = false;

@@ -40,18 +40,20 @@
         title="RSS Feed" tl:attr="href=${site.feeds.rss}">
 
   <!-- Syntax highlighting is baked into the built HTML at build time (ADR-010):
-       the SSG emits `.hljs-*` spans, styled by sass/_code.scss. No client-side
+       the SSG emits `.hljs-*` spans, styled by sass/main.scss. No client-side
        highlighter ships with the theme — code is colored with JavaScript off. -->
 
   <!-- Client-side search (S09): first-party, same-origin, no CDN.
-       Reads the index URL from the shell's data-search-index attribute; on a
-       failed index fetch it hides the control so the page stays fully readable. -->
+       Reads the index URL from the shell's data-search-index attribute. The shell
+       ships hidden and search.js reveals it only once the index has loaded, so a
+       page without JavaScript shows no permanently disabled control. -->
   <script tl:if="${theme.show_search}"
           tl:attr="src=${assetBase} + 'js/search.js'" defer></script>
 
-  <!-- Auto-skin edition toggle (first-party, same-origin, no CDN): synchronizes
-       the control with the saved or OS choice and persists explicit changes.
-       Forced skins omit both the control and this script. -->
+  <!-- Auto-skin edition toggle (first-party, same-origin, no CDN): reveals the
+       control, synchronizes it with the saved or OS choice, labels it with the
+       current edition, and persists explicit changes. Forced skins omit both the
+       control and this script. -->
   <script tl:if="${theme.skin} == 'auto'" tl:attr="src=${assetBase} + 'js/folio.js'" defer></script>
 
   <!-- Extra head slot: child layouts inject additional tags here. -->
@@ -65,9 +67,13 @@
     <div class="container">
       <a tl:href="${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}" href="/" class="site-title"
          tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
-        <!-- A site-supplied logo replaces the built-in mark when the param is set. -->
+        <!-- A site-supplied logo replaces the built-in mark when the param is set.
+             assetBase already ends in a slash, so a root-relative value sheds its
+             own leading slash — plain concatenation would emit //host-relative URLs. -->
         <img class="site-logo" tl:if="${theme.logo} != null and ${theme.logo} != ''"
-             tl:attr="src=${assetBase} + ${theme.logo},alt=${site.title}" src="" alt="">
+             tl:with="logoPath=${#strings.startsWith(theme.logo, '/')}
+               ? ${#strings.substring(theme.logo, 1)} : ${theme.logo}"
+             tl:attr="src=${assetBase} + ${logoPath},alt=${site.title}" src="" alt="">
         <!-- Folio mark: a small sprout, decorative (aria-hidden). currentColor lets
              it track the link color; the primary tint is set in CSS. -->
         <svg class="site-mark" tl:unless="${theme.logo} != null and ${theme.logo} != ''"
@@ -89,8 +95,10 @@
           </li>
         </ul>
       </nav>
+      <!-- Hidden until the edition script runs: with no JavaScript the control could
+           not change anything, so it must not occupy the masthead. -->
       <button tl:if="${theme.skin} == 'auto'" class="skin-toggle" type="button" data-folio-skin-toggle
-              aria-label="Change color scheme">Edition</button>
+              aria-label="Change color scheme" aria-pressed="false" hidden>Edition</button>
     </div>
   </header>
 
@@ -113,8 +121,9 @@
                  via data-search-index, computed with the same assetBase rule the
                  <head> asset links use (pathPrefix, or / when served at root).
                  The index is written to the output root, so it is served at
-                 ${assetBase}search-index.json (e.g. /trellis/search-index.json). -->
-            <div class="search-shell" tl:if="${theme.show_search}"
+                 ${assetBase}search-index.json (e.g. /trellis/search-index.json).
+                 Ships hidden; search.js reveals it once the index has loaded. -->
+            <div class="search-shell" hidden tl:if="${theme.show_search}"
                  tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}"
                  tl:attr="data-search-index=${assetBase} + 'search-index.json'">
               <label class="search-label" for="docs-search">Search documentation</label>

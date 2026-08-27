@@ -80,12 +80,15 @@
               </ul>
             </nav>
           </details>
+          <!-- Rendered hidden; lattice.js reveals it. Without JavaScript the toggle cannot do
+               anything, and the PRD's no-JS contract is "no skin toggle" — the media query applies. -->
           <button
             tl:if="${theme.skin} == 'auto'"
             class="mode-toggle"
             type="button"
             data-lattice-theme-toggle
             aria-label="Switch color mode"
+            hidden
           >
             <svg class="moon" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
@@ -148,7 +151,7 @@
                   >Page</a
                 >
                 <span class="sidebar-label" tl:unless="${n1.url != ''}" tl:text="${n1.title}">Section</span>
-                <ul class="sidebar-subtree" tl:if="${n1.children}">
+                <ul class="sidebar-subtree" tl:if="${#lists.size(n1.children)} > 0">
                   <li class="sidebar-item" tl:each="n2 : ${n1.children}">
                     <a
                       class="sidebar-link"
@@ -160,7 +163,7 @@
                       >Page</a
                     >
                     <span class="sidebar-label" tl:unless="${n2.url != ''}" tl:text="${n2.title}">Section</span>
-                    <ul class="sidebar-subtree" tl:if="${n2.children}">
+                    <ul class="sidebar-subtree" tl:if="${#lists.size(n2.children)} > 0">
                       <li class="sidebar-item" tl:each="n3 : ${n2.children}">
                         <a
                           class="sidebar-link"

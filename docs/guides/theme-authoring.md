@@ -117,14 +117,36 @@ params:
 
 | Field | Required | Description |
 |---|---|---|
-| `name` | Yes | Lowercase, hyphen-separated identifier |
+| `name` | Yes | Theme identifier. Must match `^[a-z0-9][a-z0-9_-]*$` and equal the name of the directory the manifest sits in |
 | `version` | Yes | Semantic version (e.g. `1.0.0`) |
 | `author` | Yes | Author name or organization |
 | `description` | Yes | One-sentence description for theme galleries |
 | `min_trellis_version` | No | Minimum `trellis_site` version required |
 | `screenshots` | No | Relative paths to preview PNG files |
-| `features` | No | Feature tags (free-form strings for gallery filtering) |
+| `features` | Yes | Feature tags. Must contain exactly one **archetype** tag — `docs`, `landing`, or `blog` — plus any number of free-form tags |
 | `params` | Yes | Parameter definitions (see below) |
+
+#### Name and archetype rules
+
+Three of the manifest's rules are checked mechanically, because the theme
+gallery is generated from the manifests and CI gates the generated output
+(`dart run tool/generate_theme_gallery.dart --check`):
+
+- **`name` charset** — `^[a-z0-9][a-z0-9_-]*$`. The name becomes a directory
+  segment in every site that installs the theme and a path segment in the
+  gallery's asset URLs, so it has to be portable on every filesystem and safe in
+  a URL. It is also what `trellis theme add --theme <name>` accepts.
+- **`name` equals the directory name** — a theme in `themes/orchard/` must
+  declare `name: orchard`. The installed directory and the configured
+  `theme:` value are the same string, so a mismatch would install a theme that
+  cannot be selected.
+- **Exactly one archetype tag** — `features` must list exactly one of `docs`,
+  `landing`, `blog`. The gallery shows it as the card's archetype label, which
+  is how a site builder picks a starting point; zero tags leave the card
+  unlabelled and two make the label ambiguous. Every other `features` entry
+  (`dark-mode`, `responsive`, `search`, …) is free-form.
+
+Violating any of the three fails the generator with an error naming the theme.
 
 ### Param Types
 
@@ -484,7 +506,9 @@ The `static/` directory in the [directory structure](#theme-directory-structure)
 
 ### Repository Naming
 
-Convention: `trellis-theme-<name>` (e.g. `trellis-theme-verdant`). This makes themes discoverable via GitHub search.
+Convention: `trellis-theme-<name>` (e.g. `trellis-theme-orchard`). This makes themes discoverable via GitHub search.
+
+A theme can also live under `themes/<name>/` in a repository that carries several — the layout the built-in Trellis themes use. Site builders install one of those with `trellis theme add <url> --theme <name>`, which copies just that subdirectory.
 
 ### Version Tagging
 
@@ -498,7 +522,7 @@ git push origin v1.0.0
 Installation with a pinned ref:
 
 ```bash
-trellis theme add https://github.com/yourname/trellis-theme-verdant --ref v1.0.0
+trellis theme add https://github.com/yourname/trellis-theme-orchard --ref v1.0.0
 ```
 
 ### Screenshots

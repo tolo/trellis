@@ -1,9 +1,31 @@
+/* Theme-gallery page styles, loaded on top of the Lattice theme's main.css.
+   The custom properties consumed here (--lattice-strong, --card, --radius,
+   --leaf, --ink-soft) are Lattice's own skin-aware tokens, not the --trellis-*
+   param bridge: the bridge emits one static value per param, so using it would
+   freeze the cards in their light-skin colors. `theme_gallery_test.dart` asserts
+   every token this file reads is still declared by the site's theme, so a
+   rename in the theme fails a test instead of silently stripping the page. */
+
 .gallery-page {
   min-width: 0;
 }
 
+/* Above the docs breakpoint the shell reserves a table-of-contents track the
+   gallery never fills and clamps to the prose measure — which leaves the
+   comparison grid one card wide. The gallery takes that space back. */
+@media (min-width: 981px) {
+  .gallery-shell {
+    max-width: 1400px;
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+}
+
 .gallery-grid {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  /* Descriptions differ in length; without this a short card is stretched to
+     its row's height and shows an empty band below its own footer. */
+  align-items: start;
   gap: 2rem;
   margin-top: 2rem;
 }

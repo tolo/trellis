@@ -17,7 +17,8 @@
 @font-face {
   font-family: 'JetBrains Mono';
   src: url('../fonts/jetbrains-mono-latin.woff2') format('woff2');
-  font-weight: 400 700;
+  /* The file carries wght 400-800; at 400 700 the theme's 800 mono labels clamped to 700. */
+  font-weight: 400 800;
   font-style: normal;
   font-display: swap;
 }
@@ -70,6 +71,11 @@ body {
   overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
 }
+/* `break-word` wraps a long token but does not shrink a box's min-content size, so an unbreakable
+   token (a URL, a package name, a hash) still widens its grid track and pushes the document past
+   the viewport. `anywhere` does shrink it. Scoped to page content: the brand and the nav/footer
+   labels keep `break-word` so short words are never split mid-label. */
+main * { overflow-wrap: anywhere; }
 button, a { font: inherit; }
 a { color: inherit; }
 [hidden] { display: none !important; }
@@ -126,6 +132,7 @@ body > main { flex: 1 0 auto; }
 .nav-actions { display: flex; align-items: center; gap: 10px; }
 .nav-cta {
   min-height: 44px;
+  max-width: 220px;
   display: inline-flex;
   align-items: center;
   padding: 9px 18px;
@@ -135,6 +142,9 @@ body > main { flex: 1 0 auto; }
   font-weight: 800;
   text-decoration: none;
 }
+/* The label is `hero.ctas[0].label`, which a landing page is free to make a sentence. Truncating
+   keeps the sticky header on its 72px rhythm instead of growing a three-line button. */
+.nav-cta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .icon-button, .mobile-menu summary {
   min-width: 44px;
   min-height: 44px;
@@ -175,12 +185,15 @@ body > main { flex: 1 0 auto; }
   align-items: center;
   padding: 6px 12px;
   border: 1px solid var(--meadow-line);
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--meadow-surface);
-  font: 800 0.78rem/1.2 var(--meadow-mono);
+  font: 700 0.78rem/1.2 var(--meadow-mono);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+/* `pill_badges: false` drops `.eyebrow-pill` from the hero label, leaving the 8px radius above.
+   Section kickers stay pills — the param names the hero badge only. */
+.kicker, .eyebrow-pill { border-radius: 999px; }
 .hero h1 {
   max-width: 830px;
   margin: 22px 0 24px;
@@ -188,30 +201,40 @@ body > main { flex: 1 0 auto; }
   letter-spacing: -0.055em;
   text-wrap: balance;
 }
+/* The band is a background on the inline box, not an absolutely-positioned ::before, so it
+   fragments with the text: a headline emphasis that wraps gets one band per line instead of a
+   single box sized to the unwrapped run. `box-decoration-break: clone` gives each fragment its
+   own padding and radii. The light band's tilt comes from the gradient angle — the stop line is
+   perpendicular to it — since a background box cannot be rotated on its own. */
 @mixin meadow-marker-light {
-  inset: 54% -0.08em 0.02em;
+  padding-inline: 0.08em;
+  margin-inline: -0.08em;
   border-radius: 0.16em 0.32em 0.14em 0.24em;
-  transform: rotate(-1.7deg);
+  background-image: linear-gradient(178.3deg, transparent 0 50%, var(--meadow-lime) 50% 100%);
+  background-position: left 0 bottom 0.02em;
+  background-size: 100% 92%;
 }
 @mixin meadow-marker-dark {
-  inset: -0.02em -0.1em -0.05em;
+  padding-inline: 0.1em;
+  margin-inline: -0.1em;
   border-radius: 0.28em 0.16em 0.25em 0.13em;
-  transform: rotate(-1.2deg) skewX(-1.5deg);
+  background-image: linear-gradient(var(--meadow-lime) 0 100%);
+  background-position: left 0 bottom 0;
+  background-size: 100% 100%;
 }
-.marker { position: relative; z-index: 0; color: #14251a; white-space: nowrap; }
-.marker::before {
-  position: absolute;
-  z-index: -1;
-  content: '';
-  background: var(--meadow-lime);
+.marker {
+  color: #14251a;
+  background-repeat: no-repeat;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
   @include meadow-marker-light;
 }
 @if $trellis-skin == dark {
-  .marker::before { @include meadow-marker-dark; }
+  .marker { @include meadow-marker-dark; }
 } @else if $trellis-skin == auto {
-  @media (prefers-color-scheme: dark) { .marker::before { @include meadow-marker-dark; } }
-  :root[data-skin='dark'] .marker::before { @include meadow-marker-dark; }
-  :root[data-skin='light'] .marker::before { @include meadow-marker-light; }
+  @media (prefers-color-scheme: dark) { .marker { @include meadow-marker-dark; } }
+  :root[data-skin='dark'] .marker { @include meadow-marker-dark; }
+  :root[data-skin='light'] .marker { @include meadow-marker-light; }
 }
 .hero-lede { max-width: 650px; margin: 0; color: var(--meadow-muted); font-size: clamp(1.08rem, 1.7vw, 1.28rem); }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 13px; margin-top: 32px; }
@@ -242,7 +265,6 @@ body > main { flex: 1 0 auto; }
 .proof-strip { border-block: 1px solid var(--meadow-line); background: var(--meadow-paper); color: var(--meadow-ink); }
 .proof-list { display: grid; grid-template-columns: repeat(4, 1fr); margin-block: 0; padding-block: 30px; list-style: none; }
 .proof-list li { min-width: 0; padding: 6px 24px; }
-.proof-list li:first-child { border-left: 0; }
 .proof-list strong, .proof-list span { display: block; }
 .proof-list strong { color: var(--meadow-ink); font: 800 1.2rem/1.25 var(--meadow-display); }
 .proof-list span { color: var(--meadow-muted); font-size: 0.9rem; }
@@ -269,13 +291,17 @@ body > main { flex: 1 0 auto; }
 .signal-section { background: var(--meadow-panel-bg); color: var(--meadow-panel-text); }
 .signal-section .section-head p { color: var(--meadow-panel-muted); }
 .signal-grid { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(320px, 0.88fr); gap: clamp(40px, 7vw, 90px); align-items: center; }
+/* Without an insight card the second track would still reserve its 320px minimum. */
+.signal-grid-solo { grid-template-columns: minmax(0, 1fr); }
 .signal-stack { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
-.signal-card { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: start; padding: 17px; border: 1px solid color-mix(in srgb, var(--meadow-panel-text) 18%, transparent); border-radius: 18px; background: color-mix(in srgb, var(--meadow-panel-text) 8%, transparent); }
+.signal-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 17px; border: 1px solid color-mix(in srgb, var(--meadow-panel-text) 18%, transparent); border-radius: 18px; background: color-mix(in srgb, var(--meadow-panel-text) 8%, transparent); }
 .signal-avatar { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: var(--meadow-lime); color: #14251a; font-weight: 900; }
 .signal-card p { margin: 3px 0 0; color: var(--meadow-panel-muted); }
-.signal-tag { padding: 4px 8px; border-radius: 999px; background: var(--meadow-bloom); color: #14251a; font: 700 0.72rem var(--meadow-mono); }
+/* An auto grid track grows to its content's max-content size, so a long tag would take the whole
+   row and collapse the message column to zero width. The chip wraps instead. */
+.signal-tag { max-width: 14ch; padding: 4px 8px; border-radius: 999px; background: var(--meadow-bloom); color: #14251a; font: 700 0.72rem var(--meadow-mono); }
 .insight-card { padding: clamp(28px, 4vw, 48px); border: 2px solid #14251a; border-radius: 32px; background: var(--meadow-lime); color: #14251a; box-shadow: 8px 8px 0 var(--meadow-leaf-deep); }
-.insight-label { color: #14251a; font: 800 0.78rem var(--meadow-mono); text-transform: uppercase; }
+.insight-label { color: #14251a; font: 700 0.78rem var(--meadow-mono); text-transform: uppercase; }
 .insight-card h3 { margin: 18px 0 12px; font: 800 clamp(2rem, 3.5vw, 3.2rem)/1 var(--meadow-display); letter-spacing: -0.04em; }
 .insight-card p { color: #14251a; }
 .meter { height: 12px; margin-top: 28px; overflow: hidden; border: 2px solid #14251a; border-radius: 999px; background: #f7faee; }
@@ -306,7 +332,7 @@ body > main { flex: 1 0 auto; }
 .template-card p { margin: 0; color: var(--meadow-muted); }
 
 .quote-band { padding-block: 44px; color: var(--meadow-ink); }
-.quote-card { display: grid; grid-template-columns: auto 1fr; gap: 28px; align-items: start; padding: clamp(32px, 5vw, 60px); border: 2px solid var(--meadow-ink); border-radius: 32px; background: var(--meadow-surface); }
+.quote-card { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 28px; align-items: start; padding: clamp(32px, 5vw, 60px); border: 2px solid var(--meadow-ink); border-radius: 32px; background: var(--meadow-surface); }
 .quote-mark { color: var(--meadow-leaf); font: 800 6rem/0.8 var(--meadow-display); }
 blockquote { margin: 0; font: 800 clamp(1.5rem, 3vw, 2.6rem)/1.15 var(--meadow-display); }
 .quote-card footer { margin-top: 14px; font-weight: 700; }
@@ -323,13 +349,38 @@ blockquote { margin: 0; font: 800 clamp(1.5rem, 3vw, 2.6rem)/1.15 var(--meadow-d
 .start-note { color: var(--meadow-muted); }
 
 .site-footer { border-top: 1px solid var(--meadow-line); }
-.footer-inner { min-height: 110px; display: flex; align-items: center; gap: 22px; }
+/* The attribution is the last item in the row and has nowhere to shrink to, so without wrapping
+   it overflows the viewport between 761px and the width its own content needs. */
+.footer-inner { min-height: 110px; display: flex; flex-wrap: wrap; align-items: center; gap: 22px; }
 .footer-links { margin-left: auto; display: flex; gap: 22px; font-weight: 700; }
 .footer-links a, .footer-powered-by a { min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; }
 .prose { font-size: 1.05rem; }
 .prose img, .prose pre { max-width: 100%; }
 .prose pre { overflow-x: auto; padding: 18px; border-radius: var(--meadow-radius); background: #13271b; color: #edf7e8; }
 .prose code { font-family: var(--meadow-mono); }
+/* Highlight.js tokens, baked into fenced blocks at build time by the SSG (ADR-010). The code
+   surface is the same dark green in both skins, so one map serves both; every color clears WCAG
+   AA on #13271b (lowest pair 6.71:1). Classes with no rule here — `.hljs-code`, `.hljs-formula` —
+   inherit the block color rather than rendering unstyled. */
+.prose pre code {
+  .hljs-comment, .hljs-quote { color: #9db4a2; font-style: italic; }
+  .hljs-keyword, .hljs-meta-keyword, .hljs-name, .hljs-selector-tag, .hljs-section {
+    color: var(--meadow-lime);
+  }
+  .hljs-string, .hljs-attr, .hljs-attribute, .hljs-selector-class, .hljs-selector-id,
+  .hljs-selector-pseudo, .hljs-selector-attr, .hljs-char, .hljs-link, .hljs-bullet, .hljs-addition {
+    color: var(--meadow-sun);
+  }
+  .hljs-number, .hljs-literal, .hljs-symbol, .hljs-variable, .hljs-template-variable, .hljs-regexp {
+    color: var(--meadow-sky);
+  }
+  .hljs-built_in, .hljs-class, .hljs-title, .hljs-type { color: var(--meadow-bloom); }
+  .hljs-meta, .hljs-tag, .hljs-subst, .hljs-punctuation, .hljs-operator, .hljs-params, .hljs-deletion {
+    color: var(--meadow-panel-muted);
+  }
+  .hljs-emphasis { font-style: italic; }
+  .hljs-strong { font-weight: 700; }
+}
 .page-header h1 { font: 800 clamp(2.5rem, 6vw, 5rem)/1 var(--meadow-display); letter-spacing: -0.05em; }
 .back-link { display: inline-flex; min-height: 44px; align-items: center; color: var(--meadow-leaf); font-weight: 800; }
 .post-list { padding: 0; list-style: none; }
@@ -353,7 +404,7 @@ blockquote { margin: 0; font: 800 clamp(1.5rem, 3vw, 2.6rem)/1.15 var(--meadow-d
   .wrap { width: min(100% - 36px, var(--meadow-width)); }
   .proof-list { grid-template-columns: repeat(2, 1fr); }
   .feature-grid { grid-template-columns: 1fr; }
-  .quote-card { grid-template-columns: 1fr; gap: 10px; }
+  .quote-card { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .footer-inner { padding-block: 28px; align-items: flex-start; flex-direction: column; }
   .footer-links { margin-left: 0; flex-wrap: wrap; }
 }
@@ -363,7 +414,6 @@ blockquote { margin: 0; font: 800 clamp(1.5rem, 3vw, 2.6rem)/1.15 var(--meadow-d
   .brand { font-size: 1.1rem; }
   .hero { padding-block: 48px 70px; }
   .hero h1 { font-size: clamp(2.65rem, 13vw, 3.4rem); line-height: 1.08; }
-  .marker { white-space: normal; }
   .hero-art { width: 100%; }
   .feature-card { padding: 23px; }
   .template-card { padding-inline: 2px; }
@@ -371,9 +421,9 @@ blockquote { margin: 0; font: 800 clamp(1.5rem, 3vw, 2.6rem)/1.15 var(--meadow-d
   .hero-actions { display: grid; }
   .button { width: 100%; }
   .proof-list { grid-template-columns: 1fr; padding-block: 24px; }
-  .proof-list li { border-left: 0; border-top: 1px solid var(--meadow-line); }
+  .proof-list li { border-top: 1px solid var(--meadow-line); }
   .proof-list li:first-child { border-top: 0; }
-  .signal-card { grid-template-columns: auto 1fr; }
+  .signal-card { grid-template-columns: auto minmax(0, 1fr); }
   .signal-tag { grid-column: 2; width: fit-content; }
   .command-row { flex-wrap: wrap; }
   .copy-button { width: 100%; margin-left: 0; }

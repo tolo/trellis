@@ -1,86 +1,93 @@
+# Structured home-page content for the Lattice home layout. A site's own
+# data/lattice.yaml replaces this file as a whole, so an override must supply
+# every block below. Defaults are content-neutral placeholders: they demonstrate
+# each section's shape without publishing anyone else's product copy.
+#
+# The *_html values are pre-marked code panes, rendered with tl:utext (ADR-010 —
+# no client-side highlighter ships in any official theme). Escape <, > and & and
+# wrap tokens in the .t-tag/.t-attr/.t-tl/.t-str/.t-expr/.t-dim spans the theme
+# styles; see themes/lattice/README.md.
 code_showcase:
   title: Open it in a browser. Then render it.
   body: >-
-    A Trellis template is valid HTML with tl:* attributes. Designers preview the file directly; the engine binds your
-    data at render time.
+    A template is valid HTML with tl:* attributes. Designers preview the file directly; the engine binds your data at
+    render time.
   template_label: posts.html
-  template_source: |-
-    <article tl:each="post : ${posts}">
-      <h2 tl:text="${post.title}">Title</h2>
-      <p tl:text="${post.summary}">Summary</p>
-      <a tl:href="@{/posts(id=${post.id})}">
-        Read more</a>
-    </article>
+  template_html: |-
+    <span class="t-dim">&lt;</span><span class="t-tag">article</span> <span class="t-tl">tl:each</span>=<span class="t-str">"post : </span><span class="t-expr">${posts}</span><span class="t-str">"</span><span class="t-dim">&gt;</span>
+      <span class="t-dim">&lt;</span><span class="t-tag">h2</span> <span class="t-tl">tl:text</span>=<span class="t-str">"</span><span class="t-expr">${post.title}</span><span class="t-str">"</span><span class="t-dim">&gt;</span>Title<span class="t-dim">&lt;/</span><span class="t-tag">h2</span><span class="t-dim">&gt;</span>
+      <span class="t-dim">&lt;</span><span class="t-tag">p</span> <span class="t-tl">tl:text</span>=<span class="t-str">"</span><span class="t-expr">${post.summary}</span><span class="t-str">"</span><span class="t-dim">&gt;</span>Summary<span class="t-dim">&lt;/</span><span class="t-tag">p</span><span class="t-dim">&gt;</span>
+      <span class="t-dim">&lt;</span><span class="t-tag">a</span> <span class="t-tl">tl:href</span>=<span class="t-str">"@{/posts(id=</span><span class="t-expr">${post.id}</span><span class="t-str">)}"</span><span class="t-dim">&gt;</span>
+        Read more<span class="t-dim">&lt;/</span><span class="t-tag">a</span><span class="t-dim">&gt;</span>
+    <span class="t-dim">&lt;/</span><span class="t-tag">article</span><span class="t-dim">&gt;</span>
   output_label: output
-  output_source: |-
-    <article>
-      <h2>Growing season</h2>
-      <p>Server-rendered Dart, start to finish.</p>
-      <a href="/posts?id=42">Read more</a>
-    </article>
-    <article>…</article>
+  output_html: |-
+    <span class="t-dim">&lt;</span><span class="t-tag">article</span><span class="t-dim">&gt;</span>
+      <span class="t-dim">&lt;</span><span class="t-tag">h2</span><span class="t-dim">&gt;</span>First frost<span class="t-dim">&lt;/</span><span class="t-tag">h2</span><span class="t-dim">&gt;</span>
+      <span class="t-dim">&lt;</span><span class="t-tag">p</span><span class="t-dim">&gt;</span>Notes from the end of the season.<span class="t-dim">&lt;/</span><span class="t-tag">p</span><span class="t-dim">&gt;</span>
+      <span class="t-dim">&lt;</span><span class="t-tag">a</span> <span class="t-attr">href</span>=<span class="t-str">"/posts?id=42"</span><span class="t-dim">&gt;</span>Read more<span class="t-dim">&lt;/</span><span class="t-tag">a</span><span class="t-dim">&gt;</span>
+    <span class="t-dim">&lt;/</span><span class="t-tag">article</span><span class="t-dim">&gt;</span>
+    <span class="t-dim">&lt;</span><span class="t-tag">article</span><span class="t-dim">&gt;</span>…<span class="t-dim">&lt;/</span><span class="t-tag">article</span><span class="t-dim">&gt;</span>
 why:
-  title: Why Trellis
-  body: Use just the engine, or the whole trellis — composable packages that share one version and grow together.
+  title: What you get
+  body: Four short claims, each with a sentence of proof — swap them for your own.
   cells:
     - title: Natural HTML templates
       body: Templates are valid HTML. Browsers render them as prototypes and designers open them directly.
-    - title: HTMX-first fragments
-      body: tl:fragment and renderFragment() map directly to HTMX partial responses.
-    - title: Pure-Dart toolchain
-      body: HTML, Markdown, and SASS are Dart packages. No Node.js, no webpack.
-    - title: Single-binary deploy
-      body: dart compile exe produces one file with instant startup and tiny containers.
+    - title: Fragments over pages
+      body: Named fragments render on their own, so a partial response updates one region instead of the whole page.
+    - title: Readable at any depth
+      body: Sidebar, in-page contents, and previous/next travel keep long documentation navigable.
+    - title: Light and dark, built in
+      body: Both skins ship with the theme; visitors get the one their system asks for.
 demo:
   title: One file, two views
   body: >-
-    Proof, not promise — the same posts.html is a clickable prototype on your desk and a live page in production.
-  template_source: |-
-    <article tl:each="post : ${posts}">
-      <h2 tl:text="${post.title}">Title</h2>
-      <p tl:text="${post.summary}">Summary</p>
-    </article>
+    The same posts.html is a clickable prototype on your desk and a live page in production.
+  template_html: |-
+    <span class="t-dim">&lt;</span><span class="t-tag">article</span> <span class="t-tl">tl:each</span>=<span class="t-str">"post : </span><span class="t-expr">${posts}</span><span class="t-str">"</span><span class="t-dim">&gt;</span>
+      <span class="t-dim">&lt;</span><span class="t-tag">h2</span> <span class="t-tl">tl:text</span>=<span class="t-str">"</span><span class="t-expr">${post.title}</span><span class="t-str">"</span><span class="t-dim">&gt;</span>Title<span class="t-dim">&lt;/</span><span class="t-tag">h2</span><span class="t-dim">&gt;</span>
+      <span class="t-dim">&lt;</span><span class="t-tag">p</span> <span class="t-tl">tl:text</span>=<span class="t-str">"</span><span class="t-expr">${post.summary}</span><span class="t-str">"</span><span class="t-dim">&gt;</span>Summary<span class="t-dim">&lt;/</span><span class="t-tag">p</span><span class="t-dim">&gt;</span>
+    <span class="t-dim">&lt;/</span><span class="t-tag">article</span><span class="t-dim">&gt;</span>
   prototype_title: Title
   prototype_body: Summary
-  rendered_title: Fragments over frameworks
-  rendered_body: Why HTMX and server rendering beat a client bundle for most apps.
   rendered_posts:
-    - title: Fragments over frameworks
-      body: Why HTMX and server rendering beat a client bundle for most apps.
-    - title: One binary, zero Node
-      body: Deploying a Dart web app in a compact container image.
-    - title: Templates you can open
-      body: Prototyping pages with no server running at all.
+    - title: First frost
+      body: Notes from the end of the season.
+    - title: Cuttings that took
+      body: Six weeks of results from the propagation bench.
+    - title: Planning next spring
+      body: What goes in the beds once the ground thaws.
 showcase:
-  title: Built-in themes, grown in the same garden
-  body: Pick a design, set one line of configuration, and publish.
+  title: Show what you built
+  body: Replace these cards with your own screenshots, captions, and configuration hints.
   link_label: ""
   link_url: ""
   cards:
     - {
-        name: Arbor,
-        description: Documentation sites — sidebar navigation, in-page TOC, search, syntax highlighting.,
-        config: "theme: arbor",
+        name: Documentation,
+        description: Sidebar navigation, in-page contents, and search.,
+        config: "theme: docs",
         accent: green,
-        screenshot_light: "showcase/arbor-light.svg",
-        screenshot_dark: "showcase/arbor-dark.svg",
-        alt: "Arbor documentation theme",
+        screenshot_light: "showcase/docs-light.svg",
+        screenshot_dark: "showcase/docs-dark.svg",
+        alt: "Documentation layout preview",
       }
     - {
-        name: Bloom,
-        description: Product landing pages — bold hero, feature sections, pricing, FAQ.,
-        config: "theme: bloom",
+        name: Landing,
+        description: Hero, feature sections, and a closing call to action.,
+        config: "theme: landing",
         accent: purple,
-        screenshot_light: "showcase/bloom-light.svg",
-        screenshot_dark: "showcase/bloom-dark.svg",
-        alt: "Bloom product theme",
+        screenshot_light: "showcase/landing-light.svg",
+        screenshot_dark: "showcase/landing-dark.svg",
+        alt: "Landing layout preview",
       }
     - {
-        name: Verdant,
-        description: Blogs — post lists, tags, archives, comfortable reading measure.,
-        config: "theme: verdant",
+        name: Journal,
+        description: Post lists, tags, and a comfortable reading measure.,
+        config: "theme: journal",
         accent: blue,
-        screenshot_light: "showcase/verdant-light.svg",
-        screenshot_dark: "showcase/verdant-dark.svg",
-        alt: "Verdant blog theme",
+        screenshot_light: "showcase/journal-light.svg",
+        screenshot_dark: "showcase/journal-dark.svg",
+        alt: "Journal layout preview",
       }

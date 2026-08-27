@@ -1,24 +1,27 @@
+# Site copy for the Lattice home layout; replaces themes/lattice/data/lattice.yaml
+# as a whole. The *_html panes are pre-marked code, rendered with tl:utext —
+# no client-side highlighter ships in an official theme (ADR-010).
 code_showcase:
   title: Open it in a browser. Then render it.
   body: >-
     A Trellis template is valid HTML with tl:* attributes. Designers preview the file directly; the engine binds your
     data at render time.
   template_label: posts.html
-  template_source: |-
-    <article tl:each="post : ${posts}">
-      <h2 tl:text="${post.title}">Title</h2>
-      <p tl:text="${post.summary}">Summary</p>
-      <a tl:href="@{/posts(id=${post.id})}">
-        Read more</a>
-    </article>
+  template_html: |-
+    <span class="t-dim">&lt;</span><span class="t-tag">article</span> <span class="t-tl">tl:each</span>=<span class="t-str">"post : </span><span class="t-expr">${posts}</span><span class="t-str">"</span><span class="t-dim">&gt;</span>
+      <span class="t-dim">&lt;</span><span class="t-tag">h2</span> <span class="t-tl">tl:text</span>=<span class="t-str">"</span><span class="t-expr">${post.title}</span><span class="t-str">"</span><span class="t-dim">&gt;</span>Title<span class="t-dim">&lt;/</span><span class="t-tag">h2</span><span class="t-dim">&gt;</span>
+      <span class="t-dim">&lt;</span><span class="t-tag">p</span> <span class="t-tl">tl:text</span>=<span class="t-str">"</span><span class="t-expr">${post.summary}</span><span class="t-str">"</span><span class="t-dim">&gt;</span>Summary<span class="t-dim">&lt;/</span><span class="t-tag">p</span><span class="t-dim">&gt;</span>
+      <span class="t-dim">&lt;</span><span class="t-tag">a</span> <span class="t-tl">tl:href</span>=<span class="t-str">"@{/posts(id=</span><span class="t-expr">${post.id}</span><span class="t-str">)}"</span><span class="t-dim">&gt;</span>
+        Read more<span class="t-dim">&lt;/</span><span class="t-tag">a</span><span class="t-dim">&gt;</span>
+    <span class="t-dim">&lt;/</span><span class="t-tag">article</span><span class="t-dim">&gt;</span>
   output_label: output
-  output_source: |-
-    <article>
-      <h2>Growing season</h2>
-      <p>Server-rendered Dart, start to finish.</p>
-      <a href="/posts?id=42">Read more</a>
-    </article>
-    <article>…</article>
+  output_html: |-
+    <span class="t-dim">&lt;</span><span class="t-tag">article</span><span class="t-dim">&gt;</span>
+      <span class="t-dim">&lt;</span><span class="t-tag">h2</span><span class="t-dim">&gt;</span>Growing season<span class="t-dim">&lt;/</span><span class="t-tag">h2</span><span class="t-dim">&gt;</span>
+      <span class="t-dim">&lt;</span><span class="t-tag">p</span><span class="t-dim">&gt;</span>Server-rendered Dart, start to finish.<span class="t-dim">&lt;/</span><span class="t-tag">p</span><span class="t-dim">&gt;</span>
+      <span class="t-dim">&lt;</span><span class="t-tag">a</span> <span class="t-attr">href</span>=<span class="t-str">"/posts?id=42"</span><span class="t-dim">&gt;</span>Read more<span class="t-dim">&lt;/</span><span class="t-tag">a</span><span class="t-dim">&gt;</span>
+    <span class="t-dim">&lt;/</span><span class="t-tag">article</span><span class="t-dim">&gt;</span>
+    <span class="t-dim">&lt;</span><span class="t-tag">article</span><span class="t-dim">&gt;</span>…<span class="t-dim">&lt;/</span><span class="t-tag">article</span><span class="t-dim">&gt;</span>
 why:
   title: Why Trellis
   body: Use just the engine, or the whole trellis — composable packages that share one version and grow together.
@@ -35,11 +38,11 @@ demo:
   title: One file, two views
   body: >-
     Proof, not promise — the same posts.html is a clickable prototype on your desk and a live page in production.
-  template_source: |-
-    <article tl:each="post : ${posts}">
-      <h2 tl:text="${post.title}">Title</h2>
-      <p tl:text="${post.summary}">Summary</p>
-    </article>
+  template_html: |-
+    <span class="t-dim">&lt;</span><span class="t-tag">article</span> <span class="t-tl">tl:each</span>=<span class="t-str">"post : </span><span class="t-expr">${posts}</span><span class="t-str">"</span><span class="t-dim">&gt;</span>
+      <span class="t-dim">&lt;</span><span class="t-tag">h2</span> <span class="t-tl">tl:text</span>=<span class="t-str">"</span><span class="t-expr">${post.title}</span><span class="t-str">"</span><span class="t-dim">&gt;</span>Title<span class="t-dim">&lt;/</span><span class="t-tag">h2</span><span class="t-dim">&gt;</span>
+      <span class="t-dim">&lt;</span><span class="t-tag">p</span> <span class="t-tl">tl:text</span>=<span class="t-str">"</span><span class="t-expr">${post.summary}</span><span class="t-str">"</span><span class="t-dim">&gt;</span>Summary<span class="t-dim">&lt;/</span><span class="t-tag">p</span><span class="t-dim">&gt;</span>
+    <span class="t-dim">&lt;/</span><span class="t-tag">article</span><span class="t-dim">&gt;</span>
   prototype_title: Title
   prototype_body: Summary
   rendered_title: Fragments over frameworks

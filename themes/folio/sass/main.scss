@@ -14,6 +14,10 @@ $trellis-border-radius: 2px !default;
 $trellis-plate-label: 'Plate' !default;
 $trellis-show-plate-numbers: true !default;
 $trellis-show-sidenotes: true !default;
+// Code needs more than the two inks: sepia for literals, indigo for types and titles.
+// Overridden per skin like the seven palette params, so a forced skin gets them too.
+$folio-code-number: #7a4a12 !default;
+$folio-code-function: #2c4a72 !default;
 
 @import 'dark_tokens';
 
@@ -34,6 +38,8 @@ $trellis-show-sidenotes: true !default;
   --folio-rule: #{$folio-dark-rule};
   --folio-green: #{$folio-dark-green};
   --folio-rubric: #{$folio-dark-rubric};
+  --folio-code-number: #{$folio-dark-code-number};
+  --folio-code-function: #{$folio-dark-code-function};
 }
 
 :root {
@@ -57,6 +63,14 @@ $trellis-show-sidenotes: true !default;
   --folio-rule-strong: color-mix(in srgb, var(--folio-rule) 30%, var(--folio-muted));
   --folio-paper-wash: color-mix(in srgb, var(--folio-green) 8%, var(--folio-paper));
   --folio-rubric-wash: color-mix(in srgb, var(--folio-rubric) 10%, var(--folio-paper));
+  /* Highlighter roles. Four reuse the page inks and follow the skin on their own;
+     only the two extra pigments need a per-skin value. */
+  --folio-code-comment: var(--folio-muted);
+  --folio-code-keyword: var(--folio-rubric);
+  --folio-code-string: var(--folio-green);
+  --folio-code-punctuation: var(--folio-ink-soft);
+  --folio-code-number: #{$folio-code-number};
+  --folio-code-function: #{$folio-code-function};
 }
 
 @if $trellis-skin == auto {
@@ -65,6 +79,7 @@ $trellis-show-sidenotes: true !default;
     --folio-ink: #{$trellis-text-color}; --folio-muted: #{$trellis-muted-color}; --folio-paper: #{$trellis-bg-color};
     --folio-surface: #{$trellis-surface-color}; --folio-rule: #{$trellis-border-color};
     --folio-green: #{$trellis-primary-color}; --folio-rubric: #{$trellis-accent-color};
+    --folio-code-number: #{$folio-code-number}; --folio-code-function: #{$folio-code-function};
   }
   :root[data-skin='dark'] { @include folio-dark; }
 }
@@ -133,22 +148,28 @@ summary:focus-visible {
 .nav-list a,
 .rubric,
 .sidebar-title,
+.sidebar-toggle,
 .toc-title,
-.page-nav-label {
+.page-nav-label,
+.skin-toggle {
   font: 700 .72rem var(--folio-mono);
   letter-spacing: .14em;
   text-transform: uppercase;
 }
-.nav-list a { font-size: .78rem; letter-spacing: .12em; }
+/* Masthead navigation is set as small caps, so the underline would fight the tracking. */
+.nav-list a { font-size: .78rem; letter-spacing: .12em; text-decoration: none; }
+.nav-list a:hover, .nav-list a:focus-visible { text-decoration: underline; }
 .rubric, .toc-title, .page-nav-label { color: var(--folio-rubric); }
 /* The tree's own top-level entries carry the rubric label role, so the nav heading above
-   them steps back to muted rather than competing with them. */
-.sidebar-title { color: var(--folio-muted); }
+   them steps back to muted rather than competing with them. The mobile disclosure summary
+   replaces that heading, so it takes the same voice. */
+.sidebar-title, .sidebar-toggle { color: var(--folio-muted); }
+/* Edition badge: rubric outline and mono caps, as on the specimen sheet. */
 .skin-toggle {
-  border: 1px solid var(--folio-rule);
+  border: 1px solid var(--folio-rule-strong);
   border-radius: var(--folio-radius);
   padding: 6px 10px;
-  color: inherit;
+  color: var(--folio-rubric);
   background: var(--folio-surface);
   cursor: pointer;
 }
@@ -256,7 +277,6 @@ img.engraving { object-fit: cover; }
   margin: 0;
   font: 500 clamp(2.35rem, 5vw, 4.7rem)/1.02 var(--folio-serif);
 }
-/* Each card owns all four edges: a short last row leaves no dangling rule. */
 /* Apparatus showcase: a mounted specimen beside its margin note. */
 .apparatus-grid {
   counter-reset: folio-plates;
@@ -286,6 +306,7 @@ img.engraving { object-fit: cover; }
 .manual-intro > p { max-width: 430px; margin: 0; color: var(--folio-ink-soft); }
 .manual-intro .button { flex: 0 0 auto; }
 
+/* Each card owns all four edges: a short last row leaves no dangling rule. */
 .card-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -307,11 +328,12 @@ img.engraving { object-fit: cover; }
 .doc-card-title a:hover, .doc-card-title a:focus-visible { text-decoration: underline; }
 .doc-card-summary { margin: 0; color: var(--folio-ink-soft); font-size: .95rem; }
 .no-pages { color: var(--folio-ink-soft); font-style: italic; }
+/* No viewport floor here: flex: 1 0 auto inside the min-height: 100vh body column already
+   stretches the shell to the footer, and a vh floor over-reserves below ~950px of height. */
 .docs-shell {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   flex: 1 0 auto;
-  min-height: 70vh;
   border: 1px solid var(--folio-rule-strong);
   background: var(--folio-paper);
   box-shadow: 0 18px 50px rgb(35 51 39 / 10%);
@@ -343,12 +365,39 @@ img.engraving { object-fit: cover; }
   color: inherit;
   background: var(--folio-surface);
 }
-.search-shell.search-unavailable { display: none; }
 .sidebar-tree, .sidebar-subtree, .toc-list, .search-results {
   margin: 18px 0 0;
   padding: 0;
   list-style: none;
 }
+/* Search results (rendered by static/js/search.js). MAX_RESULTS is 20, so the list
+   scrolls in place rather than pushing the section tree off the sidebar. */
+.search-results {
+  max-height: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.search-result { margin: 0 0 4px; }
+.search-result-link {
+  display: block;
+  border-radius: var(--folio-radius);
+  padding: 6px 7px;
+  text-decoration: none;
+}
+.search-result-link:hover, .search-result-link:focus-visible { background: var(--folio-surface); }
+.search-result-title {
+  display: block;
+  color: var(--folio-green);
+  font: 600 .87rem/1.3 var(--folio-serif);
+}
+.search-result-snippet {
+  display: block;
+  margin-top: 3px;
+  color: var(--folio-ink-soft);
+  font-size: .78rem;
+  line-height: 1.4;
+}
+.search-empty { padding: 6px 7px; color: var(--folio-ink-soft); font-size: .82rem; font-style: italic; }
 .sidebar-tree li, .toc-list li { margin: 0 0 7px; }
 .sidebar-subtree { margin: 7px 0 14px; }
 .sidebar-subtree .sidebar-subtree { margin-bottom: 7px; }
@@ -396,6 +445,11 @@ img.engraving { object-fit: cover; }
   background: var(--folio-green);
   text-decoration: none;
 }
+/* An ancestor of the current page takes a marginal tick rather than the active block, so
+   the trail reads at every level without a second entry claiming to be the page. Nested
+   entries also step up from --folio-ink-soft; top-level ones keep their rubric label colour. */
+.sidebar-tree .sidebar-link.is-active-trail { box-shadow: inset 2px 0 0 var(--folio-rubric); }
+.sidebar-subtree .sidebar-link.is-active-trail { color: var(--folio-ink); }
 .sidebar-tree > .sidebar-item + .sidebar-item { margin-top: 18px; }
 .sidebar-subtree .sidebar-link { padding-left: 14px; }
 .sidebar-subtree .sidebar-subtree .sidebar-link { padding-left: 26px; }
@@ -423,7 +477,9 @@ img.engraving { object-fit: cover; }
   padding: clamp(20px, 4vw, 42px);
 }
 .folio-plate > img { max-width: 100%; height: auto; }
-.folio-plate pre {
+/* Scoped to the wrapper: .plate-frame already draws the inner frame, so the code block
+   inside it must not draw a second one. A <pre> mounted directly keeps its own frame. */
+.folio-plate .plate-frame pre {
   margin: 0;
   border: 0;
   border-radius: 0;
@@ -468,6 +524,9 @@ img.engraving { object-fit: cover; }
   letter-spacing: .08em;
   text-transform: uppercase;
 }
+/* Article code wraps instead of clipping: the SSG emits a bare <pre> with no tabindex, so a
+   horizontal scroller here would be unreachable by keyboard (WCAG 2.1.1). overflow stays as
+   a backstop for content with no break opportunity at all. */
 pre {
   overflow: auto;
   border: 1px solid var(--folio-rule);
@@ -475,6 +534,8 @@ pre {
   padding: 22px;
   background: var(--folio-surface);
   font: .84rem/1.72 var(--folio-mono);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
 }
 code { font-family: var(--folio-mono); }
 :not(pre) > code {
@@ -483,9 +544,49 @@ code { font-family: var(--folio-mono); }
   background: var(--folio-surface);
   font-size: .82em;
 }
-.hljs-keyword, .hljs-attr { color: var(--folio-rubric); }
-.hljs-string { color: var(--folio-green); }
-.hljs-comment { color: var(--folio-muted); font-style: italic; }
+/* Highlighter tokens, baked in at build time by the SSG (ADR-010). The mapping covers the
+   full class set package:highlight emits for the vendored grammars; anything without a rule
+   (.hljs-code, nested .hljs-subst) inherits the block colour. */
+.hljs-comment,
+.hljs-quote {
+  color: var(--folio-code-comment);
+  font-style: italic;
+}
+.hljs-keyword,
+.hljs-meta-keyword,
+.hljs-selector-tag,
+.hljs-name,
+.hljs-section { color: var(--folio-code-keyword); }
+.hljs-built_in,
+.hljs-class,
+.hljs-title,
+.hljs-type { color: var(--folio-code-function); }
+.hljs-string,
+.hljs-attr,
+.hljs-attribute,
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-selector-pseudo,
+.hljs-selector-attr,
+.hljs-char,
+.hljs-link,
+.hljs-addition { color: var(--folio-code-string); }
+.hljs-number,
+.hljs-literal,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-regexp { color: var(--folio-code-number); }
+.hljs-punctuation,
+.hljs-operator,
+.hljs-subst,
+.hljs-params,
+.hljs-meta,
+.hljs-tag,
+.hljs-deletion { color: var(--folio-code-punctuation); }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 700; }
 .page-nav, .pagination {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -500,6 +601,8 @@ code { font-family: var(--folio-mono); }
   padding: 14px;
   text-decoration: none;
 }
+/* The rubric label heads its own line; the neighbour's title follows in body type. */
+.page-nav-label { display: block; }
 .page-nav-next, .pagination-next { text-align: right; }
 .pagination-disabled { color: var(--folio-muted); }
 .pagination-info { color: var(--folio-muted); font: .7rem var(--folio-mono); letter-spacing: .09em; text-transform: uppercase; }
@@ -515,16 +618,26 @@ code { font-family: var(--folio-mono); }
 .footer-text { max-width: 580px; margin: 0; }
 .social-links { justify-content: center; gap: 22px; font-size: .86rem; }
 .footer-powered-by { margin: 0; font-size: .86rem; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+/* Trail and colophon links are set small; padding lifts them to the 24px minimum target
+   (WCAG 2.5.8) without changing the inline rhythm of the crumb trail. */
+.breadcrumb-list a,
+.social-links a,
+.footer-powered-by a {
+  display: inline-block;
+  min-width: 24px;
+  padding-block: 6px;
+}
 @media (max-width: 1000px) {
   .sidebar-disclosure { width: 190px; }
   .docs-shell > .docs-toc { display: none; }
 }
 @media (max-width: 760px) {
-  /* Brand and edition control share the first row; navigation wraps below it. */
+  /* Mockup packing at this width: the brand takes the first row, and the edition badge
+     rides the right edge of the navigation row rather than claiming a row of its own. */
   .site-header .container { flex-wrap: wrap; gap: 6px 14px; min-height: 0; padding-block: 10px; }
-  .site-title { margin-right: auto; }
-  .site-header nav { order: 1; width: 100%; }
+  .site-title { width: 100%; }
+  .site-header nav { order: 1; flex: 1 1 auto; }
+  .skin-toggle { order: 2; }
   .nav-list { flex-wrap: wrap; gap: 0 18px; }
   .hero, .docs-shell { grid-template-columns: 1fr; }
   .section-head { grid-template-columns: 1fr; gap: 10px; }

@@ -487,7 +487,7 @@ Trellis sites can use pre-built themes for complete, customizable designs with
 zero boilerplate. Install a theme with the CLI:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis-theme-verdant
+trellis theme add https://github.com/tolo/trellis --theme verdant
 ```
 
 Then configure it in `trellis_site.yaml`:

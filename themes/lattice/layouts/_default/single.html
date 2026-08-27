@@ -4,7 +4,7 @@
     <title>Doc</title>
   </head>
   <body>
-    <main id="main-content" class="docs-main-region" tl:define="content">
+    <main id="main-content" tl:define="content">
       <div class="wrap docs-shell">
         <div tl:if="${theme.show_sidebar} and ${site.menu}" tl:replace="~{layouts/base.html :: sidebar}"></div>
         <article class="doc">

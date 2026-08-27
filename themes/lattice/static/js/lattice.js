@@ -19,6 +19,7 @@
   }
 
   if (themeToggle) {
+    themeToggle.hidden = false;
     setTheme(root.dataset.theme === 'dark' ? 'dark' : 'light', false);
     themeToggle.addEventListener('click', function () {
       setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark', true);
@@ -47,9 +48,13 @@
       return headlineText.scrollHeight > headlineSlot.clientHeight;
     }
     function fitHeadline() {
-      if (!headlineSlot || !headlineText || headlineSlot.clientHeight === 0) return;
+      if (!headlineSlot || !headlineText) return;
+      // Lock the slot to its fixed two-line box first: the server-rendered slot grows with
+      // its content, so nothing would ever measure as overflowing.
+      headlineSlot.classList.add('is-fitted');
+      if (headlineSlot.clientHeight === 0) return;
       headline.style.removeProperty('--headline-fit-scale');
-      headline.classList.remove('fit-initial', 'fit-1', 'fit-2', 'fit-3');
+      headline.classList.remove('fit-1', 'fit-2', 'fit-3');
       if (headlineOverflows()) headline.classList.add('fit-1');
       if (headlineOverflows()) headline.classList.add('fit-2');
       if (headlineOverflows()) headline.classList.add('fit-3');
@@ -81,72 +86,39 @@
         document.fonts.addEventListener('loadingdone', fitHeadline);
       }
     }
-    if (entries.length > 1 && !reducedMotion.matches) {
+    if (entries.length > 1) {
       headline.addEventListener('mouseenter', function () {
         paused = true;
       });
       headline.addEventListener('mouseleave', function () {
         paused = false;
       });
-      window.setInterval(function () {
-        if (paused || document.hidden) return;
-        headline.classList.add('is-fading');
-        window.setTimeout(function () {
-          headlineIndex = (headlineIndex + 1) % entries.length;
-          renderHeadline(headlineIndex);
+      var cycleTimer = null;
+      // The preference can be turned on after load, so it is tracked like the sidebar
+      // breakpoint above rather than read once: cycling stops and restarts with it.
+      function syncMotion(event) {
+        if (event.matches) {
+          if (cycleTimer === null) return;
+          window.clearInterval(cycleTimer);
+          cycleTimer = null;
           headline.classList.remove('is-fading');
-        }, 500);
-      }, 6500);
-    }
-  }
-
-  function appendCodeToken(parent, text, className) {
-    var token = document.createElement('span');
-    token.className = className;
-    token.textContent = text;
-    parent.appendChild(token);
-  }
-
-  function appendCodeString(parent, text) {
-    var cursor = 0;
-    var expression = /\$\{[^}]+\}/g;
-    var match;
-    while ((match = expression.exec(text)) !== null) {
-      if (match.index > cursor) appendCodeToken(parent, text.slice(cursor, match.index), 't-str');
-      appendCodeToken(parent, match[0], 't-expr');
-      cursor = match.index + match[0].length;
-    }
-    if (cursor < text.length) appendCodeToken(parent, text.slice(cursor), 't-str');
-  }
-
-  var codeBlocks = document.querySelectorAll('[data-lattice-code]');
-  var codePattern = /(<\/?)([A-Za-z][\w-]*)|(\s)(tl:[\w-]+|[A-Za-z][\w-]*)(?==)|("[^"]*")|(\/?>)/g;
-  for (var codeIndex = 0; codeIndex < codeBlocks.length; codeIndex++) {
-    var block = codeBlocks[codeIndex];
-    var source = block.textContent;
-    var fragment = document.createDocumentFragment();
-    var sourceCursor = 0;
-    var codeMatch;
-    while ((codeMatch = codePattern.exec(source)) !== null) {
-      if (codeMatch.index > sourceCursor)
-        fragment.appendChild(document.createTextNode(source.slice(sourceCursor, codeMatch.index)));
-      if (codeMatch[1]) {
-        appendCodeToken(fragment, codeMatch[1], 't-dim');
-        appendCodeToken(fragment, codeMatch[2], 't-tag');
-      } else if (codeMatch[4]) {
-        fragment.appendChild(document.createTextNode(codeMatch[3]));
-        appendCodeToken(fragment, codeMatch[4], codeMatch[4].indexOf('tl:') === 0 ? 't-tl' : 't-attr');
-      } else if (codeMatch[5]) {
-        appendCodeString(fragment, codeMatch[5]);
-      } else {
-        appendCodeToken(fragment, codeMatch[6], 't-dim');
+          return;
+        }
+        if (cycleTimer !== null) return;
+        cycleTimer = window.setInterval(function () {
+          if (paused || document.hidden) return;
+          headline.classList.add('is-fading');
+          window.setTimeout(function () {
+            headlineIndex = (headlineIndex + 1) % entries.length;
+            renderHeadline(headlineIndex);
+            headline.classList.remove('is-fading');
+          }, 500);
+        }, 6500);
       }
-      sourceCursor = codePattern.lastIndex;
+      syncMotion(reducedMotion);
+      if (typeof reducedMotion.addEventListener === 'function')
+        reducedMotion.addEventListener('change', syncMotion);
     }
-    if (sourceCursor < source.length)
-      fragment.appendChild(document.createTextNode(source.slice(sourceCursor)));
-    block.textContent = '';
-    block.appendChild(fragment);
   }
 
   var demo = document.querySelector('[data-demo-view]');
@@ -164,18 +136,33 @@
     }
   }
 
-  var copyButtons = document.querySelectorAll('[data-copy-command]');
-  for (var copyIndex = 0; copyIndex < copyButtons.length; copyIndex++) {
-    copyButtons[copyIndex].addEventListener('click', function (event) {
-      var button = event.currentTarget;
-      var code = button.parentElement.querySelector('code');
-      if (!code || !navigator.clipboard || !navigator.clipboard.writeText) return;
-      navigator.clipboard.writeText(code.textContent).then(function () {
-        button.textContent = 'Copied';
-        window.setTimeout(function () {
-          button.textContent = 'Copy';
-        }, 1500);
+  // The Clipboard API is absent outside a secure context (plain-http staging or LAN), so the
+  // buttons are server-rendered hidden and only revealed once the capability is confirmed —
+  // an inert button that silently does nothing is worse than no button.
+  if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+    var copyButtons = document.querySelectorAll('[data-copy-command]');
+    for (var copyIndex = 0; copyIndex < copyButtons.length; copyIndex++) {
+      copyButtons[copyIndex].hidden = false;
+      copyButtons[copyIndex].addEventListener('click', function (event) {
+        var button = event.currentTarget;
+        var code = button.parentElement.querySelector('code');
+        if (!code) return;
+        navigator.clipboard.writeText(code.textContent).then(
+          function () {
+            button.textContent = 'Copied';
+            window.setTimeout(function () {
+              button.textContent = 'Copy';
+            }, 1500);
+          },
+          function () {
+            // Permission denied or the write failed: say so instead of rejecting unhandled.
+            button.textContent = 'Copy failed';
+            window.setTimeout(function () {
+              button.textContent = 'Copy';
+            }, 1500);
+          },
+        );
       });
-    });
+    }
   }
 })();

@@ -1,7 +1,11 @@
+# GENERATED FILE – do not edit by hand.
+# Generator: tool/generate_theme_gallery.dart
+# Source:    themes/<name>/theme.yaml
+# Regenerate with: dart run tool/generate_theme_gallery.dart
 themes:
   - name: "arbor"
     archetype: "docs"
-    description: "A documentation theme for Trellis. Hierarchical sidebar navigation, in-page table of contents, prev/next links, and build-time syntax highlighting (the SSG bakes `.hljs-*` spans in — no highlighter JS shipped). Fully readable with JavaScript disabled."
+    description: "A documentation theme for Trellis. Hierarchical sidebar navigation, in-page table of contents, prev/next links, and build-time syntax highlighting: the SSG bakes the highlight spans into the HTML, so no highlighter JavaScript is shipped. Fully readable with JavaScript disabled."
     config_hint: "theme: arbor"
     readme_url: "https://github.com/tolo/trellis/tree/main/themes/arbor/README.md"
     screenshot_light: "themes/arbor/light.png"

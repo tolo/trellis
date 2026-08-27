@@ -250,7 +250,14 @@ $trellis-border-radius: 7px;
     // wrapped emphasis gets one band per line fragment instead of one box sized to the whole run.
     expect(light, isNot(contains('.marker::before')));
     expect(dark, isNot(contains('.marker::before')));
-    expect(RegExp(r'\.marker\s*\{[^}]*box-decoration-break: clone').hasMatch(light), isTrue);
+    expect(RegExp(r'\.marker\s*\{[^}]*box-decoration-break: clone;').hasMatch(light), isTrue);
+    // Placement is the fix, not just the gradient: bottom-anchored so the band sits under the lower
+    // half of every fragment, unrepeated so `background-size` cannot tile a second band above it,
+    // and dark ink so the emphasis stays legible on lime.
+    expect(RegExp(r'\.marker\s*\{[^}]*background-repeat: no-repeat;').hasMatch(light), isTrue);
+    expect(RegExp(r'\.marker\s*\{[^}]*color: #14251a;').hasMatch(light), isTrue);
+    expect(RegExp(r'\.marker\s*\{[^}]*background-position: left 0 bottom 0\.02em;').hasMatch(light), isTrue);
+    expect(RegExp(r'\.marker\s*\{[^}]*background-position: left 0 bottom 0;').hasMatch(dark), isTrue);
     expect(RegExp(r'\.marker\s*\{[^}]*white-space').hasMatch(light), isFalse);
     expect(RegExp(r'\.marker\s*\{[^}]*white-space').hasMatch(dark), isFalse);
     // Light keeps the mockup's band over the lower 46%, tilted by the gradient angle rather than by
@@ -269,7 +276,7 @@ $trellis-border-radius: 7px;
     // it reuses `hero.ctas[0].label`, which a landing page may make a sentence.
     expect(RegExp(r'\.desktop-nav, \.nav-cta\s*\{\s*display: none;').hasMatch(light), isTrue);
     expect(RegExp(r'\.nav-cta\s*\{[^}]*max-width: 220px').hasMatch(light), isTrue);
-    expect(RegExp(r'\.nav-cta span\s*\{[^}]*text-overflow: ellipsis').hasMatch(light), isTrue);
+    expect(RegExp(r'\.nav-cta span\s*\{[^}]*text-overflow: ellipsis;').hasMatch(light), isTrue);
     // `anywhere` broke the brand and menu labels mid-word, so `body` keeps `break-word`. Page copy
     // needs `anywhere` because `break-word` does not shrink a box's min-content size, and a track
     // sized from min-content is what pushes an unbreakable token past the viewport.

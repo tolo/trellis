@@ -26,3 +26,7 @@ pubspec_overrides.yaml
 .agent_temp/
 .codex
 CLAUDE.local.md
+
+# Python bytecode from tool/subset_fonts.py
+__pycache__/
+*.pyc

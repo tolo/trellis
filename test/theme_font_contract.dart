@@ -76,6 +76,11 @@ Future<void> expectThemeFontContract({
   required int maxTotalBytes,
   required List<GlyphGap> knownGaps,
   required List<WeightGap> knownWeightGaps,
+
+  /// Configs outside the theme that bind this theme's params - the docs site's own
+  /// `site/trellis_site.yaml`, say. A glyph there ships to real visitors rather than
+  /// only into a screenshot, so it is the surface that matters most.
+  List<String> extraConfigPaths = const [],
 }) async {
   // Loud comments survive compilation, and Meadow keeps one inside a `@font-face` block
   // whose prose carries both a colon-free semicolon and a `:`. Left in, the declaration
@@ -161,6 +166,7 @@ Future<void> expectThemeFontContract({
     inspected: inspected,
     knownGaps: knownGaps,
     knownWeightGaps: knownWeightGaps,
+    extraConfigPaths: extraConfigPaths,
   );
 }
 
@@ -175,6 +181,7 @@ Future<void> _expectGlyphCoverage({
   required Map<String, _Woff2> inspected,
   required List<GlyphGap> knownGaps,
   required List<WeightGap> knownWeightGaps,
+  List<String> extraConfigPaths = const [],
 }) async {
   // `--x: Fraunces, Georgia, serif` makes `--x` the Fraunces variable; a variable fronting
   // a system stack maps to nothing here and its text is not asserted, because no vendored
@@ -314,7 +321,7 @@ Future<void> _expectGlyphCoverage({
   // Parameter defaults and data-file values are substituted into whichever element the
   // layout binds them to, and a site author can move that binding. Resolving the template
   // dataflow to name one family would assert less than requiring all of them to draw it.
-  for (final (source, values) in _themeStrings(themeDir)) {
+  for (final (source, values) in _themeStrings(themeDir, extraConfigPaths)) {
     for (final value in values) {
       for (final codepoint in _nonAscii(value)) {
         demand(codepoint, null, source);
@@ -423,7 +430,7 @@ Iterable<(Element, String, String)> _renderedText(Document document) sync* {
 /// back there ships as a picture. Example *content* (`example/content/**`) is not: that is
 /// authored demo prose standing in for a site author's, and Meadow's `VENDORED.md` already
 /// records its pictographs as knowingly reaching the system font.
-Iterable<(String, Iterable<String>)> _themeStrings(String themeDir) sync* {
+Iterable<(String, Iterable<String>)> _themeStrings(String themeDir, List<String> extraConfigPaths) sync* {
   final manifest = loadYaml(File(p.join(themeDir, 'theme.yaml')).readAsStringSync()) as YamlMap;
   final params = manifest['params'];
   yield (
@@ -438,6 +445,12 @@ Iterable<(String, Iterable<String>)> _themeStrings(String themeDir) sync* {
   if (example.existsSync()) {
     final config = loadYaml(example.readAsStringSync());
     yield ('example theme_params', config is YamlMap ? _strings(config['theme_params']) : const <String>[]);
+  }
+  for (final path in extraConfigPaths) {
+    final file = File(path);
+    if (!file.existsSync()) continue;
+    final config = loadYaml(file.readAsStringSync());
+    yield ('${p.basename(path)} theme_params', config is YamlMap ? _strings(config['theme_params']) : const <String>[]);
   }
   final dataDir = Directory(p.join(themeDir, 'data'));
   if (!dataDir.existsSync()) return;

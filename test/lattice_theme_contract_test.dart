@@ -909,6 +909,9 @@ $showcaseCards''',
       // Every codepoint the theme emits is now drawn by the face that renders it:
       // `.duo-arrow` takes var(--body) for U+2192, and the terminal-card prefixes are
       // ASCII. An exact-list assertion, so a new gap fails here and so does a stale entry.
+      // The docs site binds Lattice's params in its own config, and a glyph there
+      // reaches real visitors rather than only a screenshot.
+      extraConfigPaths: [p.join(Directory.current.path, 'site', 'trellis_site.yaml')],
       knownGaps: const [],
       knownWeightGaps: const [],
     );

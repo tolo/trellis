@@ -83,8 +83,11 @@ function makeElement(dataset = {}) {
 }
 
 function runLattice(reducedMotion, { entryCount = 2, contentHeight = 100, sidebarMobile = false } = {}) {
+  // The theme server-renders the headline unscaled and lets lattice.js add
+  // `is-fitted` before measuring, so the harness must start from the unscaled
+  // state - `fit-initial` was removed from the theme and simulating it here
+  // would exercise a state that no longer ships.
   const headline = makeElement();
-  headline.classList.add('fit-initial');
   const headlineText = makeElement();
   headlineText.textContent = 'Server first';
   headline.appendChild(headlineText);
@@ -100,7 +103,7 @@ function runLattice(reducedMotion, { entryCount = 2, contentHeight = 100, sideba
   function headlineScale() {
     const inlineScale = Number(headline.style.getPropertyValue('--headline-fit-scale'));
     if (inlineScale) return inlineScale;
-    if (headline.classList.contains('fit-3') || headline.classList.contains('fit-initial')) return 0.64;
+    if (headline.classList.contains('fit-3')) return 0.64;
     if (headline.classList.contains('fit-2')) return 0.74;
     if (headline.classList.contains('fit-1')) return 0.86;
     return 1;

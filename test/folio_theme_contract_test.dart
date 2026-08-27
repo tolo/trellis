@@ -8,6 +8,8 @@ import 'package:test/test.dart';
 import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
 
+import 'theme_font_contract.dart';
+
 void main() {
   final themeDir = p.join(Directory.current.path, 'themes', 'folio');
 
@@ -163,9 +165,8 @@ $trellis-show-sidenotes: false;
     expect(RegExp(r'\.docs-shell\s*\{[^}]*grid-template-columns: auto minmax\(0, 1fr\) auto').hasMatch(css), isTrue);
     expect(css, contains('.breadcrumb-list'));
     expect(css, contains('.hero-plate::before'));
-    // One variable face spans 400-600, so headings get real weight instead of synthesised bold,
-    // and size-adjust lifts EB Garamond's small x-height to the metrics the mockup was drawn in.
-    expect(RegExp(r'@font-face\s*\{[^}]*font-weight: 400 600').hasMatch(css), isTrue);
+    // size-adjust lifts EB Garamond's small x-height to the metrics the mockup was drawn in. The
+    // declared weight range is checked against the file's own fvar in the vendored-font contract.
     expect(RegExp(r'@font-face\s*\{[^}]*size-adjust: 118%').hasMatch(css), isTrue);
     expect(css, isNot(contains('IBM Plex Mono')));
     // Leaf entries must not emit a bare subtree; nesting is indentation, not stacked rules.
@@ -567,6 +568,25 @@ $trellis-show-sidenotes: false;
     expect(home.querySelector('.no-pages'), isNotNull);
   });
 
+  test('the vendored face is the font the stylesheet claims, and draws what the theme emits', () async {
+    await expectThemeFontContract(
+      themeDir: themeDir,
+      compiledCss: TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true),
+      // Floors sit about a tenth under the shipped size and glyph count: a face that loses a table,
+      // its embedded OFL name records or a third of its glyphs fails, while trimming a few
+      // codepoints does not. No instancer step runs - `wght` is the family's only axis and the
+      // theme renders it - so the axis set is the file's own.
+      faces: const {
+        'eb-garamond-latin.woff2': (minBytes: 40 * 1024, minGlyphs: 340, axes: {'wght'}),
+      },
+      // Font payload is a budgeted part of every deployed site; hold it under 50KB. A vendored
+      // italic would take the theme to 94,756 B, which is what this cap refuses (VENDORED.md).
+      maxTotalBytes: 50 * 1024,
+      knownGaps: const [],
+      knownWeightGaps: const [],
+    );
+  });
+
   test('S07 TI08 publishability collateral and local assets are complete', () {
     final manifest = ThemeManifest.load(themeDir);
     final readme = File(p.join(themeDir, 'README.md')).readAsStringSync();
@@ -588,9 +608,7 @@ $trellis-show-sidenotes: false;
       'eb-garamond-latin.woff2',
       'OFL-EB-Garamond.txt',
     });
-    // Font payload is a budgeted part of every deployed site; hold it under 50KB.
-    final fontBytes = File(p.join(themeDir, 'static', 'fonts', 'eb-garamond-latin.woff2')).lengthSync();
-    expect(fontBytes, lessThan(50 * 1024), reason: '$fontBytes bytes');
+    // The font payload's budget, floors, axes and glyph coverage are asserted below.
     for (final screenshot in ['screenshots/light.png', 'screenshots/dark.png']) {
       final bytes = File(p.join(themeDir, screenshot)).readAsBytesSync();
       expect(bytes.take(8), [137, 80, 78, 71, 13, 10, 26, 10], reason: screenshot);

@@ -47,11 +47,14 @@ One variable file replaces per-weight statics: headings need 500 and 600, and tw
 Garamond's x-height (40.5 per 100px) to the Palatino/Iowan metrics the design was drawn against (47.1–47.9); without
 it body copy renders at roughly 15px optical instead of 18px.
 
-The `@font-face` declares `font-weight: 400 600`, the range the design uses, against a file that carries
-`wght 400-800` — the descriptor never asks for a weight the file cannot produce. One rule does sit outside it: the
-masthead sets `font: 700 … var(--folio-serif)` and the browser clamps that to 600. It has rendered at 600 since the
-design was signed off, so the descriptor is left alone; whether the wordmark wants a real 700 or the rule should say
-600 is a design call, not a font one.
+The `@font-face` declares `font-weight: 400 800`, the whole range the file carries — `subset_fonts.py` pins no axis
+limit for this family, so upstream's full `wght` survives the subset. It declared `400 600` until 0.11: `.site-title`
+and `.button` both set `font: 700 … var(--folio-serif)`/`var(--folio-body)`, and both were clamped into the declared
+range and drew a real 600. The clamp was invisible to inspection — under `font-synthesis: none` the 700 and 800
+renderings were byte-identical to 600, so nothing was faux-bolded and nothing reported it. Measured at 64px on the
+same file, advance widths go 419.14 / 441.64 / 452.67 / 460.05 for 400 / 600 / 700 / 800 once the range is declared in
+full, against 441.64 flat for everything above 600 before. The approved mockup sets `.brand { font-weight: 700 }` in
+system faces that carry a real 700, so 700 is what the design asked for. Widening costs no bytes.
 
 No italic is vendored, so the caption and empty-state rules that set `font-style: italic` on body copy render a
 synthesised oblique. EB Garamond Italic exists upstream, but the same latin subset of it measures 49,232 bytes — more

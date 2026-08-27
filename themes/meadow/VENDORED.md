@@ -41,7 +41,7 @@ defaults to `auto` and the browser drives the axis from font-size; instantiating
 widens headings by roughly 11%. Bricolage's `wdth` is unused and pinned at its default. JetBrains Mono is restricted
 to `wght 400-800` — the theme never renders below 400.
 
-The exact commands, per family (`<LATIN>` and `<SYMBOLS>` are constants in `tool/subset_fonts.py`):
+The exact commands, per family (`<LATIN>`, `<ARROWS>` and `<MARKS>` are constants in `tool/subset_fonts.py`):
 
 ```
 fonttools varLib.instancer -o inst.ttf --no-recalc-timestamp <upstream>.ttf wdth=100
@@ -50,7 +50,9 @@ fonttools subset inst.ttf --output-file=bricolage-grotesque-latin.woff2 --flavor
 ```
 
 Bricolage pins `wdth=100`; Schibsted Grotesk has no axis to pin; JetBrains Mono limits with `wght=400:800`. Schibsted
-Grotesk and JetBrains Mono add `<SYMBOLS>` to the requested set for the arrows and marks below.
+Grotesk adds `<ARROWS>` (`U+2194-2199`) to the requested set; JetBrains Mono adds `<ARROWS>` and `<MARKS>`
+(`U+21E7`, `U+25C7`, `U+25CE-25CF`, `U+26A0-26A1`). The two lists are separate because Schibsted draws no geometric
+mark: asking it for them emitted nothing while reading, in one shared constant, as coverage.
 
 `--no-recalc-timestamp` is load-bearing on both steps: without it each run stamps a new `head.modified` and the output
 hash changes. `--name-IDs=*` keeps the embedded OFL notice (name IDs 13/14) and the `fvar` instance names.
@@ -59,9 +61,10 @@ hash changes. `--name-IDs=*` keeps the embedded OFL notice (name IDs 13/14) and 
 
 The subsets must carry every non-ASCII character the theme itself can emit, not just the Google `latin` set.
 `layouts/_default/list.html` and `single.html` render `← Back` in the body face, `layouts/base.html` renders `↑`, and
-the example content uses `↗`. An earlier trim dropped `←`, `↗`, `†`, `‡`, `‰`, `⇧`, `⚠`, `⚡` and the `U+2000-200A`
-spaces, so those rendered in the visitor's system font mid-sentence, at a different weight and baseline. The requested
-set now covers them wherever the typeface draws them.
+the example content uses `↗`. An earlier trim dropped `←`, `↗`, `†`, `‡`, `‰` and the `U+2000-200A` spaces, so those
+rendered in the visitor's system font mid-sentence, at a different weight and baseline. The requested set now covers
+them wherever the typeface draws them; `⇧`, `⚠` and `⚡` are drawn by JetBrains Mono alone and are requested there
+alone.
 
 Bricolage Grotesque has no `↗` upstream; the character only ever appears in body copy, which is Schibsted Grotesk, so
 that is not reachable in practice. The pictographs the example content uses — `✓` `✦` `⌁` `◇` `◎` `●` `☀` `☾` — are

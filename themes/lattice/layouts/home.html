@@ -118,13 +118,18 @@
         <div class="wrap prose" tl:utext="${page.content}">Content</div>
       </section>
 
-      <!-- Every home section below is gated on BOTH its theme toggle and its data. The toggles are
-           deep-merged params (default true) while data/lattice.yaml is replaced by filename stem, so a
-           site that overrides one block would otherwise publish the others as empty shells: a labelled
-           but empty <h2>, no cells, blank code panes — and the build still reports success. -->
+      <!-- Every home section below is gated on BOTH its theme toggle and the individual leaves it
+           renders — not on the enclosing block. The toggles are deep-merged params (default true)
+           while data/lattice.yaml is replaced by filename stem, so a site that overrides one block
+           leaves the others with no data at all, and a block it does supply may still omit keys. A
+           block-level guard passes on `code_showcase: {title: T}` and publishes two empty code panes;
+           on `why: {title: T}` it reaches `#lists.size(null) > 0`, which throws and kills the build.
+           #strings.isEmpty and #lists.isEmpty are both null-safe, so no ordering is load-bearing. -->
       <section
         class="tinted"
-        tl:if="${theme.show_code_showcase} and ${data.lattice.code_showcase}"
+        tl:if="${theme.show_code_showcase} and not ${#strings.isEmpty(data.lattice.code_showcase.title)}
+               and not ${#strings.isEmpty(data.lattice.code_showcase.template_html)}
+               and not ${#strings.isEmpty(data.lattice.code_showcase.output_html)}"
         aria-labelledby="lattice-code-title"
       >
         <div class="wrap">
@@ -154,9 +159,9 @@
         </div>
       </section>
 
-      <!-- The block guard runs first: #lists.size(null) is null, and comparing null throws. -->
       <section
-        tl:if="${theme.show_why_grid} and ${data.lattice.why} and ${#lists.size(data.lattice.why.cells)} > 0"
+        tl:if="${theme.show_why_grid} and not ${#strings.isEmpty(data.lattice.why.title)}
+               and not ${#lists.isEmpty(data.lattice.why.cells)}"
         aria-labelledby="lattice-why-title"
       >
         <div class="wrap">
@@ -183,7 +188,13 @@
         </div>
       </section>
 
-      <section tl:if="${theme.show_demo} and ${data.lattice.demo}" aria-labelledby="lattice-demo-title">
+      <section
+        tl:if="${theme.show_demo} and not ${#strings.isEmpty(data.lattice.demo.title)}
+               and not ${#strings.isEmpty(data.lattice.demo.template_html)}
+               and not ${#strings.isEmpty(data.lattice.demo.prototype_title)}
+               and not ${#lists.isEmpty(data.lattice.demo.rendered_posts)}"
+        aria-labelledby="lattice-demo-title"
+      >
         <div class="wrap">
           <header class="section-heading">
             <h2 id="lattice-demo-title" tl:text="${data.lattice.demo.title}">Demo</h2>
@@ -240,8 +251,8 @@
 
       <section
         class="tinted"
-        tl:if="${theme.show_themes_showcase} and ${data.lattice.showcase} and
-               ${#lists.size(data.lattice.showcase.cards)} > 0"
+        tl:if="${theme.show_themes_showcase} and not ${#strings.isEmpty(data.lattice.showcase.title)}
+               and not ${#lists.isEmpty(data.lattice.showcase.cards)}"
         aria-labelledby="lattice-showcase-title"
       >
         <div class="wrap">
@@ -256,10 +267,16 @@
               tl:attr="data-accent=${card.accent}"
             >
               <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+              <!-- Each card path sheds a leading slash before the join: assetBase already
+                   ends in one, and //showcase/x.svg is an authority, not a path. -->
               <img
-                tl:with="screenshot=${theme.skin} == 'dark' ? ${card.screenshot_dark} : ${card.screenshot_light}"
-                tl:attr="src=${assetBase} + ${screenshot}, data-light=${assetBase} + ${card.screenshot_light},
-                         data-dark=${assetBase} + ${card.screenshot_dark}, alt=${card.alt}"
+                tl:with="lightPath=${#strings.startsWith(card.screenshot_light, '/')}
+                           ? ${#strings.substring(card.screenshot_light, 1)} : ${card.screenshot_light},
+                         darkPath=${#strings.startsWith(card.screenshot_dark, '/')}
+                           ? ${#strings.substring(card.screenshot_dark, 1)} : ${card.screenshot_dark},
+                         screenshotPath=${theme.skin} == 'dark' ? ${darkPath} : ${lightPath}"
+                tl:attr="src=${assetBase} + ${screenshotPath}, data-light=${assetBase} + ${lightPath},
+                         data-dark=${assetBase} + ${darkPath}, alt=${card.alt}"
               />
               <div class="theme-meta">
                 <h3 tl:text="${card.name}">Theme</h3>

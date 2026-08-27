@@ -156,14 +156,15 @@
 }
 
 // ── Search shell (client-side search wired in static/js/search.js) ───────────
-// Progressive enhancement: the <input> ships disabled and is enabled only after
-// the index loads. On a failed index fetch the whole shell is hidden via
-// .search-unavailable so it is never a broken, interactive-looking control.
+// Progressive enhancement: the shell ships `hidden` and the <input> ships disabled;
+// search.js lifts both once the index has loaded. With JavaScript off, or on a failed
+// index fetch, nothing is shown — rather than a permanently disabled search box. The
+// hiding is the [hidden] normalization in _base.scss, not a class of this component's
+// own: a class-toggle mechanism only covers the failure it was written for, never the
+// script-never-ran case.
 
 .search-shell {
   margin-bottom: $trellis-space-lg;
-
-  &.search-unavailable { display: none; }
 }
 
 .search-input {

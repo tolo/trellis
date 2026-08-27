@@ -8,6 +8,8 @@ import 'package:test/test.dart';
 import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
 
+import 'theme_font_contract.dart';
+
 void main() {
   final themeDir = p.join(Directory.current.path, 'themes', 'meadow');
 
@@ -120,28 +122,7 @@ void main() {
     for (final param in manifest.params.keys) {
       expect(readme, contains('`$param`'), reason: param);
     }
-    // Font payload ships to every deployed site, so it is budgeted. Bricolage keeps opsz because
-    // optical sizing moves it at display sizes; the rest are wght-only. The unused axes cost 86KB.
-    // The cap alone is satisfied by an empty or truncated file, so each face also has to carry the
-    // WOFF2 signature and clear a floor.
-    final fontFiles =
-        Directory(
-            p.join(themeDir, 'static', 'fonts'),
-          ).listSync().whereType<File>().where((f) => f.path.endsWith('.woff2')).toList()
-          ..sort((a, b) => a.path.compareTo(b.path));
-    expect(fontFiles.map((f) => p.basename(f.path)), [
-      'bricolage-grotesque-latin.woff2',
-      'jetbrains-mono-latin.woff2',
-      'schibsted-grotesk-latin.woff2',
-    ]);
-    var fontBytes = 0;
-    for (final file in fontFiles) {
-      final bytes = file.readAsBytesSync();
-      expect(bytes.take(4), [0x77, 0x4F, 0x46, 0x32], reason: 'wOF2 signature: ${p.basename(file.path)}');
-      expect(bytes.length, greaterThanOrEqualTo(16 * 1024), reason: '${p.basename(file.path)} ${bytes.length} bytes');
-      fontBytes += bytes.length;
-    }
-    expect(fontBytes, lessThanOrEqualTo(160 * 1024), reason: '$fontBytes bytes');
+    // The font payload's budget, floors, axes and glyph coverage are asserted in S05 TI08.
 
     for (final screenshot in manifest.screenshots) {
       final bytes = File(p.join(themeDir, screenshot)).readAsBytesSync();
@@ -152,52 +133,35 @@ void main() {
     expect(File(p.join(themeDir, 'example', '.gitignore')).readAsStringSync(), contains('output/'));
   });
 
-  test('S05 TI08 declared and requested font weights exist in the shipped faces', () async {
-    final scss = File(p.join(themeDir, 'sass', 'main.scss')).readAsStringSync();
-    final variables = File(p.join(themeDir, 'sass', '_variables.scss')).readAsStringSync();
-
-    // Each --meadow-* stack fronts one vendored family; the rest of the stack is fallbacks.
-    final stacks = <String, String>{};
-    for (final entry in {
-      '--meadow-display': r'$trellis-heading-font-family',
-      '--meadow-body': r'$trellis-font-family',
-      '--meadow-mono': r'$trellis-code-font-family',
-    }.entries) {
-      final declaration = RegExp('${RegExp.escape(entry.value)}: (.+) !default;').firstMatch(variables)!;
-      stacks[entry.key] = declaration.group(1)!.split(',').first.trim();
-    }
-
-    final faces = <String, ({String file, int min, int max})>{};
-    for (final block in RegExp(r'@font-face \{([^}]*)\}').allMatches(scss)) {
-      final body = block.group(1)!;
-      final range = RegExp(r'font-weight: (\d{3}) (\d{3});').firstMatch(body)!;
-      faces[RegExp("font-family: '([^']+)'").firstMatch(body)!.group(1)!] = (
-        file: RegExp(r"src: url\('\.\./fonts/([^']+)'\)").firstMatch(body)!.group(1)!,
-        min: int.parse(range.group(1)!),
-        max: int.parse(range.group(2)!),
-      );
-    }
-    expect(faces.keys, unorderedEquals(stacks.values));
-
-    final axes = await _fontAxes(faces.values.map((f) => f.file).toList(), themeDir);
-    if (axes == null) return;
-    for (final entry in faces.entries) {
-      final wght = (axes[entry.value.file] as Map<String, dynamic>?)?['wght'] as List<dynamic>?;
-      expect(wght, isNotNull, reason: '${entry.key} carries no wght axis');
-      // Declaring a range the file does not carry makes the browser synthesise the missing weights
-      // (folio's faux bold); declaring less than the file carries silently clamps every request past
-      // the edge instead (meadow's JetBrains Mono). Both render a weight nobody asked for.
-      expect(entry.value.min, greaterThanOrEqualTo(wght!.first as num), reason: entry.key);
-      expect(entry.value.max, lessThanOrEqualTo(wght.last as num), reason: entry.key);
-    }
-
-    final byVariable = {for (final entry in stacks.entries) entry.key: faces[entry.value]!};
-    final requests = RegExp(r'font: (\d{3}) [^;]*var\((--meadow-(?:display|body|mono))\)').allMatches(scss);
-    expect(requests, hasLength(greaterThan(10)));
-    for (final request in requests) {
-      final face = byVariable[request.group(2)!]!;
-      expect(int.parse(request.group(1)!), inInclusiveRange(face.min, face.max), reason: request.group(0));
-    }
+  test('S05 TI08 the vendored faces are the fonts the stylesheet claims, and draw what the theme emits', () async {
+    await expectThemeFontContract(
+      themeDir: themeDir,
+      compiledCss: TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true),
+      // Floors sit about a tenth under the shipped sizes and glyph counts: a face that loses a
+      // table, its embedded OFL name records or a third of its glyphs fails, while trimming a few
+      // codepoints does not. `axes` is exact - Bricolage keeps `opsz` because CSS
+      // `font-optical-sizing` defaults to auto and the browser drives the axis from font-size, so a
+      // file with it instanced out is valid and renders headings about 11% wide.
+      faces: const {
+        'bricolage-grotesque-latin.woff2': (minBytes: 70 * 1024, minGlyphs: 259, axes: {'opsz', 'wght'}),
+        'schibsted-grotesk-latin.woff2': (minBytes: 42 * 1024, minGlyphs: 270, axes: {'wght'}),
+        'jetbrains-mono-latin.woff2': (minBytes: 28 * 1024, minGlyphs: 379, axes: {'wght'}),
+      },
+      // Font payload ships to every deployed site, so it is budgeted; the unused axes cost 86KB.
+      maxTotalBytes: 160 * 1024,
+      knownGaps: const [
+        (
+          codepoint: 0x25CF,
+          source: 'css .template-window::before in schibsted-grotesk',
+          fix:
+              'main.scss `.template-window::before` sets `content: \'● ● ●\'` and names no family, so it '
+              'inherits the body face. Schibsted Grotesk draws no U+25CF and has none upstream. Add '
+              '`font-family: var(--meadow-mono)`, as the sibling window chrome in home.html already does '
+              '- JetBrains Mono carries it.',
+        ),
+      ],
+      knownWeightGaps: const [],
+    );
   });
 
   test('S01/S06 TI04/TI05 one dark source drives forced and auto skins', () {
@@ -742,86 +706,6 @@ steps.insideClick = { open: menu.open };
 fire('pointerdown', { target: element('main') });
 steps.outsideClick = { open: menu.open, label: label() };
 process.stdout.write(JSON.stringify(steps));
-''';
-
-/// Variation axes of each `themes/meadow/static/fonts/<file>`, keyed by file name then axis tag.
-///
-/// WOFF2 keeps its table directory uncompressed and concatenates the table data into a single
-/// brotli stream, so `fvar` is found by summing the lengths of the tables ahead of it. Dart has no
-/// brotli decoder; node does, and the suite already treats it as an optional tool.
-Future<Map<String, dynamic>?> _fontAxes(List<String> files, String themeDir) async {
-  final tempDir = Directory.systemTemp.createTempSync('meadow_fvar_');
-  addTearDown(() => tempDir.deleteSync(recursive: true));
-  final script = File(p.join(tempDir.path, 'fvar.js'))..writeAsStringSync(_fvarScript);
-  try {
-    final result = await Process.run('node', [
-      script.path,
-      for (final file in files) p.join(themeDir, 'static', 'fonts', file),
-    ]);
-    expect(result.exitCode, 0, reason: 'fvar reader failed: ${result.stderr}');
-    return jsonDecode(result.stdout as String) as Map<String, dynamic>;
-  } on ProcessException {
-    _requireNodeInCi('the @font-face axis contract');
-    markTestSkipped('system node not found - font axis check skipped');
-    return null;
-  }
-}
-
-const _fvarScript = r'''
-'use strict';
-const fs = require('fs');
-const zlib = require('zlib');
-const KNOWN = ['cmap','head','hhea','hmtx','maxp','name','OS/2','post','cvt ','fpgm','glyf','loca',
-  'prep','CFF ','VORG','EBDT','EBLC','gasp','hdmx','kern','LTSH','PCLT','VDMX','vhea','vmtx','BASE',
-  'GDEF','GPOS','GSUB','EBSC','JSTF','MATH','CBDT','CBLC','COLR','CPAL','SVG ','sbix','acnt','avar',
-  'bdat','bloc','bsln','cvar','fdsc','feat','fmtx','fvar','gvar','hsty','just','lcar','mort','morx',
-  'opbd','prop','trak','Zapf','Silf','Glat','Gloc','Feat','Sill'];
-function base128(buf, at) {
-  let value = 0;
-  for (let i = 0; i < 5; i++) {
-    const byte = buf[at + i];
-    value = (value << 7) | (byte & 0x7f);
-    if ((byte & 0x80) === 0) return [value >>> 0, at + i + 1];
-  }
-  throw new Error('bad UIntBase128');
-}
-function axes(file) {
-  const buf = fs.readFileSync(file);
-  if (buf.toString('latin1', 0, 4) !== 'wOF2') throw new Error(file + ': not WOFF2');
-  const numTables = buf.readUInt16BE(12);
-  let at = 48;
-  const dir = [];
-  for (let i = 0; i < numTables; i++) {
-    const flags = buf[at++];
-    let tag;
-    if ((flags & 0x3f) === 0x3f) { tag = buf.toString('latin1', at, at + 4); at += 4; }
-    else { tag = KNOWN[flags & 0x3f]; }
-    let length;
-    [length, at] = base128(buf, at);
-    if ((tag === 'glyf' || tag === 'loca') && ((flags >> 6) & 0x3) !== 3) [length, at] = base128(buf, at);
-    dir.push({ tag, length });
-  }
-  const tables = zlib.brotliDecompressSync(buf.subarray(at));
-  let offset = 0;
-  const out = {};
-  for (const entry of dir) {
-    if (entry.tag === 'fvar') {
-      const axisOffset = tables.readUInt16BE(offset + 4);
-      const axisCount = tables.readUInt16BE(offset + 8);
-      const axisSize = tables.readUInt16BE(offset + 10);
-      for (let i = 0; i < axisCount; i++) {
-        const a = offset + axisOffset + i * axisSize;
-        out[tables.toString('latin1', a, a + 4)] =
-          [tables.readInt32BE(a + 4) / 65536, tables.readInt32BE(a + 12) / 65536];
-      }
-    }
-    offset += entry.length;
-  }
-  return out;
-}
-const result = {};
-for (const file of process.argv.slice(2)) result[file.split('/').pop()] = axes(file);
-process.stdout.write(JSON.stringify(result));
 ''';
 
 /// Declarations of the first rule matching [selector], as property -> value.

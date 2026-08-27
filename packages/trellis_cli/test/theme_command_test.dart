@@ -465,6 +465,83 @@ void main() {
       expect(File(p.join(tempDir.path, 'themes', 'meadow', 'theme.yaml')).existsSync(), isTrue);
       expect(File(p.join(tempDir.path, 'trellis_site.yaml')).readAsStringSync(), contains('theme: meadow'));
     });
+
+    /// Builds `<root>/themes/<name>` as a symlink to [target] and returns
+    /// `<root>`, or null when the platform refuses symlink creation.
+    Directory? writeSymlinkedThemeSource(String root, String name, Directory target) {
+      final source = Directory(p.join(tempDir.path, root, 'themes'))..createSync(recursive: true);
+      try {
+        Link(p.join(source.path, name)).createSync(target.path);
+      } on FileSystemException {
+        markTestSkipped('symlink creation not permitted on this platform');
+        return null;
+      }
+      return source.parent;
+    }
+
+    /// A theme directory outside every install source, standing in for whatever
+    /// an escaping symlink points at (`~/.ssh`, a sibling checkout, `/etc`).
+    Directory writeOutsideTheme(String name) {
+      final dir = Directory(p.join(tempDir.path, 'outside', 'themes', name))..createSync(recursive: true);
+      File(p.join(dir.path, 'theme.yaml')).writeAsStringSync('name: $name\nversion: 1.0.0\n');
+      File(p.join(dir.path, 'secret.txt')).writeAsStringSync('originated outside the source');
+      return dir;
+    }
+
+    test('a themes/<name> symlink out of a local source is rejected, and copies nothing', () async {
+      writeConfig();
+      final outside = writeOutsideTheme('evil');
+      final source = writeSymlinkedThemeSource('checkout', 'evil', outside);
+      if (source == null) return;
+
+      late int exitCode;
+      final stderrText = await _captureStderr(() async {
+        exitCode = await run(<String>['theme', 'add', source.path, '--theme', 'evil']);
+      });
+
+      expect(exitCode, 1);
+      expect(stderrText, contains("Theme path 'themes/evil' escapes"));
+      // The message is not the contract — nothing from outside the source may
+      // reach the site, as a symlink or (worse) as a real file `trellis build`
+      // would then publish out of `themes/evil/static/`.
+      expect(Directory(p.join(tempDir.path, 'themes', 'evil')).existsSync(), isFalse);
+      expect(File(p.join(tempDir.path, 'themes', 'evil', 'secret.txt')).existsSync(), isFalse);
+      expect(File(p.join(tempDir.path, 'trellis_site.yaml')).readAsStringSync(), isNot(contains('theme: evil')));
+    });
+
+    test('a themes/<name> symlink out of a cloned repository is rejected, and copies nothing', () async {
+      writeConfig();
+      final outside = writeOutsideTheme('evil');
+      // git stores the literal link target, so an absolute symlink survives the
+      // clone and still points outside it wherever the clone lands.
+      final source = writeSymlinkedThemeSource('monorepo', 'evil', outside);
+      if (source == null) return;
+      await git(source, <String>['init', '-b', 'main']);
+      await git(source, <String>['add', '-A']);
+      await git(source, <String>['commit', '-m', 'themes']);
+
+      final result = await addSandboxed(<String>[Uri.file(source.path).toString(), '--theme', 'evil']);
+
+      expect(result.exitCode, 1);
+      expect(result.errorOutput, contains("Theme path 'themes/evil' escapes"));
+      expect(Directory(p.join(tempDir.path, 'themes', 'evil')).existsSync(), isFalse);
+      expect(File(p.join(tempDir.path, 'themes', 'evil', 'secret.txt')).existsSync(), isFalse);
+    });
+
+    test('a themes/<name> symlink that stays inside the source still installs', () async {
+      writeConfig();
+      // Containment is the rule, not "no symlinks": a multi-theme repo may well
+      // point themes/<name> at a sibling directory it also ships.
+      final vendored = Directory(p.join(tempDir.path, 'checkout', 'vendor', 'orchard'))..createSync(recursive: true);
+      File(p.join(vendored.path, 'theme.yaml')).writeAsStringSync('name: orchard\nversion: 1.0.0\n');
+      final source = writeSymlinkedThemeSource('checkout', 'orchard', vendored);
+      if (source == null) return;
+
+      final exitCode = await run(<String>['theme', 'add', source.path, '--theme', 'orchard']);
+
+      expect(exitCode, 0);
+      expect(File(p.join(tempDir.path, 'themes', 'orchard', 'theme.yaml')).existsSync(), isTrue);
+    });
   });
 
   // ─── trellis theme update ─────────────────────────────────────────────────

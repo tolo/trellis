@@ -180,13 +180,14 @@ class ThemeAddCommand extends Command<int> {
   /// Resolves `<root>/themes/<themeName>` and verifies it holds a manifest.
   ///
   /// [sourceLabel] names the source in the error message (a URL or a local
-  /// path). The containment check is belt-and-braces over the charset
-  /// validation in [validateThemeName]: a name that reached here cannot
-  /// traverse, and a future relaxation of the charset cannot silently start
-  /// writing outside the copy root either.
+  /// path). The lexical half of the containment check is belt-and-braces over
+  /// the charset validation in [validateThemeName]: a name that reached here
+  /// cannot traverse, and a future relaxation of the charset cannot silently
+  /// start writing outside the copy root either. The canonical half is what
+  /// stops a source whose own `themes/<name>` is a symlink out of the tree.
   String _resolveThemeSubdirectory(String root, String themeName, String sourceLabel, {String? ref}) {
     final resolved = p.normalize(p.join(root, 'themes', themeName));
-    if (!p.isWithin(p.normalize(root), resolved)) {
+    if (!p.isWithin(p.normalize(root), resolved) || !_resolvesWithin(root, resolved)) {
       stderr.writeln("Error: Theme path 'themes/$themeName' escapes $sourceLabel.");
       throw _ThemeAddException();
     }
@@ -231,6 +232,24 @@ class ThemeAddCommand extends Command<int> {
       throw _ThemeAddException();
     }
   }
+}
+
+/// Whether [resolved] is still inside [root] once every symlink on both paths
+/// has been followed, mirroring the containment check in
+/// `tool/generate_theme_gallery.dart`.
+///
+/// A lexical [p.isWithin] compares normalized strings, so a source whose own
+/// `themes/<name>` is a symlink pointing out of the tree passes it. The copy
+/// that follows then materializes files from outside the source as real files
+/// under the site's `themes/<name>/`, and `trellis build` publishes whatever
+/// `themes/<name>/static/` resolved to. A symlink that stays inside [root] is
+/// legitimate and allowed — containment is the rule, not "no symlinks".
+///
+/// A [resolved] that does not exist is not an escape: the missing-manifest
+/// error names that failure far better, so it is left to run.
+bool _resolvesWithin(String root, String resolved) {
+  if (!Directory(resolved).existsSync()) return true;
+  return p.isWithin(Directory(root).resolveSymbolicLinksSync(), Directory(resolved).resolveSymbolicLinksSync());
 }
 
 /// Recursively copies [source] to [destination], excluding `.git/` directories

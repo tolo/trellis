@@ -30,7 +30,33 @@ void main() {
   test('S01/TI02 site owns the complete Lattice data shape and gallery route', () {
     final data = loadYaml(File(p.join(root, 'site', 'data', 'lattice.yaml')).readAsStringSync()) as YamlMap;
     expect(data.keys.toSet(), <Object>{'code_showcase', 'why', 'demo', 'showcase'});
-    expect((data['showcase'] as YamlMap)['cards'], hasLength(3));
+
+    // The showcase deliberately curates three of the six themes (Meadow is
+    // omitted by choice), so the count is not derived from themes.yaml. What
+    // must hold is that every field of a card names the *same* theme: a card is
+    // a name, a config line, alt text and two screenshots, and swapping any one
+    // of them for another theme's ships a mislabelled card that renders fine.
+    final generated = loadYaml(File(p.join(root, 'site', 'data', 'themes.yaml')).readAsStringSync()) as YamlMap;
+    final installed = {for (final item in generated['themes'] as YamlList) (item as YamlMap)['name'] as String};
+    final cards = (data['showcase'] as YamlMap)['cards'] as YamlList;
+    expect(cards, hasLength(3));
+    final slugs = <String>[];
+    for (final item in cards) {
+      final card = item as YamlMap;
+      final config = card['config'] as String;
+      expect(config, matches(RegExp(r'^theme: [a-z0-9][a-z0-9_-]*$')), reason: '${card['name']}');
+      final slug = config.substring('theme: '.length);
+      slugs.add(slug);
+      expect(installed, contains(slug), reason: 'showcase card "$config" is not an installed theme');
+      expect((card['name'] as String).toLowerCase(), slug, reason: config);
+      expect(card['alt'], startsWith(card['name'] as String), reason: config);
+      for (final variant in <String>['light', 'dark']) {
+        final declared = card['screenshot_$variant'] as String;
+        expect(declared, 'themes/$slug/$variant.png', reason: config);
+        expect(File(p.join(root, 'site', 'static', declared)).existsSync(), isTrue, reason: declared);
+      }
+    }
+    expect(slugs.toSet(), hasLength(slugs.length), reason: 'a theme is showcased twice: $slugs');
 
     final home = File(p.join(root, 'site', 'content', '_index.md')).readAsStringSync();
     expect(home, contains('layout: home'));

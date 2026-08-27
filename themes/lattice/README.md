@@ -6,6 +6,16 @@ highlighting; and progressive enhancements that never gate access to content.
 
 ## Use
 
+Install it from the Trellis repository:
+
+```sh
+trellis theme add https://github.com/tolo/trellis --theme lattice
+```
+
+That copies `themes/lattice/` into your site's `themes/` and sets `theme: lattice` in `trellis_site.yaml`. `theme:`
+names a directory under `themes/`, so setting it without installing the theme first fails with
+`Theme 'lattice' not found in themes/`. Then customize:
+
 ```yaml
 theme: lattice
 theme_params:
@@ -93,9 +103,12 @@ The dark palette is deliberately theme-owned. Font stacks, `max_width`, and `bor
 ## Structured home data
 
 `data/lattice.yaml` owns `code_showcase`, `why`, `demo`, and `showcase`. A site's `data/lattice.yaml` replaces that
-file as a whole, so provide every shape when overriding it. Each home section renders only when both its
-`show_*` param and its data block are present, so a partial override drops the unsupplied sections instead of
-publishing them as empty headings. Optional `showcase.link_label` and `showcase.link_url` values render a link after
+file as a whole, so provide every shape when overriding it. Each home section renders only when its `show_*` param
+is on **and** every key that section renders is present — not merely its enclosing block. A block that omits one of
+them is dropped whole, so a partial override never publishes an empty heading, a blank code pane, or an empty grid,
+and never fails the build. The required keys are `code_showcase.title` / `.template_html` / `.output_html`,
+`why.title` / `.cells`, `demo.title` / `.template_html` / `.prototype_title` / `.rendered_posts`, and
+`showcase.title` / `.cards`. Optional `showcase.link_label` and `showcase.link_url` values render a link after
 the cards when both are non-empty. Showcase `screenshot_light` and `screenshot_dark` values are prefix-relative tails
 without a leading slash; the layout prepends the rendered asset base exactly once.
 
@@ -137,11 +150,13 @@ explicitly.
 
 All runtime assets are same-origin. Fonts use documented system fallbacks and `font-display: swap`; JavaScript only
 adds theme choice, headline fitting and rotation, demo switching, copy buttons, and search. Controls that JavaScript
-cannot back are server-rendered `hidden` and revealed once the capability exists: the skin toggle, and the copy
-buttons (which need a secure context for the Clipboard API). Without JavaScript the first headline renders at its
-full designed size, code panes stay coloured, and both demo panes' default content, docs, and navigation remain
-readable. Reduced-motion is tracked live — turning it on stops the headline rotation without a reload — and also
-disables transitions, smooth scrolling, and card lift. See [VENDORED.md](VENDORED.md) for provenance.
+cannot back are server-rendered `hidden` and revealed once the capability exists: the skin toggle, the copy buttons
+(which need a secure context for the Clipboard API), and the whole search shell, which appears only after the search
+index has loaded. Results are announced through an `aria-live="polite"` list that scrolls in place rather than pushing
+the section tree off the sidebar. Without JavaScript the first headline renders at its full designed size, code panes
+stay coloured, and both demo panes' default content, docs, and navigation remain readable. Reduced-motion is tracked
+live — turning it on stops the headline rotation without a reload — and also disables transitions, smooth scrolling,
+and card lift. See [VENDORED.md](VENDORED.md) for provenance.
 
 ## Preview
 

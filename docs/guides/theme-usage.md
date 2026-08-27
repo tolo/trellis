@@ -32,10 +32,14 @@ This clones the repository into `themes/orchard/` and sets `theme: orchard`.
 ### Pinning to a Version
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref <tag>
 ```
 
 Use `--ref` to pin to a git tag or branch. Recommended for production sites.
+`--ref` becomes `git clone --branch`, so the value must be a ref that already
+exists on the remote — pick one from the
+[releases](https://github.com/tolo/trellis/releases). An unpushed tag fails with
+`Remote branch <tag> not found`.
 
 ### From a Local Path (development)
 

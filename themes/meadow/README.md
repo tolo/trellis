@@ -4,6 +4,18 @@ Meadow is a self-contained Trellis landing theme with the Fresh Bloom visual lan
 type, Schibsted Grotesk body text, JetBrains Mono code, a lime headline marker, color-blocked feature cards, and a
 theme-owned trellis illustration. It works offline and supports `light`, `dark`, and OS-aware `auto` skins.
 
+## Use
+
+Install it from the Trellis repository:
+
+```sh
+trellis theme add https://github.com/tolo/trellis --theme meadow
+```
+
+That copies `themes/meadow/` into your site's `themes/` and sets `theme: meadow` in `trellis_site.yaml`. `theme:` names
+a directory under `themes/`, so setting it without installing the theme first fails with
+`Theme 'meadow' not found in themes/`.
+
 ## Preview
 
 From `themes/meadow/example`, run `trellis build`, then serve `output/`. To preview a fixture without changing tracked

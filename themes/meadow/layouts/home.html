@@ -28,7 +28,9 @@
         <!-- hero.media.src mounts the site's own artwork; the drawn scene is the fallback
              so a landing that sets only `alt` still renders the illustration. -->
         <img tl:if="${page.hero.media.src}"
-             tl:attr="src=${assetBase} + ${page.hero.media.src},alt=${page.hero.media.alt} ?: ''" src="" alt="">
+             tl:with="mediaPath=${#strings.startsWith(page.hero.media.src, '/')}
+               ? ${#strings.substring(page.hero.media.src, 1)} : ${page.hero.media.src}"
+             tl:attr="src=${assetBase} + ${mediaPath},alt=${page.hero.media.alt} ?: ''" src="" alt="">
         <svg tl:unless="${page.hero.media.src}" viewBox="0 0 520 520" fill="none" role="img" aria-hidden="true">
           <rect x="38" y="40" width="442" height="438" rx="42" fill="var(--meadow-surface)"
                 stroke="var(--meadow-ink)" stroke-width="5"></rect>

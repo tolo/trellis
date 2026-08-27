@@ -9,6 +9,8 @@ import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
 import 'package:yaml/yaml.dart';
 
+import 'theme_font_contract.dart';
+
 void main() {
   final themeDir = p.join(Directory.current.path, 'themes', 'lattice');
 
@@ -97,8 +99,8 @@ void main() {
       expect(File(p.join(themeDir, 'static', path)).existsSync(), isTrue, reason: path);
     }
     final home = File(p.join(themeDir, 'layouts', 'home.html')).readAsStringSync();
-    expect(home, contains(r'${assetBase} + ${card.screenshot_light}'));
-    expect(home, contains(r'${assetBase} + ${card.screenshot_dark}'));
+    // How the join is spelled is not the contract — that it emits exactly one leading slash is, and
+    // _expectShowcaseSources asserts it on built output at both the root and the sub-path prefix.
     expect(home, contains(r'${data.lattice.showcase.link_label}'));
     expect(home, contains(r'${data.lattice.showcase.link_url}'));
   });
@@ -339,6 +341,13 @@ $trellis-border-radius: 0;
       final source = file.readAsStringSync();
       expect(source, isNot(contains('/trellis/trellis/')), reason: file.path);
       final document = html_parser.parse(source);
+      // A prefixed asset base already ends in a slash, so joining a root-relative value onto it
+      // emits `//` — a protocol-relative URL the browser resolves against a host of that name.
+      for (final element in document.querySelectorAll('[src], [href]')) {
+        for (final attribute in ['src', 'href']) {
+          expect(element.attributes[attribute], isNot(startsWith('//')), reason: '${file.path} ${element.outerHtml}');
+        }
+      }
       final directiveAttributes = document
           .querySelectorAll('*')
           .expand<String>((element) => element.attributes.keys.map((attribute) => attribute.toString()))
@@ -412,24 +421,7 @@ $trellis-border-radius: 0;
     expect(mark.take(8), [137, 80, 78, 71, 13, 10, 26, 10]);
     expect(_readUint32(mark, 16), 256);
     expect(_readUint32(mark, 20), 256);
-    // Font payload ships to every deployed site, so it is budgeted. Each file carries only the
-    // axes the theme renders: Fraunces keeps opsz (optical sizing moves it at display sizes),
-    // everything else is wght-only. Re-adding the unused axes triples the set.
-    // 275KB against 268,024 B shipped leaves room for a small glyph addition while still failing
-    // on the two regressions this cap exists to catch: a full-axis Fraunces upright (+~53KB) or a
-    // latin-ext companion for the italic (+~35KB).
-    final fontDir = Directory(p.join(themeDir, 'static', 'fonts'));
-    final fontBytes = fontDir
-        .listSync()
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.woff2'))
-        .fold<int>(0, (sum, f) => sum + f.lengthSync());
-    expect(fontBytes, lessThanOrEqualTo(275 * 1024), reason: '\$fontBytes bytes');
-    expect(
-      File(p.join(fontDir.path, 'fraunces-latin.woff2')).lengthSync(),
-      lessThanOrEqualTo(70 * 1024),
-      reason: 'Fraunces must keep opsz+wght only, not SOFT/WONK',
-    );
+    // The font payload's budget, floors, axes and glyph coverage are asserted in L14.
 
     for (final screenshot in ['screenshots/light.png', 'screenshots/dark.png']) {
       final bytes = File(p.join(themeDir, screenshot)).readAsBytesSync();
@@ -452,8 +444,10 @@ $trellis-border-radius: 0;
     final base = File(p.join(themeDir, 'layouts', 'base.html')).readAsStringSync();
     final list = File(p.join(themeDir, 'layouts', '_default', 'list.html')).readAsStringSync();
     expect(base, contains(r'${#lists.size(theme.social_links)} > 0'));
-    expect(base, contains(r"${assetBase} + ${theme.logo}"));
-    expect(base, contains(r"${assetBase} + ${theme.favicon}"));
+    // Both identity assets are joined onto the rendered asset base through the leading-slash guard,
+    // never onto a raw param — see the built-output `//` assertions in the sub-path build test.
+    expect(base, contains(r"${assetBase} + ${logoPath}"));
+    expect(base, contains(r"${assetBase} + ${faviconPath}"));
     expect(base, isNot(contains('M5 28 27 6')));
     expect(list, contains(r'${#lists.size(pages)} > 0'));
     expect(list, contains(r'${#lists.size(pages)} == 0'));
@@ -497,23 +491,12 @@ $trellis-border-radius: 0;
   });
 
   test('L2 a partial data override drops the unsupplied home sections instead of emptying them', () async {
-    final tempDir = Directory.systemTemp.createTempSync('lattice_partial_data_');
-    addTearDown(() => tempDir.deleteSync(recursive: true));
-    _copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
-    Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
-    Link(p.join(tempDir.path, 'themes', 'lattice')).createSync(themeDir);
-    File(
-      p.join(tempDir.path, 'trellis_site.yaml'),
-    ).writeAsStringSync(File(p.join(themeDir, 'example', 'trellis_site.yaml')).readAsStringSync());
-    // Only one of the four blocks. data/<stem>.yaml replaces the theme file whole, so the other
-    // three have no data at all while their show_* params stay at their default true.
-    Directory(p.join(tempDir.path, 'data')).createSync(recursive: true);
-    File(p.join(tempDir.path, 'data', 'lattice.yaml')).writeAsStringSync('''
-showcase:
-  title: Our designs
-  body: Pick one.
-  link_label: ""
-  link_url: ""
+    // data/<stem>.yaml replaces the theme file whole, so a site that supplies one block leaves the
+    // rest with no data at all while their show_* params stay at their default true. A *partial*
+    // block is the harder case and the one a block-level guard let through: `code_showcase: {title}`
+    // published two empty <code> panes with the build reporting success, and `why: {title}` reached
+    // `#lists.size(null) > 0` and killed the build with "Cannot compare Null with int".
+    const showcaseCards = '''
   cards:
     - name: One
       description: A design.
@@ -522,24 +505,97 @@ showcase:
       screenshot_light: "showcase/docs-light.svg"
       screenshot_dark: "showcase/docs-dark.svg"
       alt: "One design"
-''');
+''';
+    const pane = '<span class="t-tag">article</span>';
+    // Each fixture pairs a data file with the section ids it must still publish. Every block below
+    // is partial in one of the two directions a real override drifts: keys without content, or
+    // content without the heading its section is named by.
+    final fixtures = <String, (String, Set<String>)>{
+      'showcase supplied whole': (
+        '''
+showcase:
+  title: Our designs
+  body: Pick one.
+  link_label: ""
+  link_url: ""
+$showcaseCards''',
+        {'lattice-showcase-title'},
+      ),
+      'code_showcase title only': ('code_showcase:\n  title: T\n', <String>{}),
+      'demo title and body only': ('demo:\n  title: T\n  body: B\n', <String>{}),
+      'why title only': ('why:\n  title: T\n', <String>{}),
+      'showcase title only': ('showcase:\n  title: T\n', <String>{}),
+      'every block content-only, no headings': (
+        '''
+code_showcase:
+  template_html: '$pane'
+  output_html: '$pane'
+why:
+  cells:
+    - title: One
+      body: Body.
+demo:
+  template_html: '$pane'
+  prototype_title: P
+  rendered_posts:
+    - title: One
+      body: Body.
+showcase:
+$showcaseCards''',
+        <String>{},
+      ),
+    };
+    const allSections = {'lattice-code-title', 'lattice-why-title', 'lattice-demo-title', 'lattice-showcase-title'};
 
-    final config = SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
-    final result = await TrellisSite(config).build();
-    expect(result.warnings, isEmpty);
+    for (final entry in fixtures.entries) {
+      final tempDir = Directory.systemTemp.createTempSync('lattice_partial_data_');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+      _copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
+      Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
+      Link(p.join(tempDir.path, 'themes', 'lattice')).createSync(themeDir);
+      File(
+        p.join(tempDir.path, 'trellis_site.yaml'),
+      ).writeAsStringSync(File(p.join(themeDir, 'example', 'trellis_site.yaml')).readAsStringSync());
+      Directory(p.join(tempDir.path, 'data')).createSync(recursive: true);
+      final (data, expectedSections) = entry.value;
+      File(p.join(tempDir.path, 'data', 'lattice.yaml')).writeAsStringSync(data);
 
-    final document = html_parser.parse(File(p.join(config.outputDir, 'index.html')).readAsStringSync());
-    expect(document.querySelector('#lattice-showcase-title'), isNotNull);
-    for (final id in ['lattice-code-title', 'lattice-why-title', 'lattice-demo-title']) {
-      expect(document.querySelector('#$id'), isNull, reason: id);
+      final config = SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
+      // A guard that reaches a null comparison throws out of build(), so reaching the assertions
+      // below is itself the "no unhandled exception" check.
+      final result = await TrellisSite(config).build();
+      expect(result.warnings, isEmpty, reason: entry.key);
+
+      final document = html_parser.parse(File(p.join(config.outputDir, 'index.html')).readAsStringSync());
+      for (final id in allSections) {
+        expect(
+          document.querySelector('#$id'),
+          expectedSections.contains(id) ? isNotNull : isNull,
+          reason: '${entry.key}: $id',
+        );
+      }
+      for (final section in document.querySelectorAll('section[aria-labelledby]')) {
+        final target = section.attributes['aria-labelledby']!;
+        expect(document.querySelector('#$target'), isNotNull, reason: '${entry.key}: dangling $target');
+      }
+      for (final heading in document.querySelectorAll('h2, h3')) {
+        expect(heading.text.trim(), isNotEmpty, reason: '${entry.key}: empty ${heading.localName}');
+      }
+      expect(
+        document.querySelectorAll('code').where((c) => c.text.trim().isEmpty),
+        isEmpty,
+        reason: '${entry.key}: blank code pane',
+      );
+      if (!expectedSections.contains('lattice-why-title')) {
+        expect(document.querySelectorAll('.why-cell'), isEmpty, reason: entry.key);
+      }
+      if (!expectedSections.contains('lattice-demo-title')) {
+        expect(document.querySelectorAll('.demo-post'), isEmpty, reason: entry.key);
+      }
+      if (!expectedSections.contains('lattice-showcase-title')) {
+        expect(document.querySelectorAll('.theme-card'), isEmpty, reason: entry.key);
+      }
     }
-    for (final section in document.querySelectorAll('section[aria-labelledby]')) {
-      final target = section.attributes['aria-labelledby']!;
-      expect(document.querySelector('#$target'), isNotNull, reason: 'dangling aria-labelledby="$target"');
-    }
-    expect(document.querySelectorAll('h2').where((h) => h.text.trim().isEmpty), isEmpty);
-    expect(document.querySelectorAll('code').where((c) => c.text.trim().isEmpty), isEmpty);
-    expect(document.querySelectorAll('.why-cell'), isEmpty);
   });
 
   test('L3 theme defaults ship a shape, not a product pitch or a release number', () {
@@ -631,9 +687,141 @@ showcase:
     for (final button in copyButtons) {
       expect(button.attributes.containsKey('hidden'), isTrue, reason: button.outerHtml);
     }
-    expect(base, contains('hidden'));
     expect(home, contains('aria-label="Copy command"'));
+
+    // The search box is the same class of control and was the one exception: the layout shipped
+    // only the results <ul> hidden, and the client marked the shell unavailable on a *fetch
+    // failure* — never for "the script never ran". With JavaScript off that rendered a
+    // permanently disabled search input in the sidebar, which is worse than no search box.
+    final docs = html_parser.parse(
+      File(p.join(config.outputDir, 'docs', 'getting-started', 'index.html')).readAsStringSync(),
+    );
+    final shell = docs.querySelector('.search-shell');
+    expect(shell, isNotNull);
+    expect(shell!.attributes.containsKey('hidden'), isTrue, reason: shell.outerHtml);
+    expect(docs.querySelector('.search-input')!.attributes.containsKey('disabled'), isTrue);
+    expect(base, contains('class="search-shell"'));
+    final searchScript = File(p.join(themeDir, 'static', 'js', 'search.js')).readAsStringSync();
+    // Revealed only on the success path; every failure path returns it to hidden.
+    expect(searchScript, contains('shell.hidden = false'));
+    expect(searchScript, contains('shell.hidden = true'));
+    // The class-toggle mechanism it replaces: a `.search-unavailable { display: none }` rule left
+    // behind would silently re-admit a shell that ships visible.
+    expect(css, isNot(contains('search-unavailable')));
+    expect(searchScript, isNot(contains('search-unavailable')));
   });
+
+  test('search results carry the classes the client builds, styled, capped, and announced', () async {
+    final script = File(p.join(themeDir, 'static', 'js', 'search.js')).readAsStringSync();
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+
+    // The client built bare <li><a> with no class at all: results rendered as inline, underlined,
+    // unpadded body text in an uncapped list, on the published docs site. The class set is derived
+    // from the script rather than hardcoded, so a rename on either side alone fails, and anchored
+    // so a longer selector (.search-result-title-DISABLED) cannot satisfy the match.
+    final built = RegExp(r"className = '([\w-]+)'").allMatches(script).map((match) => match.group(1)!).toSet();
+    expect(built, <String>{
+      'search-result',
+      'search-result-link',
+      'search-result-title',
+      'search-result-snippet',
+      'search-empty',
+    });
+    for (final className in built) {
+      expect(RegExp('\\.$className(?=[\\s,{:])').hasMatch(css), isTrue, reason: className);
+    }
+
+    // A selector that keeps its name and loses its declarations reproduces the finding verbatim, so
+    // every rule below is read for the whole value that produces the behaviour, not for a substring.
+    for (final rule in ['.search-result-link', '.search-result-title', '.search-result-snippet']) {
+      expect(
+        _declared(css, rule, 'display'),
+        'block',
+        reason: '$rule: title and snippet are <span>s and concatenate inline without it',
+      );
+    }
+    // Result links inherited the prose underline and had no hit area of their own (measured 0px).
+    expect(_declared(css, '.search-result-link', 'text-decoration'), 'none');
+    final padding = _declared(css, '.search-result-link', 'padding');
+    expect(padding, isNotNull, reason: '.search-result-link must declare its own hit area');
+    expect(int.parse(RegExp(r'^(\d+)px').firstMatch(padding!)!.group(1)!), greaterThanOrEqualTo(4));
+    // Title and snippet must be told apart; one colour for both makes the snippet read as more title.
+    final titleColour = _declared(css, '.search-result-title', 'color');
+    expect(titleColour, isNotNull);
+    expect(_declared(css, '.search-result-snippet', 'color'), allOf(isNotNull, isNot(titleColour)));
+    // The empty state is a list item like any other and needs its own treatment, or it renders as a
+    // line indistinguishable from a result.
+    expect(
+      ['color', 'font-style', 'padding'].map((prop) => _declared(css, '.search-empty', prop)).whereType<String>(),
+      isNotEmpty,
+    );
+
+    // MAX_RESULTS results at ~100px each overflow any sidebar, so the list carries its own scroll.
+    // The cap is read against the client's own limit rather than pinned; a degenerate 0 — or a cap
+    // above the natural height of a full list — leaves the sidebar exactly as it was.
+    final maxResults = int.parse(RegExp(r'MAX_RESULTS = (\d+)').firstMatch(script)!.group(1)!);
+    final cap = _declared(css, '.search-results', 'max-height');
+    expect(cap, isNotNull, reason: '.search-results must cap its height');
+    expect(int.parse(RegExp(r'^(\d+)px$').firstMatch(cap!)!.group(1)!), inInclusiveRange(120, maxResults * 40));
+    expect(_declared(css, '.search-results', 'overflow-y'), 'auto');
+
+    // Results appear without a focus change, so the region has to announce them.
+    final config = SiteConfig.load(p.join(themeDir, 'example', 'trellis_site.yaml'));
+    await TrellisSite(config).build();
+    final docs = html_parser.parse(
+      File(p.join(config.outputDir, 'docs', 'getting-started', 'index.html')).readAsStringSync(),
+    );
+    expect(docs.querySelector('.search-results')!.attributes['aria-live'], 'polite');
+  });
+
+  test('article code blocks wrap rather than becoming an unreachable scrollable region', () {
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    // The SSG emits article <pre> with no tabindex, so a horizontally scrolling one is content a
+    // keyboard-only visitor cannot reach (axe scrollable-region-focusable, WCAG 2.1.1). The base
+    // `pre` rule is `overflow: auto`; `.prose pre` is what keeps article code out of that state.
+    // Whole values: `pre-wrap nowrap` prefix-matches `pre-wrap` and computes to `pre`.
+    expect(_declared(css, '.prose pre', 'white-space'), 'pre-wrap');
+    expect(_declared(css, '.prose pre', 'overflow-wrap'), 'anywhere');
+    expect(_declared(css, '.prose pre', 'overflow'), 'visible');
+    // The home-page panes are a different surface and keep the base rule; a fix aimed at article
+    // code must not silently rewrap the marketing panes.
+    expect(_declared(css, 'pre', 'overflow'), 'auto');
+  });
+
+  test('the example advertises commands the CLI actually accepts', () async {
+    final params = SiteConfig.load(p.join(themeDir, 'example', 'trellis_site.yaml')).themeConfig!.params;
+    final lines = (params['terminal_card_lines']! as List)
+        .cast<Map<dynamic, dynamic>>()
+        .where((line) => line['kind'] == 'command')
+        .map((line) => line['text'].toString());
+    // A trailing backslash continues onto the next card line; the card is ~39 mono characters wide.
+    final cardCommands = lines.join('\n').replaceAll(RegExp(r'\\\n\s*'), ' ').split('\n');
+    final ctaCommands = (params['cta_commands']! as List).map((c) => c.toString()).toList();
+    final commands = <String>{...cardCommands, ...ctaCommands};
+    // Both surfaces have to carry the install: a Lattice site is `create` *then* `theme add`, and
+    // either one alone scaffolds a site on the wrong theme. Asserted per surface, because the two
+    // are read independently — the card is what the gallery screenshot shows, the CTA is what a
+    // visitor copies.
+    for (final surface in {'terminal card': cardCommands, 'cta_commands': ctaCommands}.entries) {
+      expect(surface.value.any((c) => c.contains('theme add')), isTrue, reason: surface.key);
+      expect(surface.value.any((c) => c.contains('trellis create')), isTrue, reason: surface.key);
+    }
+
+    // The hero card is the first thing a gallery visitor reads and it is baked into both
+    // screenshots, so the commands are checked against the CLI's own parser rather than a list
+    // kept in this file: `trellis create --theme lattice` shipped for a release with no such
+    // option. Appending --help makes each run parse-only — nothing is created.
+    final cli = p.join(Directory.current.path, 'packages', 'trellis_cli', 'bin', 'trellis.dart');
+    final probeDir = Directory.systemTemp.createTempSync('lattice_cli_probe_');
+    addTearDown(() => probeDir.deleteSync(recursive: true));
+    for (final command in commands) {
+      expect(command, startsWith('trellis '), reason: command);
+      final args = [...command.split(RegExp(r'\s+')).skip(1), '--help'];
+      final result = await Process.run('dart', ['run', cli, ...args], workingDirectory: probeDir.path);
+      expect(result.exitCode, 0, reason: '$command\n${result.stdout}${result.stderr}');
+    }
+    expect(probeDir.listSync(), isEmpty, reason: 'the --help probe must not touch the filesystem');
+  }, timeout: const Timeout(Duration(minutes: 3)));
 
   test('L7/L8/L9/L12 sticky-header offsets, capped mobile contents, unscaled no-JS headline', () async {
     final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
@@ -694,64 +882,63 @@ showcase:
     }
   });
 
-  test('L14 no rule asks a family for a weight its @font-face range cannot draw', () {
-    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
-
-    // Declared weight range per vendored family, and the custom property each family answers to.
-    // Merged across a family's faces: an <em> may pick the italic face, so the union is what the
-    // family can actually draw. (Fraunces italic is pinned to 500; a heavier <em> synthesises.)
-    final ranges = <String, List<int>>{};
-    for (final face in _leafRules(css).where((rule) => rule.$2.contains('src:'))) {
-      final family = _unquote(RegExp(r'font-family:\s*([^;]+)').firstMatch(face.$2)!.group(1)!);
-      final weights = RegExp(r'font-weight:\s*(\d+)(?:\s+(\d+))?').firstMatch(face.$2)!;
-      final low = int.parse(weights.group(1)!);
-      final high = int.parse(weights.group(2) ?? weights.group(1)!);
-      final current = ranges[family];
-      ranges[family] = current == null ? [low, high] : [math.min(current.first, low), math.max(current.last, high)];
-    }
-    expect(ranges, hasLength(3));
-
-    final root = _leafRules(css).firstWhere((rule) => _selector(rule.$1) == ':root').$2;
-    final families = {
-      for (final match in RegExp(r'(--(?:body|display|mono)):\s*([^;,]+)').allMatches(root))
-        match.group(1)!: _unquote(match.group(2)!),
-    };
-    for (final family in families.values) {
-      expect(ranges.keys, contains(family));
-    }
-
-    // A rule that names no family inherits the document's, set on body.
-    final bodyRule = _leafRules(css).firstWhere((rule) => _selector(rule.$1) == 'body').$2;
-    final fallback = families[RegExp(r'font:[^;]*var\((--[a-z]+)\)').firstMatch(bodyRule)!.group(1)!]!;
-
-    for (final (selector, body) in _leafRules(css)) {
-      if (body.contains('src:')) continue;
-      final variable = RegExp(r'font(?:-family)?:[^;]*var\((--[a-z]+)\)').firstMatch(body)?.group(1);
-      final family = families[variable] ?? fallback;
-      final requested = <int>[
-        ...RegExp(r'font-weight:\s*(\d+)\s*;').allMatches(body).map((m) => int.parse(m.group(1)!)),
-        ...RegExp(r'font:\s*(\d{3})\s').allMatches(body).map((m) => int.parse(m.group(1)!)),
-      ];
-      for (final weight in requested) {
-        final range = ranges[family]!;
-        expect(
-          weight,
-          inInclusiveRange(range.first, range.last),
-          reason: '$selector asks $family for $weight; the shipped face covers ${range.first}-${range.last}',
-        );
-      }
-    }
+  test('L14 the vendored faces are the fonts the stylesheet claims, and draw what the theme emits', () async {
+    await expectThemeFontContract(
+      themeDir: themeDir,
+      compiledCss: TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true),
+      // Floors sit about a tenth under the shipped sizes and glyph counts: a face that loses a
+      // table, its embedded OFL name records or a third of its glyphs fails, while trimming a few
+      // codepoints does not. `axes` is exact, and is what the old `fraunces-latin.woff2 <= 70KB`
+      // byte proxy was standing in for - a Fraunces with `opsz` instanced out is a perfectly valid
+      // file that renders display text roughly 19% wide.
+      faces: const {
+        'fraunces-latin.woff2': (minBytes: 62 * 1024, minGlyphs: 225, axes: {'opsz', 'wght'}),
+        'fraunces-latin-ext.woff2': (minBytes: 52 * 1024, minGlyphs: 350, axes: {'opsz', 'wght'}),
+        // The italic is one instance: wght pinned to 500, opsz kept because the headline drives it.
+        'fraunces-italic-latin.woff2': (minBytes: 38 * 1024, minGlyphs: 228, axes: {'opsz'}),
+        'instrument-sans-latin.woff2': (minBytes: 26 * 1024, minGlyphs: 223, axes: {'wght'}),
+        'instrument-sans-latin-ext.woff2': (minBytes: 9 * 1024, minGlyphs: 150, axes: {'wght'}),
+        'spline-sans-mono-latin.woff2': (minBytes: 32 * 1024, minGlyphs: 244, axes: {'wght'}),
+        'spline-sans-mono-latin-ext.woff2': (minBytes: 17 * 1024, minGlyphs: 200, axes: {'wght'}),
+      },
+      // Font payload ships to every deployed site, so it is budgeted. 275KB against 268,024 B
+      // shipped leaves room for a small glyph addition while still failing on the two regressions
+      // this cap exists to catch: a full-axis Fraunces upright (+~53KB) or a latin-ext companion
+      // for the italic (+~35KB).
+      maxTotalBytes: 275 * 1024,
+      knownGaps: const [
+        (
+          codepoint: 0x2192,
+          source: 'layouts/home.html text in <b> in spline-sans-mono',
+          fix:
+              'main.scss `.duo-arrow` sets var(--mono), and Spline Sans Mono draws no arrow at all '
+              'upstream. Point the rule at var(--body) - Instrument Sans is the one Lattice face that '
+              'carries U+2190-2193 - or draw the mark as SVG.',
+        ),
+        (
+          codepoint: 0x2713,
+          source: 'theme.yaml default in fraunces',
+          fix:
+              'terminal_card_lines prefixes. No Lattice family draws U+2713 and none draws it '
+              'upstream either, so this is a default-content change: an ASCII prefix, or an SVG mark '
+              'the layout emits beside the line.',
+        ),
+        (codepoint: 0x2713, source: 'theme.yaml default in instrument-sans', fix: 'see the fraunces entry'),
+        (codepoint: 0x2713, source: 'theme.yaml default in spline-sans-mono', fix: 'see the fraunces entry'),
+        (
+          codepoint: 0x279C,
+          source: 'theme.yaml default in fraunces',
+          fix:
+              'terminal_card_lines prefix, same call as U+2713. The terminal card is a monospace grid '
+              'mock, so a fallback advance width is visible as misalignment.',
+        ),
+        (codepoint: 0x279C, source: 'theme.yaml default in instrument-sans', fix: 'see the fraunces entry'),
+        (codepoint: 0x279C, source: 'theme.yaml default in spline-sans-mono', fix: 'see the fraunces entry'),
+      ],
+      knownWeightGaps: const [],
+    );
   });
 }
-
-/// Declaration blocks in compiled CSS, skipping at-rule wrappers (whose bodies contain `{`).
-Iterable<(String, String)> _leafRules(String css) =>
-    RegExp(r'([^{}]+)\{([^{}]*)\}').allMatches(css).map((m) => (m.group(1)!, m.group(2)!));
-
-String _unquote(String value) => value.trim().replaceAll('"', '').split(',').first.trim();
-
-/// The rule's own selector: a leading `@charset`/at-rule opener shares the regex's first group.
-String _selector(String raw) => raw.split(RegExp(r'[;}]')).last.trim();
 
 /// Flattens nested YAML/param structures to the plain strings a visitor would read.
 Iterable<String> _flattenStrings(Object? value) sync* {
@@ -766,6 +953,27 @@ Iterable<String> _flattenStrings(Object? value) sync* {
       yield* _flattenStrings(item);
     }
   }
+}
+
+/// The whole declared value of [property] in the rule whose selector text is exactly [selector],
+/// or null when the rule or the declaration is absent.
+///
+/// Whole-value on purpose. A substring match on a CSS keyword is not a match on its meaning:
+/// `white-space: pre-wrap` is a prefix of `pre-wrap nowrap`, which the parser rejects outright and
+/// computes as `pre` — the very state the assertion exists to forbid. And because Sass drops a rule
+/// with an empty body, "the selector kept its name and lost its declarations" arrives here as null
+/// rather than as a passing presence check.
+String? _declared(String css, String selector, String property) {
+  String normalize(String value) => value.replaceAll(RegExp(r'\s+'), ' ').trim();
+  final wanted = normalize(selector);
+  String? found;
+  for (final rule in RegExp(r'([^{}]+)\{([^{}]*)\}').allMatches(css)) {
+    if (normalize(rule.group(1)!.replaceAll(RegExp(r'/\*.*?\*/', dotAll: true), '')) != wanted) continue;
+    final declaration = RegExp('(?:^|;)\\s*${RegExp.escape(property)}\\s*:\\s*([^;]+)').firstMatch(rule.group(2)!);
+    // Later rules win the cascade, so keep looking rather than returning the first.
+    if (declaration != null) found = declaration.group(1)!.trim();
+  }
+  return found;
 }
 
 /// Custom properties declared by the first block matching [selectorPattern] in compiled CSS.
@@ -818,6 +1026,11 @@ void _expectShowcaseSources(String source, {required bool dark}) {
     final expected = image.attributes[dark ? 'data-dark' : 'data-light'];
     expect(image.attributes['src'], expected);
     expect(expected, startsWith('/'));
+    // Joining an asset base that already ends in a slash onto a root-relative tail emits `//`,
+    // which a browser reads as an authority and fetches from a host named after the first segment.
+    for (final attribute in ['src', 'data-light', 'data-dark']) {
+      expect(image.attributes[attribute], isNot(startsWith('//')), reason: image.outerHtml);
+    }
   }
 }
 

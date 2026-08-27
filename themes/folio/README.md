@@ -6,7 +6,17 @@ optional edition switch are progressive enhancements.
 
 ## Use and preview
 
-Set `theme: folio` in `trellis_site.yaml`, or build the complete fixture:
+Install it from the Trellis repository:
+
+```sh
+trellis theme add https://github.com/tolo/trellis --theme folio
+```
+
+That copies `themes/folio/` into your site's `themes/` and sets `theme: folio` in `trellis_site.yaml`. `theme:` names
+a directory under `themes/`, so setting it without installing the theme first fails with
+`Theme 'folio' not found in themes/`.
+
+To preview the complete fixture from a checkout of this repository instead:
 
 ```sh
 cd themes/folio/example

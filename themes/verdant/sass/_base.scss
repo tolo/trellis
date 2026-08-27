@@ -10,6 +10,13 @@
   box-sizing: border-box;
 }
 
+html {
+  // .site-header is sticky, so an un-offset in-page anchor jump parks the target
+  // behind it and the reader lands on the paragraph after the heading they clicked.
+  // Sized to the masthead at its tallest: 103px once the nav wraps under the title at 320px.
+  scroll-padding-top: 7rem;
+}
+
 body {
   // Short pages must still push the footer to the bottom of the viewport; the skip
   // link is out of flow, so it never becomes a flex item.
@@ -25,6 +32,13 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+// `break-word` wraps a long token but does not shrink a box's min-content size, so an
+// unbreakable token (a URL, a package name, a hash) still widens its grid track and pushes
+// the document past the viewport — a WCAG 1.4.10 reflow failure. `anywhere` does shrink it.
+// Scoped to page content: the brand and the nav/footer labels are left alone so a short
+// word is never split mid-label.
+main * { overflow-wrap: anywhere; }
 
 // ── Typography ───────────────────────────────────────────────────────────────
 

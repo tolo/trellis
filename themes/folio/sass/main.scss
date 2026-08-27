@@ -24,7 +24,10 @@ $folio-code-function: #2c4a72 !default;
 @font-face {
   font-family: 'EB Garamond';
   src: url('../fonts/eb-garamond-latin.woff2') format('woff2');
-  font-weight: 400 600;
+  /* The file carries upstream's whole wght 400-800 - nothing is instanced out - so the range is
+     declared in full. At 400 600 the masthead's and buttons' 700 was clamped to a real 600, not
+     faux-bolded: with font-synthesis: none the 700 and 800 renderings were byte-identical to 600. */
+  font-weight: 400 800;
   font-style: normal;
   font-display: swap;
   size-adjust: 118%;
@@ -85,7 +88,18 @@ $folio-code-function: #2c4a72 !default;
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+/* Controls that ship `hidden` (.search-shell, .skin-toggle) and are revealed by
+   JavaScript must stay hidden without it. An author rule setting `display` on one of
+   them silently beats the UA sheet, so the normalization is `!important` rather than a
+   component-by-component override that the next component would forget. */
+[hidden] { display: none !important; }
+html {
+  scroll-behavior: smooth;
+  /* .site-header is sticky, so an un-offset in-page anchor jump parks the target behind
+     it and a Field-index click lands on the paragraph after its heading. Sized to the
+     masthead at its tallest: 105px once the title, nav and edition toggle wrap on a phone. */
+  scroll-padding-top: 7rem;
+}
 body {
   display: flex;
   flex-direction: column;
@@ -96,6 +110,12 @@ body {
     linear-gradient(90deg, var(--folio-grid) 1px, transparent 1px);
   background-size: 24px 24px; font: 18px/1.62 var(--folio-body); -webkit-font-smoothing: antialiased;
 }
+/* `break-word` wraps a long token but does not shrink a box's min-content size, so an
+   unbreakable token (a URL, a package name, a hash) still widens its grid track and pushes
+   the document past the viewport — a WCAG 1.4.10 reflow failure. `anywhere` does shrink it.
+   Scoped to page content: the masthead and footer labels are left alone so a short word is
+   never split mid-label. */
+main * { overflow-wrap: anywhere; }
 a { color: var(--folio-green); text-underline-offset: .22em; }
 a:hover { color: var(--folio-rubric); }
 a:focus-visible,

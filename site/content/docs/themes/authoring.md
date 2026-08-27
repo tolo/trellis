@@ -136,34 +136,49 @@ params:
 |---|---|---|
 | `name` | Yes | Theme identifier. Must match `^[a-z0-9][a-z0-9_-]*$` and equal the name of the directory the manifest sits in |
 | `version` | Yes | Semantic version (e.g. `1.0.0`) |
-| `author` | Yes | Author name or organization |
-| `description` | Yes | One-sentence description for theme galleries |
+| `author` | No | Author name or organization. Recommended, but nothing reads it — neither `ThemeManifest.load` nor the gallery generator requires it |
+| `description` | Yes | One-sentence description for theme galleries. Plain prose — no backticks |
 | `min_trellis_version` | No | Minimum `trellis_site` version required |
-| `screenshots` | No | Relative paths to preview PNG files |
+| `screenshots` | No | Relative paths to preview PNG files, resolving inside the theme directory |
 | `features` | Yes | Feature tags. Must contain exactly one **archetype** tag — `docs`, `landing`, or `blog` — plus any number of free-form tags |
-| `params` | Yes | Parameter definitions (see below) |
+| `params` | Yes | Parameter definitions (see below). Required by the standard-params contract below, not by the loader: a theme with no `params:` loads and builds, and simply ignores every `theme_params:` a site sets |
 
 #### Name and archetype rules
 
-Three of the manifest's rules are checked mechanically, because the theme
-gallery is generated from the manifests and CI gates the generated output
-(`dart run tool/generate_theme_gallery.dart --check`):
+The theme gallery is generated from the manifests and CI gates the generated
+output (`dart run tool/generate_theme_gallery.dart --check`), so these rules are
+checked mechanically. Each one fails the generator with an error naming the
+theme:
 
-- **`name` charset** — `^[a-z0-9][a-z0-9_-]*$`. The name becomes a directory
-  segment in every site that installs the theme and a path segment in the
-  gallery's asset URLs, so it has to be portable on every filesystem and safe in
-  a URL. It is also what `trellis theme add --theme <name>` accepts.
+- **`theme.yaml` parses as a YAML mapping** — a malformed file is reported
+  against the theme rather than as a bare parser stack trace.
+- **`name` is a non-empty string** matching `^[a-z0-9][a-z0-9_-]*$`. The name
+  becomes a directory segment in every site that installs the theme and a path
+  segment in the gallery's asset URLs, so it has to be portable on every
+  filesystem and safe in a URL. It is also what
+  `trellis theme add --theme <name>` accepts.
 - **`name` equals the directory name** — a theme in `themes/orchard/` must
   declare `name: orchard`. The installed directory and the configured
   `theme:` value are the same string, so a mismatch would install a theme that
   cannot be selected.
-- **Exactly one archetype tag** — `features` must list exactly one of `docs`,
-  `landing`, `blog`. The gallery shows it as the card's archetype label, which
-  is how a site builder picks a starting point; zero tags leave the card
-  unlabelled and two make the label ambiguous. Every other `features` entry
+- **`themes/<name>/README.md` exists** — every gallery card links to it, and the
+  link is external to the built site, so no link checker would catch a dead one.
+- **`description` is a non-empty string** and **contains no backticks**. The
+  gallery renders it with `tl:text`, so `` `backticks` `` reach the card as
+  literal characters instead of code formatting.
+- **`features` is a list of strings** containing **exactly one archetype tag** —
+  one of `docs`, `landing`, `blog`. The gallery shows it as the card's archetype
+  label, which is how a site builder picks a starting point; zero tags leave the
+  card unlabelled and two make the label ambiguous. Every other `features` entry
   (`dark-mode`, `responsive`, `search`, …) is free-form.
+- **Every declared `screenshots` path stays inside the theme directory**, both
+  as written and after symlinks are resolved — the generator copies those files
+  into the published site.
 
-Violating any of the three fails the generator with an error naming the theme.
+Two screenshot problems are warnings rather than failures, and the card is
+published without the image: a file named anything other than `light.png` or
+`dark.png` (only those two variants reach a card), and a declared path with no
+file behind it.
 
 ### Param types
 
@@ -557,6 +572,8 @@ theme galleries.
 - [ ] All 18 standard params present with correct types and non-null defaults
       (except optional strings).
 - [ ] All SASS variables use `!default`.
+- [ ] A `README.md` in the theme directory — the gallery card links straight to
+      it.
 - [ ] `screenshots/` paths match the `theme.yaml` screenshot entries.
 - [ ] The `example/` site builds cleanly with `trellis build`.
 - [ ] Light and dark skins both pass WCAG 2.1 AA contrast (4.5:1 body text).

@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.request
 from pathlib import Path
 
@@ -78,9 +79,12 @@ FAMILIES = {
     ),
 }
 
-# Coverage. LATIN/LATIN_EXT are the Google Fonts subset definitions; LATIN is widened
-# with the combining marks, the two horizontal arrows the themes render and U+0102, all
-# of which Google's `latin` omits. Codepoints absent upstream are simply not emitted.
+# Coverage. LATIN/LATIN_EXT are the Google Fonts subset definitions; LATIN is widened with
+# the combining marks, the four arrows the themes render and U+0102, all of which Google's
+# `latin` omits. Both are a request shared by all eight families: a codepoint the family
+# does not draw upstream is simply not emitted, so what a face ends up carrying is a subset
+# of what was asked for. Lattice's `unicode-range` descriptors are therefore written from
+# the built cmaps, not from these constants (see themes/lattice/VENDORED.md).
 LATIN = (
     "U+0000-00FF,U+0102,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,"
     "U+0300-0304,U+0308-0309,U+0323,U+0329,U+2000-206F,U+20AC,U+2122,"
@@ -91,10 +95,14 @@ LATIN_EXT = (
     "U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,"
     "U+2113,U+2C60-2C7F,U+A720-A7FF"
 )
-# Symbols beyond the two subset definitions that a theme's own layouts, data files,
-# example content or SASS `content:` properties emit. Kept per family so a face is
-# never asked for a glyph its designer did not draw.
-SYMBOLS = "U+2016,U+2024,U+2194-2199,U+21E7,U+25C7,U+25CE-25CF,U+26A0-26A1"
+# Symbols beyond the two subset definitions that a theme's own layouts, data files, example
+# content or SASS `content:` properties emit, split by who draws them so a face is never
+# asked for a glyph its designer did not draw. Schibsted Grotesk draws the arrow block and
+# none of the geometric marks; asking it for the marks emitted nothing while reading as
+# coverage. U+2016/U+2024 were also requested here and are already inside LATIN's
+# U+2000-206F, so they never added anything.
+ARROWS = "U+2194-2199"                          # Meadow's example feature icons set U+2197.
+MARKS = "U+21E7,U+25C7,U+25CE-25CF,U+26A0-26A1"  # Mono-only; see themes/meadow/VENDORED.md.
 
 # theme, output stem, family, requested unicodes
 OUTPUTS = [
@@ -107,8 +115,8 @@ OUTPUTS = [
     ("lattice", "spline-sans-mono-latin-ext", "spline-sans-mono", LATIN_EXT),
     ("folio", "eb-garamond-latin", "eb-garamond", LATIN),
     ("meadow", "bricolage-grotesque-latin", "bricolage-grotesque", LATIN),
-    ("meadow", "schibsted-grotesk-latin", "schibsted-grotesk", f"{LATIN},{SYMBOLS}"),
-    ("meadow", "jetbrains-mono-latin", "jetbrains-mono", f"{LATIN},{SYMBOLS}"),
+    ("meadow", "schibsted-grotesk-latin", "schibsted-grotesk", f"{LATIN},{ARROWS}"),
+    ("meadow", "jetbrains-mono-latin", "jetbrains-mono", f"{LATIN},{ARROWS},{MARKS}"),
 ]
 
 SUBSET_FLAGS = [
@@ -129,8 +137,18 @@ def sha256(path: Path) -> str:
 def fetch(cache: Path, family: str) -> Path:
     rel, digest, _ = FAMILIES[family]
     dest = cache / f"{family}.ttf"
-    if not dest.exists():
-        urllib.request.urlretrieve(f"{RAW}/{rel}", dest)
+    # The gate runs on every push (.github/workflows/ci.yml, job `fonts`), so a single
+    # dropped connection would turn a green branch red for a reason unrelated to the commit.
+    for attempt in range(3):
+        if dest.exists():
+            break
+        try:
+            urllib.request.urlretrieve(f"{RAW}/{rel}", dest)
+        except OSError:
+            dest.unlink(missing_ok=True)
+            if attempt == 2:
+                raise
+            time.sleep(2 ** attempt)
     got = sha256(dest)
     if got != digest:
         raise SystemExit(f"{family}: upstream SHA-256 {got} != recorded {digest}")

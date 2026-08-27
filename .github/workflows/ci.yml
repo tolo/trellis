@@ -12,8 +12,14 @@ name: CI
 # cover the root `test/` directory — the ~1500 package tests are not picked up,
 # so a hand-rolled gate would pass while testing almost nothing.
 #
-# Two tiers, because the E2E suites are the expensive part:
+# Three jobs:
 #   * check — analyze + format + unit tests, on every push. Fast feedback.
+#   * fonts — re-derives every vendored WOFF2 from its pinned google/fonts blob
+#             and fails on drift. Independent of `check` and runs beside it, so
+#             it costs no wall-clock; it is the only check that ties the shipped
+#             font bytes to an upstream provenance rather than to their own
+#             shape. Per-push rather than release-time on purpose (TD-029): the
+#             point is to name the commit that changed the bytes.
 #   * e2e   — the E2E-tagged suites, on main and on demand. They generate
 #             projects, run `pub get` and `analyze` inside each, activate the
 #             dart_frog CLI, and boot real servers.
@@ -118,6 +124,34 @@ jobs:
 
       - name: Check root formatting
         run: dart format --output=none --set-exit-if-changed tool test
+
+  # `tool/subset_fonts.py --verify` re-runs instancer + subset for all eleven files
+  # and compares SHA-256 against the committed bytes, so a hand-edited or
+  # hand-replaced font fails here. It needs the network (the pinned blobs are
+  # fetched from raw.githubusercontent.com, ~2.6 MB); `fetch()` retries three
+  # times with backoff so a dropped connection does not redden an unrelated
+  # commit. Python and fontTools/brotli are pinned because the output hash is
+  # toolchain-versioned - the same reason DART_SDK is pinned above.
+  fonts:
+    name: Vendored font provenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install the pinned subsetting toolchain
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install --quiet 'fonttools==4.63.0' 'brotli==1.2.0'
+
+      - name: Verify every vendored WOFF2 reproduces from its pinned upstream
+        run: .venv/bin/python tool/subset_fonts.py --verify
 
   e2e:
     name: E2E suites

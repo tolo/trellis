@@ -9,7 +9,17 @@
     <meta name="description" tl:attr="content=${page.description} ?: ${page.summary} ?: ${site.description}" />
     <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/main.css'" href="/css/main.css" />
     <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/theme-props.css'" href="/css/theme-props.css" />
-    <link rel="icon" tl:attr="href=${assetBase} + ${theme.favicon}" href="/favicon.svg" />
+    <!-- assetBase already ends in a slash, so a root-relative value sheds its own
+         leading slash first: plain concatenation emits //favicon.svg, which a browser
+         reads as an authority and fetches from a host named favicon.svg. Same rule at
+         every join in this theme. -->
+    <link
+      tl:with="faviconPath=${#strings.startsWith(theme.favicon, '/')}
+        ? ${#strings.substring(theme.favicon, 1)} : ${theme.favicon}"
+      rel="icon"
+      tl:attr="href=${assetBase} + ${faviconPath}"
+      href="/favicon.svg"
+    />
     <link
       tl:if="${site.feeds.atom} and ${theme.show_rss_link}"
       rel="alternate"
@@ -58,7 +68,9 @@
           <img
             class="trellis-logo"
             tl:if="${theme.logo} != null and ${theme.logo} != ''"
-            tl:attr="src=${assetBase} + ${theme.logo},alt=${site.title}"
+            tl:with="logoPath=${#strings.startsWith(theme.logo, '/')}
+              ? ${#strings.substring(theme.logo, 1)} : ${theme.logo}"
+            tl:attr="src=${assetBase} + ${logoPath},alt=${site.title}"
             src="/trellis-logo.png"
             alt="Trellis"
           />
@@ -119,8 +131,11 @@
       <details class="sidebar-disclosure" open data-docs-sidebar tl:fragment="sidebar">
         <summary class="sidebar-toggle" tl:text="${theme.sidebar_title}">Documentation</summary>
         <div class="docs-sidebar">
+          <!-- Ships hidden alongside the disabled input: search.js reveals the shell only once the
+               index has loaded, so with JavaScript off no dead control renders at all. -->
           <div
             class="search-shell"
+            hidden
             tl:if="${theme.show_search}"
             tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}"
             tl:attr="data-search-index=${assetBase} + 'search-index.json'"
@@ -135,7 +150,7 @@
               data-lattice-search
               disabled
             />
-            <ul class="search-results" data-lattice-search-results hidden></ul>
+            <ul class="search-results" data-lattice-search-results aria-live="polite" hidden></ul>
           </div>
           <nav class="sidebar-nav" tl:attr="aria-label=${theme.sidebar_title}">
             <p class="sidebar-title" tl:text="${theme.sidebar_title}">Documentation</p>

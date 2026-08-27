@@ -35,6 +35,18 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+// `break-word` wraps a long token but does not shrink a box's min-content size, so an
+// unbreakable token (a URL, a package name, a hash) still widens its grid track and pushes
+// the document past the viewport — a WCAG 1.4.10 reflow failure. `anywhere` does shrink it.
+// Scoped to page content: the brand and the nav/footer labels are left alone so a short
+// word is never split mid-label.
+main * { overflow-wrap: anywhere; }
+
+// Controls that ship `hidden` and are revealed by JavaScript must stay hidden without it.
+// An author rule setting `display` on such a control silently beats the UA sheet, so the
+// normalization is `!important` rather than a component-by-component override.
+[hidden] { display: none !important; }
+
 // ── Typography ───────────────────────────────────────────────────────────────
 
 h1,

@@ -76,15 +76,28 @@ construction the design does not use. Left as is deliberately.
 ### unicode-range
 
 Each upright family ships a latin and a latin-ext file, so both need a `unicode-range` to stop latin-only pages
-downloading the extended one. The declared ranges are the Google Fonts `latin` and `latin-ext` definitions, with
-`latin` widened by the combining marks (`U+0300-0303`, `U+0309`, `U+0323`), the horizontal arrows (`U+2190`,
-`U+2192`) and `U+0102` — all present in the subsets and all absent from Google's `latin`.
+downloading the extended one. **Every declared range is the exact cmap of the file it gates**, and
+`lattice_theme_contract_test.dart` asserts that equality against the shipped bytes.
 
-The invariant is that every codepoint present in either file falls inside the union of the two ranges. A range that
-does not cover its own file's contents makes the browser refuse the webfont for those characters and drop to the
-system font per glyph, mid-word. Where the two overlap the `latin` face wins, being declared second, and it holds the
-overlapping glyphs. Folio and Meadow declare no `unicode-range` because they ship one file per family: with nothing to
-gate, a range there could only ever exclude.
+Equality is the only correct state, because both inequalities are defects. A range narrower than its file makes the
+browser refuse the webfont for the codepoints it omits, so a word breaks across two typefaces mid-line. A range wider
+than its file matches the face, pays for the download, finds no glyph and reaches the system fallback anyway — the
+same visual defect, now behind a font request that looked like coverage.
+
+That is why the ranges are written from the built cmaps rather than from the `<LATIN>`/`<LATIN_EXT>` constants the
+subsetter is given. Those constants are one request shared by all eight SDK families, and a family whose designer drew
+none of a codepoint gets none of it:
+
+- `U+2190-2193` is requested for every latin face and drawn only by Instrument Sans. Fraunces and Spline Sans Mono
+  carry no arrows at all upstream, so only `instrument-sans-latin.woff2` declares them. A `→` in a `var(--mono)`
+  context therefore matches no Lattice face and falls straight to the stack's next font.
+- `U+0309` and `U+0329` are requested and drawn by none of the three families, so they appear in no range here.
+- Of the combining marks, `U+0300-0304` and `U+0308` are in all three latin faces; `U+0323` is only in
+  `fraunces-italic-latin.woff2` and `spline-sans-mono-latin.woff2`.
+
+Where latin and latin-ext overlap (`U+0304`, `U+0308`) the `latin` face wins, being declared second, and carries both.
+Folio and Meadow declare no `unicode-range` because they ship one file per family: with nothing to gate, a range there
+could only ever exclude.
 
 ## Licensing
 

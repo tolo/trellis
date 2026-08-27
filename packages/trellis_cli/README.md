@@ -252,7 +252,10 @@ Installs a theme from a git URL or local path.
 
 Options:
 - `--theme`: Install one theme out of a multi-theme source, from its `themes/<name>/` directory
-- `--ref`: Pin to a git tag or branch (recommended for production)
+- `--ref`: Pin to a git tag or branch (recommended for production). Becomes
+  `git clone --branch`, so the ref must already exist on the remote — pick a
+  published tag from [releases](https://github.com/tolo/trellis/releases). An
+  unpushed tag fails with `Remote branch <tag> not found`
 
 ```bash
 # Install a built-in theme out of the Trellis repository
@@ -261,8 +264,8 @@ trellis theme add https://github.com/tolo/trellis --theme lattice
 # Install a single-theme repository (name derived from the repository)
 trellis theme add https://github.com/yourname/trellis-theme-orchard
 
-# Pin to a specific release
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
+# Pin to a published release tag
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref <tag>
 
 # Install from a local path (theme development)
 trellis theme add ./path/to/my-theme

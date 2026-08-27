@@ -55,6 +55,11 @@
 }
 
 * { box-sizing: border-box; }
+html {
+  /* .site-nav is sticky, so an un-offset in-page anchor jump parks the target behind it
+     and a nav click lands on the section after the one it names. */
+  scroll-padding-top: 5rem;
+}
 html { scroll-behavior: smooth; }
 body {
   /* Short pages must still push the footer to the bottom of the viewport; the skip

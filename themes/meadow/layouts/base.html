@@ -6,8 +6,13 @@
   <meta name="color-scheme" content="light dark">
   <title tl:text="${page.title} == ${site.title} ? ${site.title} : ${page.title} + ' – ' + ${site.title}">Page – Site</title>
   <meta name="description" tl:attr="content=${page.description} ?: ${page.summary} ?: ${site.description}">
+  <!-- assetBase already ends in a slash, so a root-relative value sheds its own leading
+       slash first: plain concatenation emits //favicon.svg, which a browser reads as an
+       authority and fetches from a host named favicon.svg. Same rule at every join. -->
   <link rel="icon" tl:if="${theme.favicon} != null and ${theme.favicon} != ''"
-        tl:attr="href=${assetBase} + ${theme.favicon}" href="/favicon.svg">
+        tl:with="faviconPath=${#strings.startsWith(theme.favicon, '/')}
+          ? ${#strings.substring(theme.favicon, 1)} : ${theme.favicon}"
+        tl:attr="href=${assetBase} + ${faviconPath}" href="/favicon.svg">
   <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/main.css'" href="/css/main.css">
   <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/theme-props.css'" href="/css/theme-props.css">
   <script tl:if="${theme.skin} == 'auto'">
@@ -27,7 +32,9 @@
       <a class="brand" tl:href="${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}" href="/"
          tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
         <img class="site-logo" tl:if="${theme.logo} != null and ${theme.logo} != ''"
-             tl:attr="src=${assetBase} + ${theme.logo},alt=${site.title}" src="" alt="">
+             tl:with="logoPath=${#strings.startsWith(theme.logo, '/')}
+               ? ${#strings.substring(theme.logo, 1)} : ${theme.logo}"
+             tl:attr="src=${assetBase} + ${logoPath},alt=${site.title}" src="" alt="">
         <svg class="brand-mark" tl:unless="${theme.logo} != null and ${theme.logo} != ''"
              viewBox="0 0 32 32" fill="none" aria-hidden="true">
           <path d="M5 27V8M16 27V4M27 27V8M5 12h22M5 21h22" stroke="currentColor" stroke-width="2.5"

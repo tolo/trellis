@@ -42,10 +42,19 @@ hand-authored output HTML.
 
 ## Using the theme
 
-In your site's `trellis_site.yaml`:
+Install it from the Trellis repository:
+
+```bash
+trellis theme add https://github.com/tolo/trellis --theme bloom
+```
+
+That copies `themes/bloom/` into your site's `themes/` and sets `theme: bloom`
+in `trellis_site.yaml`. `theme:` names a directory under `themes/`, so setting
+it without installing the theme first fails with
+`Theme 'bloom' not found in themes/`. Then customize:
 
 ```yaml
-theme: bloom            # a real themes/bloom/ directory (trellis theme add …)
+theme: bloom
 
 theme_params:
   skin: auto            # light | dark | auto

@@ -258,13 +258,13 @@ $trellis-border-radius: 7px;
     expect(
       RegExp(
         r'\.marker\s*\{[^}]*linear-gradient\(178\.3deg, transparent 0 50%, var\(--meadow-lime\) 50% 100%\)'
-        r'[^}]*background-size: 100% 92%',
+        r'[^}]*background-size: 100% 92%;',
       ).hasMatch(light),
       isTrue,
     );
     expect(RegExp(r'\.marker\s*\{[^}]*border-radius: 0\.16em 0\.32em 0\.14em 0\.24em').hasMatch(light), isTrue);
     expect(RegExp(r'\.marker\s*\{[^}]*border-radius: 0\.28em 0\.16em 0\.25em 0\.13em').hasMatch(dark), isTrue);
-    expect(RegExp(r'\.marker\s*\{[^}]*background-size: 100% 100%').hasMatch(dark), isTrue);
+    expect(RegExp(r'\.marker\s*\{[^}]*background-size: 100% 100%;').hasMatch(dark), isTrue);
     // The header CTA has no room beside the burger, so it leaves with the desktop nav. Above that
     // it reuses `hero.ctas[0].label`, which a landing page may make a sentence.
     expect(RegExp(r'\.desktop-nav, \.nav-cta\s*\{\s*display: none;').hasMatch(light), isTrue);
@@ -301,23 +301,36 @@ $trellis-border-radius: 7px;
     // the set is derived from the templates rather than listed here, and a class added later is
     // covered without anyone remembering to extend this test.
     final appended = <String>{};
+    final written = <String>{};
     for (final layout in Directory(
       p.join(themeDir, 'layouts'),
     ).listSync(recursive: true).whereType<File>().where((file) => file.path.endsWith('.html'))) {
-      for (final attribute in RegExp('tl:classappend="([^"]*)"').allMatches(layout.readAsStringSync())) {
+      final source = layout.readAsStringSync();
+      for (final attribute in RegExp('tl:classappend="([^"]*)"').allMatches(source)) {
         // Only the ternary branches name classes; `== 'split'` is a comparison operand.
         for (final branch in RegExp(r"[?:]\s*'([^']*)'").allMatches(attribute.group(1)!)) {
           appended.addAll(branch.group(1)!.split(' ').where((name) => name.isNotEmpty));
         }
       }
+      // Static attributes too: `tl:classappend` is not the only way to ship a class nothing styles.
+      for (final attribute in RegExp(r'\sclass="([^"$]*)"').allMatches(source)) {
+        written.addAll(attribute.group(1)!.split(' ').where((name) => name.isNotEmpty));
+      }
     }
     expect(appended, containsAll(const ['eyebrow-pill', 'signal-grid-solo']));
-    for (final name in appended) {
+    // Two written classes are knowingly unstyled. `bloom-pop` is the residue of the mockup's hero
+    // entrance animation, which this theme never ported - it ships no @keyframes at all - and is a
+    // release-gate finding, not something to invent here. `page` is a structural hook on the article
+    // wrapper. Naming them is what makes a NEW unstyled class fail rather than join a silent
+    // backlog, so do not extend this set to make a test pass.
+    const knownUnstyled = {'bloom-pop', 'page'};
+    expect(written, containsAll(knownUnstyled), reason: 'stale exception: the class is no longer emitted');
+    for (final name in appended.union(written).difference(knownUnstyled)) {
       // The lookahead stops a longer selector - `.signal-grid-solo-x` - from satisfying the search.
       expect(
         RegExp('\\.${RegExp.escape(name)}(?=[\\s,{:.\\[])').hasMatch(light),
         isTrue,
-        reason: '$name is appended by a layout but no rule selects it',
+        reason: '$name is emitted by a layout but no rule selects it',
       );
     }
     // Highlight.js bakes these classes into fenced blocks at build time (ADR-010); unstyled means a
@@ -354,9 +367,9 @@ $trellis-border-radius: 7px;
     // The auto block-start margin bottom-anchors the title+body block inside a stretched flex
     // column, so the cards' bottom edges align and their heights match. Titles coincide only when
     // the bodies wrap to the same number of lines.
-    expect(RegExp(r'\.template-card-inner\s*\{[^}]*flex-direction: column').hasMatch(light), isTrue);
-    expect(RegExp(r'\.template-card-inner\s*\{[^}]*height: 100%').hasMatch(light), isTrue);
-    expect(RegExp(r'\.template-card h3\s*\{\s*margin: auto 0 8px').hasMatch(light), isTrue);
+    expect(RegExp(r'\.template-card-inner\s*\{[^}]*flex-direction: column;').hasMatch(light), isTrue);
+    expect(RegExp(r'\.template-card-inner\s*\{[^}]*height: 100%;').hasMatch(light), isTrue);
+    expect(RegExp(r'\.template-card h3\s*\{\s*margin: auto 0 8px;').hasMatch(light), isTrue);
     expect(light, isNot(contains('translateY(-8px) rotate(1.6deg)')));
     expect(dark.toLowerCase(), contains('--meadow-paper: #0f1c14'));
     expect(dark, isNot(contains('@media (prefers-color-scheme: dark)')));

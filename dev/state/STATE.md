@@ -1,20 +1,27 @@
 # Project State — Trellis SDK
 
-Last Updated: 2026-08-19
+Last Updated: 2026-08-27
 
 > Cross-session state tracking. Updated at phase boundaries and when significant context changes.
 
 ## Current Phase
 
-**0.11 implementation complete** — Lattice, the redesigned site and six-theme generated gallery, Folio, Meadow,
-authoring guidance, architecture, and unreleased lockstep changelog collateral are complete on `feat/0.11`. Post-plan
-owner review and the separate 0.11.0 version bump, tag, and publication remain pending.
+**0.11 in remediation — release gated NO-GO.** Lattice, the redesigned site and six-theme generated gallery, Folio,
+Meadow, authoring guidance, architecture, and unreleased lockstep changelog collateral are on `feat/0.11`. Owner UI
+inspection (2026-08-24/26) fixed rendering defects the story reviews missed. The runbook step-1 release-gate review
+(2026-08-27, 11 reviewers) then returned **NO-GO** with 20 HIGH findings — see `docs/specs/roadmap.md` § 0.11 for the
+verdict and blocking themes. TD-014 was found unimplemented and has since landed. The version bump, tag and
+publication stay blocked until the HIGH set is remediated and the review is re-run.
+
+The recurring theme across reviewers: the contract tests check that artifacts exist and are wired, not that they
+render correctly. 8 of 11 mutations against the suite passed, including zeroing every vendored font file.
 
 ## Recent Completions
 
 | Phase | Completed | Key Deliverables |
 |-------|-----------|------------------|
-| 0.11.0 (implementation) | 2026-08-19 | Lattice docs theme and Lattice-powered site; deterministic six-theme gallery; Folio reference theme; Meadow product-landing theme; theme-data authoring guidance; architecture and unreleased 0.11.0 changelog collateral. Owner review and release remain pending. |
+| 0.11.0 (implementation) | 2026-08-19 | Lattice docs theme and Lattice-powered site; deterministic six-theme gallery; Folio reference theme; Meadow product-landing theme; theme-data authoring guidance; architecture and unreleased 0.11.0 changelog collateral. |
+| 0.11.0 (UI remediation) | 2026-08-26 | Owner-found rendering defects in Folio and Meadow; Folio design-gap closure against the mockup; compact branding assets; font payloads re-subset; landing showcase set to Arbor/Lattice/Folio. |
 | 0.10.0 (pre-release) | 2026-07-11 | Binary distribution: **Scoop** channel + release-workflow hardening (both tap jobs skip without `TAP_TOKEN`); build-time syntax highlighting (ADR-010: `CodeHighlighter`/`package:highlight`, `.hljs-*` spans, `highlight:` config key, vendored Prism removed); `bloom` landing theme + `verdant`/`arbor` polish; theme SASS-bridge escaping hardened; **TD-009** resolved (`ProcessRunner`, no CWD mutation → parallel-safe CLI suite). |
 | Docs Site | 2026-07-06 | Engine: weighted ordering + nested sections + `orderedSectionPages` seam, `${site.menu}` nav tree (section-weight ordered), `pathPrefix` (with unprefixed on-disk layout + content-link rewriting), in-section prev/next; `arbor` docs theme (build-time `.hljs-*` highlighting, WCAG-AA skins, responsive, search shell); `site/` (marketing landing + curated docs IA: getting-started, complete `tl:*` syntax reference, 8 package guides, theme-authoring); client-side search; GitHub Pages CI deploy + pure-Dart link-integrity checker. Deploy target: `tolo.github.io/trellis/` (`pathPrefix: /trellis/`). |
 | SDK Phase 4 | 2026-03-20 | Theme manifest + params, ThemeAwareLoader, SASS bridge, CLI theme commands, Verdant theme |
@@ -41,9 +48,16 @@ owner review and the separate 0.11.0 version bump, tag, and publication remain p
 ## Test Health
 
 On `feat/0.11`: all eight package test suites pass (one existing Linux-only skip in `trellis`), the repo-root suite
-passes **80/80**, and workspace analyze and format gates pass across all 12 packages. Root and `/trellis/` docs builds
+passes **81/81**, and workspace analyze and format gates pass across all 12 packages. Root and `/trellis/` docs builds
 each produce 27 pages and 39 static files with 1,279 internal references and no broken links. Dart Sass 3.0
 forward-compat tech debt remains logged as TD-006 (`@import` in theme SASS + the bridge).
+
+**Green does not mean covered.** The 2026-08-27 release-gate review mutation-tested the suite: 8 of 11 deliberate
+regressions passed. Uncaught: reverting Folio's hero to its pre-remediation geometry, deleting the mobile disclosure
+cap, restoring the invisible dark chart-paper grid, truncating every vendored `woff2` in all three new themes to zero
+bytes, swapping a landing showcase card, and stripping Meadow's sticky-nav isolation. The theme contract tests assert
+manifest, wiring and token authority; they do not assert rendered geometry, font validity, or card identity. Treat a
+green theme suite as a wiring check until that gap is closed.
 
 ## Blockers
 

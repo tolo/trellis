@@ -409,9 +409,20 @@ Iterable<(Element, String, String)> _renderedText(Document document) sync* {
   }
 }
 
-/// Every string a theme substitutes into its layouts: `theme.yaml` parameter defaults and
-/// the values of any `data/*.yaml` file. Comments are dropped by the YAML parse, so a note
-/// in the source is not mistaken for rendered text.
+/// Every string a theme substitutes into its layouts: `theme.yaml` parameter defaults, the
+/// values of any `data/*.yaml` file, and the `theme_params` its own bridged example sets.
+///
+/// Comments are dropped by the YAML parse, so a note in the source is not mistaken for
+/// rendered text - and, more usefully, `"\u2713"` is decoded to `✓` before it gets here.
+/// Lattice shipped exactly that: the terminal-card prefixes were fixed in `theme.yaml` and
+/// missed in the example, where they were escape-encoded, so a grep for the literal glyph
+/// read clean and a non-ASCII byte scan saw six ASCII characters. Parsing sees through both.
+///
+/// The example's `theme_params` are in scope because the example is what the theme's own
+/// `screenshots/` and the docs-site gallery copies are captured from, so a glyph that falls
+/// back there ships as a picture. Example *content* (`example/content/**`) is not: that is
+/// authored demo prose standing in for a site author's, and Meadow's `VENDORED.md` already
+/// records its pictographs as knowingly reaching the system font.
 Iterable<(String, Iterable<String>)> _themeStrings(String themeDir) sync* {
   final manifest = loadYaml(File(p.join(themeDir, 'theme.yaml')).readAsStringSync()) as YamlMap;
   final params = manifest['params'];
@@ -423,6 +434,11 @@ Iterable<(String, Iterable<String>)> _themeStrings(String themeDir) sync* {
           if (param is YamlMap) ..._strings(param['default']),
     ],
   );
+  final example = File(p.join(themeDir, 'example', 'trellis_site.yaml'));
+  if (example.existsSync()) {
+    final config = loadYaml(example.readAsStringSync());
+    yield ('example theme_params', config is YamlMap ? _strings(config['theme_params']) : const <String>[]);
+  }
   final dataDir = Directory(p.join(themeDir, 'data'));
   if (!dataDir.existsSync()) return;
   for (final file in dataDir.listSync().whereType<File>().where((f) => f.path.endsWith('.yaml'))) {

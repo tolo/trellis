@@ -913,6 +913,35 @@ $showcaseCards''',
       knownWeightGaps: const [],
     );
   });
+
+  test('terminal-card prefixes stay one column wide so the text column stays flush', () {
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    // The mechanism the one-character rule depends on: the prompt has no width of its own and the
+    // text is offset from it by exactly one column, so prefix length *is* the text column's origin.
+    // Give .terminal-prompt a fixed width and this constraint can be relaxed on purpose.
+    expect(_declared(css, '.terminal-prompt', 'width'), isNull);
+    expect(_declared(css, '.terminal-text', 'margin-left'), '1ch');
+
+    final sources = <String, List<dynamic>>{
+      'theme.yaml default': ThemeManifest.load(themeDir).params['terminal_card_lines']!.defaultValue as List<dynamic>,
+      'example':
+          SiteConfig.load(p.join(themeDir, 'example', 'trellis_site.yaml')).themeConfig!.params['terminal_card_lines']!
+              as List<dynamic>,
+    };
+    for (final entry in sources.entries) {
+      for (final dynamic line in entry.value) {
+        final prefix = (line as Map<dynamic, dynamic>)['prefix'].toString();
+        // Empty is allowed: a shell continuation deliberately has no prompt.
+        expect(
+          prefix.length,
+          lessThanOrEqualTo(1),
+          reason:
+              '${entry.key}: prefix "$prefix" is ${prefix.length} columns, so its row starts '
+              '${prefix.length - 1} column(s) right of every other row',
+        );
+      }
+    }
+  });
 }
 
 /// Flattens nested YAML/param structures to the plain strings a visitor would read.

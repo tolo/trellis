@@ -91,6 +91,21 @@ jobs:
         with:
           node-version: '22'
 
+      # The rendered checks - the theme reflow sweep and the visual baseline
+      # comparator - drive headless Chrome over the DevTools protocol
+      # (test/browser_reflow_probe.dart). They are the only checks that can see
+      # a layout defect at all: 0.11 shipped a hero with 205px of dead space, a
+      # mobile panel pushing content off the fold and a marker band clipping its
+      # own text, none of which is visible in the stylesheet and all of which
+      # passed a green suite. Both skip when no Chrome binary is found and
+      # `requireChromeInCi` turns that skip into a failure when CI=true, so this
+      # step is what stops them becoming the hole the Node steps above describe.
+      # ubuntu-latest ships google-chrome-stable; assert it rather than trust
+      # the image, and log the version because the baselines record the Chrome
+      # that produced them and a browser upgrade can legitimately move layout.
+      - name: Check Chrome is present
+        run: google-chrome --version
+
       - name: Activate melos
         run: |
           dart pub global activate melos "$MELOS_VERSION"
@@ -117,10 +132,20 @@ jobs:
 
       # The workspace ROOT is not a melos member, so `melos exec` skips it —
       # yet it carries the release-distribution contract test, the docs-site
-      # link check, and tool/ (build_release, Homebrew/Scoop renderers). That
-      # is exactly the pipeline TD-010 said was ungated, so cover it here.
+      # link check, tool/ (build_release, Homebrew/Scoop renderers), and the two
+      # rendered suites (theme_contract_test, visual_baseline_test). That is
+      # exactly the pipeline TD-010 said was ungated, so cover it here.
+      #
+      # The rendered suites run on every push rather than on main only. They are
+      # the slowest part of this job (a browser, a build per theme, ~100
+      # measurements), but restricting them to main would put them behind the
+      # merge that is exactly the thing they exist to gate: every 0.11 rendering
+      # defect lived on a feature branch for weeks before anyone rendered it.
+      # Excludes @Tags(['visual']): the baselines are macOS recordings and the
+      # comparator refuses a foreign platform by design. See TD-035 - record
+      # Linux baselines, then drop this exclusion so the gate enforces it.
       - name: Root workspace tests
-        run: dart test
+        run: dart test --exclude-tags=visual
 
       - name: Check root formatting
         run: dart format --output=none --set-exit-if-changed tool test

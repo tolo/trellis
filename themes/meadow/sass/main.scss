@@ -134,10 +134,18 @@ body > main { flex: 1 0 auto; }
   text-decoration: none;
 }
 .desktop-nav a:hover, .mobile-menu a:hover { background: var(--meadow-lime-soft); }
-.nav-actions { display: flex; align-items: center; gap: 10px; }
+/* min-width: 0 so the row can give: a flex item's automatic minimum is its min-content
+   width, and the CTA inside carries page copy, so without this the masthead grows past
+   the viewport instead of the CTA narrowing into its ellipsis. */
+.nav-actions { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .nav-cta {
   min-height: 44px;
+  /* 220px is the cap, not a floor: the CTA must also give way when the masthead row is
+     tight. Without `min-width: 0` a long label held the button at the cap and the row
+     overflowed from 841px — just above the breakpoint that hides the CTA entirely. */
   max-width: 220px;
+  min-width: 0;
+  flex: 0 1 auto;
   display: inline-flex;
   align-items: center;
   padding: 9px 18px;
@@ -289,7 +297,9 @@ body > main { flex: 1 0 auto; }
 .feature-card:nth-child(4n + 2) { background: var(--meadow-sky-soft); }
 .feature-card:nth-child(4n + 3) { background: var(--meadow-sun-soft); }
 .feature-card:nth-child(4n) { background: var(--meadow-bloom-soft); }
-.feature-icon { width: 44px; height: 44px; display: grid; place-items: center; border: 2px solid var(--meadow-ink); border-radius: 13px; background: var(--meadow-surface); font-size: 1.3rem; }
+// The icon is a geometric mark, and the body face draws none of them - JetBrains
+// Mono is the vendored face that carries the set (see VENDORED.md).
+.feature-icon { width: 44px; height: 44px; display: grid; place-items: center; border: 2px solid var(--meadow-ink); border-radius: 13px; background: var(--meadow-surface); font-family: var(--meadow-mono); font-size: 1.3rem; }
 .feature-card h3 { margin: 22px 0 8px; font: 800 1.45rem/1.1 var(--meadow-display); }
 .feature-card p { margin: 0; color: var(--meadow-muted); }
 

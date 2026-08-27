@@ -26,11 +26,11 @@ features:
   body: Start with two focused cards or grow to six. The layout stays balanced as your product story expands.
   items:
     - {icon: ◎, title: One listening post, body: "Pull interviews, tickets, and notes into a shared inbox without flattening their context."}
-    - {icon: ✦, title: Patterns that surface, body: Cluster related signals and trace every insight back to the exact customer words behind it.}
+    - {icon: ●, title: Patterns that surface, body: Cluster related signals and trace every insight back to the exact customer words behind it.}
     - {icon: ↗, title: Priorities with proof, body: Connect themes to roadmap decisions so teams know why the next bet deserves attention.}
-    - {icon: ⌁, title: Calm collaboration, body: "Comment, refine, and decide in one place without turning research into another noisy feed."}
+    - {icon: ⚡, title: Calm collaboration, body: "Comment, refine, and decide in one place without turning research into another noisy feed."}
     - {icon: ◇, title: Views for every team, body: "Give research, product, and leadership the level of detail each needs from the same source."}
-    - {icon: ✓, title: Close the loop, body: "Share what shipped with the people who asked, then measure whether the change helped."}
+    - {icon: "+", title: Close the loop, body: "Share what shipped with the people who asked, then measure whether the change helped."}
 workflow:
   eyebrow: From noise to next
   title: Evidence in. A decision your whole team can see out.

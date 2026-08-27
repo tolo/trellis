@@ -116,6 +116,9 @@ function buildDom({ withIndexUrl = true, withShell = true } = {}) {
   results.hidden = true;
 
   const shell = makeElement('div');
+  // The layout ships the shell hidden; search.js is what reveals it, and the
+  // script-never-ran case is exactly the one a class-toggle mechanism missed.
+  shell.hidden = true;
   if (withShell) {
     shell.classList.add('search-shell');
     if (withIndexUrl) shell.setAttribute('data-search-index', '/search-index.json');
@@ -193,7 +196,7 @@ async function scenarioFetchRejects() {
   return {
     inputDisabled: input.disabled === true,
     inputAriaDisabled: input.getAttribute('aria-disabled') === 'true',
-    shellUnavailable: shell.classList.contains('search-unavailable'),
+    shellHidden: shell.hidden === true,
   };
 }
 
@@ -205,12 +208,12 @@ async function scenarioFetchNonOk() {
   return {
     inputDisabled: input.disabled === true,
     inputAriaDisabled: input.getAttribute('aria-disabled') === 'true',
-    shellUnavailable: shell.classList.contains('search-unavailable'),
+    shellHidden: shell.hidden === true,
   };
 }
 
 async function scenarioNoMatch() {
-  const { document, input, results } = buildDom();
+  const { document, input, results, shell } = buildDom();
   runScript({ document, fetch: makeFetchStub('ok', FIXTURE_INDEX), console });
   await flushMicrotasks();
 
@@ -220,6 +223,7 @@ async function scenarioNoMatch() {
   const emptyItem = results.children.find((c) => c.className === 'search-empty');
   return {
     inputEnabled: input.disabled === false,
+    shellHidden: shell.hidden === true,
     resultsHidden: results.hidden === true,
     hasEmptyState: Boolean(emptyItem),
     emptyStateText: emptyItem ? emptyItem.textContent : null,

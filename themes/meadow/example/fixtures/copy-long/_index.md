@@ -14,8 +14,8 @@ features:
   title: Foundations that grow with the whole product story.
   body: Every field grows naturally.
   items:
-    - {icon: ✦, title: Composable foundations for teams that keep expanding, body: "Start with the template engine, add static-site generation and server integrations when needed, and keep every layer in Dart without introducing a client framework or Node-based build chain."}
-    - {icon: ✓, title: Durable context for every decision, body: Preserve the evidence behind a growing roadmap while campaigns become more specific and the team keeps expanding.}
+    - {icon: ●, title: Composable foundations for teams that keep expanding, body: "Start with the template engine, add static-site generation and server integrations when needed, and keep every layer in Dart without introducing a client framework or Node-based build chain."}
+    - {icon: "+", title: Durable context for every decision, body: Preserve the evidence behind a growing roadmap while campaigns become more specific and the team keeps expanding.}
 cta:
   eyebrow: Developer-friendly
   title: Bring the complete workflow into the tools your growing team already uses.

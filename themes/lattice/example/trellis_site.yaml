@@ -45,12 +45,12 @@ theme_params:
   # install URL rides a shell continuation rather than being clipped.
   terminal_card_lines:
     - { prefix: "$", text: "trellis create my_docs --template blog", kind: command }
-    - { prefix: "\u2713", text: "content/ layouts/ trellis_site.yaml", kind: output }
+    - { prefix: "+", text: "content/ layouts/ trellis_site.yaml", kind: output }
     - { prefix: "$", text: "trellis theme add --theme lattice \\", kind: command }
     - { prefix: "", text: "  https://github.com/tolo/trellis", kind: command }
-    - { prefix: "\u2713", text: "themes/lattice/", kind: output }
+    - { prefix: "+", text: "themes/lattice/", kind: output }
     - { prefix: "$", text: "trellis serve", kind: command }
-    - { prefix: "\u2192", text: "http://localhost:8080", kind: output }
+    - { prefix: ">", text: "http://localhost:8080", kind: output }
   cta_title: Plant it in your project
   cta_body: Scaffold a themed site, then point the content directory at your own Markdown.
   cta_commands:

@@ -16,8 +16,8 @@ features:
   title: an_unbreakable_token_of_seventy_two_characters_0123456789abcdefghij
   body: an_unbreakable_token_of_seventy_two_characters_0123456789abcdefghij
   items:
-    - {icon: ✦, title: an_unbreakable_token_of_seventy_two_characters_0123456789abcdefghij, body: an_unbreakable_token_of_seventy_two_characters_0123456789abcdefghij}
-    - {icon: ✓, title: Ordinary title, body: an_unbreakable_token_of_seventy_two_characters_0123456789abcdefghij}
+    - {icon: ●, title: an_unbreakable_token_of_seventy_two_characters_0123456789abcdefghij, body: an_unbreakable_token_of_seventy_two_characters_0123456789abcdefghij}
+    - {icon: "+", title: Ordinary title, body: an_unbreakable_token_of_seventy_two_characters_0123456789abcdefghij}
 workflow:
   eyebrow: Workflow
   title: an_unbreakable_token_of_seventy_two_characters_0123456789abcdefghij

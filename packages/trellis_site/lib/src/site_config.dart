@@ -33,7 +33,8 @@ class SiteConfig {
   /// The site title.
   final String title;
 
-  /// The canonical base URL (e.g. `https://example.com`).
+  /// The canonical base URL (e.g. `https://example.com`), with any trailing
+  /// slash stripped by [normalizeBaseUrl].
   final String baseUrl;
 
   /// The normalized URL path-prefix (sub-path) the site is served under.
@@ -140,7 +141,7 @@ class SiteConfig {
     return SiteConfig._(
       siteDir: siteDir,
       title: title,
-      baseUrl: baseUrl,
+      baseUrl: normalizeBaseUrl(baseUrl),
       pathPrefix: normalizePathPrefix(pathPrefix),
       description: description,
       contentDir: resolve(contentDir, 'content'),
@@ -242,6 +243,25 @@ class SiteConfig {
       highlightConfig: highlightConfig,
       themeConfig: themeConfig,
     );
+  }
+
+  /// Strips trailing slashes from a `baseUrl`, so it concatenates cleanly with
+  /// the root-absolute page URLs everything downstream joins onto it.
+  ///
+  /// `baseUrl: https://example.com/` otherwise renders every theme's
+  /// `<meta property="og:url" tl:attr="content=${site.baseUrl} + ${page.url}">`
+  /// as `https://example.com//`. Normalized once here rather than in each
+  /// layout, so a third-party theme gets the same guarantee — and alongside
+  /// [normalizePathPrefix], which already canonicalizes the other URL config.
+  /// [SitemapGenerator] and [FeedGenerator] carry their own trailing-slash trim
+  /// and are unaffected.
+  ///
+  /// A value made only of slashes is returned unchanged: emptying it would
+  /// silently switch off sitemap and feed generation, which both gate on a
+  /// non-empty base.
+  static String normalizeBaseUrl(String value) {
+    final trimmed = value.replaceFirst(RegExp(r'/+$'), '');
+    return trimmed.isEmpty ? value : trimmed;
   }
 
   /// Normalizes a raw `pathPrefix` config value to its canonical form.

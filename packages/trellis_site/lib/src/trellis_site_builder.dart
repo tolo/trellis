@@ -427,7 +427,11 @@ class TrellisSite {
     if (!themeStaticDir.existsSync()) return 0;
 
     var count = 0;
-    for (final entity in themeStaticDir.listSync(recursive: true).whereType<File>()) {
+    // followLinks: false - a symlink under static/ escapes the source tree and
+    // publishes whatever it points at. An installed theme is third-party code, so
+    // a committed `static/secrets -> ~/.ssh` would land in output/. Symlinks list
+    // as Link, not File, so whereType<File> then drops them.
+    for (final entity in themeStaticDir.listSync(recursive: true, followLinks: false).whereType<File>()) {
       final ext = p.extension(entity.path).toLowerCase();
       if (ext == '.scss' || ext == '.sass') continue;
 
@@ -449,7 +453,11 @@ class TrellisSite {
     if (!staticDir.existsSync()) return 0;
 
     var count = 0;
-    for (final entity in staticDir.listSync(recursive: true).whereType<File>()) {
+    // followLinks: false - a symlink under static/ escapes the source tree and
+    // publishes whatever it points at. An installed theme is third-party code, so
+    // a committed `static/secrets -> ~/.ssh` would land in output/. Symlinks list
+    // as Link, not File, so whereType<File> then drops them.
+    for (final entity in staticDir.listSync(recursive: true, followLinks: false).whereType<File>()) {
       final ext = p.extension(entity.path).toLowerCase();
       if (ext == '.scss' || ext == '.sass') continue;
 

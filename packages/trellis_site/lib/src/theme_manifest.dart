@@ -133,7 +133,13 @@ class ThemeManifest {
 
     if (!Directory(canonicalDir).existsSync()) {
       final themeName = p.basename(canonicalDir);
-      throw ThemeManifestException("Theme '$themeName' not found in themes/", themeDir: canonicalDir);
+      // Almost always a `theme:` set without installing the theme, so name the
+      // command that fixes it rather than only the directory that is missing.
+      throw ThemeManifestException(
+        "Theme '$themeName' not found in themes/ — install it first, e.g. "
+        "'trellis theme add <url-or-path> --theme $themeName'",
+        themeDir: canonicalDir,
+      );
     }
 
     final manifestFile = File(p.join(canonicalDir, 'theme.yaml'));

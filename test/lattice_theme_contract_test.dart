@@ -399,13 +399,35 @@ $trellis-border-radius: 0;
       expect(File(p.join(themeDir, asset)).existsSync(), isTrue, reason: asset);
     }
 
-    final canonicalLogo = File(p.join(Directory.current.path, 'assets', 'logo-with-text.png')).readAsBytesSync();
+    final canonicalLogo = File(p.join(Directory.current.path, 'assets', 'logo-small-with-text.png')).readAsBytesSync();
     final themeLogo = File(p.join(themeDir, 'static', 'trellis-logo.png')).readAsBytesSync();
-    expect(themeLogo, canonicalLogo, reason: 'the Trellis site must use the canonical wordmark bytes');
+    expect(themeLogo, canonicalLogo, reason: 'the Trellis top bar must use the compact canonical wordmark bytes');
+    expect(themeLogo.take(8), [137, 80, 78, 71, 13, 10, 26, 10]);
+    expect(_readUint32(themeLogo, 16), 512);
+    expect(_readUint32(themeLogo, 20), 173);
 
+    final canonicalMark = File(p.join(Directory.current.path, 'assets', 'logo-small.png')).readAsBytesSync();
     final mark = File(p.join(themeDir, 'static', 'trellis-mark.png')).readAsBytesSync();
+    expect(mark, canonicalMark, reason: 'the Trellis favicon must use the compact canonical mark bytes');
     expect(mark.take(8), [137, 80, 78, 71, 13, 10, 26, 10]);
-    expect(_readUint32(mark, 16), _readUint32(mark, 20), reason: 'the Trellis favicon crop must be square');
+    expect(_readUint32(mark, 16), 256);
+    expect(_readUint32(mark, 20), 256);
+    // Font payload ships to every deployed site, so it is budgeted. Each file carries only the
+    // axes the theme renders: Fraunces keeps opsz (optical sizing moves it at display sizes),
+    // everything else is wght-only. Re-adding the unused axes triples the set.
+    final fontDir = Directory(p.join(themeDir, 'static', 'fonts'));
+    final fontBytes = fontDir
+        .listSync()
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.woff2'))
+        .fold<int>(0, (sum, f) => sum + f.lengthSync());
+    expect(fontBytes, lessThanOrEqualTo(240 * 1024), reason: '$fontBytes bytes');
+    expect(
+      File(p.join(fontDir.path, 'fraunces-latin.woff2')).lengthSync(),
+      lessThanOrEqualTo(70 * 1024),
+      reason: 'Fraunces must keep opsz+wght only, not SOFT/WONK',
+    );
+
     for (final screenshot in ['screenshots/light.png', 'screenshots/dark.png']) {
       final bytes = File(p.join(themeDir, screenshot)).readAsBytesSync();
       expect(bytes.take(8), [137, 80, 78, 71, 13, 10, 26, 10], reason: screenshot);
@@ -413,9 +435,9 @@ $trellis-border-radius: 0;
       expect(_readUint32(bytes, 20), 800, reason: screenshot);
     }
 
-    final siteConfig = File(p.join(Directory.current.path, 'site', 'trellis_site.yaml')).readAsStringSync();
-    expect(siteConfig, contains('logo: trellis-logo.png'));
-    expect(siteConfig, contains('favicon: trellis-mark.png'));
+    final siteConfig = SiteConfig.load(p.join(Directory.current.path, 'site', 'trellis_site.yaml'));
+    expect(siteConfig.themeConfig?.params['logo'], 'trellis-logo.png');
+    expect(siteConfig.themeConfig?.params['favicon'], 'trellis-mark.png');
 
     final manifest = ThemeManifest.load(themeDir);
     final readme = File(p.join(themeDir, 'README.md')).readAsStringSync();

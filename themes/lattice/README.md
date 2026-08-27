@@ -105,8 +105,8 @@ params also pass through the SASS bridge. An empty headline list falls back to t
 entry remains static. `terminal_card_lines` entries have `prefix`, `text`, and `kind` (`command` or `output`) fields.
 
 `logo` and `favicon` are asset tails resolved through the configured path prefix. They let a site supply one coherent
-identity without hardcoding Trellis branding into reusable Lattice markup. The bundled Trellis wordmark and its exact
-favicon crop are available as `trellis-logo.png` and `trellis-mark.png`; the Trellis documentation site opts into them
+identity without hardcoding Trellis branding into reusable Lattice markup. The bundled compact Trellis wordmark and
+square mark are available as `trellis-logo.png` and `trellis-mark.png`; the Trellis documentation site opts into them
 explicitly.
 
 ## Assets and accessibility

@@ -571,6 +571,9 @@ code {
   text-align: center;
 }
 .duo-arrow b {
+  // Spline Sans Mono draws no arrow at any weight - Instrument Sans is the one
+  // vendored face carrying U+2190-2193, so the mark must come from --body.
+  font-family: var(--body);
   font-size: 28px;
   font-weight: 400;
 }

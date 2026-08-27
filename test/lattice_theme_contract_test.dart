@@ -906,35 +906,10 @@ $showcaseCards''',
       // this cap exists to catch: a full-axis Fraunces upright (+~53KB) or a latin-ext companion
       // for the italic (+~35KB).
       maxTotalBytes: 275 * 1024,
-      knownGaps: const [
-        (
-          codepoint: 0x2192,
-          source: 'layouts/home.html text in <b> in spline-sans-mono',
-          fix:
-              'main.scss `.duo-arrow` sets var(--mono), and Spline Sans Mono draws no arrow at all '
-              'upstream. Point the rule at var(--body) - Instrument Sans is the one Lattice face that '
-              'carries U+2190-2193 - or draw the mark as SVG.',
-        ),
-        (
-          codepoint: 0x2713,
-          source: 'theme.yaml default in fraunces',
-          fix:
-              'terminal_card_lines prefixes. No Lattice family draws U+2713 and none draws it '
-              'upstream either, so this is a default-content change: an ASCII prefix, or an SVG mark '
-              'the layout emits beside the line.',
-        ),
-        (codepoint: 0x2713, source: 'theme.yaml default in instrument-sans', fix: 'see the fraunces entry'),
-        (codepoint: 0x2713, source: 'theme.yaml default in spline-sans-mono', fix: 'see the fraunces entry'),
-        (
-          codepoint: 0x279C,
-          source: 'theme.yaml default in fraunces',
-          fix:
-              'terminal_card_lines prefix, same call as U+2713. The terminal card is a monospace grid '
-              'mock, so a fallback advance width is visible as misalignment.',
-        ),
-        (codepoint: 0x279C, source: 'theme.yaml default in instrument-sans', fix: 'see the fraunces entry'),
-        (codepoint: 0x279C, source: 'theme.yaml default in spline-sans-mono', fix: 'see the fraunces entry'),
-      ],
+      // Every codepoint the theme emits is now drawn by the face that renders it:
+      // `.duo-arrow` takes var(--body) for U+2192, and the terminal-card prefixes are
+      // ASCII. An exact-list assertion, so a new gap fails here and so does a stale entry.
+      knownGaps: const [],
       knownWeightGaps: const [],
     );
   });

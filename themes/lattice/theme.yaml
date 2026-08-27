@@ -72,10 +72,10 @@ params:
       default:
         [
           { prefix: "$", text: "your-cli init my-project", kind: command },
-          { prefix: "✓", text: "project scaffolded", kind: output },
+          { prefix: "+", text: "project scaffolded", kind: output },
           { prefix: "$", text: "your-cli dev", kind: command },
-          { prefix: "✓", text: "watching for changes", kind: output },
-          { prefix: "➜", text: "http://localhost:8080", kind: output },
+          { prefix: "+", text: "watching for changes", kind: output },
+          { prefix: ">", text: "http://localhost:8080", kind: output },
         ],
       description: "Hero terminal entries [{prefix, text, kind}]",
     }

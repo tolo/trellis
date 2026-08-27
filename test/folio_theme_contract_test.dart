@@ -181,7 +181,7 @@ $trellis-show-sidenotes: false;
     // Trail and colophon links clear the 24px minimum target (WCAG 2.5.8) at every width.
     expect(
       RegExp(
-        r'\.breadcrumb-list a,\s*\.social-links a,\s*\.footer-powered-by a\s*\{[^}]*padding-block: 6px',
+        r'\.breadcrumb-list a,\s*\.social-links a,\s*\.footer-powered-by a\s*\{[^}]*padding-block: 6px;',
       ).hasMatch(css),
       isTrue,
     );
@@ -205,6 +205,28 @@ $trellis-show-sidenotes: false;
     expect(RegExp(r'\.search-results\s*\{[^}]*max-height: 320px').hasMatch(css), isTrue);
     // An ancestor of the current page is marked; the class is computed in all three tree levels.
     expect(css, contains('.sidebar-link.is-active-trail'));
+    // Every class the layouts append must either be selected by a rule or be a deliberate
+    // default-state marker. Derived from tl:classappend rather than hardcoded, so a newly
+    // appended class that nothing styles fails here instead of waiting for a review to spot it
+    // (which is how is-active-trail shipped). Comparison operands are stripped: the right-hand
+    // side of `== 'secondary'` is a value, not a class.
+    const unstyledMarkers = {
+      // The filled look is .button's own; button-primary marks the default for site authors
+      // to hook, and adding a rule for it here would only restate .button.
+      'button-primary',
+    };
+    final appended = <String>{};
+    for (final layout in Directory(p.join(themeDir, 'layouts')).listSync(recursive: true).whereType<File>()) {
+      for (final match in RegExp('tl:classappend="(.*?)"', dotAll: true).allMatches(layout.readAsStringSync())) {
+        final operandsStripped = match[1]!.replaceAll(RegExp("==\\s*'[^']*'"), '==');
+        appended.addAll(RegExp("'([a-zA-Z][\\w-]*)'").allMatches(operandsStripped).map((m) => m[1]!));
+      }
+    }
+    expect(appended, containsAll(<String>['is-active', 'is-active-trail', 'button-secondary']));
+    expect(appended, isNot(contains('secondary')), reason: 'comparison operand must not count as a class');
+    for (final applied in appended.difference(unstyledMarkers)) {
+      expect(RegExp('\\.$applied(?=[\\s,{:.\\[])').hasMatch(css), isTrue, reason: applied);
+    }
     // Only the wrapped case sheds the inner frame — a <pre> mounted straight on the plate keeps it.
     expect(css, contains('.folio-plate .plate-frame pre'));
     expect(RegExp(r'(^|[\s,}])\.folio-plate pre\s*\{').hasMatch(css), isFalse);

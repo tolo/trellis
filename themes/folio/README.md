@@ -69,6 +69,13 @@ content without generating empty layout regions. Each direct child of a `folio-p
 a child in `<div class="plate-frame">` when it should carry the frame on behalf of what it holds, as a fenced code block
 does. A leading `<strong>` inside `folio-note` becomes the rubricated label.
 
+### Hero CTA classes
+
+Each `hero.ctas` entry renders as `.button`, plus `.button-secondary` when its `style` is `secondary` and
+`.button-primary` otherwise. The filled treatment is `.button`'s own, so **`.button-primary` carries no rule of its
+own** — it marks the default state so a site can restyle primary CTAs without having to exclude the secondary ones.
+Style it in your site CSS; the theme deliberately leaves it empty.
+
 ## Assets and accessibility
 
 Fonts and JavaScript are committed under `static/` and served same-origin. Code highlighting is generated at build time.

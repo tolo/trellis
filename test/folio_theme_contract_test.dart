@@ -172,26 +172,28 @@ $trellis-show-sidenotes: false;
     expect(RegExp(r'\.sidebar-subtree\s*\{[^}]*border-left').hasMatch(css), isFalse);
     expect(css, contains('.sidebar-tree > .sidebar-item > .sidebar-link'));
     // The mobile disclosure caps its own tree; an unscoped 46vh would clip the article too.
-    expect(RegExp(r'\.sidebar-disclosure\[open\] > \.docs-sidebar\s*\{[^}]*max-height: 46vh').hasMatch(css), isTrue);
+    expect(_declared(css, r'\.sidebar-disclosure\[open\] > \.docs-sidebar', 'max-height'), '46vh');
     // Touch targets belong to the interactive controls, not to whatever rule happens to carry 44px.
-    expect(
-      RegExp(r'\.nav-list a,[^{]*\.sidebar-link,[^{]*\.toc-list a\s*\{[^}]*min-block-size: 44px').hasMatch(css),
-      isTrue,
-    );
+    expect(_declared(css, r'\.nav-list a,[^{]*\.sidebar-link,[^{]*\.toc-list a', 'min-block-size'), '44px');
     // Trail and colophon links clear the 24px minimum target (WCAG 2.5.8) at every width.
-    expect(
-      RegExp(
-        r'\.breadcrumb-list a,\s*\.social-links a,\s*\.footer-powered-by a\s*\{[^}]*padding-block: 6px;',
-      ).hasMatch(css),
-      isTrue,
-    );
+    expect(_declared(css, r'\.breadcrumb-list a,\s*\.social-links a,\s*\.footer-powered-by a', 'padding-block'), '6px');
     // The hero is the mockup's: a centred two-column band, not the 830px stack it replaced.
-    expect(RegExp(r'\.hero\s*\{[^}]*align-items: center').hasMatch(css), isTrue);
-    expect(RegExp(r'\.hero\s*\{[^}]*min-height: 650px').hasMatch(css), isTrue);
-    // The chart-paper grid tracks the active green; a literal would stay light-mode in the dark skin.
-    // Percentage left open so the wash can be tuned, but a 0% mix resolves to fully
+    expect(_declared(css, r'(^|[\s,}])\.hero', 'align-items'), 'center');
+    expect(_declared(css, r'(^|[\s,}])\.hero', 'min-height'), '650px');
+    // The chart-paper grid tracks the active green, so it has to resolve per skin. This is the
+    // `skin: auto` build, so one sheet carries :root, the prefers-color-scheme block and both
+    // [data-skin] contexts — and a `contains` match is satisfied by the surviving :root
+    // declaration no matter what a later context does, which is the regression it exists to
+    // catch: a literal green in the dark context leaves the night edition wearing the light
+    // grid, suite green. So check *every* declaration, not that one of them is right.
+    // The percentage stays open so the wash can be tuned, but a 0% mix resolves to fully
     // transparent and silently removes the chart-paper texture, so require a visible one.
-    expect(RegExp(r'--folio-grid: color-mix\(in srgb, var\(--folio-green\) [1-9]\d*%').hasMatch(css), isTrue);
+    final gridValues = RegExp(r'--folio-grid:([^;}]*)').allMatches(css).map((m) => m[1]!.trim());
+    expect(gridValues, isNotEmpty, reason: 'the chart-paper grid token is gone');
+    final tracksGreen = RegExp(r'^color-mix\(in srgb, var\(--folio-green\) [1-9]\d*%, transparent\)$');
+    for (final value in gridValues) {
+      expect(value, matches(tracksGreen), reason: '--folio-grid: $value does not follow the skin');
+    }
     // flex: 1 0 auto inside the 100vh body column already reaches the footer; a vh floor over-reserves.
     expect(RegExp(r'\.docs-shell\s*\{[^}]*min-height:').hasMatch(css), isFalse);
     // Every class static/js/search.js builds has to be styled, or the results list falls
@@ -204,18 +206,18 @@ $trellis-show-sidenotes: false;
     for (final built in searchClasses) {
       expect(RegExp('\\.$built(?=[\\s,{:])').hasMatch(css), isTrue, reason: built);
     }
-    expect(RegExp(r'\.search-results\s*\{[^}]*max-height: 320px').hasMatch(css), isTrue);
+    expect(_declared(css, r'\.search-results', 'max-height'), '320px');
     // The cap needs its own scroll, or a 20-hit list overflows the sidebar instead of scrolling.
-    expect(RegExp(r'\.search-results\s*\{[^}]*overflow-y: auto;').hasMatch(css), isTrue);
+    expect(_declared(css, r'\.search-results', 'overflow-y'), 'auto');
     // The defect was layout, not absence: title and snippet are <span>s, so without an explicit
     // block they render inline and concatenate ("Semantic apparatusUse ordinary HTML..."), and
     // the link inherits the body underline. Selector presence alone does not hold any of that.
-    for (final rule in ['.search-result-title', '.search-result-snippet']) {
-      final declared = RegExp('\\$rule\\s*\\{[^}]*?display: ([a-z-]+)').firstMatch(css)?.group(1);
+    for (final rule in ['search-result-title', 'search-result-snippet']) {
+      final declared = _declared(css, '\\.$rule', 'display');
       expect(declared, isNotNull, reason: '$rule must declare a display');
       expect(declared, isNot('inline'), reason: '$rule renders concatenated when inline');
     }
-    expect(RegExp(r'\.search-result-link\s*\{[^}]*text-decoration: none;').hasMatch(css), isTrue);
+    expect(_declared(css, r'\.search-result-link', 'text-decoration'), 'none');
     // An ancestor of the current page is marked; the class is computed in all three tree levels.
     expect(css, contains('.sidebar-link.is-active-trail'));
     // A selector that exists but declares nothing reproduces the finding exactly: the trail
@@ -265,17 +267,17 @@ $trellis-show-sidenotes: false;
     expect(css, contains('.folio-plate .plate-frame pre'));
     expect(RegExp(r'(^|[\s,}])\.folio-plate pre\s*\{').hasMatch(css), isFalse);
     // Article code wraps rather than clipping: the SSG emits <pre> with no tabindex (WCAG 2.1.1).
-    expect(RegExp(r'(^|[\s,}])pre\s*\{[^}]*white-space: pre-wrap').hasMatch(css), isTrue);
+    expect(_declared(css, r'(^|[\s,}])pre', 'white-space'), 'pre-wrap');
     // pre-wrap alone still scrolls on a token with no break opportunity (measured: 3281px of
     // content in a 662px box), which re-creates the unreachable scroll region F9 removed.
-    expect(RegExp(r'(^|[\s,}])pre\s*\{[^}]*overflow-wrap: break-word;').hasMatch(css), isTrue);
+    expect(_declared(css, r'(^|[\s,}])pre', 'overflow-wrap'), 'break-word');
     // The rubric label heads its own line above the neighbour's title.
-    expect(RegExp(r'\.page-nav-label\s*\{[^}]*display: block').hasMatch(css), isTrue);
+    expect(_declared(css, r'\.page-nav-label', 'display'), 'block');
     // Masthead navigation is small caps; the underline would fight the tracking.
-    expect(RegExp(r'\.nav-list a\s*\{[^}]*text-decoration: none').hasMatch(css), isTrue);
+    expect(_declared(css, r'\.nav-list a', 'text-decoration'), 'none');
     // The edition control and the mobile disclosure summary share the mono-caps rubric voice.
     for (final selector in ['skin-toggle', 'sidebar-toggle']) {
-      expect(RegExp('\\.$selector[^{]*\\{[^}]*text-transform: uppercase;').hasMatch(css), isTrue, reason: selector);
+      expect(_declared(css, '\\.$selector[^{]*', 'text-transform'), 'uppercase', reason: selector);
     }
     // Every rule in the sheet is reachable from a layout or from authored page content.
     expect(css, isNot(contains('.sr-only')));
@@ -647,6 +649,30 @@ Future<Document> _buildVariant(
   final result = await TrellisSite(siteConfig).build();
   expect(result.warnings, isEmpty, reason: label);
   return html_parser.parse(File(p.join(siteConfig.outputDir, 'index.html')).readAsStringSync());
+}
+
+/// The declared value of [property] in the first rule whose selector matches [selectorPattern],
+/// or null if no matching rule declares it.
+///
+/// Splitting on `;` and the first `:` compares whole values, so a longer value can never
+/// prefix-match a shorter one. Every value-shaped hole found in this suite was that prefix:
+/// `6px` inside `6px 0`, `uppercase` inside `uppercase full-width`, `pre-wrap` inside
+/// `pre-wrap nowrap` (Chrome resolves that to `pre`, restoring the scrollable code block),
+/// and `none` inside `none underline` (resolves to `underline`).
+///
+/// Scoped to the property rather than returning the first matching rule wholesale: a class
+/// usually appears in an earlier grouped rule too (`.sidebar-tree, ..., .search-results`),
+/// and that rule declares none of what is being asserted. Taking the first rule that declares
+/// the property also keeps the base rule rather than a media-query override of it.
+String? _declared(String css, String selectorPattern, String property) {
+  for (final match in RegExp('$selectorPattern\\s*\\{([^}]*)\\}', multiLine: true).allMatches(css)) {
+    for (final declaration in match.group(match.groupCount)!.split(';')) {
+      final colon = declaration.indexOf(':');
+      if (colon < 0) continue;
+      if (declaration.substring(0, colon).trim() == property) return declaration.substring(colon + 1).trim();
+    }
+  }
+  return null;
 }
 
 int _readUint32(List<int> bytes, int offset) =>

@@ -205,8 +205,40 @@ $trellis-show-sidenotes: false;
       expect(RegExp('\\.$built(?=[\\s,{:])').hasMatch(css), isTrue, reason: built);
     }
     expect(RegExp(r'\.search-results\s*\{[^}]*max-height: 320px').hasMatch(css), isTrue);
+    // The cap needs its own scroll, or a 20-hit list overflows the sidebar instead of scrolling.
+    expect(RegExp(r'\.search-results\s*\{[^}]*overflow-y: auto;').hasMatch(css), isTrue);
+    // The defect was layout, not absence: title and snippet are <span>s, so without an explicit
+    // block they render inline and concatenate ("Semantic apparatusUse ordinary HTML..."), and
+    // the link inherits the body underline. Selector presence alone does not hold any of that.
+    for (final rule in ['.search-result-title', '.search-result-snippet']) {
+      final declared = RegExp('\\$rule\\s*\\{[^}]*?display: ([a-z-]+)').firstMatch(css)?.group(1);
+      expect(declared, isNotNull, reason: '$rule must declare a display');
+      expect(declared, isNot('inline'), reason: '$rule renders concatenated when inline');
+    }
+    expect(RegExp(r'\.search-result-link\s*\{[^}]*text-decoration: none;').hasMatch(css), isTrue);
     // An ancestor of the current page is marked; the class is computed in all three tree levels.
     expect(css, contains('.sidebar-link.is-active-trail'));
+    // A selector that exists but declares nothing reproduces the finding exactly: the trail
+    // entry renders pixel-identical to its non-trail siblings. Require a visual declaration,
+    // without pinning which one, so the treatment can change but cannot become nothing.
+    // Sass drops a rule with an empty body, so "declares nothing" shows up as "rule absent".
+    // The trail is emitted at all three tree levels, so require a visible declaration in both
+    // the top-level and the nested context - losing either returns that level to rendering
+    // pixel-identical to its non-trail siblings, which is the finding verbatim.
+    final trailRules = {
+      for (final match in RegExp(r'([^{}]*\.is-active-trail[^{]*)\{([^}]*)\}').allMatches(css))
+        match[1]!.trim(): match[2]!,
+    };
+    const visual = r'(color|background|box-shadow|border|font-weight|text-decoration|outline)[a-z-]*\s*:';
+    for (final context in ['sidebar-tree', 'sidebar-subtree']) {
+      final rules = trailRules.entries.where((e) => e.key.contains(context));
+      expect(rules, isNotEmpty, reason: 'no is-active-trail rule for $context');
+      expect(
+        rules.every((e) => RegExp(visual).hasMatch(e.value)),
+        isTrue,
+        reason: '$context trail rule must declare a visible difference',
+      );
+    }
     // Every class the layouts append must either be selected by a rule or be a deliberate
     // default-state marker. Derived from tl:classappend rather than hardcoded, so a newly
     // appended class that nothing styles fails here instead of waiting for a review to spot it
@@ -234,6 +266,9 @@ $trellis-show-sidenotes: false;
     expect(RegExp(r'(^|[\s,}])\.folio-plate pre\s*\{').hasMatch(css), isFalse);
     // Article code wraps rather than clipping: the SSG emits <pre> with no tabindex (WCAG 2.1.1).
     expect(RegExp(r'(^|[\s,}])pre\s*\{[^}]*white-space: pre-wrap').hasMatch(css), isTrue);
+    // pre-wrap alone still scrolls on a token with no break opportunity (measured: 3281px of
+    // content in a 662px box), which re-creates the unreachable scroll region F9 removed.
+    expect(RegExp(r'(^|[\s,}])pre\s*\{[^}]*overflow-wrap: break-word;').hasMatch(css), isTrue);
     // The rubric label heads its own line above the neighbour's title.
     expect(RegExp(r'\.page-nav-label\s*\{[^}]*display: block').hasMatch(css), isTrue);
     // Masthead navigation is small caps; the underline would fight the tracking.

@@ -189,7 +189,9 @@ $trellis-show-sidenotes: false;
     expect(RegExp(r'\.hero\s*\{[^}]*align-items: center').hasMatch(css), isTrue);
     expect(RegExp(r'\.hero\s*\{[^}]*min-height: 650px').hasMatch(css), isTrue);
     // The chart-paper grid tracks the active green; a literal would stay light-mode in the dark skin.
-    expect(css, contains('--folio-grid: color-mix(in srgb, var(--folio-green)'));
+    // Percentage left open so the wash can be tuned, but a 0% mix resolves to fully
+    // transparent and silently removes the chart-paper texture, so require a visible one.
+    expect(RegExp(r'--folio-grid: color-mix\(in srgb, var\(--folio-green\) [1-9]\d*%').hasMatch(css), isTrue);
     // flex: 1 0 auto inside the 100vh body column already reaches the footer; a vh floor over-reserves.
     expect(RegExp(r'\.docs-shell\s*\{[^}]*min-height:').hasMatch(css), isFalse);
     // Every class static/js/search.js builds has to be styled, or the results list falls
@@ -238,7 +240,7 @@ $trellis-show-sidenotes: false;
     expect(RegExp(r'\.nav-list a\s*\{[^}]*text-decoration: none').hasMatch(css), isTrue);
     // The edition control and the mobile disclosure summary share the mono-caps rubric voice.
     for (final selector in ['skin-toggle', 'sidebar-toggle']) {
-      expect(RegExp('\\.$selector[^{]*\\{[^}]*text-transform: uppercase').hasMatch(css), isTrue, reason: selector);
+      expect(RegExp('\\.$selector[^{]*\\{[^}]*text-transform: uppercase;').hasMatch(css), isTrue, reason: selector);
     }
     // Every rule in the sheet is reachable from a layout or from authored page content.
     expect(css, isNot(contains('.sr-only')));

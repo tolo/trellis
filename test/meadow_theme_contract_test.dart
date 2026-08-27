@@ -149,17 +149,7 @@ void main() {
       },
       // Font payload ships to every deployed site, so it is budgeted; the unused axes cost 86KB.
       maxTotalBytes: 160 * 1024,
-      knownGaps: const [
-        (
-          codepoint: 0x25CF,
-          source: 'css .template-window::before in schibsted-grotesk',
-          fix:
-              'main.scss `.template-window::before` sets `content: \'● ● ●\'` and names no family, so it '
-              'inherits the body face. Schibsted Grotesk draws no U+25CF and has none upstream. Add '
-              '`font-family: var(--meadow-mono)`, as the sibling window chrome in home.html already does '
-              '- JetBrains Mono carries it.',
-        ),
-      ],
+      knownGaps: const [],
       knownWeightGaps: const [],
     );
   });

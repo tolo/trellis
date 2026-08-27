@@ -80,6 +80,14 @@ Future<void> expectThemeFontContract({
   /// Configs outside the theme that bind this theme's params - the docs site's own
   /// `site/trellis_site.yaml`, say. A glyph there ships to real visitors rather than
   /// only into a screenshot, so it is the surface that matters most.
+  ///
+  /// `theme_params` only, deliberately. A consumer's `data/*.yaml` binds through
+  /// `tl:text="${data.<file>.<path>}"` to one known element, so the blanket "every vendored
+  /// family must draw it" rule this applies to substitutable values is wrong there: the docs
+  /// site's `site/data/lattice.yaml` sets `link_label: All themes →`, which renders in
+  /// `.showcase-link a.button` - body, so Instrument Sans, the one Lattice face carrying
+  /// U+2192. Passing that file here would report two gaps against faces that never draw it.
+  /// Covering data files honestly needs the template dataflow resolved, not a wider net.
   List<String> extraConfigPaths = const [],
 }) async {
   // Loud comments survive compilation, and Meadow keeps one inside a `@font-face` block

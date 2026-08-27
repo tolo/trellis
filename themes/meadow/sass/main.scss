@@ -341,7 +341,10 @@ body > main { flex: 1 0 auto; }
   border-radius: 15px;
   background: var(--meadow-surface);
 }
-.template-window::before { position: absolute; inset: 13px auto auto 14px; content: '● ● ●'; color: var(--meadow-coral); font-size: 0.7rem; letter-spacing: 2px; }
+// U+25CF is drawn by JetBrains Mono and by neither of the other two vendored faces,
+// so the body stack falls back here. The sibling chrome at home.html already names
+// the mono variable for the same reason.
+.template-window::before { position: absolute; inset: 13px auto auto 14px; content: '● ● ●'; color: var(--meadow-coral); font-family: var(--meadow-mono); font-size: 0.7rem; letter-spacing: 2px; }
 .template-window::after { position: absolute; inset: 40px 14px 14px; content: ''; border-radius: 9px; background: linear-gradient(90deg, var(--meadow-strong) 0 36%, transparent 36% 39%, var(--meadow-lime) 39%); }
 .template-card h3 { margin: auto 0 8px; font: 800 1.55rem/1.05 var(--meadow-display); }
 .template-card p { margin: 0; color: var(--meadow-muted); }

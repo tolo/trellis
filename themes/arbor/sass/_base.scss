@@ -20,6 +20,11 @@ html {
 // SASS value as fallback) so `skin: auto` flips light/dark at runtime via the
 // prefers-color-scheme :root overrides in main.scss — not just the code tokens.
 body {
+  // Short pages must still push the footer to the bottom of the viewport; the skip
+  // link is out of flow, so it never becomes a flex item.
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
   margin: 0;
   font-family: $trellis-font-family;
   font-size: $trellis-font-size-base;
@@ -161,4 +166,8 @@ td {
 th {
   font-weight: 700;
   background-color: var(--trellis-surface, #{$trellis-surface-color});
+}
+
+body > .main-content {
+  flex: 1 0 auto;
 }

@@ -104,6 +104,11 @@ html {
   scroll-behavior: smooth;
 }
 body {
+  /* Short pages must still push the footer to the bottom of the viewport. The skip link
+     and the background lattice are both position:fixed, so neither becomes a flex item. */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
   margin: 0;
   background-color: var(--paper);
   background-image:
@@ -114,6 +119,7 @@ body {
   font: 17px/1.6 var(--body);
   -webkit-font-smoothing: antialiased;
 }
+body > main { flex: 1 0 auto; }
 a {
   color: var(--leaf);
   text-underline-offset: 3px;

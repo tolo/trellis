@@ -64,17 +64,17 @@ showcase:
       screenshot_light: themes/arbor/light.png
       screenshot_dark: themes/arbor/dark.png
       alt: Arbor documentation theme
-    - name: Bloom
-      description: Product landing pages — bold hero, feature sections, pricing, FAQ.
-      config: "theme: bloom"
+    - name: Lattice
+      description: Docs with a landing page — expressive home sections, complete docs navigation.
+      config: "theme: lattice"
       accent: purple
-      screenshot_light: themes/bloom/light.png
-      screenshot_dark: themes/bloom/dark.png
-      alt: Bloom product theme
-    - name: Verdant
-      description: Blogs — post lists, tags, archives, comfortable reading measure.
-      config: "theme: verdant"
+      screenshot_light: themes/lattice/light.png
+      screenshot_dark: themes/lattice/dark.png
+      alt: Lattice documentation theme
+    - name: Folio
+      description: Field-guide docs — bookish typography, semantic figures, sidenotes.
+      config: "theme: folio"
       accent: blue
-      screenshot_light: themes/verdant/light.png
-      screenshot_dark: themes/verdant/dark.png
-      alt: Verdant blog theme
+      screenshot_light: themes/folio/light.png
+      screenshot_dark: themes/folio/dark.png
+      alt: Folio documentation theme

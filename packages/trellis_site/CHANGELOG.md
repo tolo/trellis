@@ -11,6 +11,16 @@
 - **Folio theme** – a bookish documentation and reference theme with semantic figures, captions, and sidenotes.
 - **Meadow theme** – a product-landing theme with content-driven marketing sections and resilient card/copy layouts.
 
+### Changed
+
+- **Date-only front matter is resolved as UTC midnight** (TD-014). `date: 2026-01-01` previously parsed as *local*
+  midnight, so `feed.xml` `<updated>` and `rss.xml` `<pubDate>` depended on the build machine's timezone – the same
+  content emitted `2025-12-31T23:00:00Z` on a CET laptop and `2026-01-01T00:00:00Z` on a UTC runner. Feed timestamps
+  are now identical on every machine. Values that carry a time are unchanged: an explicit offset is honoured, a
+  zone-less time is still read as local. Sites that relied on the local-time reading see their feed timestamps shift by
+  their UTC offset; write a zone-explicit `date:` to pin an exact instant. `sitemap.xml` `<lastmod>` is a calendar date
+  and is unchanged.
+
 ### Documentation
 
 - Theme authoring now documents theme `data/*.yaml` fallback, site whole-file precedence by filename stem,

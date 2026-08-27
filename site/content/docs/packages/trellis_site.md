@@ -231,6 +231,22 @@ fields are available in templates as `${page.fieldName}`.
 `menu_title` (string) overrides a page's title in the `${site.menu}` navigation
 tree; `menu_exclude: true` removes a page from that tree.
 
+### Dates and time zones
+
+A date-only `date:` (`2026-03-15`) names a calendar day, not an instant, so
+`feed.xml` and `rss.xml` anchor it at **UTC midnight**. That keeps the generated
+timestamps identical no matter which machine runs the build. `sitemap.xml`
+`<lastmod>` is a calendar date and always reports the day you wrote.
+
+A `date:` that carries a time is read as written, so prefer a zone-explicit value
+when the exact instant matters:
+
+```yaml
+date: 2026-03-15T09:30:00Z        # explicit UTC
+date: 2026-03-15T09:30:00+02:00   # explicit offset
+date: 2026-03-15T09:30:00         # no zone - read as the build machine's local time
+```
+
 ## Page ordering
 
 Within a section, pages are ordered by an integer `weight` front-matter field,

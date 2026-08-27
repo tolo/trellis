@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'front_matter_date.dart';
 import 'page.dart';
 
 /// Configuration for feed generation, parsed from the `feeds:` section
@@ -295,15 +296,8 @@ class FeedGenerator {
 
   /// Resolves a [DateTime] for [page] using front matter date, file mtime, or now.
   DateTime _resolveDateTime(Page page) {
-    final date = page.frontMatter['date'];
-    if (date is DateTime) return date.toUtc();
-    if (date is String) {
-      try {
-        return DateTime.parse(date).toUtc();
-      } on FormatException {
-        // fall through
-      }
-    }
+    final date = resolveFrontMatterDate(page.frontMatter['date']);
+    if (date != null) return date;
     final sourceFile = File(p.join(contentDir, page.sourcePath));
     if (sourceFile.existsSync()) return sourceFile.lastModifiedSync().toUtc();
     return DateTime.now().toUtc();

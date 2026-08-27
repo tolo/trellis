@@ -48,8 +48,8 @@ hands-on `package:highlight` feasibility spike).
   privacy, availability, and supply-chain liability for a static site.
 - **Arbitrary end-user content** — a general SSG highlights whatever language the
   author fences, not a curator's fixed list.
-- **Consistency across the official themes** (arbor / verdant / bloom) — one
-  highlighting model, one token-CSS convention, styled per theme.
+- **Consistency across the official themes** — one highlighting model, one
+  token-CSS convention, styled per theme.
 - **Progressive enhancement** — code must remain readable when a highlighter is
   absent or JS is off.
 - Explicitly: **do not choose an option because it is already present.**
@@ -83,7 +83,7 @@ auto-detect). Simpler to vendor than Prism (1 file vs 9), still client-side.
 - (+) One vendored file; broad language coverage; same `.hljs-*` CSS as Option A
 - (+) No build-time tokenizer dependency
 - (−) Ships JS to every visitor; no color with JS disabled until it loads
-- (−) Still a vendored asset to pin, audit, and duplicate across three themes
+- (−) Still a vendored asset to pin, audit, and duplicate across every official theme
 - (−) Client-side auto-detect is a guess; larger bundle for all-language coverage
 
 ### C. Client-side Prism, per-grammar vendored (status quo, `arbor`)

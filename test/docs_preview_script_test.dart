@@ -42,7 +42,11 @@ fi
       );
     }
 
+    // The gallery regeneration runs from the repo root, before the build cds
+    // into site/ - a theme change is otherwise invisible to the preview.
+    final expectedGallery = 'cwd=<$root> arg=<run> arg=<tool/generate_theme_gallery.dart>';
     final expectedDefault = [
+      expectedGallery,
       'cwd=<${p.join(root, 'site')}> arg=<run> arg=<../packages/trellis_cli/bin/trellis.dart> '
           'arg=<build> arg=<--path-prefix> arg=<> arg=<--output> arg=<output-root>',
       'cwd=<${p.join(root, 'site')}> arg=<run> arg=<../packages/trellis_cli/bin/trellis.dart> '
@@ -55,7 +59,8 @@ fi
     final customRun = await run(['9000']);
     expect(customRun.exitCode, 0, reason: '${customRun.stdout}\n${customRun.stderr}');
     expect(log.readAsLinesSync(), [
-      expectedDefault.first,
+      expectedDefault[0],
+      expectedDefault[1],
       expectedDefault.last.replaceFirst('arg=<8765>', 'arg=<9000>'),
     ]);
 
@@ -63,14 +68,15 @@ fi
       final boundaryRun = await run([port]);
       expect(boundaryRun.exitCode, 0, reason: '${boundaryRun.stdout}\n${boundaryRun.stderr}');
       expect(log.readAsLinesSync(), [
-        expectedDefault.first,
+        expectedDefault[0],
+        expectedDefault[1],
         expectedDefault.last.replaceFirst('arg=<8765>', 'arg=<$port>'),
       ]);
     }
 
     final failedBuild = await run([], environment: {'DOCS_PREVIEW_FAIL_BUILD': '1'});
     expect(failedBuild.exitCode, 37);
-    expect(log.readAsLinesSync(), [expectedDefault.first]);
+    expect(log.readAsLinesSync(), [expectedDefault[0], expectedDefault[1]]);
 
     for (final arguments in [
       [''],

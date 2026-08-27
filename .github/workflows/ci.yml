@@ -72,6 +72,15 @@ jobs:
         with:
           sdk: ${{ env.DART_SDK }}
 
+      # The theme client-behaviour harness runs the vendored theme JS under
+      # node. Its runner calls markTestSkipped when node is missing, so without
+      # this step the whole tier could silently evaporate on a runner image that
+      # drops node and the job would still report green.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Activate melos
         run: |
           dart pub global activate melos "$MELOS_VERSION"

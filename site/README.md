@@ -35,7 +35,9 @@ tool/serve_docs.sh
 
 Pass a different port as the only argument when needed, for example
 `tool/serve_docs.sh 9000`. Stop the server with Ctrl-C. Rerun the script after
-changing site content, layouts, or theme assets.
+changing site content, layouts, or theme assets — it regenerates the themes
+gallery first, so a theme manifest or screenshot change shows up in the preview
+and the regenerated files are ready to commit.
 
 ## Build locally
 

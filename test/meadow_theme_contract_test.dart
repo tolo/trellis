@@ -613,6 +613,7 @@ Future<Map<String, dynamic>?> _runMenuHarness(String scriptPath) async {
     expect(result.exitCode, 0, reason: 'menu harness failed: ${result.stderr}');
     return jsonDecode(result.stdout as String) as Map<String, dynamic>;
   } on ProcessException {
+    _requireNodeInCi('the mobile-menu behavioural harness');
     markTestSkipped('system node not found - mobile menu behavioural harness skipped');
     return null;
   }
@@ -702,6 +703,7 @@ Future<Map<String, dynamic>?> _fontAxes(List<String> files, String themeDir) asy
     expect(result.exitCode, 0, reason: 'fvar reader failed: ${result.stderr}');
     return jsonDecode(result.stdout as String) as Map<String, dynamic>;
   } on ProcessException {
+    _requireNodeInCi('the @font-face axis contract');
     markTestSkipped('system node not found - font axis check skipped');
     return null;
   }
@@ -804,5 +806,14 @@ void _copyDirectory(Directory source, Directory destination) {
     } else if (entity is File) {
       entity.copySync(target);
     }
+  }
+}
+
+/// Skipping a node-gated check is a local convenience; in CI it is a silent hole
+/// - the run reports "All tests passed!" with [what] never executed. Fail loudly
+/// there instead, so the gate cannot go green on an assertion that did not run.
+void _requireNodeInCi(String what) {
+  if (Platform.environment['CI'] == 'true') {
+    fail('node is required in CI: $what did not run');
   }
 }

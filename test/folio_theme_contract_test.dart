@@ -594,6 +594,7 @@ Future<Map<String, dynamic>?> _runNodeHarness(String mode, String scriptPath) as
     expect(result.exitCode, 0, reason: 'theme client harness failed: ${result.stderr}');
     return jsonDecode(result.stdout as String) as Map<String, dynamic>;
   } on ProcessException {
+    _requireNodeInCi('the theme client behavioural harness');
     markTestSkipped('system node not found – theme client behavioral harness skipped');
     return null;
   }
@@ -608,5 +609,14 @@ void _copyDirectory(Directory source, Directory destination) {
     } else if (entity is File) {
       entity.copySync(target);
     }
+  }
+}
+
+/// Skipping a node-gated check is a local convenience; in CI it is a silent hole
+/// - the run reports "All tests passed!" with [what] never executed. Fail loudly
+/// there instead, so the gate cannot go green on an assertion that did not run.
+void _requireNodeInCi(String what) {
+  if (Platform.environment['CI'] == 'true') {
+    fail('node is required in CI: $what did not run');
   }
 }

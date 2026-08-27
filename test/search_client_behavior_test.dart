@@ -35,6 +35,7 @@ void main() {
 
     test('fetch-failure, no-match, empty-query, and happy-path scenarios all hold', () async {
       if (!nodeAvailable) {
+        _requireNodeInCi('the search client DOM harness');
         markTestSkipped('system node not found — behavioral DOM-harness skipped');
         return;
       }
@@ -81,4 +82,13 @@ void main() {
       expect(happyPath['titleText'], equals('Getting Started'));
     });
   });
+}
+
+/// Skipping a node-gated check is a local convenience; in CI it is a silent hole
+/// - the run reports "All tests passed!" with [what] never executed. Fail loudly
+/// there instead, so the gate cannot go green on an assertion that did not run.
+void _requireNodeInCi(String what) {
+  if (Platform.environment['CI'] == 'true') {
+    fail('node is required in CI: $what did not run');
+  }
 }

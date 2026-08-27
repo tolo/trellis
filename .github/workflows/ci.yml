@@ -72,10 +72,14 @@ jobs:
         with:
           sdk: ${{ env.DART_SDK }}
 
-      # The theme client-behaviour harness runs the vendored theme JS under
-      # node. Its runner calls markTestSkipped when node is missing, so without
-      # this step the whole tier could silently evaporate on a runner image that
-      # drops node and the job would still report green.
+      # Several root-suite checks shell out to node: the theme client-behaviour
+      # harness (lattice/folio/search), Meadow's mobile-menu DOM harness, and the
+      # WOFF2/brotli fvar reader behind the @font-face axis contract. Each skips
+      # when node is missing, so without this step a runner image that drops node
+      # would report "All tests passed" with those assertions never executed.
+      # `_requireNodeInCi` turns that skip into a failure when CI=true, so this
+      # step is load-bearing rather than advisory - do not remove it while
+      # reasoning about only one of the three consumers.
       - name: Set up Node
         uses: actions/setup-node@v4
         with:

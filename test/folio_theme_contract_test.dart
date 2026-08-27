@@ -192,9 +192,15 @@ $trellis-show-sidenotes: false;
     expect(css, contains('--folio-grid: color-mix(in srgb, var(--folio-green)'));
     // flex: 1 0 auto inside the 100vh body column already reaches the footer; a vh floor over-reserves.
     expect(RegExp(r'\.docs-shell\s*\{[^}]*min-height:').hasMatch(css), isFalse);
-    // Search results are styled and capped; the script builds all four hooks.
-    for (final rule in ['.search-result-link', '.search-result-title', '.search-result-snippet', '.search-empty']) {
-      expect(css, contains(rule), reason: rule);
+    // Every class static/js/search.js builds has to be styled, or the results list falls
+    // back to unstyled body text. Derived from the script rather than hardcoded, so a rename
+    // on one side alone fails, and anchored so a longer selector cannot satisfy the match.
+    final searchClasses = RegExp(
+      r"className = '([\w-]+)'",
+    ).allMatches(File(p.join(themeDir, 'static', 'js', 'search.js')).readAsStringSync()).map((m) => m[1]!).toSet();
+    expect(searchClasses, containsAll(<String>['search-result', 'search-result-title', 'search-result-snippet']));
+    for (final built in searchClasses) {
+      expect(RegExp('\\.$built(?=[\\s,{:])').hasMatch(css), isTrue, reason: built);
     }
     expect(RegExp(r'\.search-results\s*\{[^}]*max-height: 320px').hasMatch(css), isTrue);
     // An ancestor of the current page is marked; the class is computed in all three tree levels.

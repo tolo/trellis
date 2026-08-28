@@ -157,7 +157,9 @@ jobs:
       # unaffected, which is the whole mechanism. Chasing the runner is permanent
       # maintenance for a check that matters most at one moment, so the tier is a
       # release gate in tool/release.sh instead, run on the maintainer's machine where
-      # the baselines were recorded. See TD-035.
+      # the baselines were recorded. This is a stability argument, not a speed one:
+      # the tier costs ~10s of this step (124s -> 114s). The step's real cost is the
+      # rendered sweeps - site reflow and the theme masthead/anchor checks. See TD-035.
       - name: Root workspace tests
         run: dart test --exclude-tags=visual
 

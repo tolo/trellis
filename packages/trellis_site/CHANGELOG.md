@@ -46,6 +46,14 @@
   previously pointed at a per-theme repository (`tolo/trellis-theme-verdant`) that does not exist – the themes live
   under `themes/` in the one repository.
 
+### Notes
+
+- **The Trellis repository gained three themes in this release** – Lattice (documentation), Folio (reference) and
+  Meadow (product landing), joining Arbor, Bloom and Verdant. They are **not part of this package** and do not
+  travel through pub.dev: themes live under `themes/` in `tolo/trellis` and are installed into a site with
+  `trellis theme add https://github.com/tolo/trellis --theme <name>`. What this package provides is the machinery
+  that discovers, loads, merges the params of and renders them.
+
 ## 0.10.2
 
 ### Changed

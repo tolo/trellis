@@ -4,14 +4,29 @@
 
 ### Added
 
-- `trellis theme add <url-or-path> --theme <name>` installs a single theme out of a source that carries several, copying
-  only its `themes/<name>/` directory into the site. This is how the built-in themes are distributed – they live under
-  `themes/` in the `tolo/trellis` repository, not in one repository each – so `trellis theme add
-  https://github.com/tolo/trellis --theme lattice` now works and the themes gallery's `theme: <name>` hint is reachable.
-  `--ref` pins the subdirectory install to a tag or branch; the theme name is validated against the same charset the
-  theme manifest requires, so a `--theme` value cannot escape the destination; the temporary clone is removed on every
-  path. Whole-repository and local-path installs are unchanged. A theme installed this way carries no git metadata, so
+- `trellis theme add <url-or-path> --theme <name>` installs a single theme out of a source that carries several,
+  copying only its `themes/<name>/` directory into the site. The built-in themes are distributed this way – they live
+  under `themes/` in the `tolo/trellis` repository, not in one repository each – so
+  `trellis theme add https://github.com/tolo/trellis --theme lattice` installs just that theme. `--ref` pins the
+  install to a tag or branch, and the temporary clone is removed on every path, failures included. Whole-repository
+  and local-path installs are unchanged. A theme installed this way carries no git metadata, so
   `trellis theme update` does not apply to it – remove and re-add instead.
+- `validateThemeName`, exported from `package:trellis_cli/trellis_cli.dart`, is the rule a `--theme` value is checked
+  against: `^[a-z0-9][a-z0-9_-]*$`. A name outside that charset is rejected before anything is cloned, so `--theme`
+  cannot traverse out of the site's `themes/`. A source whose own `themes/<name>` is a symlink resolving outside the
+  source tree is rejected as well, and nothing is copied.
+
+### Changed
+
+- The blog scaffold's sample post now explains that a date-only `date:` is anchored at UTC midnight, and shows the
+  zone-explicit form (`date: 2026-03-15T09:30:00Z`) for pinning an exact instant. Matches the front-matter date
+  resolution `trellis_site` 0.11.0 ships.
+
+### Documentation
+
+- The README's `theme add` examples now install from `https://github.com/tolo/trellis --theme lattice`. They
+  previously pointed at a per-theme repository (`tolo/trellis-theme-verdant`) that does not exist. `--ref` is
+  documented as becoming `git clone --branch`, so it takes a tag or branch that already exists on the remote.
 
 ## 0.10.2
 

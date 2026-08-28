@@ -6,15 +6,23 @@ Last Updated: 2026-08-27
 
 ## Current Phase
 
-**0.11 in remediation — release gated NO-GO.** Lattice, the redesigned site and six-theme generated gallery, Folio,
-Meadow, authoring guidance, architecture, and unreleased lockstep changelog collateral are on `feat/0.11`. Owner UI
-inspection (2026-08-24/26) fixed rendering defects the story reviews missed. The runbook step-1 release-gate review
-(2026-08-27, 11 reviewers) then returned **NO-GO** with 20 HIGH findings — see `docs/specs/roadmap.md` § 0.11 for the
-verdict and blocking themes. TD-014 was found unimplemented and has since landed. The version bump, tag and
-publication stay blocked until the HIGH set is remediated and the review is re-run.
+**0.11 remediated through three release-gate reviews; gate green; awaiting the owner's release decision.** Lattice,
+the redesigned site and six-theme generated gallery, Folio, Meadow, authoring guidance, architecture, and unreleased
+lockstep changelog collateral are on `feat/0.11`. Owner UI inspection (2026-08-24/26) fixed rendering defects the story
+reviews missed; TD-014 was found unimplemented and landed.
 
-The recurring theme across reviewers: the contract tests check that artifacts exist and are wired, not that they
-render correctly. 8 of 11 mutations against the suite passed, including zeroing every vendored font file.
+Three release-gate reviews each returned NO-GO, and each found a defect class one step outside the previous one:
+defects in themes (20 HIGH) → classes unpropagated across themes (7) → everything adjacent to themes (1 CRITICAL +
+7 HIGH: the gallery, the docs site, the CLI install journey, the package changelogs, the SDK's own CSP). Severity fell
+across the three. The third round was remediated on 2026-08-28 (`5b0f46b`..`1016455`) under an explicit decision that
+there would be **no fourth open-ended review** — the widening-scope process has no fixed point for a pre-1.0 minor, so
+the standing verdict is a judgment about acceptable known debt, recorded as TD-038…TD-047. Full record in
+`../trellis-private/docs/specs/0.11/prd.md` § Outcome.
+
+Two of the third review's findings were **wrong**, and both failure shapes are worth carrying: a finding can be
+internally rigorous and still not bear on its target (a correctly measured render change, of an element below the
+captured screenshot frame), and naming one instance of a defect is not the same as bounding it (two findings turned
+out to have siblings the review had not named).
 
 ## Recent Completions
 
@@ -47,17 +55,25 @@ render correctly. 8 of 11 mutations against the suite passed, including zeroing 
 
 ## Test Health
 
-On `feat/0.11`: all eight package test suites pass (one existing Linux-only skip in `trellis`), the repo-root suite
-passes **81/81**, and workspace analyze and format gates pass across all 12 packages. Root and `/trellis/` docs builds
+On `feat/0.11` (2026-08-28, macOS): all eight package test suites pass (one existing Linux-only skip in `trellis`) —
+`trellis` 1282, `trellis_site` 849, `trellis_cli` 251 — the repo-root suite passes **149/149** including the visual
+tier, `generate_theme_gallery.dart --check` is current, `subset_fonts.py --verify` reproduces 11/11 vendored faces
+byte-identically, and workspace analyze (`--fatal-infos`) and both format gates pass across all 12 packages.
+**The root suite is 149 only on macOS**: CI runs `dart test --exclude-tags=visual` because the committed baselines are
+macOS recordings, so the `transform`/`opacity`/`border-radius` class has no gate on CI at all (TD-035, TD-043). Root and `/trellis/` docs builds
 each produce 27 pages and 39 static files with 1,279 internal references and no broken links. Dart Sass 3.0
 forward-compat tech debt remains logged as TD-006 (`@import` in theme SASS + the bridge).
 
-**Green does not mean covered.** The 2026-08-27 release-gate review mutation-tested the suite: 8 of 11 deliberate
-regressions passed. Uncaught: reverting Folio's hero to its pre-remediation geometry, deleting the mobile disclosure
-cap, restoring the invisible dark chart-paper grid, truncating every vendored `woff2` in all three new themes to zero
-bytes, swapping a landing showcase card, and stripping Meadow's sticky-nav isolation. The theme contract tests assert
-manifest, wiring and token authority; they do not assert rendered geometry, font validity, or card identity. Treat a
-green theme suite as a wiring check until that gap is closed.
+**Green does not mean covered — and this suite has proved it three times.** The 2026-08-27 review mutation-tested the
+suite and 8 of 11 deliberate regressions passed, including truncating every vendored `woff2` to zero bytes. Those are
+closed: the theme suites now assert rendered geometry, per-file `wOF2` magic bytes and byte floors, `@font-face` axis
+containment, and (since 2026-08-28) that each gallery card's screenshots live under its own theme directory.
+
+Two holes remain open and are the ones to distrust. **`subset_fonts.py --verify` re-derives its expectation from the
+same constants it checks** (TD-038): narrow `ARROWS`/`MARKS`, re-run `--write`, and six codepoints vanish while
+`--verify` reports `11 ok` and every suite stays green. **`site/` is outside every rendered check** (TD-039) — which is
+how a WCAG 1.4.10 reflow failure reached the flagship gallery page with the whole gate green. A gate that derives its
+expected value from the artifact's own recipe cannot fail when the recipe changes; it redefines the truth instead.
 
 ## Blockers
 

@@ -14,6 +14,10 @@
 
 ### Added
 
+- `BuildResult.themeShadowedLayouts` lists the site layouts that shadowed an active theme, populated only when that
+  theme turned out inert: its assets were published to the output and no emitted page referenced any of them. Empty
+  for a partial override, and empty when the site's `base.html` is a copy of the theme's, because a copy keeps the
+  theme's stylesheet link.
 - `resolveFrontMatterDate(value)` – the front-matter `date:` resolver that `FeedGenerator` and `SitemapGenerator`
   now share, exported from `package:trellis_site/trellis_site.dart`. Returns a UTC `DateTime`, or `null` when the
   value is absent or unparseable so callers fall back to the source file's mtime.

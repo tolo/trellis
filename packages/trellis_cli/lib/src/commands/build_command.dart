@@ -130,7 +130,33 @@ class BuildCommand extends Command<int> {
         : '';
     stdout.writeln('Built ${result.pageCount} pages, $totalStatic static files in ${elapsed}ms$warningStr');
 
+    _warnOnInertTheme(config, result);
+
     return 0;
+  }
+
+  /// Warns when the active theme was published but never referenced.
+  ///
+  /// [BuildResult.themeShadowedLayouts] is populated only in that case, so a
+  /// partial override — and a site `base.html` copied from the theme, which
+  /// keeps the theme's stylesheet link — stay silent. The build still succeeds:
+  /// the output is valid, it just carries none of the theme.
+  void _warnOnInertTheme(SiteConfig config, BuildResult result) {
+    if (result.themeShadowedLayouts.isEmpty) return;
+
+    stderr.writeln('');
+    stderr.writeln(
+      'Warning: theme "${config.themeConfig!.name}" is installed but inert — its CSS and assets were copied to '
+      'the output directory and no page references them. Layouts resolve site-first, and these site layouts '
+      "shadow the theme's:",
+    );
+    for (final layout in result.themeShadowedLayouts) {
+      stderr.writeln('  $layout');
+    }
+    stderr.writeln(
+      'The site renders unstyled. Remove or rename the shadowing layouts to use the theme, or pull the theme in '
+      'explicitly with the theme: prefix (e.g. tl:extends="theme:layouts/base.html").',
+    );
   }
 }
 

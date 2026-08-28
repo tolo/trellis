@@ -52,6 +52,31 @@ trellis theme add ../trellis --theme lattice
 
 Useful when authoring a theme alongside a site, or testing before publishing to git.
 
+### Site Layouts Win Over Theme Layouts
+
+Layouts resolve **site-first**: for `layouts/base.html`, the SSG uses your site's
+`layouts/base.html` if it exists and only falls back to the theme's. That is what makes
+[layout overrides](#dimension-2-layout-override-at-same-path) work — but it also means a site that
+already has a full set of layouts shadows the whole theme.
+
+That is the case when you add a theme to a project scaffolded with `trellis create --template blog`:
+the scaffold writes `layouts/base.html`, `layouts/home.html`, `layouts/_default/single.html`,
+`layouts/_default/list.html` and `layouts/posts/single.html`, which covers everything a theme
+provides. The build succeeds and copies the theme's CSS into the output, but no page links it — the
+site renders unstyled.
+
+`trellis theme add` lists the shadowing files when it installs, and `trellis build` warns when the
+theme's CSS and assets ended up in the output with no page referencing them. To fix it, either:
+
+- delete or rename the site layouts you want the theme to render, or
+- keep them and pull the theme in explicitly with the `theme:` prefix, e.g.
+  `<html tl:extends="theme:layouts/base.html">` (see
+  [Dimension 3](#dimension-3-tlextends-block-override)).
+
+Overriding layouts is normal and stays silent, including a site `base.html` copied from the theme —
+a copy keeps the theme's stylesheet link, so the theme is still in use. Only a theme nothing
+references at all is reported.
+
 
 ## Configuring a Theme
 

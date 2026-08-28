@@ -105,6 +105,14 @@ void main() {
     return dir;
   }
 
+  /// Writes `<dir>/layouts/<relative>` — used to give a site or a theme layouts
+  /// at colliding paths.
+  void writeLayout(Directory dir, String relative) {
+    final file = File(p.join(dir.path, 'layouts', relative));
+    file.parent.createSync(recursive: true);
+    file.writeAsStringSync('<html></html>');
+  }
+
   Future<int> run(List<String> args) => TrellisCli(workingDirectory: tempDir.path).run(args);
 
   Future<int> runSingleCommand(Command<int> command, List<String> args) {
@@ -353,6 +361,46 @@ void main() {
       expect(Directory(copiedSelf).existsSync(), isFalse);
       // The skip is surfaced to the user, not silent.
       expect(stdoutText, contains('Skipped symlink:'));
+    });
+
+    // A blog scaffold ships the same layouts a theme does, so installing a theme
+    // over it leaves the theme fully shadowed and the site unstyled. The install
+    // must still succeed — overriding layouts is supported — but say so.
+    test('warns and names every site layout that shadows the installed theme', () async {
+      writeConfig();
+      final localTheme = writeTheme('my-theme', inThemesDir: false);
+      writeLayout(localTheme, 'base.html');
+      writeLayout(localTheme, '_default/single.html');
+      writeLayout(tempDir, 'base.html');
+      writeLayout(tempDir, '_default/single.html');
+
+      late int exitCode;
+      final stderrText = await _captureStderr(() async {
+        exitCode = await run(['theme', 'add', localTheme.path]);
+      });
+
+      expect(exitCode, 0, reason: 'shadowing is a warning, not an install failure');
+      expect(Directory(p.join(tempDir.path, 'themes', 'my-theme')).existsSync(), isTrue);
+      expect(stderrText, contains('Layouts resolve site-first'));
+      expect(stderrText, contains(p.join('layouts', 'base.html')));
+      expect(stderrText, contains(p.join('layouts', '_default', 'single.html')));
+    });
+
+    test('stays silent when no site layout collides with the theme', () async {
+      writeConfig();
+      final localTheme = writeTheme('my-theme', inThemesDir: false);
+      writeLayout(localTheme, 'base.html');
+      writeLayout(localTheme, '_default/single.html');
+      // Site layout at a path the theme does not provide: nothing is shadowed.
+      writeLayout(tempDir, 'posts/single.html');
+
+      late int exitCode;
+      final stderrText = await _captureStderr(() async {
+        exitCode = await run(['theme', 'add', localTheme.path]);
+      });
+
+      expect(exitCode, 0);
+      expect(stderrText, isEmpty);
     });
   });
 

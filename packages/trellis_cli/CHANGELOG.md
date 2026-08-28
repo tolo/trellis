@@ -18,6 +18,13 @@
 
 ### Changed
 
+- **`trellis theme add` warns when site layouts shadow the theme it just installed**, naming each shadowing file.
+  Layouts resolve site-first, so a scaffold that ships its own `layouts/` silently wins over the theme. Installing
+  still succeeds and still exits 0.
+- **`trellis build` warns when an active theme is inert** – its CSS, fonts and scripts were copied to the output and
+  no emitted page references any of them, which is the case that renders an unstyled site. The build still exits 0.
+  Overriding some of a theme's layouts stays silent, as does a site `base.html` copied from the theme, since a copy
+  keeps the theme's stylesheet link.
 - The blog scaffold's sample post now explains that a date-only `date:` is anchored at UTC midnight, and shows the
   zone-explicit form (`date: 2026-03-15T09:30:00Z`) for pinning an exact instant. Matches the front-matter date
   resolution `trellis_site` 0.11.0 ships.
@@ -27,6 +34,8 @@
 - The README's `theme add` examples now install from `https://github.com/tolo/trellis --theme lattice`. They
   previously pointed at a per-theme repository (`tolo/trellis-theme-verdant`) that does not exist. `--ref` is
   documented as becoming `git clone --branch`, so it takes a tag or branch that already exists on the remote.
+- `trellis theme add --help` described `--ref` as taking a tag, branch **or commit**. It becomes `git clone --branch`,
+  which does not accept a commit SHA, so the help text now says tag or branch. The README already said this.
 
 ## 0.10.2
 

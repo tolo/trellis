@@ -26,7 +26,7 @@ class ThemeAddCommand extends Command<int> {
 
   ThemeAddCommand({this.workingDirectory, ProcessRunner processRunner = runProcess}) : _processRunner = processRunner {
     argParser
-      ..addOption('ref', help: 'Git tag, branch, or commit to checkout.', valueHelp: 'tag')
+      ..addOption('ref', help: 'Git tag or branch to clone. Not a commit SHA.', valueHelp: 'tag')
       ..addOption(
         'theme',
         help: "Install one theme from a multi-theme source's themes/<name>/ directory.",
@@ -116,7 +116,46 @@ class ThemeAddCommand extends Command<int> {
     stdout.writeln('');
     stdout.writeln('Customize via theme_params: in trellis_site.yaml.');
 
+    _warnOnShadowedLayouts(configPath, themeDir, themeName);
+
     return 0;
+  }
+
+  /// Warns when the site already has layouts at paths the just-installed theme
+  /// also provides.
+  ///
+  /// Resolution is site-first, so those theme layouts can never render — the
+  /// case that turns a scaffolded project plus a theme into an unstyled site.
+  /// The install itself still succeeds: overriding layouts is supported, and the
+  /// warning is what makes the trade-off visible at the moment it is made.
+  void _warnOnShadowedLayouts(String configPath, String themeDir, String themeName) {
+    final SiteConfig config;
+    try {
+      config = SiteConfig.load(configPath);
+    } on SiteConfigException {
+      return; // Config is unreadable; `trellis build` reports it properly.
+    }
+
+    final shadowed = shadowedThemeLayouts(
+      siteDir: config.siteDir,
+      siteLayoutsDir: config.layoutsDir,
+      themeDir: themeDir,
+    );
+    if (shadowed.isEmpty) return;
+
+    final count = shadowed.length;
+    stderr.writeln('');
+    stderr.writeln(
+      'Warning: $count layout${count == 1 ? '' : 's'} in the site shadow${count == 1 ? 's' : ''} "$themeName". '
+      "Layouts resolve site-first, so the theme's version never renders:",
+    );
+    for (final layout in shadowed) {
+      stderr.writeln('  $layout');
+    }
+    stderr.writeln(
+      'Overriding a layout is supported. If the site instead renders unstyled, remove or rename the shadowing '
+      'layouts, or pull the theme in explicitly with the theme: prefix (e.g. tl:extends="theme:layouts/base.html").',
+    );
   }
 
   bool _isLocalPath(String source) {

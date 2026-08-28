@@ -6,6 +6,31 @@ import 'package:trellis_cli/trellis_cli.dart';
 
 import '_workspace_root.dart';
 
+/// Captures `dart:io` [stderr] writes during [body]. The build command writes
+/// the shadowed-theme warning straight to stderr (no injectable sink), so
+/// `IOOverrides` is the only capture seam. A minimal [Stdout] fake avoids
+/// implementing the full interface via `noSuchMethod`.
+Future<String> _captureStderr(Future<void> Function() body) async {
+  final buffer = StringBuffer();
+  await IOOverrides.runZoned(body, stderr: () => _BufferStdout(buffer));
+  return buffer.toString();
+}
+
+class _BufferStdout implements Stdout {
+  _BufferStdout(this._buffer);
+
+  final StringBuffer _buffer;
+
+  @override
+  void writeln([Object? object = '']) => _buffer.writeln(object);
+
+  @override
+  void write(Object? object) => _buffer.write(object);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
 void main() {
   late Directory tempDir;
 
@@ -359,6 +384,195 @@ theme_params:
       final propsFile = File(p.join(tempDir.path, 'output', 'css', 'theme-props.css'));
       expect(propsFile.existsSync(), isTrue);
       expect(propsFile.readAsStringSync(), contains('--trellis-primary-color'));
+    });
+
+    // H5: a theme installed over a site that already has the same layouts is
+    // shadowed by site-first resolution — the build succeeds, publishes the
+    // theme's CSS and assets, and renders unstyled because nothing links them.
+    // The trigger is exactly that symptom: assets published, no page references
+    // them. Keyed on which layouts resolved instead, a site base.html copied from
+    // the theme would false-positive, and a theme still rendering one non-root
+    // layout (Verdant's tags/) would be missed.
+    group('inert theme warning', () {
+      const themeBase = '''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="/css/theme-props.css">
+  <script src="/js/theme.js"></script>
+  <title tl:text="\${page.title}">T</title>
+</head>
+<body class="theme-shell"><main tl:define="content">placeholder</main></body>
+</html>
+''';
+
+      const siteBase = '''
+<!DOCTYPE html>
+<html lang="en">
+<head><link rel="stylesheet" href="/styles.css"><title>T</title></head>
+<body class="site-shell"><main tl:define="content">x</main></body>
+</html>
+''';
+
+      /// Returns a layout extending `layouts/base.html` and marked with [marker].
+      String layoutExtendingBase(String marker) =>
+          '<html tl:extends="layouts/base.html" lang="en">'
+          '<body><main tl:define="content"><h1 class="$marker">T</h1></main></body></html>\n';
+
+      /// Writes a theme at `themes/<name>/` whose base layout links the two things
+      /// a real theme links — the generated `css/theme-props.css` and a file from
+      /// its own `static/`. [taxonomyLayouts] adds `tags/list.html` and
+      /// `tags/term.html`: the Verdant shape, layouts a blog scaffold does not
+      /// shadow, so the theme still renders something while its shell does not.
+      void writeTheme(Directory dir, String name, {bool taxonomyLayouts = false}) {
+        final themeDir = Directory(p.join(dir.path, 'themes', name))..createSync(recursive: true);
+        File(p.join(themeDir.path, 'theme.yaml')).writeAsStringSync('''
+name: $name
+version: 1.0.0
+author: Test
+description: An inert-theme test theme.
+params:
+  primary_color:
+    type: color
+    default: "#ff0000"
+    description: Primary color
+''');
+        Directory(p.join(themeDir.path, 'static', 'js')).createSync(recursive: true);
+        File(p.join(themeDir.path, 'static', 'js', 'theme.js')).writeAsStringSync('// theme js\n');
+
+        final layouts = Directory(p.join(themeDir.path, 'layouts', '_default'))..createSync(recursive: true);
+        File(p.join(themeDir.path, 'layouts', 'base.html')).writeAsStringSync(themeBase);
+        File(p.join(themeDir.path, 'layouts', 'home.html')).writeAsStringSync(layoutExtendingBase('theme-home'));
+        File(p.join(layouts.path, 'list.html')).writeAsStringSync(layoutExtendingBase('theme-list'));
+        File(p.join(layouts.path, 'single.html')).writeAsStringSync(layoutExtendingBase('theme-single'));
+        if (taxonomyLayouts) {
+          final tags = Directory(p.join(themeDir.path, 'layouts', 'tags'))..createSync(recursive: true);
+          File(p.join(tags.path, 'list.html')).writeAsStringSync(layoutExtendingBase('theme-tags-list'));
+          File(p.join(tags.path, 'term.html')).writeAsStringSync(layoutExtendingBase('theme-tags-term'));
+        }
+      }
+
+      /// Writes content and points the config at [themeName]. [siteLayouts] maps a
+      /// path below `layouts/` to its contents; anything not listed falls through
+      /// to the theme.
+      void writeSite(Directory dir, String themeName, Map<String, String> siteLayouts, {bool tagged = false}) {
+        File(p.join(dir.path, 'trellis_site.yaml')).writeAsStringSync('''
+title: Test Site
+baseUrl: https://example.com
+outputDir: output
+theme: $themeName
+${tagged ? 'taxonomies:\n  - tags\n' : ''}''');
+        Directory(p.join(dir.path, 'content', 'posts')).createSync(recursive: true);
+        File(p.join(dir.path, 'content', '_index.md')).writeAsStringSync('---\ntitle: Home\n---\nHome.\n');
+        File(p.join(dir.path, 'content', 'posts', '_index.md')).writeAsStringSync('---\ntitle: Posts\n---\nList.\n');
+        File(p.join(dir.path, 'content', 'posts', 'hello.md')).writeAsStringSync(
+          tagged ? '---\ntitle: Hello\ntags:\n  - alpha\n---\nBody.\n' : '---\ntitle: Hello\n---\nBody.\n',
+        );
+
+        for (final entry in siteLayouts.entries) {
+          final file = File(p.join(dir.path, 'layouts', entry.key));
+          file.parent.createSync(recursive: true);
+          file.writeAsStringSync(entry.value);
+        }
+      }
+
+      /// The layouts a `create --template blog` scaffold puts in a theme's way,
+      /// with [base] as the shell.
+      Map<String, String> fullScaffold(String base) => {
+        'base.html': base,
+        'home.html': layoutExtendingBase('site-home'),
+        '_default/list.html': layoutExtendingBase('site-list'),
+        '_default/single.html': layoutExtendingBase('site-single'),
+      };
+
+      Future<({int exitCode, String errorOutput})> runBuild() async {
+        late int exitCode;
+        final errorOutput = await _captureStderr(() async {
+          exitCode = await TrellisCli(workingDirectory: tempDir.path).run(['build']);
+        });
+        return (exitCode: exitCode, errorOutput: errorOutput);
+      }
+
+      test('warns when the theme is published but no page references it', () async {
+        writeTheme(tempDir, 'inert-theme');
+        writeSite(tempDir, 'inert-theme', fullScaffold(siteBase));
+
+        final result = await runBuild();
+
+        expect(result.exitCode, 0, reason: 'the output is valid, it just carries none of the theme');
+        expect(result.errorOutput, contains('is installed but inert'));
+        expect(result.errorOutput, contains(p.join('layouts', 'base.html')));
+        expect(result.errorOutput, contains(p.join('layouts', 'home.html')));
+        expect(result.errorOutput, contains(p.join('layouts', '_default', 'list.html')));
+        expect(result.errorOutput, contains(p.join('layouts', '_default', 'single.html')));
+        // The warning describes reality: theme assets shipped, nothing links them.
+        expect(File(p.join(tempDir.path, 'output', 'js', 'theme.js')).existsSync(), isTrue);
+        final home = File(p.join(tempDir.path, 'output', 'index.html')).readAsStringSync();
+        expect(home, contains('site-shell'));
+        expect(home, isNot(contains('theme-props.css')));
+      });
+
+      // Verdant's shape: the theme still renders its taxonomy layouts, so it did
+      // contribute templates — but every page sits in the site's shell, so the
+      // theme's assets stay unreferenced and the site is still unstyled.
+      test('warns even when a theme layout the site does not shadow still renders', () async {
+        writeTheme(tempDir, 'inert-theme', taxonomyLayouts: true);
+        writeSite(tempDir, 'inert-theme', fullScaffold(siteBase), tagged: true);
+
+        final result = await runBuild();
+
+        expect(result.exitCode, 0);
+        expect(result.errorOutput, contains('is installed but inert'));
+        // A theme layout really did render, so the warning cannot key on "the
+        // theme contributed no template".
+        final tagPage = File(p.join(tempDir.path, 'output', 'tags', 'index.html'));
+        expect(tagPage.existsSync(), isTrue);
+        final tagHtml = tagPage.readAsStringSync();
+        expect(tagHtml, contains('theme-tags-list'));
+        // ...and it rendered inside the site's shell, so still no theme asset.
+        expect(tagHtml, contains('site-shell'));
+        expect(tagHtml, isNot(contains('theme-props.css')));
+      });
+
+      test('stays silent when the site overrides only one theme layout', () async {
+        writeTheme(tempDir, 'inert-theme');
+        writeSite(tempDir, 'inert-theme', {'_default/single.html': layoutExtendingBase('site-single')});
+
+        final result = await runBuild();
+
+        expect(result.exitCode, 0);
+        expect(result.errorOutput, isEmpty, reason: 'a partial override is supported and must not warn');
+        final home = File(p.join(tempDir.path, 'output', 'index.html')).readAsStringSync();
+        expect(home, contains('theme-home'));
+        expect(home, contains('theme-shell'));
+        // The site's single layout won for the page it overrides, and still
+        // renders inside the theme's shell, so theme assets are referenced.
+        final page = File(p.join(tempDir.path, 'output', 'posts', 'hello', 'index.html')).readAsStringSync();
+        expect(page, contains('site-single'));
+        expect(page, isNot(contains('theme-single')));
+        expect(page, contains('theme-props.css'));
+      });
+
+      // The case a "did the theme's layouts render?" trigger gets wrong: every
+      // theme layout is shadowed, yet the theme is fully in use because the site's
+      // base.html is the theme's base.html, stylesheet link and all.
+      test('stays silent when the site base layout is a tweaked copy of the theme base', () async {
+        writeTheme(tempDir, 'inert-theme');
+        writeSite(
+          tempDir,
+          'inert-theme',
+          fullScaffold(themeBase.replaceFirst('</body>', '  <!-- site tweak -->\n</body>')),
+        );
+
+        final result = await runBuild();
+
+        expect(result.exitCode, 0);
+        expect(result.errorOutput, isEmpty, reason: 'a copied base keeps the theme stylesheet link — theme is in use');
+        final home = File(p.join(tempDir.path, 'output', 'index.html')).readAsStringSync();
+        expect(home, contains('theme-props.css'));
+        expect(home, contains('site tweak'));
+        expect(home, contains('site-home'), reason: 'the site layouts really did win');
+      });
     });
 
     // Skin selection (H3): skin: light | dark must force the theme's _skins/

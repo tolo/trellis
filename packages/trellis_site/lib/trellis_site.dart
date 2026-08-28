@@ -21,6 +21,7 @@ export 'src/sitemap_generator.dart';
 export 'src/taxonomy.dart';
 export 'src/theme_aware_loader.dart';
 export 'src/theme_config.dart';
+export 'src/theme_layout_shadowing.dart';
 export 'src/theme_manifest.dart';
 export 'src/theme_param_merger.dart';
 export 'src/theme_sass_generator.dart';

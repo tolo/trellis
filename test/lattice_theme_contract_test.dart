@@ -906,6 +906,14 @@ $showcaseCards''',
       // this cap exists to catch: a full-axis Fraunces upright (+~53KB) or a latin-ext companion
       // for the italic (+~35KB).
       maxTotalBytes: 275 * 1024,
+      // All seven faces declare a unicode-range, so all seven are asserted against their
+      // own cmap and nothing is exempt.
+      unicodeRangeExemptions: const {},
+      // The docs site runs on this theme, so what its authors type ships to real visitors in
+      // these faces. Resolved through the layouts' content host rather than charged to every
+      // family: the `→` in the trellis_site page is body prose, which is the one Lattice face
+      // that draws it.
+      contentPaths: [p.join(Directory.current.path, 'site', 'content')],
       // Every codepoint the theme emits is now drawn by the face that renders it:
       // `.duo-arrow` takes var(--body) for U+2192, and the terminal-card prefixes are
       // ASCII. An exact-list assertion, so a new gap fails here and so does a stale entry.

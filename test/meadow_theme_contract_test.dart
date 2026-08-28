@@ -149,6 +149,16 @@ void main() {
       },
       // Font payload ships to every deployed site, so it is budgeted; the unused axes cost 86KB.
       maxTotalBytes: 160 * 1024,
+      // 0 of 3 faces have their unicode-range asserted, because the theme declares none. Each
+      // family ships one face with no companion subset for a range to route between, so a
+      // descriptor would only gate the download - worth declaring or not is a theme-authoring
+      // call nobody has made. Named so the absence is visible rather than read as a check
+      // that ran.
+      unicodeRangeExemptions: const {
+        'bricolage-grotesque-latin.woff2': 'declares no unicode-range; one face per family, nothing to route',
+        'schibsted-grotesk-latin.woff2': 'declares no unicode-range; one face per family, nothing to route',
+        'jetbrains-mono-latin.woff2': 'declares no unicode-range; one face per family, nothing to route',
+      },
       knownGaps: const [],
       knownWeightGaps: const [],
     );

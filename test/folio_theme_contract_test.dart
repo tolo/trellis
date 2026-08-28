@@ -582,6 +582,13 @@ $trellis-show-sidenotes: false;
       // Font payload is a budgeted part of every deployed site; hold it under 50KB. A vendored
       // italic would take the theme to 94,756 B, which is what this cap refuses (VENDORED.md).
       maxTotalBytes: 50 * 1024,
+      // 0 of 1 faces have their unicode-range asserted, because the theme declares none. The
+      // one face has no companion subset for a range to route between, so a descriptor would
+      // only gate its download - worth declaring or not is a theme-authoring call nobody has
+      // made. Named so the absence is visible rather than read as a check that ran.
+      unicodeRangeExemptions: const {
+        'eb-garamond-latin.woff2': 'declares no unicode-range; single face, no companion subset to route between',
+      },
       knownGaps: const [],
       knownWeightGaps: const [],
     );

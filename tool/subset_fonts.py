@@ -8,10 +8,20 @@ given the same fontTools/brotli versions (see TOOLING below).
 
     python3 -m venv .venv && .venv/bin/pip install 'fonttools==4.63.0' 'brotli==1.2.0'
     .venv/bin/python tool/subset_fonts.py --write     # regenerate in place
-    .venv/bin/python tool/subset_fonts.py --verify    # fail if shipped bytes drift
+    .venv/bin/python tool/subset_fonts.py --verify    # fail if bytes or coverage drift
 
-`--verify` is the gate: it re-runs the pipeline into a temp dir and compares SHA-256
-against the committed files, so a hand-edited font cannot pass unnoticed.
+`--verify` is the gate, and it checks two independent things:
+
+* SHA-256 of a fresh build against the committed files, so a hand-edited font cannot pass.
+* the built cmap of every face against `tool/font_coverage.txt`. The byte compare alone only
+  proves a file matches the recipe that produced it, so narrowing LATIN/ARROWS/MARKS and
+  re-running `--write` would *redefine* what "correct" means and still report `11 ok`. The
+  pinned coverage is the other side of that contract: this script never writes it, so a
+  narrowed request fails naming the face and the codepoints it lost. Changing coverage on
+  purpose means editing that file by hand - `--write` prints the block to paste.
+
+Scope comes from the tree, not from the list: `themes/*/static/fonts/` is globbed, so a
+vendored face missing from OUTPUTS is reported rather than silently left unverified.
 """
 
 from __future__ import annotations
@@ -25,6 +35,8 @@ import tempfile
 import time
 import urllib.request
 from pathlib import Path
+
+from fontTools.ttLib import TTFont
 
 TOOLING = "fonttools 4.63.0, brotli 1.2.0, python 3.14"
 
@@ -79,7 +91,10 @@ FAMILIES = {
     ),
 }
 
-# Coverage. LATIN/LATIN_EXT are the Google Fonts subset definitions; LATIN is widened with
+# Coverage *requested*. What each face ends up carrying is pinned independently in
+# tool/font_coverage.txt and asserted by --verify, so editing anything below narrows a font
+# and fails the gate instead of moving the goalposts.
+# LATIN/LATIN_EXT are the Google Fonts subset definitions; LATIN is widened with
 # the combining marks, the four arrows the themes render and U+0102, all of which Google's
 # `latin` omits. Both are a request shared by all eight families: a codepoint the family
 # does not draw upstream is simply not emitted, so what a face ends up carrying is a subset
@@ -128,10 +143,78 @@ SUBSET_FLAGS = [
 ]
 
 REPO = Path(__file__).resolve().parent.parent
+COVERAGE = Path(__file__).resolve().parent / "font_coverage.txt"
+FONTS_GLOB = "themes/*/static/fonts/*.woff2"
 
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def key_of(path: Path) -> str:
+    """`themes/meadow/static/fonts/x.woff2` -> `meadow/x`, the key OUTPUTS and the pin use."""
+    return f"{path.parents[2].name}/{path.stem}"
+
+
+def cmap(path: Path) -> set[int]:
+    """Codepoints the built face actually draws, read back out of the file."""
+    with TTFont(path) as font:
+        return set(font.getBestCmap())
+
+
+def format_range(codepoints: set[int]) -> str:
+    """`U+XXXX`/`U+XXXX-YYYY` tokens, the notation the pin and CSS `unicode-range` share."""
+    ordered = sorted(codepoints)
+    tokens = []
+    index = 0
+    while index < len(ordered):
+        end = index
+        while end + 1 < len(ordered) and ordered[end + 1] == ordered[end] + 1:
+            end += 1
+        start, stop = ordered[index], ordered[end]
+        tokens.append(f"U+{start:04X}" if start == stop else f"U+{start:04X}-{stop:04X}")
+        index = end + 1
+    return ", ".join(tokens)
+
+
+def format_block(key: str, codepoints: set[int]) -> str:
+    """One face as it is written in the pin, so a deliberate change is paste-and-review."""
+    tokens = format_range(codepoints).split(", ")
+    lines = [", ".join(tokens[i:i + 6]) for i in range(0, len(tokens), 6)]
+    return "\n".join([f"{key}:", *(f"  {line}" for line in lines)])
+
+
+def load_coverage() -> dict[str, set[int]]:
+    """The pinned per-face coverage. Hand-maintained: nothing here ever writes this file."""
+    pinned: dict[str, set[int]] = {}
+    current: set[int] | None = None
+    for number, raw in enumerate(COVERAGE.read_text().splitlines(), start=1):
+        line = raw.split("#")[0].rstrip()
+        if not line.strip():
+            continue
+        if not line[0].isspace():
+            if not line.endswith(":"):
+                raise SystemExit(f"{COVERAGE.name}:{number}: expected '<theme>/<stem>:'")
+            current = pinned.setdefault(line[:-1], set())
+            continue
+        if current is None:
+            raise SystemExit(f"{COVERAGE.name}:{number}: codepoints before any face")
+        for token in line.split(","):
+            token = token.strip()
+            bounds = [part.strip() for part in token.split("-")]
+            try:
+                start = int(bounds[0].removeprefix("U+"), 16)
+                stop = int(bounds[-1].removeprefix("U+"), 16)
+            except ValueError:
+                raise SystemExit(f"{COVERAGE.name}:{number}: bad token {token!r}") from None
+            current.update(range(start, stop + 1))
+    return pinned
+
+
+def unlisted() -> list[Path]:
+    """Vendored faces on disk that OUTPUTS does not name, and so nothing above verifies."""
+    listed = {f"{theme}/{stem}" for theme, stem, _, _ in OUTPUTS}
+    return sorted(path for path in REPO.glob(FONTS_GLOB) if key_of(path) not in listed)
 
 
 def fetch(cache: Path, family: str) -> Path:
@@ -192,13 +275,21 @@ def main() -> int:
     if args.write == args.verify:
         ap.error("pass exactly one of --write / --verify")
 
+    # Cheap and offline, so it runs before the downloads: a face on disk that OUTPUTS does
+    # not name is neither built nor compared, and would otherwise never be mentioned at all.
+    failures = 0
+    for stray in unlisted():
+        failures += 1
+        print(f"UNLISTED {stray.relative_to(REPO)} is vendored but not in OUTPUTS")
+
+    pinned = load_coverage()
+
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
         cache = tmp_path / "upstream"
         cache.mkdir()
         built = build(tmp_path / "out", cache)
 
-        failures = 0
         totals: dict[str, int] = {}
         for key, path in built.items():
             target = shipped(key)
@@ -211,6 +302,27 @@ def main() -> int:
                 ok = target.exists() and sha256(target) == digest
                 failures += not ok
                 print(f"{'ok    ' if ok else 'DRIFT '} {key:<40} {path.stat().st_size:>7} B  {digest}")
+
+        # The bytes above are only ever compared against the recipe that made them. This is
+        # the independent half: what the face actually draws, against a pin nothing here
+        # writes. --write reports rather than fails, so a deliberate widening can be built
+        # first and pasted second; --verify is where the pin has to already agree.
+        drifted = 0
+        for key in sorted(set(pinned) | set(built)):
+            actual = cmap(built[key]) if key in built else set()
+            expected = pinned.get(key, set())
+            if actual == expected:
+                continue
+            drifted += 1
+            if key not in built:
+                print(f"COVER  {key:<40} pinned in {COVERAGE.name} but nothing builds it")
+                continue
+            lost, gained = expected - actual, actual - expected
+            what = "not pinned" if not expected else f"lost {format_range(lost) or '-'}"
+            print(f"COVER  {key:<40} {what}; gained {format_range(gained) or '-'}")
+            print(f"       pin it in {COVERAGE.name} as:\n{format_block(key, actual)}")
+        failures += 0 if args.write else drifted
+
         for theme, total in sorted(totals.items()):
             print(f"total  {theme:<40} {total:>7} B")
         return 1 if failures else 0

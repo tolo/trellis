@@ -11,12 +11,14 @@
 /// * [expectThemeFontContract] — per-file integrity. A face has to be a parseable WOFF2,
 ///   clear a byte and glyph floor, carry exactly the variation axes the theme expects,
 ///   name itself after its own filename, and declare a `@font-face` weight range its
-///   `fvar` actually covers and a `unicode-range` equal to its own `cmap`.
+///   `fvar` actually covers and a `unicode-range` equal to its own `cmap` — or be named in
+///   `unicodeRangeExemptions`, because a descriptor that is simply absent used to skip the
+///   check while the loop still read as covering every face.
 /// * glyph coverage — every non-ASCII codepoint the theme itself emits has to be drawable
 ///   by the family that renders it. Emission is derived from `theme.yaml` defaults, the
-///   layouts, `data/*.yaml` and the compiled stylesheet's `content:` properties; the
-///   theme's own JavaScript is out of scope, because a string there has no element to
-///   resolve a family from.
+///   layouts, `data/*.yaml`, the compiled stylesheet's `content:` properties and any
+///   `contentPaths` Markdown; the theme's own JavaScript is out of scope, because a string
+///   there has no element to resolve a family from.
 library;
 
 import 'dart:convert';
@@ -77,6 +79,26 @@ Future<void> expectThemeFontContract({
   required List<GlyphGap> knownGaps,
   required List<WeightGap> knownWeightGaps,
 
+  /// Faces that ship without a `unicode-range` descriptor, each mapped to why.
+  ///
+  /// The descriptor is only checkable where it exists, so an absent one used to skip the
+  /// check silently while the loop still read as covering every face. Naming the exemption
+  /// makes the count honest in both directions: a face without the descriptor that is not
+  /// named here fails, and so does a named face that has since gained one. Whether these
+  /// faces *should* declare a range is a theme-authoring call - it changes what a browser
+  /// downloads per face - and is deliberately not decided here.
+  Map<String, String> unicodeRangeExemptions = const {},
+
+  /// Markdown trees whose text this theme renders - the docs site's `site/content/**`.
+  ///
+  /// A theme's own layouts and params are half of what ships: the other half is what an
+  /// author types, and a character with no glyph there renders as tofu or drops to a system
+  /// font mid-sentence. Each file is placed into the element its layouts bind `page.content`
+  /// to and resolved through the same cascade as the layouts' own text, because the family
+  /// depends on the construct - a `→` in body prose is Instrument Sans, in a fenced block
+  /// Spline Sans Mono, and charging it to both invents a defect.
+  List<String> contentPaths = const [],
+
   /// Configs outside the theme that bind this theme's params - the docs site's own
   /// `site/trellis_site.yaml`, say. A glyph there ships to real visitors rather than
   /// only into a screenshot, so it is the surface that matters most.
@@ -121,6 +143,7 @@ Future<void> expectThemeFontContract({
   final inspected = await _inspect(fontDir.path, files);
   if (inspected == null) return;
 
+  final undeclaredRange = <String>[];
   for (final face in declared) {
     final file = face.file;
     final font = inspected[file]!;
@@ -158,7 +181,9 @@ Future<void> expectThemeFontContract({
     // refuses glyphs the file holds and splits a word across two typefaces; a range wider
     // matches the face, pays for the download, finds nothing and reaches the system
     // fallback anyway - a request that reads as coverage and renders as its absence.
-    if (face.unicodeRange != null) {
+    if (face.unicodeRange == null) {
+      undeclaredRange.add(file);
+    } else {
       expect(
         _formatRange(face.unicodeRange!),
         _formatRange(font.cmap),
@@ -167,6 +192,18 @@ Future<void> expectThemeFontContract({
     }
   }
 
+  // Without this the loop above reads as covering every face while doing nothing for the
+  // ones that declare no range. An exemption has to be named and reasoned, so the number of
+  // faces actually asserted is visible rather than assumed.
+  expect(
+    undeclaredRange..sort(),
+    unicodeRangeExemptions.keys.toList()..sort(),
+    reason:
+        'unicode-range is asserted for ${declared.length - undeclaredRange.length} of ${declared.length} '
+        'faces; the rest must be named as exemptions:\n'
+        '${unicodeRangeExemptions.entries.map((e) => '  ${e.key} -> ${e.value}').join('\n')}',
+  );
+
   await _expectGlyphCoverage(
     themeDir: themeDir,
     compiledCss: css,
@@ -174,6 +211,7 @@ Future<void> expectThemeFontContract({
     inspected: inspected,
     knownGaps: knownGaps,
     knownWeightGaps: knownWeightGaps,
+    contentPaths: contentPaths,
     extraConfigPaths: extraConfigPaths,
   );
 }
@@ -189,6 +227,7 @@ Future<void> _expectGlyphCoverage({
   required Map<String, _Woff2> inspected,
   required List<GlyphGap> knownGaps,
   required List<WeightGap> knownWeightGaps,
+  List<String> contentPaths = const [],
   List<String> extraConfigPaths = const [],
 }) async {
   // `--x: Fraunces, Georgia, serif` makes `--x` the Fraunces variable; a variable fronting
@@ -293,7 +332,7 @@ Future<void> _expectGlyphCoverage({
 
   for (final entry in documents.entries) {
     final resolver = resolvers[entry.key]!;
-    for (final (element, text, what) in _renderedText(entry.value)) {
+    for (final (element, text, what) in _renderedText(entry.value.querySelectorAll('*'))) {
       for (final codepoint in _nonAscii(text)) {
         demand(codepoint, variables[resolver.variableFor(element)], '${entry.key} $what');
       }
@@ -333,6 +372,54 @@ Future<void> _expectGlyphCoverage({
     for (final value in values) {
       for (final codepoint in _nonAscii(value)) {
         demand(codepoint, null, source);
+      }
+    }
+  }
+
+  // Authored Markdown. Unlike a param default this *does* have one binding - the element the
+  // layouts give `page.content` - so it is resolved rather than charged to every family: the
+  // construct picks the family, and the docs site's `→` sits in body prose (Instrument Sans,
+  // which draws it) rather than in the display or mono faces, which do not.
+  if (contentPaths.isNotEmpty) {
+    final contentFiles = [
+      for (final root in contentPaths)
+        if (Directory(root).existsSync())
+          ...Directory(root).listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.md')),
+    ];
+    expect(contentFiles, isNotEmpty, reason: 'no Markdown found under ${contentPaths.join(', ')}');
+    final hosts = [
+      for (final entry in documents.entries)
+        if (_contentHost(entry.value) != null) entry.key,
+    ];
+    expect(hosts, isNotEmpty, reason: 'no layout binds page.content, so authored content resolves to nothing');
+    for (final file in contentFiles) {
+      final source = p.relative(file.path, from: Directory.current.path);
+      final (frontMatter, body) = _splitFrontMatter(file.readAsStringSync());
+      // Front matter feeds the chrome the layout builds around the content - the `<h1>`, the
+      // nav's menu title, a card's summary - so it takes the same blanket rule as a param
+      // default rather than the content host's family.
+      for (final value in _strings(loadYaml(frontMatter, sourceUrl: file.uri))) {
+        for (final codepoint in _nonAscii(value)) {
+          demand(codepoint, null, '$source front matter');
+        }
+      }
+      // Every host, not just the one the SSG would pick: which layout renders a file depends
+      // on its path and front matter, so a theme whose hosts disagree about fonts has to draw
+      // the content under any of them.
+      for (final layout in hosts) {
+        final document = html_parser.parse(File(p.join(themeDir, layout)).readAsStringSync());
+        final host = _contentHost(document)!;
+        host.nodes.clear();
+        for (final node in html_parser.parseFragment(_contentHtml(body)).nodes.toList()) {
+          node.remove();
+          host.append(node);
+        }
+        final resolver = _FontResolver(document, ruleVariable, bodyVariable);
+        for (final (element, text, what) in _renderedText([host, ...host.querySelectorAll('*')])) {
+          for (final codepoint in _nonAscii(text)) {
+            demand(codepoint, variables[resolver.variableFor(element)], '$source $what via $layout');
+          }
+        }
       }
     }
   }
@@ -405,8 +492,8 @@ class _FontResolver {
 /// comments carry most of a theme's em dashes while rendering nothing. Attribute literals
 /// count: a `tl:text` expression's quoted parts are concatenated into the output, and a
 /// `placeholder` is drawn in the field's own font.
-Iterable<(Element, String, String)> _renderedText(Document document) sync* {
-  for (final element in document.querySelectorAll('*')) {
+Iterable<(Element, String, String)> _renderedText(Iterable<Element> elements) sync* {
+  for (final element in elements) {
     if (const {'title', 'script', 'style'}.contains(element.localName)) continue;
     for (final node in element.nodes.whereType<Text>()) {
       if (node.data.trim().isNotEmpty) yield (element, node.data, 'text in <${element.localName}>');
@@ -423,6 +510,69 @@ Iterable<(Element, String, String)> _renderedText(Document document) sync* {
     }
   }
 }
+
+/// The element a layout binds `page.content` to, or null when it binds none.
+///
+/// Content is written into exactly one place per layout, and that place is what decides the
+/// families authored text can land in.
+Element? _contentHost(Document document) {
+  for (final element in document.querySelectorAll('*')) {
+    for (final entry in element.attributes.entries) {
+      if (entry.key.toString().endsWith(':utext') && entry.value.contains('page.content')) return element;
+    }
+  }
+  return null;
+}
+
+/// A content file split into (front matter, body); front matter is `''` when there is none.
+///
+/// The halves land in different elements - front matter in the chrome the layout builds,
+/// the body in the content host - so they cannot be scanned as one string.
+(String, String) _splitFrontMatter(String source) {
+  final match = RegExp(r'^---[ \t]*\r?\n(.*?)\r?\n---[ \t]*\r?\n', dotAll: true).firstMatch(source);
+  return match == null ? ('', source) : (match.group(1)!, source.substring(match.end));
+}
+
+/// Markdown as the elements the SSG renders it into.
+///
+/// Only the constructs that change font are modelled: a fenced block is `<pre><code>`, a
+/// backtick span is `<code>`, an ATX heading is `<hN>`, and every other line is paragraph
+/// text. Emphasis, links and list markers draw in the family already in force, so they are
+/// left as text. Text is escaped, so the HTML examples the docs are full of stay text
+/// instead of parsing into elements that would resolve fonts of their own.
+String _contentHtml(String markdown) {
+  final out = StringBuffer();
+  var fenced = false;
+  for (final line in const LineSplitter().convert(markdown)) {
+    final trimmed = line.trimLeft();
+    if (trimmed.startsWith('```') || trimmed.startsWith('~~~')) {
+      out.write(fenced ? '</code></pre>' : '<pre><code>');
+      fenced = !fenced;
+    } else if (fenced) {
+      out.writeln(_escapeHtml(line));
+    } else {
+      final heading = RegExp(r'^\s{0,3}(#{1,6})\s+(.*)$').firstMatch(line);
+      final level = heading?.group(1)!.length;
+      final inline = _inlineCode(heading?.group(2) ?? line);
+      out.write(level == null ? '<p>$inline</p>' : '<h$level>$inline</h$level>');
+    }
+  }
+  if (fenced) out.write('</code></pre>');
+  return out.toString();
+}
+
+/// Backtick spans as `<code>`; an unclosed backtick just runs to the end of the line.
+String _inlineCode(String line) {
+  final out = StringBuffer();
+  var code = false;
+  for (final part in line.split('`')) {
+    out.write(code ? '<code>${_escapeHtml(part)}</code>' : _escapeHtml(part));
+    code = !code;
+  }
+  return out.toString();
+}
+
+String _escapeHtml(String value) => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 
 /// Every string a theme substitutes into its layouts: `theme.yaml` parameter defaults, the
 /// values of any `data/*.yaml` file, and the `theme_params` its own bridged example sets.

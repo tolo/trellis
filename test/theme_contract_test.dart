@@ -23,6 +23,10 @@
 /// present and neutralised by a grid track, or absent and compensated by an
 /// ancestor. Reading CSS to decide whether a page overflows is how this release
 /// twice produced a green suite over a broken page.
+///
+/// Class 2's widths and pass criterion come from `reflow_sweep.dart`, shared
+/// with `site_reflow_test.dart` so the docs site is held to the same bar as the
+/// themes rather than to a copy of it.
 @Timeout(Duration(minutes: 20))
 library;
 
@@ -36,12 +40,7 @@ import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
 import 'browser_reflow_probe.dart';
-
-/// Viewports every theme is swept at regardless of its own breakpoints.
-///
-/// Unbreakable-token overflow is a narrow-viewport failure: at wide widths a
-/// long token fits its track and the measurement cannot discriminate.
-const _narrowViewports = {320: 568, 375: 667, 390: 844};
+import 'reflow_sweep.dart';
 
 /// An unbreakable identifier and a long URL, the two shapes real content
 /// produces: a package name and a deep documentation link.
@@ -123,7 +122,7 @@ void main() {
             pathPrefix: prefix,
             rootAllAssetPaths: true,
           );
-          for (final page in _builtPages(output)) {
+          for (final page in builtPages(output)) {
             final document = html_parser.parse(File(p.join(output, page)).readAsStringSync());
             for (final (element, name, value) in _urlAttributes(document)) {
               expect(
@@ -186,11 +185,11 @@ void main() {
           );
         }
         for (final entry in outputs.entries) {
-          await _expectNoOverflow(
+          await expectNoOverflow(
             browser,
-            output: entry.value,
-            pages: _builtPages(entry.value),
-            viewports: _narrowViewports,
+            servedRoot: entry.value,
+            pages: builtPages(entry.value),
+            viewports: narrowViewports,
             label: '${theme.name} ${entry.key}',
           );
         }
@@ -204,7 +203,7 @@ void main() {
           return;
         }
         final output = defaultBuilds[theme.name]!;
-        final probeWidths = _breakpointProbeWidths(output);
+        final probeWidths = breakpointProbeWidths([File(p.join(output, 'css', 'main.css'))]);
         // Without this, a sheet the width parser cannot read shrinks the sweep to
         // the fixed narrow widths and still reports green. Every theme here is
         // responsive and declares breakpoints; none legitimately declares zero.
@@ -213,11 +212,11 @@ void main() {
           isNotEmpty,
           reason: '${theme.name}: no @media width breakpoints parsed out of the compiled sheet',
         );
-        await _expectNoOverflow(
+        await expectNoOverflow(
           browser,
-          output: output,
-          pages: _representativePages(output),
-          viewports: {..._narrowViewports, for (final width in probeWidths) width: 900},
+          servedRoot: output,
+          pages: representativePages(output),
+          viewports: {...narrowViewports, for (final width in probeWidths) width: 900},
           label: '${theme.name} breakpoint bands',
         );
       });
@@ -232,7 +231,7 @@ void main() {
         // that script never runs the reader is looking at a dead affordance.
         final browser = probe;
         final output = defaultBuilds[theme.name]!;
-        final pages = _builtPages(output).where((page) {
+        final pages = builtPages(output).where((page) {
           return html_parser
               .parse(File(p.join(output, page)).readAsStringSync())
               .querySelectorAll('[hidden], [disabled]')
@@ -248,7 +247,7 @@ void main() {
         addTearDown(server.close);
         for (final page in pages) {
           final revealed = await browser.evaluate(
-            _pageUrl(server.baseUrl, page),
+            pageUrl(server.baseUrl, page),
             r'''Array.from(document.querySelectorAll('[hidden], [disabled]'))
                  .filter((el) => el.getClientRects().length > 0)
                  .map((el) => (el.hasAttribute('hidden') ? 'hidden ' : 'disabled ') +
@@ -281,7 +280,7 @@ void main() {
           return;
         }
         final output = defaultBuilds[theme.name]!;
-        final pages = _builtPages(output);
+        final pages = builtPages(output);
 
         final server = await StaticSiteServer.serve(Directory(output));
         addTearDown(server.close);
@@ -293,7 +292,7 @@ void main() {
           // A masthead is tallest where it wraps, and that is not the same width for
           // every theme: Verdant's is 67px at 390 and 103px at 320, so a single-width
           // check passes on an offset that is too small for a phone.
-          for (final viewport in _narrowViewports.entries) {
+          for (final viewport in narrowViewports.entries) {
             final measurement =
                 (navigated
                         ? await browser.evaluateHere(
@@ -302,7 +301,7 @@ void main() {
                             height: viewport.value,
                           )
                         : await browser.evaluate(
-                            _pageUrl(server.baseUrl, page),
+                            pageUrl(server.baseUrl, page),
                             _anchorOffsetExpression,
                             width: viewport.key,
                             height: viewport.value,
@@ -703,61 +702,8 @@ bool _decidesOnLeadingSlash(String attributeValue, String variable, Map<String, 
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Rendering helpers
+// Sticky-anchor measurement
 // ─────────────────────────────────────────────────────────────────────────────
-
-List<String> _builtPages(String output) =>
-    Directory(output)
-        .listSync(recursive: true)
-        .whereType<File>()
-        .where((file) => file.path.endsWith('.html'))
-        .map((file) => p.relative(file.path, from: output))
-        .toList()
-      ..sort();
-
-/// One page per layout shape, without needing to know the theme's layout names:
-/// the landing page, the most deeply nested page (a docs or post page), and the
-/// largest page (the one with the most components on it).
-List<String> _representativePages(String output) {
-  final pages = _builtPages(output);
-  if (pages.isEmpty) return pages;
-  final deepest = pages.reduce((a, b) => p.split(b).length > p.split(a).length ? b : a);
-  final largest = pages.reduce(
-    (a, b) => File(p.join(output, b)).lengthSync() > File(p.join(output, a)).lengthSync() ? b : a,
-  );
-  return {if (pages.contains('index.html')) 'index.html' else pages.first, deepest, largest}.toList();
-}
-
-/// Widths just inside the wide side of each layout switch the theme declares.
-///
-/// A layout is tightest at the first width where its multi-column form is back
-/// and the content has the least room — that band is where a flex row that no
-/// longer fits shows up (Meadow's footer overflowed 6px in exactly one). Derived
-/// from the theme's own compiled sheet, so a theme that adds a breakpoint is
-/// swept at it with no list here to update.
-///
-/// Both directions matter and reading only one is a silent hole: Folio and
-/// Meadow write `max-width` (narrow rules stop above N, so the band starts at
-/// N+1) while Arbor, Bloom and Verdant are mobile-first `min-width` (wide rules
-/// start at exactly N). A `max-width`-only reading returns nothing at all for
-/// the latter three, and their sweep quietly shrinks to the fixed widths.
-Set<int> _breakpointProbeWidths(String output) {
-  final css = File(p.join(output, 'css', 'main.css'));
-  if (!css.existsSync()) return const {};
-  // Comments can contain commas, colons and px values; a selector/query parser
-  // that keeps them will confidently match text that styles nothing.
-  final source = css.readAsStringSync().replaceAll(RegExp(r'/\*[\s\S]*?\*/'), '');
-  final widths = <int>{};
-  for (final query in RegExp(r'@media[^{]*').allMatches(source)) {
-    for (final match in RegExp(r'(max|min)-width\s*:\s*(\d+)px').allMatches(query[0]!)) {
-      final edge = int.parse(match[2]!);
-      widths.addAll(match[1] == 'max' ? [edge + 1, edge + 8] : [edge, edge + 8]);
-    }
-  }
-  return widths;
-}
-
-Uri _pageUrl(Uri base, String page) => base.replace(path: '/${page.replaceFirst(RegExp(r'index\.html$'), '')}');
 
 /// Scroll to every distinct in-page anchor on the loaded page and report the ones
 /// whose target ends up behind the sticky masthead.
@@ -803,73 +749,3 @@ const _anchorOffsetExpression = r'''(() => {
   }
   return {sticky: true, checked, offenders};
 })()''';
-
-/// Assert no page in [pages] pushes the document past the viewport at any of
-/// [viewports], in either color scheme.
-///
-/// One navigation per page: re-applying device metrics and emulated media on the
-/// live document re-runs layout, so the sweep costs a page load per page rather
-/// than per combination.
-Future<void> _expectNoOverflow(
-  BrowserProbe browser, {
-  required String output,
-  required List<String> pages,
-  required Map<int, int> viewports,
-  required String label,
-}) async {
-  const expression = '''(() => {
-    const root = document.documentElement;
-    const offenders = [];
-    if (root.scrollWidth > root.clientWidth) {
-      for (const element of document.querySelectorAll('*')) {
-        const box = element.getBoundingClientRect();
-        if (box.width === 0) continue;
-        if (box.right > root.clientWidth + 0.5 || box.left < -0.5) {
-          const classes = typeof element.className === 'string' ? element.className.trim() : '';
-          offenders.push(element.tagName.toLowerCase() + (classes ? '.' + classes.split(/\\s+/).join('.') : '') +
-            ' [' + Math.round(box.left) + '..' + Math.round(box.right) + ']');
-        }
-      }
-    }
-    return {scrollWidth: root.scrollWidth, clientWidth: root.clientWidth, offenders: offenders.slice(0, 5)};
-  })()''';
-
-  final server = await StaticSiteServer.serve(Directory(output));
-  try {
-    for (final page in pages) {
-      final url = _pageUrl(server.baseUrl, page);
-      var navigated = false;
-      for (final viewport in viewports.entries) {
-        for (final scheme in const ['light', 'dark']) {
-          final measured =
-              (navigated
-                      ? await browser.evaluateHere(
-                          expression,
-                          width: viewport.key,
-                          height: viewport.value,
-                          colorScheme: scheme,
-                        )
-                      : await browser.evaluate(
-                          url,
-                          expression,
-                          width: viewport.key,
-                          height: viewport.value,
-                          colorScheme: scheme,
-                        ))!
-                  as Map;
-          navigated = true;
-          expect(
-            measured['scrollWidth'],
-            measured['clientWidth'],
-            reason:
-                '$label $page at ${viewport.key}px ($scheme): document is '
-                '${(measured['scrollWidth'] as int) - (measured['clientWidth'] as int)}px wider than the '
-                'viewport. Widest boxes: ${measured['offenders']}',
-          );
-        }
-      }
-    }
-  } finally {
-    await server.close();
-  }
-}

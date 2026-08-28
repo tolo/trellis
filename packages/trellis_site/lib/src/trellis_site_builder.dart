@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -61,13 +62,15 @@ class BuildResult {
 
   /// Site layouts that shadow theme layouts, as paths relative to the site root.
   ///
-  /// Populated only when the active theme turned out inert: its assets were
-  /// copied to the output and not one emitted page references any of them, so
-  /// the site ships unstyled while carrying the theme's CSS, fonts and scripts.
+  /// Populated only when the active theme turned out inert: its stylesheets and
+  /// scripts were published to the output and no emitted page links any of them,
+  /// so the site ships unstyled while carrying the theme's CSS.
   ///
-  /// Empty in every other case — including a partial override, and including a
-  /// site `base.html` copied from the theme, since a copy keeps the theme's
-  /// stylesheet link and therefore references the theme's assets.
+  /// Empty whenever an emitted page still links one of those assets — a site
+  /// `base.html` copied from the theme keeps its stylesheet link, and a
+  /// site layout rendering inside the theme's shell inherits it. Overriding
+  /// `base.html` with a shell of your own is reported, because nothing links the
+  /// theme after that.
   final List<String> themeShadowedLayouts;
 
   const BuildResult({
@@ -102,6 +105,10 @@ class BuildResult {
 /// print('Built ${result.pageCount} pages in ${result.elapsed.inMilliseconds}ms');
 /// ```
 class TrellisSite {
+  /// Matches an `href`/`src` attribute value, the only places a page can link an
+  /// asset. Used by [_anyPageLinks].
+  static final RegExp _linkAttribute = RegExp(r'''(?:href|src)\s*=\s*["']([^"']*)["']''', caseSensitive: false);
+
   /// The site configuration.
   final SiteConfig config;
 
@@ -285,9 +292,15 @@ class TrellisSite {
     buildWarnings.addAll(generator.warnings);
 
     // 7. Copy static assets — theme first so site files overwrite on conflict
-    final themeAssets = <String>[];
-    if (themeDir != null) themeAssets.addAll(_copyThemeStaticAssets(themeDir));
-    var staticCount = themeAssets.length + _copyStaticAssets() + _copyBundleAssets(pages);
+    final themeAssets = <String>{};
+    var themeStaticCount = 0;
+    if (themeDir != null) {
+      final themeStatic = _copyThemeStaticAssets(themeDir);
+      themeStaticCount = themeStatic.fileCount;
+      themeAssets.addAll(themeStatic.stylesheetsAndScripts);
+      themeAssets.addAll(_themeStylesheetOutputs(themeDir));
+    }
+    var staticCount = themeStaticCount + _copyStaticAssets() + _copyBundleAssets(pages);
     if (themeBuildConfig != null) {
       final props = _copyThemeCustomProps(themeBuildConfig);
       themeAssets.addAll(props);
@@ -296,7 +309,7 @@ class TrellisSite {
 
     final themeShadowedLayouts = themeDir == null
         ? const <String>[]
-        : _detectInertTheme(themeDir, pageCount, themeAssets);
+        : _detectInertTheme(themeDir, generator.emittedPages, themeAssets);
 
     // 8. Generate sitemap
     final sitemapGenerator = SitemapGenerator(baseUrl: config.baseUrl, contentDir: config.contentDir);
@@ -428,49 +441,84 @@ class TrellisSite {
   /// Returns the site layouts to report when the active theme turned out inert,
   /// or an empty list when the theme is doing its job.
   ///
-  /// A theme is inert when its assets were published — [themeAssets], the files
-  /// copied out of `<theme>/static/` plus the generated `css/theme-props.css` —
-  /// and not one emitted page links any of them. That is the symptom exactly: the
-  /// theme's CSS, fonts and scripts sit in the output while every page renders
-  /// from the site's own layouts, so the site ships unstyled.
+  /// A theme is inert when its stylesheets and scripts were published —
+  /// [themeAssets] — and not one page in [emittedPages] links any of them. That
+  /// is the symptom exactly: the theme's CSS sits in the output while every page
+  /// renders from the site's own layouts, so the site ships unstyled.
   ///
-  /// Keying on published-but-unreferenced rather than on which layouts resolved
-  /// is what makes a partial override silent, including the case where the site's
-  /// own `base.html` is a copy of the theme's: a copy keeps the theme's
-  /// stylesheet link, so the assets *are* referenced.
+  /// The result is empty whenever an emitted page still links one of those
+  /// assets. That is what keeps a site layout that keeps the theme's stylesheet
+  /// link — a `base.html` copied from the theme, or a leaf layout rendering
+  /// inside the theme's shell — out of the report. It is *not* a
+  /// "partial override" exemption: replacing only `base.html` with a shell of
+  /// your own does warn, because then nothing links the theme any more.
   ///
   /// Gated on a layout actually being shadowed — that is the list the warning
-  /// names, and it keeps the output scan off every build that does not override
+  /// names, and it keeps the page scan off every build that does not override
   /// theme layouts at all.
-  List<String> _detectInertTheme(String themeDir, int pageCount, List<String> themeAssets) {
-    if (pageCount == 0 || themeAssets.isEmpty) return const [];
+  List<String> _detectInertTheme(String themeDir, List<String> emittedPages, Set<String> themeAssets) {
+    if (emittedPages.isEmpty || themeAssets.isEmpty) return const [];
     final shadowed = shadowedThemeLayouts(
       siteDir: config.siteDir,
       siteLayoutsDir: config.layoutsDir,
       themeDir: themeDir,
     );
-    if (shadowed.isEmpty || _outputReferencesAny(themeAssets)) return const [];
+    if (shadowed.isEmpty || _anyPageLinks(emittedPages, themeAssets)) return const [];
     return shadowed;
   }
 
-  /// Whether any emitted HTML page references one of [assetPaths].
+  /// Whether any page in [emittedPages] links one of [assetPaths].
   ///
-  /// [assetPaths] are output-relative and slash-separated (`css/theme-props.css`),
-  /// matched as substrings so a root-absolute link and the `pathPrefix`-rewritten
-  /// form of the same link both count.
-  bool _outputReferencesAny(List<String> assetPaths) {
-    for (final file in Directory(config.outputDir).listSync(recursive: true, followLinks: false).whereType<File>()) {
-      if (p.extension(file.path).toLowerCase() != '.html') continue;
-      final html = file.readAsStringSync();
-      if (assetPaths.any(html.contains)) return true;
+  /// Only `href`/`src` attribute values count, so an asset name occurring in body
+  /// text is not mistaken for a reference. A value matches when its path equals
+  /// the output-relative [assetPaths] entry or ends with it, which covers the
+  /// root-absolute form, the `pathPrefix`-rewritten form and a relative one
+  /// alike.
+  ///
+  /// Only files this build rendered are read, and they are read with malformed
+  /// input allowed: a diagnostic must never be the thing that fails a build.
+  bool _anyPageLinks(List<String> emittedPages, Set<String> assetPaths) {
+    for (final path in emittedPages) {
+      final file = File(path);
+      if (!file.existsSync()) continue;
+      final html = file.readAsStringSync(encoding: const Utf8Codec(allowMalformed: true));
+      for (final match in _linkAttribute.allMatches(html)) {
+        final link = match.group(1)!.split('?').first.split('#').first;
+        if (assetPaths.any((asset) => link == asset || link.endsWith('/$asset'))) return true;
+      }
     }
     return false;
+  }
+
+  /// Returns the output-relative CSS paths the SASS step compiles out of
+  /// `<theme>/sass/`, without compiling anything.
+  ///
+  /// Theme SASS is compiled after [build] returns, by the CSS pipeline the CLI
+  /// drives, so `css/main.css` — the stylesheet a themed page actually links — is
+  /// not among the files [_copyThemeStaticAssets] copied. Mirrors that step's
+  /// mapping: `sass/<rel>.scss` becomes `css/<rel>.css`, partials (`_` prefix)
+  /// excluded. Predicted, not verified: a page linking the theme's stylesheet is
+  /// using the theme whether or not that build also ran the compile.
+  List<String> _themeStylesheetOutputs(String themeDir) {
+    final sassDir = Directory(p.join(themeDir, 'sass'));
+    if (!sassDir.existsSync()) return const [];
+
+    final outputs = <String>[];
+    for (final file in sassDir.listSync(recursive: true, followLinks: false).whereType<File>()) {
+      final ext = p.extension(file.path).toLowerCase();
+      if (ext != '.scss' && ext != '.sass') continue;
+      if (p.basename(file.path).startsWith('_')) continue; // partial
+      final relative = p.setExtension(p.relative(file.path, from: sassDir.path), '.css');
+      outputs.add('css/${p.split(relative).join('/')}');
+    }
+    return outputs;
   }
 
   /// Copies the generated `_theme_custom_props.css` to `css/theme-props.css` in the output.
   ///
   /// Returns the output-relative path it wrote, or an empty list if the source
-  /// file didn't exist.
+  /// file didn't exist. That path is a theme stylesheet, so it counts towards the
+  /// inert-theme check.
   List<String> _copyThemeCustomProps(ThemeBuildConfig themeBuildConfig) {
     final srcFile = File(p.join(themeBuildConfig.buildDir, '_theme_custom_props.css'));
     if (!srcFile.existsSync()) return const [];
@@ -484,13 +532,18 @@ class TrellisSite {
   ///
   /// Called before [_copyStaticAssets] so that site files overwrite theme files
   /// on conflict. Skips `.scss` and `.sass` files (compiled by the CSS pipeline).
-  /// Returns the output-relative URL path of every file copied (empty when the
-  /// theme has no `static/` directory).
-  List<String> _copyThemeStaticAssets(String themeDir) {
+  ///
+  /// Returns how many files were copied, and — separately — the output-relative
+  /// URL paths of the `.css` and `.js` among them. Only those two indicate a page
+  /// is being *styled* by the theme, so only those feed [_detectInertTheme]: an
+  /// unstyled page can still carry the theme's `favicon.svg` or a font it never
+  /// applies, and counting those would silence the warning.
+  ({int fileCount, List<String> stylesheetsAndScripts}) _copyThemeStaticAssets(String themeDir) {
     final themeStaticDir = Directory(p.join(themeDir, 'static'));
-    if (!themeStaticDir.existsSync()) return const [];
+    if (!themeStaticDir.existsSync()) return (fileCount: 0, stylesheetsAndScripts: const []);
 
-    final copied = <String>[];
+    var fileCount = 0;
+    final stylesheetsAndScripts = <String>[];
     // followLinks: false - a symlink under static/ escapes the source tree and
     // publishes whatever it points at. An installed theme is third-party code, so
     // a committed `static/secrets -> ~/.ssh` would land in output/. Symlinks list
@@ -503,9 +556,10 @@ class TrellisSite {
       final dest = p.join(config.outputDir, relative);
       Directory(p.dirname(dest)).createSync(recursive: true);
       entity.copySync(dest);
-      copied.add(p.split(relative).join('/'));
+      fileCount++;
+      if (ext == '.css' || ext == '.js') stylesheetsAndScripts.add(p.split(relative).join('/'));
     }
-    return copied;
+    return (fileCount: fileCount, stylesheetsAndScripts: stylesheetsAndScripts);
   }
 
   /// Copies static files from [SiteConfig.staticDir] to the output directory.

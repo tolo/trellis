@@ -21,10 +21,12 @@
 - **`trellis theme add` warns when site layouts shadow the theme it just installed**, naming each shadowing file.
   Layouts resolve site-first, so a scaffold that ships its own `layouts/` silently wins over the theme. Installing
   still succeeds and still exits 0.
-- **`trellis build` warns when an active theme is inert** – its CSS, fonts and scripts were copied to the output and
-  no emitted page references any of them, which is the case that renders an unstyled site. The build still exits 0.
-  Overriding some of a theme's layouts stays silent, as does a site `base.html` copied from the theme, since a copy
-  keeps the theme's stylesheet link.
+- **`trellis build` warns when an active theme is inert** – its stylesheets and scripts were published to the output
+  and no emitted page links any of them, which is the case that renders an unstyled site. Only `.css` and `.js` count;
+  a page carrying the theme's favicon or a font it never applies is still unstyled. The build still exits 0. An
+  override that keeps a link to the theme's stylesheet is not reported – a `base.html` copied from the theme, or a
+  layout rendering inside the theme's shell. Replacing `base.html` with a shell of your own *is* reported, because
+  nothing links the theme after that.
 - The blog scaffold's sample post now explains that a date-only `date:` is anchored at UTC midnight, and shows the
   zone-explicit form (`date: 2026-03-15T09:30:00Z`) for pinning an exact instant. Matches the front-matter date
   resolution `trellis_site` 0.11.0 ships.

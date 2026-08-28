@@ -85,6 +85,14 @@ class PageGenerator {
   /// `weight` front-matter value (treated as unweighted; see [pageWeight]).
   final List<BuildWarning> warnings = [];
 
+  /// Absolute paths of the HTML files the last [generateAll] pass wrote.
+  ///
+  /// Every entry is a page this generator rendered, so a caller inspecting the
+  /// build's own output never picks up a file that was merely copied in from a
+  /// `static/` directory. Includes the extra files a paginated page emits.
+  /// Reset at the start of each pass.
+  final List<String> emittedPages = [];
+
   late final Trellis _engine;
 
   /// Per-`sectionPath` memo of [orderedSectionPages], valid for one
@@ -128,6 +136,9 @@ class PageGenerator {
   /// Returns the total number of output HTML files written (including all paginated pages).
   Future<int> generateAll(List<Page> pages) async {
     _sectionOrderCache.clear();
+    // A reused generator must not report files from an earlier pass — the output
+    // directory is cleaned between builds, so those paths no longer exist.
+    emittedPages.clear();
     final globalData = _loadGlobalData();
     final nonDraftPages = pages.where((pg) => !pg.isDraft).toList();
     _collectWeightWarnings(nonDraftPages);
@@ -480,6 +491,7 @@ class PageGenerator {
     // written content links and theme literals resolve under the sub-path. No-op
     // when pathPrefix is empty (default), keeping root-served output unchanged.
     File(outputFile).writeAsStringSync(applyPathPrefixToLinks(html, pathPrefix));
+    emittedPages.add(outputFile);
   }
 
   /// Returns layout candidate paths (relative to [layoutsDir]) in priority order.

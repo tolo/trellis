@@ -388,17 +388,19 @@ theme_params:
 
     // H5: a theme installed over a site that already has the same layouts is
     // shadowed by site-first resolution — the build succeeds, publishes the
-    // theme's CSS and assets, and renders unstyled because nothing links them.
-    // The trigger is exactly that symptom: assets published, no page references
-    // them. Keyed on which layouts resolved instead, a site base.html copied from
-    // the theme would false-positive, and a theme still rendering one non-root
-    // layout (Verdant's tags/) would be missed.
+    // theme's CSS, and renders unstyled because nothing links it. The trigger is
+    // that symptom: theme stylesheets and scripts published, no emitted page
+    // links one. Only `.css`/`.js` count (a favicon proves nothing about
+    // styling), the compiled `css/main.css` counts even though the CSS pipeline
+    // writes it after the build, and only pages the generator emitted are read.
     group('inert theme warning', () {
       const themeBase = '''
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/theme-props.css">
+  <link rel="icon" href="/favicon.svg">
   <script src="/js/theme.js"></script>
   <title tl:text="\${page.title}">T</title>
 </head>
@@ -406,24 +408,24 @@ theme_params:
 </html>
 ''';
 
-      const siteBase = '''
-<!DOCTYPE html>
-<html lang="en">
-<head><link rel="stylesheet" href="/styles.css"><title>T</title></head>
-<body class="site-shell"><main tl:define="content">x</main></body>
-</html>
-''';
+      /// A site shell of the site's own making. [extraHead] injects whatever the
+      /// case under test wants it to link from the theme — nothing, by default.
+      String siteShell([String extraHead = '']) =>
+          '<!DOCTYPE html>\n<html lang="en">\n'
+          '<head><link rel="stylesheet" href="/styles.css">$extraHead<title>T</title></head>\n'
+          '<body class="site-shell"><main tl:define="content">x</main></body>\n</html>\n';
 
       /// Returns a layout extending `layouts/base.html` and marked with [marker].
       String layoutExtendingBase(String marker) =>
           '<html tl:extends="layouts/base.html" lang="en">'
           '<body><main tl:define="content"><h1 class="$marker">T</h1></main></body></html>\n';
 
-      /// Writes a theme at `themes/<name>/` whose base layout links the two things
-      /// a real theme links — the generated `css/theme-props.css` and a file from
-      /// its own `static/`. [taxonomyLayouts] adds `tags/list.html` and
-      /// `tags/term.html`: the Verdant shape, layouts a blog scaffold does not
-      /// shadow, so the theme still renders something while its shell does not.
+      /// Writes a theme at `themes/<name>/` shaped like the shipped ones: SASS
+      /// compiling to `css/main.css`, generated `css/theme-props.css`, a script
+      /// and a favicon under `static/`, and a base layout linking all four.
+      /// [taxonomyLayouts] adds `tags/list.html` and `tags/term.html`: the Verdant
+      /// shape, layouts a blog scaffold does not shadow, so the theme still
+      /// renders something while its shell does not.
       void writeTheme(Directory dir, String name, {bool taxonomyLayouts = false}) {
         final themeDir = Directory(p.join(dir.path, 'themes', name))..createSync(recursive: true);
         File(p.join(themeDir.path, 'theme.yaml')).writeAsStringSync('''
@@ -439,6 +441,17 @@ params:
 ''');
         Directory(p.join(themeDir.path, 'static', 'js')).createSync(recursive: true);
         File(p.join(themeDir.path, 'static', 'js', 'theme.js')).writeAsStringSync('// theme js\n');
+        File(
+          p.join(themeDir.path, 'static', 'favicon.svg'),
+        ).writeAsStringSync('<svg xmlns="http://www.w3.org/2000/svg"/>');
+
+        Directory(p.join(themeDir.path, 'sass')).createSync(recursive: true);
+        File(
+          p.join(themeDir.path, 'sass', 'main.scss'),
+        ).writeAsStringSync("@import 'variables';\n.themed { color: \$trellis-primary-color; }\n");
+        File(
+          p.join(themeDir.path, 'sass', '_variables.scss'),
+        ).writeAsStringSync('\$trellis-primary-color: #ff0000 !default;\n');
 
         final layouts = Directory(p.join(themeDir.path, 'layouts', '_default'))..createSync(recursive: true);
         File(p.join(themeDir.path, 'layouts', 'base.html')).writeAsStringSync(themeBase);
@@ -493,9 +506,9 @@ ${tagged ? 'taxonomies:\n  - tags\n' : ''}''');
         return (exitCode: exitCode, errorOutput: errorOutput);
       }
 
-      test('warns when the theme is published but no page references it', () async {
+      test('warns when the theme is published but no page links it', () async {
         writeTheme(tempDir, 'inert-theme');
-        writeSite(tempDir, 'inert-theme', fullScaffold(siteBase));
+        writeSite(tempDir, 'inert-theme', fullScaffold(siteShell()));
 
         final result = await runBuild();
 
@@ -505,19 +518,19 @@ ${tagged ? 'taxonomies:\n  - tags\n' : ''}''');
         expect(result.errorOutput, contains(p.join('layouts', 'home.html')));
         expect(result.errorOutput, contains(p.join('layouts', '_default', 'list.html')));
         expect(result.errorOutput, contains(p.join('layouts', '_default', 'single.html')));
-        // The warning describes reality: theme assets shipped, nothing links them.
-        expect(File(p.join(tempDir.path, 'output', 'js', 'theme.js')).existsSync(), isTrue);
+        // The warning describes reality: theme stylesheets shipped, nothing links them.
+        expect(File(p.join(tempDir.path, 'output', 'css', 'main.css')).existsSync(), isTrue);
         final home = File(p.join(tempDir.path, 'output', 'index.html')).readAsStringSync();
         expect(home, contains('site-shell'));
-        expect(home, isNot(contains('theme-props.css')));
+        expect(home, isNot(contains('css/main.css')));
       });
 
       // Verdant's shape: the theme still renders its taxonomy layouts, so it did
       // contribute templates — but every page sits in the site's shell, so the
-      // theme's assets stay unreferenced and the site is still unstyled.
+      // theme's stylesheets stay unlinked and the site is still unstyled.
       test('warns even when a theme layout the site does not shadow still renders', () async {
         writeTheme(tempDir, 'inert-theme', taxonomyLayouts: true);
-        writeSite(tempDir, 'inert-theme', fullScaffold(siteBase), tagged: true);
+        writeSite(tempDir, 'inert-theme', fullScaffold(siteShell()), tagged: true);
 
         final result = await runBuild();
 
@@ -529,33 +542,115 @@ ${tagged ? 'taxonomies:\n  - tags\n' : ''}''');
         expect(tagPage.existsSync(), isTrue);
         final tagHtml = tagPage.readAsStringSync();
         expect(tagHtml, contains('theme-tags-list'));
-        // ...and it rendered inside the site's shell, so still no theme asset.
+        // ...and it rendered inside the site's shell, so still no theme stylesheet.
         expect(tagHtml, contains('site-shell'));
-        expect(tagHtml, isNot(contains('theme-props.css')));
+        expect(tagHtml, isNot(contains('css/main.css')));
       });
 
-      test('stays silent when the site overrides only one theme layout', () async {
+      // Replacing only the shell is the plainest way to end up unstyled, and it
+      // must be reported: overriding a layout is not by itself an exemption.
+      test('warns when the site replaces only base.html with a shell of its own', () async {
+        writeTheme(tempDir, 'inert-theme');
+        writeSite(tempDir, 'inert-theme', {'base.html': siteShell()});
+
+        final result = await runBuild();
+
+        expect(result.exitCode, 0);
+        expect(result.errorOutput, contains('is installed but inert'));
+        expect(result.errorOutput, contains(p.join('layouts', 'base.html')));
+        // The theme's own layouts rendered — inside the site's shell.
+        final home = File(p.join(tempDir.path, 'output', 'index.html')).readAsStringSync();
+        expect(home, contains('theme-home'));
+        expect(home, contains('site-shell'));
+      });
+
+      // The theme's stylesheet is compiled by the CSS pipeline after the build,
+      // so it is never among the copied files — it still has to count, or a site
+      // using the theme's entire stylesheet gets told it renders unstyled.
+      test('stays silent when the shadowing base links the theme stylesheet', () async {
+        writeTheme(tempDir, 'inert-theme');
+        writeSite(tempDir, 'inert-theme', fullScaffold(siteShell('<link rel="stylesheet" href="/css/main.css">')));
+
+        final result = await runBuild();
+
+        expect(result.exitCode, 0);
+        expect(result.errorOutput, isEmpty, reason: 'the site is using the theme\'s whole stylesheet');
+        final home = File(p.join(tempDir.path, 'output', 'index.html')).readAsStringSync();
+        expect(home, contains('site-shell'));
+        expect(home, contains('css/main.css'));
+      });
+
+      // A favicon or a font proves nothing about styling: the page can carry the
+      // theme's icon and still render with none of its CSS.
+      test('warns when the shadowing base references only a theme image', () async {
+        writeTheme(tempDir, 'inert-theme');
+        writeSite(tempDir, 'inert-theme', fullScaffold(siteShell('<link rel="icon" href="/favicon.svg">')));
+
+        final result = await runBuild();
+
+        expect(result.exitCode, 0);
+        expect(result.errorOutput, contains('is installed but inert'));
+        final home = File(p.join(tempDir.path, 'output', 'index.html')).readAsStringSync();
+        expect(home, contains('favicon.svg'), reason: 'the image really is referenced');
+        expect(home, isNot(contains('css/main.css')));
+      });
+
+      // Only pages the generator emitted are read, so a file merely copied out of
+      // a static/ directory can neither suppress the warning nor be decoded.
+      test('a theme static HTML file linking theme assets does not suppress the warning', () async {
+        writeTheme(tempDir, 'inert-theme');
+        File(p.join(tempDir.path, 'themes', 'inert-theme', 'static', 'offline.html')).writeAsStringSync(
+          '<html><head><link rel="stylesheet" href="/css/main.css">'
+          '<script src="/js/theme.js"></script></head><body>offline</body></html>\n',
+        );
+        writeSite(tempDir, 'inert-theme', fullScaffold(siteShell()));
+
+        final result = await runBuild();
+
+        expect(result.exitCode, 0);
+        expect(result.errorOutput, contains('is installed but inert'));
+        // It was published, and it does link the theme — it just is not a page.
+        final copied = File(p.join(tempDir.path, 'output', 'offline.html'));
+        expect(copied.existsSync(), isTrue);
+        expect(copied.readAsStringSync(), contains('css/main.css'));
+      });
+
+      // A diagnostic must never be the thing that fails a build.
+      test('completes normally when the output holds a non-UTF-8 HTML file', () async {
+        writeTheme(tempDir, 'inert-theme');
+        writeSite(tempDir, 'inert-theme', fullScaffold(siteShell()));
+        final staticDir = Directory(p.join(tempDir.path, 'static'))..createSync(recursive: true);
+        // 0xE9 is `é` in latin-1 and an invalid UTF-8 sequence on its own.
+        File(p.join(staticDir.path, 'legacy.html')).writeAsBytesSync([0x63, 0x61, 0x66, 0xE9, 0x0A]);
+
+        final result = await runBuild();
+
+        expect(result.exitCode, 0, reason: 'undecodable output must not fail the build');
+        expect(result.errorOutput, contains('is installed but inert'));
+        expect(File(p.join(tempDir.path, 'output', 'legacy.html')).existsSync(), isTrue);
+      });
+
+      test('stays silent when the site overrides only one leaf layout', () async {
         writeTheme(tempDir, 'inert-theme');
         writeSite(tempDir, 'inert-theme', {'_default/single.html': layoutExtendingBase('site-single')});
 
         final result = await runBuild();
 
         expect(result.exitCode, 0);
-        expect(result.errorOutput, isEmpty, reason: 'a partial override is supported and must not warn');
+        expect(result.errorOutput, isEmpty, reason: 'the theme shell still renders, so its CSS is linked');
         final home = File(p.join(tempDir.path, 'output', 'index.html')).readAsStringSync();
         expect(home, contains('theme-home'));
         expect(home, contains('theme-shell'));
         // The site's single layout won for the page it overrides, and still
-        // renders inside the theme's shell, so theme assets are referenced.
+        // renders inside the theme's shell, so the theme stylesheet is linked.
         final page = File(p.join(tempDir.path, 'output', 'posts', 'hello', 'index.html')).readAsStringSync();
         expect(page, contains('site-single'));
         expect(page, isNot(contains('theme-single')));
-        expect(page, contains('theme-props.css'));
+        expect(page, contains('css/main.css'));
       });
 
-      // The case a "did the theme's layouts render?" trigger gets wrong: every
-      // theme layout is shadowed, yet the theme is fully in use because the site's
-      // base.html is the theme's base.html, stylesheet link and all.
+      // Every theme layout is shadowed, yet the theme is fully in use because the
+      // site's base.html is its base.html, stylesheet links and all.
       test('stays silent when the site base layout is a tweaked copy of the theme base', () async {
         writeTheme(tempDir, 'inert-theme');
         writeSite(
@@ -569,7 +664,7 @@ ${tagged ? 'taxonomies:\n  - tags\n' : ''}''');
         expect(result.exitCode, 0);
         expect(result.errorOutput, isEmpty, reason: 'a copied base keeps the theme stylesheet link — theme is in use');
         final home = File(p.join(tempDir.path, 'output', 'index.html')).readAsStringSync();
-        expect(home, contains('theme-props.css'));
+        expect(home, contains('css/main.css'));
         expect(home, contains('site tweak'));
         expect(home, contains('site-home'), reason: 'the site layouts really did win');
       });

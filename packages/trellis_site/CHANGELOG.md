@@ -15,9 +15,16 @@
 ### Added
 
 - `BuildResult.themeShadowedLayouts` lists the site layouts that shadowed an active theme, populated only when that
-  theme turned out inert: its assets were published to the output and no emitted page referenced any of them. Empty
-  for a partial override, and empty when the site's `base.html` is a copy of the theme's, because a copy keeps the
-  theme's stylesheet link.
+  theme turned out inert: its stylesheets and scripts were published to the output and no emitted page linked any of
+  them. The set is the theme's `static/` `.css`/`.js`, the generated `css/theme-props.css`, and the CSS the theme's
+  `sass/` compiles to; images and fonts are excluded, since a page can carry a theme favicon and still be unstyled.
+  Empty whenever an emitted page still links one of those assets, which is what keeps a site `base.html` copied from
+  the theme, or a layout rendering inside the theme's shell, out of the list. Replacing `base.html` with a shell of
+  your own is listed – nothing links the theme after that.
+- `shadowedThemeLayouts({siteDir, siteLayoutsDir, themeDir})`, exported from `package:trellis_site/trellis_site.dart`,
+  returns the layouts a theme provides that the site also provides at the same relative path, as site-root-relative
+  paths. Those are the layouts site-first resolution makes unreachable; it is what populates
+  `BuildResult.themeShadowedLayouts` and what `trellis theme add` reports at install time.
 - `resolveFrontMatterDate(value)` – the front-matter `date:` resolver that `FeedGenerator` and `SitemapGenerator`
   now share, exported from `package:trellis_site/trellis_site.dart`. Returns a UTC `DateTime`, or `null` when the
   value is absent or unparseable so callers fall back to the source file's mtime.

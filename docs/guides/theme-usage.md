@@ -66,16 +66,18 @@ provides. The build succeeds and copies the theme's CSS into the output, but no 
 site renders unstyled.
 
 `trellis theme add` lists the shadowing files when it installs, and `trellis build` warns when the
-theme's CSS and assets ended up in the output with no page referencing them. To fix it, either:
+theme's stylesheets ended up in the output with no page linking them. To fix it, either:
 
 - delete or rename the site layouts you want the theme to render, or
 - keep them and pull the theme in explicitly with the `theme:` prefix, e.g.
   `<html tl:extends="theme:layouts/base.html">` (see
   [Dimension 3](#dimension-3-tlextends-block-override)).
 
-Overriding layouts is normal and stays silent, including a site `base.html` copied from the theme —
-a copy keeps the theme's stylesheet link, so the theme is still in use. Only a theme nothing
-references at all is reported.
+`trellis theme add` reports *any* shadowed layout, since at install time there is no build to check.
+`trellis build` is narrower: it only reports a theme no emitted page links, so an override that keeps
+the theme's stylesheet link — a `base.html` copied from the theme, or a layout rendering inside the
+theme's shell — builds silently. Replacing `base.html` with a shell of your own is reported, because
+nothing links the theme after that.
 
 
 ## Configuring a Theme

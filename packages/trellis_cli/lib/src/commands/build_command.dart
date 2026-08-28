@@ -135,20 +135,22 @@ class BuildCommand extends Command<int> {
     return 0;
   }
 
-  /// Warns when the active theme was published but never referenced.
+  /// Warns when the active theme's stylesheets were published but never linked.
   ///
-  /// [BuildResult.themeShadowedLayouts] is populated only in that case, so a
-  /// partial override — and a site `base.html` copied from the theme, which
-  /// keeps the theme's stylesheet link — stay silent. The build still succeeds:
-  /// the output is valid, it just carries none of the theme.
+  /// [BuildResult.themeShadowedLayouts] is populated only in that case, so any
+  /// override that keeps a link to the theme's stylesheet stays silent — a
+  /// `base.html` copied from the theme, or a leaf layout rendering inside the
+  /// theme's shell. Replacing `base.html` with a shell of your own *is* reported:
+  /// nothing links the theme after that. The build still succeeds; the output is
+  /// valid, it just carries none of the theme.
   void _warnOnInertTheme(SiteConfig config, BuildResult result) {
     if (result.themeShadowedLayouts.isEmpty) return;
 
     stderr.writeln('');
     stderr.writeln(
-      'Warning: theme "${config.themeConfig!.name}" is installed but inert — its CSS and assets were copied to '
-      'the output directory and no page references them. Layouts resolve site-first, and these site layouts '
-      "shadow the theme's:",
+      'Warning: theme "${config.themeConfig!.name}" is installed but inert — its stylesheets and scripts were '
+      'published to the output directory and no page links any of them. Layouts resolve site-first, and these '
+      "site layouts shadow the theme's:",
     );
     for (final layout in result.themeShadowedLayouts) {
       stderr.writeln('  $layout');

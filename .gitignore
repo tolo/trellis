@@ -30,3 +30,6 @@ CLAUDE.local.md
 # Python bytecode from tool/subset_fonts.py
 __pycache__/
 *.pyc
+
+# Python venv for the pinned font-subsetting toolchain (tool/subset_fonts.py)
+.venv/

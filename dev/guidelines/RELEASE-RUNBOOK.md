@@ -15,16 +15,32 @@ human action. Steps are in execution order; each names the guard that enforces i
 - **Do not bump versions on the branch.** Pubspecs stay at the previous version until step 4; `melos version` is
   restricted to `main` (root `pubspec.yaml` → `melos.command.version.branch`) and `tool/version_lockstep.sh` throws
   `RestrictedBranchException` and changes nothing anywhere else.
-- **Local gate = CI's `check` tier**, from the workspace root:
+- **Local gate = CI's `check` tier**, from the workspace root. Prerequisites, both of which `ci.yml` installs and
+  neither of which the Dart toolchain pulls in: **Node 22** (three JS-driven checks) and **Chrome**
+  (the theme reflow sweep and the visual baseline comparator drive headless Chrome over the DevTools protocol).
+  Both skip silently when the binary is absent; `_requireNodeInCi` / `requireChromeInCi` turn that skip into a
+  failure only when `CI=true`, so **locally a missing Node or Chrome means those checks quietly do not run**.
   ```bash
+  dart run tool/generate_theme_gallery.dart --check          # CI runs this first; a stale gallery fails the job
   melos run --no-select analyze
   melos run --no-select format:check
   melos exec --dir-exists=test -- dart test --exclude-tags=e2e
-  dart test                                                    # root suite: release/distribution contracts, tool/
+  dart test                                                  # root suite: release/distribution contracts, tool/
   dart format --output=none --set-exit-if-changed tool test
   ```
-  Root `dart test` alone covers only the root suite; `melos exec` alone skips the root — run both. Push the branch:
-  `ci.yml` runs the same tier on every branch (E2E on `main` only).
+  Root `dart test` alone covers only the root suite; `melos exec` alone skips the root — run both.
+  **The root run differs from CI on purpose.** CI runs `dart test --exclude-tags=visual`; the bare `dart test` above
+  does not, so locally you also get `test/visual_baseline_test.dart`. The committed baselines are macOS recordings,
+  so that tier passes on macOS and **fails on Linux** — on a Linux host run `dart test --exclude-tags=visual` to match
+  CI (TD-035 tracks recording Linux baselines and dropping the exclusion). Note the consequence: the
+  `transform`/`opacity`/`border-radius` class is gated by the visual tier **only**, so on CI nothing gates it.
+- **`fonts` is a second, independently blocking CI job** — not part of the `check` tier and easy to miss locally:
+  ```bash
+  python3 -m venv .venv && .venv/bin/pip install 'fonttools==4.63.0' 'brotli==1.2.0'   # pinned, as ci.yml does
+  .venv/bin/python tool/subset_fonts.py --verify              # every vendored WOFF2 reproduces from its pinned upstream
+  ```
+  It needs network access to fetch each pinned upstream face.
+- Push the branch: `ci.yml` runs the `check` and `fonts` jobs on every branch (E2E on `main` only).
 - `dart pub publish --dry-run` in every package whose public API changed (0 warnings).
 
 ## 1. Fresh-context adversarial review — not optional
@@ -40,7 +56,7 @@ git switch main && git pull --ff-only
 git merge --squash <branch> && git commit          # one commit, one-line subject, e.g. "0.10.1: <summary>"
 git push origin main
 ```
-Guard: `CLAUDE.md` Workflow Rules (squash only). `ci.yml` starts on the push: `check` + `e2e` on `main`.
+Guard: `CLAUDE.md` Workflow Rules (squash only). `ci.yml` starts on the push: `check` + `fonts` + `e2e` on `main`.
 
 ## 3. Wait for CI green on `main`
 

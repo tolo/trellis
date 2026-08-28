@@ -93,12 +93,56 @@ $folio-code-function: #2c4a72 !default;
    them silently beats the UA sheet, so the normalization is `!important` rather than a
    component-by-component override that the next component would forget. */
 [hidden] { display: none !important; }
+
+/* ── Masthead geometry ────────────────────────────────────────────────────────
+
+   The sticky masthead is a whole number of rows of a declared height — one above
+   760px, and below it two, the brand over a row the navigation shares with the
+   edition badge — and .site-header is set to exactly that height instead of
+   growing to fit its text. Everything that has to clear the bar reads
+   --folio-masthead-height: the bar itself, and the in-page anchor offset above.
+   Neither can move without the other.
+
+   Two constructions keep the narrow arithmetic true, and both are load-bearing:
+     * the title row is one line box sized by a *unitless* line-height, which is
+       font-size × factor and not a function of the font's ascent/descent. It was
+       set by the `font:` shorthand, which resets line-height to `normal` — that
+       is a metrics read of EB Garamond, and of whichever fallback serif renders
+       while the woff2 is still loading;
+     * .nav-list may not wrap — surplus links scroll sideways rather than adding a
+       row to the bar.
+   Undo either and the height goes back to being a text measurement, which is a
+   different number on a machine with different fonts. That is the defect this
+   shape exists to prevent: Verdant shipped a constant offset sized for a two-row
+   nav and Linux wrapped it to three, leaving every anchor target behind the bar
+   there while macOS passed. */
+$folio-masthead-rule: 1px;
+$folio-masthead-bar: 70px;        /* the desktop bar's one declared row */
+$folio-masthead-tap: 44px;        /* narrow: the nav and the badge share a tap-target row */
+$folio-masthead-pad: 10px;        /* narrow: above the first row and below the last */
+$folio-masthead-gap: 6px;         /* narrow: between the two rows */
+$folio-masthead-line: 1.62;       /* unitless, the body's leading — the title row's factor */
+$folio-site-title-size: 1.35rem;
+$folio-masthead-clearance: 16px;  /* paper kept above an anchor target, under the bar */
+
+:root {
+  --folio-masthead-height: #{$folio-masthead-bar + $folio-masthead-rule};
+
+  @media (max-width: 760px) {
+    --folio-masthead-height: calc(
+      #{$folio-site-title-size * $folio-masthead-line} +
+        #{$folio-masthead-gap + $folio-masthead-tap + $folio-masthead-pad * 2 + $folio-masthead-rule}
+    );
+  }
+}
+
 html {
   scroll-behavior: smooth;
   /* .site-header is sticky, so an un-offset in-page anchor jump parks the target behind
-     it and a Field-index click lands on the paragraph after its heading. Sized to the
-     masthead at its tallest: 105px once the title, nav and edition toggle wrap on a phone. */
-  scroll-padding-top: 7rem;
+     it and a Field-index click lands on the paragraph after its heading. The offset is the
+     masthead's own declared height (see "Masthead geometry" below) plus a gap — read from
+     it, not guessed alongside it, so the two cannot drift apart. */
+  scroll-padding-top: calc(var(--folio-masthead-height) + #{$folio-masthead-clearance});
 }
 body {
   display: flex;
@@ -142,29 +186,44 @@ summary:focus-visible {
   position: sticky;
   top: 0;
   z-index: 10;
-  border-bottom: 1px solid var(--folio-rule-strong);
+  /* Declared, never measured — see "Masthead geometry" above. `height` and not
+     `min-height`: a bar allowed to grow past the offset derived from it is the defect. */
+  height: var(--folio-masthead-height);
+  border-bottom: $folio-masthead-rule solid var(--folio-rule-strong);
   background: color-mix(in srgb, var(--folio-paper) 94%, transparent);
   backdrop-filter: blur(12px);
 }
+/* A flex item's automatic minimum size is its content, which would push the masthead
+   wider than the viewport instead of letting the nav strip scroll. */
+.site-header nav { min-width: 0; }
 .site-header .container,
 .footer-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  min-height: 70px;
+  min-height: $folio-masthead-bar;
 }
+/* Fills the bar's declared height rather than declaring one of its own; align-content
+   centres the rows when the bar has more height than they need. */
+.site-header .container { height: 100%; align-content: center; }
 .site-title {
   display: flex;
   align-items: center;
   gap: 10px;
   color: var(--folio-ink);
-  font: 700 1.35rem var(--folio-serif);
+  font: 700 #{$folio-site-title-size}/#{$folio-masthead-line} var(--folio-serif);
   text-decoration: none;
 }
 .site-mark { width: 24px; height: 24px; flex: 0 0 auto; color: var(--folio-green); }
 .site-logo { max-width: 168px; max-height: 32px; flex: 0 0 auto; object-fit: contain; }
 .nav-list, .social-links { display: flex; gap: 20px; margin: 0; padding: 0; list-style: none; }
+/* One row, always — see "Masthead geometry" above. A second row would grow the sticky
+   bar past the height it declares, and how many labels fit on a row is a fact about the
+   reader's font, not about the theme. Surplus entries scroll sideways. */
+.site-header .nav-list { flex-wrap: nowrap; overflow-x: auto; }
+.site-header .nav-list li { flex: 0 0 auto; }
+.site-header .nav-list a { white-space: nowrap; }
 .nav-list a,
 .rubric,
 .sidebar-title,
@@ -656,12 +715,18 @@ code { font-family: var(--folio-mono); }
 }
 @media (max-width: 760px) {
   /* Mockup packing at this width: the brand takes the first row, and the edition badge
-     rides the right edge of the navigation row rather than claiming a row of its own. */
-  .site-header .container { flex-wrap: wrap; gap: 6px 14px; min-height: 0; padding-block: 10px; }
+     rides the right edge of the navigation row rather than claiming a row of its own. The
+     brand's width:100% is what breaks the row, so the bar is exactly two lines here — a
+     layout fact, not a text measurement. --folio-masthead-height above is that sum. */
+  .site-header .container {
+    flex-wrap: wrap;
+    gap: $folio-masthead-gap 14px;
+    padding-block: $folio-masthead-pad;
+  }
   .site-title { width: 100%; }
   .site-header nav { order: 1; flex: 1 1 auto; }
   .skin-toggle { order: 2; }
-  .nav-list { flex-wrap: wrap; gap: 0 18px; }
+  .site-header .nav-list { gap: 0 18px; }
   .hero, .docs-shell { grid-template-columns: 1fr; }
   .section-head { grid-template-columns: 1fr; gap: 10px; }
   .apparatus-grid, .principles { grid-template-columns: 1fr; }

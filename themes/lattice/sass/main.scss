@@ -162,15 +162,12 @@ html {
    The per-component `anywhere` rules below predate this and stay: they cover panes that sit
    outside `main`. Scoped to page content so the wordmark and nav labels are left alone. */
 main * { overflow-wrap: anywhere; }
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  /* Covers scrollIntoView, which reads the target's own margin rather than the container's padding. */
-  scroll-margin-top: 5rem;
-}
+/* No scroll-margin-top on headings: it *adds* to the scrollport's scroll-padding-top, so a
+   heading landed at 10rem while a section id landed at 5rem. The claim it was here for —
+   that scrollIntoView reads the target's margin rather than the scrollport's padding — is
+   not true: measured in Chrome, an un-margined heading lands at exactly scroll-padding-top
+   under scrollIntoView() and under a fragment jump alike. The scrollport offset above covers
+   every anchor target. */
 body {
   /* Short pages must still push the footer to the bottom of the viewport. The skip link
      and the background lattice are both position:fixed, so neither becomes a flex item. */

@@ -41,6 +41,12 @@ $trellis-font-size-xs: 0.8125rem !default;
 $trellis-line-height: 1.65 !default;
 $trellis-heading-line-height: 1.15 !default;
 
+// Derived: the two things that can stand in the brand slot — the wordmark and,
+// when the site sets one, the logo image. _layout.scss sizes the sticky header
+// from them, so none of the three can be changed apart from the others.
+$trellis-site-title-size: $trellis-font-size-base * 1.25;
+$trellis-site-logo-height: 1.75rem;
+
 // ── Layout ───────────────────────────────────────────────────────────────────
 
 $trellis-max-width: 1120px !default;

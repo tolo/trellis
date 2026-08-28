@@ -13,10 +13,11 @@
 html {
   scroll-behavior: smooth;
   // Offset in-page anchor jumps so the target isn't hidden under the sticky header.
-  // Sized to the masthead at its tallest: it wraps to 111px below the 900px breakpoint,
-  // where the nav drops under the brand. 5rem cleared only the 70px desktop masthead, so
-  // every `#features`-style section link landed behind it on a phone.
-  scroll-padding-top: 7.5rem;
+  // The offset is the masthead's own declared height (_layout.scss) plus a gap —
+  // read from it, not guessed alongside it, so the two cannot drift apart. The
+  // constant this replaced was sized by measuring the bar once: right until a
+  // longer label added a nav row nobody re-measured.
+  scroll-padding-top: calc(var(--trellis-masthead-height) + #{$trellis-space-md});
 }
 
 // Core surfaces reference the --trellis-* custom properties (with the compiled

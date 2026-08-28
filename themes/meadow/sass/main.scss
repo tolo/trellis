@@ -55,10 +55,41 @@
 }
 
 * { box-sizing: border-box; }
+
+/* ── Masthead geometry ────────────────────────────────────────────────────────
+
+   The sticky masthead is a bar of a declared height — one row, at both of the two
+   sizes it comes in — and .site-nav is set to exactly that height instead of
+   growing to fit its contents. Everything that has to clear the bar reads
+   --meadow-masthead-height: the bar itself, and the in-page anchor offset below.
+   Neither can move without the other.
+
+   `height` and not the `min-height` this replaced. A floor is not a declaration:
+   every box in the bar is a 44px tap target today, so the floor is what you see —
+   but a nav label that wraps, or a brand that does, lifts the row past it and
+   takes the bar with it, while the offset stays where it was. .desktop-nav is
+   held to one line and scrolls sideways instead, so the row cannot grow that way.
+   That is the defect this shape exists to prevent: Verdant shipped a constant
+   offset sized for a two-row nav and Linux wrapped it to three, leaving every
+   anchor target behind the bar there while macOS passed. */
+$meadow-masthead-rule: 1px;
+$meadow-masthead-bar: 72px;
+$meadow-masthead-bar-narrow: 66px;
+$meadow-masthead-clearance: 16px; /* paper kept above an anchor target, under the bar */
+
+:root {
+  --meadow-masthead-height: #{$meadow-masthead-bar + $meadow-masthead-rule};
+
+  @media (max-width: 430px) {
+    --meadow-masthead-height: #{$meadow-masthead-bar-narrow + $meadow-masthead-rule};
+  }
+}
+
 html {
   /* .site-nav is sticky, so an un-offset in-page anchor jump parks the target behind it
-     and a nav click lands on the section after the one it names. */
-  scroll-padding-top: 5rem;
+     and a nav click lands on the section after the one it names. The offset is the bar's
+     own declared height plus a gap — read from it, not guessed alongside it. */
+  scroll-padding-top: calc(var(--meadow-masthead-height) + #{$meadow-masthead-clearance});
 }
 html { scroll-behavior: smooth; }
 body {
@@ -108,11 +139,14 @@ body > main { flex: 1 0 auto; }
   position: sticky;
   top: 0;
   z-index: 100;
+  /* Declared, never measured — see "Masthead geometry" above. */
+  height: var(--meadow-masthead-height);
   background: var(--meadow-nav);
-  border-bottom: 1px solid var(--meadow-line);
+  border-bottom: $meadow-masthead-rule solid var(--meadow-line);
   backdrop-filter: blur(18px);
 }
-.nav-inner { min-height: 72px; display: flex; align-items: center; gap: 24px; }
+/* Fills the bar's declared height rather than setting a floor of its own. */
+.nav-inner { height: 100%; display: flex; align-items: center; gap: 24px; }
 .brand {
   display: inline-flex;
   align-items: center;
@@ -123,7 +157,11 @@ body > main { flex: 1 0 auto; }
   text-decoration: none;
 }
 .brand-mark, .site-logo { width: 29px; height: 29px; object-fit: contain; }
-.desktop-nav { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+/* One row, always — see "Masthead geometry" above. A label that wrapped would lift the
+   row past the height the bar declares, and how many words fit on a line is a fact about
+   the reader's font. min-width: 0 lets the strip shrink and scroll instead of widening
+   the bar; the dropdown copy of these links (.mobile-menu a) is free to wrap. */
+.desktop-nav { margin-left: auto; display: flex; align-items: center; gap: 4px; min-width: 0; overflow-x: auto; }
 .desktop-nav a, .mobile-menu a {
   min-height: 44px;
   display: inline-flex;
@@ -133,6 +171,7 @@ body > main { flex: 1 0 auto; }
   font-weight: 700;
   text-decoration: none;
 }
+.desktop-nav a { flex: 0 0 auto; white-space: nowrap; }
 .desktop-nav a:hover, .mobile-menu a:hover { background: var(--meadow-lime-soft); }
 /* min-width: 0 so the row can give: a flex item's automatic minimum is its min-content
    width, and the CTA inside carries page copy, so without this the masthead grows past
@@ -428,7 +467,9 @@ blockquote { margin: 0; font: 800 clamp(1.5rem, 3vw, 2.6rem)/1.15 var(--meadow-d
 }
 @media (max-width: 430px) {
   .wrap { width: min(100% - 28px, var(--meadow-width)); }
-  .nav-inner { min-height: 66px; gap: 8px; }
+  /* The bar's shorter height at this width is declared with the taller one, in
+     "Masthead geometry" — the two sizes are one arithmetic and live together. */
+  .nav-inner { gap: 8px; }
   .brand { font-size: 1.1rem; }
   .hero { padding-block: 48px 70px; }
   .hero h1 { font-size: clamp(2.65rem, 13vw, 3.4rem); line-height: 1.08; }

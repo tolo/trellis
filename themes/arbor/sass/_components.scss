@@ -9,8 +9,16 @@
   padding: 0;
   margin: 0;
   display: flex;
-  flex-wrap: wrap;
+  // One row, always. A second row would grow the sticky masthead past the height
+  // it declares (_layout.scss), and how many links fit on a row is a fact about
+  // the reader's font, not about the theme. Surplus links scroll sideways.
+  flex-wrap: nowrap;
+  overflow-x: auto;
   gap: $trellis-space-sm;
+
+  li {
+    flex: 0 0 auto;
+  }
 
   a {
     color: var(--trellis-muted, #{$trellis-muted-color});
@@ -18,6 +26,7 @@
     font-weight: 500;
     padding: $trellis-space-xs $trellis-space-sm;
     border-radius: $trellis-border-radius;
+    white-space: nowrap;
     transition: color 0.15s ease, background-color 0.15s ease;
 
     &:hover,

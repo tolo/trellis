@@ -203,20 +203,11 @@ void main() {
           return;
         }
         final output = defaultBuilds[theme.name]!;
-        final probeWidths = breakpointProbeWidths([File(p.join(output, 'css', 'main.css'))]);
-        // Without this, a sheet the width parser cannot read shrinks the sweep to
-        // the fixed narrow widths and still reports green. Every theme here is
-        // responsive and declares breakpoints; none legitimately declares zero.
-        expect(
-          probeWidths,
-          isNotEmpty,
-          reason: '${theme.name}: no @media width breakpoints parsed out of the compiled sheet',
-        );
         await expectNoOverflow(
           browser,
           servedRoot: output,
           pages: representativePages(output),
-          viewports: {...narrowViewports, for (final width in probeWidths) width: 900},
+          viewports: _sweepViewports(output, theme.name),
           label: '${theme.name} breakpoint bands',
         );
       });
@@ -281,6 +272,16 @@ void main() {
         }
         final output = defaultBuilds[theme.name]!;
         final pages = builtPages(output);
+        // The offset has to clear the masthead at *every* width, and the width where
+        // the margin is thinnest is not the width where the bar is tallest. A masthead
+        // is tallest where it wraps, and that is not the same width for every theme:
+        // Verdant's is 67px at 390 and 103px at 320, so a single-width check passes on
+        // an offset that is too small for a phone. The other end is just as real and
+        // the fixed narrow set never reaches it — Meadow's desktop bar is *taller* than
+        // its phone bar (73px vs 67px) and cleared its 80px offset by 7px in a band
+        // nothing measured. So the sweep runs the same breakpoint-derived widths the
+        // reflow sweep above uses.
+        final viewports = _sweepViewports(output, theme.name);
 
         final server = await StaticSiteServer.serve(Directory(output));
         addTearDown(server.close);
@@ -289,10 +290,7 @@ void main() {
         var checked = 0;
         for (final page in pages) {
           var navigated = false;
-          // A masthead is tallest where it wraps, and that is not the same width for
-          // every theme: Verdant's is 67px at 390 and 103px at 320, so a single-width
-          // check passes on an offset that is too small for a phone.
-          for (final viewport in narrowViewports.entries) {
+          for (final viewport in viewports.entries) {
             final measurement =
                 (navigated
                         ? await browser.evaluateHere(
@@ -319,8 +317,11 @@ void main() {
           isEmpty,
           reason:
               '${theme.name}: the heading these in-page links target sits under the sticky masthead. '
-              'Set scroll-padding-top on the scrolling element (or scroll-margin-top on headings) to at '
-              'least the masthead height.',
+              'Raise scroll-padding-top on the scrolling element to at least the masthead height at this '
+              'width — and derive it from a height the masthead declares rather than restating a constant, '
+              'since a bar that measures its own text is a different height on another machine. Do not add '
+              'scroll-margin-top on top: it *adds* to the scrollport padding, so headings would land at '
+              'twice the offset that every other anchor target gets.',
         );
         // Every anchor landing at scroll 0 means nothing was actually measured — a
         // theme whose sheet lost its offset would still report green here.
@@ -330,6 +331,26 @@ void main() {
       });
     });
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sweep widths
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Viewports the rendered sweeps run [theme]'s build at: the fixed narrow set,
+/// plus the band just inside each breakpoint the theme's own compiled sheet
+/// declares.
+///
+/// Shared by the two rendered sweeps because they answer the same question about
+/// the same layout at different scroll positions, and a width one of them covers
+/// and the other does not is a hole nobody can see from either test.
+Map<int, int> _sweepViewports(String output, String theme) {
+  final widths = breakpointProbeWidths([File(p.join(output, 'css', 'main.css'))]);
+  // Without this, a sheet the width parser cannot read shrinks the sweep to the
+  // fixed narrow widths and still reports green. Every theme here is responsive
+  // and declares breakpoints; none legitimately declares zero.
+  expect(widths, isNotEmpty, reason: '$theme: no @media width breakpoints parsed out of the compiled sheet');
+  return {...narrowViewports, for (final width in widths) width: 900};
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

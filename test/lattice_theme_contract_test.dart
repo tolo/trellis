@@ -828,9 +828,15 @@ $showcaseCards''',
     final script = File(p.join(themeDir, 'static', 'js', 'lattice.js')).readAsStringSync();
     final home = File(p.join(themeDir, 'layouts', 'home.html')).readAsStringSync();
 
-    // L7 — .site-header is sticky; without both offsets an anchor target lands behind it.
+    // L7 — .site-header is sticky; without the offset an anchor target lands behind it. The
+    // scrollport's padding is the whole offset, and it is the only one: a scroll-margin-top on
+    // headings *adds* to it, so headings landed at 10rem while every other target landed at
+    // 5rem. Where a target actually ends up is measured in a browser by theme_contract_test's
+    // anchor sweep; this pins the idiom, so the heading rule cannot come back beside it.
     expect(css, matches(RegExp(r'html\s*\{[^}]*scroll-padding-top:\s*5rem', dotAll: true)));
-    expect(css, matches(RegExp(r'h1,\s*h2,\s*h3,\s*h4,\s*h5,\s*h6\s*\{[^}]*scroll-margin-top:\s*5rem', dotAll: true)));
+    // Comments survive compilation, and the sheet's own note names the property it does not
+    // set — so the absence has to be asserted over declarations, not over the source text.
+    expect(css.replaceAll(RegExp(r'/\*[\s\S]*?\*/'), ''), isNot(contains('scroll-margin-top')));
 
     // L8 — the inline contents list only appears below 980px and must not run the page height.
     expect(

@@ -12,8 +12,11 @@
 
 html {
   scroll-behavior: smooth;
-  // Offset in-page anchor jumps so a heading isn't hidden under the sticky header.
-  scroll-padding-top: 5rem;
+  // .site-header is sticky, so an un-offset in-page anchor jump parks the target
+  // behind it and the reader lands on the paragraph after the heading they clicked.
+  // The offset is the masthead's own declared height (_layout.scss) plus a gap —
+  // read from it, not guessed alongside it, so the two cannot drift apart.
+  scroll-padding-top: calc(var(--trellis-masthead-height) + #{$trellis-space-md});
 }
 
 // Core surfaces reference the --trellis-* custom properties (with the compiled
@@ -61,8 +64,11 @@ h6 {
   margin-top: $trellis-space-xl;
   margin-bottom: $trellis-space-sm;
   font-weight: 700;
-  scroll-margin-top: 5rem;
   text-wrap: balance;
+  // No scroll-margin-top here: it *adds* to the scrollport's scroll-padding-top,
+  // so a heading landed at masthead + 5rem while a section id landed at masthead.
+  // The scrollport offset above covers every anchor target, headings included —
+  // including scrollIntoView(), which honours it just as a fragment jump does.
 }
 
 // Serif display sizes read best with a touch of negative tracking; smaller

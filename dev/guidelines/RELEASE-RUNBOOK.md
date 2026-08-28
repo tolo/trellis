@@ -15,10 +15,13 @@ human action. Steps are in execution order; each names the guard that enforces i
 - **Do not bump versions on the branch.** Pubspecs stay at the previous version until step 4; `melos version` is
   restricted to `main` (root `pubspec.yaml` → `melos.command.version.branch`) and `tool/version_lockstep.sh` throws
   `RestrictedBranchException` and changes nothing anywhere else.
-- **Local gate = CI's `check` tier**, from the workspace root. Prerequisites, both of which `ci.yml` installs and
-  neither of which the Dart toolchain pulls in: **Node 22** (three JS-driven checks) and **Chrome**
-  (the theme reflow sweep and the visual baseline comparator drive headless Chrome over the DevTools protocol).
-  Both skip silently when the binary is absent; `_requireNodeInCi` / `requireChromeInCi` turn that skip into a
+- **Local gate = CI's `check` tier**, from the workspace root. Two prerequisites the Dart toolchain does not pull in:
+  - **Node 22** — three JS-driven checks. `ci.yml` installs it.
+  - **Chrome** — the theme reflow sweep and the visual baseline comparator drive it headless over the DevTools
+    protocol. `ci.yml` only *asserts* it (`google-chrome --version`) because the ubuntu image ships it, so on your
+    own machine you have to supply it.
+
+  Both tiers skip silently when their binary is absent; `_requireNodeInCi` / `requireChromeInCi` turn that skip into a
   failure only when `CI=true`, so **locally a missing Node or Chrome means those checks quietly do not run**.
   ```bash
   dart run tool/generate_theme_gallery.dart --check          # CI runs this first; a stale gallery fails the job
@@ -36,6 +39,8 @@ human action. Steps are in execution order; each names the guard that enforces i
   `transform`/`opacity`/`border-radius` class is gated by the visual tier **only**, so on CI nothing gates it.
 - **`fonts` is a second, independently blocking CI job** — not part of the `check` tier and easy to miss locally:
   ```bash
+  # Python 3.14 too: tool/subset_fonts.py:29 declares "fonttools 4.63.0, brotli 1.2.0, python 3.14" as the
+  # tooling contract, and nothing asserts the interpreter - a different python3 gives spurious DRIFT or a false ok.
   python3 -m venv .venv && .venv/bin/pip install 'fonttools==4.63.0' 'brotli==1.2.0'   # pinned, as ci.yml does
   .venv/bin/python tool/subset_fonts.py --verify              # every vendored WOFF2 reproduces from its pinned upstream
   ```

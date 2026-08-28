@@ -1,6 +1,6 @@
 # Project State — Trellis SDK
 
-Last Updated: 2026-08-27
+Last Updated: 2026-08-28
 
 > Cross-session state tracking. Updated at phase boundaries and when significant context changes.
 

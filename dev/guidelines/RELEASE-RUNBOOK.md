@@ -32,20 +32,26 @@ human action. Steps are in execution order; each names the guard that enforces i
   dart format --output=none --set-exit-if-changed tool test
   ```
   Root `dart test` alone covers only the root suite; `melos exec` alone skips the root — run both.
-  **The root run differs from CI on purpose.** CI runs `dart test --exclude-tags=visual`; the bare `dart test` above
-  does not, so locally you also get `test/visual_baseline_test.dart`. The committed baselines are macOS recordings,
-  so that tier passes on macOS and **fails on Linux** — on a Linux host run `dart test --exclude-tags=visual` to match
-  CI (TD-035 tracks recording Linux baselines and dropping the exclusion). Note the consequence: the
-  `transform`/`opacity`/`border-radius` class is gated by the visual tier **only**, so on CI nothing gates it.
-- **`fonts` is a second, independently blocking CI job** — not part of the `check` tier and easy to miss locally:
+  **The root run is the same command CI runs** — bare `dart test`, `test/visual_baseline_test.dart` included, so the
+  `transform`/`opacity`/`border-radius` class is gated on both sides. Baselines are committed per platform
+  (`test/visual_baselines/<theme>.<platform>.json`), so the tier passes on macOS and on Linux; a host with no recording
+  for its OS fails naming the platform rather than skipping. An appearance change has to be re-recorded on both
+  platforms before CI goes green again — recipe in `test/visual_baseline_test.dart`.
+- **Font provenance is a second, independently red-able check** — its own workflow (`font-provenance.yml`, every push
+  to every branch), not part of the `check` tier and easy to miss locally:
   ```bash
-  # Python 3.14 too: tool/subset_fonts.py:29 declares "fonttools 4.63.0, brotli 1.2.0, python 3.14" as the
-  # tooling contract, and nothing asserts the interpreter - a different python3 gives spurious DRIFT or a false ok.
-  python3 -m venv .venv && .venv/bin/pip install 'fonttools==4.63.0' 'brotli==1.2.0'   # pinned, as ci.yml does
+  # Python 3.14 too: tool/subset_fonts.py's TOOLING constant declares "fonttools 4.63.0, brotli 1.2.0, python 3.14"
+  # as the tooling contract, and nothing asserts the interpreter - a different python3 gives spurious DRIFT or a
+  # false ok.
+  python3 -m venv .venv && .venv/bin/pip install 'fonttools==4.63.0' 'brotli==1.2.0'   # pinned, as the workflow does
   .venv/bin/python tool/subset_fonts.py --verify              # every vendored WOFF2 reproduces from its pinned upstream
   ```
-  It needs network access to fetch each pinned upstream face.
-- Push the branch: `ci.yml` runs the `check` and `fonts` jobs on every branch (E2E on `main` only).
+  It needs network access to fetch each pinned upstream face — which is why it is no longer a job inside `ci.yml`
+  (TD-044): the release gate keys on `ci.yml`, so an upstream outage there blocked a release tag over something the
+  commit never touched. **A red `font-provenance` run therefore does not block a tag — but it still means the vendored
+  fonts do not reproduce from their pinned upstream. Fix it; do not release past it.**
+- Push the branch: `ci.yml` runs the `check` job on every branch (E2E on `main` only), and `font-provenance.yml` runs
+  beside it.
 - `dart pub publish --dry-run` in every package whose public API changed (0 warnings).
 
 ## 1. Fresh-context adversarial review — not optional
@@ -61,7 +67,8 @@ git switch main && git pull --ff-only
 git merge --squash <branch> && git commit          # one commit, one-line subject, e.g. "0.10.1: <summary>"
 git push origin main
 ```
-Guard: `CLAUDE.md` Workflow Rules (squash only). `ci.yml` starts on the push: `check` + `fonts` + `e2e` on `main`.
+Guard: `CLAUDE.md` Workflow Rules (squash only). `ci.yml` starts on the push (`check` + `e2e` on `main`), and
+`font-provenance.yml` beside it. Only `ci.yml` gates the tag.
 
 ## 3. Wait for CI green on `main`
 
@@ -104,7 +111,9 @@ package) and `release-binaries.yml` (binaries → GitHub Release → Homebrew/Sc
 
 Guards after the push:
 - **Release gate** (`release-gate.yml`, first job of both tag workflows): waits for `ci.yml` on the tagged commit and
-  refuses to run unless it concluded `success` **and** the commit is on `main`. A red build cannot publish.
+  refuses to run unless it concluded `success` **and** the commit is on `main`. A red build cannot publish. It looks up
+  the `ci.yml` workflow file by name (`tool/require_green_ci.sh`, `CI_WORKFLOW`), so `font-provenance.yml` is outside
+  this gate by construction (TD-044) — check it yourself before step 5.
 - **Version cross-check** (`release-binaries.yml` → `version` job, `tool/read_version.dart`): tag == pubspec ==
   `cliVersion`, or nothing is built.
 - Publish jobs are independent (`fail-fast: false`); pub.dev refuses to re-publish an existing version, so re-running

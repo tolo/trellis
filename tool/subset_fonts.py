@@ -220,8 +220,9 @@ def unlisted() -> list[Path]:
 def fetch(cache: Path, family: str) -> Path:
     rel, digest, _ = FAMILIES[family]
     dest = cache / f"{family}.ttf"
-    # The gate runs on every push (.github/workflows/ci.yml, job `fonts`), so a single
-    # dropped connection would turn a green branch red for a reason unrelated to the commit.
+    # The gate runs on every push (.github/workflows/font-provenance.yml, job `fonts`), so a
+    # single dropped connection would turn a green branch red for a reason unrelated to the
+    # commit.
     for attempt in range(3):
         if dest.exists():
             break

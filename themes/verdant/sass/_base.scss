@@ -13,8 +13,9 @@
 html {
   // .site-header is sticky, so an un-offset in-page anchor jump parks the target
   // behind it and the reader lands on the paragraph after the heading they clicked.
-  // Sized to the masthead at its tallest: 103px once the nav wraps under the title at 320px.
-  scroll-padding-top: 7rem;
+  // The offset is the masthead's own declared height (_layout.scss) plus a gap —
+  // read from it, not guessed alongside it, so the two cannot drift apart.
+  scroll-padding-top: calc(var(--trellis-masthead-height) + #{$trellis-space-md});
 }
 
 body {

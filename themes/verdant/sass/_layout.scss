@@ -24,16 +24,52 @@ $bp-lg: 1024px;  // Desktop
   }
 }
 
+// ── Masthead geometry ────────────────────────────────────────────────────────
+//
+// The sticky masthead is a whole number of rows of a declared height — two below
+// $bp-sm (brand over a full-width nav strip), one above — and .site-header is set
+// to exactly that height instead of growing to fit its text. Everything that has
+// to clear the bar reads --trellis-masthead-height: the bar itself, and the
+// in-page anchor offset in _base.scss. Neither can move without the other.
+//
+// Two constructions keep the arithmetic true, and both are load-bearing:
+//   * a row is one line box sized by a *unitless* line-height, which is
+//     font-size × factor and not a function of the font's ascent/descent;
+//   * .nav-list may not wrap (_components.scss) — surplus links scroll sideways
+//     rather than adding a row.
+// Undo either — wrap the nav again, switch a line-height to `normal`, drop an
+// unsized logo image into the bar — and the height goes back to being a text
+// measurement. That is the failure this replaced: the nav wrapped to two rows
+// under macOS's system-ui and three under Linux's, and the 7rem constant sized
+// for the first left every anchor target 31px behind the second.
+$trellis-masthead-row: $trellis-site-title-size * $trellis-line-height;
+$trellis-masthead-gap: $trellis-space-xs;
+$trellis-masthead-border: 1px;
+
+:root {
+  --trellis-masthead-height: calc(
+    #{$trellis-masthead-row * 2 + $trellis-masthead-gap + $trellis-space-md * 2} + #{$trellis-masthead-border}
+  );
+
+  @media (min-width: $bp-sm) {
+    --trellis-masthead-height: calc(#{$trellis-masthead-row + $trellis-space-md * 2} + #{$trellis-masthead-border});
+  }
+}
+
 // ── Site header ──────────────────────────────────────────────────────────────
 
 .site-header {
   position: sticky;
   top: 0;
   z-index: 100;
+  // Declared, never measured — see "Masthead geometry" above. `height` and not
+  // `min-height`: a bar that is allowed to grow past the offset derived from it
+  // is the whole defect.
+  height: var(--trellis-masthead-height);
   // Translucent header with backdrop blur: content scrolling beneath shows
   // through faintly, giving the page depth. Solid bg is the no-support fallback.
   background-color: var(--trellis-bg, #{$trellis-bg-color});
-  border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
+  border-bottom: $trellis-masthead-border solid var(--trellis-border, #{$trellis-border-color});
 
   @supports (backdrop-filter: blur(8px)) {
     background-color: color-mix(in srgb, var(--trellis-bg, #{$trellis-bg-color}) 82%, transparent);
@@ -41,12 +77,29 @@ $bp-lg: 1024px;  // Desktop
     -webkit-backdrop-filter: blur(8px);
   }
 
+  nav {
+    // A flex item's automatic minimum size is its content, which would push the
+    // masthead wider than the viewport instead of letting the strip scroll.
+    min-width: 0;
+  }
+
   .container {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    // Phone: the brand sits above a full-width nav strip, so the links lay out
+    // across the viewport rather than in the sliver left beside the title — with
+    // the strip cramped, whether they fit is a question about the reader's font.
+    flex-direction: column;
+    justify-content: center;
+    gap: $trellis-masthead-gap;
+    height: 100%;
     padding-top: $trellis-space-md;
     padding-bottom: $trellis-space-md;
+
+    @media (min-width: $bp-sm) {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
   }
 }
 
@@ -54,7 +107,7 @@ $bp-lg: 1024px;  // Desktop
   display: inline-flex;
   align-items: center;
   gap: 0.5em;
-  font-size: 1.25rem;
+  font-size: $trellis-site-title-size;
   font-weight: 700;
   letter-spacing: -0.015em;
   color: var(--trellis-text, #{$trellis-text-color});

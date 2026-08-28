@@ -59,7 +59,7 @@ out to have siblings the review had not named).
 ## Test Health
 
 On `feat/0.11` (2026-08-28): all eight package test suites pass (one existing Linux-only skip in `trellis`) —
-`trellis` 1282, `trellis_site` 849, `trellis_cli` 256 — the repo-root suite passes **155/155 on macOS and on Linux**,
+`trellis` 1282, `trellis_site` 849, `trellis_cli` 256 — the repo-root suite passes **161/161 on macOS and on Linux**,
 `generate_theme_gallery.dart --check` is current, `subset_fonts.py --verify` reproduces 11/11 vendored faces
 byte-identically, and workspace analyze (`--fatal-infos`) and both format gates pass across all 12 packages.
 **The visual tier now runs on CI.** Baselines are committed per platform (`test/visual_baselines/<theme>.<platform>.json`)

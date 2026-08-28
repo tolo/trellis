@@ -22,7 +22,7 @@
 
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
   /* Descriptions differ in length; without this a short card is stretched to
      its row's height and shows an empty band below its own footer. */
   align-items: start;

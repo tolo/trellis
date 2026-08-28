@@ -433,5 +433,22 @@ screenshots: []
 
       expect(consumed.difference(declared), isEmpty, reason: 'undeclared in ${p.basename(theme.path)}');
     });
+
+    test('H4 every card\'s screenshot paths live under its own theme directory', () {
+      // Mutation-proven gap (release-gate review, finding H4): swapping two themes'
+      // screenshot_light/screenshot_dark while leaving both names untouched left every
+      // suite green. Nothing bound a card's name to its own screenshots.
+      final data = loadYaml(File(p.join(repoRoot, 'site', 'data', 'themes.yaml')).readAsStringSync()) as YamlMap;
+      for (final entry in data['themes'] as YamlList) {
+        final theme = entry as YamlMap;
+        final name = theme['name'] as String;
+        final ownDir = 'themes/$name/';
+        for (final key in <String>['screenshot_light', 'screenshot_dark']) {
+          if (!theme.containsKey(key)) continue;
+          final path = theme[key] as String;
+          expect(path, contains(ownDir), reason: '$name.$key = "$path" is not under $ownDir');
+        }
+      }
+    });
   });
 }

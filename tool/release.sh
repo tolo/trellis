@@ -180,15 +180,39 @@ dart pub get
 step "Asserting only version files changed"
 # The bump may touch exactly these; anything else means the script or melos did
 # something new and a human should look before it becomes the release commit.
+#
+# Read `--porcelain -z`, not `--porcelain` split on whitespace. Two reasons, both
+# demonstrated against real `git status` output rather than reasoned about:
+#   * `--porcelain` C-quotes any path with a space or a non-ASCII byte, so
+#     `awk '{print $NF}'` handed the allow-list `README.md"` for `Project
+#     README.md` — a name no case pattern matches and no maintainer can act on.
+#     It failed safe, but it failed on a path that does not exist.
+#   * a rename is `R  <orig> -> <new>`, so `$NF` was the destination only: a file
+#     renamed *into* an allow-listed path (`R "anything" -> packages/x/pubspec.yaml`)
+#     passed with nothing reported. That is the permissive hole, and it is the one
+#     that matters for an assertion guarding an irreversible publish.
+# `-z` emits raw NUL-delimited paths with no quoting, and splits a rename or copy
+# into `XY <new>` followed by the bare source — so the source is read back and held
+# to the same allow-list.
 UNEXPECTED=()
-while IFS= read -r changed; do
+PENDING_SOURCE=0
+while IFS= read -r -d '' entry; do
+  if (( PENDING_SOURCE )); then
+    PENDING_SOURCE=0
+    changed="${entry}"
+  else
+    case "${entry:0:2}" in *[RC]*) PENDING_SOURCE=1 ;; esac
+    changed="${entry:3}"
+  fi
   case "${changed}" in
     packages/*/pubspec.yaml | packages/*/lib/src/version.dart | README.md | packages/trellis_cli/README.md) ;;
     *) UNEXPECTED+=("${changed}") ;;
   esac
-done < <(git status --porcelain | awk '{print $NF}')
+done < <(git status --porcelain -z)
 if (( ${#UNEXPECTED[@]} > 0 )); then
-  fail "unexpected changes after the bump: ${UNEXPECTED[*]}. Bump left in the working tree for inspection; discard it (= ALL uncommitted changes; the tree was clean before the bump) with: git restore --staged --worktree ."
+  # Bracketed per path: a list joined by spaces is unreadable the moment one of
+  # the paths contains a space, which is the case this parser exists to report.
+  fail "unexpected changes after the bump: $(printf '[%s] ' "${UNEXPECTED[@]}")- bump left in the working tree for inspection; discard it (= ALL uncommitted changes; the tree was clean before the bump) with: git restore --staged --worktree ."
 fi
 git status --short
 
@@ -203,6 +227,13 @@ melos run --no-select format:check || gate_failed
 step "Local gate: unit tests (packages)"
 melos exec --dir-exists=test -- dart test --exclude-tags=e2e || gate_failed
 step "Local gate: root tests + root format"
+# Bare `dart test`, matching ci.yml's `Root workspace tests` step exactly. It used
+# to differ from CI, which excluded `visual` because the baselines were macOS-only
+# and this script did not — so the gate aborted by design on any non-macOS host.
+# Baselines are now committed per platform, so the same command is right on macOS
+# and Linux and the release gate runs the tier CI runs. A host with no recording
+# for its OS (Windows) fails here naming the platform, which is the honest answer:
+# cut the release where the baselines are, or record that platform first.
 dart test || gate_failed
 dart format --output=none --set-exit-if-changed tool test || gate_failed
 

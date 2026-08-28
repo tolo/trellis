@@ -141,11 +141,16 @@ jobs:
       # measurements), but restricting them to main would put them behind the
       # merge that is exactly the thing they exist to gate: every 0.11 rendering
       # defect lived on a feature branch for weeks before anyone rendered it.
-      # Excludes @Tags(['visual']): the baselines are macOS recordings and the
-      # comparator refuses a foreign platform by design. See TD-035 - record
-      # Linux baselines, then drop this exclusion so the gate enforces it.
+      # No tag exclusion: the visual comparator is what gates the
+      # transform/opacity/border-radius class of regression, and nothing else in
+      # the workspace sees it at all. Its baselines are committed per platform
+      # (test/visual_baselines/<theme>.linux.json is the set this job compares
+      # against; the .macos.json set is what a maintainer runs locally), so an
+      # appearance change has to be re-recorded on both before this goes green
+      # again - see the recording recipe in test/visual_baseline_test.dart.
+      # Same command as tool/release.sh's root gate, deliberately.
       - name: Root workspace tests
-        run: dart test --exclude-tags=visual
+        run: dart test
 
       - name: Check root formatting
         run: dart format --output=none --set-exit-if-changed tool test

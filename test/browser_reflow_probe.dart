@@ -237,7 +237,32 @@ class BrowserProbe {
     await _events.close();
     _process.kill(ProcessSignal.sigkill);
     await _process.exitCode;
-    if (_profile.existsSync()) _profile.deleteSync(recursive: true);
+    await _removeProfile();
+  }
+
+  /// Delete the throwaway profile, tolerating Chrome outliving its own process.
+  ///
+  /// Killing the browser process does not reap its zygote and renderer children
+  /// on Linux; they keep writing into the profile for a moment afterwards, so a
+  /// recursive delete races them and throws `Directory not empty`. That is
+  /// deterministic on Linux (every run of every probe-backed suite in a
+  /// container) and unseen on macOS, and it surfaced as a `tearDownAll` failure
+  /// — a suite reporting a cleanup race as a rendering defect, which is exactly
+  /// the noise that teaches a team to ignore a red rendered check.
+  ///
+  /// The profile is a temp directory, so not removing it is litter the OS
+  /// reaps, not a broken assertion: retry briefly, then say so and move on.
+  Future<void> _removeProfile() async {
+    for (var attempt = 0; attempt < 20; attempt++) {
+      if (!_profile.existsSync()) return;
+      try {
+        _profile.deleteSync(recursive: true);
+        return;
+      } on FileSystemException {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+    }
+    stderr.writeln('browser probe: ${_profile.path} still busy after the browser exited; left for the OS to reap');
   }
 
   void _dispatch(Object? data) {

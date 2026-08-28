@@ -56,14 +56,22 @@
 ///
 /// ## Portability
 ///
-/// A baseline records the platform and Chrome version that produced it, and the
-/// comparator refuses to run against a baseline from another operating system.
-/// That is not timidity: the themes self-host their faces, but every font stack
-/// ends in a system fallback and the subsets are known to be missing glyphs the
-/// layouts render, so any text that falls back measures differently on another
-/// OS. The two ways out of that are both worse — fail on differences nobody
-/// introduced, or widen the tolerance until it hides the ones they did.
-/// Recorded goldens are platform-pinned everywhere for this reason.
+/// A baseline is per operating system: the file is `<theme>.<platform>.json`
+/// and a run reads only the one naming its own `Platform.operatingSystem`.
+/// Geometry is not portable across systems — the themes self-host their faces,
+/// but every font stack ends in a system fallback and the subsets are known to
+/// be missing glyphs the layouts render, so any text that falls back measures
+/// differently on another OS. Comparing across platforms has two outcomes and
+/// both are worse than not comparing: fail on differences nobody introduced, or
+/// widen the tolerance until it hides the ones they did. Recorded goldens are
+/// platform-pinned everywhere for this reason.
+///
+/// Splitting the file per platform is what lets one commit be gated on more
+/// than one: `macos` is what a maintainer runs locally, `linux` is what CI
+/// runs. A platform with no recording is a failure, not a skip — a theme
+/// nothing has rendered on this OS is a theme nothing is watching here. The
+/// recorded `platform` field is checked against the file name as well, so a
+/// hand-copied or hand-edited baseline is caught rather than silently compared.
 ///
 /// Chrome's version is *not* enforced, only recorded: a browser upgrade can
 /// legitimately move layout past the tolerance band, and when it does the
@@ -544,12 +552,40 @@ class Baseline {
   /// fonts are known to be missing glyphs the layouts render (`←` in Meadow's
   /// back-link). Any text that falls back measures differently on another OS,
   /// so a baseline is a record of one platform, the way a Flutter golden is.
+  ///
+  /// Redundant with the file name by design: it is what catches a recording
+  /// copied or renamed into another platform's slot instead of re-recorded.
   final String platform;
 
   final String chrome;
   final List<Capture> captures;
 
-  static String pathFor(String repoRoot, String theme) => p.join(repoRoot, 'test', 'visual_baselines', '$theme.json');
+  /// Where [theme]'s recording for *this* host lives.
+  ///
+  /// There is deliberately no way to ask for another platform's file: every
+  /// caller either records what it just rendered or compares against what this
+  /// machine can reproduce, and both are this one.
+  static String pathFor(String repoRoot, String theme) =>
+      p.join(repoRoot, 'test', 'visual_baselines', '$theme.${Platform.operatingSystem}.json');
+
+  /// Operating systems [theme] has a committed recording for, sorted.
+  ///
+  /// Only used to say something useful when this host is not one of them: a
+  /// bare "no baseline" reads as "nobody recorded this theme", which is the
+  /// wrong diagnosis when five other themes just compared fine.
+  static List<String> recordedPlatforms(String repoRoot, String theme) {
+    final dir = Directory(p.join(repoRoot, 'test', 'visual_baselines'));
+    if (!dir.existsSync()) return const [];
+    final platforms = <String>[];
+    for (final file in dir.listSync().whereType<File>()) {
+      final name = p.basename(file.path);
+      if (name.startsWith('$theme.') && name.endsWith('.json')) {
+        platforms.add(name.substring(theme.length + 1, name.length - '.json'.length));
+      }
+    }
+    platforms.sort();
+    return platforms;
+  }
 
   /// Serialized one node per line.
   ///
@@ -811,8 +847,9 @@ class VisualBaselineRun {
   /// Recorded-versus-rendered differences, in capture order.
   final List<Difference> differences;
 
-  /// Themes with no baseline on disk. In check mode this is a failure: a theme
-  /// that has never been recorded is a theme nothing is watching.
+  /// Themes with no baseline for *this* platform, each with the platforms it
+  /// was recorded on. In check mode this is a failure: a theme nothing has
+  /// rendered on this OS is a theme nothing is watching here.
   final List<String> missingBaselines;
 
   /// Baseline files whose content changed during an update run.
@@ -841,7 +878,11 @@ class VisualBaselineRun {
   String describe() {
     final buffer = StringBuffer();
     if (missingBaselines.isNotEmpty) {
-      buffer.writeln('No recorded baseline for: ${missingBaselines.join(', ')}.');
+      buffer.writeln(
+        'No recorded baseline for: ${missingBaselines.join('; ')}. Record it on this platform with '
+        'UPDATE_VISUAL_BASELINES=1 dart test test/visual_baseline_test.dart and commit the result — a '
+        'baseline from another OS cannot stand in for it.',
+      );
     }
     final drifted = recordedChrome.where((version) => _major(version) != _major(chrome)).toList();
     if (drifted.isNotEmpty) {
@@ -977,16 +1018,22 @@ Future<VisualBaselineRun> runVisualBaselines({
       continue;
     }
     if (!file.existsSync()) {
-      missing.add(example.name);
+      final elsewhere = Baseline.recordedPlatforms(repoRoot, example.name);
+      missing.add(
+        elsewhere.isEmpty
+            ? '${example.name} (never recorded)'
+            : '${example.name} on ${Platform.operatingSystem} (recorded on ${elsewhere.join(', ')})',
+      );
       continue;
     }
     final recorded = Baseline.fromJson(jsonDecode(file.readAsStringSync()) as Map<String, Object?>);
     if (recorded.platform != Platform.operatingSystem) {
       throw StateError(
-        'test/visual_baselines/${example.name}.json was recorded on ${recorded.platform}; this is '
-        '${Platform.operatingSystem}. Font fallback differs between operating systems, so the geometry in '
-        'a baseline is only meaningful on the platform that recorded it. Run this suite on '
-        '${recorded.platform}, or re-record there with UPDATE_VISUAL_BASELINES=1 and commit the result. '
+        '${p.relative(file.path, from: repoRoot)} says it was recorded on ${recorded.platform}, but its name '
+        'claims ${Platform.operatingSystem} — it was copied or renamed into the slot for this platform rather '
+        'than recorded here. Font fallback differs between operating systems, so the geometry in a baseline is only '
+        'meaningful on the platform that recorded it. Re-record on ${Platform.operatingSystem} with '
+        'UPDATE_VISUAL_BASELINES=1 and commit the result. '
         'Comparing across platforms would either fail on differences nobody introduced or need a '
         'tolerance wide enough to hide the ones they did.',
       );

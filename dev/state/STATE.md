@@ -14,9 +14,12 @@ reviews missed; TD-014 was found unimplemented and landed.
 Three release-gate reviews each returned NO-GO, and each found a defect class one step outside the previous one:
 defects in themes (20 HIGH) → classes unpropagated across themes (7) → everything adjacent to themes (1 CRITICAL +
 7 HIGH: the gallery, the docs site, the CLI install journey, the package changelogs, the SDK's own CSP). Severity fell
-across the three. The third round was remediated on 2026-08-28 (`5b0f46b`..`1016455`) under an explicit decision that
-there would be **no fourth open-ended review** — the widening-scope process has no fixed point for a pre-1.0 minor, so
-the standing verdict is a judgment about acceptable known debt, recorded as TD-038…TD-047. Full record in
+across the three. The third round was remediated on 2026-08-28 under an explicit decision that there would be
+**no fourth open-ended review** — the widening-scope process has no fixed point for a pre-1.0 minor. The ten items it
+deferred (TD-038…TD-047) were then **all closed in the same cycle** rather than carried, on the maintainer's call:
+nearly all of them lived in tooling, tests, CI and docs rather than in shipped package code, so closing them could not
+change what pub.dev receives. That inverts the usual "do not change things before a release" instinct, and it is the
+reason the release ships with the gate materially stronger than the one that passed it three times. Full record in
 `../trellis-private/docs/specs/0.11/prd.md` § Outcome.
 
 Two of the third review's findings were **wrong**, and both failure shapes are worth carrying: a finding can be
@@ -55,12 +58,15 @@ out to have siblings the review had not named).
 
 ## Test Health
 
-On `feat/0.11` (2026-08-28, macOS): all eight package test suites pass (one existing Linux-only skip in `trellis`) —
-`trellis` 1282, `trellis_site` 849, `trellis_cli` 251 — the repo-root suite passes **149/149** including the visual
-tier, `generate_theme_gallery.dart --check` is current, `subset_fonts.py --verify` reproduces 11/11 vendored faces
+On `feat/0.11` (2026-08-28): all eight package test suites pass (one existing Linux-only skip in `trellis`) —
+`trellis` 1282, `trellis_site` 849, `trellis_cli` 256 — the repo-root suite passes **155/155 on macOS and on Linux**,
+`generate_theme_gallery.dart --check` is current, `subset_fonts.py --verify` reproduces 11/11 vendored faces
 byte-identically, and workspace analyze (`--fatal-infos`) and both format gates pass across all 12 packages.
-**The root suite is 149 only on macOS**: CI runs `dart test --exclude-tags=visual` because the committed baselines are
-macOS recordings, so the `transform`/`opacity`/`border-radius` class has no gate on CI at all (TD-035, TD-043). Root and `/trellis/` docs builds
+**The visual tier now runs on CI.** Baselines are committed per platform (`test/visual_baselines/<theme>.<platform>.json`)
+and `ci.yml` no longer excludes `visual`, so the `transform`/`opacity`/`border-radius` class is gated for the first
+time. Enabling it immediately caught a real Linux-only bug: Verdant's masthead measured 143px against a hardcoded
+112px scroll offset, parking in-page anchors behind the sticky bar. **That is the cost of the gap** — the rendered
+suites had never run on CI at all, the last CI run on this repo being 0.10.2 (2026-08-18). Root and `/trellis/` docs builds
 each produce 27 pages and 39 static files with 1,279 internal references and no broken links. Dart Sass 3.0
 forward-compat tech debt remains logged as TD-006 (`@import` in theme SASS + the bridge).
 
@@ -69,11 +75,13 @@ suite and 8 of 11 deliberate regressions passed, including truncating every vend
 closed: the theme suites now assert rendered geometry, per-file `wOF2` magic bytes and byte floors, `@font-face` axis
 containment, and (since 2026-08-28) that each gallery card's screenshots live under its own theme directory.
 
-Two holes remain open and are the ones to distrust. **`subset_fonts.py --verify` re-derives its expectation from the
-same constants it checks** (TD-038): narrow `ARROWS`/`MARKS`, re-run `--write`, and six codepoints vanish while
-`--verify` reports `11 ok` and every suite stays green. **`site/` is outside every rendered check** (TD-039) — which is
-how a WCAG 1.4.10 reflow failure reached the flagship gallery page with the whole gate green. A gate that derives its
-expected value from the artifact's own recipe cannot fail when the recipe changes; it redefines the truth instead.
+Both of the holes recorded here on 2026-08-28 are now closed, and the shape of each is worth keeping. **A gate that
+re-derives its expectation from the artifact's own recipe cannot fail when the recipe changes — it redefines the
+truth instead.** `subset_fonts.py --verify` did exactly that (TD-038: narrowing the constants dropped 15 codepoints
+while it reported `11 ok`); it now asserts each face's cmap against `tool/font_coverage.txt`, a pin the tool never
+writes. **A surface outside every rendered check is a surface with no gate**, however green the suite looks: `site/`
+was outside all of them (TD-039), which is how a WCAG 1.4.10 reflow failure reached the flagship gallery page — it is
+now swept in both deploy shapes on every push.
 
 ## Blockers
 

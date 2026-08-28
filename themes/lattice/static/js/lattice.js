@@ -2,8 +2,32 @@
   'use strict';
 
   var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var darkScheme = window.matchMedia('(prefers-color-scheme: dark)');
   var root = document.documentElement;
   var themeToggle = document.querySelector('[data-lattice-theme-toggle]');
+
+  // Anything but 'dark'/'light' is not a theme this file can apply: setTheme indexes the
+  // screenshot dataset by the value.
+  function savedTheme() {
+    try {
+      var saved = window.localStorage.getItem('trellis-theme');
+      return saved === 'dark' || saved === 'light' ? saved : '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  // The reader's own choice, kept in memory so a denied localStorage write does not strand the
+  // toggle; '' means "follow the OS".
+  var explicitTheme = savedTheme();
+
+  // The pre-paint resolver in <head> is an inline script, so a page served under a strict
+  // script-src never runs it and data-theme stays unset. Resolve from the same two sources here
+  // rather than reading the attribute back: reading it back pins such a page to light and defeats
+  // the prefers-color-scheme fallback the CSS would otherwise apply.
+  function effectiveTheme() {
+    return explicitTheme || (darkScheme.matches ? 'dark' : 'light');
+  }
 
   function setTheme(theme, persist) {
     root.dataset.theme = theme;
@@ -20,10 +44,16 @@
 
   if (themeToggle) {
     themeToggle.hidden = false;
-    setTheme(root.dataset.theme === 'dark' ? 'dark' : 'light', false);
+    setTheme(effectiveTheme(), false);
     themeToggle.addEventListener('click', function () {
-      setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark', true);
+      explicitTheme = effectiveTheme() === 'dark' ? 'light' : 'dark';
+      setTheme(explicitTheme, true);
     });
+    // With nothing saved the page follows the OS, and that can change after load.
+    if (typeof darkScheme.addEventListener === 'function')
+      darkScheme.addEventListener('change', function () {
+        if (!explicitTheme) setTheme(effectiveTheme(), false);
+      });
   }
 
   var docsSidebar = document.querySelector('[data-docs-sidebar]');

@@ -13,8 +13,12 @@
     }
   }
 
+  // The reader's own choice, kept in memory so a denied localStorage write does not strand the
+  // toggle; '' means "follow the OS", the state the CSS prefers-color-scheme fallback needs.
+  var explicitSkin = savedSkin();
+
   function effectiveSkin() {
-    return savedSkin() || (media && media.matches ? 'dark' : 'light');
+    return explicitSkin || (media && media.matches ? 'dark' : 'light');
   }
 
   function syncSkinButton() {
@@ -27,13 +31,17 @@
 
   if (skinButton) {
     skinButton.hidden = false;
+    // The pre-paint applier in <head> is an inline script, so a page served under a strict
+    // script-src never runs it. Apply the saved skin here too: without it the page renders by
+    // prefers-color-scheme while the button reports the saved value and toggles from it.
+    root.dataset.skin = explicitSkin;
     syncSkinButton();
     skinButton.addEventListener('click', function () {
-      var next = effectiveSkin() === 'dark' ? 'light' : 'dark';
+      explicitSkin = effectiveSkin() === 'dark' ? 'light' : 'dark';
       try {
-        localStorage.setItem('meadow-skin', next);
+        localStorage.setItem('meadow-skin', explicitSkin);
       } catch (_) {}
-      root.dataset.skin = next;
+      root.dataset.skin = explicitSkin;
       syncSkinButton();
     });
     if (media && media.addEventListener) media.addEventListener('change', syncSkinButton);

@@ -227,13 +227,16 @@ melos run --no-select format:check || gate_failed
 step "Local gate: unit tests (packages)"
 melos exec --dir-exists=test -- dart test --exclude-tags=e2e || gate_failed
 step "Local gate: root tests + root format"
-# Bare `dart test`, matching ci.yml's `Root workspace tests` step exactly. It used
-# to differ from CI, which excluded `visual` because the baselines were macOS-only
-# and this script did not — so the gate aborted by design on any non-macOS host.
-# Baselines are now committed per platform, so the same command is right on macOS
-# and Linux and the release gate runs the tier CI runs. A host with no recording
-# for its OS (Windows) fails here naming the platform, which is the honest answer:
-# cut the release where the baselines are, or record that platform first.
+# Bare `dart test` — deliberately WIDER than ci.yml, which runs
+# `--exclude-tags=visual`. This is the only place the visual baseline tier runs, and
+# that is the point: it is a golden-file layout check whose baselines encode font
+# metrics, so it is only meaningful on the machine that recorded them. CI runners
+# drift in Chrome version and font set and cannot hold it stable. The tier is what
+# catches "the page moved" — 0.11 shipped a hero with 205px of dead space, a mobile
+# panel pushing content off the fold and a marker band clipping its own text, all
+# with a green suite. So the release gate is where it belongs, and a release must be
+# cut on a host that has a recording for its OS: no recording, this fails naming the
+# platform rather than passing a check that never ran.
 dart test || gate_failed
 dart format --output=none --set-exit-if-changed tool test || gate_failed
 

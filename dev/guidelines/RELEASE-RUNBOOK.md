@@ -32,11 +32,16 @@ human action. Steps are in execution order; each names the guard that enforces i
   dart format --output=none --set-exit-if-changed tool test
   ```
   Root `dart test` alone covers only the root suite; `melos exec` alone skips the root — run both.
-  **The root run is the same command CI runs** — bare `dart test`, `test/visual_baseline_test.dart` included, so the
-  `transform`/`opacity`/`border-radius` class is gated on both sides. Baselines are committed per platform
-  (`test/visual_baselines/<theme>.<platform>.json`), so the tier passes on macOS and on Linux; a host with no recording
-  for its OS fails naming the platform rather than skipping. An appearance change has to be re-recorded on both
-  platforms before CI goes green again — recipe in `test/visual_baseline_test.dart`.
+  **The root run here is deliberately wider than CI's.** CI runs `dart test --exclude-tags=visual`; the bare `dart test`
+  above also runs `test/visual_baseline_test.dart`, the golden-file layout tier — and **this is the only place that
+  tier runs.** It is what catches "the page moved", which no stylesheet assertion can see. Its baselines encode font
+  metrics, so a recording is only valid on the Chrome build and font set that made it; CI runners drift in both
+  (recordings from an `ubuntu:24.04` container on Chrome 152 failed the runner's Chrome 151 for the three themes whose
+  stacks end in a system fallback), so chasing them there is permanent maintenance for a check that matters most right
+  here. Baselines are named per platform (`test/visual_baselines/<theme>.<platform>.json`) and only macOS is recorded:
+  **cut releases on macOS**, or record your platform first — a host without a recording fails naming it rather than
+  skipping. An appearance change must be re-recorded before `tool/release.sh` will pass; recipe in
+  `test/visual_baseline_test.dart`.
 - **Font provenance is a second, independently red-able check** — its own workflow (`font-provenance.yml`, every push
   to every branch), not part of the `check` tier and easy to miss locally:
   ```bash

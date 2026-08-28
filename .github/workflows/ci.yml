@@ -148,8 +148,18 @@ jobs:
       # appearance change has to be re-recorded on both before this goes green
       # again - see the recording recipe in test/visual_baseline_test.dart.
       # Same command as tool/release.sh's root gate, deliberately.
+      # `visual` excluded on purpose. test/visual_baseline_test.dart is a golden-file
+      # layout check whose baselines encode font metrics, so a recording is only valid
+      # on the exact Chrome build and font set that made it. Runner images drift in
+      # both: recordings made in an ubuntu:24.04 container with Chrome 152 failed here
+      # on Chrome 151 for arbor, bloom and verdant - the three themes whose font stacks
+      # end in a system fallback. folio, lattice and meadow vendor every face and were
+      # unaffected, which is the whole mechanism. Chasing the runner is permanent
+      # maintenance for a check that matters most at one moment, so the tier is a
+      # release gate in tool/release.sh instead, run on the maintainer's machine where
+      # the baselines were recorded. See TD-035.
       - name: Root workspace tests
-        run: dart test
+        run: dart test --exclude-tags=visual
 
       - name: Check root formatting
         run: dart format --output=none --set-exit-if-changed tool test

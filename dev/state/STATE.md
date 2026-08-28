@@ -59,14 +59,22 @@ out to have siblings the review had not named).
 ## Test Health
 
 On `feat/0.11` (2026-08-28): all eight package test suites pass (one existing Linux-only skip in `trellis`) —
-`trellis` 1282, `trellis_site` 849, `trellis_cli` 256 — the repo-root suite passes **161/161 on macOS and on Linux**,
+`trellis` 1282, `trellis_site` 849, `trellis_cli` 256 — the repo-root suite passes **161/161 on macOS** (155 on CI, which excludes the `visual` tier),
 `generate_theme_gallery.dart --check` is current, `subset_fonts.py --verify` reproduces 11/11 vendored faces
 byte-identically, and workspace analyze (`--fatal-infos`) and both format gates pass across all 12 packages.
-**The visual tier now runs on CI.** Baselines are committed per platform (`test/visual_baselines/<theme>.<platform>.json`)
-and `ci.yml` no longer excludes `visual`, so the `transform`/`opacity`/`border-radius` class is gated for the first
-time. Enabling it immediately caught a real Linux-only bug: Verdant's masthead measured 143px against a hardcoded
-112px scroll offset, parking in-page anchors behind the sticky bar. **That is the cost of the gap** — the rendered
-suites had never run on CI at all, the last CI run on this repo being 0.10.2 (2026-08-18). Root and `/trellis/` docs builds
+**The visual tier is a release gate, not a CI gate — settled on evidence, 2026-08-28.** It was briefly enabled on CI
+and the first real run was red: baselines encode font metrics, and the runner ran Chrome 151 against the recording
+container's 152 with a different font set. Exactly the three themes whose stacks end in a system fallback failed
+(arbor, bloom, verdant); the three vendoring every face (folio, lattice, meadow) passed. A golden-file layout tier
+cannot be held stable on an environment that drifts, so `ci.yml` excludes `visual` and `tool/release.sh` runs it on
+the machine that recorded the baselines — which is the moment it matters. Baselines are macOS-only and named per
+platform, so a host without a recording fails naming its platform. **Cut releases on macOS.**
+
+The detour was not wasted: recording a Linux set caught a real bug the rendered suites had never been in a position
+to find. Verdant's masthead measured 143px there against a hardcoded 112px scroll offset, parking in-page anchors
+behind the sticky bar, and four other themes shared the structure. All six now derive the offset from a declared
+masthead height, and the `nowrap` invariant that rests on is asserted directly. Note the rendered suites had never
+run on CI at all — the last CI run on this repo before 0.11 was 0.10.2 (2026-08-18). Root and `/trellis/` docs builds
 each produce 27 pages and 39 static files with 1,279 internal references and no broken links. Dart Sass 3.0
 forward-compat tech debt remains logged as TD-006 (`@import` in theme SASS + the bridge).
 

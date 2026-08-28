@@ -523,8 +523,7 @@ trellis/                          # monorepo root
 │   ├── trellis_dev/              # dev tools (hot reload)
 │   ├── trellis_css/              # CSS processing (SASS + tl:scope)
 │   ├── trellis_site/             # static site generation
-│   └── trellis_cli/              # CLI (create, build, serve)
-├── starters/                     # project templates
+│   └── trellis_cli/              # CLI (create, build, serve); scaffold templates in lib/src/templates/
 ├── themes/
 │   ├── arbor/                    # documentation theme
 │   ├── bloom/                    # product/marketing landing theme

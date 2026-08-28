@@ -3,6 +3,8 @@
 ## Status
 Accepted (implemented across SDK Phases 1–4)
 
+Amendment, 0.11: the top-level `starters/` in the layout sketch below was never realized. Scaffold templates ship inside the CLI package at `packages/trellis_cli/lib/src/templates/`, and the empty directory was removed. The sketch is left as recorded; the decision it carries is unaffected.
+
 ## Context
 Trellis is expanding from a single-package template engine (v0.6) into a multi-package SDK. The SDK will include server integration (`trellis_shelf`), developer tools (`trellis_dev`), CSS processing (`trellis_css`), static site generation (`trellis_site`), and a CLI (`trellis_cli`). Testing utilities are built into core `trellis` via `testing.dart`. The architecture decision affects publishing, versioning, dependency management, developer onboarding, and long-term maintenance.
 

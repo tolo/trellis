@@ -15,8 +15,9 @@
 ///  2. Horizontal overflow (WCAG 1.4.10 reflow), from unbreakable content tokens
 ///     at narrow widths and from layouts that stop fitting just above their own
 ///     breakpoints.
-///  3. Progressive-enhancement controls that ship `hidden`, and in-page anchors
-///     landing under a sticky masthead.
+///  3. Progressive-enhancement controls that ship `hidden`; in-page anchors
+///     landing under a sticky masthead; and the masthead outgrowing the height
+///     it declares, which is the premise that anchor offset is derived from.
 ///
 /// Classes 2 and 3 are measured in a real headless Chrome (see
 /// `browser_reflow_probe.dart`). A stylesheet cannot answer them: a rule can be
@@ -328,6 +329,103 @@ void main() {
         if (sticky) {
           expect(checked, greaterThan(0), reason: '${theme.name}: sticky masthead, but no anchor scrolled the page');
         }
+      });
+
+      test('the masthead content stays on the rows the bar declares', () async {
+        // The anchor check above is correct only because this holds, and it cannot
+        // see when it stops holding: it compares a target's top against the bar's
+        // *declared* bottom, so a nav strip that wraps out of a bar whose `height`
+        // stays put keeps that arithmetic true and the check green while the links
+        // spill over the rule. The declared height is a promise about layout, and
+        // nothing asserted the layout keeps it.
+        //
+        // Two measurements, because one alone is a check that looks like coverage.
+        //  * The strips do not wrap. This is the invariant the declared heights are
+        //    computed from, and reading it back off the laid-out box is the only
+        //    form of it that is *decidable*: how many links fit on a row is a fact
+        //    about the reader's font, so restoring `flex-wrap: wrap` produces a
+        //    second row on one machine and not on another — which is how Verdant's
+        //    bar shipped correct on macOS and broken on Linux. Read as computed
+        //    style, not as source text, so a media query or a later cascade layer
+        //    that puts `wrap` back is caught wherever it is written.
+        //  * The content stays inside the bar. `nowrap` is not the whole invariant:
+        //    Folio's masthead container wraps on purpose below 760px and its
+        //    declared height is the sum of both rows, and a bar is outgrown just as
+        //    well by an unsized logo or a label that grew a line. This is the
+        //    outcome that actually breaks the page, whatever caused it.
+        final browser = probe;
+        if (browser == null) {
+          requireChromeInCi('${theme.name} masthead fit');
+          markTestSkipped('no Chrome/Chromium found – masthead fit not measured');
+          return;
+        }
+        final output = defaultBuilds[theme.name]!;
+        final viewports = _sweepViewports(output, theme.name);
+        final server = await StaticSiteServer.serve(Directory(output));
+        addTearDown(server.close);
+        // Both findings hold at a run of adjacent widths on every page, so they are
+        // collapsed per offending element: reported per width they fill the matcher's
+        // list with one defect and the truncation hides the second one.
+        final wrapping = <String, Set<int>>{};
+        final overhanging = <String, ({num overhang, String text})>{};
+        var strips = 0;
+        for (final page in representativePages(output)) {
+          var navigated = false;
+          for (final viewport in viewports.entries) {
+            final measurement =
+                (navigated
+                        ? await browser.evaluateHere(
+                            _mastheadFitExpression,
+                            width: viewport.key,
+                            height: viewport.value,
+                          )
+                        : await browser.evaluate(
+                            pageUrl(server.baseUrl, page),
+                            _mastheadFitExpression,
+                            width: viewport.key,
+                            height: viewport.value,
+                          ))!
+                    as Map;
+            navigated = true;
+            expect(measurement['found'], isTrue, reason: '${theme.name} $page: no masthead element to measure');
+            strips += measurement['strips'] as int;
+            for (final entry in (measurement['wrapping'] as List).cast<Map>()) {
+              wrapping.putIfAbsent('${entry['selector']} is flex-wrap: ${entry['value']}', () => {}).add(viewport.key);
+            }
+            for (final entry in (measurement['overhanging'] as List).cast<Map>()) {
+              final overhang = entry['overhang'] as num;
+              final text =
+                  '$page at ${viewport.key}px: ${entry['text']} '
+                  '(bar ${measurement['barHeight']}px tall)';
+              final worst = overhanging[entry['selector']];
+              if (worst == null || overhang > worst.overhang) {
+                overhanging['${entry['selector']}'] = (overhang: overhang, text: text);
+              }
+            }
+          }
+        }
+        expect(
+          [for (final entry in wrapping.entries) '${entry.key} at ${entry.value.join(', ')}px'],
+          isEmpty,
+          reason:
+              '${theme.name}: this masthead link strip is allowed to wrap. The bar declares a height built from '
+              'a fixed number of rows and the in-page anchor offset is derived from that declaration, so a strip '
+              'that can take a second row overflows the bar without moving either number — and whether it does '
+              'take one depends on the reader\'s font, not on the theme. Keep the strip `flex-wrap: nowrap` and '
+              'let surplus links scroll sideways.',
+        );
+        expect(
+          [for (final entry in overhanging.values) entry.text],
+          isEmpty,
+          reason:
+              '${theme.name}: this masthead content does not fit the bar the masthead declares, so it spills '
+              'over the rule while the bar keeps its declared height — and the in-page anchor offset, which is '
+              'derived from that same declaration, stays green over it. Either put the content back on the rows '
+              'the bar is sized for, or raise the declared height so the offset moves with it.',
+        );
+        // No strip found means the wrap half asserted nothing — a masthead whose nav
+        // stopped being a flex row of links would report green without it.
+        expect(strips, greaterThan(0), reason: '${theme.name}: masthead found, but no link strip in it');
       });
     });
   }
@@ -769,4 +867,79 @@ const _anchorOffsetExpression = r'''(() => {
     }
   }
   return {sticky: true, checked, offenders};
+})()''';
+
+/// Measure the masthead: which of its link strips may wrap, and which of its
+/// boxes reach past the bar's own rect.
+///
+/// The bar is the element the anchor measurement above scrolls against, found the
+/// same way, so the two cannot end up talking about different elements.
+///
+/// A *link strip* is a flex container whose every element child is a link or a
+/// list item — the nav row, however it is marked up, and not the masthead
+/// container that holds the brand beside it (Folio wraps that one on purpose).
+///
+/// Two exclusions from the walk, both because the box is not laid out *in* the
+/// bar:
+///  * an absolutely positioned or fixed box — a dropdown panel, a skip link — is
+///    positioned against the bar and is meant to hang past it. A collapsed
+///    disclosure's contents are unrendered and drop out with the zero-size boxes;
+///  * SVG internals, whose rects are the shapes' bounding boxes rather than
+///    layout. The `<svg>` element itself is still measured, so an oversized mark
+///    in the bar is caught; only the walk stops there.
+const _mastheadFitExpression = r'''(() => {
+  const header = document.querySelector('header, [role="banner"]');
+  if (header === null) return {found: false, strips: 0, barHeight: 0, wrapping: [], overhanging: []};
+  const bar = header.getBoundingClientRect();
+  const selectorOf = (element) => {
+    const classes = typeof element.className === 'string' ? element.className.trim() : '';
+    return element.tagName.toLowerCase() + (classes ? '.' + classes.split(/\s+/).join('.') : '');
+  };
+  const isLinkStrip = (element, style) => {
+    if (style.display !== 'flex' && style.display !== 'inline-flex') return false;
+    if (element.children.length === 0) return false;
+    for (const child of element.children) {
+      if (child.tagName !== 'LI' && child.tagName !== 'A') return false;
+    }
+    return true;
+  };
+  // Keyed by selector, worst box per key: a nav strip's eight wrapped links are one
+  // defect, and naming each of them spends the whole report on one of them.
+  const overhanging = new Map();
+  const wrapping = new Map();
+  let strips = 0;
+  const walk = (element) => {
+    for (const child of element.children) {
+      if (child.namespaceURI !== 'http://www.w3.org/1999/xhtml') continue;
+      const style = getComputedStyle(child);
+      if (style.position === 'absolute' || style.position === 'fixed') continue;
+      const box = child.getBoundingClientRect();
+      if (box.width === 0 && box.height === 0) continue;
+      const key = selectorOf(child);
+      if (isLinkStrip(child, style)) {
+        strips++;
+        if (style.flexWrap !== 'nowrap') wrapping.set(key, {selector: key, value: style.flexWrap});
+      }
+      const overhang = Math.max(bar.top - box.top, box.bottom - bar.bottom);
+      if (overhang > 1) {
+        const seen = overhanging.get(key);
+        const entry = {
+          selector: key,
+          overhang,
+          text: key + ' [' + Math.round(box.top) + '..' + Math.round(box.bottom) + '] overhangs the bar [' +
+            Math.round(bar.top) + '..' + Math.round(bar.bottom) + '] by ' + Math.round(overhang) + 'px',
+        };
+        if (seen === undefined || entry.overhang > seen.overhang) overhanging.set(key, entry);
+      }
+      walk(child);
+    }
+  };
+  walk(header);
+  return {
+    found: true,
+    strips,
+    barHeight: Math.round(bar.height),
+    wrapping: [...wrapping.values()],
+    overhanging: [...overhanging.values()].sort((a, b) => b.overhang - a.overhang).slice(0, 3),
+  };
 })()''';

@@ -61,17 +61,11 @@ class BuildResult {
   final ThemeBuildConfig? themeBuildConfig;
 
   /// Site layouts that shadow theme layouts, as paths relative to the site root.
-  ///
-  /// Populated only when the active theme turned out inert: its stylesheets and
-  /// scripts were published to the output and no emitted page links any of them,
-  /// so the site ships unstyled while carrying the theme's CSS.
-  ///
-  /// Empty whenever an emitted page still links one of those assets — a site
-  /// `base.html` copied from the theme keeps its stylesheet link, and a
-  /// site layout rendering inside the theme's shell inherits it. Overriding
-  /// `base.html` with a shell of your own is reported, because nothing links the
-  /// theme after that.
   final List<String> themeShadowedLayouts;
+
+  /// Whether the active theme published stylesheets or scripts that no emitted
+  /// page links.
+  final bool themeIsInert;
 
   const BuildResult({
     required this.pageCount,
@@ -80,6 +74,7 @@ class BuildResult {
     this.warnings = const [],
     this.themeBuildConfig,
     this.themeShadowedLayouts = const [],
+    this.themeIsInert = false,
   });
 
   /// Whether any warnings were collected.
@@ -196,6 +191,9 @@ class TrellisSite {
 
     // 2. Discover pages — pathPrefix flows through deriveUrl into every page.url
     final discovery = ContentDiscovery(config.contentDir, pathPrefix: config.pathPrefix);
+    for (final link in Directory(config.contentDir).listSync(recursive: true, followLinks: false).whereType<Link>()) {
+      buildWarnings.add(BuildWarning('Skipped content symlink', context: p.relative(link.path, from: config.siteDir)));
+    }
     final pages = await discovery.discover();
 
     // 3. Parse front matter
@@ -309,7 +307,17 @@ class TrellisSite {
 
     final themeShadowedLayouts = themeDir == null
         ? const <String>[]
-        : _detectInertTheme(themeDir, generator.emittedPages, themeAssets);
+        : shadowedThemeLayouts(siteDir: config.siteDir, siteLayoutsDir: config.layoutsDir, themeDir: themeDir);
+    final themeIsInert = themeDir != null && _isThemeInert(generator.emittedPages, themeAssets);
+    if (themeIsInert) {
+      buildWarnings.add(
+        BuildWarning(
+          'Theme "${config.themeConfig!.name}" is installed but inert: its stylesheets and scripts were '
+          'published, but no emitted page links them.',
+          context: themeShadowedLayouts.isEmpty ? null : themeShadowedLayouts.join(', '),
+        ),
+      );
+    }
 
     // 8. Generate sitemap
     final sitemapGenerator = SitemapGenerator(baseUrl: config.baseUrl, contentDir: config.contentDir);
@@ -361,6 +369,7 @@ class TrellisSite {
       warnings: buildWarnings,
       themeBuildConfig: themeBuildConfig,
       themeShadowedLayouts: themeShadowedLayouts,
+      themeIsInert: themeIsInert,
     );
   }
 
@@ -438,42 +447,20 @@ class TrellisSite {
     outDir.createSync(recursive: true);
   }
 
-  /// Returns the site layouts to report when the active theme turned out inert,
-  /// or an empty list when the theme is doing its job.
-  ///
   /// A theme is inert when its stylesheets and scripts were published —
   /// [themeAssets] — and not one page in [emittedPages] links any of them. That
   /// is the symptom exactly: the theme's CSS sits in the output while every page
   /// renders from the site's own layouts, so the site ships unstyled.
   ///
-  /// The result is empty whenever an emitted page still links one of those
-  /// assets. That is what keeps a site layout that keeps the theme's stylesheet
-  /// link — a `base.html` copied from the theme, or a leaf layout rendering
-  /// inside the theme's shell — out of the report. It is *not* a
-  /// "partial override" exemption: replacing only `base.html` with a shell of
-  /// your own does warn, because then nothing links the theme any more.
-  ///
-  /// Gated on a layout actually being shadowed — that is the list the warning
-  /// names, and it keeps the page scan off every build that does not override
-  /// theme layouts at all.
-  List<String> _detectInertTheme(String themeDir, List<String> emittedPages, Set<String> themeAssets) {
-    if (emittedPages.isEmpty || themeAssets.isEmpty) return const [];
-    final shadowed = shadowedThemeLayouts(
-      siteDir: config.siteDir,
-      siteLayoutsDir: config.layoutsDir,
-      themeDir: themeDir,
-    );
-    if (shadowed.isEmpty || _anyPageLinks(emittedPages, themeAssets)) return const [];
-    return shadowed;
-  }
+  bool _isThemeInert(List<String> emittedPages, Set<String> themeAssets) =>
+      emittedPages.isNotEmpty && themeAssets.isNotEmpty && !_anyPageLinks(emittedPages, themeAssets);
 
   /// Whether any page in [emittedPages] links one of [assetPaths].
   ///
   /// Only `href`/`src` attribute values count, so an asset name occurring in body
-  /// text is not mistaken for a reference. A value matches when its path equals
-  /// the output-relative [assetPaths] entry or ends with it, which covers the
-  /// root-absolute form, the `pathPrefix`-rewritten form and a relative one
-  /// alike.
+  /// text is not mistaken for a reference. A value matches the complete
+  /// output-relative [assetPaths] entry at a path boundary, optionally beneath
+  /// the configured path prefix.
   ///
   /// Only files this build rendered are read, and they are read with malformed
   /// input allowed: a diagnostic must never be the thing that fails a build.
@@ -483,8 +470,13 @@ class TrellisSite {
       if (!file.existsSync()) continue;
       final html = file.readAsStringSync(encoding: const Utf8Codec(allowMalformed: true));
       for (final match in _linkAttribute.allMatches(html)) {
-        final link = match.group(1)!.split('?').first.split('#').first;
-        if (assetPaths.any((asset) => link == asset || link.endsWith('/$asset'))) return true;
+        final value = match.group(1)!.split('?').first.split('#').first;
+        final uri = Uri.tryParse(value);
+        if (uri == null || uri.hasScheme || uri.hasAuthority) continue;
+        final link = uri.path.replaceFirst(RegExp(r'^/+'), '');
+        final prefix = config.pathPrefix.replaceAll(RegExp(r'^/+|/+$'), '');
+        final outputPath = prefix.isNotEmpty && link.startsWith('$prefix/') ? link.substring(prefix.length + 1) : link;
+        if (assetPaths.contains(outputPath)) return true;
       }
     }
     return false;

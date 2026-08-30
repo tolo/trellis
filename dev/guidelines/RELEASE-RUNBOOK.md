@@ -85,18 +85,23 @@ that run is `success` (it waits while the run is in flight). If CI is red: fix o
 
 ## 4. Prepare the release on `main` — `tool/release.sh`
 
+The script requires both `melos` and `gh` on `PATH`, and `gh` must already be authenticated. Install/authenticate them
+before starting this step; `release.sh` fails before the bump if either prerequisite is missing.
+
 ```bash
 tool/release.sh X.Y.Z --dry-run   # rehearsal: same checks + bump + gate + a temporary commit, then unwinds everything
 tool/release.sh X.Y.Z
 ```
 It refuses unless: on `main`, tree clean, `HEAD == origin/main`, every changelog has `## X.Y.Z`, CI green for HEAD.
 Then: `tool/version_lockstep.sh X.Y.Z` (one `melos version` pass: 8 pubspecs + inter-package constraints, 2
-`version.dart` constants, 2 README download examples) → asserts **only** those files changed → local gate (step 0's
-five commands) → commit `chore(release): trellis SDK X.Y.Z` → `dart pub publish --dry-run` ×8 (commit is undone if
+`version.dart` constants, 2 README download examples, and the docs-site hero version) → asserts **only** those files
+changed → local gate (step 0's five repeated local commands; gallery freshness is supplied by the required green CI
+run) → commit `chore(release): trellis SDK X.Y.Z` → `dart pub publish --dry-run` ×8 (commit is undone if
 one fails) → `git tag vX.Y.Z` → prints the push command. **Nothing is pushed.**
 
-Check the commit: `git show --stat HEAD` — 12 files (8 `pubspec.yaml`, 2 `lib/src/version.dart`, `README.md`,
-`packages/trellis_cli/README.md`).
+Check the commit: `git show --stat HEAD` — 13 files (8 `pubspec.yaml`, 2 `lib/src/version.dart`, `README.md`,
+`packages/trellis_cli/README.md`, `site/trellis_site.yaml`). The committed root `pubspec.lock` is not rewritten by
+the bump; release-binary jobs consume it with `dart pub get --enforce-lockfile`.
 
 If it fails: the message says which check; the bump stays in the working tree for inspection — discard it with
 `git restore --staged --worktree .` (discards **all** uncommitted changes; the tree was clean before the bump, so only

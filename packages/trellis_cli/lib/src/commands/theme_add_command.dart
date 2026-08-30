@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:trellis_site/trellis_site.dart';
 
 import '../process_runner.dart';
+import '../theme_compatibility.dart';
 import '../theme_config_updater.dart';
 import '../validators.dart';
 
@@ -74,6 +75,13 @@ class ThemeAddCommand extends Command<int> {
       stderr.writeln('Error: trellis_site.yaml not found in $baseDir');
       return 1;
     }
+    final SiteConfig siteConfig;
+    try {
+      siteConfig = SiteConfig.load(configPath);
+    } on SiteConfigException catch (error) {
+      stderr.writeln('Error: $error');
+      return 1;
+    }
 
     // Create themes/ directory if needed
     final themesDir = p.join(baseDir, 'themes');
@@ -98,7 +106,9 @@ class ThemeAddCommand extends Command<int> {
     // Verify theme.yaml is valid
     final themeDir = p.join(themesDir, themeName);
     try {
-      ThemeManifest.load(themeDir);
+      final manifest = ThemeManifest.load(themeDir);
+      final compatibilityWarning = themeCompatibilityWarning(manifest);
+      if (compatibilityWarning != null) stderr.writeln(compatibilityWarning);
     } on ThemeManifestException catch (e) {
       stderr.writeln('Error: Invalid theme — $e');
       // Clean up the cloned/copied directory
@@ -108,7 +118,13 @@ class ThemeAddCommand extends Command<int> {
 
     // Update trellis_site.yaml
     final updater = ThemeConfigUpdater(configPath);
-    updater.setTheme(themeName, ref: ref);
+    try {
+      updater.setTheme(themeName, ref: ref);
+    } on FileSystemException catch (error) {
+      Directory(themeDir).deleteSync(recursive: true);
+      stderr.writeln('Error: Could not update trellis_site.yaml — ${error.message}');
+      return 1;
+    }
 
     stdout.writeln('Installed theme "$themeName".');
     if (ref != null) stdout.writeln('  Pinned to ref: $ref');
@@ -116,7 +132,7 @@ class ThemeAddCommand extends Command<int> {
     stdout.writeln('');
     stdout.writeln('Customize via theme_params: in trellis_site.yaml.');
 
-    _warnOnShadowedLayouts(configPath, themeDir, themeName);
+    _warnOnShadowedLayouts(siteConfig, themeDir, themeName);
 
     return 0;
   }
@@ -128,14 +144,7 @@ class ThemeAddCommand extends Command<int> {
   /// case that turns a scaffolded project plus a theme into an unstyled site.
   /// The install itself still succeeds: overriding layouts is supported, and the
   /// warning is what makes the trade-off visible at the moment it is made.
-  void _warnOnShadowedLayouts(String configPath, String themeDir, String themeName) {
-    final SiteConfig config;
-    try {
-      config = SiteConfig.load(configPath);
-    } on SiteConfigException {
-      return; // Config is unreadable; `trellis build` reports it properly.
-    }
-
+  void _warnOnShadowedLayouts(SiteConfig config, String themeDir, String themeName) {
     final shadowed = shadowedThemeLayouts(
       siteDir: config.siteDir,
       siteLayoutsDir: config.layoutsDir,
@@ -185,6 +194,11 @@ class ThemeAddCommand extends Command<int> {
   Future<String> _addFromGit(String url, String themesDir, String? ref) async {
     // Derive theme name from git URL
     final themeName = themeNameFromUrl(url);
+    final invalid = validateThemeName(themeName);
+    if (invalid != null) {
+      stderr.writeln('Error: $invalid');
+      throw _ThemeAddException();
+    }
     final destDir = p.join(themesDir, themeName);
     _requireNotInstalled(themesDir, themeName);
 

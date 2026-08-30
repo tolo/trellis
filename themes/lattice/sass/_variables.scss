@@ -27,6 +27,7 @@ $trellis-show-search: true !default;
 
 :root {
   --leaf: #{$trellis-primary-color};
+  --footer-link: #2a7247;
   --leaf-hover: color-mix(in srgb, #{$trellis-primary-color} 70%, #000);
   --on-leaf: #fff;
   --tendril: #{$trellis-accent-color};

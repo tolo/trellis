@@ -28,7 +28,10 @@
   <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/theme-props.css'" href="/css/theme-props.css">
 
   <script tl:if="${theme.skin} == 'auto'">
-    try { document.documentElement.dataset.skin = localStorage.getItem('folio-skin') || ''; } catch (_) {}
+    try {
+      const saved = localStorage.getItem('folio-skin');
+      document.documentElement.dataset.skin = saved === 'dark' || saved === 'light' ? saved : '';
+    } catch (_) {}
   </script>
 
   <!-- RSS/Atom feed link — controlled by show_rss_link param -->

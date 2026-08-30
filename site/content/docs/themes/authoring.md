@@ -565,7 +565,10 @@ trellis theme add https://github.com/yourname/trellis-theme-orchard --ref v1.0.0
 
 Place 1280×800 PNG screenshots at `screenshots/light.png` and
 `screenshots/dark.png`. These are referenced in `theme.yaml` and displayed in
-theme galleries.
+theme galleries. After intentionally recapturing an official theme, review the
+image, update its SHA-256 entry in `tool/theme_screenshot_digests.json`, then run
+the gallery generator; it rejects changed bytes until the reviewed digest is
+pinned.
 
 ### Pre-publishing checklist
 

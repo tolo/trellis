@@ -130,35 +130,7 @@ class BuildCommand extends Command<int> {
         : '';
     stdout.writeln('Built ${result.pageCount} pages, $totalStatic static files in ${elapsed}ms$warningStr');
 
-    _warnOnInertTheme(config, result);
-
     return 0;
-  }
-
-  /// Warns when the active theme's stylesheets were published but never linked.
-  ///
-  /// [BuildResult.themeShadowedLayouts] is populated only in that case, so any
-  /// override that keeps a link to the theme's stylesheet stays silent — a
-  /// `base.html` copied from the theme, or a leaf layout rendering inside the
-  /// theme's shell. Replacing `base.html` with a shell of your own *is* reported:
-  /// nothing links the theme after that. The build still succeeds; the output is
-  /// valid, it just carries none of the theme.
-  void _warnOnInertTheme(SiteConfig config, BuildResult result) {
-    if (result.themeShadowedLayouts.isEmpty) return;
-
-    stderr.writeln('');
-    stderr.writeln(
-      'Warning: theme "${config.themeConfig!.name}" is installed but inert — its stylesheets and scripts were '
-      'published to the output directory and no page links any of them. Layouts resolve site-first, and these '
-      "site layouts shadow the theme's:",
-    );
-    for (final layout in result.themeShadowedLayouts) {
-      stderr.writeln('  $layout');
-    }
-    stderr.writeln(
-      'The site renders unstyled. Remove or rename the shadowing layouts to use the theme, or pull the theme in '
-      'explicitly with the theme: prefix (e.g. tl:extends="theme:layouts/base.html").',
-    );
   }
 }
 
@@ -176,31 +148,6 @@ Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? the
   final loadPaths = themeBuildConfig?.sassLoadPaths ?? [config.staticDir];
   var count = 0;
 
-  // Compile site static SASS files
-  final staticDir = Directory(config.staticDir);
-  if (staticDir.existsSync()) {
-    for (final file in staticDir.listSync(recursive: true).whereType<File>()) {
-      final ext = p.extension(file.path).toLowerCase();
-      if (ext != '.scss' && ext != '.sass') continue;
-      if (p.basename(file.path).startsWith('_')) continue; // skip partials
-
-      final relative = p.relative(file.path, from: config.staticDir);
-      final outPath = p.join(config.outputDir, p.setExtension(relative, '.css'));
-      Directory(p.dirname(outPath)).createSync(recursive: true);
-
-      final css = TrellisCss.compileSass(
-        file.path,
-        outputStyle: OutputStyle.compressed,
-        loadPaths: loadPaths,
-        silenceImportDeprecation: true,
-      );
-      File(outPath).writeAsStringSync(css);
-
-      if (verbose) stdout.writeln('  Compiled ${file.path} → $outPath');
-      count++;
-    }
-  }
-
   // Compile theme SASS files from theme's sass/ directory.
   // When a theme bridge is active, generate a wrapper entry file that imports
   // _theme_params.scss before the theme's SCSS file. This ensures merged params
@@ -214,7 +161,7 @@ Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? the
     final themeDir = p.normalize(p.join(config.siteDir, 'themes', config.themeConfig!.name));
     final themeSassDir = Directory(p.join(themeDir, 'sass'));
     if (themeSassDir.existsSync()) {
-      for (final file in themeSassDir.listSync(recursive: true).whereType<File>()) {
+      for (final file in themeSassDir.listSync(recursive: true, followLinks: false).whereType<File>()) {
         final ext = p.extension(file.path).toLowerCase();
         if (ext != '.scss' && ext != '.sass') continue;
         if (p.basename(file.path).startsWith('_')) continue; // skip partials
@@ -262,6 +209,32 @@ Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? the
         if (verbose) stdout.writeln('  Compiled ${file.path} → $outPath');
         count++;
       }
+    }
+  }
+
+  // Compile site SASS last so site-first theme precedence also holds when a
+  // site intentionally replaces the theme's css/main.css entry point.
+  final staticDir = Directory(config.staticDir);
+  if (staticDir.existsSync()) {
+    for (final file in staticDir.listSync(recursive: true, followLinks: false).whereType<File>()) {
+      final ext = p.extension(file.path).toLowerCase();
+      if (ext != '.scss' && ext != '.sass') continue;
+      if (p.basename(file.path).startsWith('_')) continue; // skip partials
+
+      final relative = p.relative(file.path, from: config.staticDir);
+      final outPath = p.join(config.outputDir, p.setExtension(relative, '.css'));
+      Directory(p.dirname(outPath)).createSync(recursive: true);
+
+      final css = TrellisCss.compileSass(
+        file.path,
+        outputStyle: OutputStyle.compressed,
+        loadPaths: loadPaths,
+        silenceImportDeprecation: true,
+      );
+      File(outPath).writeAsStringSync(css);
+
+      if (verbose) stdout.writeln('  Compiled ${file.path} → $outPath');
+      count++;
     }
   }
 

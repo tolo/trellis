@@ -86,6 +86,7 @@ void main() {
   Directory writeTheme(
     String name, {
     String version = '1.0.0',
+    String? minTrellisVersion,
     String? author,
     Map<String, dynamic>? params,
     bool inThemesDir = true,
@@ -94,6 +95,7 @@ void main() {
     dir.createSync(recursive: true);
 
     final buf = StringBuffer('name: $name\nversion: $version\n');
+    if (minTrellisVersion != null) buf.writeln('min_trellis_version: $minTrellisVersion');
     if (author != null) buf.writeln('author: $author');
     if (params != null) {
       buf.writeln('params:');
@@ -134,12 +136,15 @@ void main() {
 
   /// Builds a multi-theme repository (`themes/<name>/theme.yaml` per entry) and
   /// returns its `file://` URL, which `theme add` treats as a git remote.
-  Future<String> writeMultiThemeRepo(List<String> names, {String marker = 'v1'}) async {
+  Future<String> writeMultiThemeRepo(List<String> names, {String marker = 'v1', String? minTrellisVersion}) async {
     final repo = Directory(p.join(tempDir.path, 'monorepo'))..createSync(recursive: true);
     await git(repo, <String>['init', '-b', 'main']);
     for (final name in names) {
       final themeDir = Directory(p.join(repo.path, 'themes', name))..createSync(recursive: true);
-      File(p.join(themeDir.path, 'theme.yaml')).writeAsStringSync('name: $name\nversion: 1.0.0\n');
+      File(p.join(themeDir.path, 'theme.yaml')).writeAsStringSync(
+        'name: $name\nversion: 1.0.0\n'
+        '${minTrellisVersion == null ? '' : 'min_trellis_version: $minTrellisVersion\n'}',
+      );
       File(p.join(themeDir.path, 'marker.txt')).writeAsStringSync(marker);
     }
     File(p.join(repo.path, 'README.md')).writeAsStringSync('# monorepo\n');
@@ -291,6 +296,40 @@ void main() {
       expect(exitCode, 1);
     });
 
+    test('invalid site config fails before installing or rewriting the theme', () async {
+      final config = File(p.join(tempDir.path, 'trellis_site.yaml'))..writeAsStringSync('title: 2026\n');
+      final originalConfig = config.readAsBytesSync();
+      final localTheme = writeTheme('my-theme', inThemesDir: false);
+
+      late int exitCode;
+      final stderrText = await _captureStderr(() async {
+        exitCode = await run(['theme', 'add', localTheme.path]);
+      });
+
+      expect(exitCode, 1);
+      expect(stderrText, contains('title'));
+      expect(config.readAsBytesSync(), originalConfig);
+      expect(Directory(p.join(tempDir.path, 'themes')).existsSync(), isFalse);
+    });
+
+    test('config write failure removes the installed theme and preserves the config', () async {
+      writeConfig();
+      final config = File(p.join(tempDir.path, 'trellis_site.yaml'));
+      final originalConfig = config.readAsBytesSync();
+      Directory('${config.path}.trellis.tmp').createSync();
+      final localTheme = writeTheme('my-theme', inThemesDir: false);
+
+      late int exitCode;
+      final stderrText = await _captureStderr(() async {
+        exitCode = await run(['theme', 'add', localTheme.path]);
+      });
+
+      expect(exitCode, 1);
+      expect(stderrText, contains('Could not update trellis_site.yaml'));
+      expect(config.readAsBytesSync(), originalConfig);
+      expect(Directory(p.join(tempDir.path, 'themes', 'my-theme')).existsSync(), isFalse);
+    });
+
     test('missing git returns actionable error code for git URL', () async {
       writeConfig();
       var invokedGit = false;
@@ -311,6 +350,41 @@ void main() {
       expect(invokedGit, isTrue);
       expect(stderrText, contains('git is required'));
       expect(Directory(p.join(tempDir.path, 'themes', 'oak')).existsSync(), isFalse);
+    });
+
+    test('rejects an unsafe theme name derived from a git URL before cloning', () async {
+      writeConfig();
+      var invokedGit = false;
+      final command = ThemeAddCommand(
+        workingDirectory: tempDir.path,
+        processRunner: (executable, arguments) async {
+          invokedGit = true;
+          return ProcessResult(0, 0, '', '');
+        },
+      );
+
+      late int exitCode;
+      final stderrText = await _captureStderr(() async {
+        exitCode = await runSingleCommand(command, ['add', r'git@evil.host:r/..\..\evil']);
+      });
+
+      expect(exitCode, 1);
+      expect(invokedGit, isFalse, reason: 'the derived directory name must be validated before clone');
+      expect(stderrText, contains('is not valid'));
+      expect(Directory(p.join(tempDir.path, 'themes', r'..\..\evil')).existsSync(), isFalse);
+    });
+
+    test('warns when a locally added theme requires a newer Trellis version', () async {
+      writeConfig();
+      final localTheme = writeTheme('future-theme', minTrellisVersion: '99.0.0', inThemesDir: false);
+
+      late int exitCode;
+      final stderrText = await _captureStderr(() async {
+        exitCode = await run(['theme', 'add', localTheme.path]);
+      });
+
+      expect(exitCode, 0, reason: 'compatibility is advisory at install time');
+      expect(stderrText, allOf(contains('requires trellis_site >=99.0.0'), contains('installed version is')));
     });
 
     test('non-missing-git ProcessException returns 1 without escaping', () async {
@@ -435,6 +509,16 @@ void main() {
       expect(Directory(p.join(tempDir.path, 'themes', 'lattice', 'themes')).existsSync(), isFalse);
       expect(File(p.join(tempDir.path, 'themes', 'lattice', 'README.md')).existsSync(), isFalse);
       expect(File(p.join(tempDir.path, 'trellis_site.yaml')).readAsStringSync(), contains('theme: lattice'));
+    });
+
+    test('warns when a subdirectory theme requires a newer Trellis version', () async {
+      writeConfig();
+      final url = await writeMultiThemeRepo(<String>['future-theme'], minTrellisVersion: '99.0.0');
+
+      final result = await addSandboxed(<String>[url, '--theme', 'future-theme']);
+
+      expect(result.exitCode, 0, reason: 'compatibility is advisory at install time');
+      expect(result.errorOutput, allOf(contains('requires trellis_site >=99.0.0'), contains('installed version is')));
     });
 
     test('--ref pins the subdirectory install to a tag', () async {
@@ -662,6 +746,24 @@ void main() {
 
       expect(exitCode, 1);
       expect(stderrText, contains('git command failed'));
+    });
+
+    test('warns when an updated theme requires a newer Trellis version', () async {
+      writeConfig(theme: 'future-theme');
+      final theme = writeTheme('future-theme', minTrellisVersion: '99.0.0');
+      Directory(p.join(theme.path, '.git')).createSync();
+      final command = ThemeUpdateCommand(
+        workingDirectory: tempDir.path,
+        processRunner: (executable, arguments) async => ProcessResult(0, 0, '', ''),
+      );
+
+      late int exitCode;
+      final stderrText = await _captureStderr(() async {
+        exitCode = await runSingleCommand(command, ['update', 'future-theme']);
+      });
+
+      expect(exitCode, 0);
+      expect(stderrText, allOf(contains('requires trellis_site >=99.0.0'), contains('installed version is')));
     });
   });
 

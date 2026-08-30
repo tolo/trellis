@@ -73,6 +73,17 @@ void main() {
         expect(version, pkgVersion, reason: 'stale README example version; run tool/version_lockstep.sh to sync');
       }
     });
+
+    test('lockstep bump syncs and permits only the docs-site hero version', () {
+      final bumpScript = readWorkspaceFile('tool/version_lockstep.sh');
+      final releaseScript = readWorkspaceFile('tool/release.sh');
+
+      expect(bumpScript, contains('SITE_CONFIG="\${ROOT}/site/trellis_site.yaml"'));
+      expect(bumpScript, contains(r'(["\x27]?)'));
+      expect(bumpScript, contains(r'$ENV{VERSION}'));
+      expect(bumpScript, contains(r'END { exit 1 unless $updated == 1 }'));
+      expect(releaseScript, contains('site/trellis_site.yaml) EXPECTED_CHANGED+='));
+    });
   });
 
   group('release gate contracts', () {
@@ -94,6 +105,16 @@ void main() {
       expect(_jobBlock(workflow, 'ci-gate'), contains('uses: ./.github/workflows/release-gate.yml'));
       expect(_jobBlock(workflow, 'version'), contains('needs: ci-gate'));
       expect(_jobBlock(workflow, 'verify'), contains('tool/verify_release.sh'));
+    });
+
+    test('release binaries resolve only the committed dependency graph', () {
+      final workflow = readWorkspaceFile('.github/workflows/release-binaries.yml');
+      final gets = RegExp(r'^\s*run: dart pub get([^\n]*)$', multiLine: true).allMatches(workflow).toList();
+
+      expect(File('${workspaceRoot.path}/pubspec.lock').existsSync(), isTrue);
+      expect(gets, isNotEmpty);
+      expect(gets.map((match) => match.group(1)), everyElement(contains('--enforce-lockfile')));
+      expect(readWorkspaceFile('.gitignore'), contains('!/pubspec.lock'));
     });
 
     test('every job in both tag workflows is downstream of the gate', () {
@@ -124,6 +145,60 @@ void main() {
       expect(workflow, contains('tool/require_green_ci.sh "\$GITHUB_REF_NAME"'));
     });
 
+    test('local release gate runs every root test with CI guards enabled', () {
+      final releaseScript = readWorkspaceFile('tool/release.sh');
+      final rootTestCommands = RegExp(
+        r'^CI=true dart test([^\n]*) \|\| gate_failed$',
+        multiLine: true,
+      ).allMatches(releaseScript).toList();
+
+      expect(rootTestCommands, hasLength(1), reason: 'release.sh must have one fail-closed root test command');
+      expect(
+        rootTestCommands.single.group(1),
+        isEmpty,
+        reason: 'the local release gate must run the complete root suite without selectors or exclusions',
+      );
+      expect(
+        releaseScript,
+        contains('" M" | "M ") ;;'),
+        reason: 'the bump allow-list must reject deletion, addition, rename and copy statuses',
+      );
+      expect(releaseScript, contains('python3 tool/subset_fonts.py --verify'));
+      expect(releaseScript, isNot(contains('git add -A')));
+      expect(releaseScript, contains('git add -- "\${EXPECTED_CHANGED[@]}"'));
+    });
+
+    test('tap publication authenticates both clone and push without embedding a token in the URL', () {
+      final workflow = readWorkspaceFile('.github/workflows/release-binaries.yml');
+      for (final name in ['Publish formula to tap', 'Publish manifest to bucket']) {
+        final step = RegExp(
+          '      - name: ${RegExp.escape(name)}\\n([\\s\\S]*?)(?=\\n      - name:|\\n  [a-z][a-z-]*:)',
+        ).firstMatch(workflow)?.group(1);
+        expect(step, isNotNull, reason: '$name step must exist');
+        expect(step, contains(r'GH_TOKEN: ${{ secrets.TAP_TOKEN }}'));
+        final setup = step!.indexOf('gh auth setup-git');
+        final clone = step.indexOf('gh repo clone');
+        final push = step.indexOf('git push');
+        expect(setup, greaterThanOrEqualTo(0), reason: '$name must configure Git authentication');
+        expect(clone, greaterThan(setup), reason: '$name must configure authentication before cloning');
+        expect(push, greaterThan(clone), reason: '$name must keep the helper configured through push');
+        expect(step, isNot(contains(r'GH_TOKEN="$TAP_TOKEN"')));
+        expect(step, isNot(contains('x-access-token')));
+      }
+    });
+
+    test('green-CI gate defaults to the workflow that owns the check tier', () {
+      final gateScript = readWorkspaceFile('tool/require_green_ci.sh');
+      final workflow = RegExp(
+        r'^CI_WORKFLOW="\$\{CI_WORKFLOW:-([^}]+)\}"$',
+        multiLine: true,
+      ).firstMatch(gateScript)?.group(1);
+
+      expect(workflow, 'ci.yml');
+      final ci = readWorkspaceFile('.github/workflows/$workflow');
+      expect(_jobBlock(ci, 'check'), allOf(contains('melos run --no-select analyze'), contains('dart test')));
+    });
+
     test('ci.yml and release-binaries.yml pin the same Dart SDK', () {
       // CI's analyze/format/test evidence only speaks for the release toolchain
       // if both use the same SDK; and release-binaries must take it from the
@@ -142,6 +217,18 @@ void main() {
         reason: r'release-binaries.yml has a literal `sdk:` pin; use `sdk: ${{ env.DART_SDK }}`',
       );
       expect(releaseWorkflow, contains(r'sdk: ${{ env.DART_SDK }}'));
+    });
+
+    test('ci.yml pins the actions whose conclusion gates a release', () {
+      final ci = readWorkspaceFile('.github/workflows/ci.yml');
+      final releaseWorkflow = readWorkspaceFile('.github/workflows/release-binaries.yml');
+      final checkoutPin = RegExp(r'actions/checkout@([0-9a-f]{40})').firstMatch(releaseWorkflow)!.group(1);
+      final dartPin = RegExp(r'dart-lang/setup-dart@([0-9a-f]{40})').firstMatch(releaseWorkflow)!.group(1);
+
+      expect(ci, isNot(matches(RegExp(r'uses: (?:actions/checkout|dart-lang/setup-dart|actions/setup-node)@v\d'))));
+      expect(RegExp('actions/checkout@$checkoutPin').allMatches(ci), hasLength(2));
+      expect(RegExp('dart-lang/setup-dart@$dartPin').allMatches(ci), hasLength(2));
+      expect(ci, contains('actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7'));
     });
   });
 

@@ -60,7 +60,7 @@ concurrency:
 # CI red on an unrelated commit (that is how 22 files drifted in the first
 # place). Bump deliberately, together with the packages' `sdk:` constraints.
 env:
-  MELOS_VERSION: ^7.4.0
+  MELOS_VERSION: 7.4.0
   DART_SDK: 3.13.0
 
 jobs:
@@ -70,10 +70,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Set up Dart
-        uses: dart-lang/setup-dart@v1
+        uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1
         with:
           sdk: ${{ env.DART_SDK }}
 
@@ -86,7 +86,7 @@ jobs:
       # step is load-bearing rather than advisory - do not remove it while
       # reasoning about only one of the three consumers.
       - name: Set up Node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: '22'
 
@@ -135,19 +135,6 @@ jobs:
       # rendered suites (theme_contract_test, visual_baseline_test). That is
       # exactly the pipeline TD-010 said was ungated, so cover it here.
       #
-      # The rendered suites run on every push rather than on main only. They are
-      # the slowest part of this job (a browser, a build per theme, ~100
-      # measurements), but restricting them to main would put them behind the
-      # merge that is exactly the thing they exist to gate: every 0.11 rendering
-      # defect lived on a feature branch for weeks before anyone rendered it.
-      # No tag exclusion: the visual comparator is what gates the
-      # transform/opacity/border-radius class of regression, and nothing else in
-      # the workspace sees it at all. Its baselines are committed per platform
-      # (test/visual_baselines/<theme>.linux.json is the set this job compares
-      # against; the .macos.json set is what a maintainer runs locally), so an
-      # appearance change has to be re-recorded on both before this goes green
-      # again - see the recording recipe in test/visual_baseline_test.dart.
-      # Same command as tool/release.sh's root gate, deliberately.
       # `visual` excluded on purpose. test/visual_baseline_test.dart is a golden-file
       # layout check whose baselines encode font metrics, so a recording is only valid
       # on the exact Chrome build and font set that made it. Runner images drift in
@@ -175,10 +162,10 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Set up Dart
-        uses: dart-lang/setup-dart@v1
+        uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1
         with:
           sdk: ${{ env.DART_SDK }}
 

@@ -56,8 +56,8 @@ jobs:
         with:
           sdk: ${{ env.DART_SDK }}
 
-      - name: Install dependencies
-        run: dart pub get
+      - name: Install pinned dependencies
+        run: dart pub get --enforce-lockfile
 
       - name: Read and verify version
         id: read
@@ -110,8 +110,8 @@ jobs:
         with:
           sdk: ${{ env.DART_SDK }}
 
-      - name: Install dependencies
-        run: dart pub get
+      - name: Install pinned dependencies
+        run: dart pub get --enforce-lockfile
 
       - name: Build release artifact
         run: dart run tool/build_release.dart
@@ -244,8 +244,8 @@ jobs:
         with:
           sdk: ${{ env.DART_SDK }}
 
-      - name: Install dependencies
-        run: dart pub get
+      - name: Install pinned dependencies
+        run: dart pub get --enforce-lockfile
 
       - name: Download platform checksums
         env:
@@ -268,16 +268,17 @@ jobs:
 
       - name: Publish formula to tap
         env:
-          TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
+          GH_TOKEN: ${{ secrets.TAP_TOKEN }}
           VERSION: ${{ needs.version.outputs.version }}
         run: |
-          if [ -z "$TAP_TOKEN" ]; then
+          if [ -z "$GH_TOKEN" ]; then
             echo "TAP_TOKEN not configured; skipping Homebrew tap update." >&2
             exit 0
           fi
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git clone --depth 1 "https://x-access-token:${TAP_TOKEN}@github.com/${HOMEBREW_TAP_REPO}.git" tap-repo
+          gh auth setup-git
+          gh repo clone "$HOMEBREW_TAP_REPO" tap-repo -- --depth 1
           mkdir -p tap-repo/Formula
           cp trellis.rb tap-repo/Formula/trellis.rb
           cd tap-repo
@@ -302,8 +303,8 @@ jobs:
         with:
           sdk: ${{ env.DART_SDK }}
 
-      - name: Install dependencies
-        run: dart pub get
+      - name: Install pinned dependencies
+        run: dart pub get --enforce-lockfile
 
       - name: Download Windows checksum
         env:
@@ -325,16 +326,17 @@ jobs:
 
       - name: Publish manifest to bucket
         env:
-          TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
+          GH_TOKEN: ${{ secrets.TAP_TOKEN }}
           VERSION: ${{ needs.version.outputs.version }}
         run: |
-          if [ -z "$TAP_TOKEN" ]; then
+          if [ -z "$GH_TOKEN" ]; then
             echo "TAP_TOKEN not configured; skipping Scoop bucket update." >&2
             exit 0
           fi
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git clone --depth 1 "https://x-access-token:${TAP_TOKEN}@github.com/${SCOOP_TAP_REPO}.git" bucket-repo
+          gh auth setup-git
+          gh repo clone "$SCOOP_TAP_REPO" bucket-repo -- --depth 1
           mkdir -p bucket-repo/bucket
           cp trellis.json bucket-repo/bucket/trellis.json
           cd bucket-repo

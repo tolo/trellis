@@ -252,6 +252,8 @@ $trellis-border-radius: 7px;
     // The attribution is the last flex item and cannot shrink, so without wrapping it pushes the
     // document 6px past a 768px viewport - measured, and the reason the rule exists.
     expect(_declarations(light, '.footer-inner')['flex-wrap'], 'wrap');
+    expect(_declarations(light, '.footer-links')['flex-wrap'], 'wrap');
+    expect(_declarations(light, '.footer-links')['min-width'], '0');
     // An auto track grows to max-content, so an uncapped tag collapses the message column to 0px
     // (measured 304px -> 0px at 1024px). The cap may be tuned; it may not be removed.
     expect(_declarations(light, '.signal-tag')['max-width'], isNotNull);

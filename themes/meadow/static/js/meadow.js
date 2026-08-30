@@ -7,7 +7,8 @@
 
   function savedSkin() {
     try {
-      return localStorage.getItem('meadow-skin') || '';
+      var saved = localStorage.getItem('meadow-skin');
+      return saved === 'dark' || saved === 'light' ? saved : '';
     } catch (_) {
       return '';
     }

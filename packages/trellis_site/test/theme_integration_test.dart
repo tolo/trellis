@@ -131,5 +131,74 @@ void main() {
 
       await expectLater(site.build(), throwsA(isA<SiteConfigException>()));
     });
+
+    test('reports healthy layout overrides without calling the theme inert', () async {
+      final tempDir = Directory.systemTemp.createTempSync('healthy_theme_override_');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+      final themeDir = Directory(p.join(tempDir.path, 'themes', 'healthy'))..createSync(recursive: true);
+      File(p.join(themeDir.path, 'theme.yaml')).writeAsStringSync('name: healthy\nversion: 1.0.0\nparams: {}\n');
+      Directory(p.join(themeDir.path, 'layouts')).createSync();
+      File(p.join(themeDir.path, 'layouts', 'home.html')).writeAsStringSync('<html><body>theme</body></html>');
+      Directory(p.join(themeDir.path, 'sass')).createSync();
+      File(p.join(themeDir.path, 'sass', 'main.scss')).writeAsStringSync('body { color: red; }');
+      Directory(p.join(tempDir.path, 'content')).createSync();
+      File(p.join(tempDir.path, 'content', '_index.md')).writeAsStringSync('---\ntitle: Home\n---\n');
+      Directory(p.join(tempDir.path, 'layouts')).createSync();
+      File(
+        p.join(tempDir.path, 'layouts', 'home.html'),
+      ).writeAsStringSync('<html><head><link rel="stylesheet" href="/css/main.css"></head><body>site</body></html>');
+
+      final result = await TrellisSite(
+        SiteConfig(
+          siteDir: tempDir.path,
+          outputDir: tempOutput.path,
+          themeConfig: const ThemeConfig(name: 'healthy'),
+        ),
+      ).build();
+
+      expect(result.themeShadowedLayouts, [p.join('layouts', 'home.html')]);
+      expect(result.themeIsInert, isFalse);
+      expect(result.warnings, isNot(contains(predicate<BuildWarning>((warning) => warning.message.contains('inert')))));
+    });
+
+    test('detects an inert theme even when site and theme layout names differ', () async {
+      final result = await _buildInertFixture(tempOutput.path);
+
+      expect(result.themeShadowedLayouts, isEmpty);
+      expect(result.themeIsInert, isTrue);
+      expect(result.warnings, contains(predicate<BuildWarning>((warning) => warning.message.contains('inert'))));
+    });
+
+    test('an unrelated stylesheet with the same basename does not suppress the inert warning', () async {
+      final result = await _buildInertFixture(tempOutput.path, stylesheet: '/vendor/css/main.css');
+
+      expect(result.themeIsInert, isTrue);
+      expect(result.warnings, contains(predicate<BuildWarning>((warning) => warning.message.contains('inert'))));
+    });
   });
+}
+
+Future<BuildResult> _buildInertFixture(String outputDir, {String? stylesheet}) async {
+  final tempDir = Directory.systemTemp.createTempSync('inert_theme_');
+  addTearDown(() => tempDir.deleteSync(recursive: true));
+  final themeDir = Directory(p.join(tempDir.path, 'themes', 'inert'))..createSync(recursive: true);
+  File(p.join(themeDir.path, 'theme.yaml')).writeAsStringSync('name: inert\nversion: 1.0.0\nparams: {}\n');
+  Directory(p.join(themeDir.path, 'layouts')).createSync();
+  File(p.join(themeDir.path, 'layouts', 'home.html')).writeAsStringSync('<html><body>theme</body></html>');
+  Directory(p.join(themeDir.path, 'sass')).createSync();
+  File(p.join(themeDir.path, 'sass', 'main.scss')).writeAsStringSync('body { color: red; }');
+  Directory(p.join(tempDir.path, 'content')).createSync();
+  File(p.join(tempDir.path, 'content', '_index.md')).writeAsStringSync('---\ntitle: Home\nlayout: index\n---\n');
+  Directory(p.join(tempDir.path, 'layouts')).createSync();
+  File(p.join(tempDir.path, 'layouts', 'index.html')).writeAsStringSync(
+    '<html><head>${stylesheet == null ? '' : '<link rel="stylesheet" href="$stylesheet">'}</head><body>site</body></html>',
+  );
+
+  return TrellisSite(
+    SiteConfig(
+      siteDir: tempDir.path,
+      outputDir: outputDir,
+      themeConfig: const ThemeConfig(name: 'inert'),
+    ),
+  ).build();
 }

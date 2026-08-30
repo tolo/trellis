@@ -6,16 +6,6 @@ import 'package:trellis_cli/trellis_cli.dart';
 
 import '_workspace_root.dart';
 
-/// Captures `dart:io` [stderr] writes during [body]. The build command writes
-/// the shadowed-theme warning straight to stderr (no injectable sink), so
-/// `IOOverrides` is the only capture seam. A minimal [Stdout] fake avoids
-/// implementing the full interface via `noSuchMethod`.
-Future<String> _captureStderr(Future<void> Function() body) async {
-  final buffer = StringBuffer();
-  await IOOverrides.runZoned(body, stderr: () => _BufferStdout(buffer));
-  return buffer.toString();
-}
-
 class _BufferStdout implements Stdout {
   _BufferStdout(this._buffer);
 
@@ -258,6 +248,26 @@ $primary: #3498db;
       expect(File(cssPath).readAsStringSync(), contains('.btn'));
     });
 
+    test('does not compile site SASS reached through a symlinked directory', () async {
+      minimalSite(tempDir);
+      final outside = Directory(p.join(tempDir.path, 'outside-site-sass'))..createSync();
+      File(p.join(outside.path, 'escaped.scss')).writeAsStringSync('.site-secret { color: red; }\n');
+      final staticDir = Directory(p.join(tempDir.path, 'static'))..createSync();
+      try {
+        Link(p.join(staticDir.path, 'escaped')).createSync(outside.path);
+      } on FileSystemException {
+        markTestSkipped('symlink creation not permitted on this platform');
+        return;
+      }
+
+      expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
+      expect(
+        File(p.join(tempDir.path, 'output', 'escaped', 'escaped.css')).existsSync(),
+        isFalse,
+        reason: 'site SASS outside static/ must not be compiled into the output',
+      );
+    });
+
     // SASS partial _ files should be skipped
     test('skips SCSS partials starting with underscore', () async {
       minimalSite(tempDir);
@@ -386,6 +396,53 @@ theme_params:
       expect(propsFile.readAsStringSync(), contains('--trellis-primary-color'));
     });
 
+    test('does not compile theme SASS reached through a symlinked directory', () async {
+      minimalSite(tempDir);
+      final themeDir = Directory(p.join(tempDir.path, 'themes', 'linked-theme'))..createSync(recursive: true);
+      File(p.join(themeDir.path, 'theme.yaml')).writeAsStringSync('name: linked-theme\nversion: 1.0.0\n');
+      final sassDir = Directory(p.join(themeDir.path, 'sass'))..createSync();
+      final outside = Directory(p.join(tempDir.path, 'outside-theme-sass'))..createSync();
+      File(p.join(outside.path, 'escaped.scss')).writeAsStringSync('.theme-secret { color: red; }\n');
+      try {
+        Link(p.join(sassDir.path, 'escaped')).createSync(outside.path);
+      } on FileSystemException {
+        markTestSkipped('symlink creation not permitted on this platform');
+        return;
+      }
+      File(p.join(tempDir.path, 'trellis_site.yaml')).writeAsStringSync('''
+title: Test Site
+baseUrl: https://example.com
+theme: linked-theme
+''');
+
+      expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
+      expect(
+        File(p.join(tempDir.path, 'output', 'css', 'escaped', 'escaped.css')).existsSync(),
+        isFalse,
+        reason: 'theme SASS outside themes/<name>/sass must not be compiled into the output',
+      );
+    });
+
+    test('site main.scss overrides the theme stylesheet at the shared output path', () async {
+      minimalSite(tempDir);
+      final siteSass = File(p.join(tempDir.path, 'static', 'css', 'main.scss'))..parent.createSync(recursive: true);
+      siteSass.writeAsStringSync('.site-main { color: blue; }\n');
+      final themeDir = Directory(p.join(tempDir.path, 'themes', 'collision-theme'))..createSync(recursive: true);
+      File(p.join(themeDir.path, 'theme.yaml')).writeAsStringSync('name: collision-theme\nversion: 1.0.0\n');
+      final themeSass = File(p.join(themeDir.path, 'sass', 'main.scss'))..parent.createSync(recursive: true);
+      themeSass.writeAsStringSync('.theme-main { color: red; }\n');
+      File(p.join(tempDir.path, 'trellis_site.yaml')).writeAsStringSync('''
+title: Test Site
+baseUrl: https://example.com
+theme: collision-theme
+''');
+
+      expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
+      final css = File(p.join(tempDir.path, 'output', 'css', 'main.css')).readAsStringSync();
+      expect(css, contains('.site-main'), reason: 'site-first precedence must extend to compiled SASS');
+      expect(css, isNot(contains('.theme-main')));
+    });
+
     // H5: a theme installed over a site that already has the same layouts is
     // shadowed by site-first resolution — the build succeeds, publishes the
     // theme's CSS, and renders unstyled because nothing links it. The trigger is
@@ -499,11 +556,17 @@ ${tagged ? 'taxonomies:\n  - tags\n' : ''}''');
       };
 
       Future<({int exitCode, String errorOutput})> runBuild() async {
+        final output = StringBuffer();
         late int exitCode;
-        final errorOutput = await _captureStderr(() async {
-          exitCode = await TrellisCli(workingDirectory: tempDir.path).run(['build']);
-        });
-        return (exitCode: exitCode, errorOutput: errorOutput);
+        await IOOverrides.runZoned(
+          () async {
+            exitCode = await TrellisCli(workingDirectory: tempDir.path).run(['build', '--verbose']);
+          },
+          stdout: () => _BufferStdout(output),
+          stderr: () => _BufferStdout(output),
+        );
+        final warningOutput = output.toString().split('\n').where((line) => line.contains('Warning:')).join('\n');
+        return (exitCode: exitCode, errorOutput: warningOutput);
       }
 
       test('warns when the theme is published but no page links it', () async {

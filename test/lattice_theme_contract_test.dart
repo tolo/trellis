@@ -630,6 +630,14 @@ $showcaseCards''',
           reason: '$skin ${entry.key} ${entry.value} on $surface is ${ratio.toStringAsFixed(2)}:1',
         );
       }
+      for (final surface in [props['--paper']!, props['--foot-bg']!]) {
+        final ratio = _contrastRatio(props['--footer-link']!, surface);
+        expect(
+          ratio,
+          greaterThanOrEqualTo(4.5),
+          reason: '$skin footer link ${props['--footer-link']} on $surface is ${ratio.toStringAsFixed(2)}:1',
+        );
+      }
     }
 
     final styled = RegExp(r'\.(hljs-[A-Za-z_-]+)').allMatches(css).map((m) => m.group(1)!).toSet();
@@ -833,7 +841,27 @@ $showcaseCards''',
     // headings *adds* to it, so headings landed at 10rem while every other target landed at
     // 5rem. Where a target actually ends up is measured in a browser by theme_contract_test's
     // anchor sweep; this pins the idiom, so the heading rule cannot come back beside it.
-    expect(css, matches(RegExp(r'html\s*\{[^}]*scroll-padding-top:\s*5rem', dotAll: true)));
+    expect(
+      css,
+      matches(
+        RegExp(
+          r'html\s*\{[^}]*--lattice-masthead-height:\s*48px;[^}]*'
+          r'scroll-padding-top:\s*calc\(var\(--lattice-masthead-height\) \+ 2rem\)',
+          dotAll: true,
+        ),
+      ),
+    );
+    expect(css, matches(RegExp(r'\.nav\s*\{[^}]*height:\s*var\(--lattice-masthead-height\)', dotAll: true)));
+    expect(
+      css,
+      matches(RegExp(r'\.docs-toc\s*\{[^}]*top:\s*calc\(var\(--lattice-masthead-height\) \+ 30px\)', dotAll: true)),
+    );
+    expect(
+      css,
+      matches(
+        RegExp(r'@media\s*\(max-width: 700px\)\s*\{.*?html\s*\{[^}]*--lattice-masthead-height:\s*56px', dotAll: true),
+      ),
+    );
     // Comments survive compilation, and the sheet's own note names the property it does not
     // set — so the absence has to be asserted over declarations, not over the source text.
     expect(css.replaceAll(RegExp(r'/\*[\s\S]*?\*/'), ''), isNot(contains('scroll-margin-top')));

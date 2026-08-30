@@ -39,6 +39,10 @@ changing site content, layouts, or theme assets — it regenerates the themes
 gallery first, so a theme manifest or screenshot change shows up in the preview
 and the regenerated files are ready to commit.
 
+An intentional screenshot recapture must be reviewed before it becomes gallery input. After reviewing the image,
+update its SHA-256 entry in `tool/theme_screenshot_digests.json`, then regenerate the gallery; an unpinned byte change
+is rejected.
+
 ## Build locally
 
 From this directory (`site/`):

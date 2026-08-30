@@ -9,7 +9,7 @@ theme-owned trellis illustration. It works offline and supports `light`, `dark`,
 Install it from the Trellis repository:
 
 ```sh
-trellis theme add https://github.com/tolo/trellis --theme meadow
+trellis theme add https://github.com/tolo/trellis --theme meadow --ref v0.11.0
 ```
 
 That copies `themes/meadow/` into your site's `themes/` and sets `theme: meadow` in `trellis_site.yaml`. `theme:` names

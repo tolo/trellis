@@ -2,7 +2,8 @@
 .dart_tool/
 .packages
 build/
-pubspec.lock
+**/pubspec.lock
+!/pubspec.lock
 
 # IDE
 .idea/

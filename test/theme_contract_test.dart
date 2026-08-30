@@ -213,6 +213,43 @@ void main() {
         );
       });
 
+      if (theme.name == 'lattice') {
+        test('six and eight long navigation labels stay contained across 690–720px', () async {
+          final browser = probe;
+          if (browser == null) {
+            requireChromeInCi('lattice long-navigation breakpoint reflow');
+            markTestSkipped('no Chrome/Chromium found – adversarial Lattice navigation not measured');
+            return;
+          }
+          final output = defaultBuilds[theme.name]!;
+          final server = await StaticSiteServer.serve(Directory(output));
+          addTearDown(server.close);
+          final offenders = <String>[];
+          var desktopProbes = 0;
+          for (final labelCount in const [6, 8]) {
+            for (var width = 690; width <= 720; width++) {
+              final measurement =
+                  await browser.evaluate(
+                        pageUrl(server.baseUrl, 'index.html'),
+                        _latticeLongNavigationExpression(labelCount),
+                        width: width,
+                        height: 900,
+                      )
+                      as Map;
+              if (measurement['desktop'] != true) continue;
+              desktopProbes++;
+              if (measurement['documentOverflow'] != 0 ||
+                  measurement['overflowX'] != 'auto' ||
+                  measurement['lastLinkVisible'] != true) {
+                offenders.add('$labelCount labels at ${width}px: $measurement');
+              }
+            }
+          }
+          expect(desktopProbes, 40, reason: 'Lattice desktop navigation must be exercised at every width above 700px');
+          expect(offenders, isEmpty, reason: 'Lattice long navigation must scroll internally, never the page');
+        });
+      }
+
       // ── Class 3 ────────────────────────────────────────────────────────────
       test('no control is left visible for a reader whose JavaScript never ran', () async {
         // Two shapes of the same defect. `hidden` is the one a stray `display`
@@ -229,7 +266,10 @@ void main() {
               .querySelectorAll('[hidden], [disabled]')
               .isNotEmpty;
         }).toList();
-        if (pages.isEmpty) return; // A theme with no such control asserts nothing.
+        if (pages.isEmpty) {
+          markTestSkipped('${theme.name} has no progressive-enhancement control to exercise');
+          return;
+        }
         if (browser == null) {
           requireChromeInCi('${theme.name} script-less control visibility');
           markTestSkipped('no Chrome/Chromium found – control visibility not measured');
@@ -262,6 +302,63 @@ void main() {
                 'silently beat the UA sheet.',
           );
         }
+      });
+
+      test('keyboard focus rings are visible and not clipped', () async {
+        final browser = probe;
+        if (browser == null) {
+          requireChromeInCi('${theme.name} focus visibility');
+          markTestSkipped('no Chrome/Chromium found – focus visibility not measured');
+          return;
+        }
+        final output = defaultBuilds[theme.name]!;
+        final server = await StaticSiteServer.serve(Directory(output));
+        addTearDown(server.close);
+        final offenders = <String>[];
+        var checked = 0;
+        for (final page in representativePages(output)) {
+          for (final skin in const ['light', 'dark']) {
+            for (final width in const [390, 1280]) {
+              await browser.evaluate(pageUrl(server.baseUrl, page), '0', width: width, height: 900, colorScheme: skin);
+              await browser.forceFocusVisible();
+              final measurement = await browser.evaluateHere(_focusVisibilityExpression) as Map;
+              checked += measurement['checked'] as int;
+              offenders.addAll((measurement['offenders'] as List).map((entry) => '$page $skin at ${width}px: $entry'));
+            }
+          }
+        }
+        expect(checked, greaterThan(0), reason: '${theme.name}: no visible interactive control was focused');
+        expect(offenders, isEmpty, reason: '${theme.name}: keyboard focus must be solid, at least 2px, and unclipped');
+      });
+
+      test('reduced motion disables rendered transitions and animations', () async {
+        final browser = probe;
+        if (browser == null) {
+          requireChromeInCi('${theme.name} reduced motion');
+          markTestSkipped('no Chrome/Chromium found – reduced motion not measured');
+          return;
+        }
+        final output = defaultBuilds[theme.name]!;
+        final server = await StaticSiteServer.serve(Directory(output));
+        addTearDown(server.close);
+        final offenders = <String>[];
+        for (final page in representativePages(output)) {
+          final normal =
+              await browser.evaluate(
+                    pageUrl(server.baseUrl, page),
+                    _motionExpression,
+                    width: 1280,
+                    height: 900,
+                    reducedMotion: 'no-preference',
+                  )
+                  as Map;
+          final reduced = await browser.evaluateHere(_motionExpression, reducedMotion: 'reduce') as Map;
+          offenders.addAll((reduced['offenders'] as List).map((entry) => '$page: $entry'));
+          if (normal['scrollBehavior'] == 'smooth' && reduced['scrollBehavior'] != 'auto') {
+            offenders.add('$page: smooth scrolling remains enabled');
+          }
+        }
+        expect(offenders, isEmpty, reason: '${theme.name}: motion remains under prefers-reduced-motion: reduce');
       });
 
       test('in-page anchors land clear of a sticky masthead', () async {
@@ -942,4 +1039,115 @@ const _mastheadFitExpression = r'''(() => {
     wrapping: [...wrapping.values()],
     overhanging: [...overhanging.values()].sort((a, b) => b.overhang - a.overhang).slice(0, 3),
   };
+})()''';
+
+String _latticeLongNavigationExpression(int labelCount) =>
+    '''(() => {
+  const list = document.querySelector('.nav-links');
+  if (list === null) return {desktop: false};
+  while (list.children.length < $labelCount) {
+    const item = list.lastElementChild.cloneNode(true);
+    const link = item.querySelector('a');
+    link.textContent = 'Long navigation label ' + (list.children.length + 1);
+    link.setAttribute('href', '#nav-' + list.children.length);
+    list.appendChild(item);
+  }
+  const style = getComputedStyle(list);
+  if (style.display === 'none' || list.getClientRects().length === 0) return {desktop: false};
+  const last = list.querySelector('li:last-child a');
+  last.focus({preventScroll: true});
+  list.scrollLeft = list.scrollWidth;
+  const listBox = list.getBoundingClientRect();
+  const lastBox = last.getBoundingClientRect();
+  return {
+    desktop: true,
+    documentOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
+    overflowX: style.overflowX,
+    lastLinkVisible: lastBox.left >= listBox.left - 1 && lastBox.right <= listBox.right + 1,
+  };
+})()''';
+
+const _focusVisibilityExpression = r'''(() => {
+  const rgb = (value) => {
+    const match = value.match(/rgba?\((\d+(?:\.\d+)?)[, ]+(\d+(?:\.\d+)?)[, ]+(\d+(?:\.\d+)?)(?:[, /]+(\d+(?:\.\d+)?))?\)/);
+    if (match !== null) return {
+      r: Number(match[1]), g: Number(match[2]), b: Number(match[3]), a: match[4] === undefined ? 1 : Number(match[4]),
+    };
+    const srgb = value.match(/color\(srgb (\d+(?:\.\d+)?) (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)(?: \/ (\d+(?:\.\d+)?))?\)/);
+    return srgb === null ? null : {
+      r: Number(srgb[1]) * 255, g: Number(srgb[2]) * 255, b: Number(srgb[3]) * 255,
+      a: srgb[4] === undefined ? 1 : Number(srgb[4]),
+    };
+  };
+  const luminance = (color) => {
+    const channel = (value) => {
+      const normalized = value / 255;
+      return normalized <= 0.04045 ? normalized / 12.92 : Math.pow((normalized + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * channel(color.r) + 0.7152 * channel(color.g) + 0.0722 * channel(color.b);
+  };
+  const contrast = (left, right) => {
+    const l1 = luminance(left);
+    const l2 = luminance(right);
+    return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+  };
+  const selectorOf = (element) => {
+    const classes = typeof element.className === 'string' ? element.className.trim() : '';
+    return element.tagName.toLowerCase() + (classes ? '.' + classes.split(/\s+/).join('.') : '');
+  };
+  const offenders = [];
+  let checked = 0;
+  for (const element of document.querySelectorAll('a[href], button, input, summary, select, textarea')) {
+    if (element.disabled || element.getClientRects().length === 0) continue;
+    element.scrollIntoView({block: 'nearest', inline: 'nearest'});
+    const style = getComputedStyle(element);
+    const width = parseFloat(style.outlineWidth) || 0;
+    const offset = parseFloat(style.outlineOffset) || 0;
+    const name = selectorOf(element);
+    checked++;
+    if (style.outlineStyle !== 'solid' || width < 2) {
+      offenders.push(name + ' has ' + style.outlineWidth + ' ' + style.outlineStyle + ' outline');
+      continue;
+    }
+    const outline = rgb(style.outlineColor);
+    const fill = rgb(style.backgroundColor);
+    if (outline === null || (offset < 0 && fill !== null && fill.a >= 0.99 && contrast(outline, fill) < 3)) {
+      offenders.push(name + ' outline has less than 3:1 contrast');
+      continue;
+    }
+    const expansion = Math.max(0, width + offset);
+    const ring = element.getBoundingClientRect();
+    for (let ancestor = element.parentElement; ancestor !== null; ancestor = ancestor.parentElement) {
+      const ancestorStyle = getComputedStyle(ancestor);
+      const clipX = ancestorStyle.overflowX !== 'visible';
+      const clipY = ancestorStyle.overflowY !== 'visible';
+      if (!clipX && !clipY) continue;
+      const clip = ancestor.getBoundingClientRect();
+      if ((clipX && (ring.left - expansion < clip.left - 0.5 || ring.right + expansion > clip.right + 0.5)) ||
+          (clipY && (ring.top - expansion < clip.top - 0.5 || ring.bottom + expansion > clip.bottom + 0.5))) {
+        offenders.push(name + ' ring is clipped by ' + selectorOf(ancestor));
+        break;
+      }
+    }
+  }
+  return {checked, offenders};
+})()''';
+
+const _motionExpression = r'''(() => {
+  const seconds = (value) => value.split(',').reduce((max, part) => {
+    const token = part.trim();
+    const duration = token.endsWith('ms') ? parseFloat(token) / 1000 : parseFloat(token);
+    return Math.max(max, Number.isFinite(duration) ? duration : 0);
+  }, 0);
+  const offenders = [];
+  let animated = 0;
+  for (const element of document.querySelectorAll('body *')) {
+    const style = getComputedStyle(element);
+    const duration = Math.max(seconds(style.animationDuration), seconds(style.transitionDuration));
+    if (duration <= 0.01) continue;
+    animated++;
+    const classes = typeof element.className === 'string' ? element.className.trim().split(/\s+/).join('.') : '';
+    offenders.push(element.tagName.toLowerCase() + (classes ? '.' + classes : '') + ' ' + duration + 's');
+  }
+  return {animated, offenders, scrollBehavior: getComputedStyle(document.documentElement).scrollBehavior};
 })()''';

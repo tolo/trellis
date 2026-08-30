@@ -259,6 +259,11 @@ Future<void> _expectGlyphCoverage({
   final resolvers = {
     for (final entry in documents.entries) entry.key: _FontResolver(entry.value, ruleVariable, bodyVariable),
   };
+  final italicRules = <String, String>{
+    for (final rule in rules)
+      if (rule.properties['font-style'] case final style?) rule.selector: style,
+  };
+  final italicResolvers = {for (final entry in documents.entries) entry.key: _ItalicResolver(entry.value, italicRules)};
 
   /// Vendored families the rule's text can land in: the family it names itself, or the
   /// families in force wherever the selector matches a layout.
@@ -283,13 +288,30 @@ Future<void> _expectGlyphCoverage({
     return families;
   }
 
-  // Merged declared range per family: an <em> picks the italic face, so the union is what
-  // the family can actually draw. A request outside it is clamped into the range and renders
-  // the nearest declared weight, with nothing in the stylesheet saying so.
-  final weights = <String, (int, int)>{};
+  Set<bool> stylesFor(_Rule rule) {
+    final declared = rule.properties['font-style'];
+    if (declared == 'italic') return const {true};
+    if (declared == 'normal') return const {false};
+    final styles = <bool>{};
+    for (final selector in _selectors(rule.selector)) {
+      final origin = selector.replaceAll(RegExp(r'::?(before|after)\b'), '').trim();
+      for (final entry in documents.entries) {
+        for (final element in _safeQuery(entry.value, origin)) {
+          styles.add(italicResolvers[entry.key]!.italicFor(element));
+        }
+      }
+    }
+    return styles.isEmpty ? const {false} : styles;
+  }
+
+  // Merged declared range per family and style. Upright and italic faces are
+  // selected independently, so unioning them lets a one-weight italic face
+  // borrow the upright variable range and hides synthetic bold.
+  final weights = <(String, bool), (int, int)>{};
   for (final face in declared) {
-    final current = weights[_slug(face.family)];
-    weights[_slug(face.family)] = current == null
+    final key = (_slug(face.family), face.italic);
+    final current = weights[key];
+    weights[key] = current == null
         ? (face.minWeight, face.maxWeight)
         : (min(current.$1, face.minWeight), max(current.$2, face.maxWeight));
   }
@@ -306,11 +328,14 @@ Future<void> _expectGlyphCoverage({
       ),
     ];
     for (final family in requested.isEmpty ? const <String>{} : familiesFor(rule)) {
-      for (final weight in requested) {
-        requestCount++;
-        final range = weights[family]!;
-        if (weight < range.$1 || weight > range.$2) {
-          weightGaps.add((selector: rule.selector, family: family, weight: weight, fix: ''));
+      for (final italic in stylesFor(rule)) {
+        final range = weights[(family, italic)];
+        if (range == null) continue;
+        for (final weight in requested) {
+          requestCount++;
+          if (weight < range.$1 || weight > range.$2) {
+            weightGaps.add((selector: rule.selector, family: family, weight: weight, fix: ''));
+          }
         }
       }
     }
@@ -483,6 +508,32 @@ class _FontResolver {
       }
     }
     return fallback;
+  }
+}
+
+/// The font style in force for an element, including the user-agent semantics
+/// of `<em>`/`<i>` when the theme does not override it.
+class _ItalicResolver {
+  _ItalicResolver(this._document, Map<String, String> ruleStyles) {
+    for (final entry in ruleStyles.entries) {
+      if (entry.value != 'italic' && entry.value != 'normal') continue;
+      for (final selector in _selectors(entry.key)) {
+        _matches.add((_safeQuery(_document, selector).toSet(), entry.value == 'italic'));
+      }
+    }
+  }
+
+  final Document _document;
+  final List<(Set<Element>, bool)> _matches = [];
+
+  bool italicFor(Element element) {
+    for (Element? node = element; node != null; node = node.parent) {
+      for (final (elements, italic) in _matches.reversed) {
+        if (elements.contains(node)) return italic;
+      }
+      if (node.localName == 'em' || node.localName == 'i') return true;
+    }
+    return false;
   }
 }
 

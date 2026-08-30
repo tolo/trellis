@@ -45,7 +45,7 @@ hand-authored output HTML.
 Install it from the Trellis repository:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme bloom
+trellis theme add https://github.com/tolo/trellis --theme bloom --ref v0.11.0
 ```
 
 That copies `themes/bloom/` into your site's `themes/` and sets `theme: bloom`

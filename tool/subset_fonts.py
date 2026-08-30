@@ -269,7 +269,7 @@ def shipped(key: str) -> Path:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
+    ap = argparse.ArgumentParser(description=__doc__, epilog=f"Pinned tooling: {TOOLING}")
     ap.add_argument("--write", action="store_true", help="overwrite the vendored files")
     ap.add_argument("--verify", action="store_true", help="compare against the vendored files")
     args = ap.parse_args()

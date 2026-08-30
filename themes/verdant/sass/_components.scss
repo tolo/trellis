@@ -32,6 +32,8 @@
       color: var(--trellis-primary, #{$trellis-primary-color});
       background-color: var(--trellis-surface, #{$trellis-surface-color});
     }
+
+    &:focus-visible { outline-offset: -2px; }
   }
 }
 

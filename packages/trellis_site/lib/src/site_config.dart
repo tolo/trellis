@@ -197,6 +197,13 @@ class SiteConfig {
     final map = (yaml as YamlMap?) ?? YamlMap();
     final siteDir = p.dirname(resolvedPath);
 
+    String? stringValue(String field) {
+      final value = map[field];
+      if (value == null) return null;
+      if (value is String) return value;
+      throw SiteConfigException("'$field:' must be a string, got ${value.runtimeType}", configPath: resolvedPath);
+    }
+
     final rawParams = map['params'];
     final params = rawParams is YamlMap ? convertYamlMap(rawParams) : <String, dynamic>{};
 
@@ -226,15 +233,15 @@ class SiteConfig {
 
     return SiteConfig(
       siteDir: siteDir,
-      title: (map['title'] as String?) ?? '',
-      baseUrl: (map['baseUrl'] as String?) ?? '',
+      title: stringValue('title') ?? '',
+      baseUrl: stringValue('baseUrl') ?? '',
       pathPrefix: pathPrefix,
-      description: (map['description'] as String?) ?? '',
-      contentDir: map['contentDir'] as String?,
-      layoutsDir: map['layoutsDir'] as String?,
-      staticDir: map['staticDir'] as String?,
-      outputDir: map['outputDir'] as String?,
-      dataDir: map['dataDir'] as String?,
+      description: stringValue('description') ?? '',
+      contentDir: stringValue('contentDir'),
+      layoutsDir: stringValue('layoutsDir'),
+      staticDir: stringValue('staticDir'),
+      outputDir: stringValue('outputDir'),
+      dataDir: stringValue('dataDir'),
       taxonomies: taxonomies,
       paginate: paginate,
       params: params,

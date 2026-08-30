@@ -11,16 +11,21 @@
   warning and a zero exit. It also drops symlinks that were there on purpose – a `static/` link into a shared asset
   directory stops appearing in the built site and `BuildResult.staticFileCount` falls to match, with no warning.
   Put the real files under `static/`, or copy them in before `trellis build`.
+- **Symlinks under `content/` are no longer rendered.** Content discovery also lists with `followLinks: false`, so
+  a symlinked Markdown or HTML file cannot publish a readable file outside the site. The build emits a warning for
+  each skipped content symlink. Replace intentional links with real content before building.
 
 ### Added
 
-- `BuildResult.themeShadowedLayouts` lists the site layouts that shadowed an active theme, populated only when that
-  theme turned out inert: its stylesheets and scripts were published to the output and no emitted page linked any of
-  them. The set is the theme's `static/` `.css`/`.js`, the generated `css/theme-props.css`, and the CSS the theme's
-  `sass/` compiles to; images and fonts are excluded, since a page can carry a theme favicon and still be unstyled.
-  Empty whenever an emitted page still links one of those assets, which is what keeps a site `base.html` copied from
-  the theme, or a layout rendering inside the theme's shell, out of the list. Replacing `base.html` with a shell of
-  your own is listed – nothing links the theme after that.
+- `PageGenerator.emittedPages` exposes the absolute HTML paths written by the most recent `generateAll` pass,
+  including paginated outputs and excluding files merely copied from `static/`. The list resets at the start of each
+  pass.
+- `BuildResult.themeShadowedLayouts` always lists the active theme layouts shadowed by site layouts, whether or not
+  the resulting theme is inert. `BuildResult.themeIsInert` separately reports that the theme's stylesheets and
+  scripts were published but no emitted page linked any of them. The inertness check covers the theme's `static/`
+  `.css`/`.js`, generated `css/theme-props.css`, and compiled `sass/` output; images and fonts are excluded, since a
+  page can carry a theme favicon and still be unstyled. A site may therefore report shadowed layouts while
+  `themeIsInert` remains false when its rendered shell still links a theme asset.
 - `shadowedThemeLayouts({siteDir, siteLayoutsDir, themeDir})`, exported from `package:trellis_site/trellis_site.dart`,
   returns the layouts a theme provides that the site also provides at the same relative path, as site-root-relative
   paths. Those are the layouts site-first resolution makes unreachable; it is what populates
@@ -40,30 +45,30 @@
   feed generation, which both gate on a non-empty base. `sitemap.xml` and the feeds carry their own trailing-slash
   trim and are unaffected. A template that joins a *relative* path onto `${site.baseUrl}` and relied on the
   configured trailing slash to separate them now has to write the slash itself.
-- **Date-only front matter is resolved as UTC midnight** (TD-014). `date: 2026-01-01` previously parsed as *local*
+- **Zone-less front matter dates are resolved reproducibly in UTC** (TD-014). `date: 2026-01-01` previously parsed as *local*
   midnight, so `feed.xml` `<updated>` and `rss.xml` `<pubDate>` depended on the build machine's timezone – the same
   content emitted `2025-12-31T23:00:00Z` on a CET laptop and `2026-01-01T00:00:00Z` on a UTC runner. Feed timestamps
-  are now identical on every machine. Values that carry a time are unchanged: an explicit offset is honoured, a
-  zone-less time is still read as local. Sites that relied on the local-time reading see their feed timestamps shift by
-  their UTC offset; write a zone-explicit `date:` to pin an exact instant. `sitemap.xml` `<lastmod>` is a calendar date
-  and is unchanged.
+  are now identical on every machine. A zone-less date-time such as `2026-03-15T09:30:00` likewise names UTC calendar
+  fields instead of the build machine's local time; an explicit `Z` or numeric offset remains authoritative. Sites
+  that relied on local-time interpretation should add their intended offset. `sitemap.xml` `<lastmod>` uses the same
+  resolver and is timezone-stable for date-only, zone-less, and explicit-offset values.
 - **A `theme:` that resolves to no installed theme now names the command that installs it.** The
   `ThemeManifestException` reads `Theme 'x' not found in themes/ — install it first, e.g. 'trellis theme add
   <url-or-path> --theme x'` instead of stopping at the directory that is missing.
 
 ### Documentation
 
-- The README's theme-install example is now `trellis theme add https://github.com/tolo/trellis --theme verdant`. It
-  previously pointed at a per-theme repository (`tolo/trellis-theme-verdant`) that does not exist – the themes live
-  under `themes/` in the one repository.
+- The README's built-in Verdant install now uses `trellis theme add https://github.com/tolo/trellis` with
+  `--theme verdant --ref v0.11.0`. It previously pointed at a per-theme repository
+  (`tolo/trellis-theme-verdant`) that does not exist – the themes live under `themes/` in the one repository.
 
 ### Notes
 
 - **The Trellis repository gained three themes in this release** – Lattice (documentation), Folio (reference) and
   Meadow (product landing), joining Arbor, Bloom and Verdant. They are **not part of this package** and do not
   travel through pub.dev: themes live under `themes/` in `tolo/trellis` and are installed into a site with
-  `trellis theme add https://github.com/tolo/trellis --theme <name>`. What this package provides is the machinery
-  that discovers, loads, merges the params of and renders them.
+  `trellis theme add https://github.com/tolo/trellis` with `--theme <name> --ref v0.11.0`. What this package
+  provides is the machinery that discovers, loads, merges the params of and renders them.
 
 ## 0.10.2
 

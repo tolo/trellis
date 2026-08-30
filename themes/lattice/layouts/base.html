@@ -32,6 +32,7 @@
         try {
           saved = localStorage.getItem("trellis-theme");
         } catch (_) {}
+        saved = saved === "dark" || saved === "light" ? saved : null;
         document.documentElement.dataset.theme =
           saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
       })();

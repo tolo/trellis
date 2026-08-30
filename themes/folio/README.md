@@ -9,7 +9,7 @@ optional edition switch are progressive enhancements.
 Install it from the Trellis repository:
 
 ```sh
-trellis theme add https://github.com/tolo/trellis --theme folio
+trellis theme add https://github.com/tolo/trellis --theme folio --ref v0.11.0
 ```
 
 That copies `themes/folio/` into your site's `themes/` and sets `theme: folio` in `trellis_site.yaml`. `theme:` names

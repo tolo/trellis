@@ -30,7 +30,11 @@ class ThemeConfig {
       throw SiteConfigException("'theme:' must be a non-empty string");
     }
 
-    final ref = yaml['theme_ref'] as String?;
+    final rawRef = yaml['theme_ref'];
+    if (rawRef != null && rawRef is! String) {
+      throw SiteConfigException("'theme_ref:' must be a string, got ${rawRef.runtimeType}");
+    }
+    final ref = rawRef as String?;
 
     final rawParams = yaml['theme_params'];
     final params = rawParams is YamlMap ? convertYamlMap(rawParams) : <String, dynamic>{};

@@ -39,7 +39,7 @@ CDN-loaded** (see [`VENDORED.md`](VENDORED.md)).
 Install it from the Trellis repository:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme arbor
+trellis theme add https://github.com/tolo/trellis --theme arbor --ref v0.11.0
 ```
 
 That copies `themes/arbor/` into your site's `themes/` and sets `theme: arbor`

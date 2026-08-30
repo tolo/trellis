@@ -32,7 +32,6 @@ library;
 
 import 'dart:io';
 
-import 'package:html/parser.dart' as html_parser;
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
@@ -150,29 +149,7 @@ void main() {
 /// The non-empty path segments of a `pathPrefix`, e.g. `/trellis/` → `['trellis']`.
 Iterable<String> _segments(String prefix) => prefix.split('/').where((segment) => segment.isNotEmpty);
 
-/// Pages to sweep at the breakpoint bands: the shape-based representatives, plus
-/// one page for every distinct stylesheet set the site serves.
-///
-/// `representativePages` picks by layout shape, which cannot see a page-specific
-/// stylesheet. The gallery is neither the landing page, the deepest page nor the
-/// largest, yet it is the only page that loads `gallery.css` — the sheet whose
-/// breakpoints this test sweeps and whose grid-track floor overflowed in 0.11.
-List<String> _bandPages(String servedRoot) {
-  final perStylesheetSet = <String, String>{};
-  for (final page in builtPages(servedRoot)) {
-    final file = File(p.join(servedRoot, page));
-    final sheets =
-        html_parser
-            .parse(file.readAsStringSync())
-            .querySelectorAll('link[rel="stylesheet"]')
-            .map((link) => link.attributes['href'] ?? '')
-            .toList()
-          ..sort();
-    final incumbent = perStylesheetSet[sheets.join(' ')];
-    // Largest page of each set: the one carrying the most of what the sheet styles.
-    if (incumbent == null || file.lengthSync() > File(p.join(servedRoot, incumbent)).lengthSync()) {
-      perStylesheetSet[sheets.join(' ')] = page;
-    }
-  }
-  return {...representativePages(servedRoot), ...perStylesheetSet.values}.toList()..sort();
-}
+/// Every generated page is swept at the breakpoint bands. Re-layout on an
+/// already-loaded page is cheap, and a page selected by shape or stylesheet set
+/// cannot represent page-specific content that widens its own layout.
+List<String> _bandPages(String servedRoot) => builtPages(servedRoot);

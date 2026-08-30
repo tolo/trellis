@@ -162,6 +162,21 @@ void main() {
       expect(() => SiteConfig.load(configFile.path), throwsA(isA<SiteConfigException>()));
     });
 
+    test('non-string scalar fields name the field in SiteConfigException', () {
+      final tempDir = Directory.systemTemp.createTempSync('site_cfg_scalar_');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+      final configFile = File(p.join(tempDir.path, 'trellis_site.yaml'))..writeAsStringSync('title: 2026\n');
+
+      expect(
+        () => SiteConfig.load(configFile.path),
+        throwsA(
+          isA<SiteConfigException>()
+              .having((e) => e.message, 'message', contains('title'))
+              .having((e) => e.configPath, 'configPath', configFile.path),
+        ),
+      );
+    });
+
     test('taxonomies parsed as List<String>', () {
       final tempDir = Directory.systemTemp.createTempSync('site_cfg_tax_');
       addTearDown(() => tempDir.deleteSync(recursive: true));

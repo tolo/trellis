@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -54,6 +56,19 @@ $screenshotsYaml
     if (readme) {
       File(p.join(themeDir.path, 'README.md')).writeAsStringSync('# ${name ?? directory}\n');
     }
+    final pinsFile = File(p.join(root.path, 'tool', 'theme_screenshot_digests.json'));
+    final pins = pinsFile.existsSync()
+        ? (jsonDecode(pinsFile.readAsStringSync()) as Map<String, dynamic>)
+        : <String, dynamic>{};
+    pins[name ?? directory] = <String, String>{
+      if (lightExists)
+        'light': sha256.convert(File(p.join(themeDir.path, 'screenshots', 'light.png')).readAsBytesSync()).toString(),
+      if (darkExists)
+        'dark': sha256.convert(File(p.join(themeDir.path, 'screenshots', 'dark.png')).readAsBytesSync()).toString(),
+    };
+    pinsFile
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync('${const JsonEncoder.withIndent('  ').convert(pins)}\n');
   }
 
   ThemeGalleryGenerator generator() => ThemeGalleryGenerator(root.path, warningSink: warnings.add);
@@ -167,7 +182,7 @@ $screenshotsYaml
     addTheme('alpha');
     generator().write();
 
-    File(p.join(root.path, 'themes', 'alpha', 'screenshots', 'light.png')).writeAsBytesSync(<int>[9]);
+    File(p.join(root.path, 'site', 'static', 'themes', 'alpha', 'light.png')).writeAsBytesSync(<int>[9]);
     addTheme('beta', features: 'landing');
     final orphan = File(p.join(root.path, 'site', 'static', 'themes', 'orphan.png'))..writeAsStringSync('orphan');
 
@@ -208,6 +223,22 @@ $screenshotsYaml
     generator().write();
     expect(generator().check().isFresh, isTrue);
     expect(relocated.existsSync(), isTrue);
+  });
+
+  test('S07 swapped screenshot bytes fail even after gallery regeneration', () {
+    addTheme('alpha');
+    addTheme('beta', features: 'landing');
+    generator().write();
+    final alpha = File(p.join(root.path, 'themes', 'alpha', 'screenshots', 'light.png'));
+    final beta = File(p.join(root.path, 'themes', 'beta', 'screenshots', 'light.png'));
+    final alphaBytes = alpha.readAsBytesSync();
+    alpha.writeAsBytesSync(beta.readAsBytesSync());
+    beta.writeAsBytesSync(alphaBytes);
+
+    expect(
+      generator().write,
+      throwsA(isA<ThemeGalleryException>().having((error) => error.toString(), 'message', contains('reviewed digest'))),
+    );
   });
 
   test('S04 rejects unsafe or mismatched manifest names before mutating outputs', () {

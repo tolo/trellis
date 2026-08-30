@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
@@ -66,6 +67,7 @@ final class ThemeGalleryGenerator {
   String get _themesDir => p.join(projectRoot, 'themes');
   String get _dataPath => p.join(projectRoot, 'site', 'data', 'themes.yaml');
   String get _screenshotsDir => p.join(projectRoot, 'site', 'static', 'themes');
+  String get _screenshotPinsPath => p.join(projectRoot, 'tool', 'theme_screenshot_digests.json');
 
   /// Reconciles metadata, screenshot copies, and orphaned prior outputs.
   void write() {
@@ -92,7 +94,12 @@ final class ThemeGalleryGenerator {
 
   /// Checks generated outputs without changing the working tree.
   ThemeGalleryCheckResult check() {
-    final model = _buildModel();
+    final _GalleryModel model;
+    try {
+      model = _buildModel();
+    } on ThemeGalleryException catch (error) {
+      return ThemeGalleryCheckResult(<String>[error.message, 'Regenerate with: $_regenerationCommand']);
+    }
     final problems = <String>[];
     try {
       _validateGeneratedOutputs();
@@ -149,6 +156,7 @@ final class ThemeGalleryGenerator {
       entries.add(_readTheme(themeDir));
     }
     entries.sort((a, b) => a.name.compareTo(b.name));
+    _validateScreenshotPins(entries);
 
     final screenshots = <String, List<int>>{};
     for (final entry in entries) {
@@ -166,6 +174,38 @@ final class ThemeGalleryGenerator {
       screenshots: Map.unmodifiable(screenshots),
       themeNames: List.unmodifiable(entries.map((entry) => entry.name)),
     );
+  }
+
+  void _validateScreenshotPins(List<_ThemeEntry> entries) {
+    final pinsFile = File(_screenshotPinsPath);
+    if (!pinsFile.existsSync()) {
+      throw ThemeGalleryException('Screenshot digest pins are missing: $_screenshotPinsPath');
+    }
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(pinsFile.readAsStringSync());
+    } on FormatException catch (error) {
+      throw ThemeGalleryException('Screenshot digest pins are invalid JSON: ${error.message}');
+    }
+    if (decoded is! Map<String, dynamic>) {
+      throw ThemeGalleryException('Screenshot digest pins must contain a theme map');
+    }
+    for (final entry in entries) {
+      final themePins = decoded[entry.name];
+      if (themePins is! Map<String, dynamic>) {
+        throw ThemeGalleryException('${entry.name}: screenshot digest pins are missing');
+      }
+      for (final screenshot in entry.screenshots.entries) {
+        final expected = themePins[screenshot.key];
+        final actual = sha256.convert(screenshot.value.file.readAsBytesSync()).toString();
+        if (expected != actual) {
+          throw ThemeGalleryException(
+            '${entry.name}: ${screenshot.key} screenshot does not match its reviewed digest; '
+            'review the capture, then update tool/theme_screenshot_digests.json',
+          );
+        }
+      }
+    }
   }
 
   _ThemeEntry _readTheme(Directory themeDir) {

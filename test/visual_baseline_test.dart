@@ -1,14 +1,13 @@
 @Timeout(Duration(minutes: 5))
-// Tagged so a maintainer can drop the slowest tier from a local loop
-// (`dart test --exclude-tags=visual`). CI and tool/release.sh run it: baselines
-// are committed per platform (`<theme>.macos.json`, `<theme>.linux.json`), so
-// there is no host among those two where this suite has nothing to compare
-// against and skipping it would be honest.
+// Tagged so CI and a maintainer's local loop can exclude this host-specific
+// tier. tool/release.sh is its required executor and enables CI guards so a
+// missing browser or baseline fails the release instead of skipping.
 @Tags(['visual'])
 library;
 
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../tool/visual_baseline.dart';
@@ -27,51 +26,9 @@ import 'browser_reflow_probe.dart';
 ///
 /// Scope a re-record with `VISUAL_BASELINE_THEMES=folio,meadow`.
 ///
-/// Baselines are one file per platform (see `tool/visual_baseline.dart`
-/// § Portability), so a re-record only rewrites the recording for the OS it ran
-/// on. An appearance change therefore has to be re-recorded **on both** macOS
-/// and Linux before CI is green again — `.linux.json` is the set CI compares.
-///
-/// ## Re-recording the Linux set without a Linux machine
-///
-/// The image mirrors the `check` job: Ubuntu 24.04 (what `ubuntu-latest`
-/// resolves to), `google-chrome-stable` from Google's apt repo, and the
-/// `DART_SDK` the workflow pins, copied out of the official image. Write it to
-/// a scratch path — it is a recording tool, not a shipped artifact:
-///
-///     FROM --platform=linux/amd64 dart:3.13 AS sdk
-///     FROM --platform=linux/amd64 ubuntu:24.04
-///     COPY --from=sdk /usr/lib/dart /usr/lib/dart
-///     ENV PATH="/usr/lib/dart/bin:${PATH}"
-///     RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
-///      && curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
-///           | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg \
-///      && echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] \
-///           https://dl.google.com/linux/chrome/deb/ stable main' > /etc/apt/sources.list.d/google-chrome.list \
-///      && apt-get update && apt-get install -y --no-install-recommends google-chrome-stable fonts-noto-color-emoji
-///
-///     docker build --platform linux/amd64 -t trellis-visual-linux <dir with that Dockerfile>
-///     rsync -a --exclude .git/ --exclude .dart_tool/ ./ /tmp/trellis-linux/   # writable copy
-///     docker run --rm --platform linux/amd64 --shm-size=2g -v /tmp/trellis-linux:/work -w /work \
-///       -e UPDATE_VISUAL_BASELINES=1 trellis-visual-linux \
-///       bash -lc 'dart pub get && dart test test/visual_baseline_test.dart'
-///     cp /tmp/trellis-linux/test/visual_baselines/*.linux.json test/visual_baselines/
-///
-/// Three of those flags are load-bearing:
-///
-/// * `linux/amd64` — GitHub's runners are x86_64 and `google-chrome-stable` has
-///   no arm64 package, so an arm64 recording would be a different browser.
-/// * `--shm-size=2g` — Docker's default 64 MB `/dev/shm` starves Chrome's
-///   renderers and the page never fires its load event; it surfaces as a
-///   30-second navigation timeout, not as an out-of-memory error.
-/// * a writable copy rather than a bind mount of the checkout — the container
-///   writes `.dart_tool/` with paths from its own pub cache, which would leave
-///   the host checkout unable to resolve `package:test`.
-///
-/// The recording is insensitive to the host's font set within the ±4 px
-/// tolerance, which is what makes it safe to record here and compare there:
-/// adding `fonts-noto-color-emoji` leaves it byte-identical, and adding 200 more
-/// families moves only the `font-family: monospace` code block, by 2 px.
+/// The committed baselines are recorded on macOS, where the release gate runs.
+/// They encode browser and system-font metrics, so CI deliberately excludes the
+/// `visual` tag rather than comparing them on a drifting Linux runner image.
 ///
 /// **How CI tells an intended change from a regression:** it cannot be told at
 /// runtime, and does not try. CI never sets `UPDATE_VISUAL_BASELINES`, so the
@@ -92,6 +49,20 @@ void main() {
       .map((name) => name.trim())
       .where((name) => name.isNotEmpty)
       .toSet();
+
+  test('every visual baseline belongs to a bundled theme', () {
+    final themes = discoverThemeExamples(repoRoot).map((example) => example.name).toSet();
+    final orphans =
+        Directory(p.join(repoRoot, 'test', 'visual_baselines'))
+            .listSync()
+            .whereType<File>()
+            .where((file) => file.path.endsWith('.json'))
+            .map((file) => p.basename(file.path).split('.').first)
+            .where((name) => !themes.contains(name))
+            .toList()
+          ..sort();
+    expect(orphans, isEmpty, reason: 'baseline files for themes that no longer exist');
+  });
 
   if (update && Platform.environment['CI'] == 'true') {
     test('visual baselines are not re-recorded in CI', () {

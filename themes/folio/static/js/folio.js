@@ -6,7 +6,10 @@
 
   const media = window.matchMedia('(prefers-color-scheme: dark)');
   const stored = () => {
-    try { return localStorage.getItem('folio-skin') || ''; } catch (_) { return ''; }
+    try {
+      const saved = localStorage.getItem('folio-skin');
+      return saved === 'dark' || saved === 'light' ? saved : '';
+    } catch (_) { return ''; }
   };
   let explicit = stored();
   // The control names the edition currently in force, as the masthead badge does in

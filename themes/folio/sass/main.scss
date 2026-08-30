@@ -144,6 +144,14 @@ html {
      it, not guessed alongside it, so the two cannot drift apart. */
   scroll-padding-top: calc(var(--folio-masthead-height) + #{$folio-masthead-clearance});
 }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
 body {
   display: flex;
   flex-direction: column;
@@ -166,8 +174,8 @@ a:focus-visible,
 button:focus-visible,
 input:focus-visible,
 summary:focus-visible {
-  outline: 3px solid var(--folio-rubric);
-  outline-offset: 3px;
+  outline: 3px solid currentColor;
+  outline-offset: -3px;
 }
 .container { width: min(calc(100% - 40px), var(--folio-width)); margin-inline: auto; }
 /* Stretch the main column so the docs shell reaches the footer on short pages. */
@@ -776,10 +784,3 @@ code { font-family: var(--folio-mono); }
   .page-nav-next, .pagination-next { text-align: left; }
 }
 @media (min-width: 1001px) { .toc-inline { display: none; } }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    scroll-behavior: auto !important;
-    transition-duration: .01ms !important;
-    animation-duration: .01ms !important;
-  }
-}

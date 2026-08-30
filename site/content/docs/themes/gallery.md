@@ -13,8 +13,10 @@ example.
 Install one by naming it:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme lattice
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
 ```
+
+The `--theme` selector requires Trellis CLI 0.11.0 or later.
 
 That copies `themes/lattice/` into your site's `themes/` and sets `theme: lattice` in `trellis_site.yaml` –
 the line each card shows below. See [`trellis theme add`](/docs/packages/trellis_cli/) for pinning with

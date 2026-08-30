@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:trellis_site/trellis_site.dart';
 
 import '../process_runner.dart';
+import '../theme_compatibility.dart';
 
 /// The `trellis theme update [<name>]` subcommand.
 ///
@@ -94,36 +95,16 @@ class ThemeUpdateCommand extends Command<int> {
       return 1;
     }
 
-    // Reload manifest and check min_trellis_version against installed version
+    // Reload the manifest and surface compatibility drift after the update.
     try {
       final manifest = ThemeManifest.load(themeDir);
-      if (manifest.minTrellisVersion != null) {
-        if (_isVersionLessThan(siteVersion, manifest.minTrellisVersion!)) {
-          stderr.writeln(
-            'Warning: Theme requires trellis_site >=${manifest.minTrellisVersion} '
-            'but installed version is $siteVersion. '
-            'Some features may not work correctly.',
-          );
-        }
-      }
+      final compatibilityWarning = themeCompatibilityWarning(manifest);
+      if (compatibilityWarning != null) stderr.writeln(compatibilityWarning);
     } on ThemeManifestException catch (e) {
       stderr.writeln('Warning: Updated theme has invalid manifest — $e');
     }
 
     stdout.writeln('Updated theme "$themeName".');
     return 0;
-  }
-
-  /// Returns `true` if [a] is less than [b] using simple semver comparison.
-  static bool _isVersionLessThan(String a, String b) {
-    final aParts = a.split('.').map(int.tryParse).toList();
-    final bParts = b.split('.').map(int.tryParse).toList();
-    for (var i = 0; i < 3; i++) {
-      final av = i < aParts.length ? (aParts[i] ?? 0) : 0;
-      final bv = i < bParts.length ? (bParts[i] ?? 0) : 0;
-      if (av < bv) return true;
-      if (av > bv) return false;
-    }
-    return false;
   }
 }

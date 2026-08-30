@@ -116,8 +116,8 @@ button, a { font: inherit; }
 a { color: inherit; }
 [hidden] { display: none !important; }
 :where(a, button, summary):focus-visible {
-  outline: 3px solid var(--meadow-focus);
-  outline-offset: 4px;
+  outline: 3px solid currentColor;
+  outline-offset: -3px;
   border-radius: 8px;
 }
 .skip-link {
@@ -409,7 +409,7 @@ blockquote { margin: 0; font: 800 clamp(1.5rem, 3vw, 2.6rem)/1.15 var(--meadow-d
 /* The attribution is the last item in the row and has nowhere to shrink to, so without wrapping
    it overflows the viewport between 761px and the width its own content needs. */
 .footer-inner { min-height: 110px; display: flex; flex-wrap: wrap; align-items: center; gap: 22px; }
-.footer-links { margin-left: auto; display: flex; gap: 22px; font-weight: 700; }
+.footer-links { min-width: 0; margin-left: auto; display: flex; flex-wrap: wrap; gap: 22px; font-weight: 700; }
 .footer-links a, .footer-powered-by a { min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; }
 .prose { font-size: 1.05rem; }
 .prose img, .prose pre { max-width: 100%; }

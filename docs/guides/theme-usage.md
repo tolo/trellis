@@ -9,12 +9,16 @@ Related docs:
 
 ## Installing a Theme
 
+A theme is executable site code, not a passive style preset: its layouts are rendered during the build, its SASS is
+compiled, and its JavaScript runs in visitors' browsers. Inspect third-party themes before installing them and pin a
+reviewed tag or branch with `--ref` in production.
+
 ### A Built-in Theme
 
 The six themes that ship with Trellis (`arbor`, `bloom`, `folio`, `lattice`, `meadow`, `verdant`) live under `themes/<name>/` in the [tolo/trellis](https://github.com/tolo/trellis) repository. `--theme <name>` installs one of them out of that repository:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme lattice
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
 ```
 
 This copies `themes/lattice/` into your site's `themes/lattice/` and sets `theme: lattice` in `trellis_site.yaml`. Browse the [themes gallery](https://tolo.github.io/trellis/docs/themes/gallery/) to pick one.
@@ -32,7 +36,7 @@ This clones the repository into `themes/orchard/` and sets `theme: orchard`.
 ### Pinning to a Version
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref <tag>
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
 ```
 
 Use `--ref` to pin to a git tag or branch. Recommended for production sites.
@@ -260,7 +264,7 @@ If you need to change the pinned version, remove and re-add with a new `--ref`:
 
 ```bash
 trellis theme remove lattice
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.12.0
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
 ```
 
 

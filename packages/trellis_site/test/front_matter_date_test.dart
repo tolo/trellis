@@ -58,6 +58,17 @@ void main() {
       expect(resolveFrontMatterDate('2026-01-01T12:00:00+02:00'), DateTime.utc(2026, 1, 1, 10));
     });
 
+    test('anchors a zone-less date-time at the same UTC calendar fields', () {
+      for (final value in [
+        '2026-03-15T23:30:00',
+        '2026-03-15 23:30:00',
+        '2026-03-15T23:30:00,123',
+        '20260315T233000',
+      ]) {
+        expect(resolveFrontMatterDate(value), DateTime.utc(2026, 3, 15, 23, 30, 0, value.contains(',') ? 123 : 0));
+      }
+    });
+
     test('returns null for an unparseable value so callers fall back to mtime', () {
       expect(resolveFrontMatterDate('last tuesday'), isNull);
       expect(resolveFrontMatterDate(''), isNull);
@@ -118,7 +129,15 @@ void main() {
     });
 
     test('sitemap lastmod is identical across timezones', () {
-      const script = r'''
+      const values = [
+        '2026-03-15',
+        '2026-03-15T23:30:00',
+        '2026-03-15 23:30:00',
+        '2026-03-15T23:30:00,123',
+        '20260315T233000',
+        '2026-03-15T23:30:00-12:00',
+      ];
+      const scriptPrefix = r'''
 import 'package:trellis_site/trellis_site.dart';
 void main() {
   final page = Page(
@@ -129,7 +148,8 @@ void main() {
     isDraft: false,
     isBundle: false,
     bundleAssets: const [],
-    frontMatter: {'title': 'Hello', 'date': '2026-01-01'},
+    frontMatter: {'title': 'Hello', 'date': ''';
+      const scriptSuffix = r'''},
     content: '<p>Hello.</p>',
     summary: 'Hello.',
   );
@@ -137,9 +157,11 @@ void main() {
   print(gen.generate([page]));
 }
 ''';
-      final outputs = {for (final tz in _timezones) tz: _runUnder(tz, script)};
-      expect(outputs.values.toSet(), hasLength(1), reason: 'sitemap differs by timezone: $outputs');
-      expect(outputs.values.first, contains('<lastmod>2026-01-01</lastmod>'));
+      for (final value in values) {
+        final script = "$scriptPrefix'$value'$scriptSuffix";
+        final outputs = {for (final tz in _timezones) tz: _runUnder(tz, script)};
+        expect(outputs.values.toSet(), hasLength(1), reason: '$value sitemap differs by timezone: $outputs');
+      }
     });
   });
 

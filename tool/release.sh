@@ -23,7 +23,8 @@ Preconditions (each checked; the script refuses otherwise):
   * <version> is X.Y.Z (the tag pattern the release workflows trigger on)
 
 Then:
-  1. tool/version_lockstep.sh <version>   (pubspecs, constraints, version.dart, READMEs)
+  1. tool/version_lockstep.sh <version>   (pubspecs, constraints, version.dart, READMEs,
+                                           site/trellis_site.yaml)
   2. asserts only those files changed
   3. local gate = ci.yml's check tier: melos analyze + format:check + unit
      tests, root tests + root format
@@ -195,17 +196,28 @@ step "Asserting only version files changed"
 # into `XY <new>` followed by the bare source — so the source is read back and held
 # to the same allow-list.
 UNEXPECTED=()
+EXPECTED_CHANGED=()
 PENDING_SOURCE=0
 while IFS= read -r -d '' entry; do
   if (( PENDING_SOURCE )); then
     PENDING_SOURCE=0
-    changed="${entry}"
+    UNEXPECTED+=("${entry} (rename/copy source)")
+    continue
   else
     case "${entry:0:2}" in *[RC]*) PENDING_SOURCE=1 ;; esac
     changed="${entry:3}"
   fi
+  # A lockstep bump only modifies existing tracked files. A deletion, addition,
+  # rename or copy of an allow-listed path is still an unexpected release change.
+  case "${entry:0:2}" in
+    " M" | "M ") ;;
+    *)
+      UNEXPECTED+=("${changed} (status ${entry:0:2})")
+      continue
+      ;;
+  esac
   case "${changed}" in
-    packages/*/pubspec.yaml | packages/*/lib/src/version.dart | README.md | packages/trellis_cli/README.md) ;;
+    packages/*/pubspec.yaml | packages/*/lib/src/version.dart | README.md | packages/trellis_cli/README.md | site/trellis_site.yaml) EXPECTED_CHANGED+=("${changed}") ;;
     *) UNEXPECTED+=("${changed}") ;;
   esac
 done < <(git status --porcelain -z)
@@ -215,6 +227,11 @@ if (( ${#UNEXPECTED[@]} > 0 )); then
   fail "unexpected changes after the bump: $(printf '[%s] ' "${UNEXPECTED[@]}")- bump left in the working tree for inspection; discard it (= ALL uncommitted changes; the tree was clean before the bump) with: git restore --staged --worktree ."
 fi
 git status --short
+
+# Font bytes live in repository themes rather than published packages, so this
+# reproducibility check is advisory rather than a publish blocker.
+python3 tool/subset_fonts.py --verify \
+  || echo "release: advisory: font provenance was not verified; run 'python3 tool/subset_fonts.py --verify' before changing vendored fonts." >&2
 
 # --- Local gate (ci.yml check tier + publish dry-run) -------------------------
 gate_failed() {
@@ -237,7 +254,7 @@ step "Local gate: root tests + root format"
 # with a green suite. So the release gate is where it belongs, and a release must be
 # cut on a host that has a recording for its OS: no recording, this fails naming the
 # platform rather than passing a check that never ran.
-dart test || gate_failed
+CI=true dart test || gate_failed
 dart format --output=none --set-exit-if-changed tool test || gate_failed
 
 # --- Commit, then publish dry-run against the committed tree ------------------
@@ -245,7 +262,7 @@ dart format --output=none --set-exit-if-changed tool test || gate_failed
 # uncommitted bump is exactly that — so commit first and undo the commit if the
 # dry-run finds a problem (the bump is then back in the working tree, as above).
 step "Committing release"
-git add -A
+git add -- "${EXPECTED_CHANGED[@]}"
 git commit --quiet -m "${MSG}"
 undo_commit() { git reset --quiet --soft HEAD~1; }
 # Interrupted between commit and tag would leave a tagless release commit on

@@ -16,7 +16,10 @@
   <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/main.css'" href="/css/main.css">
   <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/theme-props.css'" href="/css/theme-props.css">
   <script tl:if="${theme.skin} == 'auto'">
-    try { document.documentElement.dataset.skin = localStorage.getItem('meadow-skin') || ''; } catch (_) {}
+    try {
+      const saved = localStorage.getItem('meadow-skin');
+      document.documentElement.dataset.skin = saved === 'dark' || saved === 'light' ? saved : '';
+    } catch (_) {}
   </script>
   <link tl:if="${site.feeds.atom} and ${theme.show_rss_link}" rel="alternate" type="application/atom+xml"
         title="Atom Feed" tl:attr="href=${site.feeds.atom}">

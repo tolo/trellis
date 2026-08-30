@@ -72,4 +72,53 @@ void main() {
     expect(File(p.join(root.path, 'output', 'leak.txt')).existsSync(), isFalse);
     expect(File(p.join(root.path, 'output', 'keep.txt')).existsSync(), isTrue);
   });
+
+  test('a symlinked Markdown file under content/ is skipped with a warning', () async {
+    Link(p.join(root.path, 'content', 'leak.md')).createSync(p.join(outside.path, 'secret.txt'));
+
+    final result = await buildSite();
+
+    expect(File(p.join(root.path, 'output', 'leak', 'index.html')).existsSync(), isFalse);
+    expect(
+      result.warnings,
+      contains(predicate<BuildWarning>((warning) => warning.context == p.join('content', 'leak.md'))),
+    );
+    expect(File(p.join(root.path, 'output', 'index.html')).existsSync(), isTrue);
+  });
+
+  test('a symlinked directory under content/ is skipped with a warning', () async {
+    File(p.join(outside.path, 'leak.md')).writeAsStringSync('PRIVATE');
+    Link(p.join(root.path, 'content', 'escaped')).createSync(outside.path);
+
+    final result = await buildSite();
+
+    expect(File(p.join(root.path, 'output', 'escaped', 'leak', 'index.html')).existsSync(), isFalse);
+    expect(
+      result.warnings,
+      contains(predicate<BuildWarning>((warning) => warning.context == p.join('content', 'escaped'))),
+    );
+  });
+
+  test('a symlink under theme static/ does not publish its target', () async {
+    final themeDir = Directory(p.join(root.path, 'themes', 'contained'))..createSync(recursive: true);
+    File(p.join(themeDir.path, 'theme.yaml')).writeAsStringSync('name: contained\nversion: 1.0.0\nparams: {}\n');
+    Directory(p.join(themeDir.path, 'layouts')).createSync();
+    File(
+      p.join(themeDir.path, 'layouts', 'home.html'),
+    ).writeAsStringSync('<html><body><h1 tl:text="\${page.title}">T</h1></body></html>');
+    final themeStatic = Directory(p.join(themeDir.path, 'static'))..createSync();
+    Link(p.join(themeStatic.path, 'escaped')).createSync(outside.path);
+
+    final result = await TrellisSite(
+      SiteConfig(
+        siteDir: root.path,
+        title: 'Containment',
+        baseUrl: 'https://example.com',
+        themeConfig: const ThemeConfig(name: 'contained'),
+      ),
+    ).build();
+
+    expect(File(p.join(root.path, 'output', 'escaped', 'secret.txt')).existsSync(), isFalse);
+    expect(result.pageCount, 1);
+  });
 }

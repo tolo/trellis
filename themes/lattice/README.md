@@ -9,7 +9,7 @@ highlighting; and progressive enhancements that never gate access to content.
 Install it from the Trellis repository:
 
 ```sh
-trellis theme add https://github.com/tolo/trellis --theme lattice
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
 ```
 
 That copies `themes/lattice/` into your site's `themes/` and sets `theme: lattice` in `trellis_site.yaml`. `theme:`

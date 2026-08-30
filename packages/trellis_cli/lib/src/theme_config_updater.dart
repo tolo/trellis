@@ -23,7 +23,7 @@ class ThemeConfigUpdater {
       content = _setOrAppendKey(content, 'theme_ref', ref);
     }
 
-    file.writeAsStringSync(content);
+    _writeAtomically(content);
   }
 
   /// Clears `theme:` and `theme_ref:` from the config file.
@@ -36,7 +36,19 @@ class ThemeConfigUpdater {
     content = _removeKey(content, 'theme');
     content = _removeKey(content, 'theme_ref');
 
-    file.writeAsStringSync(content);
+    _writeAtomically(content);
+  }
+
+  /// Replaces the config only after the complete new value exists beside it.
+  /// A failed write therefore leaves the original bytes untouched.
+  void _writeAtomically(String content) {
+    final temporary = File('$configPath.trellis.tmp');
+    try {
+      temporary.writeAsStringSync(content, flush: true);
+      temporary.renameSync(configPath);
+    } finally {
+      if (temporary.existsSync()) temporary.deleteSync();
+    }
   }
 
   /// Sets or appends a top-level YAML key with the given [value].

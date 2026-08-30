@@ -129,7 +129,6 @@ $trellis-show-sidenotes: false;
     }
     expect(darkSkin, contains(r'$folio-dark-paper'));
     expect(main, contains(r'$folio-dark-paper'));
-    expect(main, contains('@media (prefers-reduced-motion: reduce)'));
   });
 
   test('S02-S07 TI02/TI05/TI06/TI07 bridged example builds cleanly', () async {

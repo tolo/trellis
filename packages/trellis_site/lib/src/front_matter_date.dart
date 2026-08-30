@@ -2,6 +2,8 @@
 library;
 
 final _dateOnly = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+final _timeSeparator = RegExp('[Tt ]');
+final _explicitZone = RegExp(r'(?:[zZ]|[+-]\d{2}(?::?\d{2})?)$');
 
 /// Resolves a front matter `date:` value to a UTC [DateTime], or `null` when
 /// [value] is absent or unparseable.
@@ -13,9 +15,9 @@ final _dateOnly = RegExp(r'^\d{4}-\d{2}-\d{2}$');
 /// on a CET laptop against `2026-01-01T00:00:00Z` on a UTC runner. The blog
 /// scaffold ships date-only values, so that was the default path.
 ///
-/// Values that carry a time are parsed as written: an explicit offset is
-/// honoured, and a zone-less time is still read as local. Authors who need an
-/// exact instant should write the zone.
+/// Values with an explicit offset are parsed as written. A zone-less date-time
+/// names UTC calendar fields, matching the date-only rule, so identical source
+/// produces identical feed and sitemap output on every build machine.
 DateTime? resolveFrontMatterDate(Object? value) {
   if (value is DateTime) return value.toUtc();
   if (value is! String) return null;
@@ -30,5 +32,21 @@ DateTime? resolveFrontMatterDate(Object? value) {
     return DateTime.utc(parsed.year, parsed.month, parsed.day);
   }
 
-  return DateTime.tryParse(text)?.toUtc();
+  final parsed = DateTime.tryParse(text);
+  if (parsed == null) return null;
+  final separator = text.indexOf(_timeSeparator);
+  if (separator >= 0 && !_explicitZone.hasMatch(text.substring(separator + 1))) {
+    return DateTime.utc(
+      parsed.year,
+      parsed.month,
+      parsed.day,
+      parsed.hour,
+      parsed.minute,
+      parsed.second,
+      parsed.millisecond,
+      parsed.microsecond,
+    );
+  }
+
+  return parsed.toUtc();
 }

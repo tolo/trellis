@@ -156,6 +156,7 @@ class BrowserProbe {
     required int width,
     required int height,
     String colorScheme = 'light',
+    String reducedMotion = 'no-preference',
     bool disableScripts = false,
   }) async {
     await _send('Emulation.setScriptExecutionDisabled', {'value': disableScripts}, session: true);
@@ -168,6 +169,7 @@ class BrowserProbe {
     await _send('Emulation.setEmulatedMedia', {
       'features': [
         {'name': 'prefers-color-scheme', 'value': colorScheme},
+        {'name': 'prefers-reduced-motion', 'value': reducedMotion},
       ],
     }, session: true);
 
@@ -186,7 +188,13 @@ class BrowserProbe {
   /// document, so a sweep over widths and schemes costs one navigation per page
   /// instead of one per combination. Use [evaluate] when the page's own load-time
   /// JavaScript is part of what is being measured.
-  Future<Object?> evaluateHere(String expression, {int? width, int? height, String? colorScheme}) async {
+  Future<Object?> evaluateHere(
+    String expression, {
+    int? width,
+    int? height,
+    String? colorScheme,
+    String reducedMotion = 'no-preference',
+  }) async {
     if (width != null && height != null) {
       await _send('Emulation.setDeviceMetricsOverride', {
         'width': width,
@@ -195,10 +203,11 @@ class BrowserProbe {
         'mobile': false,
       }, session: true);
     }
-    if (colorScheme != null) {
+    if (colorScheme != null || reducedMotion != 'no-preference') {
       await _send('Emulation.setEmulatedMedia', {
         'features': [
-          {'name': 'prefers-color-scheme', 'value': colorScheme},
+          if (colorScheme != null) {'name': 'prefers-color-scheme', 'value': colorScheme},
+          {'name': 'prefers-reduced-motion', 'value': reducedMotion},
         ],
       }, session: true);
     }
@@ -224,6 +233,28 @@ class BrowserProbe {
   Future<Uint8List> screenshot() async {
     final result = await _send('Page.captureScreenshot', const {'format': 'png'}, session: true);
     return base64Decode(result['data'] as String);
+  }
+
+  /// Force the focus-visible pseudo-state on every interactive control.
+  ///
+  /// Programmatic `focus()` does not consistently put links into Chrome's
+  /// keyboard modality. DevTools' forced pseudo-state is the same mechanism the
+  /// browser inspector uses and makes the computed focus ring deterministic.
+  Future<void> forceFocusVisible() async {
+    await _send('DOM.enable', const {}, session: true);
+    await _send('CSS.enable', const {}, session: true);
+    final document = await _send('DOM.getDocument', const {}, session: true);
+    final root = (document['root'] as Map)['nodeId'] as int;
+    final matches = await _send('DOM.querySelectorAll', {
+      'nodeId': root,
+      'selector': 'a[href], button, input, summary, select, textarea',
+    }, session: true);
+    for (final nodeId in (matches['nodeIds'] as List).cast<int>()) {
+      await _send('CSS.forcePseudoState', {
+        'nodeId': nodeId,
+        'forcedPseudoClasses': ['focus', 'focus-visible'],
+      }, session: true);
+    }
   }
 
   /// Shut the browser down and remove its throwaway profile.

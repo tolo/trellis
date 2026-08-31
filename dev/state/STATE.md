@@ -1,15 +1,15 @@
 # Project State — Trellis SDK
 
-Last Updated: 2026-08-28
+Last Updated: 2026-08-31
 
 > Cross-session state tracking. Updated at phase boundaries and when significant context changes.
 
 ## Current Phase
 
-**0.11 remediated through three release-gate reviews; gate green; awaiting the owner's release decision.** Lattice,
-the redesigned site and six-theme generated gallery, Folio, Meadow, authoring guidance, architecture, and unreleased
-lockstep changelog collateral are on `feat/0.11`. Owner UI inspection (2026-08-24/26) fixed rendering defects the story
-reviews missed; TD-014 was found unimplemented and landed.
+**v0.11.0 is published and fully verified; the next milestone is unscheduled.** All eight lockstep packages, the
+GitHub Release and 11 assets, Homebrew formula, and Scoop manifest were verified on 2026-08-31 with
+`tool/verify_release.sh 0.11.0`. The release contains Lattice, the redesigned site and six-theme generated gallery,
+Folio, Meadow, authoring guidance, TD-014, and the release-gate hardening described below.
 
 Three release-gate reviews each returned NO-GO, and each found a defect class one step outside the previous one:
 defects in themes (20 HIGH) → classes unpropagated across themes (7) → everything adjacent to themes (1 CRITICAL +
@@ -31,6 +31,7 @@ out to have siblings the review had not named).
 
 | Phase | Completed | Key Deliverables |
 |-------|-----------|------------------|
+| 0.11.0 (release) | 2026-08-31 | Eight lockstep packages on pub.dev; GitHub Release with 11 assets; Homebrew and Scoop updated; tagged-commit CI, E2E, docs deployment, and font provenance green. |
 | 0.11.0 (implementation) | 2026-08-19 | Lattice docs theme and Lattice-powered site; deterministic six-theme gallery; Folio reference theme; Meadow product-landing theme; theme-data authoring guidance; architecture and unreleased 0.11.0 changelog collateral. |
 | 0.11.0 (UI remediation) | 2026-08-26 | Owner-found rendering defects in Folio and Meadow; Folio design-gap closure against the mockup; compact branding assets; font payloads re-subset; landing showcase set to Arbor/Lattice/Folio. |
 | 0.10.0 (pre-release) | 2026-07-11 | Binary distribution: **Scoop** channel + release-workflow hardening (both tap jobs skip without `TAP_TOKEN`); build-time syntax highlighting (ADR-010: `CodeHighlighter`/`package:highlight`, `.hljs-*` spans, `highlight:` config key, vendored Prism removed); `bloom` landing theme + `verdant`/`arbor` polish; theme SASS-bridge escaping hardened; **TD-009** resolved (`ProcessRunner`, no CWD mutation → parallel-safe CLI suite). |
@@ -48,6 +49,7 @@ out to have siblings the review had not named).
 - **v0.10.0** (2026-07-25): build-time syntax highlighting (ADR-010), Scoop distribution channel, `bloom` theme + theme polish, TD-009.
 - **v0.10.1** (2026-08-18): `FragmentHost` contract (source-break for direct `ProcessorContext` construction, deliberate), SSG prev/next perf, HTMX 2.0.10 scaffolds, push CI + release gate/tooling. Verified with `tool/verify_release.sh 0.10.1`: pub.dev ×8, Release + 11 assets, Homebrew, Scoop.
 - **v0.10.2** (2026-08-18): TD-013 Linux nested-template watching + dev-watch hardening (rename/atomic-save reloads), `listTemplates()` symlink alignment, e2e numeric loopback. Verified with `tool/verify_release.sh 0.10.2`: pub.dev ×8 latest=0.10.2, Release + 11 assets, Homebrew, Scoop.
+- **v0.11.0** (2026-08-31): Lattice docs theme and site redesign, six-theme generated gallery, Folio and Meadow themes, built-in theme installation, timezone-stable front matter dates, and release-gate hardening. Verified with `tool/verify_release.sh 0.11.0`: pub.dev ×8 latest=0.11.0, Release + 11 assets, Homebrew, Scoop.
 - Releases follow `dev/guidelines/RELEASE-RUNBOOK.md`: `tool/release.sh` (lockstep bump, gate, release commit, local tag), then one push; publish is OIDC tag-triggered (`publish.yml`, global `vX.Y.Z` tag per ADR-009) behind the CI release gate (`release-gate.yml`).
 - The 4 `examples/*` packages + root workspace correctly carry `publish_to: none`.
 
@@ -58,10 +60,10 @@ out to have siblings the review had not named).
 
 ## Test Health
 
-On `feat/0.11` (2026-08-28): all eight package test suites pass (one existing Linux-only skip in `trellis`) —
-`trellis` 1282, `trellis_site` 849, `trellis_cli` 256 — the repo-root suite passes **161/161 on macOS** (155 on CI, which excludes the `visual` tier),
-`generate_theme_gallery.dart --check` is current, `subset_fonts.py --verify` reproduces 11/11 vendored faces
-byte-identically, and workspace analyze (`--fatal-infos`) and both format gates pass across all 12 packages.
+On the v0.11.0 release commit (2026-08-31), all eight package suites pass (one Linux-only skip in `trellis`) —
+`trellis` 1282, `trellis_site` 857, `trellis_cli` 265 — and the macOS release-host root suite passes **181 with
+2 intentional skips**. `generate_theme_gallery.dart --check`, workspace analyze (`--fatal-infos`), and both format
+gates pass; the tagged-commit font-provenance workflow reproduces all 11 vendored faces byte-identically.
 **The visual tier is a release gate, not a CI gate — settled on evidence, 2026-08-28.** It was briefly enabled on CI
 and the first real run was red: baselines encode font metrics, and the runner ran Chrome 151 against the recording
 container's 152 with a different font set. Exactly the three themes whose stacks end in a system fallback failed

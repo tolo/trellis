@@ -92,6 +92,7 @@ void main() {
     expect(source, isNot(matches(RegExp(r'\b(three|six|total) themes\b', caseSensitive: false))));
   });
 
+  // Two full builds and two link checks can exceed package:test's 30-second default under parallel CI load.
   test('S01-S04/TI02/TI05-TI07 bridged root and sub-path builds preserve the complete site', () async {
     final tempDir = Directory.systemTemp.createTempSync('site_migration_build_');
     addTearDown(() => tempDir.deleteSync(recursive: true));
@@ -185,5 +186,5 @@ void main() {
       expect(previous!.text, allOf(contains('Previous'), contains('Theme Authoring')));
       expect(previous.attributes['href'], '${assetPrefix}docs/themes/authoring/');
     }
-  });
+  }, timeout: const Timeout(Duration(minutes: 2)));
 }

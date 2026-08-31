@@ -1,0 +1,26 @@
+{
+  "arbor": {
+    "light": "36032c4cf4aa7c92ecd9b422d9c1bbf553e95525972a4acdc17e1cf311305a58",
+    "dark": "be81b5e8a0e6f2f1ce014925db16ffe1a6091283075540db32ca5d1b5f6464c0"
+  },
+  "bloom": {
+    "light": "313b6f75eb9f62e378ab2a92c1a385dd19c00d1f346ff175c3260d16a0327010",
+    "dark": "cad83f4d75d69d31dfb435269d5098f35fbee53dd13970e118097163689c2907"
+  },
+  "folio": {
+    "light": "c5ef35af8288579504ecd2d4d68a2828403f907aa91773f8cbcddaf3f460ced4",
+    "dark": "17ecb8bc950f875208aa0ee9fc5b5671e6c523162245561e4217bb1b43900a0e"
+  },
+  "lattice": {
+    "light": "0ae9dfda03c61847b032b1914ba66dc9d0463e6248fd55014ac3790a832d764b",
+    "dark": "cbca8469cb881368bcd64495e85fc098f6e34825ec4dcbd1f92a4c5600b4fac4"
+  },
+  "meadow": {
+    "light": "2ff02b92dbe45051992a0c70f3d3c364447ebbabfef4031aea8c5b038aa9d3e0",
+    "dark": "46d6b5c95dc03552bdeecd7ff3f6a27f2a4d80ea967c76be92aaf7903d682dc0"
+  },
+  "verdant": {
+    "light": "3c220b3cdfbac1d6e7b5c9ba4a4b9796abf6a25bf1542a287860112e9cb0e48f",
+    "dark": "896fca4c071cb14067676386e9c3651c0dddfaddd8bf1b789edd8ba2789ab9fd"
+  }
+}

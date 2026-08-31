@@ -1,0 +1,60 @@
+name: Font provenance
+
+# Re-derives every vendored WOFF2 from its pinned google/fonts blob and fails on
+# drift. It is the only check that ties the shipped font bytes to an upstream
+# provenance rather than to their own shape (TD-029). Per-push on every branch
+# rather than release-time on purpose: the point is to name the commit that
+# changed the bytes. It runs beside ci.yml, so it costs no extra wall-clock.
+#
+# Why a separate workflow and not a job inside ci.yml (TD-044): this is the one
+# check that needs the network — ~2.6 MB of pinned blobs from
+# raw.githubusercontent.com — and ci.yml is the release gate. release-gate.yml
+# (first job of publish.yml and release-binaries.yml) runs
+# tool/require_green_ci.sh, which looks up runs of the `ci.yml` workflow FILE by
+# name and requires `success`. As a job in ci.yml, an upstream outage, a moved
+# blob or a rate limit turned into a red ci.yml and blocked a release tag for a
+# reason unrelated to the commit. Split out, this workflow is not part of that
+# lookup, so a red run here no longer stands in front of an irreversible
+# publish.
+#
+# The deliberate consequence: a release CAN be cut while this is red. Red here
+# still means the vendored fonts do not reproduce from their pinned upstream —
+# fix it, do not ship past it. See dev/guidelines/RELEASE-RUNBOOK.md.
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fonts:
+    name: Vendored font provenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+
+      # Python and fontTools/brotli are pinned because the output hash is
+      # toolchain-versioned - the same reason ci.yml pins DART_SDK. The triple
+      # is the tooling contract declared by tool/subset_fonts.py's TOOLING
+      # constant; move them together or --verify reports spurious drift.
+      - name: Install the pinned subsetting toolchain
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install --quiet 'fonttools==4.63.0' 'brotli==1.2.0'
+
+      # `--verify` re-runs instancer + subset for all eleven files and compares
+      # SHA-256 against the committed bytes, so a hand-edited or hand-replaced
+      # font fails here. `fetch()` retries three times with backoff so a dropped
+      # connection does not redden an unrelated commit.
+      - name: Verify every vendored WOFF2 reproduces from its pinned upstream
+        run: .venv/bin/python tool/subset_fonts.py --verify

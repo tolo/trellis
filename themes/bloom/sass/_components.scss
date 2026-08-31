@@ -57,6 +57,8 @@
   color: var(--trellis-primary, #{$trellis-primary-color});
   background-color: #ffffff;
 
+  &:focus-visible { outline-color: #111111; }
+
   &:hover { color: var(--trellis-accent, #{$trellis-accent-color}); background-color: #ffffff; }
 }
 

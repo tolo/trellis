@@ -1,0 +1,75 @@
+$trellis-skin: auto !default;
+$trellis-primary-color: #2e7d4f !default;
+$trellis-accent-color: #6e9b45 !default;
+$trellis-text-color: #1c2b21 !default;
+$trellis-muted-color: #47584c !default;
+$trellis-bg-color: #fbfaf5 !default;
+$trellis-surface-color: #ffffff !default;
+$trellis-border-color: #e7e3d4 !default;
+$trellis-font-family:
+  Instrument Sans,
+  -apple-system,
+  sans-serif !default;
+$trellis-heading-font-family: Fraunces, Georgia, serif !default;
+$trellis-code-font-family:
+  Spline Sans Mono,
+  ui-monospace,
+  monospace !default;
+$trellis-max-width: 1056px !default;
+$trellis-border-radius: 8px !default;
+$trellis-footer-text: null !default;
+$trellis-show-powered-by: true !default;
+$trellis-show-rss-link: true !default;
+$trellis-show-sidebar: true !default;
+$trellis-show-toc: true !default;
+$trellis-show-prev-next: true !default;
+$trellis-show-search: true !default;
+
+:root {
+  --leaf: #{$trellis-primary-color};
+  --footer-link: #2a7247;
+  --leaf-hover: color-mix(in srgb, #{$trellis-primary-color} 70%, #000);
+  --on-leaf: #fff;
+  --tendril: #{$trellis-accent-color};
+  --paper: #{$trellis-bg-color};
+  --card: #{$trellis-surface-color};
+  --ink: #{$trellis-text-color};
+  --ink-soft: #{$trellis-muted-color};
+  --lattice: #{$trellis-border-color};
+  --lattice-strong: color-mix(
+    in srgb,
+    #{$trellis-border-color} 75%,
+    #{$trellis-text-color}
+  );
+  --display: #{$trellis-heading-font-family};
+  --body: #{$trellis-font-family};
+  --mono: #{$trellis-code-font-family};
+  --content-width: #{$trellis-max-width};
+  --radius: #{$trellis-border-radius};
+  --tint: #f5f3e9;
+  --foot-bg: #eceddd;
+  --start-bg: #17472e;
+  --start-border: transparent;
+  --chrome-bg: #f1efe6;
+  --chip-bg: #efeedf;
+  --chip-fg: #17472e;
+  --tag-bg: #ebf3ec;
+  --tl-bg: #edf5ec;
+  --conf-bg: #f2f0e4;
+  --wash-a: rgb(46 125 79 / 0.06);
+  --wash-b: rgb(110 155 69 / 0.05);
+  // Code tokens. Every value clears WCAG AA (4.5:1) against --card, the surface both
+  // the home-page panes and docs code blocks sit on. --syntax-dim carries punctuation
+  // (brackets, operators), which is read text, not decoration.
+  --syntax-tag: #8a6b2e;
+  --syntax-attribute: #6f634c;
+  --syntax-string: #3e6b8f;
+  --syntax-keyword: #7a4e9e;
+  --syntax-number: #a3452f;
+  --syntax-function: #1f6f6a;
+  --syntax-dim: #786f5e;
+  --shadow-soft: rgb(28 43 33 / 0.05);
+  --shadow: rgb(28 43 33 / 0.12);
+  --bg-lattice: #d8d3be;
+  color-scheme: light;
+}

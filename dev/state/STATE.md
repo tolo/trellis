@@ -1,21 +1,38 @@
 # Project State — Trellis SDK
 
+Last Updated: 2026-08-28
+
 > Cross-session state tracking. Updated at phase boundaries and when significant context changes.
 
 ## Current Phase
 
-**0.10.0** (shipped 2026-07-25 from branch `feature/0.10.0`) — a multi-slice release hardening the SDK for distribution: binary distribution gains a **Scoop** channel (plus release-workflow hardening and conflict resolution); **build-time syntax highlighting** lands (ADR-010: `trellis_site` bakes `.hljs-*` spans at build time, retiring the vendored client-side Prism); the **`bloom`** landing theme ships alongside `verdant`/`arbor` polish; the theme **SASS-bridge** escaping is hardened; and **TD-009** (CLI CWD mutation) is resolved so the `trellis_cli` suite is parallel-safe.
+**0.11 remediated through three release-gate reviews; gate green; awaiting the owner's release decision.** Lattice,
+the redesigned site and six-theme generated gallery, Folio, Meadow, authoring guidance, architecture, and unreleased
+lockstep changelog collateral are on `feat/0.11`. Owner UI inspection (2026-08-24/26) fixed rendering defects the story
+reviews missed; TD-014 was found unimplemented and landed.
 
-**0.10.1 shipped 2026-08-18** — first release cut through [`dev/guidelines/RELEASE-RUNBOOK.md`](../guidelines/RELEASE-RUNBOOK.md) (`tool/release.sh` + the CI tag gate; both gates held for CI and released cleanly): `FragmentHost` typing for `ProcessorContext.domProcessor`, SSG prev/next perf, HTMX 2.0.10 scaffolds, push CI (`ci.yml`, TD-010), release tooling. The first ubuntu CI run surfaced two macOS-only assumptions (TZ-baked golden; Linux `recursive` watch gap → TD-013/TD-014).
+Three release-gate reviews each returned NO-GO, and each found a defect class one step outside the previous one:
+defects in themes (20 HIGH) → classes unpropagated across themes (7) → everything adjacent to themes (1 CRITICAL +
+7 HIGH: the gallery, the docs site, the CLI install journey, the package changelogs, the SDK's own CSP). Severity fell
+across the three. The third round was remediated on 2026-08-28 under an explicit decision that there would be
+**no fourth open-ended review** — the widening-scope process has no fixed point for a pre-1.0 minor. The ten items it
+deferred (TD-038…TD-047) were then **all closed in the same cycle** rather than carried, on the maintainer's call:
+nearly all of them lived in tooling, tests, CI and docs rather than in shipped package code, so closing them could not
+change what pub.dev receives. That inverts the usual "do not change things before a release" instinct, and it is the
+reason the release ships with the gate materially stronger than the one that passed it three times. Full record in
+`../trellis-private/docs/specs/0.11/prd.md` § Outcome.
 
-**0.10.2 shipped 2026-08-18** — patch: **TD-013** resolved — `FileSystemLoader` watches each template directory individually on Linux, so dev-mode hot reload now sees edits in sub-folders there (macOS/Windows unchanged); plus dev-watch hardening (rename/atomic-save reloads on Linux/Windows, once-only warning when the OS refuses a watch, `close()` leak fix, no adoption of runtime-created directory symlinks) and `listTemplates()` no longer following symlinks (aligned with `load()`; in-tree alias names drop from enumeration — see CHANGELOG); plus the `trellis_cli` generated-app e2e twin binding/connecting via numeric loopback (**TD-015** files the remaining scaffold `'localhost'` bind). Hardening items came out of a 4-round adversarial review→remediate loop (report in `.agent_temp/reviews/`, findings recorded in LEARNINGS/TD-016). ADR-014 (component composition primitives, Proposed) landed with the merge.
-
-**Next up**: 0.11 — doc-site redesign & three new built-in themes (private `docs/specs/0.11/`, 5 stories spec-ready), then TD-006 SASS `@use` migration; later candidates: CSS processing, composition primitives, Trellis UI (private `docs/specs/0.next-*/`). Open follow-ups: TD-014 (date-only front matter timezone), TD-015 (Shelf scaffold `'localhost'` bind), and TD-016 (template enumeration abort-on-unreadable + validate CLI symlink divergence, filed by the 0.10.2 review).
+Two of the third review's findings were **wrong**, and both failure shapes are worth carrying: a finding can be
+internally rigorous and still not bear on its target (a correctly measured render change, of an element below the
+captured screenshot frame), and naming one instance of a defect is not the same as bounding it (two findings turned
+out to have siblings the review had not named).
 
 ## Recent Completions
 
 | Phase | Completed | Key Deliverables |
 |-------|-----------|------------------|
+| 0.11.0 (implementation) | 2026-08-19 | Lattice docs theme and Lattice-powered site; deterministic six-theme gallery; Folio reference theme; Meadow product-landing theme; theme-data authoring guidance; architecture and unreleased 0.11.0 changelog collateral. |
+| 0.11.0 (UI remediation) | 2026-08-26 | Owner-found rendering defects in Folio and Meadow; Folio design-gap closure against the mockup; compact branding assets; font payloads re-subset; landing showcase set to Arbor/Lattice/Folio. |
 | 0.10.0 (pre-release) | 2026-07-11 | Binary distribution: **Scoop** channel + release-workflow hardening (both tap jobs skip without `TAP_TOKEN`); build-time syntax highlighting (ADR-010: `CodeHighlighter`/`package:highlight`, `.hljs-*` spans, `highlight:` config key, vendored Prism removed); `bloom` landing theme + `verdant`/`arbor` polish; theme SASS-bridge escaping hardened; **TD-009** resolved (`ProcessRunner`, no CWD mutation → parallel-safe CLI suite). |
 | Docs Site | 2026-07-06 | Engine: weighted ordering + nested sections + `orderedSectionPages` seam, `${site.menu}` nav tree (section-weight ordered), `pathPrefix` (with unprefixed on-disk layout + content-link rewriting), in-section prev/next; `arbor` docs theme (build-time `.hljs-*` highlighting, WCAG-AA skins, responsive, search shell); `site/` (marketing landing + curated docs IA: getting-started, complete `tl:*` syntax reference, 8 package guides, theme-authoring); client-side search; GitHub Pages CI deploy + pure-Dart link-integrity checker. Deploy target: `tolo.github.io/trellis/` (`pathPrefix: /trellis/`). |
 | SDK Phase 4 | 2026-03-20 | Theme manifest + params, ThemeAwareLoader, SASS bridge, CLI theme commands, Verdant theme |
@@ -41,7 +58,38 @@
 
 ## Test Health
 
-On `feature/0.10.0`: `trellis_site` **835 pass / 0 fail**; `trellis_cli` **253 pass** at default concurrency (parallel-safe after **TD-009** removed the CWD mutation the `examples_smoke_test` flakiness traced to — no more `-j 1` workaround); repo-root `test/` **34 pass** (incl. the release-distribution contract tests). `dart analyze --fatal-infos` clean across the workspace. Dart Sass 3.0 forward-compat tech-debt remains logged as TD-006 (`@import` in theme SASS + the bridge).
+On `feat/0.11` (2026-08-28): all eight package test suites pass (one existing Linux-only skip in `trellis`) —
+`trellis` 1282, `trellis_site` 849, `trellis_cli` 256 — the repo-root suite passes **161/161 on macOS** (155 on CI, which excludes the `visual` tier),
+`generate_theme_gallery.dart --check` is current, `subset_fonts.py --verify` reproduces 11/11 vendored faces
+byte-identically, and workspace analyze (`--fatal-infos`) and both format gates pass across all 12 packages.
+**The visual tier is a release gate, not a CI gate — settled on evidence, 2026-08-28.** It was briefly enabled on CI
+and the first real run was red: baselines encode font metrics, and the runner ran Chrome 151 against the recording
+container's 152 with a different font set. Exactly the three themes whose stacks end in a system fallback failed
+(arbor, bloom, verdant); the three vendoring every face (folio, lattice, meadow) passed. A golden-file layout tier
+cannot be held stable on an environment that drifts, so `ci.yml` excludes `visual` and `tool/release.sh` runs it on
+the machine that recorded the baselines — which is the moment it matters. Baselines are macOS-only and named per
+platform, so a host without a recording fails naming its platform. **Cut releases on macOS.**
+
+The detour was not wasted: recording a Linux set caught a real bug the rendered suites had never been in a position
+to find. Verdant's masthead measured 143px there against a hardcoded 112px scroll offset, parking in-page anchors
+behind the sticky bar, and four other themes shared the structure. All six now derive the offset from a declared
+masthead height, and the `nowrap` invariant that rests on is asserted directly. Note the rendered suites had never
+run on CI at all — the last CI run on this repo before 0.11 was 0.10.2 (2026-08-18). Root and `/trellis/` docs builds
+each produce 27 pages and 39 static files with 1,279 internal references and no broken links. Dart Sass 3.0
+forward-compat tech debt remains logged as TD-006 (`@import` in theme SASS + the bridge).
+
+**Green does not mean covered — and this suite has proved it three times.** The 2026-08-27 review mutation-tested the
+suite and 8 of 11 deliberate regressions passed, including truncating every vendored `woff2` to zero bytes. Those are
+closed: the theme suites now assert rendered geometry, per-file `wOF2` magic bytes and byte floors, `@font-face` axis
+containment, and (since 2026-08-28) that each gallery card's screenshots live under its own theme directory.
+
+Both of the holes recorded here on 2026-08-28 are now closed, and the shape of each is worth keeping. **A gate that
+re-derives its expectation from the artifact's own recipe cannot fail when the recipe changes — it redefines the
+truth instead.** `subset_fonts.py --verify` did exactly that (TD-038: narrowing the constants dropped 15 codepoints
+while it reported `11 ok`); it now asserts each face's cmap against `tool/font_coverage.txt`, a pin the tool never
+writes. **A surface outside every rendered check is a surface with no gate**, however green the suite looks: `site/`
+was outside all of them (TD-039), which is how a WCAG 1.4.10 reflow failure reached the flagship gallery page — it is
+now swept in both deploy shapes on every push.
 
 ## Blockers
 

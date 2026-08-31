@@ -48,8 +48,8 @@
   // Use the runtime --trellis-primary so the ring flips in dark mode; the
   // compile-time $trellis-focus-ring-color is only the fallback. A literal
   // light-primary ring stays ~2.7:1 on the dark bg (below WCAG 3:1).
-  outline: $trellis-focus-ring-width solid var(--trellis-primary, #{$trellis-focus-ring-color});
-  outline-offset: $trellis-focus-ring-offset;
+  outline: $trellis-focus-ring-width solid currentColor;
+  outline-offset: -$trellis-focus-ring-width;
   border-radius: var(--trellis-radius, #{$trellis-border-radius});
 }
 

@@ -12,8 +12,12 @@
 
 html {
   scroll-behavior: smooth;
-  // Offset in-page anchor jumps so a heading isn't hidden under the sticky header.
-  scroll-padding-top: 5rem;
+  // Offset in-page anchor jumps so the target isn't hidden under the sticky header.
+  // The offset is the masthead's own declared height (_layout.scss) plus a gap —
+  // read from it, not guessed alongside it, so the two cannot drift apart. The
+  // constant this replaced was sized by measuring the bar once: right until a
+  // longer label added a nav row nobody re-measured.
+  scroll-padding-top: calc(var(--trellis-masthead-height) + #{$trellis-space-md});
 }
 
 // Core surfaces reference the --trellis-* custom properties (with the compiled
@@ -28,6 +32,13 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+// `break-word` wraps a long token but does not shrink a box's min-content size, so an
+// unbreakable token (a URL, a package name, a hash) still widens its grid track and pushes
+// the document past the viewport — a WCAG 1.4.10 reflow failure. `anywhere` does shrink it.
+// Scoped to page content: the brand and the nav/footer labels are left alone so a short
+// word is never split mid-label.
+main * { overflow-wrap: anywhere; }
 
 // ── Typography ───────────────────────────────────────────────────────────────
 
@@ -44,7 +55,9 @@ h6 {
   margin-bottom: $trellis-space-md;
   font-weight: 800;
   letter-spacing: -0.02em;
-  scroll-margin-top: 5rem;
+  // No scroll-margin-top here: it *adds* to the scrollport's scroll-padding-top, so a
+  // heading would land 7.5rem + 5rem down the viewport while a section id landed at
+  // 7.5rem. The scrollport offset covers every anchor target, headings included.
 }
 
 h1 { font-size: clamp(2rem, 5vw, 3rem); }

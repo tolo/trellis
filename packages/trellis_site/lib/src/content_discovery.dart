@@ -232,7 +232,7 @@ class ContentDiscovery {
 
     // Collect all files recursively.
     final allFiles = dir
-        .listSync(recursive: true, followLinks: true)
+        .listSync(recursive: true, followLinks: false)
         .whereType<File>()
         .map((f) => p.normalize(f.path))
         .toList();

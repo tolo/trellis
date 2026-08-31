@@ -1,4 +1,4 @@
-title: My Blog
+title: Verdant Blog
 description: A sample blog powered by Trellis and the Verdant theme.
 baseUrl: http://localhost:4000
 
@@ -33,7 +33,7 @@ theme_params:
       url: /posts/
     - label: About
       url: /about/
-  footer_text: "© 2024 My Blog"
+  footer_text: "Verdant — a Trellis blog theme."
   show_powered_by: true
 
 # Pagination

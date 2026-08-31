@@ -1,0 +1,78 @@
+<!doctype html>
+<html tl:extends="theme:layouts/base.html" lang="en">
+  <head>
+    <title>Built-in Themes</title>
+    <!-- tl:define replaces the base block element's *children*, so the override
+         has to be a container: a bare <link tl:define="head-extra"> would
+         contribute nothing and the stylesheet would silently never load. -->
+    <tl:block tl:define="head-extra">
+      <link
+        rel="stylesheet"
+        tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}"
+        tl:attr="href=${assetBase} + 'gallery.css'"
+        href="/gallery.css"
+      />
+    </tl:block>
+  </head>
+  <body>
+    <main id="main-content" tl:define="content" tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
+      <div class="wrap docs-shell gallery-shell">
+        <div tl:if="${theme.show_sidebar} and ${site.menu}" tl:replace="~{theme:layouts/base.html :: sidebar}"></div>
+        <article class="doc gallery-page">
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <ul>
+              <li><a href="/">Home</a></li>
+              <li><a href="/docs/themes/">Themes</a></li>
+              <li><span aria-current="page" tl:text="${page.title}">Built-in Themes</span></li>
+            </ul>
+          </nav>
+          <h1 class="doc-title" tl:text="${page.title}">Built-in Themes</h1>
+          <div class="doc-content prose" tl:utext="${page.content}">Gallery introduction</div>
+          <div class="gallery-grid">
+            <article class="gallery-card" tl:each="themeItem : ${data.themes.themes}">
+              <header>
+                <p class="gallery-archetype" tl:text="${themeItem.archetype}">Archetype</p>
+                <h2 tl:text="${themeItem.name}">Theme</h2>
+                <p tl:text="${themeItem.description}">Description</p>
+              </header>
+              <div class="gallery-screenshots">
+                <figure tl:if="${themeItem.screenshot_light}">
+                  <img
+                    loading="lazy"
+                    tl:src="${assetBase} + ${themeItem.screenshot_light}"
+                    tl:attr="alt=${themeItem.name} + ' light theme preview'"
+                  />
+                  <figcaption>Light</figcaption>
+                </figure>
+                <figure tl:if="${themeItem.screenshot_dark}">
+                  <img
+                    loading="lazy"
+                    tl:src="${assetBase} + ${themeItem.screenshot_dark}"
+                    tl:attr="alt=${themeItem.name} + ' dark theme preview'"
+                  />
+                  <figcaption>Dark</figcaption>
+                </figure>
+              </div>
+              <footer>
+                <code tl:text="${themeItem.config_hint}">theme: name</code>
+                <a tl:href="${themeItem.readme_url}">Theme README <span aria-hidden="true">→</span></a>
+              </footer>
+            </article>
+          </div>
+          <nav
+            class="page-nav"
+            tl:if="${theme.show_prev_next} and (${page.prev} or ${page.next})"
+            aria-label="Page navigation"
+          >
+            <a tl:if="${page.prev}" tl:href="${page.prev.url}"
+              ><small>Previous</small><span tl:text="${page.prev.title}">Previous</span></a
+            >
+            <a tl:if="${page.next}" tl:href="${page.next.url}"
+              ><small>Next</small><span tl:text="${page.next.title}">Next</span></a
+            >
+          </nav>
+        </article>
+      </div>
+    </main>
+  </body>
+</html>

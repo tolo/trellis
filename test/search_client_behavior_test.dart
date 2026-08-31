@@ -35,6 +35,7 @@ void main() {
 
     test('fetch-failure, no-match, empty-query, and happy-path scenarios all hold', () async {
       if (!nodeAvailable) {
+        _requireNodeInCi('the search client DOM harness');
         markTestSkipped('system node not found — behavioral DOM-harness skipped');
         return;
       }
@@ -53,17 +54,18 @@ void main() {
       final fetchRejects = scenarios['fetchRejects'] as Map<String, dynamic>;
       expect(fetchRejects['inputDisabled'], isTrue, reason: 'input must be disabled on fetch rejection');
       expect(fetchRejects['inputAriaDisabled'], isTrue, reason: 'aria-disabled must be set on fetch rejection');
-      expect(fetchRejects['shellUnavailable'], isTrue, reason: 'shell must get search-unavailable on fetch rejection');
+      expect(fetchRejects['shellHidden'], isTrue, reason: 'shell must stay hidden on fetch rejection');
 
       // S04: non-OK response (e.g. 404) is treated the same as a hard failure.
       final fetchNonOk = scenarios['fetchNonOk'] as Map<String, dynamic>;
       expect(fetchNonOk['inputDisabled'], isTrue, reason: 'input must be disabled on non-OK response');
       expect(fetchNonOk['inputAriaDisabled'], isTrue, reason: 'aria-disabled must be set on non-OK response');
-      expect(fetchNonOk['shellUnavailable'], isTrue, reason: 'shell must get search-unavailable on non-OK response');
+      expect(fetchNonOk['shellHidden'], isTrue, reason: 'shell must stay hidden on non-OK response');
 
       // S02: a query with no matches renders the friendly empty-state element.
       final noMatch = scenarios['noMatch'] as Map<String, dynamic>;
       expect(noMatch['inputEnabled'], isTrue, reason: 'input must be enabled after a successful load');
+      expect(noMatch['shellHidden'], isFalse, reason: 'shell must be revealed after a successful load');
       expect(noMatch['resultsHidden'], isFalse, reason: 'results container must be shown for a no-match query');
       expect(noMatch['hasEmptyState'], isTrue, reason: 'a search-empty element must be rendered');
       expect(noMatch['emptyStateText'], equals('No results found.'));
@@ -81,4 +83,13 @@ void main() {
       expect(happyPath['titleText'], equals('Getting Started'));
     });
   });
+}
+
+/// Skipping a node-gated check is a local convenience; in CI it is a silent hole
+/// - the run reports "All tests passed!" with [what] never executed. Fail loudly
+/// there instead, so the gate cannot go green on an assertion that did not run.
+void _requireNodeInCi(String what) {
+  if (Platform.environment['CI'] == 'true') {
+    fail('node is required in CI: $what did not run');
+  }
 }

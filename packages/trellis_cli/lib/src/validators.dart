@@ -109,3 +109,25 @@ const _reservedWords = <String>{
   'with',
   'yield',
 };
+
+/// The charset a theme name must match to be usable as a directory segment.
+///
+/// Mirrors the rule the theme-gallery generator enforces on `theme.yaml`'s
+/// `name`, so a name that installs is a name that can be published.
+final _themeNamePattern = RegExp(r'^[a-z0-9][a-z0-9_-]*$');
+
+/// Validates a theme name supplied as `--theme <name>`.
+///
+/// Returns `null` if [name] is valid, or a human-readable error message.
+/// Rejecting anything outside the charset is also what keeps a `--theme`
+/// value from being a path traversal (`../..`) or an absolute path.
+String? validateThemeName(String name) {
+  if (name.isEmpty) {
+    return 'Theme name cannot be empty.';
+  }
+  if (!_themeNamePattern.hasMatch(name)) {
+    return 'Theme name "$name" is not valid. Use lowercase letters, digits, '
+        'hyphens, and underscores, starting with a letter or digit.';
+  }
+  return null;
+}

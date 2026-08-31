@@ -2,7 +2,8 @@
 .dart_tool/
 .packages
 build/
-pubspec.lock
+**/pubspec.lock
+!/pubspec.lock
 
 # IDE
 .idea/
@@ -26,3 +27,10 @@ pubspec_overrides.yaml
 .agent_temp/
 .codex
 CLAUDE.local.md
+
+# Python bytecode from tool/subset_fonts.py
+__pycache__/
+*.pyc
+
+# Python venv for the pinned font-subsetting toolchain (tool/subset_fonts.py)
+.venv/

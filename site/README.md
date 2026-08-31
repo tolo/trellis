@@ -24,6 +24,25 @@ Moving to a custom root domain later is a **config edit, not a code change**: cl
 `pathPrefix` to `''` (or drop it) and point `baseUrl` at the new host. Nothing in the
 deploy workflow hardcodes the domain.
 
+## Preview locally
+
+From the repository root, [`tool/serve_docs.sh`](../tool/serve_docs.sh) builds a
+root-served variant and serves it at `http://localhost:8765`:
+
+```sh
+tool/serve_docs.sh
+```
+
+Pass a different port as the only argument when needed, for example
+`tool/serve_docs.sh 9000`. Stop the server with Ctrl-C. Rerun the script after
+changing site content, layouts, or theme assets — it regenerates the themes
+gallery first, so a theme manifest or screenshot change shows up in the preview
+and the regenerated files are ready to commit.
+
+An intentional screenshot recapture must be reviewed before it becomes gallery input. After reviewing the image,
+update its SHA-256 entry in `tool/theme_screenshot_digests.json`, then regenerate the gallery; an unpinned byte change
+is rejected.
+
 ## Build locally
 
 From this directory (`site/`):
@@ -43,7 +62,8 @@ trellis build --path-prefix '' --output output-root
 A green `trellis build` is **not** proof of a working site — a wrong-base-path link
 emits valid HTML and no build error but a dead link in production. The pure-Dart
 checker at [`../tool/link_check.dart`](../tool/link_check.dart) is the real gate: it
-walks the built output, resolves every internal `href`/`src`/`srcset` against the
+walks the built output, resolves every internal `href`/`src`/`srcset` — plus the
+`data-light`/`data-dark` attributes themes use to swap assets per skin — against the
 output filesystem the way a static host serves it, and exits non-zero on any broken
 reference. External URLs (`http(s):`, `//host`, `mailto:`, `tel:`, `data:`) and pure
 in-page anchors (`#frag`) are never reported.

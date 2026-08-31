@@ -231,6 +231,22 @@ fields are available in templates as `${page.fieldName}`.
 `menu_title` (string) overrides a page's title in the `${site.menu}` navigation
 tree; `menu_exclude: true` removes a page from that tree.
 
+### Dates and time zones
+
+A date-only `date:` (`2026-03-15`) names a calendar day, not an instant, so
+`feed.xml` and `rss.xml` anchor it at **UTC midnight**. A zone-less date-time
+(`2026-03-15T09:30:00`) likewise names UTC calendar fields. That keeps feeds and
+`sitemap.xml` `<lastmod>` identical no matter which machine runs the build.
+
+A `date:` with `Z` or a numeric offset is read as that exact instant. Use one when
+the timestamp is authored in a timezone other than UTC:
+
+```yaml
+date: 2026-03-15T09:30:00Z        # explicit UTC
+date: 2026-03-15T09:30:00+02:00   # explicit offset
+date: 2026-03-15T09:30:00         # no zone - treated as UTC calendar fields
+```
+
 ## Page ordering
 
 Within a section, pages are ordered by an integer `weight` front-matter field,
@@ -471,7 +487,7 @@ Trellis sites can use pre-built themes for complete, customizable designs with
 zero boilerplate. Install a theme with the CLI:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis-theme-verdant
+trellis theme add https://github.com/tolo/trellis --theme verdant --ref v0.11.0
 ```
 
 Then configure it in `trellis_site.yaml`:

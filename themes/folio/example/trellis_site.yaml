@@ -1,0 +1,42 @@
+title: Folio Field Notes
+description: A reference collection for coast and fen observations.
+baseUrl: http://localhost:8080
+theme: folio
+
+theme_params:
+  skin: auto
+  primary_color: "#315f46"
+  accent_color: "#912f27"
+  text_color: "#17291f"
+  muted_color: "#59695e"
+  bg_color: "#f2f1e8"
+  surface_color: "#fbfaf4"
+  border_color: "#bdc4b6"
+  font_family: "EB Garamond, Iowan Old Style, Georgia, serif"
+  heading_font_family: "EB Garamond, Iowan Old Style, Georgia, serif"
+  code_font_family: "SFMono-Regular, Consolas, Liberation Mono, monospace"
+  max_width: "1180px"
+  border_radius: "2px"
+  nav_links: [{label: Home, url: /}, {label: Entries, url: /docs/}]
+  social_links: [{platform: GitHub, label: Source, url: https://github.com/tolo/trellis}]
+  footer_text: "Observations arranged with Folio"
+  show_powered_by: true
+  show_rss_link: true
+  excerpt_length: 160
+  show_sidebar: true
+  show_toc: true
+  show_prev_next: true
+  show_search: true
+  toc_title: "Field index"
+  sidebar_title: "Contents"
+  plate_label: "Plate"
+  show_plate_numbers: true
+  show_sidenotes: true
+
+feeds:
+  atom: true
+  rss: true
+
+search:
+  enabled: true
+  fields: [title, summary, content]

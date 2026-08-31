@@ -3,7 +3,7 @@ title: Templates
 description: Write natural HTML templates with tl:* attributes across every fenced language.
 ---
 
-This page exercises every vendored highlighter grammar — Dart, HTML, CSS, YAML,
+This page exercises every build-time highlighter grammar — Dart, HTML, CSS, YAML,
 and Bash — plus the in-page table of contents.
 
 ## Dart

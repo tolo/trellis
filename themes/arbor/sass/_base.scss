@@ -12,14 +12,22 @@
 
 html {
   scroll-behavior: smooth;
-  // Offset in-page anchor jumps so a heading isn't hidden under the sticky header.
-  scroll-padding-top: 5rem;
+  // .site-header is sticky, so an un-offset in-page anchor jump parks the target
+  // behind it and the reader lands on the paragraph after the heading they clicked.
+  // The offset is the masthead's own declared height (_layout.scss) plus a gap —
+  // read from it, not guessed alongside it, so the two cannot drift apart.
+  scroll-padding-top: calc(var(--trellis-masthead-height) + #{$trellis-space-md});
 }
 
 // Core surfaces reference the --trellis-* custom properties (with the compiled
 // SASS value as fallback) so `skin: auto` flips light/dark at runtime via the
 // prefers-color-scheme :root overrides in main.scss — not just the code tokens.
 body {
+  // Short pages must still push the footer to the bottom of the viewport; the skip
+  // link is out of flow, so it never becomes a flex item.
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
   margin: 0;
   font-family: $trellis-font-family;
   font-size: $trellis-font-size-base;
@@ -29,6 +37,18 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+// `break-word` wraps a long token but does not shrink a box's min-content size, so an
+// unbreakable token (a URL, a package name, a hash) still widens its grid track and pushes
+// the document past the viewport — a WCAG 1.4.10 reflow failure. `anywhere` does shrink it.
+// Scoped to page content: the brand and the nav/footer labels are left alone so a short
+// word is never split mid-label.
+main * { overflow-wrap: anywhere; }
+
+// Controls that ship `hidden` and are revealed by JavaScript must stay hidden without it.
+// An author rule setting `display` on such a control silently beats the UA sheet, so the
+// normalization is `!important` rather than a component-by-component override.
+[hidden] { display: none !important; }
 
 // ── Typography ───────────────────────────────────────────────────────────────
 
@@ -44,8 +64,11 @@ h6 {
   margin-top: $trellis-space-xl;
   margin-bottom: $trellis-space-sm;
   font-weight: 700;
-  scroll-margin-top: 5rem;
   text-wrap: balance;
+  // No scroll-margin-top here: it *adds* to the scrollport's scroll-padding-top,
+  // so a heading landed at masthead + 5rem while a section id landed at masthead.
+  // The scrollport offset above covers every anchor target, headings included —
+  // including scrollIntoView(), which honours it just as a fragment jump does.
 }
 
 // Serif display sizes read best with a touch of negative tracking; smaller
@@ -161,4 +184,8 @@ td {
 th {
   font-weight: 700;
   background-color: var(--trellis-surface, #{$trellis-surface-color});
+}
+
+body > .main-content {
+  flex: 1 0 auto;
 }

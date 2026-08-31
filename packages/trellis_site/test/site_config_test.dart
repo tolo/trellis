@@ -78,6 +78,26 @@ void main() {
       final config = SiteConfig(siteDir: '/my/site');
       expect(config.taxonomies, isEmpty);
     });
+
+    test('baseUrl loses its trailing slash so page URLs concatenate cleanly', () {
+      // Every theme emits og:url as ${site.baseUrl} + ${page.url}, and page.url
+      // is always root-absolute, so an unstripped trailing slash renders
+      // content="https://example.com//" on the home page of every site.
+      for (final (configured, expected) in <(String, String)>[
+        ('https://example.com/', 'https://example.com'),
+        ('https://example.com///', 'https://example.com'),
+        ('https://example.com/base/', 'https://example.com/base'),
+        ('https://example.com', 'https://example.com'),
+        ('', ''),
+      ]) {
+        final config = SiteConfig(siteDir: '/my/site', baseUrl: configured);
+        expect(config.baseUrl, expected, reason: configured);
+        expect('${config.baseUrl}/about/', isNot(contains('//about/')), reason: configured);
+      }
+      // Slashes only is left alone: emptying it would silently switch off
+      // sitemap and feed generation, both of which gate on a non-empty base.
+      expect(SiteConfig(siteDir: '/my/site', baseUrl: '/').baseUrl, '/');
+    });
   });
 
   group('SiteConfig.load()', () {
@@ -140,6 +160,21 @@ void main() {
         ..writeAsStringSync(': invalid: yaml: here\n  bad indent');
 
       expect(() => SiteConfig.load(configFile.path), throwsA(isA<SiteConfigException>()));
+    });
+
+    test('non-string scalar fields name the field in SiteConfigException', () {
+      final tempDir = Directory.systemTemp.createTempSync('site_cfg_scalar_');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+      final configFile = File(p.join(tempDir.path, 'trellis_site.yaml'))..writeAsStringSync('title: 2026\n');
+
+      expect(
+        () => SiteConfig.load(configFile.path),
+        throwsA(
+          isA<SiteConfigException>()
+              .having((e) => e.message, 'message', contains('title'))
+              .having((e) => e.configPath, 'configPath', configFile.path),
+        ),
+      );
     });
 
     test('taxonomies parsed as List<String>', () {

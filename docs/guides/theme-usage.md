@@ -9,29 +9,79 @@ Related docs:
 
 ## Installing a Theme
 
-### From a Git URL
+A theme is executable site code, not a passive style preset: its layouts are rendered during the build, its SASS is
+compiled, and its JavaScript runs in visitors' browsers. Inspect third-party themes before installing them and pin a
+reviewed tag or branch with `--ref` in production.
+
+### A Built-in Theme
+
+The six themes that ship with Trellis (`arbor`, `bloom`, `folio`, `lattice`, `meadow`, `verdant`) live under `themes/<name>/` in the [tolo/trellis](https://github.com/tolo/trellis) repository. `--theme <name>` installs one of them out of that repository:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis-theme-verdant
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
 ```
 
-This clones the theme into `themes/verdant/` and sets `theme: verdant` in `trellis_site.yaml`.
+This copies `themes/lattice/` into your site's `themes/lattice/` and sets `theme: lattice` in `trellis_site.yaml`. Browse the [themes gallery](https://tolo.github.io/trellis/docs/themes/gallery/) to pick one.
+
+### From a Single-Theme Git Repository
+
+When a theme is the whole repository, omit `--theme` — the theme name is derived from the repository name:
+
+```bash
+trellis theme add https://github.com/yourname/trellis-theme-orchard
+```
+
+This clones the repository into `themes/orchard/` and sets `theme: orchard`.
 
 ### Pinning to a Version
 
 ```bash
-trellis theme add https://github.com/tolo/trellis-theme-verdant --ref v1.0.0
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
 ```
 
-Use `--ref` to pin to a git tag, branch, or commit SHA. Recommended for production sites.
+Use `--ref` to pin to a git tag or branch. Recommended for production sites.
+`--ref` becomes `git clone --branch`, so the value must be a ref that already
+exists on the remote — pick one from the
+[releases](https://github.com/tolo/trellis/releases). An unpushed tag fails with
+`Remote branch <tag> not found`.
 
 ### From a Local Path (development)
 
 ```bash
 trellis theme add ./path/to/my-theme
+
+# Or one theme out of a local multi-theme checkout
+trellis theme add ../trellis --theme lattice
 ```
 
 Useful when authoring a theme alongside a site, or testing before publishing to git.
+
+### Site Layouts Win Over Theme Layouts
+
+Layouts resolve **site-first**: for `layouts/base.html`, the SSG uses your site's
+`layouts/base.html` if it exists and only falls back to the theme's. That is what makes
+[layout overrides](#dimension-2-layout-override-at-same-path) work — but it also means a site that
+already has a full set of layouts shadows the whole theme.
+
+That is the case when you add a theme to a project scaffolded with `trellis create --template blog`:
+the scaffold writes `layouts/base.html`, `layouts/home.html`, `layouts/_default/single.html`,
+`layouts/_default/list.html` and `layouts/posts/single.html`, which covers everything a theme
+provides. The build succeeds and copies the theme's CSS into the output, but no page links it — the
+site renders unstyled.
+
+`trellis theme add` lists the shadowing files when it installs, and `trellis build` warns when the
+theme's stylesheets ended up in the output with no page linking them. To fix it, either:
+
+- delete or rename the site layouts you want the theme to render, or
+- keep them and pull the theme in explicitly with the `theme:` prefix, e.g.
+  `<html tl:extends="theme:layouts/base.html">` (see
+  [Dimension 3](#dimension-3-tlextends-block-override)).
+
+`trellis theme add` reports *any* shadowed layout, since at install time there is no build to check.
+`trellis build` is narrower: it only reports a theme no emitted page links, so an override that keeps
+the theme's stylesheet link — a `base.html` copied from the theme, or a layout rendering inside the
+theme's shell — builds silently. Replacing `base.html` with a shell of your own is reported, because
+nothing links the theme after that.
 
 
 ## Configuring a Theme
@@ -205,14 +255,16 @@ Because site SASS takes precedence over theme SASS, these values override the th
 trellis theme update
 
 # Update a specific theme
-trellis theme update verdant
+trellis theme update orchard
 ```
+
+`trellis theme update` runs `git pull` inside the installed theme, so it only works for themes installed from a single-theme repository. A theme installed with `--theme <name>` carries no git metadata — remove and re-add it instead.
 
 If you need to change the pinned version, remove and re-add with a new `--ref`:
 
 ```bash
-trellis theme remove verdant
-trellis theme add https://github.com/tolo/trellis-theme-verdant --ref v2.0.0
+trellis theme remove lattice
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
 ```
 
 

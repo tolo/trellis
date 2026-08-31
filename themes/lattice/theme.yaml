@@ -1,0 +1,100 @@
+name: lattice
+version: 1.0.0
+author: Trellis Team
+description: A garden-inspired documentation theme with an expressive home page and complete docs navigation.
+min_trellis_version: 0.10.0
+screenshots:
+  - screenshots/light.png
+  - screenshots/dark.png
+features: [docs, dark-mode, responsive, accessible, syntax-highlighting, search]
+
+params:
+  # Standard params (18).
+  skin: { type: enum, values: [light, dark, auto], default: auto, description: Color scheme }
+  primary_color: { type: color, default: "#2E7D4F", description: Light-skin primary accent }
+  accent_color: { type: color, default: "#6E9B45", description: Light-skin secondary accent }
+  text_color: { type: color, default: "#1C2B21", description: Light-skin body text }
+  muted_color: { type: color, default: "#47584C", description: Light-skin muted text }
+  bg_color: { type: color, default: "#FBFAF5", description: Light-skin page background }
+  surface_color: { type: color, default: "#FFFFFF", description: Light-skin surface background }
+  border_color: { type: color, default: "#E7E3D4", description: Light-skin borders }
+  font_family: { type: string, default: "Instrument Sans, -apple-system, sans-serif", description: Body font stack }
+  heading_font_family: { type: string, default: "Fraunces, Georgia, serif", description: Heading font stack }
+  code_font_family: { type: string, default: "Spline Sans Mono, ui-monospace, monospace", description: Code font stack }
+  max_width: { type: string, default: "1056px", description: Maximum content width }
+  border_radius: { type: string, default: "8px", description: Global corner radius }
+  nav_links:
+    type: list
+    default: [{ label: Home, url: / }, { label: Docs, url: /docs/ }]
+    description: Header navigation links
+  social_links: { type: list, default: [], description: Footer social links }
+  footer_text: { type: string, default: null, description: Optional footer text }
+  show_powered_by: { type: boolean, default: true, description: Show Trellis attribution }
+  show_rss_link: { type: boolean, default: true, description: Show feed discovery links }
+
+  # Docs params (the Arbor contract).
+  show_sidebar: { type: boolean, default: true, description: Show docs sidebar }
+  show_toc: { type: boolean, default: true, description: Show page table of contents }
+  show_prev_next: { type: boolean, default: true, description: Show previous and next links }
+  show_search: { type: boolean, default: true, description: Show client-side docs search }
+  toc_title: { type: string, default: "On this page", description: TOC title }
+  sidebar_title: { type: string, default: "Documentation", description: Sidebar label }
+
+  # Lattice params.
+  logo: { type: string, default: null, description: Optional prefix-relative header logo path }
+  favicon: { type: string, default: "favicon.svg", description: Prefix-relative favicon path }
+  excerpt_length: { type: int, default: 160, description: Plain-text generated-summary length }
+  # Home-page copy. Defaults are content-neutral placeholders that render a
+  # coherent page but name no product — a site that installs Lattice and sets
+  # nothing must not publish someone else's pitch. Keep release version numbers
+  # out of them: theme defaults are outside tool/version_lockstep.sh.
+  hero_eyebrow: { type: string, default: "Your tagline here", description: Hero eyebrow }
+  hero_headlines:
+    type: list
+    default:
+      - { prefix: "Say what your project ", emphasis: "actually does", suffix: "." }
+      - { prefix: "Then show it in ", emphasis: "one screen", suffix: "." }
+    description: "Headline entries [{prefix, emphasis, suffix}]"
+  hero_lede:
+    {
+      type: string,
+      default: "One or two sentences describing what you build and who it is for.",
+      description: Hero introduction,
+    }
+  hero_cta_primary_label: { type: string, default: "Read the docs", description: Primary hero CTA label }
+  hero_cta_primary_url: { type: string, default: "/docs/", description: Primary hero CTA URL }
+  hero_cta_secondary_label: { type: string, default: "Get started", description: Secondary hero CTA label }
+  hero_cta_secondary_url:
+    { type: string, default: "/docs/getting-started/", description: Secondary hero CTA URL }
+  terminal_card_lines:
+    {
+      type: list,
+      default:
+        [
+          { prefix: "$", text: "your-cli init my-project", kind: command },
+          { prefix: "+", text: "project scaffolded", kind: output },
+          { prefix: "$", text: "your-cli dev", kind: command },
+          { prefix: "+", text: "watching for changes", kind: output },
+          { prefix: ">", text: "http://localhost:8080", kind: output },
+        ],
+      description: "Hero terminal entries [{prefix, text, kind}]",
+    }
+  show_terminal_card: { type: boolean, default: true, description: Show hero terminal card }
+  show_code_showcase: { type: boolean, default: true, description: Show code showcase }
+  show_why_grid: { type: boolean, default: true, description: Show benefits grid }
+  show_demo: { type: boolean, default: true, description: Show two-view demo }
+  show_themes_showcase: { type: boolean, default: true, description: Show theme cards }
+  show_cta: { type: boolean, default: true, description: Show closing CTA }
+  cta_title: { type: string, default: "Ready when you are", description: Closing CTA title }
+  cta_body:
+    {
+      type: string,
+      default: "Two commands to go from nothing to a running site.",
+      description: Closing CTA body,
+    }
+  cta_commands:
+    {
+      type: list,
+      default: ["your-cli init my-project", "your-cli dev"],
+      description: Closing CTA commands,
+    }

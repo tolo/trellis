@@ -33,7 +33,8 @@ class SiteConfig {
   /// The site title.
   final String title;
 
-  /// The canonical base URL (e.g. `https://example.com`).
+  /// The canonical base URL (e.g. `https://example.com`), with any trailing
+  /// slash stripped by [normalizeBaseUrl].
   final String baseUrl;
 
   /// The normalized URL path-prefix (sub-path) the site is served under.
@@ -140,7 +141,7 @@ class SiteConfig {
     return SiteConfig._(
       siteDir: siteDir,
       title: title,
-      baseUrl: baseUrl,
+      baseUrl: normalizeBaseUrl(baseUrl),
       pathPrefix: normalizePathPrefix(pathPrefix),
       description: description,
       contentDir: resolve(contentDir, 'content'),
@@ -196,6 +197,13 @@ class SiteConfig {
     final map = (yaml as YamlMap?) ?? YamlMap();
     final siteDir = p.dirname(resolvedPath);
 
+    String? stringValue(String field) {
+      final value = map[field];
+      if (value == null) return null;
+      if (value is String) return value;
+      throw SiteConfigException("'$field:' must be a string, got ${value.runtimeType}", configPath: resolvedPath);
+    }
+
     final rawParams = map['params'];
     final params = rawParams is YamlMap ? convertYamlMap(rawParams) : <String, dynamic>{};
 
@@ -225,15 +233,15 @@ class SiteConfig {
 
     return SiteConfig(
       siteDir: siteDir,
-      title: (map['title'] as String?) ?? '',
-      baseUrl: (map['baseUrl'] as String?) ?? '',
+      title: stringValue('title') ?? '',
+      baseUrl: stringValue('baseUrl') ?? '',
       pathPrefix: pathPrefix,
-      description: (map['description'] as String?) ?? '',
-      contentDir: map['contentDir'] as String?,
-      layoutsDir: map['layoutsDir'] as String?,
-      staticDir: map['staticDir'] as String?,
-      outputDir: map['outputDir'] as String?,
-      dataDir: map['dataDir'] as String?,
+      description: stringValue('description') ?? '',
+      contentDir: stringValue('contentDir'),
+      layoutsDir: stringValue('layoutsDir'),
+      staticDir: stringValue('staticDir'),
+      outputDir: stringValue('outputDir'),
+      dataDir: stringValue('dataDir'),
       taxonomies: taxonomies,
       paginate: paginate,
       params: params,
@@ -242,6 +250,25 @@ class SiteConfig {
       highlightConfig: highlightConfig,
       themeConfig: themeConfig,
     );
+  }
+
+  /// Strips trailing slashes from a `baseUrl`, so it concatenates cleanly with
+  /// the root-absolute page URLs everything downstream joins onto it.
+  ///
+  /// `baseUrl: https://example.com/` otherwise renders every theme's
+  /// `<meta property="og:url" tl:attr="content=${site.baseUrl} + ${page.url}">`
+  /// as `https://example.com//`. Normalized once here rather than in each
+  /// layout, so a third-party theme gets the same guarantee — and alongside
+  /// [normalizePathPrefix], which already canonicalizes the other URL config.
+  /// [SitemapGenerator] and [FeedGenerator] carry their own trailing-slash trim
+  /// and are unaffected.
+  ///
+  /// A value made only of slashes is returned unchanged: emptying it would
+  /// silently switch off sitemap and feed generation, which both gate on a
+  /// non-empty base.
+  static String normalizeBaseUrl(String value) {
+    final trimmed = value.replaceFirst(RegExp(r'/+$'), '');
+    return trimmed.isEmpty ? value : trimmed;
   }
 
   /// Normalizes a raw `pathPrefix` config value to its canonical form.

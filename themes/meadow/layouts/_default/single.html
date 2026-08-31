@@ -1,0 +1,6 @@
+<!DOCTYPE html>
+<html tl:extends="layouts/base.html" lang="en"><head><title>Page</title></head><body>
+<main id="main-content" tl:define="content"><div class="wrap measure"><article class="page"><header class="page-header">
+<a class="back-link" tl:href="${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">← Back</a>
+<h1 tl:text="${page.title}">Title</h1></header><div class="prose" tl:utext="${page.content}">Content</div>
+</article></div></main></body></html>

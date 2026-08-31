@@ -1,0 +1,1429 @@
+@import "variables";
+
+@mixin lattice-dark {
+  --paper: #101915;
+  --ink: #e6eee5;
+  --ink-soft: #a2b2a4;
+  --leaf: #6fbf8b;
+  --footer-link: #6fbf8b;
+  --leaf-hover: #8fd3a6;
+  --on-leaf: #0d1710;
+  --tendril: #8fbf62;
+  --lattice: #1a2620;
+  --lattice-strong: #27392c;
+  --card: #16221b;
+  --tint: #131f19;
+  --foot-bg: #15211b;
+  --start-bg: #182b1f;
+  --start-border: #2c4433;
+  --chrome-bg: #121c16;
+  --chip-bg: #1e3025;
+  --chip-fg: #9cd3ae;
+  --tag-bg: #1e3025;
+  --tl-bg: #1e3527;
+  --conf-bg: #121c16;
+  --wash-a: rgb(111 191 139 / 0.055);
+  --wash-b: rgb(143 191 98 / 0.04);
+  // Same AA rule as the light skin, measured against the dark --card.
+  --syntax-tag: #c9a96a;
+  --syntax-attribute: #8f9b84;
+  --syntax-string: #7faed4;
+  --syntax-keyword: #b48bd9;
+  --syntax-number: #dd9a76;
+  --syntax-function: #6fc9bd;
+  --syntax-dim: #82907f;
+  --shadow-soft: rgb(0 0 0 / 0.25);
+  --shadow: rgb(0 0 0 / 0.45);
+  --bg-lattice: #27392c;
+  color-scheme: dark;
+}
+
+[data-skin="dark"],
+[data-skin="auto"][data-theme="dark"] {
+  @include lattice-dark;
+}
+@if $trellis-skin == auto {
+  @media (prefers-color-scheme: dark) {
+    [data-skin="auto"]:not([data-theme="light"]) {
+      @include lattice-dark;
+    }
+  }
+}
+
+/* Each range is the exact cmap of the file it gates, taken from the built bytes rather than from what
+   tool/subset_fonts.py asked for: the requested set is one union shared by eight families, and a family whose
+   designer drew none of a codepoint gets none of it. A range wider than its file matches the face and then
+   misses, so the character reaches a system fallback only after paying for the download; a range narrower than
+   its file refuses glyphs the file holds and breaks a word across two typefaces. Fraunces and Spline Sans Mono
+   draw no arrows upstream, so U+2190-2193 is declared by Instrument Sans alone. On overlap (U+0304, U+0308) the
+   latin face wins, being declared second, and carries both. The ranges are asserted against the shipped cmaps
+   by the theme contract test; regenerate the files with tool/subset_fonts.py. */
+@font-face {
+  font-family: "Fraunces";
+  src: url("../fonts/fraunces-latin-ext.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 100 900;
+  unicode-range:
+    U+0100-0148, U+014A-017E, U+018F, U+0192, U+01A0-01A1, U+01AF-01B0, U+01C4-01CC, U+01D9-01DA, U+01E6-01E7,
+    U+01EA-01EB, U+01FA-021B, U+022A-022D, U+0230-0233, U+0237, U+0259, U+02B9-02BA, U+02C7, U+02DD, U+0304, U+0308,
+    U+1E08-1E09, U+1E0C-1E0F, U+1E14-1E17, U+1E1C-1E1D, U+1E20-1E21, U+1E24-1E25, U+1E2A-1E2B, U+1E2E-1E2F,
+    U+1E36-1E37, U+1E3A-1E3B, U+1E42-1E43, U+1E46-1E49, U+1E4C-1E53, U+1E5A-1E5B, U+1E5E-1E5F, U+1E62-1E65,
+    U+1E6C-1E6F, U+1E78-1E7B, U+1E80-1E85, U+1E92-1E93, U+1E97, U+1E9E, U+1EF2-1EF9, U+2020, U+20A1, U+20A3-20A4,
+    U+20A6-20A7, U+20A9, U+20AB, U+20AD, U+20B1-20B2, U+20B5, U+20B9-20BA, U+20BC-20BD;
+}
+@font-face {
+  font-family: "Fraunces";
+  src: url("../fonts/fraunces-latin.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 100 900;
+  unicode-range:
+    U+0020-007E, U+00A0-00FF, U+0102, U+0131, U+0152-0153, U+02BC, U+02C6, U+02DA, U+02DC, U+0300-0304, U+0308,
+    U+2010, U+2013-2014, U+2018-201A, U+201C-201E, U+2020-2022, U+2026, U+2030, U+2032-2033, U+2039-203A, U+2044,
+    U+2052, U+20AC, U+2122, U+2212, U+2215;
+}
+/* The hero's emphasised word is italic (A3 mockup, `Fraunces:ital,opsz,wght@1,9..144,500`). Without a real
+   italic face the browser shears the upright at 38-64px. One instance is vendored: wght pinned to 500, opsz
+   kept because the headline drives it. Latin only - latin-ext emphasis still falls back to the upright. */
+@font-face {
+  font-family: "Fraunces";
+  src: url("../fonts/fraunces-italic-latin.woff2") format("woff2");
+  font-display: swap;
+  font-style: italic;
+  font-weight: 500;
+  unicode-range:
+    U+0020-007E, U+00A0-00FF, U+0102, U+0131, U+0152-0153, U+02BC, U+02C6, U+02DA, U+02DC, U+0300-0304, U+0308,
+    U+0323, U+2013-2014, U+2018-201A, U+201C-201E, U+2020-2022, U+2026, U+2030, U+2032-2033, U+2039-203A, U+2044,
+    U+2052, U+20AC, U+2122, U+2212, U+2215;
+}
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("../fonts/instrument-sans-latin-ext.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400 700;
+  unicode-range:
+    U+0100-0107, U+010A-0113, U+0116-011B, U+011E-0123, U+0126-0127, U+012A-012B, U+012E-0133, U+0136-0137,
+    U+0139-013E, U+0141-0148, U+014A-014D, U+0150-015B, U+015E-0161, U+0164-0165, U+016A-017E, U+01CD-01CE,
+    U+0218-021B, U+0237, U+02C7, U+02DD, U+0304, U+0308, U+1E80-1E85, U+1E9E, U+1EF2-1EF3;
+}
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("../fonts/instrument-sans-latin.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400 700;
+  unicode-range:
+    U+0020-007E, U+00A0-00A3, U+00A5, U+00A7-00AB, U+00AE-00B0, U+00B4, U+00B6-00B8, U+00BA-00BB, U+00BF-00FF, U+0102,
+    U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+0300-0304, U+0308, U+2013-2014, U+2018-201A, U+201C-201E, U+2022,
+    U+2026, U+2030, U+2039-203A, U+20AC, U+2122, U+2190-2193, U+2212;
+}
+@font-face {
+  font-family: "Spline Sans Mono";
+  src: url("../fonts/spline-sans-mono-latin-ext.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 300 700;
+  unicode-range:
+    U+0100-0107, U+010A-011B, U+011E-0123, U+0126-0133, U+0136-0137, U+0139-0148, U+014A-015B, U+015E-017E, U+018F,
+    U+01E6-01E7, U+01F4-01F5, U+01FA-01FF, U+0218-021B, U+0232-0233, U+0237, U+0259, U+02C7, U+02DD, U+0304, U+0308,
+    U+1E80-1E85, U+1E9E, U+1EF2-1EF3, U+1EF8-1EF9, U+2020;
+}
+@font-face {
+  font-family: "Spline Sans Mono";
+  src: url("../fonts/spline-sans-mono-latin.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 300 700;
+  unicode-range:
+    U+000D, U+0020-007E, U+00A0-00FF, U+0102, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+0300-0304, U+0308,
+    U+0323, U+200B, U+2013-2014, U+2018-201A, U+201C-201E, U+2020-2022, U+2026, U+2039-203A, U+2044, U+20AC, U+2122,
+    U+2212, U+2215;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+/* Progressive-enhancement controls ship hidden and are revealed by lattice.js. Several of
+   them set their own display, which would otherwise beat the UA [hidden] rule. */
+[hidden] {
+  display: none !important;
+}
+html {
+  --lattice-masthead-height: 48px;
+  scroll-behavior: smooth;
+  /* .site-header is sticky, so an un-offset anchor jump parks the target behind it. */
+  scroll-padding-top: calc(var(--lattice-masthead-height) + 2rem);
+}
+/* `break-word` wraps a long token but does not shrink a box's min-content size, so an
+   unbreakable token (a URL, a package name, a hash) still widens its grid track and pushes
+   the document past the viewport — a WCAG 1.4.10 reflow failure. `anywhere` does shrink it.
+   The per-component `anywhere` rules below predate this and stay: they cover panes that sit
+   outside `main`. Scoped to page content so the wordmark and nav labels are left alone. */
+main * { overflow-wrap: anywhere; }
+/* No scroll-margin-top on headings: it *adds* to the scrollport's scroll-padding-top, so a
+   heading landed at 10rem while a section id landed at 5rem. The claim it was here for —
+   that scrollIntoView reads the target's margin rather than the scrollport's padding — is
+   not true: measured in Chrome, an un-margined heading lands at exactly scroll-padding-top
+   under scrollIntoView() and under a fragment jump alike. The scrollport offset above covers
+   every anchor target. */
+body {
+  /* Short pages must still push the footer to the bottom of the viewport. The skip link
+     and the background lattice are both position:fixed, so neither becomes a flex item. */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(1200px 800px at 85% -120px, var(--wash-a), transparent 70%),
+    radial-gradient(1000px 700px at -8% 38%, var(--wash-b), transparent 70%);
+  background-repeat: no-repeat;
+  color: var(--ink);
+  font: 17px/1.6 var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+body > main { flex: 1 0 auto; }
+a {
+  color: var(--leaf);
+  text-underline-offset: 3px;
+}
+a:hover {
+  color: var(--leaf-hover);
+}
+:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+  border-radius: 2px;
+}
+.wrap {
+  width: 100%;
+  max-width: var(--content-width);
+  margin-inline: auto;
+  padding-inline: 24px;
+}
+.background-lattice {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  color: var(--bg-lattice);
+  opacity: 0.8;
+  mask-image: radial-gradient(ellipse 46% 62% at 50% 46%, transparent 55%, #000 94%);
+}
+.background-lattice svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.skip-to-content {
+  position: fixed;
+  z-index: 100;
+  top: 8px;
+  left: 12px;
+  padding: 8px 12px;
+  background: var(--leaf);
+  color: var(--paper);
+  transform: translateY(-150%);
+}
+.skip-to-content:focus {
+  transform: none;
+}
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid var(--lattice-strong);
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: blur(7px);
+}
+.nav {
+  height: var(--lattice-masthead-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font: 600 22px var(--display);
+  text-decoration: none;
+}
+.trellis-logo {
+  display: block;
+  width: 108px;
+  height: auto;
+}
+[data-skin="dark"] .trellis-logo,
+[data-skin="auto"][data-theme="dark"] .trellis-logo {
+  filter: brightness(1.35) saturate(0.9);
+}
+.nav-right,
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+.nav-right {
+  min-width: 0;
+  flex: 1 1 0;
+  justify-content: flex-end;
+}
+.nav-links {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  list-style: none;
+}
+.nav-links li { flex: 0 0 auto; }
+.nav-links a {
+  color: var(--ink-soft);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.mobile-nav {
+  display: none;
+}
+.mode-toggle {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--lattice-strong);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.mode-toggle .sun {
+  display: none;
+}
+[data-theme="dark"] .mode-toggle .sun {
+  display: block;
+}
+[data-theme="dark"] .mode-toggle .moon {
+  display: none;
+}
+/* Element selector rather than the main element's id: an id outranks .hero-section below and
+   forces an !important to undo it. Same elements either way — home sections live here. */
+main > section {
+  padding-block: 84px;
+  border-top: 1px solid var(--lattice-strong);
+}
+.hero-section {
+  padding-block: 0;
+  border: 0;
+}
+.hero {
+  position: relative;
+  padding-block: 120px 96px;
+}
+.hero-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+}
+.hero-copy {
+  position: relative;
+  z-index: 1;
+  padding-left: 144px;
+  --h1-size: clamp(38px, 5.4vw, 64px);
+}
+.hero-vine {
+  position: absolute;
+  top: -48px;
+  left: 0;
+  width: 96px;
+  height: calc(100% + 96px);
+  pointer-events: none;
+}
+.hero-vine svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.vine-stem {
+  fill: none;
+  stroke: var(--tendril);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+.vine-leaf {
+  fill: var(--tendril);
+  opacity: 0.9;
+}
+.vine-leaf.is-dark {
+  fill: var(--leaf);
+}
+.eyebrow {
+  margin: 0 0 20px;
+  color: var(--leaf);
+  font: 600 13px var(--mono);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+/* Server-rendered state: the headline sits in flow at its designed size and the slot grows
+   with it, so a visitor without JavaScript gets the full-size heading rather than a
+   pre-shrunk one. lattice.js adds .is-fitted before measuring, which locks the slot to a
+   fixed two-line box — the geometry the crossfade and the fit-down steps depend on. */
+.headline-slot {
+  min-height: calc(var(--h1-size) * 1.08 * 2);
+  display: flex;
+  align-items: center;
+  margin-bottom: 26px;
+}
+.headline-slot.is-fitted {
+  height: calc(var(--h1-size) * 1.08 * 2);
+  overflow: hidden;
+}
+h1,
+h2,
+h3 {
+  font-family: var(--display);
+  line-height: 1.15;
+}
+.headline-slot h1 {
+  position: relative;
+  width: 100%;
+  max-width: 24ch;
+  margin: 0;
+  font-size: calc(var(--h1-size) * var(--headline-fit-scale, 1));
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+  font-variation-settings: "opsz" 100;
+}
+.headline-slot.is-fitted h1 {
+  height: 100%;
+}
+/* Taken out of flow only once the slot has a fixed height to centre inside. */
+.headline-slot.is-fitted .headline-text {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  transform: translateY(-50%);
+}
+.headline-slot h1 em {
+  color: var(--leaf);
+  font-style: italic;
+}
+.headline-slot h1.fit-1 {
+  --headline-fit-scale: 0.86;
+}
+.headline-slot h1.fit-2 {
+  --headline-fit-scale: 0.74;
+}
+.headline-slot h1.fit-3 {
+  --headline-fit-scale: 0.64;
+}
+.headline-entry {
+  display: none;
+}
+.headline-entry.is-active {
+  display: inline;
+}
+.lede {
+  margin: 0 0 36px;
+  max-width: 52ch;
+  color: var(--ink-soft);
+  font-size: 19px;
+}
+.cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0;
+}
+.button {
+  display: inline-block;
+  padding: 12px 26px;
+  border-radius: var(--radius);
+  font-weight: 700;
+  text-decoration: none;
+}
+.button-primary {
+  background: var(--leaf);
+  color: var(--on-leaf);
+}
+.button-secondary {
+  border: 1px solid var(--lattice-strong);
+  background: var(--card);
+  color: var(--ink);
+}
+.terminal,
+.pane,
+.demo,
+.theme-card,
+.doc-card {
+  overflow: hidden;
+  border: 1px solid var(--lattice-strong);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 8px 28px var(--shadow);
+}
+.terminal {
+  display: none;
+  padding-block: 0;
+  border-top: 1px solid var(--lattice-strong);
+}
+.window-bar,
+.pane-bar,
+.demo-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--lattice);
+  background: var(--chrome-bg);
+  color: var(--ink-soft);
+  font: 12px var(--mono);
+}
+.window-bar i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--lattice-strong);
+}
+.window-bar i:first-child {
+  background: #be6e54;
+}
+.window-bar i:nth-child(2) {
+  background: #c9a04b;
+}
+.window-bar i:nth-child(3) {
+  background: var(--tendril);
+}
+.window-bar span {
+  margin-left: 8px;
+}
+pre {
+  overflow: auto;
+  margin: 0;
+  padding: 20px;
+  font: 13px/1.75 var(--mono);
+}
+code {
+  font-family: var(--mono);
+}
+.terminal pre {
+  padding: 20px 20px 22px;
+  font-size: 13px;
+  line-height: 2;
+}
+.terminal-line {
+  display: block;
+  min-height: 26px;
+}
+.terminal-line[data-kind="command"] {
+  color: var(--ink);
+  font-weight: 500;
+}
+.terminal-line[data-kind="output"] {
+  color: var(--ink-soft);
+}
+.terminal-line[data-kind="output"] + .terminal-line[data-kind="command"] {
+  margin-top: 26px;
+}
+.terminal-prompt {
+  color: var(--leaf);
+  font-weight: 500;
+}
+.terminal-text {
+  margin-left: 1ch;
+}
+.section-heading {
+  max-width: 60ch;
+  margin-bottom: 43px;
+}
+.section-heading h2,
+.closing h2 {
+  margin: 0 0 12px;
+  font-size: clamp(28px, 3.4vw, 38px);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+.section-heading p,
+.theme-meta p,
+.why-cell p {
+  color: var(--ink-soft);
+}
+.tinted {
+  background: var(--tint);
+}
+.code-duo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+}
+.duo-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--leaf);
+  font-family: var(--mono);
+  text-align: center;
+}
+.duo-arrow b {
+  // Spline Sans Mono draws no arrow at any weight - Instrument Sans is the one
+  // vendored face carrying U+2190-2193, so the mark must come from --body.
+  font-family: var(--body);
+  font-size: 28px;
+  font-weight: 400;
+}
+.duo-arrow small {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+.pane {
+  border-radius: 10px;
+  box-shadow: 0 1px 2px var(--shadow-soft);
+}
+.pane-bar {
+  justify-content: space-between;
+  padding-inline: 16px;
+  font-size: 12.5px;
+}
+.pane-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--tag-bg);
+  color: var(--leaf-hover);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.pane pre {
+  min-height: 176px;
+  font-size: 13px;
+  line-height: 1.75;
+}
+.t-dim {
+  color: var(--syntax-dim);
+}
+.t-tag {
+  color: var(--syntax-tag);
+}
+.t-attr {
+  color: var(--syntax-attribute);
+}
+.t-tl {
+  padding-inline: 2px;
+  border-radius: 3px;
+  background: var(--tl-bg);
+  color: var(--leaf);
+  font-weight: 500;
+}
+.t-str {
+  color: var(--syntax-string);
+}
+.t-expr {
+  color: var(--syntax-keyword);
+}
+.why-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  border: 1px solid var(--lattice-strong);
+  background: var(--lattice-strong);
+}
+.why-cell {
+  padding: 30px 32px;
+  background: var(--paper);
+}
+.why-cell h3 {
+  margin: 14px 0 8px;
+  font-size: 20px;
+  font-weight: 600;
+}
+.leaf-mark {
+  display: block;
+  color: var(--leaf);
+}
+.demo {
+  max-width: 1000px;
+  margin-inline: auto;
+  box-shadow: 0 8px 28px var(--shadow);
+}
+.demo-bar {
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 9px 16px;
+}
+.window-dots {
+  display: flex;
+  gap: 6px;
+}
+.window-dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--lattice-strong);
+}
+.window-dots i:first-child {
+  background: #be6e54;
+}
+.window-dots i:nth-child(2) {
+  background: #c9a04b;
+}
+.window-dots i:nth-child(3) {
+  background: var(--tendril);
+}
+.demo-toggle {
+  display: inline-flex;
+  margin-left: auto;
+  padding: 3px;
+  border: 1px solid var(--lattice);
+  border-radius: 999px;
+  background: var(--conf-bg);
+}
+.demo-toggle button {
+  border: 0;
+  border-radius: 999px;
+  padding: 5px 14px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: 500 13px var(--body);
+  cursor: pointer;
+}
+.demo-toggle button[aria-pressed="true"] {
+  background: var(--leaf);
+  color: var(--on-leaf);
+}
+.demo-toggle small {
+  margin-right: 5px;
+  font: 600 10.5px var(--mono);
+  opacity: 0.65;
+}
+.demo-panes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.demo-source {
+  border-right: 1px solid var(--lattice);
+}
+.demo-output {
+  padding: 0 18px 20px;
+}
+.demo-label {
+  margin: 0;
+  padding: 12px 18px 0;
+  color: var(--ink-soft);
+  font: 12px var(--mono);
+}
+.demo-label b {
+  color: var(--ink);
+  font-weight: 500;
+}
+.demo-source pre {
+  padding: 14px 18px 20px;
+}
+.demo-url {
+  margin: 12px 0;
+  padding: 6px 12px;
+  border: 1px solid var(--lattice);
+  border-radius: 7px;
+  background: var(--conf-bg);
+  color: var(--ink-soft);
+  font: 12px var(--mono);
+}
+.demo-url strong {
+  color: var(--leaf-hover);
+  font-weight: 400;
+}
+.demo-page {
+  min-height: 250px;
+  padding: 16px 22px;
+  border: 1px solid #e1e4dc;
+  border-radius: 8px;
+  background: #fff;
+  color: #26312a;
+}
+.demo-page h3 {
+  margin: 0 0 3px;
+  color: #1c2b21;
+  font-size: 17px;
+  font-weight: 600;
+}
+.demo-page p {
+  margin: 0 0 6px;
+  color: #57695c;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.demo-page a {
+  color: #2e7d4f;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.demo-post {
+  padding-block: 11px;
+}
+.demo-post + .demo-post {
+  border-top: 1px solid #e7e9e2;
+}
+.demo-caption {
+  max-width: 66ch;
+  margin: 18px auto 0;
+  color: var(--ink-soft);
+  font-size: 14.5px;
+  text-align: center;
+}
+.demo-caption code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--chip-bg);
+  color: var(--chip-fg);
+  font-size: 13px;
+}
+.themes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.theme-card {
+  display: flex;
+  flex-direction: column;
+  transition:
+    transform 0.18s,
+    box-shadow 0.18s;
+}
+.theme-card[data-accent="green"] {
+  border-top: 3px solid #2e7d4f;
+}
+.theme-card[data-accent="purple"] {
+  border-top: 3px solid #8e44ad;
+}
+.theme-card[data-accent="blue"] {
+  border-top: 3px solid #2c6bc9;
+}
+.theme-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 28px var(--shadow);
+}
+.theme-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1280 / 800;
+  object-fit: cover;
+  background: var(--chip-bg);
+}
+.theme-meta {
+  padding: 18px 20px 20px;
+}
+.theme-meta h3 {
+  margin: 0 0 4px;
+  font-size: 21px;
+  font-weight: 600;
+}
+.theme-meta code {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: var(--chip-bg);
+  color: var(--chip-fg);
+  font-size: 12.5px;
+}
+.showcase-link {
+  margin: 28px 0 0;
+  text-align: center;
+}
+.closing-section {
+  border: 0;
+}
+.closing {
+  padding: 53px 48px;
+  border: 1px solid var(--start-border);
+  border-radius: 14px;
+  background: var(--start-bg);
+  color: #eef6ee;
+}
+.closing p {
+  max-width: 56ch;
+  margin-bottom: 28px;
+  color: #c5d6c8;
+}
+.commands {
+  display: grid;
+  gap: 8px;
+  max-width: 560px;
+}
+.command {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  border-radius: var(--radius);
+}
+.command button {
+  padding: 4px 12px;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: 600 12.5px var(--body);
+  cursor: pointer;
+}
+.site-footer {
+  margin-top: 24px;
+  padding-block: 40px 48px;
+  border-top: 1px solid var(--lattice-strong);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--foot-bg) 35%, var(--paper)), var(--foot-bg) 60%);
+}
+.site-footer a {
+  color: var(--footer-link);
+  font-size: 14.5px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+}
+.footer-inner p {
+  color: var(--ink-soft);
+  font-size: 14.5px;
+}
+.social-links {
+  display: flex;
+  gap: 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.docs-shell {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) 190px;
+  gap: 42px;
+  align-items: start;
+  padding-block: 64px 96px;
+}
+.sidebar-disclosure {
+  border: 0;
+}
+.sidebar-toggle {
+  display: none;
+}
+.sidebar-tree,
+.sidebar-subtree,
+.toc-list,
+.card-list,
+.breadcrumb ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sidebar-subtree {
+  padding-left: 12px;
+}
+.breadcrumb {
+  margin-bottom: 18px;
+}
+.breadcrumb ul {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.breadcrumb li {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink-soft);
+  font-size: 13.5px;
+}
+.breadcrumb li + li::before {
+  margin-right: 8px;
+  color: var(--lattice-strong);
+  content: "/";
+}
+.breadcrumb a {
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+.breadcrumb a:hover {
+  color: var(--leaf);
+  text-decoration: underline;
+}
+.sidebar-link,
+.sidebar-label,
+.toc-item a {
+  display: block;
+  padding: 5px 8px;
+  color: var(--ink-soft);
+  font-size: 14px;
+  text-decoration: none;
+}
+.sidebar-link.is-active {
+  color: var(--leaf);
+  border-left: 2px solid var(--leaf);
+  background: var(--tint);
+}
+.docs-toc {
+  position: sticky;
+  top: calc(var(--lattice-masthead-height) + 30px);
+}
+.toc-title,
+.sidebar-title {
+  font-size: 12px;
+  /* Instrument Sans ships wght 400-700 (upstream tops out at 700 too), so 800 was clamped to
+     this all along — the stylesheet was claiming a weight nothing could draw. */
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.toc-level-3 a {
+  padding-left: 18px;
+}
+.search-input {
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 8px 10px;
+  border: 1px solid var(--lattice-strong);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+}
+/* Search results, built by static/js/search.js. MAX_RESULTS is 20, so the list carries its own
+   scroll rather than pushing the section tree off the bottom of the sidebar. */
+.search-results {
+  max-height: 320px;
+  margin: 0 0 18px;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+}
+.search-result {
+  margin: 0 0 4px;
+}
+/* Title and snippet are <span>s: without an explicit block they run together on one line and
+   the link inherits the prose underline. */
+.search-result-link {
+  display: block;
+  padding: 6px 8px;
+  border-radius: var(--radius);
+  text-decoration: none;
+}
+.search-result-link:hover,
+.search-result-link:focus-visible {
+  background: var(--tint);
+}
+.search-result-title {
+  display: block;
+  color: var(--leaf);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.search-result-snippet {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.search-empty {
+  padding: 6px 8px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-style: italic;
+}
+.doc {
+  min-width: 0;
+}
+.doc > h1 {
+  position: static;
+  width: auto;
+  height: auto;
+  max-width: none;
+  margin: 0 0 24px;
+  min-height: 0;
+  font-family: var(--body);
+  font-size: clamp(34px, 3.2vw, 46px);
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+.prose {
+  max-width: 72ch;
+}
+.prose img {
+  max-width: 100%;
+}
+.prose :not(pre) > code {
+  overflow-wrap: anywhere;
+}
+.prose table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+}
+.prose th,
+.prose td {
+  overflow-wrap: anywhere;
+}
+.prose pre {
+  overflow: visible;
+  overflow-wrap: anywhere;
+  margin-block: 24px;
+  border: 1px solid var(--lattice);
+  border-radius: var(--radius);
+  background: var(--card);
+  white-space: pre-wrap;
+}
+/* Build-time highlighting tokens (ADR-010). The grouping follows arbor's map so the six
+   built-in themes colour the same things, but the values are Lattice's own palette.
+   .hljs-name and .hljs-selector-tag take --syntax-tag rather than the keyword colour: the
+   home-page panes already colour element names that way, and a page can show both. Classes
+   with no rule here (.hljs-code, .hljs-quote nested in a string) inherit the code colour. */
+.hljs-keyword,
+.hljs-meta-keyword,
+.hljs-section {
+  color: var(--syntax-keyword);
+}
+.hljs-name,
+.hljs-selector-tag {
+  color: var(--syntax-tag);
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-selector-pseudo,
+.hljs-selector-attr {
+  color: var(--syntax-attribute);
+}
+.hljs-string,
+.hljs-char,
+.hljs-link,
+.hljs-addition {
+  color: var(--syntax-string);
+}
+.hljs-number,
+.hljs-literal,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-regexp {
+  color: var(--syntax-number);
+}
+.hljs-built_in,
+.hljs-class,
+.hljs-title,
+.hljs-type {
+  color: var(--syntax-function);
+}
+.hljs-punctuation,
+.hljs-operator,
+.hljs-subst,
+.hljs-params,
+.hljs-meta,
+.hljs-tag,
+.hljs-deletion {
+  color: var(--syntax-dim);
+}
+.hljs-comment,
+.hljs-quote {
+  color: var(--ink-soft);
+  font-style: italic;
+}
+.hljs-emphasis {
+  font-style: italic;
+}
+.hljs-strong {
+  font-weight: 700;
+}
+.page-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 48px;
+}
+.page-nav a {
+  display: grid;
+  text-decoration: none;
+}
+.page-nav small {
+  color: var(--ink-soft);
+}
+.toc-inline {
+  display: none;
+}
+.doc-card {
+  margin-block: 16px;
+  padding: 20px;
+  box-shadow: none;
+}
+.doc-card h2 {
+  margin: 0;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+@media (min-width: 1180px) {
+  .hero-cols {
+    grid-template-columns: minmax(0, 1fr) 350px;
+    gap: 56px;
+  }
+  .terminal {
+    display: block;
+  }
+}
+@media (min-width: 1180px) and (max-width: 1420px) {
+  .hero-copy {
+    --h1-size: 50px;
+  }
+}
+@media (max-width: 980px) {
+  .themes-grid {
+    grid-template-columns: 1fr;
+  }
+  .docs-shell {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+  .docs-shell > .docs-toc {
+    display: none;
+  }
+  .toc-inline {
+    display: block;
+    margin-block: 22px;
+    padding: 16px;
+    border-left: 3px solid var(--leaf);
+    background: var(--tint);
+    /* Uncapped, a long page's contents list pushes the article a full screen down. */
+    max-height: 46vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .toc-inline .docs-toc {
+    display: block;
+    position: static;
+  }
+}
+@media (max-width: 900px) {
+  .demo-panes,
+  .why-grid {
+    grid-template-columns: 1fr;
+  }
+  .demo-source {
+    border: 0;
+    border-bottom: 1px solid var(--lattice);
+  }
+}
+@media (max-width: 1199px) {
+  .code-duo {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .duo-arrow {
+    flex-direction: row;
+    padding-block: 2px;
+  }
+  .duo-arrow b {
+    transform: rotate(90deg);
+  }
+}
+@media (max-width: 700px) {
+  html {
+    --lattice-masthead-height: 56px;
+  }
+  .wrap {
+    padding-inline: 16px;
+  }
+  .nav {
+    gap: 12px;
+  }
+  .nav-right {
+    width: auto;
+    margin-left: auto;
+    gap: 12px;
+  }
+  .desktop-nav {
+    display: none;
+  }
+  .mobile-nav {
+    position: relative;
+    display: block;
+  }
+  .mobile-nav summary {
+    min-height: 44px;
+    padding: 10px 8px;
+    color: var(--ink-soft);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .mobile-nav nav {
+    position: absolute;
+    top: calc(100% + 5px);
+    right: 0;
+    width: min(240px, calc(100vw - 32px));
+    padding: 8px;
+    border: 1px solid var(--lattice-strong);
+    border-radius: var(--radius);
+    background: var(--card);
+    box-shadow: 0 10px 28px var(--shadow);
+  }
+  .mobile-nav ul {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .mobile-nav a {
+    display: block;
+    min-height: 44px;
+    padding: 9px 10px;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .trellis-logo {
+    width: 94px;
+  }
+  .hero-section {
+    padding-block: 0;
+  }
+  .hero {
+    padding-block: 72px;
+  }
+  .hero-copy {
+    padding-left: 0;
+    --h1-size: 38px;
+  }
+  .hero-vine {
+    display: none;
+  }
+  .headline-slot {
+    min-height: calc(var(--h1-size) * 1.08 * 3);
+  }
+  .headline-slot.is-fitted {
+    height: calc(var(--h1-size) * 1.08 * 3);
+  }
+  .docs-shell {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding-block: 32px 64px;
+  }
+  .code-duo pre,
+  .demo-source pre {
+    overflow: visible;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+  .sidebar-disclosure {
+    border: 1px solid var(--lattice);
+    border-radius: var(--radius);
+  }
+  .sidebar-toggle {
+    display: block;
+    min-height: 44px;
+    padding: 11px 14px;
+    color: var(--ink);
+    font-weight: 650;
+  }
+  .sidebar-disclosure[open] .sidebar-toggle {
+    border-bottom: 1px solid var(--lattice);
+  }
+  .docs-sidebar {
+    padding: 14px;
+    max-height: min(60vh, 480px);
+    overflow-y: auto;
+  }
+  .closing {
+    padding: 30px 22px;
+  }
+  main > section {
+    padding-block: 64px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .theme-card:hover {
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  h1[data-headline] {
+    transition: opacity 0.5s ease;
+  }
+  h1[data-headline].is-fading {
+    opacity: 0;
+  }
+  .vine-stem {
+    stroke-dasharray: 1200;
+    stroke-dashoffset: 1200;
+    animation: vine-grow 2.4s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards;
+  }
+  .vine-leaf {
+    opacity: 0;
+    transform-origin: var(--origin);
+    scale: 0;
+    animation: vine-leaf 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  .vine-leaf:nth-of-type(2) {
+    animation-delay: 0.7s;
+  }
+  .vine-leaf:nth-of-type(3) {
+    animation-delay: 1s;
+  }
+  .vine-leaf:nth-of-type(4) {
+    animation-delay: 1.3s;
+  }
+  .vine-leaf:nth-of-type(5) {
+    animation-delay: 1.6s;
+  }
+  .vine-leaf:nth-of-type(6) {
+    animation-delay: 1.9s;
+  }
+  .vine-leaf:nth-of-type(7) {
+    animation-delay: 2.2s;
+  }
+  @keyframes vine-grow {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes vine-leaf {
+    to {
+      opacity: 0.9;
+      scale: 1;
+    }
+  }
+}

@@ -1,17 +1,17 @@
 ---
-title: Sprout
+title: Bloom
 layout: home
 description: The calm note-taking app that grows with your ideas.
 
 hero:
-  eyebrow: New — Sprout 2.0
+  eyebrow: New — Bloom 2.0
   title: |
     Notes that grow<br>into something bigger
   subtitle: A calmer place to think.
-  lede: Sprout turns scattered thoughts into structured knowledge — no folders to
+  lede: Bloom turns scattered thoughts into structured knowledge — no folders to
     fuss over, no lock-in, just a quiet space that keeps up with you.
   image: /img/hero.svg
-  image_alt: A Sprout workspace with linked notes
+  image_alt: A Bloom workspace with linked notes
   ctas:
     - label: Start free
       href: "#pricing"
@@ -45,19 +45,19 @@ features:
     body: Markdown in, Markdown out. Works alongside the tools you already trust.
 
 showcase:
-  title: See Sprout in action
+  title: See Bloom in action
   subtitle: A workspace that stays calm even when your ideas don't.
 
 sections:
   - eyebrow: Capture
     title: From fleeting thought to lasting note
-    body: A global shortcut drops you into a blank note anywhere. Sprout remembers
+    body: A global shortcut drops you into a blank note anywhere. Bloom remembers
       where you were and what you were doing, so capture never breaks your flow.
     image: /img/panel-a.svg
     image_alt: Quick-capture panel
   - eyebrow: Connect
     title: Your notes, quietly linked
-    body: As you write, Sprout suggests connections to what you already know.
+    body: As you write, Bloom suggests connections to what you already know.
       Backlinks and an ambient graph reveal structure you didn't plan.
     image: /img/panel-b.svg
     image_alt: Linked notes graph
@@ -65,17 +65,17 @@ sections:
   - eyebrow: Trust
     title: Built to outlive any app
     body: Everything is plain Markdown on your disk. Export the whole vault in one
-      click. If Sprout ever disappears, your knowledge doesn't.
+      click. If Bloom ever disappears, your knowledge doesn't.
 
 pricing:
   title: Simple, honest pricing
-  subtitle: Start free. Upgrade when Sprout earns it.
+  subtitle: Start free. Upgrade when Bloom earns it.
   note: Prices in USD. Cancel anytime — your notes stay yours.
   tiers:
     - name: Seedling
       price: Free
       period: forever
-      description: Everything you need to start thinking in Sprout.
+      description: Everything you need to start thinking in Bloom.
       features:
         - Unlimited local notes
         - Full-text search
@@ -117,7 +117,7 @@ faq:
       a: Yes. Notes are stored as plain Markdown files on your device. Sync is an
         optional, end-to-end encrypted layer on top — never a requirement.
     - q: Can I import from other apps?
-      a: If it exports Markdown or plain text, Sprout can read it. We ship importers
+      a: If it exports Markdown or plain text, Bloom can read it. We ship importers
         for the most common note apps.
     - q: What happens if I cancel?
       a: Nothing happens to your notes — they're already on your disk. Paid features
@@ -134,6 +134,6 @@ cta_band:
     href: "#"
 ---
 
-Sprout began as a weekend project to escape folder-shaped thinking. Today it helps
+Bloom began as a weekend project to escape folder-shaped thinking. Today it helps
 thousands of writers, researchers, and builders turn scattered notes into
 knowledge they can actually find again.

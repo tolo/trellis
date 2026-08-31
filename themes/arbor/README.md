@@ -36,14 +36,16 @@ CDN-loaded** (see [`VENDORED.md`](VENDORED.md)).
 
 ## Using the theme
 
-In your site's `trellis_site.yaml`:
+Install it from the Trellis repository:
 
-```yaml
-theme: arbor
+```bash
+trellis theme add https://github.com/tolo/trellis --theme arbor --ref v0.11.0
 ```
 
-after adding it under your site's `themes/` directory (e.g. via
-`trellis theme add <arbor-url>`), then customize with `theme_params:`:
+That copies `themes/arbor/` into your site's `themes/` and sets `theme: arbor`
+in `trellis_site.yaml`. `theme:` names a directory under `themes/`, so setting
+it without installing the theme first fails with
+`Theme 'arbor' not found in themes/`. Then customize with `theme_params:`:
 
 ```yaml
 theme_params:

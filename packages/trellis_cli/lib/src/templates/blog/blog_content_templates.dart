@@ -65,6 +65,13 @@ that browsers can render as prototypes without a server.
 - Customize `layouts/` to change the look
 - Run `trellis build` to generate your site
 - Run `trellis serve` to preview it locally
+
+## A note on dates
+
+A date-only `date:` like the one above names a calendar day, so feeds and the
+sitemap anchor it at **UTC midnight** — the same content produces the same
+timestamps no matter which machine builds the site. When the exact publication
+instant matters, write the zone: `date: 2026-03-15T09:30:00Z`.
 ''';
 
 /// Generates the content/posts/getting-started.md content (second sample post).

@@ -3,9 +3,9 @@ version: 1.0.0
 author: Trellis Team
 description: >-
   A documentation theme for Trellis. Hierarchical sidebar navigation, in-page
-  table of contents, prev/next links, and build-time syntax highlighting (the
-  SSG bakes `.hljs-*` spans in — no highlighter JS shipped). Fully readable with
-  JavaScript disabled.
+  table of contents, prev/next links, and build-time syntax highlighting: the
+  SSG bakes the highlight spans into the HTML, so no highlighter JavaScript is
+  shipped. Fully readable with JavaScript disabled.
 min_trellis_version: 0.8.0
 screenshots:
   - screenshots/light.png

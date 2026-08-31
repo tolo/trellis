@@ -29,24 +29,90 @@ $bp-lg: 1120px;  // desktop
   max-width: $trellis-measure;
 }
 
+// ── Masthead geometry ────────────────────────────────────────────────────────
+//
+// The sticky masthead is a whole number of rows of a declared height — two below
+// $bp-sm (brand over a full-width nav strip), one above — and .site-header is set
+// to exactly that height instead of growing to fit its text. Everything that has
+// to clear the bar reads --trellis-masthead-height: the bar itself, and the
+// in-page anchor offset in _base.scss. Neither can move without the other.
+//
+// A row is the tallest thing that can stand in it, and all three candidates are
+// sized rather than measured: the wordmark's line box (a *unitless* line-height,
+// so font-size × factor and not a function of the font's ascent/descent), the
+// logo's declared height, and the nav link's line box plus its padding. Written
+// as max() rather than "the wordmark wins" because which one is tallest is a
+// consequence of the tokens, not a fact about them.
+//
+// The other load-bearing construction is that .nav-list may not wrap — surplus
+// links scroll sideways rather than adding a row. Undo that, or switch one of the
+// three line-heights to `normal`, and the height goes back to being a text
+// measurement, which is a different number on a machine with different fonts.
+// That is the defect this shape exists to prevent: Verdant shipped a constant
+// offset sized for a two-row nav and Linux wrapped it to three, leaving every
+// anchor target behind the bar there while macOS passed. Bloom's own bar was one
+// label away from the same failure, already wrapping to two nav rows at 320px.
+$trellis-masthead-nav-row: $trellis-font-size-sm * $trellis-line-height + $trellis-space-xs * 2;
+$trellis-masthead-gap: $trellis-space-xs;
+$trellis-masthead-border: 1px;
+
+:root {
+  --trellis-masthead-row: max(
+    #{$trellis-site-title-size * $trellis-line-height},
+    #{$trellis-site-logo-height},
+    #{$trellis-masthead-nav-row}
+  );
+  --trellis-masthead-height: calc(
+    var(--trellis-masthead-row) * 2 + #{$trellis-masthead-gap + $trellis-space-md * 2} +
+      #{$trellis-masthead-border}
+  );
+
+  @media (min-width: $bp-sm) {
+    --trellis-masthead-height: calc(
+      var(--trellis-masthead-row) + #{$trellis-space-md * 2} + #{$trellis-masthead-border}
+    );
+  }
+}
+
 // ── Site header ──────────────────────────────────────────────────────────────
 
 .site-header {
   position: sticky;
   top: 0;
   z-index: 100;
+  // Declared, never measured — see "Masthead geometry" above. `height` and not
+  // `min-height`: a bar that is allowed to grow past the offset derived from it
+  // is the whole defect.
+  height: var(--trellis-masthead-height);
   background-color: color-mix(in srgb, var(--trellis-bg, #{$trellis-bg-color}) 88%, transparent);
   backdrop-filter: saturate(1.4) blur(8px);
-  border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
+  border-bottom: $trellis-masthead-border solid var(--trellis-border, #{$trellis-border-color});
+
+  .site-nav {
+    // A flex item's automatic minimum size is its content, which would push the
+    // masthead wider than the viewport instead of letting the strip scroll.
+    min-width: 0;
+  }
 }
 
 .site-header-inner {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: $trellis-space-md;
+  // Phone: the brand sits above a full-width nav strip, so the links lay out
+  // across the viewport rather than in the sliver left beside the title — with
+  // the strip cramped, whether they fit is a question about the reader's font.
+  flex-direction: column;
+  justify-content: center;
+  gap: $trellis-masthead-gap;
+  height: 100%;
   padding-top: $trellis-space-md;
   padding-bottom: $trellis-space-md;
+
+  @media (min-width: $bp-sm) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: $trellis-space-md;
+  }
 }
 
 .site-brand {
@@ -59,13 +125,13 @@ $bp-lg: 1120px;  // desktop
 
 .site-logo {
   display: block;
-  height: 1.75rem;
+  height: $trellis-site-logo-height;
   width: auto;
 }
 
 .site-title {
   font-family: var(--trellis-heading-font, #{$trellis-heading-font});
-  font-size: 1.25rem;
+  font-size: $trellis-site-title-size;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--trellis-text, #{$trellis-text-color});
@@ -78,8 +144,17 @@ $bp-lg: 1120px;  // desktop
   padding: 0;
   margin: 0;
   display: flex;
-  flex-wrap: wrap;
+  // One row, always — see "Masthead geometry" above.
+  flex-wrap: nowrap;
+  overflow-x: auto;
   gap: $trellis-space-xs;
+
+  li {
+    flex: 0 0 auto;
+    // The prose `li` margin from _base.scss is not a masthead rule; left standing
+    // it made the nav row 4px taller than the box the row is computed from.
+    margin: 0;
+  }
 
   a {
     display: inline-block;
@@ -88,12 +163,15 @@ $bp-lg: 1120px;  // desktop
     font-weight: 600;
     padding: $trellis-space-xs $trellis-space-sm;
     border-radius: 999px;
+    white-space: nowrap;
     transition: color 0.15s ease, background-color 0.15s ease;
 
     &:hover {
       color: var(--trellis-primary, #{$trellis-primary-color});
       background-color: var(--trellis-surface, #{$trellis-surface-color});
     }
+
+    &:focus-visible { outline-offset: -$trellis-focus-ring-width; }
   }
 }
 

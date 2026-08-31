@@ -9,8 +9,16 @@
   padding: 0;
   margin: 0;
   display: flex;
-  flex-wrap: wrap;
+  // One row, always. A second row would grow the sticky masthead past the height
+  // it declares (_layout.scss), and how many links fit on a row is a fact about
+  // the reader's font, not about the theme. Surplus links scroll sideways.
+  flex-wrap: nowrap;
+  overflow-x: auto;
   gap: $trellis-space-sm;
+
+  li {
+    flex: 0 0 auto;
+  }
 
   a {
     color: var(--trellis-muted, #{$trellis-muted-color});
@@ -18,6 +26,7 @@
     font-weight: 500;
     padding: $trellis-space-xs $trellis-space-sm;
     border-radius: $trellis-border-radius;
+    white-space: nowrap;
     transition: color 0.15s ease, background-color 0.15s ease;
 
     &:hover,
@@ -25,6 +34,8 @@
       color: var(--trellis-primary, #{$trellis-primary-color});
       background-color: var(--trellis-surface, #{$trellis-surface-color});
     }
+
+    &:focus-visible { outline-offset: -$trellis-focus-ring-width; }
   }
 }
 
@@ -156,14 +167,15 @@
 }
 
 // ── Search shell (client-side search wired in static/js/search.js) ───────────
-// Progressive enhancement: the <input> ships disabled and is enabled only after
-// the index loads. On a failed index fetch the whole shell is hidden via
-// .search-unavailable so it is never a broken, interactive-looking control.
+// Progressive enhancement: the shell ships `hidden` and the <input> ships disabled;
+// search.js lifts both once the index has loaded. With JavaScript off, or on a failed
+// index fetch, nothing is shown — rather than a permanently disabled search box. The
+// hiding is the [hidden] normalization in _base.scss, not a class of this component's
+// own: a class-toggle mechanism only covers the failure it was written for, never the
+// script-never-ran case.
 
 .search-shell {
   margin-bottom: $trellis-space-lg;
-
-  &.search-unavailable { display: none; }
 }
 
 .search-input {
@@ -186,7 +198,7 @@
 
   &:focus-visible {
     outline: 2px solid var(--trellis-primary, #{$trellis-primary-color});
-    outline-offset: 2px;
+    outline-offset: -2px;
   }
 
   &:disabled { opacity: 0.6; cursor: not-allowed; }

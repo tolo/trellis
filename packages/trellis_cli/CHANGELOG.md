@@ -1,5 +1,49 @@
 # Changelog
 
+## 0.11.0
+
+### Added
+
+- `trellis theme add <url-or-path> --theme <name>` installs a single theme out of a source that carries several,
+  copying only its `themes/<name>/` directory into the site. The built-in themes are distributed this way – they live
+  under `themes/` in the `tolo/trellis` repository, not in one repository each – so
+  `trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0` installs just that theme from the
+  release tag. `--ref` also accepts a branch, and the temporary clone is removed on every path, failures included.
+  Whole-repository git installs additionally validate the directory name derived from the URL before cloning; all
+  install paths now warn when the installed manifest requires a newer Trellis version. A theme installed this way
+  carries no git metadata, so
+  `trellis theme update` does not apply to it – remove and re-add instead.
+- `validateThemeName`, exported from `package:trellis_cli/trellis_cli.dart`, is the rule a `--theme` value is checked
+  against: `^[a-z0-9][a-z0-9_-]*$`. A name outside that charset is rejected before anything is cloned, so `--theme`
+  cannot traverse out of the site's `themes/`. A source whose own `themes/<name>` is a symlink resolving outside the
+  source tree is rejected as well, and nothing is copied.
+
+### Changed
+
+- **`trellis theme add` warns when site layouts shadow the theme it just installed**, naming each shadowing file.
+  Layouts resolve site-first, so a scaffold that ships its own `layouts/` silently wins over the theme. Installing
+  still succeeds and still exits 0.
+- **`trellis theme add` validates `trellis_site.yaml` before installing anything.** Invalid field types exit 1
+  without creating `themes/` or rewriting the configuration.
+- **`trellis build` warns when an active theme is inert** – its stylesheets and scripts were published to the output
+  and no emitted page links any of them, which is the case that renders an unstyled site. Only `.css` and `.js` count;
+  a page carrying the theme's favicon or a font it never applies is still unstyled. The build still exits 0. An
+  override that keeps a link to the theme's stylesheet is not reported – a `base.html` copied from the theme, or a
+  layout rendering inside the theme's shell. Replacing `base.html` with a shell of your own *is* reported, because
+  nothing links the theme after that.
+- The blog scaffold's sample post now explains that a date-only `date:` is anchored at UTC midnight, and shows the
+  zone-explicit form (`date: 2026-03-15T09:30:00Z`) for pinning an exact instant. Matches the front-matter date
+  resolution `trellis_site` 0.11.0 ships.
+
+### Documentation
+
+- The README's built-in Lattice examples now install from `https://github.com/tolo/trellis` with
+  `--theme lattice --ref v0.11.0`. They previously pointed at a per-theme repository
+  (`tolo/trellis-theme-verdant`) that does not exist. `--ref` is documented as becoming `git clone --branch`, so it
+  takes a tag or branch that already exists on the remote.
+- `trellis theme add --help` described `--ref` as taking a tag, branch **or commit**. It becomes `git clone --branch`,
+  which does not accept a commit SHA, so the help text now says tag or branch. The README already said this.
+
 ## 0.10.2
 
 ### Changed

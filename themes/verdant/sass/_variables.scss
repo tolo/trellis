@@ -39,6 +39,11 @@ $trellis-font-size-xs: 0.8rem !default;
 $trellis-line-height: 1.7 !default;
 $trellis-heading-line-height: 1.25 !default;
 
+// Derived: the brand wordmark, and with it the height of one masthead row.
+// _layout.scss sizes the sticky header from this, so the two cannot be changed
+// apart.
+$trellis-site-title-size: $trellis-font-size-base * 1.25;
+
 // ── Layout ───────────────────────────────────────────────────────────────────
 
 $trellis-max-width: 800px !default;

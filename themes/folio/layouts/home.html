@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<!-- Folio Theme — layouts/home.html. Content-driven field-guide landing page plus
+     a grid of page cards, no sidebar. Overrides the "content" block and tolerates
+     an empty page list. This is the target `layout: home` resolves to. -->
+<html tl:extends="layouts/base.html" lang="en">
+<head><title>Home</title></head>
+<body>
+  <main id="main-content" class="main-content" tl:define="content">
+    <div class="container">
+
+      <!-- Hero copy comes entirely from standard site/page data. -->
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="rubric hero-kicker" tl:text="${site.title}">Site title</p>
+          <h1 id="hero-title" tl:text="${page.title}">Field guide</h1>
+          <p class="hero-description"
+             tl:if="${page.description} ?: ${site.description}"
+             tl:text="${page.description} ?: ${site.description}">
+            Site description.
+          </p>
+          <!-- Hero calls to action come from the page's own front matter, so the
+               landing can point somewhere other than the header navigation. Local
+               root-relative targets are joined with pathPrefix exactly once. -->
+          <nav class="hero-actions" aria-label="Featured destinations"
+               tl:if="${page.hero.ctas} != null and ${#lists.size(page.hero.ctas)} > 0">
+            <a class="button" tl:each="cta : ${page.hero.ctas}"
+               tl:classappend="${cta.style} == 'secondary' ? 'button-secondary' : 'button-primary'"
+               tl:with="prefix=${site.pathPrefix}, local=${#strings.startsWith(cta.href, '/')}"
+               tl:href="${prefix} != '' and ${local} ? ${prefix} + ${#strings.substring(cta.href, 1)} : ${cta.href}"
+               tl:text="${cta.label}">Destination</a>
+          </nav>
+        </div>
+        <figure class="hero-plate"
+                tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
+          <!-- page.hero.image mounts the site's own specimen; the drawn engraving is the
+               fallback so a landing with no artwork still renders a complete plate.
+               assetBase already ends in a slash, so a root-relative src sheds its own
+               leading slash — plain concatenation would emit a //host-relative URL. -->
+          <img class="engraving" tl:if="${page.hero.image}"
+               tl:with="platePath=${#strings.startsWith(page.hero.image.src, '/')}
+                 ? ${#strings.substring(page.hero.image.src, 1)} : ${page.hero.image.src}"
+               tl:attr="src=${assetBase} + ${platePath},alt=${page.hero.image.alt} ?: ''" src="" alt="">
+          <svg class="engraving" tl:unless="${page.hero.image}" viewBox="0 0 360 440" aria-hidden="true">
+            <path class="plate-stem" d="M176 382c5-102 18-194 54-292"/>
+            <path class="plate-leaf" d="M205 195c47-73 105-78 122-67-18 63-66 92-122 67Z"/>
+            <path class="plate-leaf" d="M188 270c-55-58-109-50-128-34 29 55 78 71 128 34Z"/>
+            <path class="plate-leaf" d="M225 122c-30-45-22-89-5-104 40 27 49 67 5 104Z"/>
+            <circle class="plate-seed" cx="108" cy="172" r="15"/>
+            <circle class="plate-seed" cx="285" cy="275" r="11"/>
+          </svg>
+          <figcaption class="plate-caption"
+                      tl:if="${page.hero.caption} != null and ${page.hero.caption} != ''"
+                      tl:text="${page.hero.caption}">Specimen caption.</figcaption>
+        </figure>
+      </section>
+
+      <!-- Page body — the landing's Markdown content (pitch, differentiators,
+           code example, CTAs). Rendered from ${page.content} so a content-driven
+           home page (layout: home) surfaces its body, not just the hero. -->
+      <section class="home-content" tl:if="${page.content}">
+        <div class="prose" tl:utext="${page.content}">Body content.</div>
+      </section>
+
+      <!-- Apparatus showcase — a mounted specimen beside its margin note. Absent
+           front matter removes the whole section. -->
+      <section class="section apparatus" tl:if="${page.apparatus}" aria-labelledby="apparatus-heading">
+        <header class="section-head">
+          <p class="rubric" tl:text="${page.apparatus.label}">Label</p>
+          <div>
+            <h2 id="apparatus-heading" tl:text="${page.apparatus.title}">Title</h2>
+            <p tl:if="${page.apparatus.body}" tl:text="${page.apparatus.body}">Standfirst.</p>
+          </div>
+        </header>
+        <div class="apparatus-grid">
+          <figure class="folio-plate" tl:if="${page.apparatus.plate}">
+            <div class="plate-frame"><pre tabindex="0"><code
+              tl:text="${page.apparatus.plate.code}">Specimen</code></pre></div>
+            <figcaption tl:if="${page.apparatus.plate.caption}"
+                        tl:text="${page.apparatus.plate.caption}">Caption.</figcaption>
+          </figure>
+          <aside class="folio-sidenote" tl:if="${page.apparatus.sidenote}">
+            <span class="rubric" tl:if="${page.apparatus.sidenote.label}"
+                  tl:text="${page.apparatus.sidenote.label}">Note</span>
+            <p tl:each="line : ${page.apparatus.sidenote.body}" tl:text="${line}">Note text.</p>
+          </aside>
+        </div>
+      </section>
+
+      <!-- Characteristics — numbered principles, ruled rather than boxed. -->
+      <section class="section" tl:if="${page.principles}" aria-labelledby="principles-heading">
+        <header class="section-head">
+          <p class="rubric" tl:text="${page.principles.label}">Label</p>
+          <div><h2 id="principles-heading" tl:text="${page.principles.title}">Title</h2></div>
+        </header>
+        <div class="principles">
+          <article class="principle" tl:each="item : ${page.principles.items}">
+            <span class="rubric" tl:text="${item.number}">01</span>
+            <h3 tl:text="${item.title}">Principle</h3>
+            <p tl:text="${item.body}">Body.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- Featured pages — the page list is injected by the SSG pipeline. -->
+      <section class="featured" aria-labelledby="featured-heading">
+        <!-- Section head: rubric label beside the heading and an optional standfirst,
+             all from the landing page's own front matter. -->
+        <header class="section-head">
+          <p class="rubric" tl:text="${page.featured.label} ?: 'Contents'">Contents</p>
+          <div>
+            <h2 id="featured-heading" tl:text="${page.featured.title} ?: 'Explore'">Explore</h2>
+            <p tl:if="${page.featured.body}" tl:text="${page.featured.body}">Standfirst.</p>
+          </div>
+        </header>
+
+        <ul class="card-list" tl:if="${#lists.size(pages)} > 0">
+          <li class="doc-card" tl:each="p : ${pages}">
+            <h3 class="doc-card-title">
+              <a tl:href="${p.url}" tl:text="${p.title}">Page Title</a>
+            </h3>
+            <p class="doc-card-summary" tl:if="${p.summary}" tl:text="${p.summary}">
+              Page summary.
+            </p>
+          </li>
+        </ul>
+
+        <p class="no-pages" tl:if="${#lists.size(pages)} == 0">No entries yet.</p>
+      </section>
+
+    </div>
+
+    <!-- Manual band — a full-width introduction to the documentation surface. -->
+    <section class="manual-band" tl:if="${page.manual}" aria-labelledby="manual-heading">
+      <div class="container manual-intro">
+        <div>
+          <p class="rubric" tl:text="${page.manual.label}">Label</p>
+          <h2 id="manual-heading" tl:text="${page.manual.title}">Title</h2>
+        </div>
+        <p tl:if="${page.manual.body}" tl:text="${page.manual.body}">Standfirst.</p>
+        <a class="button" tl:if="${page.manual.cta}"
+           tl:with="prefix=${site.pathPrefix}, local=${#strings.startsWith(page.manual.cta.href, '/')}"
+           tl:href="${prefix} != '' and ${local} ? ${prefix} + ${#strings.substring(page.manual.cta.href, 1)}
+             : ${page.manual.cta.href}"
+           tl:text="${page.manual.cta.label}">Open</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

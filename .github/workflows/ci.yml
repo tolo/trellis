@@ -12,12 +12,17 @@ name: CI
 # cover the root `test/` directory — the ~1500 package tests are not picked up,
 # so a hand-rolled gate would pass while testing almost nothing.
 #
-# Two tiers, because the E2E suites are the expensive part:
+# Two jobs:
 #   * check — analyze + format + unit tests, on every push. Fast feedback.
 #   * e2e   — the E2E-tagged suites, on main and on demand. They generate
 #             projects, run `pub get` and `analyze` inside each, activate the
 #             dart_frog CLI, and boot real servers.
 # Feature branches get the fast tier; main additionally gets E2E.
+#
+# Vendored font provenance runs on every push too, but from font-provenance.yml
+# rather than from here (TD-044): it is the only check that needs the network,
+# and everything in THIS workflow blocks the release tag (below), so an upstream
+# outage must not be able to hold up a publish. Keep it out of this file.
 #
 # This workflow is the release gate: publish.yml and release-binaries.yml
 # (triggered by the `vX.Y.Z` tag push) refuse to run unless THIS workflow
@@ -55,7 +60,7 @@ concurrency:
 # CI red on an unrelated commit (that is how 22 files drifted in the first
 # place). Bump deliberately, together with the packages' `sdk:` constraints.
 env:
-  MELOS_VERSION: ^7.4.0
+  MELOS_VERSION: 7.4.0
   DART_SDK: 3.13.0
 
 jobs:
@@ -65,12 +70,40 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Set up Dart
-        uses: dart-lang/setup-dart@v1
+        uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1
         with:
           sdk: ${{ env.DART_SDK }}
+
+      # Several root-suite checks shell out to node: the theme client-behaviour
+      # harness (lattice/folio/search), Meadow's mobile-menu DOM harness, and the
+      # WOFF2/brotli fvar reader behind the @font-face axis contract. Each skips
+      # when node is missing, so without this step a runner image that drops node
+      # would report "All tests passed" with those assertions never executed.
+      # `_requireNodeInCi` turns that skip into a failure when CI=true, so this
+      # step is load-bearing rather than advisory - do not remove it while
+      # reasoning about only one of the three consumers.
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '22'
+
+      # The rendered checks - the theme reflow sweep and the visual baseline
+      # comparator - drive headless Chrome over the DevTools protocol
+      # (test/browser_reflow_probe.dart). They are the only checks that can see
+      # a layout defect at all: 0.11 shipped a hero with 205px of dead space, a
+      # mobile panel pushing content off the fold and a marker band clipping its
+      # own text, none of which is visible in the stylesheet and all of which
+      # passed a green suite. Both skip when no Chrome binary is found and
+      # `requireChromeInCi` turns that skip into a failure when CI=true, so this
+      # step is what stops them becoming the hole the Node steps above describe.
+      # ubuntu-latest ships google-chrome-stable; assert it rather than trust
+      # the image, and log the version because the baselines record the Chrome
+      # that produced them and a browser upgrade can legitimately move layout.
+      - name: Check Chrome is present
+        run: google-chrome --version
 
       - name: Activate melos
         run: |
@@ -79,6 +112,9 @@ jobs:
 
       - name: Bootstrap workspace
         run: dart pub get
+
+      - name: Check generated theme gallery
+        run: dart run tool/generate_theme_gallery.dart --check
 
       # melos `analyze` script: `dart analyze --fatal-infos` per package.
       - name: Analyze
@@ -95,10 +131,24 @@ jobs:
 
       # The workspace ROOT is not a melos member, so `melos exec` skips it —
       # yet it carries the release-distribution contract test, the docs-site
-      # link check, and tool/ (build_release, Homebrew/Scoop renderers). That
-      # is exactly the pipeline TD-010 said was ungated, so cover it here.
+      # link check, tool/ (build_release, Homebrew/Scoop renderers), and the two
+      # rendered suites (theme_contract_test, visual_baseline_test). That is
+      # exactly the pipeline TD-010 said was ungated, so cover it here.
+      #
+      # `visual` excluded on purpose. test/visual_baseline_test.dart is a golden-file
+      # layout check whose baselines encode font metrics, so a recording is only valid
+      # on the exact Chrome build and font set that made it. Runner images drift in
+      # both: recordings made in an ubuntu:24.04 container with Chrome 152 failed here
+      # on Chrome 151 for arbor, bloom and verdant - the three themes whose font stacks
+      # end in a system fallback. folio, lattice and meadow vendor every face and were
+      # unaffected, which is the whole mechanism. Chasing the runner is permanent
+      # maintenance for a check that matters most at one moment, so the tier is a
+      # release gate in tool/release.sh instead, run on the maintainer's machine where
+      # the baselines were recorded. This is a stability argument, not a speed one:
+      # the tier costs ~10s of this step (124s -> 114s). The step's real cost is the
+      # rendered sweeps - site reflow and the theme masthead/anchor checks. See TD-035.
       - name: Root workspace tests
-        run: dart test
+        run: dart test --exclude-tags=visual
 
       - name: Check root formatting
         run: dart format --output=none --set-exit-if-changed tool test
@@ -112,10 +162,10 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Set up Dart
-        uses: dart-lang/setup-dart@v1
+        uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1
         with:
           sdk: ${{ env.DART_SDK }}
 

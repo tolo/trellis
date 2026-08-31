@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'front_matter_date.dart';
 import 'page.dart';
 
 /// Generates a `sitemap.xml` conforming to the sitemap protocol.
@@ -89,21 +90,21 @@ class SitemapGenerator {
 
   /// Returns the ISO 8601 date string (`YYYY-MM-DD`) for [page].
   ///
-  /// Resolution order:
-  /// 1. `page.frontMatter['date']` as [DateTime]
-  /// 2. `page.frontMatter['date']` as parseable [String]
+  /// `<lastmod>` is a calendar date, not an instant, so each source keeps the
+  /// day it already names rather than being converted between zones:
+  /// 1. `page.frontMatter['date']` as [DateTime] - its own calendar day
+  /// 2. `page.frontMatter['date']` as a string, per [resolveFrontMatterDate];
+  ///    a date-only value anchors at UTC midnight, so it yields the day written
   /// 3. Source file modification time
   /// 4. Current date (fallback if file does not exist)
   String _resolveLastmod(Page page) {
-    final date = page.frontMatter['date'];
-    if (date is DateTime) return _formatDate(date);
-    if (date is String) {
-      try {
-        return _formatDate(DateTime.parse(date));
-      } on FormatException {
-        // fall through to mtime
-      }
-    }
+    final raw = page.frontMatter['date'];
+    // A DateTime already names a calendar day in its own zone; converting it
+    // would move `2026-03-15` to the 14th for any zone east of UTC.
+    if (raw is DateTime) return _formatDate(raw);
+
+    final date = resolveFrontMatterDate(raw);
+    if (date != null) return _formatDate(date);
 
     final sourceFile = File(p.join(contentDir, page.sourcePath));
     if (sourceFile.existsSync()) {

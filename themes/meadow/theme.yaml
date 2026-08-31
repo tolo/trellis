@@ -1,0 +1,52 @@
+name: meadow
+version: 1.0.0
+author: Trellis Team
+description: A fresh, energetic product-landing theme with content-driven sections.
+min_trellis_version: 0.10.0
+screenshots: [screenshots/light.png, screenshots/dark.png]
+features: [landing, dark-mode, responsive, accessible]
+
+params:
+  skin: {type: enum, values: [light, dark, auto], default: auto, description: Color scheme}
+  primary_color: {type: color, default: "#237a48", description: Leaf green used for links and accents}
+  accent_color: {type: color, default: "#d4f15f", description: Lime marker and primary highlight}
+  text_color: {type: color, default: "#14251a", description: Main ink color}
+  muted_color: {type: color, default: "#476050", description: Secondary ink color}
+  bg_color: {type: color, default: "#f7faee", description: Page background}
+  surface_color: {type: color, default: "#fffef8", description: Raised surface color}
+  border_color: {type: color, default: "#d4e2ce", description: Rules and dividers}
+  font_family:
+    type: string
+    default: "Schibsted Grotesk, Inter, ui-sans-serif, system-ui, sans-serif"
+    description: Body font stack
+  heading_font_family:
+    type: string
+    default: "Bricolage Grotesque, Arial Rounded MT Bold, Trebuchet MS, sans-serif"
+    description: Display font stack
+  code_font_family:
+    type: string
+    default: "JetBrains Mono, SFMono-Regular, Consolas, monospace"
+    description: Code font stack
+  max_width: {type: string, default: "1180px", description: Maximum shell width}
+  border_radius: {type: string, default: "24px", description: Global corner radius}
+  nav_links:
+    type: list
+    default:
+      - {label: Features, url: "#features"}
+      - {label: Workflow, url: "#workflow"}
+      - {label: Use cases, url: "#use-cases"}
+      - {label: Developers, url: "#start"}
+    description: Header navigation links
+  social_links: {type: list, default: [], description: Social links}
+  footer_text: {type: string, default: null, description: Optional footer text}
+  show_powered_by: {type: boolean, default: true, description: Show Trellis attribution}
+  show_rss_link: {type: boolean, default: true, description: Show feed discovery links}
+  excerpt_length: {type: int, default: 160, description: Plain-text list summary length}
+  hero_align: {type: enum, values: [center, split], default: split, description: Hero composition}
+  pill_badges: {type: boolean, default: true, description: Render labels as pills}
+  logo: {type: string, default: null, description: Optional logo asset path}
+  favicon: {type: string, default: "favicon.svg", description: Prefix-relative browser icon path}
+  sky_color: {type: color, default: "#69b9ea", description: Sky feature-card color}
+  sun_color: {type: color, default: "#ffd367", description: Sun feature-card color}
+  bloom_color: {type: color, default: "#cf91ef", description: Bloom feature-card color}
+  coral_color: {type: color, default: "#fb907b", description: Coral feature-card color}

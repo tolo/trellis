@@ -169,4 +169,4 @@ params:
   posts_per_page:
     type: int
     default: null
-    description: Override site-level paginate for blog listings
+    description: "Page size for blog listings when the site sets no paginate:"

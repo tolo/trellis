@@ -11,5 +11,5 @@ export 'src/generator/file_writer.dart' show FileWriter, DiskFileWriter, InMemor
 export 'src/generator/project_generator.dart' show ProjectGenerator;
 export 'src/generator/relic_project_generator.dart' show RelicProjectGenerator;
 export 'src/generator/theme_project_generator.dart' show ThemeProjectGenerator;
-export 'src/validators.dart' show themeNameFromUrl, validateProjectName;
+export 'src/validators.dart' show themeNameFromUrl, validateProjectName, validateThemeName;
 export 'src/version.dart' show cliVersion;

@@ -10,7 +10,20 @@
   box-sizing: border-box;
 }
 
+html {
+  // .site-header is sticky, so an un-offset in-page anchor jump parks the target
+  // behind it and the reader lands on the paragraph after the heading they clicked.
+  // The offset is the masthead's own declared height (_layout.scss) plus a gap —
+  // read from it, not guessed alongside it, so the two cannot drift apart.
+  scroll-padding-top: calc(var(--trellis-masthead-height) + #{$trellis-space-md});
+}
+
 body {
+  // Short pages must still push the footer to the bottom of the viewport; the skip
+  // link is out of flow, so it never becomes a flex item.
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
   margin: 0;
   font-family: $trellis-font-family;
   font-size: $trellis-font-size-base;
@@ -20,6 +33,13 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+// `break-word` wraps a long token but does not shrink a box's min-content size, so an
+// unbreakable token (a URL, a package name, a hash) still widens its grid track and pushes
+// the document past the viewport — a WCAG 1.4.10 reflow failure. `anywhere` does shrink it.
+// Scoped to page content: the brand and the nav/footer labels are left alone so a short
+// word is never split mid-label.
+main * { overflow-wrap: anywhere; }
 
 // ── Typography ───────────────────────────────────────────────────────────────
 
@@ -164,4 +184,8 @@ td {
 th {
   font-weight: 700;
   background-color: var(--trellis-surface, #{$trellis-surface-color});
+}
+
+body > .main-content {
+  flex: 1 0 auto;
 }

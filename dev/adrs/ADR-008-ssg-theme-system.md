@@ -68,12 +68,15 @@ theme_params:
 
 ### Distribution
 
-Git-based (like Hugo modules). Installation via `trellis theme add <git-url>` which
-clones into `themes/` and updates config. No package registry in v1.
+Git-based (like Hugo modules). Installation via `trellis theme add <git-url>` clones a single-theme repository into
+`themes/` and updates config. `trellis theme add <git-url> --theme <name>` selects `themes/<name>/` from a repository
+that carries multiple themes, copying only that subtree into the site. No package registry in v1.
 
 ### CLI commands
 
-- `trellis theme add <git-url>` — install theme from git
+- `trellis theme add <git-url> [--theme <name>]` — install a whole theme repository or select one from a
+  multi-theme repository
+- `trellis theme update [<name>]` — update whole-repository installs that retain git metadata
 - `trellis theme list` — list installed themes
 - `trellis theme info <name>` — show params, features, version
 - `trellis theme remove <name>` — uninstall theme
@@ -134,7 +137,9 @@ clones into `themes/` and updates config. No package registry in v1.
 - SASS `!default` is the standard mechanism for overridable variables (no Trellis-specific invention)
 - CSS custom properties generated with `--trellis-{param}` naming convention
 - Theme param deep merge: maps merged recursively, scalars/lists replaced (site wins)
-- `trellis theme add` does shallow git clone + config update (simple, no Go toolchain)
+- `trellis theme add` does a shallow git clone + config update (simple, no Go toolchain). A whole-repository install
+  retains its git metadata and supports `theme update`; a `--theme` install copies only the selected subtree, so it
+  must be removed and re-added to change versions.
 
 ## References
 

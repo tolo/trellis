@@ -1,0 +1,100 @@
+/* Theme-gallery page styles, loaded on top of the Lattice theme's main.css.
+   The custom properties consumed here (--lattice-strong, --card, --radius,
+   --leaf, --ink-soft) are Lattice's own skin-aware tokens, not the --trellis-*
+   param bridge: the bridge emits one static value per param, so using it would
+   freeze the cards in their light-skin colors. `theme_gallery_test.dart` asserts
+   every token this file reads is still declared by the site's theme, so a
+   rename in the theme fails a test instead of silently stripping the page. */
+
+.gallery-page {
+  min-width: 0;
+}
+
+/* Above the docs breakpoint the shell reserves a table-of-contents track the
+   gallery never fills and clamps to the prose measure — which leaves the
+   comparison grid one card wide. The gallery takes that space back. */
+@media (min-width: 981px) {
+  .gallery-shell {
+    max-width: 1400px;
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
+  /* Descriptions differ in length; without this a short card is stretched to
+     its row's height and shows an empty band below its own footer. */
+  align-items: start;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.gallery-card {
+  overflow: hidden;
+  border: 1px solid var(--lattice-strong);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.gallery-card > header,
+.gallery-card > footer {
+  padding: 1.25rem;
+}
+
+.gallery-card h2 {
+  margin: 0.2rem 0 0.5rem;
+}
+
+.gallery-archetype {
+  margin: 0;
+  color: var(--leaf);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.gallery-screenshots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--lattice-strong);
+  border-block: 1px solid var(--lattice-strong);
+}
+
+.gallery-screenshots figure {
+  margin: 0;
+  background: var(--card);
+}
+
+.gallery-screenshots img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 8 / 5;
+  object-fit: cover;
+}
+
+.gallery-screenshots figcaption {
+  padding: 0.45rem 0.75rem;
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+}
+
+.gallery-card > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+@media (max-width: 700px) {
+  .gallery-screenshots {
+    grid-template-columns: 1fr;
+  }
+
+  .gallery-card > footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

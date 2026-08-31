@@ -15,16 +15,48 @@ human action. Steps are in execution order; each names the guard that enforces i
 - **Do not bump versions on the branch.** Pubspecs stay at the previous version until step 4; `melos version` is
   restricted to `main` (root `pubspec.yaml` → `melos.command.version.branch`) and `tool/version_lockstep.sh` throws
   `RestrictedBranchException` and changes nothing anywhere else.
-- **Local gate = CI's `check` tier**, from the workspace root:
+- **Local gate = CI's `check` tier**, from the workspace root. Two prerequisites the Dart toolchain does not pull in:
+  - **Node 22** — three JS-driven checks. `ci.yml` installs it.
+  - **Chrome** — the theme reflow sweep and the visual baseline comparator drive it headless over the DevTools
+    protocol. `ci.yml` only *asserts* it (`google-chrome --version`) because the ubuntu image ships it, so on your
+    own machine you have to supply it.
+
+  Both tiers skip silently when their binary is absent; `_requireNodeInCi` / `requireChromeInCi` turn that skip into a
+  failure only when `CI=true`, so **locally a missing Node or Chrome means those checks quietly do not run**.
   ```bash
+  dart run tool/generate_theme_gallery.dart --check          # CI runs this first; a stale gallery fails the job
   melos run --no-select analyze
   melos run --no-select format:check
   melos exec --dir-exists=test -- dart test --exclude-tags=e2e
-  dart test                                                    # root suite: release/distribution contracts, tool/
+  dart test                                                  # root suite: release/distribution contracts, tool/
   dart format --output=none --set-exit-if-changed tool test
   ```
-  Root `dart test` alone covers only the root suite; `melos exec` alone skips the root — run both. Push the branch:
-  `ci.yml` runs the same tier on every branch (E2E on `main` only).
+  Root `dart test` alone covers only the root suite; `melos exec` alone skips the root — run both.
+  **The root run here is deliberately wider than CI's.** CI runs `dart test --exclude-tags=visual`; the bare `dart test`
+  above also runs `test/visual_baseline_test.dart`, the golden-file layout tier — and **this is the only place that
+  tier runs.** It is what catches "the page moved", which no stylesheet assertion can see. Its baselines encode font
+  metrics, so a recording is only valid on the Chrome build and font set that made it; CI runners drift in both
+  (recordings from an `ubuntu:24.04` container on Chrome 152 failed the runner's Chrome 151 for the three themes whose
+  stacks end in a system fallback), so chasing them there is permanent maintenance for a check that matters most right
+  here. Baselines are named per platform (`test/visual_baselines/<theme>.<platform>.json`) and only macOS is recorded:
+  **cut releases on macOS**, or record your platform first — a host without a recording fails naming it rather than
+  skipping. An appearance change must be re-recorded before `tool/release.sh` will pass; recipe in
+  `test/visual_baseline_test.dart`.
+- **Font provenance is a second, independently red-able check** — its own workflow (`font-provenance.yml`, every push
+  to every branch), not part of the `check` tier and easy to miss locally:
+  ```bash
+  # Python 3.14 too: tool/subset_fonts.py's TOOLING constant declares "fonttools 4.63.0, brotli 1.2.0, python 3.14"
+  # as the tooling contract, and nothing asserts the interpreter - a different python3 gives spurious DRIFT or a
+  # false ok.
+  python3 -m venv .venv && .venv/bin/pip install 'fonttools==4.63.0' 'brotli==1.2.0'   # pinned, as the workflow does
+  .venv/bin/python tool/subset_fonts.py --verify              # every vendored WOFF2 reproduces from its pinned upstream
+  ```
+  It needs network access to fetch each pinned upstream face — which is why it is no longer a job inside `ci.yml`
+  (TD-044): the release gate keys on `ci.yml`, so an upstream outage there blocked a release tag over something the
+  commit never touched. **A red `font-provenance` run therefore does not block a tag — but it still means the vendored
+  fonts do not reproduce from their pinned upstream. Fix it; do not release past it.**
+- Push the branch: `ci.yml` runs the `check` job on every branch (E2E on `main` only), and `font-provenance.yml` runs
+  beside it.
 - `dart pub publish --dry-run` in every package whose public API changed (0 warnings).
 
 ## 1. Fresh-context adversarial review — not optional
@@ -40,7 +72,8 @@ git switch main && git pull --ff-only
 git merge --squash <branch> && git commit          # one commit, one-line subject, e.g. "0.10.1: <summary>"
 git push origin main
 ```
-Guard: `CLAUDE.md` Workflow Rules (squash only). `ci.yml` starts on the push: `check` + `e2e` on `main`.
+Guard: `CLAUDE.md` Workflow Rules (squash only). `ci.yml` starts on the push (`check` + `e2e` on `main`), and
+`font-provenance.yml` beside it. Only `ci.yml` gates the tag.
 
 ## 3. Wait for CI green on `main`
 
@@ -52,18 +85,23 @@ that run is `success` (it waits while the run is in flight). If CI is red: fix o
 
 ## 4. Prepare the release on `main` — `tool/release.sh`
 
+The script requires both `melos` and `gh` on `PATH`, and `gh` must already be authenticated. Install/authenticate them
+before starting this step; `release.sh` fails before the bump if either prerequisite is missing.
+
 ```bash
 tool/release.sh X.Y.Z --dry-run   # rehearsal: same checks + bump + gate + a temporary commit, then unwinds everything
 tool/release.sh X.Y.Z
 ```
 It refuses unless: on `main`, tree clean, `HEAD == origin/main`, every changelog has `## X.Y.Z`, CI green for HEAD.
 Then: `tool/version_lockstep.sh X.Y.Z` (one `melos version` pass: 8 pubspecs + inter-package constraints, 2
-`version.dart` constants, 2 README download examples) → asserts **only** those files changed → local gate (step 0's
-five commands) → commit `chore(release): trellis SDK X.Y.Z` → `dart pub publish --dry-run` ×8 (commit is undone if
+`version.dart` constants, 2 README download examples, and the docs-site hero version) → asserts **only** those files
+changed → local gate (step 0's five repeated local commands; gallery freshness is supplied by the required green CI
+run) → commit `chore(release): trellis SDK X.Y.Z` → `dart pub publish --dry-run` ×8 (commit is undone if
 one fails) → `git tag vX.Y.Z` → prints the push command. **Nothing is pushed.**
 
-Check the commit: `git show --stat HEAD` — 12 files (8 `pubspec.yaml`, 2 `lib/src/version.dart`, `README.md`,
-`packages/trellis_cli/README.md`).
+Check the commit: `git show --stat HEAD` — 13 files (8 `pubspec.yaml`, 2 `lib/src/version.dart`, `README.md`,
+`packages/trellis_cli/README.md`, `site/trellis_site.yaml`). The committed root `pubspec.lock` is not rewritten by
+the bump; release-binary jobs consume it with `dart pub get --enforce-lockfile`.
 
 If it fails: the message says which check; the bump stays in the working tree for inspection — discard it with
 `git restore --staged --worktree .` (discards **all** uncommitted changes; the tree was clean before the bump, so only
@@ -83,7 +121,9 @@ package) and `release-binaries.yml` (binaries → GitHub Release → Homebrew/Sc
 
 Guards after the push:
 - **Release gate** (`release-gate.yml`, first job of both tag workflows): waits for `ci.yml` on the tagged commit and
-  refuses to run unless it concluded `success` **and** the commit is on `main`. A red build cannot publish.
+  refuses to run unless it concluded `success` **and** the commit is on `main`. A red build cannot publish. It looks up
+  the `ci.yml` workflow file by name (`tool/require_green_ci.sh`, `CI_WORKFLOW`), so `font-provenance.yml` is outside
+  this gate by construction (TD-044) — check it yourself before step 5.
 - **Version cross-check** (`release-binaries.yml` → `version` job, `tool/read_version.dart`): tag == pubspec ==
   `cliVersion`, or nothing is built.
 - Publish jobs are independent (`fail-fast: false`); pub.dev refuses to re-publish an existing version, so re-running

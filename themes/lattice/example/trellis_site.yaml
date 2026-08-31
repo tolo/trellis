@@ -1,0 +1,62 @@
+title: Lattice
+description: A garden-inspired documentation theme with an expressive home page.
+baseUrl: http://localhost:8080
+theme: lattice
+theme_params:
+  skin: auto
+  logo: null
+  favicon: favicon.svg
+  sidebar_title: Documentation
+  toc_title: On this page
+  show_search: true
+  show_toc: true
+  show_sidebar: true
+  show_prev_next: true
+  nav_links:
+    - { label: Home, url: / }
+    - { label: Docs, url: /docs/ }
+    - { label: Guides, url: /docs/guides/ }
+    - { label: Reference, url: /docs/reference/ }
+  footer_text: "Lattice — a Trellis theme."
+  social_links:
+    - { label: GitHub, url: https://github.com/tolo/trellis }
+    - { label: pub.dev, url: https://pub.dev/packages/trellis }
+  hero_eyebrow: Documentation theme
+  hero_headlines:
+    - prefix: "A home page with room to "
+      emphasis: explain
+      suffix: "."
+    - prefix: "Docs that stay "
+      emphasis: readable
+      suffix: " at any depth."
+    - prefix: "One theme, from landing to "
+      emphasis: reference
+      suffix: "."
+  hero_lede: >-
+    Lattice pairs an expressive landing page with a complete documentation surface — searchable section tree,
+    in-page contents, previous and next travel — so a project needs one theme rather than two.
+  hero_cta_primary_label: Read the docs
+  hero_cta_primary_url: /docs/
+  hero_cta_secondary_label: View on GitHub
+  hero_cta_secondary_url: https://github.com/tolo/trellis
+  # Runnable as written. `trellis create` has no --theme option, and only the `blog` template
+  # scaffolds the trellis_site.yaml that `trellis theme add` requires; the theme is installed
+  # afterwards out of the multi-theme repository. The card is ~39 mono characters wide, so the
+  # install URL rides a shell continuation rather than being clipped.
+  terminal_card_lines:
+    - { prefix: "$", text: "trellis create my_docs --template blog", kind: command }
+    - { prefix: "+", text: "content/ layouts/ trellis_site.yaml", kind: output }
+    - { prefix: "$", text: "trellis theme add --theme lattice \\", kind: command }
+    - { prefix: "", text: "  https://github.com/tolo/trellis", kind: command }
+    - { prefix: "+", text: "themes/lattice/", kind: output }
+    - { prefix: "$", text: "trellis serve", kind: command }
+    - { prefix: ">", text: "http://localhost:8080", kind: output }
+  cta_title: Plant it in your project
+  cta_body: Scaffold a themed site, then point the content directory at your own Markdown.
+  cta_commands:
+    - trellis create my_docs --template blog
+    - trellis theme add https://github.com/tolo/trellis --theme lattice
+    - trellis serve
+search:
+  enabled: true
+  fields: [title, summary, content]

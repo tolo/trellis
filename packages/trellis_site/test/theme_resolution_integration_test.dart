@@ -104,9 +104,14 @@ void main() {
       expect(result.staticFileCount, greaterThanOrEqualTo(3));
     });
 
-    test('build completes without warnings for well-formed theme fixture', () async {
+    test('build warns when the selected layouts never link the published theme CSS', () async {
       final result = await buildSite();
-      expect(result.hasWarnings, isFalse);
+      expect(result.hasWarnings, isTrue);
+      expect(result.themeIsInert, isTrue);
+      expect(
+        result.warnings,
+        contains(isA<BuildWarning>().having((warning) => warning.message, 'message', contains('installed but inert'))),
+      );
     });
 
     test('elapsed time is non-negative', () async {

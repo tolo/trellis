@@ -49,8 +49,13 @@
           tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
     <div class="container site-header-inner">
       <a href="/" class="site-brand">
+        <!-- assetBase already ends in a slash, so a root-relative logo sheds its own
+             leading slash first: plain concatenation emits //img/logo.png, which a
+             browser reads as an authority and fetches from a host named img. -->
         <img class="site-logo" tl:if="${theme.logo}"
-             tl:attr="src=${assetBase} + ${theme.logo},alt=${site.title}" src="" alt="">
+             tl:with="logoPath=${#strings.startsWith(theme.logo, '/')}
+               ? ${#strings.substring(theme.logo, 1)} : ${theme.logo}"
+             tl:attr="src=${assetBase} + ${logoPath},alt=${site.title}" src="" alt="">
         <span class="site-title" tl:unless="${theme.logo}" tl:text="${site.title}">Site Title</span>
       </a>
 

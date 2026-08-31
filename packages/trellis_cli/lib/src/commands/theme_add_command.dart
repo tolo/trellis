@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:trellis_site/trellis_site.dart';
 
 import '../process_runner.dart';
+import '../theme_compatibility.dart';
 import '../theme_config_updater.dart';
 import '../validators.dart';
 
@@ -13,13 +14,25 @@ import '../validators.dart';
 /// Installs a theme from a git URL (shallow clone) or local path (directory
 /// copy). Reads the theme's `theme.yaml`, then sets `theme:` in
 /// `trellis_site.yaml`.
+///
+/// `--theme <name>` installs a single theme out of a multi-theme repository
+/// (the layout the Trellis themes themselves use: `themes/<name>/` inside one
+/// repo). The source is materialized in a temporary directory and only
+/// `themes/<name>/` is copied into the site, so the site's `themes/` mirrors
+/// the whole-repo case.
 class ThemeAddCommand extends Command<int> {
   /// Base directory the site and its `themes/` are resolved from. Defaults to
   /// the process current directory.
   final String? workingDirectory;
 
   ThemeAddCommand({this.workingDirectory, ProcessRunner processRunner = runProcess}) : _processRunner = processRunner {
-    argParser.addOption('ref', help: 'Git tag, branch, or commit to checkout.', valueHelp: 'tag');
+    argParser
+      ..addOption('ref', help: 'Git tag or branch to clone. Not a commit SHA.', valueHelp: 'tag')
+      ..addOption(
+        'theme',
+        help: "Install one theme from a multi-theme source's themes/<name>/ directory.",
+        valueHelp: 'name',
+      );
   }
 
   final ProcessRunner _processRunner;
@@ -31,7 +44,7 @@ class ThemeAddCommand extends Command<int> {
   String get description => 'Install a theme from a git URL or local path.';
 
   @override
-  String get invocation => 'trellis theme add <url-or-path> [--ref <tag>]';
+  String get invocation => 'trellis theme add <url-or-path> [--theme <name>] [--ref <tag>]';
 
   @override
   Future<int> run() async {
@@ -44,6 +57,15 @@ class ThemeAddCommand extends Command<int> {
 
     final source = argResults!.rest.first;
     final ref = argResults!['ref'] as String?;
+    final subdirectoryTheme = argResults!['theme'] as String?;
+
+    if (subdirectoryTheme != null) {
+      final invalid = validateThemeName(subdirectoryTheme);
+      if (invalid != null) {
+        stderr.writeln('Error: $invalid');
+        return 1;
+      }
+    }
 
     final baseDir = workingDirectory ?? Directory.current.path;
 
@@ -51,6 +73,13 @@ class ThemeAddCommand extends Command<int> {
     final configPath = p.join(baseDir, 'trellis_site.yaml');
     if (!File(configPath).existsSync()) {
       stderr.writeln('Error: trellis_site.yaml not found in $baseDir');
+      return 1;
+    }
+    final SiteConfig siteConfig;
+    try {
+      siteConfig = SiteConfig.load(configPath);
+    } on SiteConfigException catch (error) {
+      stderr.writeln('Error: $error');
       return 1;
     }
 
@@ -64,7 +93,9 @@ class ThemeAddCommand extends Command<int> {
     final String themeName;
     try {
       if (isLocal) {
-        themeName = await _addFromLocalPath(source, themesDir);
+        themeName = await _addFromLocalPath(source, themesDir, subdirectoryTheme);
+      } else if (subdirectoryTheme != null) {
+        themeName = await _addFromGitSubdirectory(source, themesDir, ref, subdirectoryTheme);
       } else {
         themeName = await _addFromGit(source, themesDir, ref);
       }
@@ -75,7 +106,9 @@ class ThemeAddCommand extends Command<int> {
     // Verify theme.yaml is valid
     final themeDir = p.join(themesDir, themeName);
     try {
-      ThemeManifest.load(themeDir);
+      final manifest = ThemeManifest.load(themeDir);
+      final compatibilityWarning = themeCompatibilityWarning(manifest);
+      if (compatibilityWarning != null) stderr.writeln(compatibilityWarning);
     } on ThemeManifestException catch (e) {
       stderr.writeln('Error: Invalid theme — $e');
       // Clean up the cloned/copied directory
@@ -85,7 +118,13 @@ class ThemeAddCommand extends Command<int> {
 
     // Update trellis_site.yaml
     final updater = ThemeConfigUpdater(configPath);
-    updater.setTheme(themeName, ref: ref);
+    try {
+      updater.setTheme(themeName, ref: ref);
+    } on FileSystemException catch (error) {
+      Directory(themeDir).deleteSync(recursive: true);
+      stderr.writeln('Error: Could not update trellis_site.yaml — ${error.message}');
+      return 1;
+    }
 
     stdout.writeln('Installed theme "$themeName".');
     if (ref != null) stdout.writeln('  Pinned to ref: $ref');
@@ -93,7 +132,39 @@ class ThemeAddCommand extends Command<int> {
     stdout.writeln('');
     stdout.writeln('Customize via theme_params: in trellis_site.yaml.');
 
+    _warnOnShadowedLayouts(siteConfig, themeDir, themeName);
+
     return 0;
+  }
+
+  /// Warns when the site already has layouts at paths the just-installed theme
+  /// also provides.
+  ///
+  /// Resolution is site-first, so those theme layouts can never render — the
+  /// case that turns a scaffolded project plus a theme into an unstyled site.
+  /// The install itself still succeeds: overriding layouts is supported, and the
+  /// warning is what makes the trade-off visible at the moment it is made.
+  void _warnOnShadowedLayouts(SiteConfig config, String themeDir, String themeName) {
+    final shadowed = shadowedThemeLayouts(
+      siteDir: config.siteDir,
+      siteLayoutsDir: config.layoutsDir,
+      themeDir: themeDir,
+    );
+    if (shadowed.isEmpty) return;
+
+    final count = shadowed.length;
+    stderr.writeln('');
+    stderr.writeln(
+      'Warning: $count layout${count == 1 ? '' : 's'} in the site shadow${count == 1 ? 's' : ''} "$themeName". '
+      "Layouts resolve site-first, so the theme's version never renders:",
+    );
+    for (final layout in shadowed) {
+      stderr.writeln('  $layout');
+    }
+    stderr.writeln(
+      'Overriding a layout is supported. If the site instead renders unstyled, remove or rename the shadowing '
+      'layouts, or pull the theme in explicitly with the theme: prefix (e.g. tl:extends="theme:layouts/base.html").',
+    );
   }
 
   bool _isLocalPath(String source) {
@@ -103,43 +174,98 @@ class ThemeAddCommand extends Command<int> {
         Directory(source).existsSync();
   }
 
-  Future<String> _addFromLocalPath(String source, String themesDir) async {
-    final sourceDir = Directory(source);
-    if (!sourceDir.existsSync()) {
+  Future<String> _addFromLocalPath(String source, String themesDir, String? subdirectoryTheme) async {
+    if (!Directory(source).existsSync()) {
       stderr.writeln('Error: Local path does not exist: $source');
       throw _ThemeAddException();
     }
 
-    final themeName = p.basename(p.canonicalize(source));
-    final destDir = p.join(themesDir, themeName);
-
-    if (Directory(destDir).existsSync()) {
-      stderr.writeln("Error: Theme '$themeName' already installed. Use 'trellis theme update $themeName'.");
-      throw _ThemeAddException();
-    }
+    final themeName = subdirectoryTheme ?? p.basename(p.canonicalize(source));
+    final sourceDir = subdirectoryTheme == null
+        ? Directory(source)
+        : Directory(_resolveThemeSubdirectory(source, subdirectoryTheme, source));
+    _requireNotInstalled(themesDir, themeName);
 
     // Copy directory recursively, excluding .git/
-    _copyDirectory(sourceDir, Directory(destDir));
+    _copyDirectory(sourceDir, Directory(p.join(themesDir, themeName)));
     return themeName;
   }
 
   Future<String> _addFromGit(String url, String themesDir, String? ref) async {
     // Derive theme name from git URL
     final themeName = themeNameFromUrl(url);
-    final destDir = p.join(themesDir, themeName);
-
-    if (Directory(destDir).existsSync()) {
-      stderr.writeln("Error: Theme '$themeName' already installed. Use 'trellis theme update $themeName'.");
+    final invalid = validateThemeName(themeName);
+    if (invalid != null) {
+      stderr.writeln('Error: $invalid');
       throw _ThemeAddException();
     }
+    final destDir = p.join(themesDir, themeName);
+    _requireNotInstalled(themesDir, themeName);
 
     // Shallow clone. Unlike the local-path copy, symlinks are kept as git
     // materializes them: git's own checkout is safe and non-recursing, so the
     // skip in _copyDirectory (which only guards our own recursive copy) does
     // not apply here.
+    await _clone(url, destDir, ref);
+    return themeName;
+  }
+
+  /// Installs `themes/<themeName>/` out of the repository at [url].
+  ///
+  /// The repository is cloned to a temporary directory and discarded once the
+  /// subdirectory has been copied — the installed theme carries no `.git`, so
+  /// it is re-installed rather than `trellis theme update`d.
+  Future<String> _addFromGitSubdirectory(String url, String themesDir, String? ref, String themeName) async {
+    _requireNotInstalled(themesDir, themeName);
+
+    final tempRoot = Directory.systemTemp.createTempSync('trellis_theme_add_');
+    try {
+      final clonePath = p.join(tempRoot.path, 'repo');
+      await _clone(url, clonePath, ref);
+      final sourcePath = _resolveThemeSubdirectory(clonePath, themeName, url, ref: ref);
+      _copyDirectory(Directory(sourcePath), Directory(p.join(themesDir, themeName)));
+    } finally {
+      if (tempRoot.existsSync()) tempRoot.deleteSync(recursive: true);
+    }
+    return themeName;
+  }
+
+  /// Resolves `<root>/themes/<themeName>` and verifies it holds a manifest.
+  ///
+  /// [sourceLabel] names the source in the error message (a URL or a local
+  /// path). The lexical half of the containment check is belt-and-braces over
+  /// the charset validation in [validateThemeName]: a name that reached here
+  /// cannot traverse, and a future relaxation of the charset cannot silently
+  /// start writing outside the copy root either. The canonical half is what
+  /// stops a source whose own `themes/<name>` is a symlink out of the tree.
+  String _resolveThemeSubdirectory(String root, String themeName, String sourceLabel, {String? ref}) {
+    final resolved = p.normalize(p.join(root, 'themes', themeName));
+    if (!p.isWithin(p.normalize(root), resolved) || !_resolvesWithin(root, resolved)) {
+      stderr.writeln("Error: Theme path 'themes/$themeName' escapes $sourceLabel.");
+      throw _ThemeAddException();
+    }
+    if (!File(p.join(resolved, 'theme.yaml')).existsSync()) {
+      stderr.writeln(
+        "Error: Theme '$themeName' not found in $sourceLabel${ref == null ? '' : ' at ref $ref'} — "
+        'expected a manifest at themes/$themeName/theme.yaml.',
+      );
+      throw _ThemeAddException();
+    }
+    return resolved;
+  }
+
+  void _requireNotInstalled(String themesDir, String themeName) {
+    if (Directory(p.join(themesDir, themeName)).existsSync()) {
+      stderr.writeln("Error: Theme '$themeName' already installed. Use 'trellis theme update $themeName'.");
+      throw _ThemeAddException();
+    }
+  }
+
+  /// Shallow-clones [url] into [destination], optionally pinned to [ref].
+  Future<void> _clone(String url, String destination, String? ref) async {
     final cloneArgs = ['clone', '--depth', '1'];
     if (ref != null) cloneArgs.addAll(['--branch', ref]);
-    cloneArgs.addAll([url, destDir]);
+    cloneArgs.addAll([url, destination]);
 
     final ProcessResult result;
     try {
@@ -158,9 +284,25 @@ class ThemeAddCommand extends Command<int> {
       stderr.writeln('Error: Failed to clone theme: ${result.stderr}');
       throw _ThemeAddException();
     }
-
-    return themeName;
   }
+}
+
+/// Whether [resolved] is still inside [root] once every symlink on both paths
+/// has been followed, mirroring the containment check in
+/// `tool/generate_theme_gallery.dart`.
+///
+/// A lexical [p.isWithin] compares normalized strings, so a source whose own
+/// `themes/<name>` is a symlink pointing out of the tree passes it. The copy
+/// that follows then materializes files from outside the source as real files
+/// under the site's `themes/<name>/`, and `trellis build` publishes whatever
+/// `themes/<name>/static/` resolved to. A symlink that stays inside [root] is
+/// legitimate and allowed — containment is the rule, not "no symlinks".
+///
+/// A [resolved] that does not exist is not an escape: the missing-manifest
+/// error names that failure far better, so it is left to run.
+bool _resolvesWithin(String root, String resolved) {
+  if (!Directory(resolved).existsSync()) return true;
+  return p.isWithin(Directory(root).resolveSymbolicLinksSync(), Directory(resolved).resolveSymbolicLinksSync());
 }
 
 /// Recursively copies [source] to [destination], excluding `.git/` directories

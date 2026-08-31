@@ -7,6 +7,13 @@
 // working site: a wrong-base-path link produces valid HTML and no build error
 // but a dead link in production. This checker is that gate.
 //
+// Asset-bearing `data-*` attributes are in scope too, via the explicit
+// allow-list in [assetDataAttributes]. Client-side skin swapping (the docs
+// landing page's `data-light`/`data-dark` theme screenshots) reaches the
+// browser as a data attribute rather than as `src`, so without this the dark
+// variant of every swapped image is unchecked and a missing file ships as a
+// live 404. Adding an attribute here is how a new swap convention gets covered.
+//
 // External references (`http(s):`, protocol-relative `//host`, `mailto:`,
 // `tel:`, `data:`) and pure in-page anchors (`#frag`) are out of scope and are
 // never reported.
@@ -46,6 +53,13 @@ import 'dart:io';
 import 'package:html/parser.dart' as html_parser;
 import 'package:path/path.dart' as p;
 
+/// `data-*` attributes whose value is an asset path the browser will load.
+///
+/// Kept explicit rather than scanning every `data-*`: most data attributes hold
+/// state, not URLs, and treating them as references would produce false
+/// "broken" reports.
+const assetDataAttributes = <String>['data-light', 'data-dark'];
+
 const _usage = '''
 Internal link/asset integrity checker for a Trellis build output tree.
 
@@ -58,6 +72,9 @@ Options:
                         root-absolute ref without it is reported as broken.
                         Omit for a root-served host.
   -h, --help            Print this usage and exit.
+
+Checks href, src, srcset, and the asset-bearing data attributes
+data-light and data-dark.
 
 Exits 0 when every internal reference resolves, 1 when any is broken, 2 on a
 usage error. External URLs (http(s):, //host, mailto:, tel:, data:) and pure
@@ -208,8 +225,8 @@ LinkCheckResult checkLinks(String outputDirPath, {String? basePath}) {
   return LinkCheckResult(broken, htmlFiles.length, refsChecked);
 }
 
-/// Collects raw `href`/`src` values plus the first URL of each `srcset`
-/// candidate, in document order, from [elements].
+/// Collects raw `href`/`src`/[assetDataAttributes] values plus the first URL of
+/// each `srcset` candidate, in document order, from [elements].
 Iterable<String> _extractRefs(Iterable<dynamic> elements) sync* {
   for (final el in elements) {
     final attrs = el.attributes as Map<Object, String>;
@@ -217,6 +234,10 @@ Iterable<String> _extractRefs(Iterable<dynamic> elements) sync* {
     if (href != null && href.isNotEmpty) yield href;
     final src = attrs['src'];
     if (src != null && src.isNotEmpty) yield src;
+    for (final name in assetDataAttributes) {
+      final value = attrs[name];
+      if (value != null && value.isNotEmpty) yield value;
+    }
     final srcset = attrs['srcset'];
     if (srcset != null && srcset.isNotEmpty) {
       for (final candidate in srcset.split(',')) {

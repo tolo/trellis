@@ -18,7 +18,8 @@ Usage:
 Bumps EVERY publishable package to the same version in a single `melos version`
 pass. Melos also rewrites the inter-package dependency constraints (e.g. the
 `trellis: ^x.y.z` in each satellite) to match, in the same run. The script then
-syncs the hardcoded version constants and README download examples.
+syncs the hardcoded version constants, README download examples, and the docs-site
+hero in site/trellis_site.yaml.
 
 The flags a real release needs are built in — run it with just the version:
   --no-changelog           packages keep hand-written CHANGELOG.md files; melos
@@ -123,3 +124,13 @@ for file in "${README_EXAMPLE_FILES[@]}"; do
      s/(\$Version = ")[0-9][0-9A-Za-z.+-]*(")/$1$ENV{VERSION}$2/' "${file}"
   git add "${file}" 2>/dev/null || true
 done
+
+# The docs-site hero includes the released SDK version in its terminal card.
+# Keep it on the same lockstep rail as package versions and README examples.
+SITE_CONFIG="${ROOT}/site/trellis_site.yaml"
+echo "Syncing docs-site hero version to ${VERSION}..."
+VERSION="${VERSION}" perl -pi -e \
+  'BEGIN { $updated = 0 }
+   $updated += s/^(\s*text:\s*)(["\x27]?)(trellis )[0-9][0-9A-Za-z.+-]*( — one dependency)\2\s*$/$1$2$3$ENV{VERSION}$4$2/;
+   END { exit 1 unless $updated == 1 }' "${SITE_CONFIG}"
+git add "${SITE_CONFIG}" 2>/dev/null || true

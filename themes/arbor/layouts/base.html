@@ -100,8 +100,10 @@
                  via data-search-index, computed with the same assetBase rule the
                  <head> asset links use (pathPrefix, or / when served at root).
                  The index is written to the output root, so it is served at
-                 ${assetBase}search-index.json (e.g. /trellis/search-index.json). -->
-            <div class="search-shell" tl:if="${theme.show_search}"
+                 ${assetBase}search-index.json (e.g. /trellis/search-index.json).
+                 Ships hidden; search.js reveals it once the index has loaded, so a page
+                 without JavaScript shows no permanently disabled control. -->
+            <div class="search-shell" hidden tl:if="${theme.show_search}"
                  tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}"
                  tl:attr="data-search-index=${assetBase} + 'search-index.json'">
               <label class="sr-only" for="docs-search">Search documentation</label>

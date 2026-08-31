@@ -1,0 +1,494 @@
+@import 'variables';
+
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  src: url('../fonts/bricolage-grotesque-latin.woff2') format('woff2');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Schibsted Grotesk';
+  src: url('../fonts/schibsted-grotesk-latin.woff2') format('woff2');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('../fonts/jetbrains-mono-latin.woff2') format('woff2');
+  /* The file carries wght 400-800; at 400 700 the theme's 800 mono labels clamped to 700. */
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@if $trellis-skin == dark {
+  :root { @include meadow-dark-tokens; }
+} @else if $trellis-skin == auto {
+  @media (prefers-color-scheme: dark) { :root { @include meadow-dark-tokens; } }
+  :root[data-skin='dark'] { @include meadow-dark-tokens; }
+  :root[data-skin='light'] {
+    --meadow-ink: #{$trellis-text-color};
+    --meadow-muted: #{$trellis-muted-color};
+    --meadow-paper: #{$trellis-bg-color};
+    --meadow-surface: #{$trellis-surface-color};
+    --meadow-strong: #eef5df;
+    --meadow-leaf: #{$trellis-primary-color};
+    --meadow-leaf-deep: #185733;
+    --meadow-lime: #{$trellis-accent-color};
+    --meadow-lime-soft: #edf8c9;
+    --meadow-sky: #{$trellis-sky-color};
+    --meadow-sky-soft: #e2f3fd;
+    --meadow-sun: #{$trellis-sun-color};
+    --meadow-sun-soft: #fff1c8;
+    --meadow-bloom: #{$trellis-bloom-color};
+    --meadow-bloom-soft: #f4e5fc;
+    --meadow-coral: #{$trellis-coral-color};
+    --meadow-line: #{$trellis-border-color};
+    --meadow-shadow: #173923;
+    --meadow-nav: rgba(247, 250, 238, 0.92);
+    --meadow-focus: #176aa5;
+    --meadow-primary-bg: #{$trellis-text-color};
+    --meadow-primary-text: #{$trellis-accent-color};
+  }
+}
+
+* { box-sizing: border-box; }
+
+/* ── Masthead geometry ────────────────────────────────────────────────────────
+
+   The sticky masthead is a bar of a declared height — one row, at both of the two
+   sizes it comes in — and .site-nav is set to exactly that height instead of
+   growing to fit its contents. Everything that has to clear the bar reads
+   --meadow-masthead-height: the bar itself, and the in-page anchor offset below.
+   Neither can move without the other.
+
+   `height` and not the `min-height` this replaced. A floor is not a declaration:
+   every box in the bar is a 44px tap target today, so the floor is what you see —
+   but a nav label that wraps, or a brand that does, lifts the row past it and
+   takes the bar with it, while the offset stays where it was. .desktop-nav is
+   held to one line and scrolls sideways instead, so the row cannot grow that way.
+   That is the defect this shape exists to prevent: Verdant shipped a constant
+   offset sized for a two-row nav and Linux wrapped it to three, leaving every
+   anchor target behind the bar there while macOS passed. */
+$meadow-masthead-rule: 1px;
+$meadow-masthead-bar: 72px;
+$meadow-masthead-bar-narrow: 66px;
+$meadow-masthead-clearance: 16px; /* paper kept above an anchor target, under the bar */
+
+:root {
+  --meadow-masthead-height: #{$meadow-masthead-bar + $meadow-masthead-rule};
+
+  @media (max-width: 430px) {
+    --meadow-masthead-height: #{$meadow-masthead-bar-narrow + $meadow-masthead-rule};
+  }
+}
+
+html {
+  /* .site-nav is sticky, so an un-offset in-page anchor jump parks the target behind it
+     and a nav click lands on the section after the one it names. The offset is the bar's
+     own declared height plus a gap — read from it, not guessed alongside it. */
+  scroll-padding-top: calc(var(--meadow-masthead-height) + #{$meadow-masthead-clearance});
+}
+html { scroll-behavior: smooth; }
+body {
+  /* Short pages must still push the footer to the bottom of the viewport; the skip
+     link is out of flow, so it never becomes a flex item. */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
+  background: radial-gradient(circle at 5% 8%, color-mix(in srgb, var(--meadow-lime) 16%, transparent) 0 9rem,
+      transparent 24rem), var(--meadow-paper);
+  color: var(--meadow-ink);
+  font-family: var(--meadow-body);
+  line-height: 1.6;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+}
+/* `break-word` wraps a long token but does not shrink a box's min-content size, so an unbreakable
+   token (a URL, a package name, a hash) still widens its grid track and pushes the document past
+   the viewport. `anywhere` does shrink it. Scoped to page content: the brand and the nav/footer
+   labels keep `break-word` so short words are never split mid-label. */
+main * { overflow-wrap: anywhere; }
+button, a { font: inherit; }
+a { color: inherit; }
+[hidden] { display: none !important; }
+:where(a, button, summary):focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: -3px;
+  border-radius: 8px;
+}
+.skip-link {
+  position: fixed;
+  inset: 10px auto auto 10px;
+  z-index: 1000;
+  padding: 10px 15px;
+  background: var(--meadow-ink);
+  color: var(--meadow-paper);
+  border-radius: 10px;
+  transform: translateY(-180%);
+}
+.skip-link:focus { transform: translateY(0); }
+body > main { flex: 1 0 auto; }
+.wrap { width: min(var(--meadow-width), calc(100% - 48px)); margin-inline: auto; }
+.measure { max-width: 760px; padding-block: 72px; }
+
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  /* Declared, never measured — see "Masthead geometry" above. */
+  height: var(--meadow-masthead-height);
+  background: var(--meadow-nav);
+  border-bottom: $meadow-masthead-rule solid var(--meadow-line);
+  backdrop-filter: blur(18px);
+}
+/* Fills the bar's declared height rather than setting a floor of its own. */
+.nav-inner { height: 100%; display: flex; align-items: center; gap: 24px; }
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font: 800 1.25rem/1 var(--meadow-display);
+  letter-spacing: -0.03em;
+  text-decoration: none;
+}
+.brand-mark, .site-logo { width: 29px; height: 29px; object-fit: contain; }
+/* One row, always — see "Masthead geometry" above. A label that wrapped would lift the
+   row past the height the bar declares, and how many words fit on a line is a fact about
+   the reader's font. min-width: 0 lets the strip shrink and scroll instead of widening
+   the bar; the dropdown copy of these links (.mobile-menu a) is free to wrap. */
+.desktop-nav { margin-left: auto; display: flex; align-items: center; gap: 4px; min-width: 0; overflow-x: auto; }
+.desktop-nav a, .mobile-menu a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 13px;
+  border-radius: 999px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.desktop-nav a { flex: 0 0 auto; white-space: nowrap; }
+.desktop-nav a:hover, .mobile-menu a:hover { background: var(--meadow-lime-soft); }
+/* min-width: 0 so the row can give: a flex item's automatic minimum is its min-content
+   width, and the CTA inside carries page copy, so without this the masthead grows past
+   the viewport instead of the CTA narrowing into its ellipsis. */
+.nav-actions { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.nav-cta {
+  min-height: 44px;
+  /* 220px is the cap, not a floor: the CTA must also give way when the masthead row is
+     tight. Without `min-width: 0` a long label held the button at the cap and the row
+     overflowed from 841px — just above the breakpoint that hides the CTA entirely. */
+  max-width: 220px;
+  min-width: 0;
+  flex: 0 1 auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: var(--meadow-primary-bg);
+  color: var(--meadow-primary-text);
+  font-weight: 800;
+  text-decoration: none;
+}
+/* The label is `hero.ctas[0].label`, which a landing page is free to make a sentence. Truncating
+   keeps the sticky header on its 72px rhythm instead of growing a three-line button. */
+.nav-cta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.icon-button, .mobile-menu summary {
+  min-width: 44px;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  border: 1.5px solid var(--meadow-line);
+  border-radius: 999px;
+  background: var(--meadow-surface);
+  color: var(--meadow-ink);
+  cursor: pointer;
+}
+.mobile-menu { display: none; position: relative; }
+.mobile-menu summary { list-style: none; }
+.mobile-menu summary::-webkit-details-marker { display: none; }
+.mobile-menu nav {
+  position: absolute;
+  top: 52px;
+  right: 0;
+  width: min(260px, calc(100vw - 36px));
+  display: grid;
+  padding: 10px;
+  background: var(--meadow-surface);
+  border: 1px solid var(--meadow-line);
+  border-radius: 18px;
+  box-shadow: 0 18px 50px color-mix(in srgb, var(--meadow-shadow) 24%, transparent);
+}
+
+.hero { padding-block: clamp(58px, 8vw, 108px) clamp(68px, 9vw, 118px); overflow: clip; }
+.hero-grid { display: grid; align-items: center; gap: clamp(44px, 6vw, 84px); }
+.hero-split { grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr); }
+.hero-center { max-width: 860px; text-align: center; }
+.hero-center .hero-copy { margin-inline: auto; }
+.hero-center .hero-actions { justify-content: center; }
+.eyebrow, .kicker {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  padding: 6px 12px;
+  border: 1px solid var(--meadow-line);
+  border-radius: 8px;
+  background: var(--meadow-surface);
+  font: 700 0.78rem/1.2 var(--meadow-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+/* `pill_badges: false` drops `.eyebrow-pill` from the hero label, leaving the 8px radius above.
+   Section kickers stay pills — the param names the hero badge only. */
+.kicker, .eyebrow-pill { border-radius: 999px; }
+.hero h1 {
+  max-width: 830px;
+  margin: 22px 0 24px;
+  font: 800 clamp(3.4rem, 6.5vw, 6.6rem)/0.92 var(--meadow-display);
+  letter-spacing: -0.055em;
+  text-wrap: balance;
+}
+/* The band is a background on the inline box, not an absolutely-positioned ::before, so it
+   fragments with the text: a headline emphasis that wraps gets one band per line instead of a
+   single box sized to the unwrapped run. `box-decoration-break: clone` gives each fragment its
+   own padding and radii. The light band's tilt comes from the gradient angle — the stop line is
+   perpendicular to it — since a background box cannot be rotated on its own. */
+@mixin meadow-marker-light {
+  padding-inline: 0.08em;
+  margin-inline: -0.08em;
+  border-radius: 0.16em 0.32em 0.14em 0.24em;
+  background-image: linear-gradient(178.3deg, transparent 0 50%, var(--meadow-lime) 50% 100%);
+  background-position: left 0 bottom 0.02em;
+  background-size: 100% 92%;
+}
+@mixin meadow-marker-dark {
+  padding-inline: 0.1em;
+  margin-inline: -0.1em;
+  border-radius: 0.28em 0.16em 0.25em 0.13em;
+  background-image: linear-gradient(var(--meadow-lime) 0 100%);
+  background-position: left 0 bottom 0;
+  background-size: 100% 100%;
+}
+.marker {
+  color: #14251a;
+  background-repeat: no-repeat;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  @include meadow-marker-light;
+}
+@if $trellis-skin == dark {
+  .marker { @include meadow-marker-dark; }
+} @else if $trellis-skin == auto {
+  @media (prefers-color-scheme: dark) { .marker { @include meadow-marker-dark; } }
+  :root[data-skin='dark'] .marker { @include meadow-marker-dark; }
+  :root[data-skin='light'] .marker { @include meadow-marker-light; }
+}
+.hero-lede { max-width: 650px; margin: 0; color: var(--meadow-muted); font-size: clamp(1.08rem, 1.7vw, 1.28rem); }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 13px; margin-top: 32px; }
+.button {
+  min-height: 50px;
+  max-width: 360px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 20px;
+  border: 2px solid var(--meadow-ink);
+  border-radius: 999px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.button-primary {
+  background: var(--meadow-primary-bg);
+  color: var(--meadow-primary-text);
+  box-shadow: 5px 5px 0 var(--meadow-leaf-deep);
+}
+.button-secondary { background: var(--meadow-surface); }
+.button:hover { transform: translateY(-2px); }
+.hero-art { width: min(100%, 500px); margin: 0; filter: drop-shadow(16px 18px 0 color-mix(in srgb, var(--meadow-leaf) 30%, transparent)); }
+.hero-art svg, .hero-art img { display: block; width: 100%; height: auto; }
+.home-prose { padding-block: 36px; }
+
+.proof-strip { border-block: 1px solid var(--meadow-line); background: var(--meadow-paper); color: var(--meadow-ink); }
+.proof-list { display: grid; grid-template-columns: repeat(4, 1fr); margin-block: 0; padding-block: 30px; list-style: none; }
+.proof-list li { min-width: 0; padding: 6px 24px; }
+.proof-list strong, .proof-list span { display: block; }
+.proof-list strong { color: var(--meadow-ink); font: 800 1.2rem/1.25 var(--meadow-display); }
+.proof-list span { color: var(--meadow-muted); font-size: 0.9rem; }
+
+.section { padding-block: clamp(72px, 9vw, 118px); }
+.section-head { max-width: 760px; margin-bottom: 46px; }
+.section-head h2 { margin: 18px 0 13px; font: 800 clamp(2.25rem, 4.2vw, 4.25rem)/1 var(--meadow-display); letter-spacing: -0.045em; text-wrap: balance; }
+.section-head p { max-width: 660px; margin: 0; color: var(--meadow-muted); font-size: 1.08rem; }
+.kicker { border: 0; }
+.kicker.lime { background: var(--meadow-lime); color: #14251a; }
+.kicker.sky { background: var(--meadow-sky); color: #14251a; }
+.kicker.bloom { background: var(--meadow-bloom); color: #14251a; }
+
+.feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.feature-card { min-width: 0; padding: 28px; border: 2px solid var(--meadow-ink); border-radius: var(--meadow-radius); box-shadow: 7px 7px 0 var(--meadow-ink); }
+.feature-card:nth-child(4n + 1) { background: var(--meadow-lime-soft); }
+.feature-card:nth-child(4n + 2) { background: var(--meadow-sky-soft); }
+.feature-card:nth-child(4n + 3) { background: var(--meadow-sun-soft); }
+.feature-card:nth-child(4n) { background: var(--meadow-bloom-soft); }
+// The icon is a geometric mark, and the body face draws none of them - JetBrains
+// Mono is the vendored face that carries the set (see VENDORED.md).
+.feature-icon { width: 44px; height: 44px; display: grid; place-items: center; border: 2px solid var(--meadow-ink); border-radius: 13px; background: var(--meadow-surface); font-family: var(--meadow-mono); font-size: 1.3rem; }
+.feature-card h3 { margin: 22px 0 8px; font: 800 1.45rem/1.1 var(--meadow-display); }
+.feature-card p { margin: 0; color: var(--meadow-muted); }
+
+.signal-section { background: var(--meadow-panel-bg); color: var(--meadow-panel-text); }
+.signal-section .section-head p { color: var(--meadow-panel-muted); }
+.signal-grid { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(320px, 0.88fr); gap: clamp(40px, 7vw, 90px); align-items: center; }
+/* Without an insight card the second track would still reserve its 320px minimum. */
+.signal-grid-solo { grid-template-columns: minmax(0, 1fr); }
+.signal-stack { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.signal-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 17px; border: 1px solid color-mix(in srgb, var(--meadow-panel-text) 18%, transparent); border-radius: 18px; background: color-mix(in srgb, var(--meadow-panel-text) 8%, transparent); }
+.signal-avatar { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: var(--meadow-lime); color: #14251a; font-weight: 900; }
+.signal-card p { margin: 3px 0 0; color: var(--meadow-panel-muted); }
+/* An auto grid track grows to its content's max-content size, so a long tag would take the whole
+   row and collapse the message column to zero width. The chip wraps instead. */
+.signal-tag { max-width: 14ch; padding: 4px 8px; border-radius: 999px; background: var(--meadow-bloom); color: #14251a; font: 700 0.72rem var(--meadow-mono); }
+.insight-card { padding: clamp(28px, 4vw, 48px); border: 2px solid #14251a; border-radius: 32px; background: var(--meadow-lime); color: #14251a; box-shadow: 8px 8px 0 var(--meadow-leaf-deep); }
+.insight-label { color: #14251a; font: 700 0.78rem var(--meadow-mono); text-transform: uppercase; }
+.insight-card h3 { margin: 18px 0 12px; font: 800 clamp(2rem, 3.5vw, 3.2rem)/1 var(--meadow-display); letter-spacing: -0.04em; }
+.insight-card p { color: #14251a; }
+.meter { height: 12px; margin-top: 28px; overflow: hidden; border: 2px solid #14251a; border-radius: 999px; background: #f7faee; }
+.meter span { display: block; width: clamp(0%, var(--confidence), 100%); height: 100%; background: var(--meadow-leaf); }
+
+.template-section { overflow: clip; contain: paint; }
+.template-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; padding: 20px 12px 34px; }
+.template-card { min-width: 0; position: relative; z-index: 0; padding: 8px; border-radius: 30px; color: inherit; contain: paint; text-decoration: none; }
+.template-card-inner { display: flex; flex-direction: column; height: 100%; min-height: 340px; padding: 26px; border: 2px solid var(--meadow-ink); border-radius: 24px; background: var(--meadow-sky-soft); box-shadow: 6px 6px 0 var(--meadow-ink); transition: transform 170ms ease, box-shadow 170ms ease; }
+.template-card:nth-child(2) .template-card-inner { background: var(--meadow-sun-soft); }
+.template-card:nth-child(3) .template-card-inner { background: var(--meadow-bloom-soft); }
+.template-card:nth-child(1) .template-card-inner { transform: rotate(-1deg); }
+.template-card:nth-child(2) .template-card-inner { transform: rotate(1deg); }
+.template-card:nth-child(3) .template-card-inner { transform: rotate(-0.75deg); }
+.template-card:hover .template-card-inner, .template-card:focus-visible .template-card-inner { transform: translateY(-5px) rotate(0); box-shadow: 8px 10px 0 var(--meadow-ink); }
+.template-number { color: var(--meadow-ink); font: 800 0.75rem var(--meadow-mono); }
+.template-window {
+  position: relative;
+  height: 145px;
+  margin: 22px 0 24px;
+  border: 2px solid var(--meadow-ink);
+  border-radius: 15px;
+  background: var(--meadow-surface);
+}
+// U+25CF is drawn by JetBrains Mono and by neither of the other two vendored faces,
+// so the body stack falls back here. The sibling chrome at home.html already names
+// the mono variable for the same reason.
+.template-window::before { position: absolute; inset: 13px auto auto 14px; content: '● ● ●'; color: var(--meadow-coral); font-family: var(--meadow-mono); font-size: 0.7rem; letter-spacing: 2px; }
+.template-window::after { position: absolute; inset: 40px 14px 14px; content: ''; border-radius: 9px; background: linear-gradient(90deg, var(--meadow-strong) 0 36%, transparent 36% 39%, var(--meadow-lime) 39%); }
+.template-card h3 { margin: auto 0 8px; font: 800 1.55rem/1.05 var(--meadow-display); }
+.template-card p { margin: 0; color: var(--meadow-muted); }
+
+.quote-band { padding-block: 44px; color: var(--meadow-ink); }
+.quote-card { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 28px; align-items: start; padding: clamp(32px, 5vw, 60px); border: 2px solid var(--meadow-ink); border-radius: 32px; background: var(--meadow-surface); }
+.quote-mark { color: var(--meadow-leaf); font: 800 6rem/0.8 var(--meadow-display); }
+blockquote { margin: 0; font: 800 clamp(1.5rem, 3vw, 2.6rem)/1.15 var(--meadow-display); }
+.quote-card footer { margin-top: 14px; font-weight: 700; }
+.start { text-align: center; }
+.start .section-head { margin-inline: auto; }
+.start .section-head .kicker { margin-inline: auto; }
+.terminal { max-width: 760px; margin-inline: auto; overflow: hidden; border: 2px solid var(--meadow-ink); border-radius: 22px; background: #13271b; color: #edf7e8; text-align: left; box-shadow: 8px 8px 0 var(--meadow-leaf); }
+.terminal-top { display: flex; justify-content: space-between; padding: 18px 22px 0; color: rgba(237, 247, 232, 0.58); font: 700 0.72rem var(--meadow-mono); }
+.terminal-top span:first-child { color: var(--meadow-coral); letter-spacing: 4px; }
+.command-row { display: flex; align-items: center; gap: 12px; padding: 22px; }
+.command { min-width: 0; overflow-wrap: anywhere; font-family: var(--meadow-mono); }
+.prompt { color: var(--meadow-lime); }
+.copy-button { min-height: 44px; margin-left: auto; padding: 8px 14px; border: 1px solid currentColor; border-radius: 10px; background: transparent; color: inherit; cursor: pointer; }
+.start-note { color: var(--meadow-muted); }
+
+.site-footer { border-top: 1px solid var(--meadow-line); }
+/* The attribution is the last item in the row and has nowhere to shrink to, so without wrapping
+   it overflows the viewport between 761px and the width its own content needs. */
+.footer-inner { min-height: 110px; display: flex; flex-wrap: wrap; align-items: center; gap: 22px; }
+.footer-links { min-width: 0; margin-left: auto; display: flex; flex-wrap: wrap; gap: 22px; font-weight: 700; }
+.footer-links a, .footer-powered-by a { min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; }
+.prose { font-size: 1.05rem; }
+.prose img, .prose pre { max-width: 100%; }
+.prose pre { overflow-x: auto; padding: 18px; border-radius: var(--meadow-radius); background: #13271b; color: #edf7e8; }
+.prose code { font-family: var(--meadow-mono); }
+/* Highlight.js tokens, baked into fenced blocks at build time by the SSG (ADR-010). The code
+   surface is the same dark green in both skins, so one map serves both; every color clears WCAG
+   AA on #13271b (lowest pair 6.71:1). Classes with no rule here — `.hljs-code`, `.hljs-formula` —
+   inherit the block color rather than rendering unstyled. */
+.prose pre code {
+  .hljs-comment, .hljs-quote { color: #9db4a2; font-style: italic; }
+  .hljs-keyword, .hljs-meta-keyword, .hljs-name, .hljs-selector-tag, .hljs-section {
+    color: var(--meadow-lime);
+  }
+  .hljs-string, .hljs-attr, .hljs-attribute, .hljs-selector-class, .hljs-selector-id,
+  .hljs-selector-pseudo, .hljs-selector-attr, .hljs-char, .hljs-link, .hljs-bullet, .hljs-addition {
+    color: var(--meadow-sun);
+  }
+  .hljs-number, .hljs-literal, .hljs-symbol, .hljs-variable, .hljs-template-variable, .hljs-regexp {
+    color: var(--meadow-sky);
+  }
+  .hljs-built_in, .hljs-class, .hljs-title, .hljs-type { color: var(--meadow-bloom); }
+  .hljs-meta, .hljs-tag, .hljs-subst, .hljs-punctuation, .hljs-operator, .hljs-params, .hljs-deletion {
+    color: var(--meadow-panel-muted);
+  }
+  .hljs-emphasis { font-style: italic; }
+  .hljs-strong { font-weight: 700; }
+}
+.page-header h1 { font: 800 clamp(2.5rem, 6vw, 5rem)/1 var(--meadow-display); letter-spacing: -0.05em; }
+.back-link { display: inline-flex; min-height: 44px; align-items: center; color: var(--meadow-leaf); font-weight: 800; }
+.post-list { padding: 0; list-style: none; }
+.post-list li { padding-block: 22px; border-top: 1px solid var(--meadow-line); }
+
+@media (max-width: 980px) {
+  .hero-split, .signal-grid { grid-template-columns: 1fr; }
+  .hero-copy { text-align: center; }
+  .hero-actions { justify-content: center; }
+  .hero-art { margin-inline: auto; }
+  .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .template-grid { grid-template-columns: 1fr; max-width: 650px; margin-inline: auto; }
+  .template-card-inner { min-height: 280px; transform: none !important; }
+}
+@media (max-width: 840px) {
+  .desktop-nav, .nav-cta { display: none; }
+  .nav-actions { margin-left: auto; }
+  .mobile-menu { display: block; }
+}
+@media (max-width: 760px) {
+  .wrap { width: min(100% - 36px, var(--meadow-width)); }
+  .proof-list { grid-template-columns: repeat(2, 1fr); }
+  .feature-grid { grid-template-columns: 1fr; }
+  .quote-card { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .footer-inner { padding-block: 28px; align-items: flex-start; flex-direction: column; }
+  .footer-links { margin-left: 0; flex-wrap: wrap; }
+}
+@media (max-width: 430px) {
+  .wrap { width: min(100% - 28px, var(--meadow-width)); }
+  /* The bar's shorter height at this width is declared with the taller one, in
+     "Masthead geometry" — the two sizes are one arithmetic and live together. */
+  .nav-inner { gap: 8px; }
+  .brand { font-size: 1.1rem; }
+  .hero { padding-block: 48px 70px; }
+  .hero h1 { font-size: clamp(2.65rem, 13vw, 3.4rem); line-height: 1.08; }
+  .hero-art { width: 100%; }
+  .feature-card { padding: 23px; }
+  .template-card { padding-inline: 2px; }
+  .template-card-inner { min-height: 260px; padding: 22px; }
+  .hero-actions { display: grid; }
+  .button { width: 100%; }
+  .proof-list { grid-template-columns: 1fr; padding-block: 24px; }
+  .proof-list li { border-top: 1px solid var(--meadow-line); }
+  .proof-list li:first-child { border-top: 0; }
+  .signal-card { grid-template-columns: auto minmax(0, 1fr); }
+  .signal-tag { grid-column: 2; width: fit-content; }
+  .command-row { flex-wrap: wrap; }
+  .copy-button { width: 100%; margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  .button:hover, .template-card:hover .template-card-inner, .template-card:focus-visible .template-card-inner { transform: none; }
+}

@@ -1,0 +1,325 @@
+<!doctype html>
+<html tl:extends="layouts/base.html" lang="en">
+  <head>
+    <title>Home</title>
+  </head>
+  <body>
+    <main
+      id="main-content"
+      tabindex="-1"
+      tl:define="content"
+      tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}"
+    >
+      <section class="hero-section">
+        <div class="wrap">
+          <div class="hero">
+            <div class="hero-vine" aria-hidden="true">
+              <svg viewBox="0 0 96 620" preserveAspectRatio="xMidYMax meet">
+                <path
+                  class="vine-stem"
+                  d="M48 620C48 560 48 540 48 500C48 450 24 440 24 400C24 360 48 350 48 310
+                     C48 260 72 250 72 210C72 170 48 160 48 120C48 84 48 62 52 44C55 31 62 21 73 15"
+                />
+                <path
+                  class="vine-leaf"
+                  style="--origin: 48px 500px"
+                  d="M48 500C60 488 76 488 82 496C74 506 58 508 48 500Z"
+                />
+                <path
+                  class="vine-leaf is-dark"
+                  style="--origin: 24px 400px"
+                  d="M24 400C12 388-2 390-8 398C0 408 14 410 24 400Z"
+                />
+                <path
+                  class="vine-leaf"
+                  style="--origin: 48px 310px"
+                  d="M48 310C60 298 76 298 82 306C74 316 58 318 48 310Z"
+                />
+                <path
+                  class="vine-leaf is-dark"
+                  style="--origin: 72px 210px"
+                  d="M72 210C84 198 96 200 96 208C90 218 80 218 72 210Z"
+                />
+                <path
+                  class="vine-leaf"
+                  style="--origin: 48px 120px"
+                  d="M48 120C36 108 22 110 16 118C24 128 38 130 48 120Z"
+                />
+                <path
+                  class="vine-leaf is-dark"
+                  style="--origin: 73px 15px"
+                  d="M73 15C84 4 99 4 105 11C98 21 83 24 73 15Z"
+                />
+              </svg>
+            </div>
+            <div class="hero-cols">
+              <div class="hero-copy">
+                <p class="eyebrow" tl:text="${theme.hero_eyebrow}">Eyebrow</p>
+                <div class="headline-slot" data-headline-slot>
+                  <h1 id="headline" data-headline>
+                    <span class="headline-text" data-headline-text>
+                      <span
+                        class="headline-entry is-active"
+                        tl:if="${#lists.size(theme.hero_headlines)} == 0"
+                        tl:attr="data-prefix=${site.title},data-emphasis='',data-suffix=''"
+                      >
+                        <span tl:text="${site.title}">Site title</span>
+                      </span>
+                      <span
+                        class="headline-entry"
+                        tl:each="headline, state : ${theme.hero_headlines}"
+                        tl:classappend="${state.first} ? 'is-active' : ''"
+                        tl:attr="data-prefix=${headline.prefix}, data-emphasis=${headline.emphasis},
+                                 data-suffix=${headline.suffix}"
+                      >
+                        <span tl:text="${headline.prefix}">Prefix</span><em tl:text="${headline.emphasis}"
+                          >emphasis</em
+                        ><span tl:text="${headline.suffix}">suffix</span>
+                      </span>
+                    </span>
+                  </h1>
+                </div>
+                <p class="lede" tl:text="${theme.hero_lede}">Introduction</p>
+                <div class="cta-row">
+                  <a
+                    class="button button-primary"
+                    tl:if="${theme.hero_cta_primary_label != ''}"
+                    tl:href="${theme.hero_cta_primary_url}"
+                    tl:text="${theme.hero_cta_primary_label}"
+                    >Primary action</a
+                  >
+                  <a
+                    class="button button-secondary"
+                    tl:if="${theme.hero_cta_secondary_label != ''}"
+                    tl:href="${theme.hero_cta_secondary_url}"
+                    tl:text="${theme.hero_cta_secondary_label}"
+                    >Secondary action</a
+                  >
+                </div>
+              </div>
+              <section class="terminal" tl:if="${theme.show_terminal_card}" aria-label="Quick start">
+                <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i><span>getting started</span></div>
+                <pre aria-hidden="true"><code><span
+                    class="terminal-line"
+                    tl:each="line : ${theme.terminal_card_lines}"
+                    tl:attr="data-kind=${line.kind}"
+                  ><span
+                    class="terminal-prompt"
+                    tl:text="${line.prefix}"
+                  >$</span><span class="terminal-text" tl:text="${line.text}">command</span>
+</span></code></pre>
+              </section>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="home-content" tl:if="${page.content} != ''">
+        <div class="wrap prose" tl:utext="${page.content}">Content</div>
+      </section>
+
+      <!-- Every home section below is gated on BOTH its theme toggle and the individual leaves it
+           renders — not on the enclosing block. The toggles are deep-merged params (default true)
+           while data/lattice.yaml is replaced by filename stem, so a site that overrides one block
+           leaves the others with no data at all, and a block it does supply may still omit keys. A
+           block-level guard passes on `code_showcase: {title: T}` and publishes two empty code panes;
+           on `why: {title: T}` it reaches `#lists.size(null) > 0`, which throws and kills the build.
+           #strings.isEmpty and #lists.isEmpty are both null-safe, so no ordering is load-bearing. -->
+      <section
+        class="tinted"
+        tl:if="${theme.show_code_showcase} and not ${#strings.isEmpty(data.lattice.code_showcase.title)}
+               and not ${#strings.isEmpty(data.lattice.code_showcase.template_html)}
+               and not ${#strings.isEmpty(data.lattice.code_showcase.output_html)}"
+        aria-labelledby="lattice-code-title"
+      >
+        <div class="wrap">
+          <header class="section-heading">
+            <h2 id="lattice-code-title" tl:text="${data.lattice.code_showcase.title}">Code</h2>
+            <p tl:text="${data.lattice.code_showcase.body}">Description</p>
+          </header>
+          <div class="code-duo">
+            <div class="pane">
+              <div class="pane-bar">
+                <span tl:text="${data.lattice.code_showcase.template_label}">Template</span>
+                <span class="pane-tag">valid html</span>
+              </div>
+              <!-- Pre-marked token spans from the data file, not a client-side tokenizer (ADR-010):
+                   the panes are coloured with JavaScript off. -->
+              <pre><code tl:utext="${data.lattice.code_showcase.template_html}">Template source</code></pre>
+            </div>
+            <span class="duo-arrow" aria-hidden="true"><b>→</b><small>engine.render()</small></span>
+            <div class="pane">
+              <div class="pane-bar">
+                <span tl:text="${data.lattice.code_showcase.output_label}">Output</span>
+                <span class="pane-tag">rendered</span>
+              </div>
+              <pre><code tl:utext="${data.lattice.code_showcase.output_html}">Output source</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        tl:if="${theme.show_why_grid} and not ${#strings.isEmpty(data.lattice.why.title)}
+               and not ${#lists.isEmpty(data.lattice.why.cells)}"
+        aria-labelledby="lattice-why-title"
+      >
+        <div class="wrap">
+          <header class="section-heading">
+            <h2 id="lattice-why-title" tl:text="${data.lattice.why.title}">Why</h2>
+            <p tl:text="${data.lattice.why.body}">Description</p>
+          </header>
+          <div class="why-grid">
+            <article class="why-cell" tl:each="cell : ${data.lattice.why.cells}">
+              <svg class="leaf-mark" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+                <path
+                  d="M3 19C3 9 9 3 19 3c0 10-6 16-16 16Zm0 0c4-6 8-10 12-12"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  fill="none"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              <h3 tl:text="${cell.title}">Benefit</h3>
+              <p tl:text="${cell.body}">Body</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section
+        tl:if="${theme.show_demo} and not ${#strings.isEmpty(data.lattice.demo.title)}
+               and not ${#strings.isEmpty(data.lattice.demo.template_html)}
+               and not ${#strings.isEmpty(data.lattice.demo.prototype_title)}
+               and not ${#lists.isEmpty(data.lattice.demo.rendered_posts)}"
+        aria-labelledby="lattice-demo-title"
+      >
+        <div class="wrap">
+          <header class="section-heading">
+            <h2 id="lattice-demo-title" tl:text="${data.lattice.demo.title}">Demo</h2>
+            <p tl:text="${data.lattice.demo.body}">Description</p>
+          </header>
+          <div class="demo" data-demo-view="prototype">
+            <div class="demo-bar">
+              <div class="window-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+              <span>one template — two views</span>
+              <div class="demo-toggle" role="group" aria-label="Demo view">
+                <button type="button" data-demo-button="prototype" aria-pressed="true">
+                  <small aria-hidden="true">1</small> Preview in browser
+                </button>
+                <button type="button" data-demo-button="rendered" aria-pressed="false">
+                  <small aria-hidden="true">2</small> Server-rendered
+                </button>
+              </div>
+            </div>
+            <div class="demo-panes">
+              <div class="demo-source">
+                <p class="demo-label"><b>posts.html</b> — the template you write</p>
+                <pre><code tl:utext="${data.lattice.demo.template_html}">Template</code></pre>
+              </div>
+              <div class="demo-output">
+                <div data-demo-panel="prototype">
+                  <p class="demo-label"><b>The browser view</b> — opened straight from disk, no server</p>
+                  <p class="demo-url"><strong>file://</strong> templates/posts.html</p>
+                  <div class="demo-page">
+                    <h3 tl:text="${data.lattice.demo.prototype_title}">Title</h3>
+                    <p tl:text="${data.lattice.demo.prototype_body}">Body</p>
+                    <a href="#" tabindex="-1">Read more</a>
+                  </div>
+                </div>
+                <div data-demo-panel="rendered" hidden>
+                  <p class="demo-label"><b>The server response</b> — same file, rendered with data</p>
+                  <p class="demo-url"><strong>https://</strong> localhost:8080/posts</p>
+                  <div class="demo-page">
+                    <article class="demo-post" tl:each="post : ${data.lattice.demo.rendered_posts}">
+                      <h3 tl:text="${post.title}">Title</h3>
+                      <p tl:text="${post.body}">Body</p>
+                      <a href="#" tabindex="-1">Read more</a>
+                    </article>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="demo-caption">
+            The same file, twice — open <code>posts.html</code> from disk and it is a working prototype; serve it and
+            the <code>tl:*</code> attributes fill in real data.
+          </p>
+        </div>
+      </section>
+
+      <section
+        class="tinted"
+        tl:if="${theme.show_themes_showcase} and not ${#strings.isEmpty(data.lattice.showcase.title)}
+               and not ${#lists.isEmpty(data.lattice.showcase.cards)}"
+        aria-labelledby="lattice-showcase-title"
+      >
+        <div class="wrap">
+          <header class="section-heading">
+            <h2 id="lattice-showcase-title" tl:text="${data.lattice.showcase.title}">Themes</h2>
+            <p tl:text="${data.lattice.showcase.body}">Description</p>
+          </header>
+          <div class="themes-grid">
+            <article
+              class="theme-card"
+              tl:each="card : ${data.lattice.showcase.cards}"
+              tl:attr="data-accent=${card.accent}"
+            >
+              <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+              <!-- Each card path sheds a leading slash before the join: assetBase already
+                   ends in one, and //showcase/x.svg is an authority, not a path. -->
+              <img
+                tl:with="lightPath=${#strings.startsWith(card.screenshot_light, '/')}
+                           ? ${#strings.substring(card.screenshot_light, 1)} : ${card.screenshot_light},
+                         darkPath=${#strings.startsWith(card.screenshot_dark, '/')}
+                           ? ${#strings.substring(card.screenshot_dark, 1)} : ${card.screenshot_dark},
+                         screenshotPath=${theme.skin} == 'dark' ? ${darkPath} : ${lightPath}"
+                tl:attr="src=${assetBase} + ${screenshotPath}, data-light=${assetBase} + ${lightPath},
+                         data-dark=${assetBase} + ${darkPath}, alt=${card.alt}"
+              />
+              <div class="theme-meta">
+                <h3 tl:text="${card.name}">Theme</h3>
+                <p tl:text="${card.description}">Description</p>
+                <code tl:text="${card.config}">theme: name</code>
+              </div>
+            </article>
+          </div>
+          <p
+            class="showcase-link"
+            tl:if="${data.lattice.showcase.link_label} != '' and ${data.lattice.showcase.link_url} != ''"
+          >
+            <a
+              class="button button-secondary"
+              tl:href="${data.lattice.showcase.link_url}"
+              tl:text="${data.lattice.showcase.link_label}"
+            >All themes</a>
+          </p>
+        </div>
+      </section>
+
+      <section class="closing-section" tl:if="${theme.show_cta}" aria-labelledby="lattice-cta-title">
+        <div class="wrap">
+          <div class="closing">
+            <h2 id="lattice-cta-title" tl:text="${theme.cta_title}">Get started</h2>
+            <p tl:text="${theme.cta_body}">Description</p>
+            <div class="commands">
+              <div class="command" tl:each="command, state : ${theme.cta_commands}">
+                <code tl:text="${command}">command</code>
+                <!-- Hidden until lattice.js confirms a usable Clipboard API; the command stays selectable. -->
+                <button
+                  type="button"
+                  tl:attr="data-copy-command=${state.index}"
+                  aria-label="Copy command"
+                  hidden
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

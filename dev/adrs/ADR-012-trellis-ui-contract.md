@@ -271,11 +271,9 @@ full qualification gate before any support claim.
 
 ## References
 
-- [Research bundle](../../../trellis-private/docs/research/trellis-ui-component-architecture/)
-- [Design tree](../../../trellis-private/docs/research/trellis-ui-component-architecture/design-tree.md)
-- [Weighted trade-off matrix](../../../trellis-private/docs/research/trellis-ui-component-architecture/tradeoff-matrix.md)
-- [Recommendation](../../../trellis-private/docs/research/trellis-ui-component-architecture/recommendation.md)
-- [Verification addendum, 2026-08-15](../../../trellis-private/docs/research/trellis-ui-component-architecture/research.md)
+- Research – private planning repo, canonical (no public digest yet):
+  `docs/research/trellis-ui-component-architecture/` – bundle, `design-tree.md`, `tradeoff-matrix.md`,
+  `recommendation.md`, and the 2026-08-15 verification addendum (`research.md`)
 - Spike branch `spike/trellis-ui-registry-vs-basecoat`, commit `21f4a5b`
 - [UI5 Web Components](https://ui5.github.io/webcomponents/components/)
 - [Basecoat](https://basecoatui.com/introduction/)

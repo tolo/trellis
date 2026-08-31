@@ -42,8 +42,8 @@
 // Keyboard users get clear outlines; pointer users don't see unwanted rings.
 
 :focus-visible {
-  outline: $trellis-focus-ring-width solid $trellis-focus-ring-color;
-  outline-offset: $trellis-focus-ring-offset;
+  outline: $trellis-focus-ring-width solid currentColor;
+  outline-offset: -$trellis-focus-ring-width;
   border-radius: $trellis-border-radius;
 }
 

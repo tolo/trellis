@@ -1,0 +1,786 @@
+$trellis-skin: auto !default;
+$trellis-primary-color: #315f46 !default;
+$trellis-accent-color: #912f27 !default;
+$trellis-text-color: #17291f !default;
+$trellis-muted-color: #59695e !default;
+$trellis-bg-color: #f2f1e8 !default;
+$trellis-surface-color: #fbfaf4 !default;
+$trellis-border-color: #bdc4b6 !default;
+$trellis-font-family: EB Garamond, Iowan Old Style, Georgia, serif !default;
+$trellis-heading-font-family: EB Garamond, Iowan Old Style, Georgia, serif !default;
+$trellis-code-font-family: SFMono-Regular, Consolas, Liberation Mono, monospace !default;
+$trellis-max-width: 1180px !default;
+$trellis-border-radius: 2px !default;
+$trellis-plate-label: 'Plate' !default;
+$trellis-show-plate-numbers: true !default;
+$trellis-show-sidenotes: true !default;
+// Code needs more than the two inks: sepia for literals, indigo for types and titles.
+// Overridden per skin like the seven palette params, so a forced skin gets them too.
+$folio-code-number: #7a4a12 !default;
+$folio-code-function: #2c4a72 !default;
+
+@import 'dark_tokens';
+
+@font-face {
+  font-family: 'EB Garamond';
+  src: url('../fonts/eb-garamond-latin.woff2') format('woff2');
+  /* The file carries upstream's whole wght 400-800 - nothing is instanced out - so the range is
+     declared in full. At 400 600 the masthead's and buttons' 700 was clamped to a real 600, not
+     faux-bolded: with font-synthesis: none the 700 and 800 renderings were byte-identical to 600. */
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+  size-adjust: 118%;
+}
+
+@mixin folio-dark {
+  --folio-ink: #{$folio-dark-ink};
+  --folio-muted: #{$folio-dark-muted};
+  --folio-paper: #{$folio-dark-paper};
+  --folio-surface: #{$folio-dark-surface};
+  --folio-rule: #{$folio-dark-rule};
+  --folio-green: #{$folio-dark-green};
+  --folio-rubric: #{$folio-dark-rubric};
+  --folio-code-number: #{$folio-dark-code-number};
+  --folio-code-function: #{$folio-dark-code-function};
+}
+
+:root {
+  color-scheme: light dark;
+  --folio-ink: #{$trellis-text-color};
+  --folio-muted: #{$trellis-muted-color};
+  --folio-paper: #{$trellis-bg-color};
+  --folio-surface: #{$trellis-surface-color};
+  --folio-rule: #{$trellis-border-color};
+  --folio-green: #{$trellis-primary-color};
+  --folio-rubric: #{$trellis-accent-color};
+  --folio-serif: #{$trellis-heading-font-family};
+  --folio-body: #{$trellis-font-family};
+  --folio-mono: #{$trellis-code-font-family};
+  --folio-width: #{$trellis-max-width};
+  --folio-radius: #{$trellis-border-radius};
+  --folio-grid: color-mix(in srgb, var(--folio-green) 6%, transparent);
+  /* Mid-tone ink for secondary prose; --folio-muted stays the faintest level. */
+  --folio-ink-soft: color-mix(in srgb, var(--folio-ink) 40%, var(--folio-muted));
+  /* Structural rules (frames, shell, masthead) sit darker than interior dividers. */
+  --folio-rule-strong: color-mix(in srgb, var(--folio-rule) 30%, var(--folio-muted));
+  --folio-paper-wash: color-mix(in srgb, var(--folio-green) 8%, var(--folio-paper));
+  --folio-rubric-wash: color-mix(in srgb, var(--folio-rubric) 10%, var(--folio-paper));
+  /* Highlighter roles. Four reuse the page inks and follow the skin on their own;
+     only the two extra pigments need a per-skin value. */
+  --folio-code-comment: var(--folio-muted);
+  --folio-code-keyword: var(--folio-rubric);
+  --folio-code-string: var(--folio-green);
+  --folio-code-punctuation: var(--folio-ink-soft);
+  --folio-code-number: #{$folio-code-number};
+  --folio-code-function: #{$folio-code-function};
+}
+
+@if $trellis-skin == auto {
+  @media (prefers-color-scheme: dark) { :root { @include folio-dark; } }
+  :root[data-skin='light'] {
+    --folio-ink: #{$trellis-text-color}; --folio-muted: #{$trellis-muted-color}; --folio-paper: #{$trellis-bg-color};
+    --folio-surface: #{$trellis-surface-color}; --folio-rule: #{$trellis-border-color};
+    --folio-green: #{$trellis-primary-color}; --folio-rubric: #{$trellis-accent-color};
+    --folio-code-number: #{$folio-code-number}; --folio-code-function: #{$folio-code-function};
+  }
+  :root[data-skin='dark'] { @include folio-dark; }
+}
+
+* { box-sizing: border-box; }
+/* Controls that ship `hidden` (.search-shell, .skin-toggle) and are revealed by
+   JavaScript must stay hidden without it. An author rule setting `display` on one of
+   them silently beats the UA sheet, so the normalization is `!important` rather than a
+   component-by-component override that the next component would forget. */
+[hidden] { display: none !important; }
+
+/* ── Masthead geometry ────────────────────────────────────────────────────────
+
+   The sticky masthead is a whole number of rows of a declared height — one above
+   760px, and below it two, the brand over a row the navigation shares with the
+   edition badge — and .site-header is set to exactly that height instead of
+   growing to fit its text. Everything that has to clear the bar reads
+   --folio-masthead-height: the bar itself, and the in-page anchor offset above.
+   Neither can move without the other.
+
+   Two constructions keep the narrow arithmetic true, and both are load-bearing:
+     * the title row is one line box sized by a *unitless* line-height, which is
+       font-size × factor and not a function of the font's ascent/descent. It was
+       set by the `font:` shorthand, which resets line-height to `normal` — that
+       is a metrics read of EB Garamond, and of whichever fallback serif renders
+       while the woff2 is still loading;
+     * .nav-list may not wrap — surplus links scroll sideways rather than adding a
+       row to the bar.
+   Undo either and the height goes back to being a text measurement, which is a
+   different number on a machine with different fonts. That is the defect this
+   shape exists to prevent: Verdant shipped a constant offset sized for a two-row
+   nav and Linux wrapped it to three, leaving every anchor target behind the bar
+   there while macOS passed. */
+$folio-masthead-rule: 1px;
+$folio-masthead-bar: 70px;        /* the desktop bar's one declared row */
+$folio-masthead-tap: 44px;        /* narrow: the nav and the badge share a tap-target row */
+$folio-masthead-pad: 10px;        /* narrow: above the first row and below the last */
+$folio-masthead-gap: 6px;         /* narrow: between the two rows */
+$folio-masthead-line: 1.62;       /* unitless, the body's leading — the title row's factor */
+$folio-site-title-size: 1.35rem;
+$folio-masthead-clearance: 16px;  /* paper kept above an anchor target, under the bar */
+
+:root {
+  --folio-masthead-height: #{$folio-masthead-bar + $folio-masthead-rule};
+
+  @media (max-width: 760px) {
+    --folio-masthead-height: calc(
+      #{$folio-site-title-size * $folio-masthead-line} +
+        #{$folio-masthead-gap + $folio-masthead-tap + $folio-masthead-pad * 2 + $folio-masthead-rule}
+    );
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+  /* .site-header is sticky, so an un-offset in-page anchor jump parks the target behind
+     it and a Field-index click lands on the paragraph after its heading. The offset is the
+     masthead's own declared height (see "Masthead geometry" below) plus a gap — read from
+     it, not guessed alongside it, so the two cannot drift apart. */
+  scroll-padding-top: calc(var(--folio-masthead-height) + #{$folio-masthead-clearance});
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0; color: var(--folio-ink); background-color: var(--folio-paper);
+  background-image:
+    linear-gradient(var(--folio-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--folio-grid) 1px, transparent 1px);
+  background-size: 24px 24px; font: 18px/1.62 var(--folio-body); -webkit-font-smoothing: antialiased;
+}
+/* `break-word` wraps a long token but does not shrink a box's min-content size, so an
+   unbreakable token (a URL, a package name, a hash) still widens its grid track and pushes
+   the document past the viewport — a WCAG 1.4.10 reflow failure. `anywhere` does shrink it.
+   Scoped to page content: the masthead and footer labels are left alone so a short word is
+   never split mid-label. */
+main * { overflow-wrap: anywhere; }
+a { color: var(--folio-green); text-underline-offset: .22em; }
+a:hover { color: var(--folio-rubric); }
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+summary:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: -3px;
+}
+.container { width: min(calc(100% - 40px), var(--folio-width)); margin-inline: auto; }
+/* Stretch the main column so the docs shell reaches the footer on short pages. */
+.main-content, .main-content > .container { display: flex; flex: 1 0 auto; flex-direction: column; }
+.skip-to-content {
+  position: fixed;
+  z-index: 20;
+  transform: translateY(-180%);
+  padding: 8px 13px;
+  background: var(--folio-ink);
+  color: var(--folio-paper);
+}
+.skip-to-content:focus { transform: translateY(0); }
+/* Sticky masthead with the paper showing through, as in the design. */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  /* Declared, never measured — see "Masthead geometry" above. `height` and not
+     `min-height`: a bar allowed to grow past the offset derived from it is the defect. */
+  height: var(--folio-masthead-height);
+  border-bottom: $folio-masthead-rule solid var(--folio-rule-strong);
+  background: color-mix(in srgb, var(--folio-paper) 94%, transparent);
+  backdrop-filter: blur(12px);
+}
+/* A flex item's automatic minimum size is its content, which would push the masthead
+   wider than the viewport instead of letting the nav strip scroll. */
+.site-header nav { min-width: 0; }
+.site-header .container,
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: $folio-masthead-bar;
+}
+/* Fills the bar's declared height rather than declaring one of its own; align-content
+   centres the rows when the bar has more height than they need. */
+.site-header .container { height: 100%; align-content: center; }
+.site-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--folio-ink);
+  font: 700 #{$folio-site-title-size}/#{$folio-masthead-line} var(--folio-serif);
+  text-decoration: none;
+}
+.site-mark { width: 24px; height: 24px; flex: 0 0 auto; color: var(--folio-green); }
+.site-logo { max-width: 168px; max-height: 32px; flex: 0 0 auto; object-fit: contain; }
+.nav-list, .social-links { display: flex; gap: 20px; margin: 0; padding: 0; list-style: none; }
+/* One row, always — see "Masthead geometry" above. A second row would grow the sticky
+   bar past the height it declares, and how many labels fit on a row is a fact about the
+   reader's font, not about the theme. Surplus entries scroll sideways. */
+.site-header .nav-list { flex-wrap: nowrap; overflow-x: auto; }
+.site-header .nav-list li { flex: 0 0 auto; }
+.site-header .nav-list a { white-space: nowrap; }
+.nav-list a,
+.rubric,
+.sidebar-title,
+.sidebar-toggle,
+.toc-title,
+.page-nav-label,
+.skin-toggle {
+  font: 700 .72rem var(--folio-mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+/* Masthead navigation is set as small caps, so the underline would fight the tracking. */
+.nav-list a { font-size: .78rem; letter-spacing: .12em; text-decoration: none; }
+.nav-list a:hover, .nav-list a:focus-visible { text-decoration: underline; }
+.rubric, .toc-title, .page-nav-label { color: var(--folio-rubric); }
+/* The tree's own top-level entries carry the rubric label role, so the nav heading above
+   them steps back to muted rather than competing with them. The mobile disclosure summary
+   replaces that heading, so it takes the same voice. */
+.sidebar-title, .sidebar-toggle { color: var(--folio-muted); }
+/* Edition badge: rubric outline and mono caps, as on the specimen sheet. */
+.skin-toggle {
+  border: 1px solid var(--folio-rule-strong);
+  border-radius: var(--folio-radius);
+  padding: 6px 10px;
+  color: var(--folio-rubric);
+  background: var(--folio-surface);
+  cursor: pointer;
+}
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(310px, .8fr);
+  align-items: center;
+  gap: clamp(36px, 7vw, 92px);
+  min-height: 650px;
+  padding-block: 88px;
+}
+h1, h2, h3 { font-weight: 500; line-height: 1.02; text-wrap: balance; }
+.hero h1 {
+  margin: 22px 0 26px;
+  font: 500 clamp(4rem, 9vw, 8rem)/1.02 var(--folio-serif);
+  letter-spacing: -.045em;
+}
+.doc-title, .section-title {
+  margin: 15px 0 16px;
+  font: 500 clamp(2.6rem, 5vw, 4.5rem)/1.02 var(--folio-serif);
+  letter-spacing: -.04em;
+}
+.lede { max-width: 690px; margin: 0 0 38px; color: var(--folio-ink-soft); font-size: 1.15rem; }
+/* The rubric eyebrow carries a short measuring rule, as on a specimen sheet. */
+.hero-kicker { display: flex; align-items: center; gap: 12px; }
+.hero-kicker::after { flex: 0 0 auto; width: 84px; border-top: 1px solid var(--folio-rubric); content: ''; }
+.hero-description { max-width: 650px; color: var(--folio-ink-soft); font-size: clamp(1.18rem, 2vw, 1.45rem); }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+.button {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--folio-ink);
+  border-radius: var(--folio-radius);
+  padding: 9px 20px;
+  background: var(--folio-ink);
+  color: var(--folio-surface);
+  font: 700 .85rem var(--folio-body);
+  letter-spacing: .06em;
+  text-decoration: none;
+}
+.button-secondary { background: transparent; color: var(--folio-ink); }
+.button:hover { border-color: var(--folio-green); background: var(--folio-green); color: var(--folio-surface); }
+.button-secondary:hover {
+  border-color: var(--folio-rubric);
+  background: color-mix(in srgb, var(--folio-rubric) 14%, var(--folio-paper));
+  color: var(--folio-rubric);
+}
+/* Herbarium sheet: a mounted specimen card, tipped like a pasted-in plate. */
+.hero-plate {
+  position: relative;
+  margin: 0;
+  border: 1px solid var(--folio-rule-strong);
+  border-radius: var(--folio-radius);
+  padding: 16px;
+  background: var(--folio-surface);
+  box-shadow: 0 18px 50px rgb(35 51 39 / 10%);
+  transform: rotate(1.2deg);
+}
+@if $trellis-show-plate-numbers {
+  .hero-plate::before {
+    position: absolute;
+    inset: 0 auto auto 0;
+    padding: 3px 10px;
+    background: var(--folio-rubric);
+    color: var(--folio-surface);
+    content: '#{$trellis-plate-label}';
+    font: 700 .67rem/1.5 var(--folio-mono);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    transform: rotate(-90deg) translateX(-100%);
+    transform-origin: top left;
+  }
+}
+.engraving {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  background: var(--folio-paper-wash);
+  color: var(--folio-green);
+}
+img.engraving { object-fit: cover; }
+.plate-caption { margin: 13px 4px 0; color: var(--folio-ink-soft); font-size: .9rem; font-style: italic; }
+.plate-stem, .plate-leaf { fill: none; stroke: var(--folio-green); stroke-linecap: round; stroke-linejoin: round; }
+.plate-stem { stroke-width: 7; }
+.plate-leaf {
+  fill: color-mix(in srgb, var(--folio-green) 12%, transparent);
+  stroke-width: 5;
+}
+.plate-seed {
+  fill: color-mix(in srgb, var(--folio-rubric) 16%, transparent);
+  stroke: var(--folio-rubric);
+  stroke-width: 4;
+}
+.home-content { padding-block: 52px; }
+.section, .featured { padding-block: 88px; border-top: 1px solid var(--folio-rule-strong); }
+/* Section head: rubric label in a fixed column beside the heading and its standfirst. */
+.section-head { display: grid; grid-template-columns: 150px 1fr; gap: 28px; margin-bottom: 45px; }
+.section-head > div { min-width: 0; }
+.section-head > div > p { max-width: 670px; margin: 20px 0 0; color: var(--folio-ink-soft); }
+.home-content .prose { max-width: 690px; }
+.section-head h2 {
+  max-width: 780px;
+  margin: 0;
+  font: 500 clamp(2.35rem, 5vw, 4.7rem)/1.02 var(--folio-serif);
+}
+/* Apparatus showcase: a mounted specimen beside its margin note. */
+.apparatus-grid {
+  counter-reset: folio-plates;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 270px;
+  gap: 34px;
+  align-items: start;
+}
+.apparatus-grid > * { min-width: 0; }
+.apparatus-grid .folio-plate { margin: 0; }
+
+/* Numbered characteristics, ruled rather than boxed. */
+.principles { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--folio-rule-strong); }
+.principle { padding: 28px 28px 32px 0; border-bottom: 1px solid var(--folio-rule); }
+.principle + .principle { padding-left: 28px; border-left: 1px solid var(--folio-rule); }
+.principle h3 { margin: 9px 0 13px; font: 500 1.65rem/1.02 var(--folio-serif); }
+.principle p { margin: 0; color: var(--folio-ink-soft); font-size: .94rem; }
+
+/* Manual band: a raised full-width block introducing the documentation surface. */
+.manual-band {
+  padding-block: 90px;
+  border-block: 1px solid var(--folio-rule-strong);
+  background: var(--folio-surface);
+}
+.manual-intro { display: flex; align-items: end; justify-content: space-between; gap: 30px; }
+.manual-intro h2 { margin: 8px 0 0; font: 500 clamp(2.6rem, 5vw, 4.6rem)/1.02 var(--folio-serif); letter-spacing: -.04em; }
+.manual-intro > p { max-width: 430px; margin: 0; color: var(--folio-ink-soft); }
+/* Shrinkable, not fixed: the label is `manual.cta.label`, page content the site owns, so
+   `flex: 0 0 auto` pinned the button at its max-content width and a long label pushed the
+   whole document past the viewport from 761px up — where .manual-intro is a row again. */
+.manual-intro .button { flex: 0 1 auto; min-width: 0; }
+
+/* Each card owns all four edges: a short last row leaves no dangling rule. */
+.card-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.doc-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--folio-rule);
+  border-radius: var(--folio-radius);
+  padding: 24px;
+  background: var(--folio-surface);
+}
+.doc-card-title { margin: 0 0 10px; font: 500 1.35rem/1.15 var(--folio-serif); }
+.doc-card-title a { text-decoration: none; }
+.doc-card-title a:hover, .doc-card-title a:focus-visible { text-decoration: underline; }
+.doc-card-summary { margin: 0; color: var(--folio-ink-soft); font-size: .95rem; }
+.no-pages { color: var(--folio-ink-soft); font-style: italic; }
+/* No viewport floor here: flex: 1 0 auto inside the min-height: 100vh body column already
+   stretches the shell to the footer, and a vh floor over-reserves below ~950px of height. */
+.docs-shell {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  flex: 1 0 auto;
+  border: 1px solid var(--folio-rule-strong);
+  background: var(--folio-paper);
+  box-shadow: 0 18px 50px rgb(35 51 39 / 10%);
+}
+.sidebar-disclosure { width: 215px; }
+.docs-toc { width: 175px; }
+.sidebar-disclosure,
+.docs-toc {
+  padding: 26px 22px;
+  background: var(--folio-paper-wash);
+}
+.sidebar-disclosure { border-right: 1px solid var(--folio-rule); }
+.docs-toc { border-left: 1px solid var(--folio-rule); }
+.sidebar-toggle { display: none; }
+.search-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--folio-ink-soft);
+  font: 700 .67rem var(--folio-mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.search-input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--folio-rule-strong);
+  border-radius: var(--folio-radius);
+  padding: 8px 10px;
+  color: inherit;
+  background: var(--folio-surface);
+}
+.sidebar-tree, .sidebar-subtree, .toc-list, .search-results {
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+/* Search results (rendered by static/js/search.js). MAX_RESULTS is 20, so the list
+   scrolls in place rather than pushing the section tree off the sidebar. */
+.search-results {
+  max-height: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.search-result { margin: 0 0 4px; }
+.search-result-link {
+  display: block;
+  border-radius: var(--folio-radius);
+  padding: 6px 7px;
+  text-decoration: none;
+}
+.search-result-link:hover, .search-result-link:focus-visible { background: var(--folio-surface); }
+.search-result-title {
+  display: block;
+  color: var(--folio-green);
+  font: 600 .87rem/1.3 var(--folio-serif);
+}
+.search-result-snippet {
+  display: block;
+  margin-top: 3px;
+  color: var(--folio-ink-soft);
+  font-size: .78rem;
+  line-height: 1.4;
+}
+.search-empty { padding: 6px 7px; color: var(--folio-ink-soft); font-size: .82rem; font-style: italic; }
+.sidebar-tree li, .toc-list li { margin: 0 0 7px; }
+.sidebar-subtree { margin: 7px 0 14px; }
+.sidebar-subtree .sidebar-subtree { margin-bottom: 7px; }
+.breadcrumb-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--folio-muted);
+  font: .7rem var(--folio-mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.breadcrumb-list li + li::before { margin-right: 8px; color: var(--folio-rule); content: '/'; }
+.breadcrumb-list [aria-current='page'] { color: var(--folio-ink); }
+.sidebar-link, .toc-list a {
+  display: block;
+  padding: 5px 7px;
+  color: var(--folio-ink-soft);
+  text-decoration: none;
+  font-size: .87rem;
+  line-height: 1.3;
+}
+.sidebar-link:hover { color: var(--folio-rubric); }
+/* Top-level entries head a section, so they read as rubric labels rather than peers of
+   the pages beneath them. They stay links when the section has its own page. */
+.sidebar-tree > .sidebar-item > .sidebar-link,
+.sidebar-tree > .sidebar-item > .sidebar-label {
+  display: block;
+  padding: 5px 7px;
+  color: var(--folio-rubric);
+  font: 700 .67rem var(--folio-mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.sidebar-tree > .sidebar-item > .sidebar-link:hover { text-decoration: underline; }
+/* Placed after the label rule so an active section keeps the label's type and only
+   swaps its colours; equal specificity means source order decides. */
+.sidebar-tree .sidebar-link.is-active,
+.sidebar-tree .sidebar-link.is-active:hover {
+  color: var(--folio-surface);
+  background: var(--folio-green);
+  text-decoration: none;
+}
+/* An ancestor of the current page takes a marginal tick rather than the active block, so
+   the trail reads at every level without a second entry claiming to be the page. Nested
+   entries also step up from --folio-ink-soft; top-level ones keep their rubric label colour. */
+.sidebar-tree .sidebar-link.is-active-trail { box-shadow: inset 2px 0 0 var(--folio-rubric); }
+.sidebar-subtree .sidebar-link.is-active-trail { color: var(--folio-ink); }
+.sidebar-tree > .sidebar-item + .sidebar-item { margin-top: 18px; }
+.sidebar-subtree .sidebar-link { padding-left: 14px; }
+.sidebar-subtree .sidebar-subtree .sidebar-link { padding-left: 26px; }
+.toc-list a { padding-inline: 0; font-size: .78rem; }
+.toc-list .toc-level-3 a, .toc-list .toc-level-4 a { padding-left: 12px; border-left: 1px solid var(--folio-rule); }
+.docs-main { min-width: 0; padding: clamp(30px, 5vw, 62px); }
+.doc-title { margin-block: 18px 30px; font-size: clamp(2.8rem, 6vw, 5rem); }
+.doc-content { counter-reset: folio-plates; }
+.doc-content h2 { margin: 46px 0 14px; font: 500 2rem/1.02 var(--folio-serif); }
+.doc-content h3 { margin: 29px 0 9px; font: 500 1.35rem/1.05 var(--folio-serif); }
+.doc-content p { max-width: 690px; }
+.doc-content img { max-width: 100%; height: auto; }
+.folio-plate {
+  counter-increment: folio-plates;
+  margin: 32px 0;
+  border: 1px solid var(--folio-rule-strong);
+  border-radius: var(--folio-radius);
+  padding: 12px;
+  background: var(--folio-surface);
+  box-shadow: 0 18px 50px rgb(35 51 39 / 10%);
+}
+.folio-plate > :not(figcaption) {
+  display: block;
+  border: 1px solid var(--folio-rule);
+  padding: clamp(20px, 4vw, 42px);
+}
+.folio-plate > img { max-width: 100%; height: auto; }
+/* Scoped to the wrapper: .plate-frame already draws the inner frame, so the code block
+   inside it must not draw a second one. A <pre> mounted directly keeps its own frame. */
+.folio-plate .plate-frame pre {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: none;
+}
+@if $trellis-show-plate-numbers {
+  .folio-plate::before {
+    display: block;
+    margin: 0 7px 12px;
+    content: '#{$trellis-plate-label} ' counter(folio-plates, upper-roman) '.';
+    color: var(--folio-rubric);
+    font: 700 .72rem var(--folio-mono);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+}
+.folio-plate figcaption { margin: 13px 7px 3px; color: var(--folio-ink-soft); font-size: .91rem; font-style: italic; }
+@if $trellis-show-sidenotes {
+  .folio-sidenote {
+    margin: 28px 0;
+    border-left: 2px solid var(--folio-rubric);
+    padding: 18px 0 18px 22px;
+    color: var(--folio-ink-soft);
+    font-size: .92rem;
+  }
+  .folio-sidenote p { margin: 9px 0 0; }
+  .folio-sidenote code { color: var(--folio-rubric); }
+}
+@else { .folio-sidenote { display: none; } }
+.folio-note {
+  margin: 28px 0;
+  border-left: 3px solid var(--folio-rubric);
+  padding: 18px 21px;
+  color: var(--folio-ink-soft);
+  background: var(--folio-rubric-wash);
+}
+.folio-note > strong:first-child {
+  display: block;
+  color: var(--folio-rubric);
+  font: 700 .72rem var(--folio-mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+/* Article code wraps instead of clipping: the SSG emits a bare <pre> with no tabindex, so a
+   horizontal scroller here would be unreachable by keyboard (WCAG 2.1.1). overflow stays as
+   a backstop for content with no break opportunity at all. */
+pre {
+  overflow: auto;
+  border: 1px solid var(--folio-rule);
+  border-radius: var(--folio-radius);
+  padding: 22px;
+  background: var(--folio-surface);
+  font: .84rem/1.72 var(--folio-mono);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+code { font-family: var(--folio-mono); }
+:not(pre) > code {
+  border: 1px solid var(--folio-rule);
+  padding: .08em .35em;
+  background: var(--folio-surface);
+  font-size: .82em;
+}
+/* Highlighter tokens, baked in at build time by the SSG (ADR-010). The mapping covers the
+   full class set package:highlight emits for the vendored grammars; anything without a rule
+   (.hljs-code, nested .hljs-subst) inherits the block colour. */
+.hljs-comment,
+.hljs-quote {
+  color: var(--folio-code-comment);
+  font-style: italic;
+}
+.hljs-keyword,
+.hljs-meta-keyword,
+.hljs-selector-tag,
+.hljs-name,
+.hljs-section { color: var(--folio-code-keyword); }
+.hljs-built_in,
+.hljs-class,
+.hljs-title,
+.hljs-type { color: var(--folio-code-function); }
+.hljs-string,
+.hljs-attr,
+.hljs-attribute,
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-selector-pseudo,
+.hljs-selector-attr,
+.hljs-char,
+.hljs-link,
+.hljs-addition { color: var(--folio-code-string); }
+.hljs-number,
+.hljs-literal,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-regexp { color: var(--folio-code-number); }
+.hljs-punctuation,
+.hljs-operator,
+.hljs-subst,
+.hljs-params,
+.hljs-meta,
+.hljs-tag,
+.hljs-deletion { color: var(--folio-code-punctuation); }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 700; }
+.page-nav, .pagination {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 50px;
+  padding-top: 22px;
+  border-top: 1px solid var(--folio-rule);
+}
+.pagination { grid-template-columns: 1fr auto 1fr; align-items: center; }
+.page-nav-link, .pagination-prev, .pagination-next {
+  border: 1px solid var(--folio-rule);
+  padding: 14px;
+  text-decoration: none;
+}
+/* The rubric label heads its own line; the neighbour's title follows in body type. */
+.page-nav-label { display: block; }
+.page-nav-next, .pagination-next { text-align: right; }
+.pagination-disabled { color: var(--folio-muted); }
+.pagination-info { color: var(--folio-muted); font: .7rem var(--folio-mono); letter-spacing: .09em; text-transform: uppercase; }
+.site-footer { border-top: 1px solid var(--folio-rule-strong); }
+.footer-inner {
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding-block: 60px;
+  color: var(--folio-ink-soft);
+  text-align: center;
+}
+.footer-text { max-width: 580px; margin: 0; }
+.social-links { justify-content: center; gap: 22px; font-size: .86rem; }
+.footer-powered-by { margin: 0; font-size: .86rem; }
+/* Trail and colophon links are set small; padding lifts them to the 24px minimum target
+   (WCAG 2.5.8) without changing the inline rhythm of the crumb trail. */
+.breadcrumb-list a,
+.social-links a,
+.footer-powered-by a {
+  display: inline-block;
+  min-width: 24px;
+  padding-block: 6px;
+}
+@media (max-width: 1000px) {
+  .sidebar-disclosure { width: 190px; }
+  .docs-shell > .docs-toc { display: none; }
+}
+@media (max-width: 760px) {
+  /* Mockup packing at this width: the brand takes the first row, and the edition badge
+     rides the right edge of the navigation row rather than claiming a row of its own. The
+     brand's width:100% is what breaks the row, so the bar is exactly two lines here — a
+     layout fact, not a text measurement. --folio-masthead-height above is that sum. */
+  .site-header .container {
+    flex-wrap: wrap;
+    gap: $folio-masthead-gap 14px;
+    padding-block: $folio-masthead-pad;
+  }
+  .site-title { width: 100%; }
+  .site-header nav { order: 1; flex: 1 1 auto; }
+  .skin-toggle { order: 2; }
+  .site-header .nav-list { gap: 0 18px; }
+  .hero, .docs-shell { grid-template-columns: 1fr; }
+  .section-head { grid-template-columns: 1fr; gap: 10px; }
+  .apparatus-grid, .principles { grid-template-columns: 1fr; }
+  .principle, .principle + .principle { padding: 24px 0; border-left: 0; }
+  .manual-band { padding-block: 64px; }
+  .manual-intro { align-items: start; flex-direction: column; }
+  .folio-sidenote { border: 0; border-top: 2px solid var(--folio-rubric); padding: 18px 0 0; }
+  .hero { min-height: 0; padding-block: 65px; }
+  .hero-plate { width: min(390px, 92%); margin-inline: auto; transform: none; }
+  .home-content { padding-block: 40px; }
+  .featured { padding-block: 64px; }
+  .sidebar-disclosure, .docs-toc {
+    width: auto;
+    border: 0;
+    border-bottom: 1px solid var(--folio-rule);
+  }
+  /* The open tree would otherwise push the article a full screen down. */
+  .sidebar-disclosure[open] > .docs-sidebar {
+    max-height: 46vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .sidebar-toggle { display: list-item; }
+  /* The disclosure summary already carries sidebar_title, so the heading repeats it. */
+  .sidebar-nav > .sidebar-title { display: none; }
+  .docs-main { padding: 28px 20px; }
+  .toc-inline { display: block; }
+  .nav-list a,
+  .skin-toggle,
+  .button,
+  .sidebar-toggle,
+  .sidebar-link,
+  .toc-list a {
+    min-block-size: 44px;
+  }
+  .nav-list a,
+  .sidebar-link,
+  .toc-list a {
+    display: flex;
+    align-items: center;
+  }
+}
+@media (max-width: 430px) {
+  .hero-actions { align-items: stretch; flex-direction: column; }
+  .button { width: 100%; }
+  .page-nav, .pagination { grid-template-columns: 1fr; }
+  .page-nav-next, .pagination-next { text-align: left; }
+}
+@media (min-width: 1001px) { .toc-inline { display: none; } }

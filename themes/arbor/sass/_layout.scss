@@ -25,16 +25,48 @@ $bp-lg: 1200px;  // TOC column appears
   }
 }
 
+// ── Masthead geometry ────────────────────────────────────────────────────────
+//
+// The sticky masthead is one row of a declared height at every width — the brand
+// and the nav sit side by side all the way down to 320px — and .site-header is
+// set to exactly that height instead of growing to fit its text. Everything that
+// has to clear the bar reads --trellis-masthead-height: the bar itself, and the
+// in-page anchor offset in _base.scss. Neither can move without the other.
+//
+// Two constructions keep the arithmetic true, and both are load-bearing:
+//   * the row is one line box sized by a *unitless* line-height, which is
+//     font-size × factor and not a function of the font's ascent/descent;
+//   * .nav-list may not wrap (_components.scss) — surplus links scroll sideways
+//     rather than adding a row.
+// Undo either — wrap the nav again, switch a line-height to `normal`, drop an
+// unsized logo image into the bar — and the height goes back to being a text
+// measurement, which is a different number on a machine with different fonts.
+// That is the defect this shape exists to prevent: Verdant shipped a constant
+// offset sized for a two-row nav and Linux wrapped it to three, leaving every
+// anchor target behind the bar there while macOS passed.
+$trellis-masthead-row: $trellis-site-title-size * $trellis-line-height;
+$trellis-masthead-border: 1px;
+
+:root {
+  --trellis-masthead-height: calc(
+    #{$trellis-masthead-row + $trellis-space-md * 2} + #{$trellis-masthead-border}
+  );
+}
+
 // ── Site header ──────────────────────────────────────────────────────────────
 
 .site-header {
   position: sticky;
   top: 0;
   z-index: 100;
+  // Declared, never measured — see "Masthead geometry" above. `height` and not
+  // `min-height`: a bar that is allowed to grow past the offset derived from it
+  // is the whole defect.
+  height: var(--trellis-masthead-height);
   // Translucent header with backdrop blur: content scrolling beneath shows
   // through faintly, giving the page depth. Solid bg is the no-support fallback.
   background-color: var(--trellis-bg, #{$trellis-bg-color});
-  border-bottom: 1px solid var(--trellis-border, #{$trellis-border-color});
+  border-bottom: $trellis-masthead-border solid var(--trellis-border, #{$trellis-border-color});
 
   @supports (backdrop-filter: blur(8px)) {
     background-color: color-mix(in srgb, var(--trellis-bg, #{$trellis-bg-color}) 82%, transparent);
@@ -42,11 +74,18 @@ $bp-lg: 1200px;  // TOC column appears
     -webkit-backdrop-filter: blur(8px);
   }
 
+  nav {
+    // A flex item's automatic minimum size is its content, which would push the
+    // masthead wider than the viewport instead of letting the strip scroll.
+    min-width: 0;
+  }
+
   .container {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: $trellis-space-md;
+    height: 100%;
     padding-top: $trellis-space-md;
     padding-bottom: $trellis-space-md;
   }
@@ -57,7 +96,7 @@ $bp-lg: 1200px;  // TOC column appears
   align-items: center;
   gap: $trellis-space-sm;
   font-family: $trellis-heading-font;
-  font-size: 1.3rem;
+  font-size: $trellis-site-title-size;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--trellis-text, #{$trellis-text-color});

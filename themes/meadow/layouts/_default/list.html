@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html tl:extends="layouts/base.html" lang="en"><head><title>List</title></head><body>
+<main id="main-content" tl:define="content"><div class="wrap measure"><header class="page-header">
+<a class="back-link" tl:href="${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">← Back</a>
+<h1 tl:text="${page.title}">Title</h1><div class="prose" tl:if="${page.content}" tl:utext="${page.content}">Content</div>
+</header><ul class="post-list" tl:if="${pages}"><li tl:each="p : ${pages}"><h2><a tl:href="${p.url}"
+tl:text="${p.title}">Page</a></h2><p tl:if="${p.summary}" tl:text="${p.summary}">Summary</p></li></ul></div></main>
+</body></html>

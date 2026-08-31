@@ -1,0 +1,83 @@
+$trellis-skin: auto !default;
+$trellis-primary-color: #237a48 !default;
+$trellis-accent-color: #d4f15f !default;
+$trellis-text-color: #14251a !default;
+$trellis-muted-color: #476050 !default;
+$trellis-bg-color: #f7faee !default;
+$trellis-surface-color: #fffef8 !default;
+$trellis-border-color: #d4e2ce !default;
+$trellis-font-family: Schibsted Grotesk, Inter, ui-sans-serif, system-ui, sans-serif !default;
+$trellis-heading-font-family: Bricolage Grotesque, Arial Rounded MT Bold, Trebuchet MS, sans-serif !default;
+$trellis-code-font-family: JetBrains Mono, SFMono-Regular, Consolas, monospace !default;
+$trellis-max-width: 1180px !default;
+$trellis-border-radius: 24px !default;
+$trellis-show-powered-by: true !default;
+$trellis-show-rss-link: true !default;
+$trellis-excerpt-length: 160 !default;
+$trellis-hero-align: split !default;
+$trellis-pill-badges: true !default;
+$trellis-logo: null !default;
+$trellis-sky-color: #69b9ea !default;
+$trellis-sun-color: #ffd367 !default;
+$trellis-bloom-color: #cf91ef !default;
+$trellis-coral-color: #fb907b !default;
+
+@import 'dark_tokens';
+
+:root {
+  --meadow-ink: #{$trellis-text-color};
+  --meadow-muted: #{$trellis-muted-color};
+  --meadow-paper: #{$trellis-bg-color};
+  --meadow-surface: #{$trellis-surface-color};
+  --meadow-strong: #eef5df;
+  --meadow-leaf: #{$trellis-primary-color};
+  --meadow-leaf-deep: #185733;
+  --meadow-lime: #{$trellis-accent-color};
+  --meadow-lime-soft: #edf8c9;
+  --meadow-sky: #{$trellis-sky-color};
+  --meadow-sky-soft: #e2f3fd;
+  --meadow-sun: #{$trellis-sun-color};
+  --meadow-sun-soft: #fff1c8;
+  --meadow-bloom: #{$trellis-bloom-color};
+  --meadow-bloom-soft: #f4e5fc;
+  --meadow-coral: #{$trellis-coral-color};
+  --meadow-line: #{$trellis-border-color};
+  --meadow-shadow: #173923;
+  --meadow-nav: rgba(247, 250, 238, 0.92);
+  --meadow-focus: #176aa5;
+  --meadow-primary-bg: #{$trellis-text-color};
+  --meadow-primary-text: #{$trellis-accent-color};
+  --meadow-panel-bg: #14251a;
+  --meadow-panel-text: #f7faee;
+  --meadow-panel-muted: #c0d0c0;
+  --meadow-display: #{$trellis-heading-font-family};
+  --meadow-body: #{$trellis-font-family};
+  --meadow-mono: #{$trellis-code-font-family};
+  --meadow-width: #{$trellis-max-width};
+  --meadow-radius: #{$trellis-border-radius};
+}
+
+@mixin meadow-dark-tokens {
+  --meadow-ink: #{$meadow-dark-ink};
+  --meadow-muted: #{$meadow-dark-muted};
+  --meadow-paper: #{$meadow-dark-paper};
+  --meadow-surface: #{$meadow-dark-surface};
+  --meadow-strong: #{$meadow-dark-strong};
+  --meadow-leaf: #{$meadow-dark-leaf};
+  --meadow-leaf-deep: #{$meadow-dark-leaf-deep};
+  --meadow-lime: #{$meadow-dark-lime};
+  --meadow-lime-soft: #2a431f;
+  --meadow-sky: #7bc8f2;
+  --meadow-sky-soft: #17394b;
+  --meadow-sun: #ffda7c;
+  --meadow-sun-soft: #493b19;
+  --meadow-bloom: #dfaff5;
+  --meadow-bloom-soft: #3b2847;
+  --meadow-coral: #ff9f8b;
+  --meadow-line: #{$meadow-dark-line};
+  --meadow-shadow: #071009;
+  --meadow-nav: rgba(15, 28, 20, 0.92);
+  --meadow-focus: #{$meadow-dark-focus};
+  --meadow-primary-bg: #{$meadow-dark-lime};
+  --meadow-primary-text: #14251a;
+}

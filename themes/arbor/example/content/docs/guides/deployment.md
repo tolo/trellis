@@ -4,7 +4,7 @@ description: Ship the built output tree to any static host.
 ---
 
 The build produces a self-contained static tree — HTML, compiled CSS, and the
-vendored highlighter scripts. Deploy it to any static host.
+highlighter scripts. Deploy it to any static host.
 
 ## Build for production
 

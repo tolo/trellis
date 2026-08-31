@@ -1,5 +1,5 @@
 name: trellis_relic
-version: 0.10.2
+version: 0.11.0
 description: >-
   Serverpod Relic integration for the Trellis template engine — response
   helpers, HTMX detection, and security headers.
@@ -11,7 +11,7 @@ environment:
 
 dependencies:
   relic: ^1.2.0
-  trellis: ^0.10.2
+  trellis: ^0.11.0
 
 dev_dependencies:
   lints: ^6.0.0

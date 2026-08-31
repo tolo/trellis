@@ -43,7 +43,7 @@ and put it on your `PATH`.
 macOS / Linux:
 
 ```bash
-VERSION=0.10.2
+VERSION=0.11.0
 BASE=https://github.com/tolo/trellis/releases/download/v$VERSION
 ASSET=trellis-v$VERSION-macos-arm64.tar.gz
 curl -LO $BASE/$ASSET
@@ -56,7 +56,7 @@ sudo mv trellis /usr/local/bin/
 Windows (PowerShell):
 
 ```powershell
-$Version = "0.10.2" # no leading "v"
+$Version = "0.11.0" # no leading "v"
 $Base = "https://github.com/tolo/trellis/releases/download/v$Version"
 $Asset = "trellis-v$Version-windows-x64.zip"
 Invoke-WebRequest "$Base/$Asset" -OutFile $Asset

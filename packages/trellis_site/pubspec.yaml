@@ -1,5 +1,5 @@
 name: trellis_site
-version: 0.10.2
+version: 0.11.0
 description: >-
   Static site generator for Trellis — Markdown content, Trellis templates,
   Hugo-inspired conventions.
@@ -17,7 +17,7 @@ dependencies:
   html: ^0.15.6
   markdown: ^7.3.0
   path: ^1.9.0
-  trellis: ^0.10.2
+  trellis: ^0.11.0
   yaml: ^3.1.0
 
 dev_dependencies:
@@ -26,4 +26,4 @@ dev_dependencies:
   # Compiles the generated SASS bridge through the real compiler in
   # theme_sass_integration_test.dart, to catch quoting bugs the plain string
   # assertions on _theme_params.scss content can't see.
-  trellis_css: ^0.10.2
+  trellis_css: ^0.11.0

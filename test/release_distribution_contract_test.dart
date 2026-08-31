@@ -84,6 +84,43 @@ void main() {
       expect(bumpScript, contains(r'END { exit 1 unless $updated == 1 }'));
       expect(releaseScript, contains('site/trellis_site.yaml) EXPECTED_CHANGED+='));
     });
+
+    test('lockstep bump preserves YAML line boundaries around the docs-site hero version', () async {
+      final repo = Directory.systemTemp.createTempSync('version_lockstep_contract_');
+      addTearDown(() => repo.deleteSync(recursive: true));
+      Directory('${repo.path}/tool').createSync();
+      Directory('${repo.path}/site').createSync();
+      final bin = Directory('${repo.path}/bin')..createSync();
+      File('${repo.path}/tool/version_lockstep.sh').writeAsStringSync(readWorkspaceFile('tool/version_lockstep.sh'));
+      final fakeDart = File('${bin.path}/dart')..writeAsStringSync('#!/usr/bin/env bash\nexit 0\n');
+      expect((await Process.run('chmod', ['+x', fakeDart.path])).exitCode, 0);
+      expect((await Process.run('git', ['init', '--quiet'], workingDirectory: repo.path)).exitCode, 0);
+
+      for (final scalar in <String>[
+        'trellis 0.10.2 — one dependency',
+        '"trellis 0.10.2 — one dependency"',
+        "'trellis 0.10.2 — one dependency'",
+      ]) {
+        final fixture =
+            '''
+theme_params:
+  terminal_card_lines:
+    - prefix: "+"
+      text: $scalar
+      kind: output
+''';
+        final config = File('${repo.path}/site/trellis_site.yaml')..writeAsStringSync(fixture);
+        final result = await Process.run(
+          'bash',
+          ['tool/version_lockstep.sh', '9.8.7'],
+          workingDirectory: repo.path,
+          environment: {...Platform.environment, 'PATH': '${bin.path}:${Platform.environment['PATH']}'},
+        );
+
+        expect(result.exitCode, 0, reason: '${result.stdout}${result.stderr}');
+        expect(config.readAsStringSync(), fixture.replaceFirst('0.10.2', '9.8.7'), reason: scalar);
+      }
+    });
   });
 
   group('release gate contracts', () {

@@ -1,12 +1,12 @@
 # Project State — Trellis SDK
 
-Last Updated: 2026-08-31
+Last Updated: 2026-09-02
 
 > Cross-session state tracking. Updated at phase boundaries and when significant context changes.
 
 ## Current Phase
 
-**v0.11.0 is published and fully verified; the next milestone is unscheduled.** All eight lockstep packages, the
+**v0.11.0 is published and fully verified; 0.12 (SASS `@use` migration, TD-006) is scheduled and awaits execution.** Sequence decided 2026-09-02: 0.12 sass-use-migration → 0.13 composition primitives (ADR-014) → 0.14 Trellis UI Tier 1 slice (ADR-012); spec at `../trellis-private/docs/specs/0.12/`. All eight lockstep packages, the
 GitHub Release and 11 assets, Homebrew formula, and Scoop manifest were verified on 2026-08-31 with
 `tool/verify_release.sh 0.11.0`. The release contains Lattice, the redesigned site and six-theme generated gallery,
 Folio, Meadow, authoring guidance, TD-014, and the release-gate hardening described below.

@@ -53,6 +53,7 @@ void main() {
       'show_code_showcase',
       'show_why_grid',
       'show_demo',
+      'show_site_demo',
       'show_themes_showcase',
       'show_cta',
       'cta_title',
@@ -466,6 +467,7 @@ $trellis-border-radius: 0;
       r'tl:utext="${data.lattice.code_showcase.template_html}"',
       r'tl:utext="${data.lattice.code_showcase.output_html}"',
       r'tl:utext="${data.lattice.demo.template_html}"',
+      r'tl:utext="${data.lattice.site_demo.markdown_html}"',
     ]) {
       expect(home, contains(binding), reason: binding);
     }
@@ -510,7 +512,7 @@ $trellis-border-radius: 0;
     // Each fixture pairs a data file with the section ids it must still publish. Every block below
     // is partial in one of the two directions a real override drifts: keys without content, or
     // content without the heading its section is named by.
-    final fixtures = <String, (String, Set<String>)>{
+    final fixtures = <String, (String, Set<String>, String?)>{
       'showcase supplied whole': (
         '''
 showcase:
@@ -520,11 +522,23 @@ showcase:
   link_url: ""
 $showcaseCards''',
         {'lattice-showcase-title'},
+        null,
       ),
-      'code_showcase title only': ('code_showcase:\n  title: T\n', <String>{}),
-      'demo title and body only': ('demo:\n  title: T\n  body: B\n', <String>{}),
-      'why title only': ('why:\n  title: T\n', <String>{}),
-      'showcase title only': ('showcase:\n  title: T\n', <String>{}),
+      'code_showcase title only': ('code_showcase:\n  title: T\n', <String>{}, null),
+      'demo title and body only': ('demo:\n  title: T\n  body: B\n', <String>{}, null),
+      'site_demo title only': ('site_demo:\n  title: T\n', <String>{}, null),
+      'site_demo supplied whole and enabled': (
+        '''
+site_demo:
+  title: Source to page
+  markdown_html: '$pane'
+  page_title: Result
+''',
+        {'lattice-site-demo-title'},
+        '  show_site_demo: true\n',
+      ),
+      'why title only': ('why:\n  title: T\n', <String>{}, null),
+      'showcase title only': ('showcase:\n  title: T\n', <String>{}, null),
       'every block content-only, no headings': (
         '''
 code_showcase:
@@ -543,9 +557,16 @@ demo:
 showcase:
 $showcaseCards''',
         <String>{},
+        null,
       ),
     };
-    const allSections = {'lattice-code-title', 'lattice-why-title', 'lattice-demo-title', 'lattice-showcase-title'};
+    const allSections = {
+      'lattice-code-title',
+      'lattice-why-title',
+      'lattice-demo-title',
+      'lattice-site-demo-title',
+      'lattice-showcase-title',
+    };
 
     for (final entry in fixtures.entries) {
       final tempDir = Directory.systemTemp.createTempSync('lattice_partial_data_');
@@ -553,11 +574,14 @@ $showcaseCards''',
       _copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
       Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
       Link(p.join(tempDir.path, 'themes', 'lattice')).createSync(themeDir);
-      File(
-        p.join(tempDir.path, 'trellis_site.yaml'),
-      ).writeAsStringSync(File(p.join(themeDir, 'example', 'trellis_site.yaml')).readAsStringSync());
+      final (data, expectedSections, themeParams) = entry.value;
+      final exampleConfig = File(p.join(themeDir, 'example', 'trellis_site.yaml')).readAsStringSync();
+      File(p.join(tempDir.path, 'trellis_site.yaml')).writeAsStringSync(
+        themeParams == null
+            ? exampleConfig
+            : exampleConfig.replaceFirst('theme_params:\n', 'theme_params:\n$themeParams'),
+      );
       Directory(p.join(tempDir.path, 'data')).createSync(recursive: true);
-      final (data, expectedSections) = entry.value;
       File(p.join(tempDir.path, 'data', 'lattice.yaml')).writeAsStringSync(data);
 
       final config = SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
@@ -577,6 +601,13 @@ $showcaseCards''',
       for (final section in document.querySelectorAll('section[aria-labelledby]')) {
         final target = section.attributes['aria-labelledby']!;
         expect(document.querySelector('#$target'), isNotNull, reason: '${entry.key}: dangling $target');
+      }
+      if (expectedSections.contains('lattice-site-demo-title')) {
+        expect(
+          document.querySelector('section[aria-labelledby="lattice-site-demo-title"] code span.t-tag'),
+          isNotNull,
+          reason: '${entry.key}: S05 requires server-rendered syntax tokens',
+        );
       }
       for (final heading in document.querySelectorAll('h2, h3')) {
         expect(heading.text.trim(), isNotEmpty, reason: '${entry.key}: empty ${heading.localName}');

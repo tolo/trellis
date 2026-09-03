@@ -58,6 +58,21 @@ demo:
       body: Six weeks of results from the propagation bench.
     - title: Planning next spring
       body: What goes in the beds once the ground thaws.
+site_demo:
+  title: From source to page
+  body: Put structured content on the left and the page it produces on the right.
+  source_label: page.md
+  markdown_html: |-
+    <span class="t-dim">---</span>
+    <span class="t-attr">title</span>: <span class="t-str">Your first page</span>
+    <span class="t-dim">---</span>
+
+    <span class="t-dim">#</span> <span class="t-tag">Your first page</span>
+
+    A short introduction for readers.
+  arrow_label: build
+  page_title: Your first page
+  page_body: A short introduction for readers.
 showcase:
   title: Show what you built
   body: Replace these cards with your own screenshots, captions, and configuration hints.

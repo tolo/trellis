@@ -1,0 +1,16 @@
+title: Acorn Docs
+description: A small documentation site built from Markdown with Trellis.
+baseUrl: https://example.com
+theme: ../../../themes/arbor
+theme_params:
+  skin: auto
+  nav_links:
+    - label: Home
+      url: /
+    - label: Docs
+      url: /docs/
+  sidebar_title: Acorn Docs
+  show_search: true
+search:
+  enabled: true
+  fields: [title, summary, content]

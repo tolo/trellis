@@ -83,6 +83,7 @@ params:
   show_code_showcase: { type: boolean, default: true, description: Show code showcase }
   show_why_grid: { type: boolean, default: true, description: Show benefits grid }
   show_demo: { type: boolean, default: true, description: Show two-view demo }
+  show_site_demo: { type: boolean, default: false, description: Show Markdown-to-page demo }
   show_themes_showcase: { type: boolean, default: true, description: Show theme cards }
   show_cta: { type: boolean, default: true, description: Show closing CTA }
   cta_title: { type: string, default: "Ready when you are", description: Closing CTA title }

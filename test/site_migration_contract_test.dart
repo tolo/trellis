@@ -29,7 +29,7 @@ void main() {
 
   test('S01/TI02 site owns the complete Lattice data shape and gallery route', () {
     final data = loadYaml(File(p.join(root, 'site', 'data', 'lattice.yaml')).readAsStringSync()) as YamlMap;
-    expect(data.keys.toSet(), <Object>{'code_showcase', 'why', 'demo', 'showcase'});
+    expect(data.keys.toSet(), <Object>{'code_showcase', 'why', 'demo', 'site_demo', 'showcase'});
 
     // The showcase deliberately curates three of the six themes (Meadow is
     // omitted by choice), so the count is not derived from themes.yaml. What

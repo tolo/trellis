@@ -2,9 +2,8 @@
 
 Canonical reference for understanding the Trellis SDK architecture: how the packages compose, what each package is responsible for, the dependency graph, and how a request flows through the system.
 
-**Current through**: v0.10.2 SDK + the unreleased 0.11 implementation milestone (Lattice theme, Lattice-powered
-docs site and generated themes gallery, Folio theme, Meadow theme, and documented theme-data fallback). No 0.11 version
-bump, tag, publication, or deployment is recorded here.
+**Current through**: v0.11.0 SDK + the 2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
+Lattice `site_demo` home block, and the `examples/docs_site/` proof).
 
 ---
 
@@ -463,7 +462,10 @@ Both search and the code copy button are **progressive enhancements**: the docs 
 Lattice carries the same documentation-navigation contracts as Arbor and adds a content-driven home surface. Its theme
 data provides default `lattice.yaml` landing content; a consuming site's same-stem file replaces that value as one unit.
 The repository's `site/` selects Lattice and supplies its own landing data, while retaining the theme's sidebar, TOC,
-breadcrumbs, prev/next navigation, search client, and build-time code highlighting.
+breadcrumbs, prev/next navigation, search client, and build-time code highlighting. The additive `show_site_demo` param
+defaults to `false`; when enabled, the home layout renders its Markdown-to-page block only if `site_demo.title`,
+`site_demo.markdown_html`, and `site_demo.page_title` are all present. This leaf-level guard preserves existing installs
+and prevents a partial whole-file data override from publishing an empty section or failing the build.
 
 ### Client-Side Search Flow (S09)
 
@@ -487,11 +489,14 @@ The `<input>` ships `disabled` in the static HTML and is enabled only after the 
 
 ### Docs Site (`site/`)
 
-The `site/` tree is the Trellis marketing landing + documentation IA (getting-started, the full `tl:*` syntax reference,
-and a per-package guide for each SDK package plus theme authoring). It carries no `pubspec` of its own; `trellis build`
+The `site/` tree is the Trellis marketing landing + documentation IA. It presents server-rendered applications and static
+sites as co-equal tracks: engine getting-started and the full `tl:*` syntax reference sit beside a first-class Sites
+section for content, layouts, themes, search/feeds, and deployment, plus a per-package reference for each SDK package.
+The site carries no `pubspec` of its own; `trellis build`
 reads `site/trellis_site.yaml` from the working directory, which wires `theme: ../../themes/lattice` (a relative escape
 resolving to `<repo>/themes/lattice`), `search.enabled: true`, and the deploy target. Lattice's theme data supplies landing
-defaults, while the site's same-stem data replaces them wholesale. The generated themes gallery reads
+defaults, while the site's same-stem data replaces them wholesale. The site opts into the `site_demo` block and the
+shared "Built with Trellis" footer attribution. The generated themes gallery reads
 `site/data/themes.yaml` and site-owned screenshot copies under `site/static/themes/`; its inventory is regenerated from
 installed theme manifests. The GitHub Pages workflow described under
 [Deployment Model](#docs-site-static-github-pages) is configured to build the site under `pathPrefix: /trellis/` and gate
@@ -533,6 +538,7 @@ trellis/                          # monorepo root
 │   └── verdant/                  # minimal blog theme
 ├── site/                         # the Lattice-powered docs/marketing site (built by trellis_cli)
 ├── examples/
+│   ├── docs_site/                # Markdown docs site built with Arbor and trellis_cli
 │   └── relic_app/                # Relic + Trellis + HTMX example
 └── docs/                         # guides, API docs
 ```

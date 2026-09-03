@@ -22,6 +22,8 @@ theme_params:
   nav_links:
     - label: Docs
       url: /docs/
+    - label: Sites
+      url: /docs/sites/
     - label: Packages
       url: /docs/packages/
     - label: Themes
@@ -36,7 +38,7 @@ theme_params:
       url: https://pub.dev/packages/trellis
     - label: Docs
       url: /docs/
-  show_powered_by: false
+  show_powered_by: true
   show_rss_link: false
   show_sidebar: true
   show_toc: true
@@ -85,10 +87,23 @@ theme_params:
     - prefix: ">"
       text: dart run bin/server.dart -> :8080
       kind: output
+    - prefix: "$"
+      text: trellis create my_site --template blog
+      kind: command
+    - prefix: "+"
+      text: created Markdown site
+      kind: output
+    - prefix: "$"
+      text: trellis build && trellis serve
+      kind: command
+    - prefix: ">"
+      text: http://localhost:8080
+      kind: output
   show_terminal_card: true
   show_code_showcase: true
   show_why_grid: true
   show_demo: true
+  show_site_demo: true
   show_themes_showcase: true
   show_cta: true
   cta_title: One dependency away

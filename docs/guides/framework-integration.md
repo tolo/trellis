@@ -113,7 +113,7 @@ for Shelf applications.
 
 ```yaml
 dependencies:
-  trellis_shelf: ^0.1.0
+  trellis_shelf: ^0.11.0
 ```
 
 **Import:**
@@ -211,7 +211,7 @@ and security middleware for Dart Frog applications.
 
 ```yaml
 dependencies:
-  trellis_dart_frog: ^0.1.0
+  trellis_dart_frog: ^0.11.0
 ```
 
 **Import:**
@@ -317,7 +317,7 @@ Relic applications.
 
 ```yaml
 dependencies:
-  trellis_relic: ^0.1.0
+  trellis_relic: ^0.11.0
 ```
 
 **Import:**
@@ -520,6 +520,34 @@ template itself is not.
 
 > `${csrfToken}` is automatically available in Shelf and Dart Frog when `trellisCsrf` middleware
 > is active. For Relic, CSRF is not available — see [Section 6.2](#62-csrf-protection).
+
+### 5.5 Running on HTMX 4
+
+Scaffolds and examples pin HTMX 2.0.10, the npm `latest` release (ADR-011). A project can move to HTMX 4 by
+replacing the script tag. The packages need no change:
+
+- `isHtmxRequest()`, `isHtmxBoosted()`, `renderPage(htmxFragment:)`, `renderFragment()` and
+  `renderOobFragments()` read headers HTMX 4 still sends.
+- `htmxTarget()` and `htmxSource()` return element ids on both versions. HTMX 4 sends `tag#id` in `HX-Target`
+  and `HX-Source`; the helpers extract the id. `htmxTrigger()` is deprecated because HTMX 4 reserves
+  `HX-Trigger` for responses.
+- The scaffolded CSRF listener registers for both `htmx:configRequest` (HTMX 2) and `htmx:config:request`
+  (HTMX 4). A project generated before this change must add the second listener next to the existing one in
+  its base layout, because HTMX 4 exposes the outgoing headers at a different path:
+
+  ```js
+  document.addEventListener('htmx:configRequest', function(evt) { setCsrfHeader(evt.detail.headers); });
+  document.addEventListener('htmx:config:request', function(evt) { setCsrfHeader(evt.detail.ctx.request.headers); });
+  ```
+- Replace the script tag's version and `integrity` hash. The jsdelivr URL pattern is unchanged, so the
+  scaffolded CSP allow-list still applies.
+
+HTMX 4 changes that affect templates rather than Trellis code: out-of-band elements swap after the main
+content instead of before; `hx-delete` no longer includes the enclosing form's fields (add
+`hx-include="closest form"`); attributes are not inherited unless written as `hx-confirm:inherited` and the
+like; every `htmx:*` event follows the `htmx:phase:action` naming (`htmx:afterRequest` is
+`htmx:after:request`); the config key `includeIndicatorStyles` is now `includeIndicatorCSS`. Run
+`npx htmx.org@4.0.0 upgrade-check <template-dir>` for the full list.
 
 ---
 

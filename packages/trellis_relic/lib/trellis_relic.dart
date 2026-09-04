@@ -24,7 +24,7 @@
 /// ```
 library;
 
-export 'src/htmx_helpers.dart' show isHtmxRequest, htmxTarget, htmxTrigger, isHtmxBoosted;
+export 'src/htmx_helpers.dart' show isHtmxRequest, htmxTarget, htmxSource, htmxTrigger, isHtmxBoosted;
 export 'src/response_helpers.dart' show renderPage, renderFragment, renderOobFragments;
 export 'src/response_utils.dart' show htmlResponse;
 export 'src/security_headers_middleware.dart' show trellisSecurityHeaders, CspBuilder;

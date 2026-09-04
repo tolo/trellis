@@ -111,6 +111,7 @@ void main() {
       expect(base, contains('csrf-token'));
       expect(base, contains('X-CSRF-Token'));
       expect(base, contains('htmx:configRequest'));
+      expect(base, contains('htmx:config:request'));
     });
 
     test('nav partial defines a tl:fragment with Home and About links', () async {

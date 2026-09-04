@@ -13,8 +13,8 @@ protection, and security-header defaults.
 
 ```yaml
 dependencies:
-  trellis: ^0.8.0
-  trellis_shelf: ^0.1.0
+  trellis: ^0.11.0
+  trellis_shelf: ^0.11.0
 ```
 
 ## Quick start
@@ -91,11 +91,15 @@ Convenience functions for reading HTMX request headers:
 
 ```dart
 if (isHtmxRequest(request)) {
-  final target = htmxTarget(request);   // HX-Target value or null
-  final trigger = htmxTrigger(request); // HX-Trigger value or null
+  final target = htmxTarget(request);   // id of the swap target, or null
+  final source = htmxSource(request);   // id of the triggering element, or null
   final boosted = isHtmxBoosted(request);
 }
 ```
+
+The helpers read the HTMX 2 headers (`HX-Target`, `HX-Trigger`, bare ids) and the HTMX 4 headers
+(`HX-Target`, `HX-Source`, `tag#id`) alike, so handler code is the same on either version.
+`htmxTrigger()` is deprecated in favour of `htmxSource()`.
 
 ## Security headers
 
@@ -147,8 +151,8 @@ final token = csrfToken(request);
 <input type="hidden" name="_csrf" tl:attr="value=${csrfToken}">
 ```
 
-HTMX requests can submit the token via the `htmx:configRequest` event. Add this
-to your base layout:
+HTMX requests can submit the token from the request-configuration event (`htmx:configRequest`
+in HTMX 2, `htmx:config:request` in HTMX 4). Add this to your base layout:
 
 ```html
 <!-- In <head>: render the token into a meta tag -->
@@ -156,10 +160,14 @@ to your base layout:
 
 <!-- Also in <head>: inject it into every HTMX request -->
 <script>
-  document.addEventListener('htmx:configRequest', function(evt) {
-    var token = document.querySelector('meta[name="csrf-token"]').content;
-    if (token) evt.detail.headers['X-CSRF-Token'] = token;
-  });
+  (function () {
+    function setCsrfHeader(headers) {
+      var token = document.querySelector('meta[name="csrf-token"]').content;
+      if (token) headers['X-CSRF-Token'] = token;
+    }
+    document.addEventListener('htmx:configRequest', function(evt) { setCsrfHeader(evt.detail.headers); });
+    document.addEventListener('htmx:config:request', function(evt) { setCsrfHeader(evt.detail.ctx.request.headers); });
+  })();
 </script>
 ```
 

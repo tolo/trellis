@@ -76,7 +76,8 @@ enables double-submit cookie CSRF protection:
 
 - A `csrfToken` is automatically available in the template context
 - The base layout injects it via `<meta name="csrf-token">`
-- HTMX sends it on every request via `htmx:configRequest`
+- HTMX sends it on every request from the request-configuration event (`htmx:configRequest` in
+  HTMX 2, `htmx:config:request` in HTMX 4)
 - Hidden `_csrf` fields remain as a fallback
 
 ### Dev Mode Hot Reload

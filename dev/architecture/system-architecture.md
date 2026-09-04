@@ -3,7 +3,8 @@
 Canonical reference for understanding the Trellis SDK architecture: how the packages compose, what each package is responsible for, the dependency graph, and how a request flows through the system.
 
 **Current through**: v0.11.0 SDK + the 2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
-Lattice `site_demo` home block, and the `examples/docs_site/` proof).
+Lattice `site_demo` home block, and the `examples/docs_site/` proof) + the 2026-09-04 HTMX 4 adapter
+compatibility (ADR-011 amendment).
 
 ---
 
@@ -134,9 +135,10 @@ When the browser makes an HTMX request (`HX-Request: true`), the handler returns
 
 **Version policy and coupling boundary (ADR-011)** — the core engine is
 hypermedia-agnostic: `hx-*` attributes pass through untouched and `renderFragments()`
-is generic concatenation. All HTMX protocol coupling is four request-header reads
-(`HX-Request`, `HX-Target`, `HX-Trigger`, `HX-Boosted`) confined to the three optional
-adapter packages. Scaffolded projects pin the HTMX `latest` dist-tag (2.x) from a single
+is generic concatenation. All HTMX protocol coupling is five request-header reads
+(`HX-Request`, `HX-Target`, `HX-Source`, `HX-Trigger`, `HX-Boosted`) confined to the three
+optional adapter packages; the helpers accept both the HTMX 2 and the HTMX 4 header
+formats, so a project can run either version against unchanged packages. Scaffolded projects pin the HTMX `latest` dist-tag (2.x) from a single
 constant, `trellis_cli`'s `htmx_asset.dart`; the HTMX 4 migration is deferred pending an
 explicit trigger. See [ADR-011](../adrs/ADR-011-htmx-version-policy.md).
 
@@ -386,7 +388,7 @@ route handler
   renderPage(context, 'template', ctx)         ← full page
   renderFragment(context, 'template', 'frag', ctx)  ← named fragment
   renderOobFragments(context, 'template', [...], ctx) ← HTMX OOB
-  isHtmxRequest(context)  htmxTarget(context)  ← HTMX detection
+  isHtmxRequest(context)  htmxTarget(context)  htmxSource(context)  ← HTMX detection
 ```
 
 The CSRF bridge reads the Dart Frog request body via `request.bytes()` then creates a `shelf.Request` to hand off to `trellis_shelf.trellisCsrf`. Dart Frog test files use `concurrency: 1` (`dart_test.yaml`) because `serve()` starts real HTTP servers that cannot run in parallel within a single Dart isolate.

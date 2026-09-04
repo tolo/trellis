@@ -3,7 +3,8 @@
 ## Status
 Accepted (2026-07-26). Records a previously unrecorded, de-facto decision: HTMX has
 been the load-bearing interactivity story since v0.3 without an ADR. Defers the
-HTMX 4 migration; supersedes nothing.
+HTMX 4 migration; supersedes nothing. Amended 2026-09-04 after the HTMX 4.0.0 release:
+adapters and scaffolds made version-agnostic, pin unchanged (see Amendment).
 
 ## Context
 
@@ -24,8 +25,9 @@ positioning implies:
   concatenation. Foreign `hx-*` attributes pass through untouched, pinned by a test
   (`engine_test.dart`, "HTMX OOB attributes preserved"). The engine would work
   identically against Turbo, Unpoly, or hand-written `fetch()`.
-- **Runtime coupling — four request headers, read never written.** `HX-Request`,
-  `HX-Target`, `HX-Trigger`, `HX-Boosted`, in three near-identical ~20-line
+- **Runtime coupling — five request headers, read never written.** `HX-Request`,
+  `HX-Target`, `HX-Trigger`, `HX-Boosted`, and `HX-Source` (added by the 2026-09-04
+  amendment), in three near-identical ~20-line
   `htmx_helpers.dart` files (`trellis_shelf`, `trellis_dart_frog`,
   `trellis_relic`), plus one `isHtmxRequest()` branch per package in
   `response_helpers.dart` selecting fragment vs. full page.
@@ -50,6 +52,9 @@ positioning implies:
   migration and no deadline.
 - Version 4 rather than 3 is a deliberate joke: the maintainer had promised there
   would never be a backwards-incompatible htmx 3.
+- **Update 2026-09-04:** 4.0.0 final shipped 2026-08-28. npm dist-tags are
+  `latest: 2.0.10`, `next: 4.0.0`; the release announcement keeps 4.x on `next` until
+  early 2027 and states HTMX 2 "will continue to be supported indefinitely".
 
 ### What HTMX 4 would cost Trellis
 
@@ -149,9 +154,8 @@ Run `npx htmx.org@<version> upgrade-check` against `examples/` for a concrete di
 ### Negative / accepted trade-offs
 - Trellis ships a nominally older HTMX than the newest published release. Accepted:
   `latest` is 2.x, so this is the mainstream choice, not a laggard one.
-- `htmxTrigger()` keeps a name that becomes misleading under HTMX 4, where
-  `HX-Trigger` is response-only. Accepted until migration; renaming now would break
-  the public API of three packages for no present benefit.
+- `htmxTrigger()` stays exported as a deprecated alias of `htmxSource()` (amendment
+  2026-09-04) rather than being removed; removal waits for the migration.
 - Example templates duplicate the version string. Unavoidable — they are plain HTML.
   Mitigated by the drift test rather than by a build step.
 - Historical phase specs in the private repo still cite the 2.0.8 pin. Deliberately
@@ -191,3 +195,28 @@ abstraction would add indirection without removing anything.
 - Drift guard: [`htmx_asset_test.dart`](../../packages/trellis_cli/test/htmx_asset_test.dart)
 - Adapter coupling: [`trellis_shelf/htmx_helpers.dart`](../../packages/trellis_shelf/lib/src/htmx_helpers.dart), [`trellis_dart_frog/htmx_helpers.dart`](../../packages/trellis_dart_frog/lib/src/htmx_helpers.dart), [`trellis_relic/htmx_helpers.dart`](../../packages/trellis_relic/lib/src/htmx_helpers.dart)
 - Related: [ADR-005](ADR-005-server-integration-strategy.md) (server integration — cites the HTMX-first architecture as a decision driver), [ADR-010](ADR-010-syntax-highlighting.md) (asset preference order)
+
+## Amendment (2026-09-04): version-agnostic adapters, pin unchanged
+
+HTMX 4.0.0 shipped 2026-08-28 on the `next` dist-tag. Neither revisit-trigger arm has
+fired (`latest` is still 2.0.10; `<hx-partial>` is not yet needed), so decision 1
+stands. The part of the migration scope that needs no pin change was done now, so a
+project can run HTMX 4 against unchanged packages and a fresh scaffold:
+
+- `htmxSource()` added to the three adapters: reads `HX-Source` (HTMX 4, `tag#id`,
+  id extracted) and falls back to the `HX-Trigger` request header (HTMX 2).
+  `htmxTrigger()` is a deprecated alias of it.
+- `htmxTarget()` extracts the id from HTMX 4's `tag#id`. The presence of `HX-Source`,
+  which HTMX 4 always sends, is the version discriminator; a value without `#` under
+  HTMX 4 means the target has no id and yields `null`. Unchanged for HTMX 2.
+- The Shelf and Dart Frog scaffold layouts (and the mirrored example layouts) register
+  the CSRF listener for both `htmx:configRequest` (`evt.detail.headers`) and
+  `htmx:config:request` (`evt.detail.ctx.request.headers`).
+- Verified against the published 4.0.0 source rather than the docs: `HX-Request: true`,
+  `HX-Boosted`, `hx-swap-oob` are unchanged; `HX-Target` and `HX-Source` are built as
+  `` `${tag}${id ? '#' + encodeURI(id) : ''}` ``; DELETE parameters travel in the query
+  string on both versions.
+
+Still behind the trigger: the `htmxVersion` + SRI bump, `<hx-partial>` adoption, and the
+`includeIndicatorStyles` → `includeIndicatorCSS` rename noted in TD-018. TD-012 is
+resolved by this amendment.

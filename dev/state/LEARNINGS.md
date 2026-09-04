@@ -77,6 +77,12 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
 - **Parent element preserved, only children replaced**: `_mergeBlocks` replaces the parent `tl:define` element's children (nodes), not the element itself. This preserves the parent element's tag, id, class, and other attributes — the child's `tl:define` wrapper element is discarded.
 - **`_parse()` automatically caches and clones parent DOMs**: Parent templates loaded via `loader.loadSync()` go through the engine's `_parse()` which handles caching. Each call returns a clone, so the cached parent is never mutated by the merge operation.
 
+## HTMX Integration
+
+- **HTMX 4 moves the request-configuration headers**: `htmx:configRequest` (HTMX 2) exposes `evt.detail.headers`; `htmx:config:request` (HTMX 4) passes `{ctx}` and the outgoing headers live at `evt.detail.ctx.request.headers`. A listener registered under the old name never fires on HTMX 4, so the CSRF header silently disappears and `trellisCsrf` rejects every state-changing request. Scaffolds register both names.
+- **HTMX 4 identifies elements as `tag#id`, not bare ids**, in `HX-Target` and `HX-Source` (`encodeURI(id)`, `#id` omitted when the element has none), and it always sends `HX-Source`. The adapter helpers use that header's presence as the version discriminator; under HTMX 4 a value without `#` means "no id", not an id called `form`.
+- **DELETE parameters travel in the query string on both HTMX 2 and 4** (`methodsThatUseUrlParams: ['get', 'delete']` / `/GET|DELETE/`), never in the body. A handler that reads `hx-vals` of an `hx-delete` from the request body sees nothing.
+
 ## Testing
 
 - **`FileSystemLoader` validates directory existence at construction**: Tests using `Trellis()` no-arg constructor need a `MapLoader({})` instead, or the test directory must exist.

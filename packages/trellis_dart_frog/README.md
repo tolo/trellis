@@ -9,8 +9,8 @@ Part of the [Trellis SDK](https://github.com/tolo/trellis).
 
 ```yaml
 dependencies:
-  trellis: ^0.8.0
-  trellis_dart_frog: ^0.1.0
+  trellis: ^0.11.0
+  trellis_dart_frog: ^0.11.0
 ```
 
 ## Quick Start
@@ -113,12 +113,16 @@ Future<Response> onRequest(RequestContext context) async {
   if (isHtmxRequest(context)) {
     // HTMX partial request
   }
-  final target = htmxTarget(context);   // HX-Target header value or null
-  final trigger = htmxTrigger(context); // HX-Trigger header value or null
+  final target = htmxTarget(context);   // id of the swap target, or null
+  final source = htmxSource(context);   // id of the triggering element, or null
   final boosted = isHtmxBoosted(context); // HX-Boosted: true
   // ...
 }
 ```
+
+The helpers read the HTMX 2 headers (`HX-Target`, `HX-Trigger`, bare ids) and the HTMX 4 headers
+(`HX-Target`, `HX-Source`, `tag#id`) alike, so handler code is the same on either version.
+`htmxTrigger()` is deprecated in favour of `htmxSource()`.
 
 ## Security Headers
 

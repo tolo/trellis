@@ -472,15 +472,16 @@
                 document.getElementById("edit-todo-dialog").show();
             }
 
-            // Auto-close dialogs after successful HTMX request
-            document.body.addEventListener("htmx:afterRequest", (evt) => {
-                if (evt.detail.successful) {
-                    ["edit-list-dialog", "edit-todo-dialog"].forEach((id) => {
-                        const d = document.getElementById(id);
-                        if (d && d.open) d.hide();
-                    });
-                }
-            });
+            // Auto-close dialogs after a successful HTMX request (htmx 2 and htmx 4 event shapes)
+            const closeDialogsAfterRequest = (successful) => {
+                if (!successful) return;
+                ["edit-list-dialog", "edit-todo-dialog"].forEach((id) => {
+                    const d = document.getElementById(id);
+                    if (d && d.open) d.hide();
+                });
+            };
+            document.body.addEventListener("htmx:afterRequest", (evt) => closeDialogsAfterRequest(evt.detail.successful));
+            document.body.addEventListener("htmx:after:request", (evt) => closeDialogsAfterRequest(evt.detail.ctx.response?.ok));
         </script>
     </body>
 </html>

@@ -121,6 +121,90 @@ theme_params:
         expect(config.readAsStringSync(), fixture.replaceFirst('0.10.2', '9.8.7'), reason: scalar);
       }
     });
+
+    test('install-snippet pubspec constraints in READMEs and docs track the lockstep version', () {
+      // Melos rewrites the real pubspecs but not the `trellis*: ^x.y.z` lines in the install
+      // snippets of READMEs and docs pages. Those sat at `^0.1.0` until 0.11.1 — a range no
+      // published satellite matches (they start at 0.8.1) — so a copied snippet failed
+      // `dart pub get`. Exact `^<lockstep>` rather than "admits": that is the shape
+      // version_lockstep.sh maintains, and a merely-admitting `^0.11.0` at 0.11.1 would
+      // already mean the rewrite was skipped or broken. Same file set as the script's
+      // snippet_files() and release.sh's allow-list.
+      final lockstep = _pubspecVersion(readWorkspaceFile('packages/trellis/pubspec.yaml'));
+      final constraintLine = RegExp(r'^[ \t]+(trellis\w*):[ \t]*(\S+)[ \t]*$', multiLine: true);
+
+      var found = 0;
+      for (final path in _installSnippetFiles(workspaceRoot)) {
+        for (final match in constraintLine.allMatches(File(path).readAsStringSync())) {
+          found++;
+          final (package, constraint) = (match.group(1)!, match.group(2)!);
+          expect(
+            constraint,
+            '^$lockstep',
+            reason: '$path: `$package: $constraint` is a stale install snippet; run tool/version_lockstep.sh',
+          );
+        }
+      }
+      expect(found, greaterThan(0), reason: 'no install-snippet constraint line found; regex or docs drift');
+    });
+
+    test('lockstep bump rewrites only the install-snippet constraint lines and permits those files', () async {
+      final bumpScript = readWorkspaceFile('tool/version_lockstep.sh');
+      final releaseScript = readWorkspaceFile('tool/release.sh');
+      expect(bumpScript, contains(r's/^([ \t]+trellis\w*: \^)[0-9][0-9A-Za-z.+-]*$/$1$ENV{VERSION}/'));
+      expect(releaseScript, contains('README.md | packages/*/README.md | docs/*.md | site/content/*.md |'));
+
+      final repo = Directory.systemTemp.createTempSync('version_lockstep_snippets_');
+      addTearDown(() => repo.deleteSync(recursive: true));
+      for (final dir in ['tool', 'site', 'docs/guides', 'packages/trellis_x']) {
+        Directory('${repo.path}/$dir').createSync(recursive: true);
+      }
+      final bin = Directory('${repo.path}/bin')..createSync();
+      File('${repo.path}/tool/version_lockstep.sh').writeAsStringSync(bumpScript);
+      final fakeDart = File('${bin.path}/dart')..writeAsStringSync('#!/usr/bin/env bash\nexit 0\n');
+      expect((await Process.run('chmod', ['+x', fakeDart.path])).exitCode, 0);
+      expect((await Process.run('git', ['init', '--quiet'], workingDirectory: repo.path)).exitCode, 0);
+      // The hero sync exits non-zero unless it rewrites exactly one line, so the fixture needs one.
+      File('${repo.path}/site/trellis_site.yaml').writeAsStringSync('      text: trellis 0.10.2 — one dependency\n');
+
+      // Prose mentioning a constraint inline, a config key that is not a dependency, and a
+      // non-trellis dependency must all survive untouched; only the indented pubspec lines move.
+      const snippet = '''
+Requires `trellis: ^0.1.0` or later.
+
+```yaml
+dependencies:
+  trellis: ^0.8.0
+  trellis_x: ^0.1.0
+  shelf: ^1.4.0
+trellis_x:
+  theme: default
+```
+''';
+      final expected = snippet
+          .replaceFirst('  trellis: ^0.8.0', '  trellis: ^9.8.7')
+          .replaceFirst('  trellis_x: ^0.1.0', '  trellis_x: ^9.8.7');
+      final fixtures = [
+        File('${repo.path}/README.md'),
+        File('${repo.path}/packages/trellis_x/README.md'),
+        File('${repo.path}/docs/guides/install.md'),
+      ];
+      for (final fixture in fixtures) {
+        fixture.writeAsStringSync(snippet);
+      }
+
+      final result = await Process.run(
+        'bash',
+        ['tool/version_lockstep.sh', '9.8.7'],
+        workingDirectory: repo.path,
+        environment: {...Platform.environment, 'PATH': '${bin.path}:${Platform.environment['PATH']}'},
+      );
+
+      expect(result.exitCode, 0, reason: '${result.stdout}${result.stderr}');
+      for (final fixture in fixtures) {
+        expect(fixture.readAsStringSync(), expected, reason: fixture.path);
+      }
+    });
   });
 
   group('release gate contracts', () {
@@ -334,6 +418,30 @@ theme_params:
       expect(autoUrl, contains(r'$version'));
     });
   });
+}
+
+/// The `version:` of a pubspec, or fails the test.
+String _pubspecVersion(String pubspec) {
+  final version = RegExp(r'^version:\s*(\S+)', multiLine: true).firstMatch(pubspec)?.group(1);
+  expect(version, isNotNull, reason: 'no version: line in pubspec');
+  return version!;
+}
+
+/// The README and docs pages whose install snippets version_lockstep.sh keeps on the
+/// lockstep version: `README.md`, `packages/*/README.md`, every `.md` under `docs/` and
+/// `site/content/`. Mirrors the script's `snippet_files()` and release.sh's allow-list.
+Iterable<String> _installSnippetFiles(Directory root) sync* {
+  final rootReadme = File('${root.path}/README.md');
+  if (rootReadme.existsSync()) yield rootReadme.path;
+  for (final package in Directory('${root.path}/packages').listSync().whereType<Directory>()) {
+    final readme = File('${package.path}/README.md');
+    if (readme.existsSync()) yield readme.path;
+  }
+  for (final dir in ['docs', 'site/content']) {
+    final directory = Directory('${root.path}/$dir');
+    if (!directory.existsSync()) continue;
+    yield* directory.listSync(recursive: true).whereType<File>().map((f) => f.path).where((p) => p.endsWith('.md'));
+  }
 }
 
 /// The `jobs:` section of a GitHub Actions [workflow] (from `jobs:` to end of

@@ -24,7 +24,7 @@ Preconditions (each checked; the script refuses otherwise):
 
 Then:
   1. tool/version_lockstep.sh <version>   (pubspecs, constraints, version.dart, READMEs,
-                                           site/trellis_site.yaml)
+                                           docs install snippets, site/trellis_site.yaml)
   2. asserts only those files changed
   3. local gate = ci.yml's check tier: melos analyze + format:check + unit
      tests, root tests + root format
@@ -217,7 +217,10 @@ while IFS= read -r -d '' entry; do
       ;;
   esac
   case "${changed}" in
-    packages/*/pubspec.yaml | packages/*/lib/src/version.dart | README.md | packages/trellis_cli/README.md | site/trellis_site.yaml) EXPECTED_CHANGED+=("${changed}") ;;
+    # Bash `case` globs match across `/`, so docs/*.md covers every docs page. The
+    # README/docs entries are the install-snippet constraint lines version_lockstep.sh
+    # rewrites (plus the two manual-download examples); keep the three file sets identical.
+    packages/*/pubspec.yaml | packages/*/lib/src/version.dart | README.md | packages/*/README.md | docs/*.md | site/content/*.md | site/trellis_site.yaml) EXPECTED_CHANGED+=("${changed}") ;;
     *) UNEXPECTED+=("${changed}") ;;
   esac
 done < <(git status --porcelain -z)

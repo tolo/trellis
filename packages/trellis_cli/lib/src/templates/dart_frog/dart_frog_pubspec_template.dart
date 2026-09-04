@@ -1,4 +1,8 @@
+import '../../version.dart';
+
 /// Generates the pubspec.yaml content for a Dart Frog + Trellis project.
+///
+/// Trellis packages are constrained to the CLI's own [cliVersion]: under lockstep (ADR-009) that is the SDK version.
 String dartFrogPubspecTemplate(String projectName) =>
     '''
 name: $projectName
@@ -10,9 +14,9 @@ environment:
 
 dependencies:
   dart_frog: ^1.2.0
-  trellis: ^0.8.0
-  trellis_dart_frog: ^0.1.0
-  trellis_dev: ^0.1.0
+  trellis: ^$cliVersion
+  trellis_dart_frog: ^$cliVersion
+  trellis_dev: ^$cliVersion
 
 dev_dependencies:
   lints: ^6.0.0

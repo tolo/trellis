@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.1
+
+### Fixed
+
+- README install snippet pinned `trellis_site: ^0.1.0`, a range no published version of the package
+  matches, so a copied snippet failed `dart pub get`. It now tracks the lockstep version and
+  `tool/version_lockstep.sh` keeps it current.
+
 ## 0.11.0
 
 ### Breaking

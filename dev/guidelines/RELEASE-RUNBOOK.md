@@ -94,14 +94,17 @@ tool/release.sh X.Y.Z
 ```
 It refuses unless: on `main`, tree clean, `HEAD == origin/main`, every changelog has `## X.Y.Z`, CI green for HEAD.
 Then: `tool/version_lockstep.sh X.Y.Z` (one `melos version` pass: 8 pubspecs + inter-package constraints, 2
-`version.dart` constants, 2 README download examples, and the docs-site hero version) → asserts **only** those files
+`version.dart` constants, 2 README download examples, every `trellis*: ^x.y.z` install-snippet line in `README.md`,
+`packages/*/README.md`, `docs/`, `site/content/`, and the docs-site hero version) → asserts **only** those files
 changed → local gate (step 0's five repeated local commands; gallery freshness is supplied by the required green CI
-run) → commit `chore(release): trellis SDK X.Y.Z` → `dart pub publish --dry-run` ×8 (commit is undone if
-one fails) → `git tag vX.Y.Z` → prints the push command. **Nothing is pushed.**
+run) → commit `chore(release): trellis SDK X.Y.Z` → `dart pub publish --dry-run` ×8 (commit is undone if one fails)
+→ `git tag vX.Y.Z` → prints the push command. **Nothing is pushed.**
 
-Check the commit: `git show --stat HEAD` — 13 files (8 `pubspec.yaml`, 2 `lib/src/version.dart`, `README.md`,
-`packages/trellis_cli/README.md`, `site/trellis_site.yaml`). The committed root `pubspec.lock` is not rewritten by
-the bump; release-binary jobs consume it with `dart pub get --enforce-lockfile`.
+Check the commit: `git show --stat HEAD` — 13 fixed files (8 `pubspec.yaml`, 2 `lib/src/version.dart`, `README.md`,
+`packages/trellis_cli/README.md`, `site/trellis_site.yaml`) plus every README/docs page holding an install snippet
+(13 at 0.11.1: 6 package READMEs, 6 `site/content/docs/packages/` pages, `docs/guides/framework-integration.md`). The
+committed root `pubspec.lock` is not rewritten by the bump; release-binary jobs consume it with
+`dart pub get --enforce-lockfile`.
 
 If it fails: the message says which check; the bump stays in the working tree for inspection — discard it with
 `git restore --staged --worktree .` (discards **all** uncommitted changes; the tree was clean before the bump, so only

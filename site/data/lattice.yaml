@@ -68,12 +68,12 @@ site_demo:
     <span class="t-attr">weight</span>: <span class="t-expr">10</span>
     <span class="t-dim">---</span>
 
-    <span class="t-dim">#</span> <span class="t-tag">Build a site</span>
+    <span class="t-dim">#</span> <span class="t-tag">Getting Started</span>
 
-    Create pages from Markdown, then publish the output anywhere.
+    Write Markdown, pick a theme, run one build.
   arrow_label: trellis build
-  page_title: Build a site with Trellis
-  page_body: Create pages from Markdown, apply a theme, and deploy the generated output anywhere.
+  page_title: Getting Started
+  page_body: Write Markdown, pick a theme, run one build.
 showcase:
   title: Built-in themes, grown in the same garden
   body: Pick a design, set one line of configuration, and publish. Browse every installed design from Themes.

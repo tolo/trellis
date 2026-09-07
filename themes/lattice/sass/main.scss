@@ -755,6 +755,11 @@ code {
   background: #fff;
   color: #26312a;
 }
+/* The site demo reuses the page mock as the right pane of a .code-duo; the posts-list
+   min-height would leave a mostly empty card beside a short Markdown source. */
+.code-duo > .demo-page {
+  min-height: 0;
+}
 .demo-page h3 {
   margin: 0 0 3px;
   color: #1c2b21;

@@ -54,7 +54,7 @@ See the [Theme Usage Guide](../../docs/guides/theme-usage.md) and [Standard Para
 
 ```yaml
 dependencies:
-  trellis_site: ^0.11.0
+  trellis_site: ^0.11.1
 ```
 
 ## Quick Start

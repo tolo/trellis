@@ -12,8 +12,8 @@ detection, and security headers.
 
 ```yaml
 dependencies:
-  trellis: ^0.8.0
-  trellis_relic: ^0.1.0
+  trellis: ^0.11.0
+  trellis_relic: ^0.11.0
 ```
 
 ## Quick start
@@ -105,10 +105,14 @@ Inspect HTMX-specific request headers:
 
 ```dart
 isHtmxRequest(request)   // HX-Request: true
-htmxTarget(request)      // HX-Target value (nullable)
-htmxTrigger(request)     // HX-Trigger value (nullable)
+htmxTarget(request)      // id of the swap target (nullable)
+htmxSource(request)      // id of the triggering element (nullable)
 isHtmxBoosted(request)   // HX-Boosted: true
 ```
+
+The helpers read the HTMX 2 headers (`HX-Target`, `HX-Trigger`, bare ids) and the HTMX 4 headers
+(`HX-Target`, `HX-Source`, `tag#id`) alike, so handler code is the same on either version.
+`htmxTrigger()` is deprecated in favour of `htmxSource()`.
 
 Relic returns headers as `Iterable<String>?`. These helpers use `.first`
 internally, consistent with HTMX's single-value headers.

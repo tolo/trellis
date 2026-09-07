@@ -17,12 +17,17 @@ String dartFrogBaseLayoutTemplate(String projectName) =>
   <link rel="stylesheet" href="/styles.css">
   ''' +
     htmxScriptTag(trailingNewline: true) +
-    r'''  <!-- Set CSRF header on all HTMX requests -->
+    r'''  <!-- Set CSRF header on all HTMX requests (htmx 2 and htmx 4 event shapes) -->
   <script>
-    document.addEventListener('htmx:configRequest', function(evt) {
-      var token = document.querySelector('meta[name="csrf-token"]').content;
-      if (token) evt.detail.headers['X-CSRF-Token'] = token;
-    });
+    (function () {
+      function setCsrfHeader(headers) {
+        if (!headers) return;
+        var token = document.querySelector('meta[name="csrf-token"]').content;
+        if (token) headers['X-CSRF-Token'] = token;
+      }
+      document.addEventListener('htmx:configRequest', function(evt) { setCsrfHeader(evt.detail.headers); });
+      document.addEventListener('htmx:config:request', function(evt) { setCsrfHeader(evt.detail.ctx.request.headers); });
+    })();
   </script>
 </head>
 <body>

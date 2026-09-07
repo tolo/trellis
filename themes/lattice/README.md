@@ -80,6 +80,7 @@ Lattice-specific surface.
 | `show_code_showcase`       | `true`                 | Code section visibility       |
 | `show_why_grid`            | `true`                 | Benefits section visibility   |
 | `show_demo`                | `true`                 | Two-view demo visibility      |
+| `show_site_demo`           | `false`                | Markdown-to-page demo         |
 | `show_themes_showcase`     | `true`                 | Theme cards visibility        |
 | `show_cta`                 | `true`                 | Closing CTA visibility        |
 | `cta_title`                | `Ready when you are`   | Closing CTA heading           |
@@ -102,13 +103,15 @@ The dark palette is deliberately theme-owned. Font stacks, `max_width`, and `bor
 
 ## Structured home data
 
-`data/lattice.yaml` owns `code_showcase`, `why`, `demo`, and `showcase`. A site's `data/lattice.yaml` replaces that
+`data/lattice.yaml` owns `code_showcase`, `why`, `demo`, `site_demo`, and `showcase`. A site's `data/lattice.yaml` replaces that
 file as a whole, so provide every shape when overriding it. Each home section renders only when its `show_*` param
 is on **and** every key that section renders is present — not merely its enclosing block. A block that omits one of
 them is dropped whole, so a partial override never publishes an empty heading, a blank code pane, or an empty grid,
 and never fails the build. The required keys are `code_showcase.title` / `.template_html` / `.output_html`,
 `why.title` / `.cells`, `demo.title` / `.template_html` / `.prototype_title` / `.rendered_posts`, and
-`showcase.title` / `.cards`. Optional `showcase.link_label` and `showcase.link_url` values render a link after
+`site_demo.title` / `.markdown_html` / `.page_title`, and `showcase.title` / `.cards`. Optional `site_demo.body`,
+`site_demo.source_label`, `site_demo.arrow_label`, and `site_demo.page_body` values complete the Markdown-to-page
+story. Optional `showcase.link_label` and `showcase.link_url` values render a link after
 the cards when both are non-empty. Showcase `screenshot_light` and `screenshot_dark` values are prefix-relative tails
 without a leading slash; the layout prepends the rendered asset base exactly once.
 
@@ -117,7 +120,8 @@ your own copy; nothing in them names a product or bakes in a release version.
 
 ### Pre-marked code panes
 
-`code_showcase.template_html`, `code_showcase.output_html`, and `demo.template_html` are **HTML**, rendered with
+`code_showcase.template_html`, `code_showcase.output_html`, `demo.template_html`, and `site_demo.markdown_html` are
+**HTML**, rendered with
 `tl:utext`. No client-side highlighter ships in an official theme (ADR-010), so the panes carry their token spans
 from the data file and stay coloured with JavaScript off. Escape `<`, `>`, and `&`, and wrap tokens in the classes
 the theme styles:

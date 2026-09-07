@@ -18,8 +18,9 @@ Usage:
 Bumps EVERY publishable package to the same version in a single `melos version`
 pass. Melos also rewrites the inter-package dependency constraints (e.g. the
 `trellis: ^x.y.z` in each satellite) to match, in the same run. The script then
-syncs the hardcoded version constants, README download examples, and the docs-site
-hero in site/trellis_site.yaml.
+syncs the hardcoded version constants, README download examples, the install-snippet
+`trellis*: ^x.y.z` constraints in READMEs and docs pages, and the docs-site hero in
+site/trellis_site.yaml.
 
 The flags a real release needs are built in — run it with just the version:
   --no-changelog           packages keep hand-written CHANGELOG.md files; melos
@@ -124,6 +125,32 @@ for file in "${README_EXAMPLE_FILES[@]}"; do
      s/(\$Version = ")[0-9][0-9A-Za-z.+-]*(")/$1$ENV{VERSION}$2/' "${file}"
   git add "${file}" 2>/dev/null || true
 done
+
+# Install snippets in READMEs and docs pages carry pubspec lines like
+# `  trellis_shelf: ^x.y.z`. Melos rewrites only the real pubspecs, so these sat
+# at `^0.1.0` until 0.11.1 — a range no published satellite matches (they start
+# at 0.8.1), so a copied snippet failed `dart pub get`. The root contract test
+# asserts every such line is `^<version>`; this file set, the test's, and the
+# allow-list in tool/release.sh must stay identical.
+snippet_files() {
+  local path
+  for path in "${ROOT}/README.md" "${ROOT}"/packages/*/README.md; do
+    [[ -f "${path}" ]] && echo "${path}"
+  done
+  for path in "${ROOT}/docs" "${ROOT}/site/content"; do
+    [[ -d "${path}" ]] && find "${path}" -name '*.md'
+  done
+}
+echo "Syncing install-snippet pubspec constraints to ${VERSION}..."
+while IFS= read -r file; do
+  grep -qE '^[[:space:]]+trellis[A-Za-z0-9_]*: \^' "${file}" || continue
+  # Anchored to an indented `trellis<_pkg>: ^<semver>` dependency line, the shape
+  # a pubspec snippet has inside a yaml code block, so prose that mentions a
+  # constraint inline is left alone.
+  VERSION="${VERSION}" perl -pi -e \
+    's/^([ \t]+trellis\w*: \^)[0-9][0-9A-Za-z.+-]*$/$1$ENV{VERSION}/' "${file}"
+  git add "${file}" 2>/dev/null || true
+done < <(snippet_files)
 
 # The docs-site hero includes the released SDK version in its terminal card.
 # Keep it on the same lockstep rail as package versions and README examples.

@@ -152,6 +152,7 @@ void main() {
         expect(content, contains('id="content"'));
         expect(content, contains('csrf-token'));
         expect(content, contains('htmx:configRequest'));
+        expect(content, contains('htmx:config:request'));
         expect(content, contains('nav.html'));
         expect(content, contains('Dart Frog'));
       });

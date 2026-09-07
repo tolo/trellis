@@ -251,6 +251,50 @@
 
       <section
         class="tinted"
+        tl:if="${theme.show_site_demo} and not ${#strings.isEmpty(data.lattice.site_demo.title)}
+               and not ${#strings.isEmpty(data.lattice.site_demo.markdown_html)}
+               and not ${#strings.isEmpty(data.lattice.site_demo.page_title)}"
+        aria-labelledby="lattice-site-demo-title"
+      >
+        <div class="wrap">
+          <header class="section-heading">
+            <h2 id="lattice-site-demo-title" tl:text="${data.lattice.site_demo.title}">Site demo</h2>
+            <p
+              tl:if="not ${#strings.isEmpty(data.lattice.site_demo.body)}"
+              tl:text="${data.lattice.site_demo.body}"
+            >Description</p>
+          </header>
+          <div class="code-duo">
+            <div class="pane">
+              <div
+                class="pane-bar"
+                tl:if="not ${#strings.isEmpty(data.lattice.site_demo.source_label)}"
+              >
+                <span tl:text="${data.lattice.site_demo.source_label}">Source</span>
+                <span class="pane-tag">markdown</span>
+              </div>
+              <pre><code tl:utext="${data.lattice.site_demo.markdown_html}">Markdown source</code></pre>
+            </div>
+            <span class="duo-arrow" aria-hidden="true">
+              <b>→</b>
+              <small
+                tl:if="not ${#strings.isEmpty(data.lattice.site_demo.arrow_label)}"
+                tl:text="${data.lattice.site_demo.arrow_label}"
+              >build</small>
+            </span>
+            <div class="demo-page">
+              <h3 tl:text="${data.lattice.site_demo.page_title}">Page title</h3>
+              <p
+                tl:if="not ${#strings.isEmpty(data.lattice.site_demo.page_body)}"
+                tl:text="${data.lattice.site_demo.page_body}"
+              >Page body</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="tinted"
         tl:if="${theme.show_themes_showcase} and not ${#strings.isEmpty(data.lattice.showcase.title)}
                and not ${#lists.isEmpty(data.lattice.showcase.cards)}"
         aria-labelledby="lattice-showcase-title"

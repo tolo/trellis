@@ -2,9 +2,9 @@
 
 Canonical reference for understanding the Trellis SDK architecture: how the packages compose, what each package is responsible for, the dependency graph, and how a request flows through the system.
 
-**Current through**: v0.10.2 SDK + the unreleased 0.11 implementation milestone (Lattice theme, Lattice-powered
-docs site and generated themes gallery, Folio theme, Meadow theme, and documented theme-data fallback). No 0.11 version
-bump, tag, publication, or deployment is recorded here.
+**Current through**: v0.11.0 SDK + the 2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
+Lattice `site_demo` home block, and the `examples/docs_site/` proof) + the 2026-09-04 HTMX 4 adapter
+compatibility (ADR-011 amendment).
 
 ---
 
@@ -24,14 +24,14 @@ Trellis is a Dart toolkit for building server-rendered web applications and stat
 
 | Package | Responsibility | Dependencies | Status |
 |---|---|---|---|
-| **`trellis`** | HTML template engine: parsing, expression evaluation (incl. utility objects), processor pipeline, fragment rendering, caching, validation, template inheritance, contextual escaping. Also includes testing utilities via `testing.dart` (test engine factory, CSS-selector matchers, snapshot golden file testing, fragment helpers). | `package:html` | v0.10.2 (published) |
-| **`trellis_shelf`** | Shelf middleware: engine injection, HTMX helpers, security defaults (CSRF, CSP), response builders | `trellis`, `shelf`, `crypto` | v0.10.2 (published) |
-| **`trellis_dart_frog`** | Dart Frog integration: `trellisProvider()` DI middleware, response helpers (`renderPage`, `renderFragment`, `renderOobFragments`), HTMX detection, CSRF/security middleware bridged from `trellis_shelf` | `trellis`, `trellis_shelf`, `dart_frog` | v0.10.2 (published) |
-| **`trellis_relic`** | Serverpod Relic integration: response helpers with explicit engine passing, HTMX detection, `trellisSecurityHeaders()` middleware. No CSRF (Relic form parser gap). | `trellis`, `relic` | v0.10.2 (published) |
-| **`trellis_dev`** | Dev tools: SSE browser hot reload, script injection middleware | `trellis`, `shelf` | v0.10.2 (published) |
-| **`trellis_css`** | CSS processing: Dart-native SASS/SCSS compilation via `package:sass`, `tl:scope` fragment-scoped CSS via CSS `@scope` | `trellis`, `sass`, `html` | v0.10.2 (published) |
-| **`trellis_site`** | Static site generation: content discovery, front matter, Markdown, taxonomies, pagination, sitemap, shortcodes, data cascade, Atom/RSS feed generation, JSON search index | `trellis`, `markdown`, `yaml` | v0.10.2 (published) |
-| **`trellis_cli`** | CLI tool: `trellis create` (htmx + blog + dart_frog + relic templates), `trellis build` (SSG pipeline + SASS), `trellis serve` (local preview server), and `trellis theme` (`add`, `update`, `list`, `info`, `remove`) | `args`, `shelf`, `shelf_static`, `trellis_css`, `trellis_site` | v0.10.2 (published) |
+| **`trellis`** | HTML template engine: parsing, expression evaluation (incl. utility objects), processor pipeline, fragment rendering, caching, validation, template inheritance, contextual escaping. Also includes testing utilities via `testing.dart` (test engine factory, CSS-selector matchers, snapshot golden file testing, fragment helpers). | `package:html` | v0.11.0 (published) |
+| **`trellis_shelf`** | Shelf middleware: engine injection, HTMX helpers, security defaults (CSRF, CSP), response builders | `trellis`, `shelf`, `crypto` | v0.11.0 (published) |
+| **`trellis_dart_frog`** | Dart Frog integration: `trellisProvider()` DI middleware, response helpers (`renderPage`, `renderFragment`, `renderOobFragments`), HTMX detection, CSRF/security middleware bridged from `trellis_shelf` | `trellis`, `trellis_shelf`, `dart_frog` | v0.11.0 (published) |
+| **`trellis_relic`** | Serverpod Relic integration: response helpers with explicit engine passing, HTMX detection, `trellisSecurityHeaders()` middleware. No CSRF (Relic form parser gap). | `trellis`, `relic` | v0.11.0 (published) |
+| **`trellis_dev`** | Dev tools: SSE browser hot reload, script injection middleware | `trellis`, `shelf` | v0.11.0 (published) |
+| **`trellis_css`** | CSS processing: Dart-native SASS/SCSS compilation via `package:sass`, `tl:scope` fragment-scoped CSS via CSS `@scope` | `trellis`, `sass`, `html` | v0.11.0 (published) |
+| **`trellis_site`** | Static site generation: content discovery, front matter, Markdown, taxonomies, pagination, sitemap, shortcodes, data cascade, Atom/RSS feed generation, JSON search index | `trellis`, `markdown`, `yaml` | v0.11.0 (published) |
+| **`trellis_cli`** | CLI tool: `trellis create` (htmx + blog + dart_frog + relic templates), `trellis build` (SSG pipeline + SASS), `trellis serve` (local preview server), and `trellis theme` (`add`, `update`, `list`, `info`, `remove`) | `args`, `shelf`, `shelf_static`, `trellis_css`, `trellis_site` | v0.11.0 (published) |
 | ~~`trellis_test`~~ | *Merged into `trellis` core as `testing.dart` entry point (2026-03-18)* | — | — |
 
 ---
@@ -135,9 +135,10 @@ When the browser makes an HTMX request (`HX-Request: true`), the handler returns
 
 **Version policy and coupling boundary (ADR-011)** — the core engine is
 hypermedia-agnostic: `hx-*` attributes pass through untouched and `renderFragments()`
-is generic concatenation. All HTMX protocol coupling is four request-header reads
-(`HX-Request`, `HX-Target`, `HX-Trigger`, `HX-Boosted`) confined to the three optional
-adapter packages. Scaffolded projects pin the HTMX `latest` dist-tag (2.x) from a single
+is generic concatenation. All HTMX protocol coupling is five request-header reads
+(`HX-Request`, `HX-Target`, `HX-Source`, `HX-Trigger`, `HX-Boosted`) confined to the three
+optional adapter packages; the helpers accept both the HTMX 2 and the HTMX 4 header
+formats, so a project can run either version against unchanged packages. Scaffolded projects pin the HTMX `latest` dist-tag (2.x) from a single
 constant, `trellis_cli`'s `htmx_asset.dart`; the HTMX 4 migration is deferred pending an
 explicit trigger. See [ADR-011](../adrs/ADR-011-htmx-version-policy.md).
 
@@ -387,7 +388,7 @@ route handler
   renderPage(context, 'template', ctx)         ← full page
   renderFragment(context, 'template', 'frag', ctx)  ← named fragment
   renderOobFragments(context, 'template', [...], ctx) ← HTMX OOB
-  isHtmxRequest(context)  htmxTarget(context)  ← HTMX detection
+  isHtmxRequest(context)  htmxTarget(context)  htmxSource(context)  ← HTMX detection
 ```
 
 The CSRF bridge reads the Dart Frog request body via `request.bytes()` then creates a `shelf.Request` to hand off to `trellis_shelf.trellisCsrf`. Dart Frog test files use `concurrency: 1` (`dart_test.yaml`) because `serve()` starts real HTTP servers that cannot run in parallel within a single Dart isolate.
@@ -463,7 +464,10 @@ Both search and the code copy button are **progressive enhancements**: the docs 
 Lattice carries the same documentation-navigation contracts as Arbor and adds a content-driven home surface. Its theme
 data provides default `lattice.yaml` landing content; a consuming site's same-stem file replaces that value as one unit.
 The repository's `site/` selects Lattice and supplies its own landing data, while retaining the theme's sidebar, TOC,
-breadcrumbs, prev/next navigation, search client, and build-time code highlighting.
+breadcrumbs, prev/next navigation, search client, and build-time code highlighting. The additive `show_site_demo` param
+defaults to `false`; when enabled, the home layout renders its Markdown-to-page block only if `site_demo.title`,
+`site_demo.markdown_html`, and `site_demo.page_title` are all present. This leaf-level guard preserves existing installs
+and prevents a partial whole-file data override from publishing an empty section or failing the build.
 
 ### Client-Side Search Flow (S09)
 
@@ -487,11 +491,14 @@ The `<input>` ships `disabled` in the static HTML and is enabled only after the 
 
 ### Docs Site (`site/`)
 
-The `site/` tree is the Trellis marketing landing + documentation IA (getting-started, the full `tl:*` syntax reference,
-and a per-package guide for each SDK package plus theme authoring). It carries no `pubspec` of its own; `trellis build`
+The `site/` tree is the Trellis marketing landing + documentation IA. It presents server-rendered applications and static
+sites as co-equal tracks: engine getting-started and the full `tl:*` syntax reference sit beside a first-class Sites
+section for content, layouts, themes, search/feeds, and deployment, plus a per-package reference for each SDK package.
+The site carries no `pubspec` of its own; `trellis build`
 reads `site/trellis_site.yaml` from the working directory, which wires `theme: ../../themes/lattice` (a relative escape
 resolving to `<repo>/themes/lattice`), `search.enabled: true`, and the deploy target. Lattice's theme data supplies landing
-defaults, while the site's same-stem data replaces them wholesale. The generated themes gallery reads
+defaults, while the site's same-stem data replaces them wholesale. The site opts into the `site_demo` block and the
+shared "Built with Trellis" footer attribution. The generated themes gallery reads
 `site/data/themes.yaml` and site-owned screenshot copies under `site/static/themes/`; its inventory is regenerated from
 installed theme manifests. The GitHub Pages workflow described under
 [Deployment Model](#docs-site-static-github-pages) is configured to build the site under `pathPrefix: /trellis/` and gate
@@ -533,6 +540,7 @@ trellis/                          # monorepo root
 │   └── verdant/                  # minimal blog theme
 ├── site/                         # the Lattice-powered docs/marketing site (built by trellis_cli)
 ├── examples/
+│   ├── docs_site/                # Markdown docs site built with Arbor and trellis_cli
 │   └── relic_app/                # Relic + Trellis + HTMX example
 └── docs/                         # guides, API docs
 ```

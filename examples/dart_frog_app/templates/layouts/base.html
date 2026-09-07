@@ -9,12 +9,17 @@
   <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js"
           integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
           crossorigin="anonymous"></script>
-  <!-- Set CSRF header on all HTMX requests -->
+  <!-- Set CSRF header on all HTMX requests (htmx 2 and htmx 4 event shapes) -->
   <script>
-    document.addEventListener('htmx:configRequest', function(evt) {
-      var token = document.querySelector('meta[name="csrf-token"]').content;
-      if (token) evt.detail.headers['X-CSRF-Token'] = token;
-    });
+    (function () {
+      function setCsrfHeader(headers) {
+        if (!headers) return;
+        var token = document.querySelector('meta[name="csrf-token"]').content;
+        if (token) headers['X-CSRF-Token'] = token;
+      }
+      document.addEventListener('htmx:configRequest', function(evt) { setCsrfHeader(evt.detail.headers); });
+      document.addEventListener('htmx:config:request', function(evt) { setCsrfHeader(evt.detail.ctx.request.headers); });
+    })();
   </script>
 </head>
 <body>

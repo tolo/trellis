@@ -17,7 +17,7 @@ library;
 
 export 'src/csrf_middleware.dart' show trellisCsrf;
 export 'src/engine_middleware.dart' show trellisEngine, getEngine;
-export 'src/htmx_helpers.dart' show isHtmxRequest, htmxTarget, htmxTrigger, isHtmxBoosted;
+export 'src/htmx_helpers.dart' show isHtmxRequest, htmxTarget, htmxSource, htmxTrigger, isHtmxBoosted;
 export 'src/request_context.dart' show csrfToken;
 export 'src/response_helpers.dart' show renderPage, renderFragment, renderOobFragments;
 export 'src/response_utils.dart' show htmlResponse;

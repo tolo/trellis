@@ -34,6 +34,10 @@ why:
       body: HTML, Markdown, and SASS are Dart packages. No Node.js, no webpack.
     - title: Single-binary deploy
       body: dart compile exe produces one file with instant startup and tiny containers.
+    - title: Static sites from Markdown
+      body: Content, layouts, navigation, feeds, and search build together with the same pure-Dart toolchain.
+    - title: Themes without forks
+      body: Install a complete design, configure it in YAML, and keep the theme on its own update path.
 demo:
   title: One file, two views
   body: >-
@@ -54,6 +58,22 @@ demo:
       body: Deploying a Dart web app in a compact container image.
     - title: Templates you can open
       body: Prototyping pages with no server running at all.
+site_demo:
+  title: Markdown in. A complete site out.
+  body: Write content once, then build themed HTML with navigation, search, feeds, and deploy-ready links.
+  source_label: content/docs/getting-started.md
+  markdown_html: |-
+    <span class="t-dim">---</span>
+    <span class="t-attr">title</span>: <span class="t-str">Getting Started</span>
+    <span class="t-attr">weight</span>: <span class="t-expr">10</span>
+    <span class="t-dim">---</span>
+
+    <span class="t-dim">#</span> <span class="t-tag">Getting Started</span>
+
+    Write Markdown, pick a theme, run one build.
+  arrow_label: trellis build
+  page_title: Getting Started
+  page_body: Write Markdown, pick a theme, run one build.
 showcase:
   title: Built-in themes, grown in the same garden
   body: Pick a design, set one line of configuration, and publish. Browse every installed design from Themes.

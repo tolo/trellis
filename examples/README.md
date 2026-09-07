@@ -33,6 +33,18 @@ void main() {
 
 Commands below assume you're in the repository root.
 
+### [docs_site/](docs_site/) -- Markdown Documentation Site
+
+A static documentation site built from Markdown with the Arbor theme. It shows
+the smallest useful content tree, ordered sidebar navigation, search, and the
+default "Built with Trellis" attribution.
+
+```bash
+cd examples/docs_site
+trellis build
+trellis serve
+```
+
 ### [shelf_app/](shelf_app/) -- Shelf + HTMX Starter App
 
 A materialized version of the default `trellis create` starter for Shelf.

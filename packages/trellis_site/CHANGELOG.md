@@ -2,6 +2,12 @@
 
 ## 0.11.1
 
+### Changed
+
+- **Lattice theme**: new `show_site_demo` param (default `false`) renders a Markdown-to-page block on the home page
+  from a `site_demo` block in `data/lattice.yaml`; dropped whole when a required key is missing, like the other home
+  sections. The Trellis docs site enables it, gains a top-level Sites section, and ships `examples/docs_site/`.
+
 ### Fixed
 
 - README install snippet pinned `trellis_site: ^0.1.0`, a range no published version of the package

@@ -127,6 +127,7 @@ in HTMX 2, `htmx:config:request` in HTMX 4). Add this to your base layout:
 <script>
   (function () {
     function setCsrfHeader(headers) {
+      if (!headers) return;
       var token = document.querySelector('meta[name="csrf-token"]').content;
       if (token) headers['X-CSRF-Token'] = token;
     }

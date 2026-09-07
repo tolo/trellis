@@ -21,6 +21,7 @@ String dartFrogBaseLayoutTemplate(String projectName) =>
   <script>
     (function () {
       function setCsrfHeader(headers) {
+        if (!headers) return;
         var token = document.querySelector('meta[name="csrf-token"]').content;
         if (token) headers['X-CSRF-Token'] = token;
       }

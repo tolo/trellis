@@ -481,7 +481,7 @@
                 });
             };
             document.body.addEventListener("htmx:afterRequest", (evt) => closeDialogsAfterRequest(evt.detail.successful));
-            document.body.addEventListener("htmx:after:request", (evt) => closeDialogsAfterRequest(evt.detail.ctx.response?.ok));
+            document.body.addEventListener("htmx:after:request", (evt) => closeDialogsAfterRequest(evt.detail.ctx?.response?.ok));
         </script>
     </body>
 </html>

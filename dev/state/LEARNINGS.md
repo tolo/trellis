@@ -167,3 +167,10 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
 - **`tool/*.sh` must run on bash 3.2** (macOS `/bin/bash`): no `declare -A`, no `${var,,}`; use parallel indexed arrays. GitHub runners have bash 5, so the mismatch only shows locally.
 - **`dart format` gates must cover the examples too**: `examples/*` are workspace members, so `packages/*/lib packages/*/test` misses them — `examples/todo_app` had drifted unnoticed. `melos run format:check` spans every member.
 - **Retiring a theme param/asset requires a multi-surface propagation sweep**: the 0.10.0 review found the syntax_highlighting retirement (ADR-010) landed in code+themes but left 8 stale spots (5 independent reviewers): the standard-params contract ("19 params" count claim), the CLI theme scaffolder templates + its test (`packages/trellis_cli/lib/src/templates/`), arbor's `theme.yaml` description, both theme-authoring doc copies (`docs/guides` + `site/content`), and `dev/architecture/`. Before closing a retirement, grep the retired symbol repo-wide – incl. `docs/`, `site/content/`, CLI templates, `themes/*/theme.yaml`, `dev/architecture/` – and check count claims ("N params") near the removal site.
+- **Step 0 of the runbook is not done until STATE.md and every version-pinned doc string are on the branch.** 0.11.1
+  (2026-09-07) squashed with `dev/state/STATE.md` unaware of the release and three site theme-install snippets still
+  pinning `--ref v0.11.0`, a tag that lacks the Lattice `show_site_demo` param the same release documents.
+  `tool/version_lockstep.sh` rewrites `trellis*: ^x.y.z` install lines but not `--ref v<semver>`, so the pins were
+  seen in the first site scan and still missed. Both had to wait for a follow-up branch because `main` takes no
+  fix-up commits. Guard, not discipline: `release.sh` should refuse when STATE.md lacks the version, and the
+  lockstep script should own `--ref` pins.

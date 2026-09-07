@@ -89,6 +89,9 @@ This file covers working **on** the SDK. For template syntax, see the
 ## Workflow Rules
 
 - **Squash merge to `main`** (`git merge --squash`). Stay on the current branch unless told otherwise.
+- **`main` carries only squash commits and `chore(release)` commits.** Everything a release needs is complete on the
+  branch before the squash: `dev/state/STATE.md` entry, every version-pinned string in docs and site (`--ref vX.Y.Z`,
+  install snippets), review findings fixed. Nothing is fixed up on `main` afterwards; a miss waits for the next branch.
 - **Lockstep versioning (ADR-009).** All publishable packages share one version and release together — never
   bump a single package on its own. Pre-1.0: minor for features, patch for fixes, applied to the whole SDK.
 - **Releases follow [`dev/guidelines/RELEASE-RUNBOOK.md`](dev/guidelines/RELEASE-RUNBOOK.md):** review → squash-merge →

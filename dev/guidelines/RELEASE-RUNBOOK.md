@@ -12,6 +12,9 @@ human action. Steps are in execution order; each names the guard that enforces i
   (see `packages/trellis_css/CHANGELOG.md` `## 0.10.1`):
   `Lockstep version bump to keep all Trellis SDK packages on a single shared version. No functional changes in this package.`
   Guard: `tool/release.sh` refuses to bump if any package lacks the section.
+- **STATE.md and version-pinned doc strings.** `dev/state/STATE.md` records the release on the branch, and every
+  `--ref vX.Y.Z` theme-install pin in `docs/` and `site/content/` names the version being cut (the lockstep script
+  rewrites install snippets, not `--ref` pins). `main` takes no fix-up commits after the squash.
 - **Do not bump versions on the branch.** Pubspecs stay at the previous version until step 4; `melos version` is
   restricted to `main` (root `pubspec.yaml` → `melos.command.version.branch`) and `tool/version_lockstep.sh` throws
   `RestrictedBranchException` and changes nothing anywhere else.

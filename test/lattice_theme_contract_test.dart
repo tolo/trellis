@@ -25,6 +25,13 @@ void main() {
       'bg_color',
       'surface_color',
       'border_color',
+      'primary_color_dark',
+      'accent_color_dark',
+      'text_color_dark',
+      'muted_color_dark',
+      'bg_color_dark',
+      'surface_color_dark',
+      'border_color_dark',
       'font_family',
       'heading_font_family',
       'code_font_family',
@@ -107,24 +114,30 @@ void main() {
   });
 
   test('S02-S05/TI03 bridged overrides preserve shared geometry and dark palette ownership', () {
-    String compile(String prelude) {
+    final manifest = ThemeManifest.load(themeDir);
+    String compile(String skin, Map<String, dynamic> siteParams) {
       final tempDir = Directory.systemTemp.createTempSync('lattice_skin_contract_');
       addTearDown(() => tempDir.deleteSync(recursive: true));
-      final wrapper = File(p.join(tempDir.path, 'main.scss'))
-        ..writeAsStringSync(
-          '$prelude\n'
-          '@import "${p.join(themeDir, 'sass', 'main.scss')}";\n',
-        );
-      return TrellisCss.compileSass(wrapper.path, silenceImportDeprecation: true);
+      final merged = const ThemeParamMerger().merge(manifest.defaultParams, {'skin': skin, ...siteParams}).params;
+      final config = const ThemeSassGenerator().generate(
+        mergedParams: merged,
+        paramTypes: {for (final e in manifest.params.entries) e.key: e.value.type},
+        siteDir: tempDir.path,
+        themeDir: themeDir,
+      );
+      final entry = File(p.join(themeDir, 'sass', 'main.scss')).resolveSymbolicLinksSync();
+      final wrapper = File(p.join(config.buildDir, 'bridge_main.scss'))
+        ..writeAsStringSync(config.bridgeWrapperSource(entry));
+      return TrellisCss.compileSass(wrapper.path, loadPaths: config.sassLoadPaths, fatalImportDeprecation: true);
     }
 
-    const sharedOverrides = r'''
-$trellis-heading-font-family: Georgia, serif;
-$trellis-max-width: 900px;
-$trellis-border-radius: 0;
-''';
-    final light = compile(r'$trellis-primary-color: #7A4FBF;' + sharedOverrides);
-    final dark = compile('@import "${p.join(themeDir, 'sass', '_skins', '_dark.scss')}";\n$sharedOverrides');
+    const sharedOverrides = <String, dynamic>{
+      'heading_font_family': 'Georgia, serif',
+      'max_width': '900px',
+      'border_radius': '0',
+    };
+    final light = compile('light', {'primary_color': '#7A4FBF', ...sharedOverrides});
+    final dark = compile('dark', sharedOverrides);
 
     for (final css in [light, dark]) {
       expect(css, contains('--display: Georgia, serif'));
@@ -165,7 +178,7 @@ $trellis-border-radius: 0;
   });
 
   test('owner spacing polish keeps terminal groups legible and centers the closing card', () {
-    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'));
     expect(css, matches(RegExp(r'\.window-bar span\s*\{[^}]*margin-left:\s*8px', dotAll: true)));
     expect(
       css,
@@ -194,7 +207,7 @@ $trellis-border-radius: 0;
   });
 
   test('subpage shell provides spacing, utility type, and compact navigation', () async {
-    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'));
     expect(css, matches(RegExp(r'\.docs-shell\s*\{[^}]*padding-block:\s*64px 96px', dotAll: true)));
     expect(
       css,
@@ -284,10 +297,9 @@ $trellis-border-radius: 0;
     addTearDown(() => tempDir.deleteSync(recursive: true));
     final wrapper = File(p.join(tempDir.path, 'main.scss'))
       ..writeAsStringSync(
-        '@import "${p.join(bridge.buildDir, '_theme_params.scss')}";\n'
-        '@import "${p.join(themeDir, 'sass', 'main.scss')}";\n',
+        bridge.bridgeWrapperSource(File(p.join(themeDir, 'sass', 'main.scss')).resolveSymbolicLinksSync()),
       );
-    final css = TrellisCss.compileSass(wrapper.path, loadPaths: bridge.sassLoadPaths, silenceImportDeprecation: true);
+    final css = TrellisCss.compileSass(wrapper.path, loadPaths: bridge.sassLoadPaths, fatalImportDeprecation: true);
     final cssFile = File(p.join(config.outputDir, 'css', 'main.css'))..parent.createSync(recursive: true);
     cssFile.writeAsStringSync(css);
     expect(css, contains('--body: Instrument Sans, -apple-system, sans-serif'));
@@ -649,7 +661,7 @@ $showcaseCards''',
   });
 
   test('L4/L13 every code token clears WCAG AA and covers what the site emits', () async {
-    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'));
     for (final (skin, selector) in [('light', ':root'), ('dark', r'\[data-skin="?dark"?\]')]) {
       final props = _customProperties(css, selector);
       final surface = props['--card']!;
@@ -711,7 +723,7 @@ $showcaseCards''',
     // button stuck on "Copy" with nothing on the clipboard.
     expect(script, contains("button.textContent = 'Copy failed'"));
 
-    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'));
     // .mode-toggle sets display:inline-flex, which outranks the UA [hidden] rule on its own.
     expect(css, matches(RegExp(r'\[hidden\]\s*\{[^}]*display:\s*none\s*!important', dotAll: true)));
 
@@ -752,7 +764,7 @@ $showcaseCards''',
 
   test('search results carry the classes the client builds, styled, capped, and announced', () async {
     final script = File(p.join(themeDir, 'static', 'js', 'search.js')).readAsStringSync();
-    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'));
 
     // The client built bare <li><a> with no class at all: results rendered as inline, underlined,
     // unpadded body text in an uncapped list, on the published docs site. The class set is derived
@@ -814,7 +826,7 @@ $showcaseCards''',
   });
 
   test('article code blocks wrap rather than becoming an unreachable scrollable region', () {
-    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'));
     // The SSG emits article <pre> with no tabindex, so a horizontally scrolling one is content a
     // keyboard-only visitor cannot reach (axe scrollable-region-focusable, WCAG 2.1.1). The base
     // `pre` rule is `overflow: auto`; `.prose pre` is what keeps article code out of that state.
@@ -863,7 +875,7 @@ $showcaseCards''',
   }, timeout: const Timeout(Duration(minutes: 3)));
 
   test('L7/L8/L9/L12 sticky-header offsets, capped mobile contents, unscaled no-JS headline', () async {
-    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'));
     final script = File(p.join(themeDir, 'static', 'js', 'lattice.js')).readAsStringSync();
     final home = File(p.join(themeDir, 'layouts', 'home.html')).readAsStringSync();
 
@@ -950,7 +962,7 @@ $showcaseCards''',
   test('L14 the vendored faces are the fonts the stylesheet claims, and draw what the theme emits', () async {
     await expectThemeFontContract(
       themeDir: themeDir,
-      compiledCss: TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true),
+      compiledCss: TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss')),
       // Floors sit about a tenth under the shipped sizes and glyph counts: a face that loses a
       // table, its embedded OFL name records or a third of its glyphs fails, while trimming a few
       // codepoints does not. `axes` is exact, and is what the old `fraunces-latin.woff2 <= 70KB`
@@ -991,7 +1003,7 @@ $showcaseCards''',
   });
 
   test('terminal-card prefixes stay one column wide so the text column stays flush', () {
-    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'));
     // The mechanism the one-character rule depends on: the prompt has no width of its own and the
     // text is offset from it by exactly one column, so prefix length *is* the text column's origin.
     // Give .terminal-prompt a fixed width and this constraint can be relaxed on purpose.

@@ -21,10 +21,11 @@ theme: lattice
 theme_params:
   skin: auto
   primary_color: "#2E7D4F"
+  primary_color_dark: "#6fbf8b"
   max_width: "1056px"
 ```
 
-Lattice implements all 18 standard params, two branding params, Arbor's docs params, and the following
+Lattice implements all 25 standard params, two branding params, Arbor's docs params, and the following
 Lattice-specific surface.
 
 ### Standard params
@@ -39,6 +40,13 @@ Lattice-specific surface.
 | `bg_color`            | `#FBFAF5`              | Light-skin page background                  |
 | `surface_color`       | `#FFFFFF`              | Light-skin card background                  |
 | `border_color`        | `#E7E3D4`              | Light-skin borders and lattice              |
+| `primary_color_dark`  | `#6fbf8b`              | Dark-skin primary accent                    |
+| `accent_color_dark`   | `#8fbf62`              | Dark-skin secondary accent                  |
+| `text_color_dark`     | `#e6eee5`              | Dark-skin body text                         |
+| `muted_color_dark`    | `#a2b2a4`              | Dark-skin secondary text                    |
+| `bg_color_dark`       | `#101915`              | Dark-skin page background                   |
+| `surface_color_dark`  | `#16221b`              | Dark-skin card background                   |
+| `border_color_dark`   | `#1a2620`              | Dark-skin borders and lattice               |
 | `font_family`         | Instrument Sans stack  | Body font stack                             |
 | `heading_font_family` | Fraunces stack         | Heading font stack                          |
 | `code_font_family`    | Spline Sans Mono stack | Code font stack                             |
@@ -87,19 +95,25 @@ Lattice-specific surface.
 | `cta_body`                 | Placeholder sentence   | Closing CTA body              |
 | `cta_commands`             | Two commands           | Closing CTA commands          |
 
-Light-skin color tokens map as follows:
+Color tokens map as follows. Each color param sets one entry in one palette: `<name>` the light palette's, `<name>_dark`
+the dark palette's. Every dark view (`skin: dark`, the `prefers-color-scheme` block under `skin: auto`, and the reader
+toggle's dark state) reads the dark tokens from the dark palette.
 
-| Param           | Token                                      |
-| --------------- | ------------------------------------------ |
-| `primary_color` | `--leaf`                                   |
-| `accent_color`  | `--tendril`                                |
-| `bg_color`      | `--paper`                                  |
-| `surface_color` | `--card`                                   |
-| `text_color`    | `--ink`                                    |
-| `muted_color`   | `--ink-soft`                               |
-| `border_color`  | `--lattice` and derived `--lattice-strong` |
+| Param                       | Light token                                | Dark token                              |
+| --------------------------- | ------------------------------------------ | --------------------------------------- |
+| `primary_color[_dark]`      | `--leaf`                                   | `--leaf`                                |
+| `accent_color[_dark]`       | `--tendril`                                | `--tendril`                             |
+| `bg_color[_dark]`           | `--paper`                                  | `--paper`                               |
+| `surface_color[_dark]`      | `--card`                                   | `--card`                                |
+| `text_color[_dark]`         | `--ink`                                    | `--ink`                                 |
+| `muted_color[_dark]`        | `--ink-soft`                               | `--ink-soft`                            |
+| `border_color[_dark]`       | `--lattice` and derived `--lattice-strong` | `--lattice`                             |
 
-The dark palette is deliberately theme-owned. Font stacks, `max_width`, and `border_radius` affect every skin.
+A plain color param sets the light entry only, under every skin: `primary_color` has no effect on `skin: dark`, and
+`primary_color_dark` has none on `skin: light`. Dark values are never derived from light ones. Tokens with no color
+param stay theme-authored in dark: `--footer-link`, `--lattice-strong`, `--bg-lattice`, `--leaf-hover`, `--on-leaf`, the
+washes, chips, shadows and `--syntax-*`, so a `primary_color_dark` override does not retune hover or washes. Font
+stacks, `max_width`, and `border_radius` affect every skin.
 
 ## Structured home data
 

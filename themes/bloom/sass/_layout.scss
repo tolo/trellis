@@ -2,6 +2,8 @@
 // Page structure: sticky header, container, section rhythm, footer, breakpoints.
 // Mobile-first: base styles target mobile; media queries add wider layouts.
 
+@use 'variables' as *;
+
 // ── Breakpoints ──────────────────────────────────────────────────────────────
 
 $bp-sm: 640px;   // large phone / small tablet — 2-col grids

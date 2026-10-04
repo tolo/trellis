@@ -1,6 +1,8 @@
 // Verdant Blog Theme — sass/_components.scss
 // Navigation, hero, post cards, tags, pagination, and metadata bar.
 
+@use 'variables' as *;
+
 // ── Navigation ───────────────────────────────────────────────────────────────
 
 .nav-list {

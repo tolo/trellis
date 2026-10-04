@@ -13,7 +13,7 @@ features:
   - accessible
 
 params:
-  # === Standard Params (18) ===
+  # === Standard Params (25) ===
   # Contract: docs/reference/standard-params.md. Every standard param is present
   # with the contract type. Non-null defaults required except optional strings
   # (heading_font_family, footer_text).
@@ -59,6 +59,44 @@ params:
     type: color
     default: "#e7e3f0"
     description: Borders, dividers
+
+  # Dark-mode twins: each colour param has a `<name>_dark` sibling that sets the
+  # same entry in the dark palette (skin: dark, and the prefers-color-scheme
+  # block of skin: auto). A plain colour param sets the light entry only.
+  primary_color_dark:
+    type: color
+    default: "#a78bfa"
+    description: Brand/accent color in dark mode — links, buttons, active states
+
+  accent_color_dark:
+    type: color
+    default: "#f472b6"
+    description: Secondary accent in dark mode — hover states, highlights
+
+  text_color_dark:
+    type: color
+    default: "#f3f0fa"
+    description: Main body text in dark mode
+
+  muted_color_dark:
+    type: color
+    default: "#a79fc0"
+    description: Secondary text in dark mode — metadata, captions
+
+  bg_color_dark:
+    type: color
+    default: "#120f1a"
+    description: Page background in dark mode
+
+  surface_color_dark:
+    type: color
+    default: "#1c1730"
+    description: Elevated surfaces in dark mode — cards, bands
+
+  border_color_dark:
+    type: color
+    default: "#302a45"
+    description: Borders, dividers in dark mode
 
   # Typography
   font_family:
@@ -138,6 +176,16 @@ params:
     type: color
     default: "#db2777"
     description: Gradient end — hero title gradient and primary buttons
+
+  accent_gradient_start_dark:
+    type: color
+    default: "#6d28d9"
+    description: Gradient start in dark mode — hero title gradient and primary buttons
+
+  accent_gradient_end_dark:
+    type: color
+    default: "#db2777"
+    description: Gradient end in dark mode — hero title gradient and primary buttons
 
   pill_badges:
     type: boolean

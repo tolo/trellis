@@ -1,6 +1,9 @@
 // Bloom Landing Theme — sass/_skins/_light.scss
-// Light skin color overrides. Imported when skin: light (and as the base for
-// skin: auto). These match the default param values in theme.yaml.
+// Light palette. Read by _variables.scss, where each entry is the default of its
+// colour param and the base of the light palette: the whole `skin: light` output
+// and the base :root of `skin: auto`. The entries match the default param values
+// in theme.yaml; theme_bloom_verdant_use_test.dart fails on drift. The gradient
+// pair feeds --trellis-gradient-start / -end (hero title and primary buttons).
 //
 // WCAG 2.1 AA contrast ratios (computed over sRGB, per WCAG relative luminance):
 //   On the page background (#ffffff):
@@ -13,10 +16,14 @@
 //     #5b5568 on #f7f5fb =  6.79:1  (muted — passes 4.5:1)
 //     #6d28d9 on #f7f5fb =  6.63:1  (primary — passes 4.5:1)
 
-$trellis-text-color: #1a1523 !default;
-$trellis-muted-color: #5b5568 !default;
-$trellis-bg-color: #ffffff !default;
-$trellis-surface-color: #f7f5fb !default;
-$trellis-border-color: #e7e3f0 !default;
-$trellis-primary-color: #6d28d9 !default;
-$trellis-accent-color: #db2777 !default;
+$palette: (
+  text-color: #1a1523,
+  muted-color: #5b5568,
+  bg-color: #ffffff,
+  surface-color: #f7f5fb,
+  border-color: #e7e3f0,
+  primary-color: #6d28d9,
+  accent-color: #db2777,
+  accent-gradient-start: #6d28d9,
+  accent-gradient-end: #db2777,
+);

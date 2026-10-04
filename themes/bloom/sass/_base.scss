@@ -2,6 +2,8 @@
 // Minimal reset, typography, and base element styles (also the prose defaults
 // used by single/list pages and the home Markdown band).
 
+@use 'variables' as *;
+
 // ── Reset ────────────────────────────────────────────────────────────────────
 
 *,

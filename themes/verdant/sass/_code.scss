@@ -1,6 +1,8 @@
 // Verdant Blog Theme — sass/_code.scss
 // Inline code and code block (pre) styles.
 
+@use 'variables' as *;
+
 // ── Inline code ───────────────────────────────────────────────────────────────
 
 code {

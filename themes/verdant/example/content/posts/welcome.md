@@ -29,7 +29,7 @@ Override any param in `theme_params:`:
 ```yaml
 theme_params:
   skin: dark
-  primary_color: "#7c3aed"
+  primary_color_dark: "#7c3aed"
   show_reading_time: false
 ```
 

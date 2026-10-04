@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:html/dom.dart' show Document;
@@ -558,7 +557,7 @@ void main() {
   test('S02 TI07 prefixed build joins same-origin assets exactly once', () async {
     final tempDir = Directory.systemTemp.createTempSync('folio_prefix_contract_');
     addTearDown(() => tempDir.deleteSync(recursive: true));
-    _copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
+    copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
     Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
     Link(p.join(tempDir.path, 'themes', 'folio')).createSync(themeDir);
     final source = File(p.join(themeDir, 'example', 'trellis_site.yaml')).readAsStringSync();
@@ -600,7 +599,7 @@ void main() {
   test('S03/S06 TI07 template controls remove their regions', () async {
     final tempDir = Directory.systemTemp.createTempSync('folio_controls_contract_');
     addTearDown(() => tempDir.deleteSync(recursive: true));
-    _copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
+    copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
     Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
     Link(p.join(tempDir.path, 'themes', 'folio')).createSync(themeDir);
     var source = File(p.join(themeDir, 'example', 'trellis_site.yaml')).readAsStringSync();
@@ -635,7 +634,7 @@ void main() {
   test('S05 TI07 forced skin omits auto-only scripts and controls', () async {
     final tempDir = Directory.systemTemp.createTempSync('folio_forced_skin_contract_');
     addTearDown(() => tempDir.deleteSync(recursive: true));
-    _copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
+    copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
     Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
     Link(p.join(tempDir.path, 'themes', 'folio')).createSync(themeDir);
     final source = File(p.join(themeDir, 'example', 'trellis_site.yaml')).readAsStringSync();
@@ -671,7 +670,7 @@ void main() {
   });
 
   test('S05/TI05 auto skin control follows OS only without a stored choice', () async {
-    final result = await _runNodeHarness('folio', p.join(themeDir, 'static', 'js', 'folio.js'));
+    final result = await runNodeHarness('folio', p.join(themeDir, 'static', 'js', 'folio.js'));
     if (result == null) return;
 
     final osDark = result['osDark']! as Map<String, dynamic>;
@@ -860,7 +859,7 @@ Future<Document> _buildVariant(
 }) async {
   final tempDir = Directory.systemTemp.createTempSync('folio_${label}_contract_');
   addTearDown(() => tempDir.deleteSync(recursive: true));
-  _copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
+  copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
   if (keepOnly != null) {
     for (final entity in Directory(p.join(tempDir.path, 'content')).listSync()) {
       if (p.basename(entity.path) != keepOnly) entity.deleteSync(recursive: true);
@@ -908,37 +907,3 @@ String? _declared(String css, String selectorPattern, String property) {
 
 int _readUint32(List<int> bytes, int offset) =>
     (bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3];
-
-Future<Map<String, dynamic>?> _runNodeHarness(String mode, String scriptPath) async {
-  try {
-    final harnessPath = p.join(Directory.current.path, 'test', 'theme_client_behavior_harness.js');
-    final result = await Process.run('node', [harnessPath, mode, scriptPath]);
-    expect(result.exitCode, 0, reason: 'theme client harness failed: ${result.stderr}');
-    return jsonDecode(result.stdout as String) as Map<String, dynamic>;
-  } on ProcessException {
-    _requireNodeInCi('the theme client behavioural harness');
-    markTestSkipped('system node not found – theme client behavioral harness skipped');
-    return null;
-  }
-}
-
-void _copyDirectory(Directory source, Directory destination) {
-  destination.createSync(recursive: true);
-  for (final entity in source.listSync()) {
-    final target = p.join(destination.path, p.basename(entity.path));
-    if (entity is Directory) {
-      _copyDirectory(entity, Directory(target));
-    } else if (entity is File) {
-      entity.copySync(target);
-    }
-  }
-}
-
-/// Skipping a node-gated check is a local convenience; in CI it is a silent hole
-/// - the run reports "All tests passed!" with [what] never executed. Fail loudly
-/// there instead, so the gate cannot go green on an assertion that did not run.
-void _requireNodeInCi(String what) {
-  if (Platform.environment['CI'] == 'true') {
-    fail('node is required in CI: $what did not run');
-  }
-}

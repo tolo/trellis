@@ -1,11 +1,13 @@
-/// Shared by the folio and meadow contract suites: compiles a theme through the
+/// Shared by the folio, meadow and lattice contract suites: compiles a theme through the
 /// bridge wrapper `trellis build` compiles, with the `@import` deprecation fatal,
-/// and reads the compiled CSS back as custom-property blocks.
+/// reads the compiled CSS back as custom-property blocks, and runs the node-gated client harness.
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:test/test.dart';
 import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
 
@@ -108,3 +110,37 @@ Map<String, String> customProps(String block) => {
 
 String stripComments(String source) =>
     source.replaceAll(RegExp(r'/\*.*?\*/', dotAll: true), '').replaceAll(RegExp(r'//.*'), '');
+
+Future<Map<String, dynamic>?> runNodeHarness(String mode, String scriptPath) async {
+  try {
+    final harnessPath = p.join(Directory.current.path, 'test', 'theme_client_behavior_harness.js');
+    final result = await Process.run('node', [harnessPath, mode, scriptPath]);
+    expect(result.exitCode, 0, reason: 'theme client harness failed: ${result.stderr}');
+    return jsonDecode(result.stdout as String) as Map<String, dynamic>;
+  } on ProcessException {
+    requireNodeInCi('the theme client behavioural harness');
+    markTestSkipped('system node not found – theme client behavioral harness skipped');
+    return null;
+  }
+}
+
+void copyDirectory(Directory source, Directory destination) {
+  destination.createSync(recursive: true);
+  for (final entity in source.listSync()) {
+    final target = p.join(destination.path, p.basename(entity.path));
+    if (entity is Directory) {
+      copyDirectory(entity, Directory(target));
+    } else if (entity is File) {
+      entity.copySync(target);
+    }
+  }
+}
+
+/// Skipping a node-gated check is a local convenience; in CI it is a silent hole
+/// - the run reports "All tests passed!" with [what] never executed. Fail loudly
+/// there instead, so the gate cannot go green on an assertion that did not run.
+void requireNodeInCi(String what) {
+  if (Platform.environment['CI'] == 'true') {
+    fail('node is required in CI: $what did not run');
+  }
+}

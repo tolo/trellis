@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:isolate';
 
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -7,6 +6,7 @@ import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
 
 import 'theme_sass_sources.dart';
+import 'theme_use_support.dart' show findRepoRoot;
 
 /// The compile-every-theme gate (ADR-013, Enforcement).
 ///
@@ -33,7 +33,7 @@ const _bundledThemes = ['arbor', 'bloom', 'folio', 'lattice', 'meadow', 'verdant
 final _scaffoldTemplates = p.join('packages', 'trellis_cli', 'lib', 'src', 'templates', 'theme');
 
 Future<void> main() async {
-  final repoRoot = await _repoRoot();
+  final repoRoot = await findRepoRoot();
   final themesRoot = p.join(repoRoot, 'themes');
   final scaffoldDir = p.join(repoRoot, _scaffoldTemplates);
   final themes = discoverThemes(themesRoot);
@@ -566,20 +566,3 @@ String _setDefault(String yaml, String name, String value) => yaml.replaceFirstM
 );
 
 String _dropPaletteEntry(String scss, String key) => scss.replaceFirst(RegExp('^\\s*$key:.*\\n', multiLine: true), '');
-
-/// Resolves the monorepo root by walking up from this package until `themes/` and
-/// `packages/trellis_site` are found, so the gate works from any test CWD.
-Future<String> _repoRoot() async {
-  final uri = await Isolate.resolvePackageUri(Uri.parse('package:trellis_site/trellis_site.dart'));
-  if (uri == null || uri.scheme != 'file') {
-    throw StateError('Could not resolve package:trellis_site/trellis_site.dart');
-  }
-  var dir = Directory(p.dirname(uri.toFilePath()));
-  while (!(Directory(p.join(dir.path, 'themes')).existsSync() &&
-      Directory(p.join(dir.path, 'packages', 'trellis_site')).existsSync())) {
-    final parent = dir.parent;
-    if (parent.path == dir.path) throw StateError('Could not find repo root (themes/) from ${uri.toFilePath()}');
-    dir = parent;
-  }
-  return dir.path;
-}

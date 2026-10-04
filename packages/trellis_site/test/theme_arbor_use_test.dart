@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:isolate';
 
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -7,14 +6,11 @@ import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
 
 import 'theme_sass_sources.dart';
+import 'theme_use_support.dart';
 
 /// Proves arbor, the reference theme, on the `@use` bridge contract: compiled
 /// through the same wrapper `trellis build` compiles, with the `@import`
 /// deprecation fatal, at every skin, with per-mode colour overrides.
-
-/// Two colours no output style abbreviates, so `contains` assertions are stable.
-const _lightOverride = '#123456';
-const _darkOverride = '#654321';
 
 /// Colour params' palette keys, mapped to the `:root` custom property each one
 /// feeds. The six code tokens have no param; they ride in the same palettes.
@@ -42,10 +38,10 @@ void main() {
   late Map<String, String> darkPalette;
 
   setUpAll(() async {
-    arborDir = p.join(await _repoRoot(), 'themes', 'arbor');
+    arborDir = p.join(await findRepoRoot(), 'themes', 'arbor');
     manifest = ThemeManifest.load(arborDir);
-    lightPalette = _palette(arborDir, 'light');
-    darkPalette = _palette(arborDir, 'dark');
+    lightPalette = readPalette(arborDir, 'light');
+    darkPalette = readPalette(arborDir, 'dark');
   });
 
   setUp(() {
@@ -78,8 +74,8 @@ void main() {
       final dark = compileArbor('dark');
 
       expect(light, isNot(equals(dark)));
-      final lightRoot = _props(_rootBlock(light));
-      final darkRoot = _props(_rootBlock(dark));
+      final lightRoot = customProps(rootBlock(light));
+      final darkRoot = customProps(rootBlock(dark));
       for (final entry in _paletteProps.entries) {
         expect(lightRoot[entry.value], lightPalette[entry.key], reason: 'light ${entry.key}');
         expect(darkRoot[entry.value], darkPalette[entry.key], reason: 'dark ${entry.key}');
@@ -87,7 +83,7 @@ void main() {
     });
 
     test('dark :root carries the six code tokens of the dark palette', () {
-      final root = _props(_rootBlock(compileArbor('dark')));
+      final root = customProps(rootBlock(compileArbor('dark')));
       expect(root['--trellis-code-keyword'], '#d2a8ff');
       expect(root['--trellis-code-string'], '#7ee787');
       expect(root['--trellis-code-number'], '#ffa657');
@@ -107,7 +103,7 @@ void main() {
 
     test('the derived heading font follows its param, and null leaves the theme default in force', () {
       String headingFont(Map<String, dynamic> siteParams) =>
-          _props(_rootBlock(compileArbor('dark', siteParams: siteParams)))['--trellis-heading-font']!;
+          customProps(rootBlock(compileArbor('dark', siteParams: siteParams)))['--trellis-heading-font']!;
 
       expect(headingFont({}), 'Charter, Cambria, Georgia, ui-serif, serif');
       expect(headingFont({'heading_font_family': 'Georgia, serif'}), 'Georgia, serif');
@@ -118,8 +114,8 @@ void main() {
 
     test('auto emits the light palette plus a prefers-color-scheme block carrying the dark palette', () {
       final css = compileArbor('auto');
-      final base = _props(_rootBlock(css));
-      final media = _props(_darkMediaRoot(css)!);
+      final base = customProps(rootBlock(css));
+      final media = customProps(darkMediaRoot(css)!);
 
       for (final entry in _paletteProps.entries) {
         expect(base[entry.value], lightPalette[entry.key], reason: 'base ${entry.key}');
@@ -139,11 +135,11 @@ void main() {
 
   group('S08–S10 per-mode colour params', () {
     test('S08: a _dark override reaches a forced dark skin and nothing else moves', () {
-      final plain = _props(_rootBlock(compileArbor('dark')));
-      final css = compileArbor('dark', siteParams: {'primary_color_dark': _darkOverride});
-      final root = _props(_rootBlock(css));
+      final plain = customProps(rootBlock(compileArbor('dark')));
+      final css = compileArbor('dark', siteParams: {'primary_color_dark': darkOverride});
+      final root = customProps(rootBlock(css));
 
-      expect(root['--trellis-primary'], _darkOverride);
+      expect(root['--trellis-primary'], darkOverride);
       expect(
         Map.of(root)..remove('--trellis-primary'),
         Map.of(plain)..remove('--trellis-primary'),
@@ -157,34 +153,34 @@ void main() {
     });
 
     test('S09: a _dark override reaches auto mode through the dark palette, not a literal', () {
-      final css = compileArbor('auto', siteParams: {'primary_color_dark': _darkOverride});
+      final css = compileArbor('auto', siteParams: {'primary_color_dark': darkOverride});
 
-      expect(_props(_rootBlock(css))['--trellis-primary'], lightPalette['primary-color']);
-      expect(_props(_darkMediaRoot(css)!)['--trellis-primary'], _darkOverride);
+      expect(customProps(rootBlock(css))['--trellis-primary'], lightPalette['primary-color']);
+      expect(customProps(darkMediaRoot(css)!)['--trellis-primary'], darkOverride);
     });
 
     test('S10: a plain colour param sets the light entry only', () {
       // Documented precedence rule, not load-order luck: a forced skin selects a
       // palette and a per-mode param sets one entry in it, so a plain
       // `primary_color` (the light entry) has no effect on a `skin: dark` site.
-      final dark = compileArbor('dark', siteParams: {'primary_color': _lightOverride});
-      expect(_props(_rootBlock(dark))['--trellis-primary'], darkPalette['primary-color']);
-      expect(dark, isNot(contains(_lightOverride)));
+      final dark = compileArbor('dark', siteParams: {'primary_color': lightOverride});
+      expect(customProps(rootBlock(dark))['--trellis-primary'], darkPalette['primary-color']);
+      expect(dark, isNot(contains(lightOverride)));
 
-      final auto = compileArbor('auto', siteParams: {'primary_color': _lightOverride});
-      expect(_props(_rootBlock(auto))['--trellis-primary'], _lightOverride);
-      expect(_props(_darkMediaRoot(auto)!)['--trellis-primary'], darkPalette['primary-color']);
+      final auto = compileArbor('auto', siteParams: {'primary_color': lightOverride});
+      expect(customProps(rootBlock(auto))['--trellis-primary'], lightOverride);
+      expect(customProps(darkMediaRoot(auto)!)['--trellis-primary'], darkPalette['primary-color']);
 
-      final light = compileArbor('light', siteParams: {'primary_color': _lightOverride});
-      expect(_props(_rootBlock(light))['--trellis-primary'], _lightOverride);
+      final light = compileArbor('light', siteParams: {'primary_color': lightOverride});
+      expect(customProps(rootBlock(light))['--trellis-primary'], lightOverride);
     });
 
     test('S10: a _dark-only override under light changes nothing', () {
-      expect(compileArbor('light', siteParams: {'primary_color_dark': _darkOverride}), compileArbor('light'));
+      expect(compileArbor('light', siteParams: {'primary_color_dark': darkOverride}), compileArbor('light'));
     });
 
     test('a with()-set non-colour param reaches compiled CSS', () {
-      final root = _props(_rootBlock(compileArbor('light', siteParams: {'max_width': '900px'})));
+      final root = customProps(rootBlock(compileArbor('light', siteParams: {'max_width': '900px'})));
       expect(root['--trellis-max-width'], '900px');
     });
 
@@ -245,18 +241,18 @@ void main() {
 
     test('no @import remains in arbor sass/', () {
       for (final file in sweepFiles(p.join(arborDir, 'sass'))) {
-        expect(_stripComments(file.readAsStringSync()), isNot(contains('@import')), reason: file.path);
+        expect(stripComments(file.readAsStringSync()), isNot(contains('@import')), reason: file.path);
       }
     });
 
     test("main.scss opens with @forward 'variables' as its first module rule", () {
-      final firstRule = RegExp(r'@(use|forward)\b[^;]*;').firstMatch(_stripComments(sass('main.scss')));
+      final firstRule = RegExp(r'@(use|forward)\b[^;]*;').firstMatch(stripComments(sass('main.scss')));
       expect(firstRule!.group(0), "@forward 'variables';");
     });
 
     test(r'skins expose a $palette and declare nothing !default', () {
       for (final skin in ['_light', '_dark']) {
-        final source = _stripComments(sass('_skins/$skin.scss'));
+        final source = stripComments(sass('_skins/$skin.scss'));
         expect(source, contains(r'$palette:'), reason: skin);
         expect(source, isNot(contains('!default')), reason: skin);
       }
@@ -264,13 +260,13 @@ void main() {
 
     test("every partial reading a \$trellis-* variable declares @use 'variables' as *", () {
       for (final partial in partials) {
-        final source = _stripComments(sass('$partial.scss'));
+        final source = stripComments(sass('$partial.scss'));
         if (source.contains(r'$trellis-')) {
           expect(source, contains("@use 'variables' as *;"), reason: partial);
         }
       }
       // $bp-* breakpoints live in _layout.scss; _components.scss reads them.
-      expect(_stripComments(sass('_components.scss')), contains("@use 'layout' as *;"));
+      expect(stripComments(sass('_components.scss')), contains("@use 'layout' as *;"));
     });
 
     test('arbor compiles standalone, without the bridge, to its light-palette defaults (auto skin)', () {
@@ -278,63 +274,15 @@ void main() {
         File(p.join(arborDir, 'sass', 'main.scss')).resolveSymbolicLinksSync(),
         fatalImportDeprecation: true,
       );
-      final root = _props(_rootBlock(css));
+      final root = customProps(rootBlock(css));
       for (final entry in _paletteProps.entries) {
         expect(root[entry.value], lightPalette[entry.key], reason: entry.key);
       }
       // Standalone is `skin: auto`: the light palette plus the dark media block.
-      final media = _props(_darkMediaRoot(css)!);
+      final media = customProps(darkMediaRoot(css)!);
       for (final entry in _paletteProps.entries) {
         expect(media[entry.value], darkPalette[entry.key], reason: 'media ${entry.key}');
       }
     });
   });
-}
-
-/// Reads a skin's `$palette` map by compiling it, so the gate sees what Sass sees.
-Map<String, String> _palette(String arborDir, String mode) {
-  final file = p.join(arborDir, 'sass', '_skins', '_$mode.scss');
-  final css = TrellisCss.compileSassString('''
-@use "$file" as skin;
-:root { @each \$key, \$value in skin.\$palette { --#{\$key}: #{\$value}; } }
-''');
-  return {for (final e in _props(_rootBlock(css)).entries) e.key.substring(2): e.value};
-}
-
-/// Body of the first top-level `:root { ... }` rule.
-String _rootBlock(String css) {
-  final start = RegExp(r'^:root \{', multiLine: true).firstMatch(css)!;
-  return css.substring(start.end, css.indexOf('\n}', start.end));
-}
-
-/// Body of the `:root` rule inside `@media (prefers-color-scheme: dark)`, or null.
-String? _darkMediaRoot(String css) {
-  final media = css.indexOf('@media (prefers-color-scheme: dark)');
-  if (media == -1) return null;
-  final root = css.indexOf(':root {', media);
-  return css.substring(root + ':root {'.length, css.indexOf('}', root));
-}
-
-/// Custom properties declared in [block] (`--name: value;` lines).
-Map<String, String> _props(String block) => {
-  for (final m in RegExp(r'(--[\w-]+):\s*([^;]+);').allMatches(block)) m.group(1)!: m.group(2)!.trim(),
-};
-
-String _stripComments(String source) =>
-    source.replaceAll(RegExp(r'/\*.*?\*/', dotAll: true), '').replaceAll(RegExp(r'//.*'), '');
-
-/// Resolves the monorepo root by walking up from this package until `themes/arbor`
-/// is found, so the test works regardless of the test CWD.
-Future<String> _repoRoot() async {
-  final uri = await Isolate.resolvePackageUri(Uri.parse('package:trellis_site/trellis_site.dart'));
-  if (uri == null || uri.scheme != 'file') {
-    throw StateError('Could not resolve package:trellis_site/trellis_site.dart');
-  }
-  var dir = Directory(p.dirname(uri.toFilePath()));
-  while (!Directory(p.join(dir.path, 'themes', 'arbor')).existsSync()) {
-    final parent = dir.parent;
-    if (parent.path == dir.path) throw StateError('Could not find repo root (themes/arbor) from ${uri.toFilePath()}');
-    dir = parent;
-  }
-  return dir.path;
 }

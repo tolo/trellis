@@ -220,8 +220,7 @@ final _hexColorPattern = RegExp(r'^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8
 /// as tech debt (TD-011).
 String _toSassValue(dynamic value, String type) {
   if (value == null) return 'null';
-  if (value is bool) return value.toString();
-  if (value is num) return value.toString();
+  if (value is bool || value is num) return value.toString();
   if (value is String) {
     // Genuine hex colors pass through unquoted (matched by pattern, not length,
     // so interpolation-shaped values like `#{9}` don't slip through raw).
@@ -322,11 +321,7 @@ String _generateCssCustomProperties(Map<String, dynamic> params, Map<String, Str
 /// silently corrupts the emitted CSS. Semi-trusted build-time config, not
 /// untrusted runtime input, so this is a robustness gap, not an exploit; the
 /// single cross-sink validation policy is tracked as TD-011.
-String _toCssValue(dynamic value) {
-  if (value == null) return 'initial';
-  if (value is num) return value.toString();
-  return value.toString();
-}
+String _toCssValue(dynamic value) => value == null ? 'initial' : value.toString();
 
 /// Returns the `$trellis-*` variable names (no `$`, `_` normalised to `-` as Sass
 /// does) that the stylesheet at [path] declares `!default`, or an empty set when
@@ -341,9 +336,10 @@ Set<String> _declaredDefaultVars(String path) {
 
   final names = <String>{};
   final declaration = RegExp(r'^\s*\$(trellis-[A-Za-z0-9_-]+)\s*:(.*)$', dotAll: true);
+  final defaultFlag = RegExp(r'!default\b');
   for (final statement in _statements(file.readAsStringSync())) {
     final match = declaration.firstMatch(statement);
-    if (match == null || !RegExp(r'!default\b').hasMatch(match.group(2)!)) continue;
+    if (match == null || !defaultFlag.hasMatch(match.group(2)!)) continue;
     names.add(match.group(1)!.replaceAll('_', '-'));
   }
   return names;

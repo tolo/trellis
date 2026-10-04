@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -10,6 +9,7 @@ import 'package:trellis_site/trellis_site.dart';
 import 'package:yaml/yaml.dart';
 
 import 'theme_font_contract.dart';
+import 'theme_use_support.dart' show copyDirectory, runNodeHarness;
 
 void main() {
   final themeDir = p.join(Directory.current.path, 'themes', 'lattice');
@@ -234,7 +234,7 @@ void main() {
     final base = File(p.join(themeDir, 'layouts', 'base.html')).readAsStringSync();
     expect(base, contains('class="sidebar-disclosure" open data-docs-sidebar'));
 
-    final result = await _runNodeHarness('lattice', p.join(themeDir, 'static', 'js', 'lattice.js'));
+    final result = await runNodeHarness('lattice', p.join(themeDir, 'static', 'js', 'lattice.js'));
     if (result == null) return;
     expect((result['motion']! as Map<String, dynamic>)['sidebar'], {
       'initial': true,
@@ -251,7 +251,7 @@ void main() {
   });
 
   test('S04/TI06 headline waits for the interval and stays static with reduced motion', () async {
-    final result = await _runNodeHarness('lattice', p.join(themeDir, 'static', 'js', 'lattice.js'));
+    final result = await runNodeHarness('lattice', p.join(themeDir, 'static', 'js', 'lattice.js'));
     if (result == null) return;
 
     final motion = result['motion']! as Map<String, dynamic>;
@@ -335,7 +335,7 @@ void main() {
   test('S03-S05/TI08 sub-path build prefixes URLs once without nesting output', () async {
     final tempDir = Directory.systemTemp.createTempSync('lattice_subpath_contract_');
     addTearDown(() => tempDir.deleteSync(recursive: true));
-    _copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
+    copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
     Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
     Link(p.join(tempDir.path, 'themes', 'lattice')).createSync(themeDir);
     final sourceConfig = File(p.join(themeDir, 'example', 'trellis_site.yaml')).readAsStringSync();
@@ -380,7 +380,7 @@ void main() {
       for (final prefix in ['', '/trellis/']) {
         final tempDir = Directory.systemTemp.createTempSync('lattice_forced_skin_contract_');
         addTearDown(() => tempDir.deleteSync(recursive: true));
-        _copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
+        copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
         Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
         Link(p.join(tempDir.path, 'themes', 'lattice')).createSync(themeDir);
         var configSource = sourceConfig.replaceFirst('skin: auto', 'skin: $skin');
@@ -583,7 +583,7 @@ $showcaseCards''',
     for (final entry in fixtures.entries) {
       final tempDir = Directory.systemTemp.createTempSync('lattice_partial_data_');
       addTearDown(() => tempDir.deleteSync(recursive: true));
-      _copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
+      copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
       Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
       Link(p.join(tempDir.path, 'themes', 'lattice')).createSync(themeDir);
       final (data, expectedSections, themeParams) = entry.value;
@@ -1098,19 +1098,6 @@ double _contrastRatio(String foreground, String background) {
 int _readUint32(List<int> bytes, int offset) =>
     (bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3];
 
-Future<Map<String, dynamic>?> _runNodeHarness(String mode, String scriptPath) async {
-  try {
-    final harnessPath = p.join(Directory.current.path, 'test', 'theme_client_behavior_harness.js');
-    final result = await Process.run('node', [harnessPath, mode, scriptPath]);
-    expect(result.exitCode, 0, reason: 'theme client harness failed: ${result.stderr}');
-    return jsonDecode(result.stdout as String) as Map<String, dynamic>;
-  } on ProcessException {
-    _requireNodeInCi('the theme client behavioural harness');
-    markTestSkipped('system node not found – theme client behavioral harness skipped');
-    return null;
-  }
-}
-
 void _expectShowcaseSources(String source, {required bool dark}) {
   final images = html_parser.parse(source).querySelectorAll('.theme-card img[data-light][data-dark]');
   expect(images, isNotEmpty);
@@ -1123,26 +1110,5 @@ void _expectShowcaseSources(String source, {required bool dark}) {
     for (final attribute in ['src', 'data-light', 'data-dark']) {
       expect(image.attributes[attribute], isNot(startsWith('//')), reason: image.outerHtml);
     }
-  }
-}
-
-void _copyDirectory(Directory source, Directory destination) {
-  destination.createSync(recursive: true);
-  for (final entity in source.listSync()) {
-    final target = p.join(destination.path, p.basename(entity.path));
-    if (entity is Directory) {
-      _copyDirectory(entity, Directory(target));
-    } else if (entity is File) {
-      entity.copySync(target);
-    }
-  }
-}
-
-/// Skipping a node-gated check is a local convenience; in CI it is a silent hole
-/// - the run reports "All tests passed!" with [what] never executed. Fail loudly
-/// there instead, so the gate cannot go green on an assertion that did not run.
-void _requireNodeInCi(String what) {
-  if (Platform.environment['CI'] == 'true') {
-    fail('node is required in CI: $what did not run');
   }
 }

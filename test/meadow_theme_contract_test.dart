@@ -861,7 +861,7 @@ void main() {
   test('S06/S07 TI05/TI06 prefix and progressive-enhancement contracts hold', () async {
     final tempDir = Directory.systemTemp.createTempSync('meadow_prefix_');
     addTearDown(() => tempDir.deleteSync(recursive: true));
-    _copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
+    copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
     Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
     Link(p.join(tempDir.path, 'themes', 'meadow')).createSync(themeDir);
     final source = File(p.join(themeDir, 'example', 'trellis_site.subpath.yaml')).readAsStringSync();
@@ -915,7 +915,7 @@ Future<Map<String, dynamic>?> _runMenuHarness(String scriptPath) async {
     expect(result.exitCode, 0, reason: 'menu harness failed: ${result.stderr}');
     return jsonDecode(result.stdout as String) as Map<String, dynamic>;
   } on ProcessException {
-    _requireNodeInCi('the mobile-menu behavioural harness');
+    requireNodeInCi('the mobile-menu behavioural harness');
     markTestSkipped('system node not found - mobile menu behavioural harness skipped');
     return null;
   }
@@ -1032,25 +1032,4 @@ ${params.entries.map((e) => '  ${e.key}: ${e.value}\n').join()}''');
   final source = File(p.join(config.outputDir, 'index.html')).readAsStringSync();
   tempDir.deleteSync(recursive: true);
   return html_parser.parse(source);
-}
-
-void _copyDirectory(Directory source, Directory destination) {
-  destination.createSync(recursive: true);
-  for (final entity in source.listSync()) {
-    final target = p.join(destination.path, p.basename(entity.path));
-    if (entity is Directory) {
-      _copyDirectory(entity, Directory(target));
-    } else if (entity is File) {
-      entity.copySync(target);
-    }
-  }
-}
-
-/// Skipping a node-gated check is a local convenience; in CI it is a silent hole
-/// - the run reports "All tests passed!" with [what] never executed. Fail loudly
-/// there instead, so the gate cannot go green on an assertion that did not run.
-void _requireNodeInCi(String what) {
-  if (Platform.environment['CI'] == 'true') {
-    fail('node is required in CI: $what did not run');
-  }
 }

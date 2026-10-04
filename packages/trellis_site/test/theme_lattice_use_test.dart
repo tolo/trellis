@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:isolate';
 
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -7,14 +6,11 @@ import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
 
 import 'theme_sass_sources.dart';
+import 'theme_use_support.dart';
 
 /// Proves lattice on the `@use` bridge contract: compiled through the same
 /// wrapper `trellis build` compiles, with the `@import` deprecation fatal, at
 /// every skin, with per-mode colour overrides reaching every dark view.
-
-/// Two colours no output style abbreviates, so `contains` assertions are stable.
-const _lightOverride = '#123456';
-const _darkOverride = '#654321';
 
 /// Colour params' palette keys, mapped to the lattice token each one feeds in
 /// both the light `:root` and the dark views.
@@ -39,10 +35,10 @@ void main() {
   late Map<String, String> darkPalette;
 
   setUpAll(() async {
-    themeDir = p.join(await _repoRoot(), 'themes', 'lattice');
+    themeDir = p.join(await findRepoRoot(), 'themes', 'lattice');
     manifest = ThemeManifest.load(themeDir);
-    lightPalette = _palette(themeDir, 'light');
-    darkPalette = _palette(themeDir, 'dark');
+    lightPalette = readPalette(themeDir, 'light');
+    darkPalette = readPalette(themeDir, 'dark');
   });
 
   setUp(() {
@@ -83,9 +79,9 @@ void main() {
         File(p.join(themeDir, 'sass', 'main.scss')).resolveSymbolicLinksSync(),
         fatalImportDeprecation: true,
       );
-      expect(_props(_rootBlock(css))['--leaf']!.toLowerCase(), '#2e7d4f');
+      expect(customProps(rootBlock(css))['--leaf']!.toLowerCase(), '#2e7d4f');
       for (final file in sweepFiles(p.join(themeDir, 'sass'))) {
-        expect(_stripComments(file.readAsStringSync()), isNot(contains('@import')), reason: file.path);
+        expect(stripComments(file.readAsStringSync()), isNot(contains('@import')), reason: file.path);
       }
     });
   });
@@ -128,8 +124,8 @@ void main() {
     });
 
     test('S03: site overrides for non-colour variables win on compiled CSS', () {
-      final root = _props(
-        _rootBlock(
+      final root = customProps(
+        rootBlock(
           compileLattice(
             'auto',
             siteParams: {
@@ -156,33 +152,33 @@ void main() {
       final dark = compileLattice('dark');
       final auto = compileLattice('auto');
 
-      _expectPalette(_props(_rootBlock(light)), lightPalette, reason: 'light :root');
-      _expectPalette(_props(_rootBlock(auto)), lightPalette, reason: 'auto :root');
-      _expectPalette(_props(_rootBlock(dark)), darkPalette, reason: 'dark :root');
+      _expectPalette(customProps(rootBlock(light)), lightPalette, reason: 'light :root');
+      _expectPalette(customProps(rootBlock(auto)), lightPalette, reason: 'auto :root');
+      _expectPalette(customProps(rootBlock(dark)), darkPalette, reason: 'dark :root');
 
       for (final css in [light, dark, auto]) {
-        _expectPalette(_props(_toggleDarkBlock(css)!), darkPalette, reason: 'toggle dark rule');
+        _expectPalette(customProps(_toggleDarkBlock(css)!), darkPalette, reason: 'toggle dark rule');
       }
       expect(light, isNot(contains('prefers-color-scheme')));
       expect(dark, isNot(contains('prefers-color-scheme')));
-      _expectPalette(_props(_mediaDarkBlock(auto)!), darkPalette, reason: 'auto @media rule');
+      _expectPalette(customProps(_mediaDarkBlock(auto)!), darkPalette, reason: 'auto @media rule');
     });
   });
 
   group('S08-S10 per-mode colour params', () {
     test('S08: a _dark override reaches a forced dark skin and nothing else moves', () {
       final plain = compileLattice('dark');
-      final css = compileLattice('dark', siteParams: {'primary_color_dark': _darkOverride});
-      final plainRoot = _props(_rootBlock(plain));
-      final root = _props(_rootBlock(css));
-      final rule = _props(_toggleDarkBlock(css)!);
+      final css = compileLattice('dark', siteParams: {'primary_color_dark': darkOverride});
+      final plainRoot = customProps(rootBlock(plain));
+      final root = customProps(rootBlock(css));
+      final rule = customProps(_toggleDarkBlock(css)!);
 
-      expect(rule['--leaf'], _darkOverride);
-      expect(root['--leaf'], _darkOverride);
+      expect(rule['--leaf'], darkOverride);
+      expect(root['--leaf'], darkOverride);
       expect(root['--footer-link'], plainRoot['--footer-link']);
       expect(
         Map.of(rule)..remove('--leaf'),
-        Map.of(_props(_toggleDarkBlock(plain)!))..remove('--leaf'),
+        Map.of(customProps(_toggleDarkBlock(plain)!))..remove('--leaf'),
         reason: 'every other dark-rule token is unchanged',
       );
       expect(
@@ -200,31 +196,31 @@ void main() {
 
     test('S08: every _dark twin reaches its token in the forced dark views', () {
       for (final key in _paletteTokens.keys) {
-        final css = compileLattice('dark', siteParams: {'${key.replaceAll('-', '_')}_dark': _darkOverride});
+        final css = compileLattice('dark', siteParams: {'${key.replaceAll('-', '_')}_dark': darkOverride});
         final token = _paletteTokens[key]!;
-        expect(_props(_rootBlock(css))[token], _darkOverride, reason: ':root $token');
-        expect(_props(_toggleDarkBlock(css)!)[token], _darkOverride, reason: 'dark rule $token');
+        expect(customProps(rootBlock(css))[token], darkOverride, reason: ':root $token');
+        expect(customProps(_toggleDarkBlock(css)!)[token], darkOverride, reason: 'dark rule $token');
       }
     });
 
     test('S09: a _dark override reaches both dark views under auto, through the palette', () {
       final plain = compileLattice('auto');
-      final css = compileLattice('auto', siteParams: {'primary_color_dark': _darkOverride});
-      final media = _props(_mediaDarkBlock(css)!);
+      final css = compileLattice('auto', siteParams: {'primary_color_dark': darkOverride});
+      final media = customProps(_mediaDarkBlock(css)!);
 
-      expect(_props(_rootBlock(css))['--leaf']!.toLowerCase(), lightPalette['primary-color']);
-      expect(_props(_toggleDarkBlock(css)!)['--leaf'], _darkOverride);
-      expect(media['--leaf'], _darkOverride);
-      expect(media['--footer-link'], _props(_mediaDarkBlock(plain)!)['--footer-link'], reason: 'theme-authored');
+      expect(customProps(rootBlock(css))['--leaf']!.toLowerCase(), lightPalette['primary-color']);
+      expect(customProps(_toggleDarkBlock(css)!)['--leaf'], darkOverride);
+      expect(media['--leaf'], darkOverride);
+      expect(media['--footer-link'], customProps(_mediaDarkBlock(plain)!)['--footer-link'], reason: 'theme-authored');
     });
 
     test('S09: every _dark twin reaches its token in the toggle rule and the @media rule', () {
       for (final key in _paletteTokens.keys) {
-        final css = compileLattice('auto', siteParams: {'${key.replaceAll('-', '_')}_dark': _darkOverride});
+        final css = compileLattice('auto', siteParams: {'${key.replaceAll('-', '_')}_dark': darkOverride});
         final token = _paletteTokens[key]!;
-        expect(_props(_toggleDarkBlock(css)!)[token], _darkOverride, reason: 'toggle $token');
-        expect(_props(_mediaDarkBlock(css)!)[token], _darkOverride, reason: '@media $token');
-        expect(_props(_rootBlock(css))[token]!.toLowerCase(), isNot(_darkOverride), reason: 'light :root $token');
+        expect(customProps(_toggleDarkBlock(css)!)[token], darkOverride, reason: 'toggle $token');
+        expect(customProps(_mediaDarkBlock(css)!)[token], darkOverride, reason: '@media $token');
+        expect(customProps(rootBlock(css))[token]!.toLowerCase(), isNot(darkOverride), reason: 'light :root $token');
       }
     });
 
@@ -232,23 +228,23 @@ void main() {
       // Documented precedence rule, not load-order luck: a forced skin selects a
       // palette and a per-mode param sets one entry in it, so a plain
       // `primary_color` (the light entry) has no effect on a `skin: dark` site.
-      final dark = compileLattice('dark', siteParams: {'primary_color': _lightOverride});
-      expect(_props(_rootBlock(dark))['--leaf'], darkPalette['primary-color']);
-      expect(_props(_toggleDarkBlock(dark)!)['--leaf'], darkPalette['primary-color']);
+      final dark = compileLattice('dark', siteParams: {'primary_color': lightOverride});
+      expect(customProps(rootBlock(dark))['--leaf'], darkPalette['primary-color']);
+      expect(customProps(_toggleDarkBlock(dark)!)['--leaf'], darkPalette['primary-color']);
 
-      final auto = compileLattice('auto', siteParams: {'primary_color': _lightOverride});
-      expect(_props(_rootBlock(auto))['--leaf'], _lightOverride);
-      expect(_props(_toggleDarkBlock(auto)!)['--leaf'], darkPalette['primary-color']);
-      expect(_props(_mediaDarkBlock(auto)!)['--leaf'], darkPalette['primary-color']);
+      final auto = compileLattice('auto', siteParams: {'primary_color': lightOverride});
+      expect(customProps(rootBlock(auto))['--leaf'], lightOverride);
+      expect(customProps(_toggleDarkBlock(auto)!)['--leaf'], darkPalette['primary-color']);
+      expect(customProps(_mediaDarkBlock(auto)!)['--leaf'], darkPalette['primary-color']);
 
-      final light = compileLattice('light', siteParams: {'primary_color': _lightOverride});
-      expect(_props(_rootBlock(light))['--leaf'], _lightOverride);
+      final light = compileLattice('light', siteParams: {'primary_color': lightOverride});
+      expect(customProps(rootBlock(light))['--leaf'], lightOverride);
     });
 
     test('S10: a _dark-only override under light leaves :root unchanged', () {
       expect(
-        _rootBlock(compileLattice('light', siteParams: {'primary_color_dark': _darkOverride})),
-        _rootBlock(compileLattice('light')),
+        rootBlock(compileLattice('light', siteParams: {'primary_color_dark': darkOverride})),
+        rootBlock(compileLattice('light')),
       );
     });
   });
@@ -283,7 +279,7 @@ void main() {
   });
 
   group('SC02-SC04 structure', () {
-    String sass(String relative) => _stripComments(File(p.join(themeDir, 'sass', relative)).readAsStringSync());
+    String sass(String relative) => stripComments(File(p.join(themeDir, 'sass', relative)).readAsStringSync());
 
     test("main.scss opens with @forward 'variables' as its first module rule", () {
       final firstRule = RegExp(r'@(use|forward)\b[^;]*;').firstMatch(sass('main.scss'));
@@ -324,29 +320,11 @@ void main() {
   });
 }
 
-/// Reads a skin's `$palette` map by compiling it, so the test sees what Sass sees.
-Map<String, String> _palette(String themeDir, String mode) {
-  final css = TrellisCss.compileSassString(
-    '''
-@use "_$mode" as skin;
-:root { @each \$key, \$value in skin.\$palette { --#{\$key}: #{\$value}; } }
-''',
-    loadPaths: [p.join(themeDir, 'sass', '_skins')],
-  );
-  return {for (final e in _props(_rootBlock(css)).entries) e.key.substring(2): e.value};
-}
-
 /// Asserts [props] carries every palette entry on the token it feeds, case-insensitively.
 void _expectPalette(Map<String, String> props, Map<String, String> palette, {required String reason}) {
   for (final entry in _paletteTokens.entries) {
     expect(props[entry.value]?.toLowerCase(), palette[entry.key]!.toLowerCase(), reason: '$reason ${entry.value}');
   }
-}
-
-/// Body of the first top-level `:root { ... }` rule.
-String _rootBlock(String css) {
-  final start = RegExp(r'^:root \{', multiLine: true).firstMatch(css)!;
-  return css.substring(start.end, css.indexOf('\n}', start.end));
 }
 
 /// Body of the grouped dark rule `[data-skin=dark], [data-skin=auto][data-theme=dark]`
@@ -367,28 +345,4 @@ String? _mediaDarkBlock(String css) {
   if (start == null) return null;
   final from = media + start.end;
   return css.substring(from, css.indexOf('}', from));
-}
-
-/// Custom properties declared in [block] (`--name: value;` lines).
-Map<String, String> _props(String block) => {
-  for (final m in RegExp(r'(--[\w-]+):\s*([^;]+);').allMatches(block)) m.group(1)!: m.group(2)!.trim(),
-};
-
-String _stripComments(String source) =>
-    source.replaceAll(RegExp(r'/\*.*?\*/', dotAll: true), '').replaceAll(RegExp(r'//.*'), '');
-
-/// Resolves the monorepo root by walking up from this package until `themes/lattice`
-/// is found, so the test works regardless of the test CWD.
-Future<String> _repoRoot() async {
-  final uri = await Isolate.resolvePackageUri(Uri.parse('package:trellis_site/trellis_site.dart'));
-  if (uri == null || uri.scheme != 'file') {
-    throw StateError('Could not resolve package:trellis_site/trellis_site.dart');
-  }
-  var dir = Directory(p.dirname(uri.toFilePath()));
-  while (!Directory(p.join(dir.path, 'themes', 'lattice')).existsSync()) {
-    final parent = dir.parent;
-    if (parent.path == dir.path) throw StateError('Could not find repo root (themes/lattice) from ${uri.toFilePath()}');
-    dir = parent;
-  }
-  return dir.path;
 }

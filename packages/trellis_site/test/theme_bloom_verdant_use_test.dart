@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:isolate';
 
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -7,15 +6,12 @@ import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
 
 import 'theme_sass_sources.dart';
+import 'theme_use_support.dart';
 
 /// Proves bloom and verdant on the `@use` bridge contract arbor established
 /// (`theme_arbor_use_test.dart`): compiled through the same wrapper
 /// `trellis build` compiles, with the `@import` deprecation fatal, at every skin,
 /// with per-mode colour overrides.
-
-/// Two colours no output style abbreviates, so `contains` assertions are stable.
-const _lightOverride = '#123456';
-const _darkOverride = '#654321';
 
 /// The seven standard colour params' palette keys and the `:root` property each feeds.
 const _standardProps = {
@@ -71,7 +67,7 @@ void main() {
   late String repoRoot;
 
   setUpAll(() async {
-    repoRoot = await _repoRoot();
+    repoRoot = await findRepoRoot();
   });
 
   group('bloom', () => _themeTests('bloom', () => repoRoot, {..._standardProps, ..._gradientProps}));
@@ -85,33 +81,33 @@ void main() {
     tearDown(() => h.close());
 
     test('S04: a _dark gradient override reaches a forced dark skin', () {
-      final css = h.compile('dark', siteParams: {'accent_gradient_start_dark': _darkOverride});
-      final root = _props(_rootBlock(css));
-      expect(root['--trellis-gradient-start'], _darkOverride);
+      final css = h.compile('dark', siteParams: {'accent_gradient_start_dark': darkOverride});
+      final root = customProps(rootBlock(css));
+      expect(root['--trellis-gradient-start'], darkOverride);
       expect(root['--trellis-gradient-end'], h.darkPalette['accent-gradient-end']);
     });
 
     test('S05: a _dark gradient override reaches the auto block, which now carries both gradient tokens', () {
-      final css = h.compile('auto', siteParams: {'accent_gradient_start_dark': _darkOverride});
-      expect(_props(_rootBlock(css))['--trellis-gradient-start'], h.lightPalette['accent-gradient-start']);
-      final media = _props(_darkMediaRoot(css)!);
-      expect(media['--trellis-gradient-start'], _darkOverride);
+      final css = h.compile('auto', siteParams: {'accent_gradient_start_dark': darkOverride});
+      expect(customProps(rootBlock(css))['--trellis-gradient-start'], h.lightPalette['accent-gradient-start']);
+      final media = customProps(darkMediaRoot(css)!);
+      expect(media['--trellis-gradient-start'], darkOverride);
       expect(media['--trellis-gradient-end'], h.darkPalette['accent-gradient-end']);
     });
 
     test('S06: a plain gradient param does not leak into dark (reverses the old carry-through)', () {
       // Precedence rule, not load-order luck: a plain colour param sets the light
       // palette entry only, so `accent_gradient_start` never reaches a dark view.
-      final dark = h.compile('dark', siteParams: {'accent_gradient_start': _lightOverride});
-      expect(_props(_rootBlock(dark))['--trellis-gradient-start'], h.darkPalette['accent-gradient-start']);
-      expect(dark, isNot(contains(_lightOverride)));
+      final dark = h.compile('dark', siteParams: {'accent_gradient_start': lightOverride});
+      expect(customProps(rootBlock(dark))['--trellis-gradient-start'], h.darkPalette['accent-gradient-start']);
+      expect(dark, isNot(contains(lightOverride)));
 
-      final auto = h.compile('auto', siteParams: {'accent_gradient_start': _lightOverride});
-      expect(_props(_rootBlock(auto))['--trellis-gradient-start'], _lightOverride);
-      expect(_props(_darkMediaRoot(auto)!)['--trellis-gradient-start'], h.darkPalette['accent-gradient-start']);
+      final auto = h.compile('auto', siteParams: {'accent_gradient_start': lightOverride});
+      expect(customProps(rootBlock(auto))['--trellis-gradient-start'], lightOverride);
+      expect(customProps(darkMediaRoot(auto)!)['--trellis-gradient-start'], h.darkPalette['accent-gradient-start']);
 
-      final light = h.compile('light', siteParams: {'accent_gradient_start': _lightOverride});
-      expect(_props(_rootBlock(light))['--trellis-gradient-start'], _lightOverride);
+      final light = h.compile('light', siteParams: {'accent_gradient_start': lightOverride});
+      expect(customProps(rootBlock(light))['--trellis-gradient-start'], lightOverride);
     });
 
     test('S02: nav_links and social_links stay inert, and still reach templates', () {
@@ -122,7 +118,7 @@ void main() {
     });
 
     test("SC02: _components.scss reads layout's breakpoints through @use, with no layout import", () {
-      final source = _stripComments(h.sass('_components.scss'));
+      final source = stripComments(h.sass('_components.scss'));
       expect(source, contains("@use 'layout' as *;"));
       expect(source, isNot(contains('@import')));
     });
@@ -136,7 +132,7 @@ void main() {
     tearDown(() => h.close());
 
     test('auto also deepens the shadows, which are mode constants and stay literals', () {
-      final media = _props(_darkMediaRoot(h.compile('auto'))!);
+      final media = customProps(darkMediaRoot(h.compile('auto'))!);
       expect(media['--trellis-shadow-sm'], isNotNull);
       expect(media['--trellis-shadow-md'], isNotNull);
     });
@@ -189,7 +185,7 @@ void _themeTests(String theme, String Function() repoRoot, Map<String, String> p
 
     test('standalone, without the bridge, :root carries the light palette', () {
       final css = TrellisCss.compileSass(h.entry, fatalImportDeprecation: true);
-      final root = _props(_rootBlock(css));
+      final root = customProps(rootBlock(css));
       for (final entry in props.entries) {
         expect(root[entry.value], h.lightPalette[entry.key], reason: entry.key);
       }
@@ -202,8 +198,8 @@ void _themeTests(String theme, String Function() repoRoot, Map<String, String> p
       final dark = h.compile('dark');
 
       expect(light, isNot(equals(dark)));
-      final lightRoot = _props(_rootBlock(light));
-      final darkRoot = _props(_rootBlock(dark));
+      final lightRoot = customProps(rootBlock(light));
+      final darkRoot = customProps(rootBlock(dark));
       for (final entry in props.entries) {
         expect(lightRoot[entry.value], h.lightPalette[entry.key], reason: 'light ${entry.key}');
         expect(darkRoot[entry.value], h.darkPalette[entry.key], reason: 'dark ${entry.key}');
@@ -221,8 +217,8 @@ void _themeTests(String theme, String Function() repoRoot, Map<String, String> p
 
     test('auto emits the light palette plus a prefers-color-scheme block carrying the dark palette', () {
       final css = h.compile('auto');
-      final base = _props(_rootBlock(css));
-      final media = _props(_darkMediaRoot(css)!);
+      final base = customProps(rootBlock(css));
+      final media = customProps(darkMediaRoot(css)!);
 
       for (final entry in props.entries) {
         expect(base[entry.value], h.lightPalette[entry.key], reason: 'base ${entry.key}');
@@ -239,11 +235,11 @@ void _themeTests(String theme, String Function() repoRoot, Map<String, String> p
 
   group('S04–S06 per-mode colour params', () {
     test('S04: a _dark override reaches a forced dark skin and nothing else moves', () {
-      final plain = _props(_rootBlock(h.compile('dark')));
-      final css = h.compile('dark', siteParams: {'primary_color_dark': _darkOverride});
-      final root = _props(_rootBlock(css));
+      final plain = customProps(rootBlock(h.compile('dark')));
+      final css = h.compile('dark', siteParams: {'primary_color_dark': darkOverride});
+      final root = customProps(rootBlock(css));
 
-      expect(root['--trellis-primary'], _darkOverride);
+      expect(root['--trellis-primary'], darkOverride);
       expect(
         Map.of(root)..remove('--trellis-primary'),
         Map.of(plain)..remove('--trellis-primary'),
@@ -259,34 +255,34 @@ void _themeTests(String theme, String Function() repoRoot, Map<String, String> p
     });
 
     test('S05: a _dark override reaches auto mode through the dark palette, not a literal', () {
-      final css = h.compile('auto', siteParams: {'primary_color_dark': _darkOverride});
+      final css = h.compile('auto', siteParams: {'primary_color_dark': darkOverride});
 
-      expect(_props(_rootBlock(css))['--trellis-primary'], h.lightPalette['primary-color']);
-      expect(_props(_darkMediaRoot(css)!)['--trellis-primary'], _darkOverride);
+      expect(customProps(rootBlock(css))['--trellis-primary'], h.lightPalette['primary-color']);
+      expect(customProps(darkMediaRoot(css)!)['--trellis-primary'], darkOverride);
     });
 
     test('S06: a plain colour param sets the light entry only', () {
       // Documented precedence rule, not load-order luck: a forced skin selects a
       // palette and a per-mode param sets one entry in it, so a plain
       // `primary_color` (the light entry) has no effect on a `skin: dark` site.
-      final dark = h.compile('dark', siteParams: {'primary_color': _lightOverride});
-      expect(_props(_rootBlock(dark))['--trellis-primary'], h.darkPalette['primary-color']);
-      expect(dark, isNot(contains(_lightOverride)));
+      final dark = h.compile('dark', siteParams: {'primary_color': lightOverride});
+      expect(customProps(rootBlock(dark))['--trellis-primary'], h.darkPalette['primary-color']);
+      expect(dark, isNot(contains(lightOverride)));
 
-      final auto = h.compile('auto', siteParams: {'primary_color': _lightOverride});
-      expect(_props(_rootBlock(auto))['--trellis-primary'], _lightOverride);
-      expect(_props(_darkMediaRoot(auto)!)['--trellis-primary'], h.darkPalette['primary-color']);
+      final auto = h.compile('auto', siteParams: {'primary_color': lightOverride});
+      expect(customProps(rootBlock(auto))['--trellis-primary'], lightOverride);
+      expect(customProps(darkMediaRoot(auto)!)['--trellis-primary'], h.darkPalette['primary-color']);
 
-      final light = h.compile('light', siteParams: {'primary_color': _lightOverride});
-      expect(_props(_rootBlock(light))['--trellis-primary'], _lightOverride);
+      final light = h.compile('light', siteParams: {'primary_color': lightOverride});
+      expect(customProps(rootBlock(light))['--trellis-primary'], lightOverride);
     });
 
     test('S06: a _dark-only override under light changes nothing', () {
-      expect(h.compile('light', siteParams: {'primary_color_dark': _darkOverride}), h.compile('light'));
+      expect(h.compile('light', siteParams: {'primary_color_dark': darkOverride}), h.compile('light'));
     });
 
     test('a with()-set non-colour param reaches compiled CSS', () {
-      final root = _props(_rootBlock(h.compile('light', siteParams: {'max_width': '900px'})));
+      final root = customProps(rootBlock(h.compile('light', siteParams: {'max_width': '900px'})));
       expect(root['--trellis-max-width'], '900px');
     });
   });
@@ -322,18 +318,18 @@ void _themeTests(String theme, String Function() repoRoot, Map<String, String> p
 
     test('no @import remains in sass/', () {
       for (final file in sweepFiles(p.join(h.themeDir, 'sass'))) {
-        expect(_stripComments(file.readAsStringSync()), isNot(contains('@import')), reason: file.path);
+        expect(stripComments(file.readAsStringSync()), isNot(contains('@import')), reason: file.path);
       }
     });
 
     test("main.scss opens with @forward 'variables' as its first module rule", () {
-      final firstRule = RegExp(r'@(use|forward)\b[^;]*;').firstMatch(_stripComments(h.sass('main.scss')));
+      final firstRule = RegExp(r'@(use|forward)\b[^;]*;').firstMatch(stripComments(h.sass('main.scss')));
       expect(firstRule!.group(0), "@forward 'variables';");
     });
 
     test(r'skins expose a $palette and declare nothing !default', () {
       for (final skin in ['_light', '_dark']) {
-        final source = _stripComments(h.sass('_skins/$skin.scss'));
+        final source = stripComments(h.sass('_skins/$skin.scss'));
         expect(source, contains(r'$palette:'), reason: skin);
         expect(source, isNot(contains('!default')), reason: skin);
       }
@@ -341,7 +337,7 @@ void _themeTests(String theme, String Function() repoRoot, Map<String, String> p
 
     test("every partial reading a \$trellis-* variable declares @use 'variables' as *", () {
       for (final partial in partials) {
-        final source = _stripComments(h.sass('$partial.scss'));
+        final source = stripComments(h.sass('$partial.scss'));
         if (source.contains(r'$trellis-')) {
           expect(source, contains("@use 'variables' as *;"), reason: partial);
         }
@@ -350,7 +346,7 @@ void _themeTests(String theme, String Function() repoRoot, Map<String, String> p
 
     test('main.scss restates no palette value as a literal', () {
       final literal = RegExp(r'^\s*--trellis-[a-z-]+:\s*#[0-9a-fA-F]+;', multiLine: true);
-      expect(literal.hasMatch(_stripComments(h.sass('main.scss'))), isFalse);
+      expect(literal.hasMatch(stripComments(h.sass('main.scss'))), isFalse);
     });
   });
 }
@@ -367,7 +363,7 @@ class _Harness {
 
   factory _Harness.create(String repoRoot, String theme) {
     final dir = p.join(repoRoot, 'themes', theme);
-    return _Harness._(dir, ThemeManifest.load(dir), _palette(dir, 'light'), _palette(dir, 'dark'));
+    return _Harness._(dir, ThemeManifest.load(dir), readPalette(dir, 'light'), readPalette(dir, 'dark'));
   }
 
   void open() {
@@ -399,56 +395,4 @@ class _Harness {
       ..writeAsStringSync('${config.bridgeWrapperSource(entry)}${probe == null ? '' : '.probe { value: $probe; }\n'}');
     return TrellisCss.compileSass(wrapper.path, loadPaths: config.sassLoadPaths, fatalImportDeprecation: true);
   }
-}
-
-/// Reads a skin's `$palette` map by compiling it, so the test sees what Sass sees.
-Map<String, String> _palette(String themeDir, String mode) {
-  // Loaded by URL through an explicit load path: an absolute path resolves
-  // through the cwd importer, which Sass deprecates (fs-importer-cwd).
-  final css = TrellisCss.compileSassString(
-    '''
-@use "_skins/$mode" as skin;
-:root { @each \$key, \$value in skin.\$palette { --#{\$key}: #{\$value}; } }
-''',
-    loadPaths: [p.join(themeDir, 'sass')],
-  );
-  return {for (final e in _props(_rootBlock(css)).entries) e.key.substring(2): e.value};
-}
-
-/// Body of the first top-level `:root { ... }` rule.
-String _rootBlock(String css) {
-  final start = RegExp(r'^:root \{', multiLine: true).firstMatch(css)!;
-  return css.substring(start.end, css.indexOf('\n}', start.end));
-}
-
-/// Body of the `:root` rule inside `@media (prefers-color-scheme: dark)`, or null.
-String? _darkMediaRoot(String css) {
-  final media = css.indexOf('@media (prefers-color-scheme: dark)');
-  if (media == -1) return null;
-  final root = css.indexOf(':root {', media);
-  return css.substring(root + ':root {'.length, css.indexOf('}', root));
-}
-
-/// Custom properties declared in [block] (`--name: value;` lines).
-Map<String, String> _props(String block) => {
-  for (final m in RegExp(r'(--[\w-]+):\s*([^;]+);').allMatches(block)) m.group(1)!: m.group(2)!.trim(),
-};
-
-String _stripComments(String source) =>
-    source.replaceAll(RegExp(r'/\*.*?\*/', dotAll: true), '').replaceAll(RegExp(r'//.*'), '');
-
-/// Resolves the monorepo root by walking up from this package until `themes/bloom`
-/// is found, so the test works regardless of the test CWD.
-Future<String> _repoRoot() async {
-  final uri = await Isolate.resolvePackageUri(Uri.parse('package:trellis_site/trellis_site.dart'));
-  if (uri == null || uri.scheme != 'file') {
-    throw StateError('Could not resolve package:trellis_site/trellis_site.dart');
-  }
-  var dir = Directory(p.dirname(uri.toFilePath()));
-  while (!Directory(p.join(dir.path, 'themes', 'bloom')).existsSync()) {
-    final parent = dir.parent;
-    if (parent.path == dir.path) throw StateError('Could not find repo root (themes/bloom) from ${uri.toFilePath()}');
-    dir = parent;
-  }
-  return dir.path;
 }

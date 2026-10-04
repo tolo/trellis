@@ -33,6 +33,11 @@ Folio supports all standard parameters: `skin`, `primary_color`, `accent_color`,
 controlled only by `accent_color`. `logo` takes an image path, with or without a leading slash, and replaces the
 built-in sprout mark in the header; leave it unset to keep the mark. The path is joined with `pathPrefix` exactly once.
 
+Each colour param has a night-edition twin: `primary_color_dark`, `accent_color_dark`, `text_color_dark`,
+`muted_color_dark`, `bg_color_dark`, `surface_color_dark`, and `border_color_dark`. A plain colour param sets the light
+entry only and never reaches the night edition, whether it is forced with `skin: dark` or arrives through `auto`'s
+`prefers-color-scheme` block and edition toggle; set the `_dark` twin for that.
+
 Docs parameters are `show_sidebar`, `show_toc`, `show_prev_next`, `show_search`, `toc_title`, and `sidebar_title`.
 `excerpt_length` controls generated summaries. Apparatus uses `plate_label`, `show_plate_numbers`, and `show_sidenotes`.
 

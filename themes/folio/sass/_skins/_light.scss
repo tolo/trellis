@@ -1,7 +1,19 @@
-$trellis-primary-color: #315f46 !default;
-$trellis-accent-color: #912f27 !default;
-$trellis-text-color: #17291f !default;
-$trellis-muted-color: #59695e !default;
-$trellis-bg-color: #f2f1e8 !default;
-$trellis-surface-color: #fbfaf4 !default;
-$trellis-border-color: #bdc4b6 !default;
+// Folio — sass/_skins/_light.scss
+// Light edition. Read by _variables.scss, where each colour entry is the default
+// of its colour param and the base of the light palette: the whole `skin: light`
+// output and the base :root of `skin: auto`. The seven colour entries match the
+// default param values in theme.yaml; test/folio_theme_contract_test.dart fails
+// on drift.
+
+$palette: (
+  primary-color: #315f46,
+  accent-color: #912f27,
+  text-color: #17291f,
+  muted-color: #59695e,
+  bg-color: #f2f1e8,
+  surface-color: #fbfaf4,
+  border-color: #bdc4b6,
+  // Code needs more than the two inks: sepia for literals, indigo for types and titles.
+  code-number: #7a4a12,
+  code-function: #2c4a72,
+);

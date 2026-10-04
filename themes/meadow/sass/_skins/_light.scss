@@ -1,7 +1,19 @@
-$trellis-primary-color: #237a48;
-$trellis-accent-color: #d4f15f;
-$trellis-text-color: #14251a;
-$trellis-muted-color: #476050;
-$trellis-bg-color: #f7faee;
-$trellis-surface-color: #fffef8;
-$trellis-border-color: #d4e2ce;
+// Meadow — sass/_skins/_light.scss
+// Light palette. Read by _variables.scss, where each entry is the default of its
+// colour param and the base of the light palette: the whole `skin: light` output
+// and the base :root of `skin: auto`. The entries match the default param values
+// in theme.yaml; test/meadow_theme_contract_test.dart fails on drift.
+
+$palette: (
+  primary-color: #237a48,
+  accent-color: #d4f15f,
+  text-color: #14251a,
+  muted-color: #476050,
+  bg-color: #f7faee,
+  surface-color: #fffef8,
+  border-color: #d4e2ce,
+  sky-color: #69b9ea,
+  sun-color: #ffd367,
+  bloom-color: #cf91ef,
+  coral-color: #fb907b,
+);

@@ -1,12 +1,12 @@
 # Project State — Trellis SDK
 
-Last Updated: 2026-09-02
+Last Updated: 2026-10-04
 
 > Cross-session state tracking. Updated at phase boundaries and when significant context changes.
 
 ## Current Phase
 
-**v0.11.0 is published and fully verified; 0.12 (SASS `@use` migration, TD-006) is scheduled and awaits execution.** Sequence decided 2026-09-02: 0.12 sass-use-migration → 0.13 composition primitives (ADR-014) → 0.14 Trellis UI Tier 1 slice (ADR-012); spec at `../trellis-private/docs/specs/0.12/`. All eight lockstep packages, the
+**v0.11.0 is published and fully verified. The 0.12 SASS `@use` migration (TD-006, [ADR-013](../adrs/ADR-013-sass-module-bridge.md)) is implemented and gate-green on the `feat/0.12` branch, awaiting review and release.** The bridge, all six bundled themes, the scaffold and the docs site are on `@use … with()` with per-mode colour params, and `packages/trellis_site/test/theme_sass_use_gate_test.dart` (untagged, so the fast CI job runs it) compiles every theme under `themes/` at each skin and standalone with the `@import` deprecation fatal. On the merged tree the full tier, analyze, format, the gallery check and the macOS visual comparator pass, and each theme's compiled CSS equals its pre-migration baseline except recorded rendering-neutral differences (bloom's duplicate `_layout` block, lattice's light hex case, lattice's and meadow's forced-dark base `:root`). TD-006 and TD-048 are resolved. Open for the owner: `heading_font_family: null` never made headings inherit the body font, although `docs/reference/standard-params.md` and the scaffold say so (see LEARNINGS, "A param set to `null`"); neither the code nor the docs were changed. Sequence decided 2026-09-02: 0.12 sass-use-migration → 0.13 composition primitives (ADR-014) → 0.14 Trellis UI Tier 1 slice (ADR-012); spec at `../trellis-private/docs/specs/0.12/`. All eight lockstep packages, the
 GitHub Release and 11 assets, Homebrew formula, and Scoop manifest were verified on 2026-08-31 with
 `tool/verify_release.sh 0.11.0`. The release contains Lattice, the redesigned site and six-theme generated gallery,
 Folio, Meadow, authoring guidance, TD-014, and the release-gate hardening described below.
@@ -31,6 +31,7 @@ out to have siblings the review had not named).
 
 | Phase | Completed | Key Deliverables |
 |-------|-----------|------------------|
+| 0.12.0 (implementation) | 2026-10-04 | SASS `@use` migration on the `feat/0.12` branch (ADR-013): module bridge with palette-map skins and `_dark` colour twins, six themes, scaffold and docs site migrated, the import-silencing parameter removed from `TrellisCss.compileSass`, compile-every-theme gate, TD-006 and TD-048 resolved. Awaiting review and release. |
 | 0.11.0 (release) | 2026-08-31 | Eight lockstep packages on pub.dev; GitHub Release with 11 assets; Homebrew and Scoop updated; tagged-commit CI, E2E, docs deployment, and font provenance green. |
 | 0.11.0 (implementation) | 2026-08-19 | Lattice docs theme and Lattice-powered site; deterministic six-theme gallery; Folio reference theme; Meadow product-landing theme; theme-data authoring guidance; architecture and unreleased 0.11.0 changelog collateral. |
 | 0.11.0 (UI remediation) | 2026-08-26 | Owner-found rendering defects in Folio and Meadow; Folio design-gap closure against the mockup; compact branding assets; font payloads re-subset; landing showcase set to Arbor/Lattice/Folio. |
@@ -60,6 +61,11 @@ out to have siblings the review had not named).
 
 ## Test Health
 
+On the 0.12 branch (2026-10-04, `melos exec --dir-exists=test -- dart test`, e2e included): `trellis` 1282 (1 skip),
+`trellis_site` 1012, `trellis_cli` 320, `trellis_css` 54; the root suite passes 197 with 2 skips and the macOS visual
+comparator 7 of 7 against unchanged baselines. Analyze, both format gates and `generate_theme_gallery.dart --check`
+pass.
+
 On the v0.11.0 release commit (2026-08-31), all eight package suites pass (one Linux-only skip in `trellis`) —
 `trellis` 1282, `trellis_site` 857, `trellis_cli` 265 — and the macOS release-host root suite passes **181 with
 2 intentional skips**. `generate_theme_gallery.dart --check`, workspace analyze (`--fatal-infos`), and both format
@@ -78,7 +84,8 @@ behind the sticky bar, and four other themes shared the structure. All six now d
 masthead height, and the `nowrap` invariant that rests on is asserted directly. Note the rendered suites had never
 run on CI at all — the last CI run on this repo before 0.11 was 0.10.2 (2026-08-18). Root and `/trellis/` docs builds
 each produce 27 pages and 39 static files with 1,279 internal references and no broken links. Dart Sass 3.0
-forward-compat tech debt remains logged as TD-006 (`@import` in theme SASS + the bridge).
+forward-compat (`@import` in theme SASS + the bridge, TD-006) was closed in 0.12: the compile-every-theme gate now fails
+CI on a reintroduced `@import`.
 
 **Green does not mean covered — and this suite has proved it three times.** The 2026-08-27 review mutation-tested the
 suite and 8 of 11 deliberate regressions passed, including truncating every vendored `woff2` to zero bytes. Those are

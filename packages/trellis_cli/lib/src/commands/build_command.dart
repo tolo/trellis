@@ -178,7 +178,16 @@ Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? the
         final wrapperPath = p.join(themeBuildConfig.buildDir, 'bridge_$wrapperBaseName.scss');
         File(wrapperPath).writeAsStringSync(themeBuildConfig.bridgeWrapperSource(p.canonicalize(file.path)));
 
-        final css = TrellisCss.compileSass(wrapperPath, outputStyle: OutputStyle.compressed, loadPaths: loadPaths);
+        // Fatal for themes only: an @import-era theme would compile with a
+        // warning, but no skin file is injected any more, so `skin: dark` would
+        // silently build light (ADR-013). A site's own stylesheets keep @import
+        // until Dart Sass 3.0.
+        final css = TrellisCss.compileSass(
+          wrapperPath,
+          outputStyle: OutputStyle.compressed,
+          loadPaths: loadPaths,
+          fatalImportDeprecation: true,
+        );
         File(outPath).writeAsStringSync(css);
 
         if (verbose) stdout.writeln('  Compiled ${file.path} → $outPath');

@@ -130,7 +130,9 @@ For each non-partial `.scss`/`.sass` file in a theme's `sass/` directory, the bu
 namespace and never configured. The wrapper text comes from one function (`ThemeBuildConfig.bridgeWrapperSource`,
 `trellis_site`) that the CLI build calls and the tests compile, so a test compiles exactly what `trellis build`
 compiles. The entry gets the explicit namespace `theme`, because Sass rejects a default namespace that is not an
-identifier (`2col.scss`). With no configurable variables the entry is `@use`d without `with()`.
+identifier (`2col.scss`). With no configurable variables the entry is `@use`d without `with()`. The entry is written as
+the path of its `file:` URL (`/C:/a%20b/main.scss` on Windows), never a native path: Sass parses a load string as a
+URL, so `C:\…` reads as scheme `c:`, and a full `file:` URL resolves only through load paths.
 
 ### The intersection rule
 
@@ -187,12 +189,13 @@ none ships one global brand colour applied unchanged to both), is in the private
 
 There is no compatibility mode. The `@import` skin line and the import-deprecation silencing are gone from the build
 path, `TrellisCss.compileSass` no longer has a parameter to silence the `@import` deprecation, and every bundled theme
-and the `trellis create --template theme` scaffold are migrated in 0.12. A third-party theme whose entry still
-`@import`s compiles through the wrapper on Dart Sass 1.x with only the `@import` deprecation warning, but its skin file
-is no longer injected, so `skin: dark` silently builds light. It fails with a raw Sass error, not a Trellis diagnostic,
-once Dart Sass 3.0 removes `@import`; that is accepted. The owner's rationale: *"No one is really using Trellis yet
-(and no-one has created a Trellis theme yet), so it's ok to make breaking changes if this makes things simpler. We don't
-need backwards compatibility."* The break rides the lockstep minor (ADR-009).
+and the `trellis create --template theme` scaffold are migrated in 0.12. `trellis build` compiles a theme with the
+`import` deprecation fatal, so a third-party theme whose entry still `@import`s fails with Sass's import-deprecation
+error, not a Trellis diagnostic; that is accepted. Without the fatal flag it would compile with only a warning while its
+skin file is no longer injected, so `skin: dark` would silently build light. A site's own stylesheets are compiled
+without the flag: their `@import` stays legal until Dart Sass 3.0. The owner's rationale: *"No one is really using
+Trellis yet (and no-one has created a Trellis theme yet), so it's ok to make breaking changes if this makes things
+simpler. We don't need backwards compatibility."* The break rides the lockstep minor (ADR-009).
 
 ### Enforcement
 

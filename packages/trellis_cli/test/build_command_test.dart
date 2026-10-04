@@ -986,6 +986,43 @@ params:
         expect(wrapper, isNot(contains('_skins')));
         expect(File(p.join(tempDir.path, 'output', 'css', 'main.css')).readAsStringSync(), contains('.no-skins'));
       });
+
+      // An @import-era theme would otherwise compile with only a warning while
+      // its skin file is no longer injected: `skin: dark` would build light.
+      test('a theme entry that @imports fails the build with Sass\'s import deprecation', () async {
+        minimalSite(tempDir);
+        final themeDir = skinTheme(tempDir);
+        File(p.join(themeDir.path, 'sass', 'main.scss')).writeAsStringSync(r'''
+@import 'variables';
+.bg { background: $trellis-bg-color; }
+''');
+        useSkinTheme(tempDir, 'skin-theme', 'dark');
+
+        final output = StringBuffer();
+        late int exitCode;
+        await IOOverrides.runZoned(
+          () async => exitCode = await TrellisCli(workingDirectory: tempDir.path).run(['build']),
+          stdout: () => _BufferStdout(output),
+          stderr: () => _BufferStdout(output),
+        );
+
+        expect(exitCode, 1);
+        expect(output.toString(), contains('SASS compilation failed'));
+        expect(output.toString(), contains('@import'));
+        expect(output.toString(), contains('import deprecation to be fatal'));
+      });
+
+      test('a site stylesheet that @imports still builds', () async {
+        minimalSite(tempDir);
+        skinTheme(tempDir);
+        useSkinTheme(tempDir, 'skin-theme', 'dark');
+        final staticCss = Directory(p.join(tempDir.path, 'static', 'css'))..createSync(recursive: true);
+        File(p.join(staticCss.path, '_tokens.scss')).writeAsStringSync(r'$accent: #0a0b0c;');
+        File(p.join(staticCss.path, 'site.scss')).writeAsStringSync("@import 'tokens';\n.site { color: \$accent; }\n");
+
+        expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
+        expect(File(p.join(tempDir.path, 'output', 'css', 'site.css')).readAsStringSync(), contains('#0a0b0c'));
+      });
     });
 
     // A theme referenced by a RELATIVE escaping path (theme lives outside the

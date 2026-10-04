@@ -66,14 +66,21 @@ class ThemeBuildConfig {
   /// not an identifier (an entry named `2col.scss`) or that collides with `tp`.
   /// The CLI build writes exactly this text to `bridge_<entry>.scss`, so a test
   /// that compiles it compiles what `trellis build` compiles.
+  ///
+  /// The entry is embedded as the path of its `file:` URL (`/C:/a%20b/main.scss`
+  /// on Windows): Sass parses a load string as a URL, so a native Windows path
+  /// (`C:\…`) reads as scheme `c:` with backslash escapes, and a `%` in any path
+  /// reads as an escape. Not the full `file:` URL, because Sass resolves a URL
+  /// with a scheme only through load paths, never against the wrapper's own URL.
   String bridgeWrapperSource(String themeEntryPath) {
+    final entryUrl = p.toUri(themeEntryPath).path;
     final buffer = StringBuffer()
       ..writeln('// Auto-generated bridge wrapper — do not edit')
       ..writeln('@use "theme_params" as tp;');
     if (configurableVars.isEmpty) {
-      buffer.writeln('@use "$themeEntryPath" as theme;');
+      buffer.writeln('@use "$entryUrl" as theme;');
     } else {
-      buffer.writeln('@use "$themeEntryPath" as theme with (');
+      buffer.writeln('@use "$entryUrl" as theme with (');
       buffer.writeln(configurableVars.map((name) => '  \$$name: tp.\$$name').join(',\n'));
       buffer.writeln(');');
     }

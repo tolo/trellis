@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
 
 void main() {
@@ -320,7 +321,8 @@ $trellis-skin: auto !default;
   });
 
   group('ThemeBuildConfig.bridgeWrapperSource', () {
-    const entry = '/themes/fixture/sass/main.scss';
+    final entry = p.join(p.rootPrefix(p.current), 'themes', 'my fixture', 'sass', 'main.scss');
+    final entryUrl = p.toUri(entry).path;
 
     ThemeBuildConfig config(List<String> vars) =>
         ThemeBuildConfig(buildDir: '/b', sassLoadPaths: const [], skinMode: SkinMode.auto, configurableVars: vars);
@@ -328,7 +330,7 @@ $trellis-skin: auto !default;
     test('@uses the params module and configures exactly the configurable vars', () {
       final wrapper = config(['trellis-skin', 'trellis-primary-color']).bridgeWrapperSource(entry);
       expect(wrapper, contains('@use "theme_params" as tp;'));
-      expect(wrapper, contains('@use "$entry" as theme with ('));
+      expect(wrapper, contains('@use "$entryUrl" as theme with ('));
       expect(wrapper, contains(r'$trellis-skin: tp.$trellis-skin,'));
       expect(wrapper, contains(r'$trellis-primary-color: tp.$trellis-primary-color'));
       expect(RegExp(r'tp\.\$').allMatches(wrapper), hasLength(2));
@@ -342,8 +344,31 @@ $trellis-skin: auto !default;
 
     test('omits with() when nothing is configurable', () {
       final wrapper = config([]).bridgeWrapperSource(entry);
-      expect(wrapper, contains('@use "$entry" as theme;'));
+      expect(wrapper, contains('@use "$entryUrl" as theme;'));
       expect(wrapper, isNot(contains('with')));
+    });
+
+    // Sass reads a raw Windows path `C:\…` as URL scheme `c:` with backslash
+    // escapes, so the entry is embedded as a URL path on every platform.
+    test('embeds the entry as an encoded URL path, never a native path', () {
+      final wrapper = config([]).bridgeWrapperSource(entry);
+      expect(wrapper, contains('my%20fixture'));
+      expect(wrapper, isNot(contains('"$entry"')));
+      expect(wrapper, isNot(contains('file:')), reason: 'Sass resolves a URL with a scheme only via load paths');
+    });
+
+    test('a wrapper for an entry whose path needs URL escaping compiles without load paths', () {
+      final tempDir = Directory.systemTemp.createTempSync('trellis wrapper %20 ');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+      final sassDir = Directory(p.join(tempDir.path, 'sass'))..createSync();
+      File(p.join(sassDir.path, '_variables.scss')).writeAsStringSync(r'$trellis-bg-color: #ffffff !default;');
+      final themeEntry = File(p.join(sassDir.path, 'main.scss'))
+        ..writeAsStringSync("@forward 'variables';\n@use 'variables' as *;\n.bg { background: \$trellis-bg-color; }\n");
+      File(p.join(tempDir.path, '_theme_params.scss')).writeAsStringSync(r'$trellis-bg-color: #010203;');
+      final wrapper = File(p.join(tempDir.path, 'bridge_main.scss'))
+        ..writeAsStringSync(config(['trellis-bg-color']).bridgeWrapperSource(themeEntry.path));
+
+      expect(TrellisCss.compileSass(wrapper.path, fatalImportDeprecation: true), contains('#010203'));
     });
   });
 }

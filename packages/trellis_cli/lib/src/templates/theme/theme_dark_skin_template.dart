@@ -9,13 +9,13 @@ String themeDarkSkinTemplate() => r'''// Dark palette. Read by _variables.scss, 
 //   On the page background (#111827):
 //     #f3f4f6 = 16.12:1  (body text — passes 4.5:1)
 //     #9ca3af =  6.99:1  (muted — passes 4.5:1)
-//     #3b82f6 =  4.82:1  (primary/links — passes 4.5:1)
-//     #60a5fa =  6.98:1  (accent — passes 4.5:1)
+//     #60a5fa =  6.98:1  (primary/links — passes 4.5:1)
+//     #93c5fd =  9.84:1  (accent — passes 4.5:1)
 //   On the elevated surface (#1f2937):
 //     #f3f4f6 = 13.34:1  (body text — passes 4.5:1)
 //     #9ca3af =  5.78:1  (muted — passes 4.5:1)
-//     #60a5fa =  5.77:1  (accent — passes 4.5:1)
-//     #3b82f6 =  3.99:1  (primary — below 4.5:1 for normal text)
+//     #60a5fa =  5.77:1  (primary — passes 4.5:1)
+//     #93c5fd =  8.14:1  (accent — passes 4.5:1)
 
 $palette: (
   text-color: #f3f4f6,
@@ -23,7 +23,7 @@ $palette: (
   bg-color: #111827,
   surface-color: #1f2937,
   border-color: #374151,
-  primary-color: #3b82f6,
-  accent-color: #60a5fa,
+  primary-color: #60a5fa,
+  accent-color: #93c5fd,
 );
 ''';

@@ -172,7 +172,7 @@ void main() {
       final dark = writer.files['sass/_skins/_dark.scss']!;
       expect(dark, contains(r'$palette: ('));
       expect(dark, contains('bg-color: #111827'));
-      expect(dark, contains('primary-color: #3b82f6'));
+      expect(dark, contains('primary-color: #60a5fa'));
       expect(dark, isNot(contains('!default')));
     });
 

@@ -30,7 +30,7 @@ params:
 
   accent_color:
     type: color
-    default: "#3b82f6"
+    default: "#1d4ed8"
     description: Secondary accent — hover states, highlights, borders
 
   text_color:
@@ -40,7 +40,7 @@ params:
 
   muted_color:
     type: color
-    default: "#6b7280"
+    default: "#4b5563"
     description: Secondary text — dates, metadata, captions
 
   bg_color:
@@ -63,12 +63,12 @@ params:
   # block of skin: auto). A plain colour param sets the light entry only.
   primary_color_dark:
     type: color
-    default: "#3b82f6"
+    default: "#60a5fa"
     description: Brand/accent color in dark mode — links, buttons, active states
 
   accent_color_dark:
     type: color
-    default: "#60a5fa"
+    default: "#93c5fd"
     description: Secondary accent in dark mode — hover states, highlights, borders
 
   text_color_dark:

@@ -50,7 +50,7 @@ Configure the theme in `trellis_site.yaml`:
 theme: arbor
 theme_params:
   skin: dark
-  primary_color: "#4ade80"
+  primary_color_dark: "#4ade80"
 ```
 
 ## Bash

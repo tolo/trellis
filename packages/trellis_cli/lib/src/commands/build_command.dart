@@ -149,9 +149,9 @@ Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? the
   var count = 0;
 
   // Compile theme SASS files from theme's sass/ directory.
-  // When a theme bridge is active, generate a wrapper entry file that imports
-  // _theme_params.scss before the theme's SCSS file. This ensures merged params
-  // (theme defaults + site theme_params:) override the theme's !default values.
+  // When a theme bridge is active, each entry is compiled through a generated
+  // wrapper (ThemeBuildConfig.bridgeWrapperSource) that `@use`s the entry with
+  // the merged params (theme defaults + site theme_params:) configured onto it.
   if (themeBuildConfig != null && config.themeConfig != null) {
     // Normalize so a relative `theme:` value (e.g. `../../themes/arbor`) collapses
     // its `..` segments — matches the engine's theme resolution in
@@ -170,40 +170,15 @@ Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? the
         final outPath = p.join(config.outputDir, 'css', p.setExtension(relative, '.css'));
         Directory(p.dirname(outPath)).createSync(recursive: true);
 
-        // Generate a bridge wrapper that imports _theme_params.scss first.
-        // The wrapper lives in .trellis/build/ so its @import "theme_params"
+        // The wrapper lives in .trellis/build/ so its `@use "theme_params"`
         // resolves to the adjacent _theme_params.scss. The theme's actual SCSS
-        // file is imported via absolute path so its own relative @imports
-        // resolve correctly from its original directory.
+        // file is `@use`d via absolute path so its own relative `@use`s resolve
+        // from its original directory.
         final wrapperBaseName = p.basenameWithoutExtension(file.path);
         final wrapperPath = p.join(themeBuildConfig.buildDir, 'bridge_$wrapperBaseName.scss');
-        final themeFileAbsolute = p.canonicalize(file.path);
+        File(wrapperPath).writeAsStringSync(themeBuildConfig.bridgeWrapperSource(p.canonicalize(file.path)));
 
-        // For skin: light | dark, force the corresponding palette by importing
-        // the theme's _skins/_<skin>.scss BEFORE theme_params. The skin file's
-        // color vars are `!default`, and SASS honors the FIRST `!default`
-        // assignment — so the skin palette wins over the light color defaults
-        // that theme.yaml bakes into _theme_params.scss (which are also
-        // `!default`), while every non-color param in theme_params still applies
-        // untouched. skin: auto (and unset) emits no skin import, keeping output
-        // byte-for-byte identical to before this feature; auto's OS dark-mode
-        // handling stays in the theme's own @media block. A theme without the
-        // skin file is handled gracefully by skipping the import.
-        final skinImport = _skinImportLine(themeDir, themeBuildConfig.skinMode);
-
-        File(wrapperPath).writeAsStringSync(
-          '// Auto-generated bridge wrapper — do not edit\n'
-          '$skinImport'
-          '@import "theme_params";\n'
-          '@import "$themeFileAbsolute";\n',
-        );
-
-        final css = TrellisCss.compileSass(
-          wrapperPath,
-          outputStyle: OutputStyle.compressed,
-          loadPaths: loadPaths,
-          silenceImportDeprecation: true,
-        );
+        final css = TrellisCss.compileSass(wrapperPath, outputStyle: OutputStyle.compressed, loadPaths: loadPaths);
         File(outPath).writeAsStringSync(css);
 
         if (verbose) stdout.writeln('  Compiled ${file.path} → $outPath');
@@ -225,12 +200,7 @@ Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? the
       final outPath = p.join(config.outputDir, p.setExtension(relative, '.css'));
       Directory(p.dirname(outPath)).createSync(recursive: true);
 
-      final css = TrellisCss.compileSass(
-        file.path,
-        outputStyle: OutputStyle.compressed,
-        loadPaths: loadPaths,
-        silenceImportDeprecation: true,
-      );
+      final css = TrellisCss.compileSass(file.path, outputStyle: OutputStyle.compressed, loadPaths: loadPaths);
       File(outPath).writeAsStringSync(css);
 
       if (verbose) stdout.writeln('  Compiled ${file.path} → $outPath');
@@ -239,27 +209,4 @@ Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? the
   }
 
   return count;
-}
-
-/// Returns the bridge `@import` line that forces the [skinMode] palette, or an
-/// empty string for [SkinMode.auto] (and when the theme ships no matching skin
-/// file).
-///
-/// Imports `<themeDir>/sass/_skins/_<skin>.scss` via an absolute (canonical)
-/// path so the file resolves regardless of the wrapper's location. Emitted
-/// BEFORE `@import "theme_params"` so the skin's `!default` color vars win over
-/// theme.yaml's baked-in light defaults (see caller for the ordering rationale).
-/// Auto returns `''`, preserving the pre-feature wrapper byte-for-byte.
-String _skinImportLine(String themeDir, SkinMode skinMode) {
-  final skinName = switch (skinMode) {
-    SkinMode.light => 'light',
-    SkinMode.dark => 'dark',
-    SkinMode.auto => null,
-  };
-  if (skinName == null) return '';
-
-  final skinFile = File(p.join(themeDir, 'sass', '_skins', '_$skinName.scss'));
-  if (!skinFile.existsSync()) return ''; // theme without _skins/ — skip gracefully
-
-  return '@import "${p.canonicalize(skinFile.path)}";\n';
 }

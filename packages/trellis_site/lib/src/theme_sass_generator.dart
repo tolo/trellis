@@ -4,13 +4,14 @@ import 'package:path/path.dart' as p;
 
 /// The skin mode for a theme.
 enum SkinMode {
-  /// Light skin only — loads `_skins/_light.scss`.
+  /// Light skin only — the theme's light palette is emitted.
   light,
 
-  /// Dark skin only — loads `_skins/_dark.scss`.
+  /// Dark skin only — the theme's dark palette is emitted.
   dark,
 
-  /// Auto skin — loads both skins with `@media (prefers-color-scheme: ...)`.
+  /// Auto skin — the light palette plus a `@media (prefers-color-scheme: dark)`
+  /// block carrying the dark palette.
   auto;
 
   /// Parses a skin mode from a string value.
@@ -40,16 +41,55 @@ class ThemeBuildConfig {
   /// The resolved skin mode.
   final SkinMode skinMode;
 
-  const ThemeBuildConfig({required this.buildDir, required this.sassLoadPaths, required this.skinMode});
+  /// SASS variable names (without `$`, e.g. `trellis-primary-color`) the bridge
+  /// configures on the theme entry: the manifest params that were merged and that
+  /// the theme's `_variables.scss` declares `!default`. Everything else in
+  /// `_theme_params.scss` stays inert, because Sass rejects configuring a
+  /// variable the module does not declare `!default`.
+  final List<String> configurableVars;
+
+  const ThemeBuildConfig({
+    required this.buildDir,
+    required this.sassLoadPaths,
+    required this.skinMode,
+    this.configurableVars = const [],
+  });
+
+  /// The compile entry for the theme stylesheet at [themeEntryPath]: a wrapper
+  /// that `@use`s the generated params module and configures the theme entry with
+  /// the values of [configurableVars] (`@use "<entry>" with (...)`).
+  ///
+  /// The theme entry must `@forward` its `_variables.scss` before any other rule
+  /// that loads it; Sass only accepts `with()` on a module's first load. Without
+  /// configurable variables the entry is `@use`d unconfigured. The entry gets the
+  /// explicit namespace `theme`, because Sass rejects a default namespace that is
+  /// not an identifier (an entry named `2col.scss`) or that collides with `tp`.
+  /// The CLI build writes exactly this text to `bridge_<entry>.scss`, so a test
+  /// that compiles it compiles what `trellis build` compiles.
+  String bridgeWrapperSource(String themeEntryPath) {
+    final buffer = StringBuffer()
+      ..writeln('// Auto-generated bridge wrapper — do not edit')
+      ..writeln('@use "theme_params" as tp;');
+    if (configurableVars.isEmpty) {
+      buffer.writeln('@use "$themeEntryPath" as theme;');
+    } else {
+      buffer.writeln('@use "$themeEntryPath" as theme with (');
+      buffer.writeln(configurableVars.map((name) => '  \$$name: tp.\$$name').join(',\n'));
+      buffer.writeln(');');
+    }
+    return buffer.toString();
+  }
 }
 
 /// Generates SASS variable files and CSS custom properties from merged theme params.
 ///
 /// Produces two files in `.trellis/build/`:
-/// - `_theme_params.scss` — SASS variables with `$trellis-` prefix and `!default`
+/// - `_theme_params.scss` — a plain Sass module of `$trellis-` variables, read by
+///   the bridge wrapper ([ThemeBuildConfig.bridgeWrapperSource])
 /// - `_theme_custom_props.css` — CSS custom properties with `--trellis-` prefix (plain CSS)
 ///
-/// Also resolves skin file paths based on the `skin` param value.
+/// Also resolves the skin mode from the `skin` param and works out which params
+/// the theme can be configured with ([ThemeBuildConfig.configurableVars]).
 class ThemeSassGenerator {
   const ThemeSassGenerator();
 
@@ -62,11 +102,12 @@ class ThemeSassGenerator {
   ///
   /// Creates `.trellis/build/` directory and a `.trellis/.gitignore` safety net,
   /// then writes:
-  /// - `_theme_params.scss` with all params as `$trellis-*: value !default;`
+  /// - `_theme_params.scss` with all params as `$trellis-*: value;`
   /// - `_theme_custom_props.css` with non-boolean/enum/list/map params as
   ///   `:root { --trellis-*: value; }`
   ///
-  /// Returns a [ThemeBuildConfig] with load paths and skin info for the SASS compiler.
+  /// Returns a [ThemeBuildConfig] with load paths, skin info and the configurable
+  /// variables for the SASS compiler.
   ThemeBuildConfig generate({
     required Map<String, dynamic> mergedParams,
     required Map<String, String> paramTypes,
@@ -95,19 +136,35 @@ class ThemeSassGenerator {
     File(p.join(buildDir, '_theme_custom_props.css')).writeAsStringSync(customProps);
 
     // 4. Build SASS load paths: [.trellis/build/, site/sass/, theme/sass/]
-    // Bridge dir is first so @import "theme_params" resolves to the generated
-    // file. Site SASS is before theme SASS so site-level overrides shadow
-    // theme partials of the same name.
+    // Bridge dir is first so @use "theme_params" resolves to the generated file.
+    // Site and theme sass/ follow for site-authored stylesheets. A theme's own
+    // `@use 'variables'` resolves relative to the importing file before any load
+    // path is consulted, so a site partial never shadows a theme-internal one.
     final sassLoadPaths = <String>[buildDir, p.join(siteDir, 'sass'), if (themeDir != null) p.join(themeDir, 'sass')];
 
-    return ThemeBuildConfig(buildDir: buildDir, sassLoadPaths: sassLoadPaths, skinMode: skinMode);
+    // 5. Params the theme entry can be configured with.
+    final declared = themeDir == null
+        ? const <String>{}
+        : _declaredDefaultVars(p.join(themeDir, 'sass', '_variables.scss'));
+    final configurableVars = [
+      for (final name in paramTypes.keys)
+        if (mergedParams.containsKey(name) && declared.contains(_toSassName(name))) _toSassName(name),
+    ];
+
+    return ThemeBuildConfig(
+      buildDir: buildDir,
+      sassLoadPaths: sassLoadPaths,
+      skinMode: skinMode,
+      configurableVars: configurableVars,
+    );
   }
 }
 
 /// Generates SASS variable declarations from merged theme params.
 ///
-/// Each param becomes `$trellis-{name}: {value} !default;`
-/// with `_` in names converted to `-` for SASS convention.
+/// Each param becomes `$trellis-{name}: {value};`
+/// with `_` in names converted to `-` for SASS convention. The result is a plain
+/// module the bridge wrapper reads by namespace, so no declaration is `!default`.
 String _generateSassVariables(Map<String, dynamic> params, Map<String, String> paramTypes) {
   final buffer = StringBuffer();
   buffer.writeln('// Auto-generated by Trellis theme system — do not edit');
@@ -118,7 +175,7 @@ String _generateSassVariables(Map<String, dynamic> params, Map<String, String> p
     final sassName = _toSassName(entry.key);
     final type = paramTypes[entry.key] ?? 'string';
     final value = _toSassValue(entry.value, type);
-    buffer.writeln('\$$sassName: $value !default;');
+    buffer.writeln('\$$sassName: $value;');
   }
 
   return buffer.toString();
@@ -140,15 +197,14 @@ final _hexColorPattern = RegExp(r'^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8
 /// Converts a param value to a SASS value string.
 ///
 /// String values are emitted via SASS interpolation of a quoted literal —
-/// `#{"<escaped>"}` — rather than as a bare quoted literal. A quoted `!default`
-/// value (e.g. `"system-ui, sans-serif"`) wins over the theme's own unquoted
-/// `_variables.scss` default (since the bridge partial loads first) and
-/// produces invalid CSS like `font-family: "system-ui, sans-serif"`.
-/// Interpolating the quoted string yields an *unquoted* SASS string — so it
-/// still satisfies `!default` overriding — but its value is unquoted, matching
-/// what the theme authors would have written by hand. Unlike the legacy global
-/// `unquote()`, interpolation emits no `global-builtin` deprecation warning
-/// (that builtin is removed in Dart Sass 3.0.0).
+/// `#{"<escaped>"}` — rather than as a bare quoted literal. A quoted value
+/// (e.g. `"system-ui, sans-serif"`) configured onto the theme's own unquoted
+/// `_variables.scss` default produces invalid CSS like
+/// `font-family: "system-ui, sans-serif"`. Interpolating the quoted string
+/// yields an *unquoted* SASS string, matching what the theme authors would have
+/// written by hand. Unlike the legacy global `unquote()`, interpolation emits no
+/// `global-builtin` deprecation warning (that builtin is removed in Dart Sass
+/// 3.0.0).
 ///
 /// Values come from semi-trusted theme.yaml / site config. Every branch that
 /// emits raw (unescaped) — the hex fast-path and the `color` type hint —
@@ -270,4 +326,69 @@ String _toCssValue(dynamic value) {
   if (value == null) return 'initial';
   if (value is num) return value.toString();
   return value.toString();
+}
+
+/// Returns the `$trellis-*` variable names (no `$`, `_` normalised to `-` as Sass
+/// does) that the stylesheet at [path] declares `!default`, or an empty set when
+/// the file does not exist.
+///
+/// Matches each declaration as a whole statement up to its terminating `;`, so a
+/// formatter re-wrapping a long value across lines cannot hide a declaration.
+/// Comments are stripped first so a commented-out declaration does not count.
+Set<String> _declaredDefaultVars(String path) {
+  final file = File(path);
+  if (!file.existsSync()) return const {};
+
+  final names = <String>{};
+  final declaration = RegExp(r'^\s*\$(trellis-[A-Za-z0-9_-]+)\s*:(.*)$', dotAll: true);
+  for (final statement in _statements(file.readAsStringSync())) {
+    final match = declaration.firstMatch(statement);
+    if (match == null || !RegExp(r'!default\b').hasMatch(match.group(2)!)) continue;
+    names.add(match.group(1)!.replaceAll('_', '-'));
+  }
+  return names;
+}
+
+/// Splits SCSS [source] into statements at top-level `;`, `{` and `}`, dropping
+/// `/* */` and `//` comments. Quoted strings and `#{...}` interpolation are
+/// respected (their braces do not end a statement), and a `//` directly after
+/// `:` is part of a URL, not a comment.
+Iterable<String> _statements(String source) sync* {
+  final current = StringBuffer();
+  String? quote;
+  var interpolationDepth = 0;
+  for (var i = 0; i < source.length; i++) {
+    final c = source[i];
+    if (interpolationDepth > 0 && quote == null && (c == '{' || c == '}')) {
+      interpolationDepth += c == '{' ? 1 : -1;
+      current.write(c);
+    } else if (quote != null) {
+      current.write(c);
+      if (c == r'\' && i + 1 < source.length) {
+        current.write(source[++i]);
+      } else if (c == quote) {
+        quote = null;
+      }
+    } else if (c == '"' || c == "'") {
+      quote = c;
+      current.write(c);
+    } else if (c == '/' && i + 1 < source.length && source[i + 1] == '*') {
+      final end = source.indexOf('*/', i + 2);
+      i = end == -1 ? source.length : end + 1;
+      current.write(' ');
+    } else if (c == '/' && i + 1 < source.length && source[i + 1] == '/' && (i == 0 || source[i - 1] != ':')) {
+      final end = source.indexOf('\n', i);
+      i = end == -1 ? source.length : end - 1;
+    } else if (c == '#' && i + 1 < source.length && source[i + 1] == '{') {
+      interpolationDepth = 1;
+      current.write('#{');
+      i++;
+    } else if (c == ';' || c == '{' || c == '}') {
+      yield current.toString();
+      current.clear();
+    } else {
+      current.write(c);
+    }
+  }
+  yield current.toString();
 }

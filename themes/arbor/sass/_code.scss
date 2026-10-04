@@ -5,6 +5,8 @@
 // which emits `.hljs-*` spans inside `pre > code[class^="language-"]`; this file
 // styles them. No client-side highlighter ships with the theme.
 
+@use 'variables' as *;
+
 // ── Inline code ───────────────────────────────────────────────────────────────
 
 code {

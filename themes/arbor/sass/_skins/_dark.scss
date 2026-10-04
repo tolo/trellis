@@ -1,6 +1,8 @@
 // Arbor Docs Theme — sass/_skins/_dark.scss
-// Dark skin color overrides. Imported when skin: dark; also mirrored as the
-// prefers-color-scheme: dark :root overrides in main.scss for skin: auto.
+// Dark palette. Read by _variables.scss, where each colour entry is the default
+// of its `<name>_dark` param and the base of the dark palette: the whole
+// `skin: dark` output, and the `prefers-color-scheme: dark` :root block that
+// main.scss emits for `skin: auto`. Never derived from the light palette.
 //
 // WCAG 2.1 AA contrast ratios (computed over sRGB, per WCAG relative luminance):
 //   Body/UI text on page background (#0d1117):
@@ -13,16 +15,18 @@
 //     #9aa5b1 on #161b22 =  6.91:1  (muted — passes 4.5:1)
 //     #4ade80 on #161b22 =  9.93:1  (primary — passes 4.5:1)
 
-$trellis-text-color: #e6edf3 !default;
-$trellis-muted-color: #9aa5b1 !default;
-$trellis-bg-color: #0d1117 !default;
-$trellis-surface-color: #161b22 !default;
-$trellis-border-color: #2d333b !default;
-$trellis-primary-color: #4ade80 !default;
-$trellis-accent-color: #6ee7a8 !default;
-$trellis-code-keyword: #d2a8ff !default;
-$trellis-code-string: #7ee787 !default;
-$trellis-code-number: #ffa657 !default;
-$trellis-code-comment: #8b949e !default;
-$trellis-code-function: #79c0ff !default;
-$trellis-code-punctuation: #8b949e !default;
+$palette: (
+  text-color: #e6edf3,
+  muted-color: #9aa5b1,
+  bg-color: #0d1117,
+  surface-color: #161b22,
+  border-color: #2d333b,
+  primary-color: #4ade80,
+  accent-color: #6ee7a8,
+  code-keyword: #d2a8ff,
+  code-string: #7ee787,
+  code-number: #ffa657,
+  code-comment: #8b949e,
+  code-function: #79c0ff,
+  code-punctuation: #8b949e,
+);

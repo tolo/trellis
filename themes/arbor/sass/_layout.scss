@@ -3,6 +3,8 @@
 // footer, and responsive breakpoints. Mobile-first: base styles target mobile,
 // media queries add the multi-column desktop layout.
 
+@use 'variables' as *;
+
 // ── Breakpoints ──────────────────────────────────────────────────────────────
 
 $bp-sm: 640px;   // Large phone / small tablet

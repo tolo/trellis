@@ -56,6 +56,35 @@ void main() {
       expect(css, contains('#f5f5f5'));
     });
 
+    group('fatalImportDeprecation', () {
+      test('an @import fails the compile', () {
+        expect(
+          () => TrellisCss.compileSass(
+            fixture('uses_import.scss'),
+            loadPaths: [fixture('')],
+            fatalImportDeprecation: true,
+          ),
+          throwsA(
+            isA<SassCompilationException>().having((e) => e.message, 'message', contains('only an error because')),
+          ),
+        );
+      });
+
+      test('an @import compiles when not fatal', () {
+        final css = TrellisCss.compileSass(fixture('uses_import.scss'), loadPaths: [fixture('')]);
+        expect(css, contains('#3498db'));
+      });
+
+      test('an @use-only source compiles when fatal', () {
+        final css = TrellisCss.compileSass(
+          fixture('uses_variables.scss'),
+          loadPaths: [fixture('')],
+          fatalImportDeprecation: true,
+        );
+        expect(css, contains('#3498db'));
+      });
+    });
+
     test('non-existent file throws SassCompilationException', () {
       expect(() => TrellisCss.compileSass('non_existent_file.scss'), throwsA(isA<SassCompilationException>()));
     });

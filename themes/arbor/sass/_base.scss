@@ -2,6 +2,8 @@
 // Minimal reset, typography, and base element styles.
 // Colors reference SASS variables from _variables.scss.
 
+@use 'variables' as *;
+
 // ── Reset ────────────────────────────────────────────────────────────────────
 
 *,

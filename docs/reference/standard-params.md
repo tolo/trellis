@@ -1,6 +1,8 @@
 # Standard Theme Params Contract
 
-All official Trellis themes **must** support the 18 core standard params defined in this document. This contract ensures site builders can switch themes and carry their `theme_params:` configuration without modification.
+All official Trellis themes **must** support the 25 core standard params defined in this document. This contract ensures site builders can switch themes and carry their `theme_params:` configuration without modification.
+
+> **Per-mode colors.** The 25 are the standard params of earlier releases plus seven `<name>_dark` twins, one for each color param. A color is set per mode: see [Skin & Colors](#skin--colors-15-params).
 
 > **Retired param.** A 19th param, `syntax_highlighting`, was removed by [ADR-010](../../dev/adrs/ADR-010-syntax-highlighting.md): syntax highlighting is now applied at build time by `trellis_site` and configured site-side via the `highlight:` key in `trellis_site.yaml`, not per theme. The old param is ignored.
 
@@ -14,7 +16,7 @@ Related docs:
 Standard params are defined in `theme.yaml` under `params:`. The Trellis CLI and `trellis_site` build pipeline parse them, merge them with the site's `theme_params:`, and expose them in three ways:
 
 1. **Templates** — `${theme.<param_name>}` (e.g. `${theme.primary_color}`)
-2. **SASS variables** — `$trellis-<param-name>` with `!default` (e.g. `$trellis-primary-color`)
+2. **SASS variables** — `$trellis-<param-name>`, declared `!default` in the theme's `_variables.scss` (e.g. `$trellis-primary-color`). The build configures each one with the merged value as `@use "main.scss" with (…)`; a param whose variable the theme does not declare `!default` is inert in SASS
 3. **CSS custom properties** — `--trellis-<param-name>` on `:root` (e.g. `--trellis-primary-color`)
 
 Boolean, enum, and list params are template-only or SASS-only (see Type Reference below).
@@ -22,7 +24,7 @@ Boolean, enum, and list params are template-only or SASS-only (see Type Referenc
 
 ## Complete Params Table
 
-All 18 standard params, with their SASS variable names and CSS custom property names:
+All 25 standard params, with their SASS variable names and CSS custom property names:
 
 | Param name | Type | Default | SASS variable | CSS custom property | Description |
 |---|---|---|---|---|---|
@@ -35,6 +37,13 @@ All 18 standard params, with their SASS variable names and CSS custom property n
 | `bg_color` | color | `#ffffff` | `$trellis-bg-color` | `--trellis-bg-color` | Page background |
 | `surface_color` | color | `#f3f4f6` | `$trellis-surface-color` | `--trellis-surface-color` | Elevated surfaces — code blocks, cards |
 | `border_color` | color | `#e5e7eb` | `$trellis-border-color` | `--trellis-border-color` | Borders, dividers |
+| `primary_color_dark` | color | `#3b82f6` | `$trellis-primary-color-dark` | `--trellis-primary-color-dark` | `primary_color` in the dark palette |
+| `accent_color_dark` | color | `#60a5fa` | `$trellis-accent-color-dark` | `--trellis-accent-color-dark` | `accent_color` in the dark palette |
+| `text_color_dark` | color | `#f3f4f6` | `$trellis-text-color-dark` | `--trellis-text-color-dark` | `text_color` in the dark palette |
+| `muted_color_dark` | color | `#9ca3af` | `$trellis-muted-color-dark` | `--trellis-muted-color-dark` | `muted_color` in the dark palette |
+| `bg_color_dark` | color | `#111827` | `$trellis-bg-color-dark` | `--trellis-bg-color-dark` | `bg_color` in the dark palette |
+| `surface_color_dark` | color | `#1f2937` | `$trellis-surface-color-dark` | `--trellis-surface-color-dark` | `surface_color` in the dark palette |
+| `border_color_dark` | color | `#374151` | `$trellis-border-color-dark` | `--trellis-border-color-dark` | `border_color` in the dark palette |
 | **Typography** | | | | | |
 | `font_family` | string | `"system-ui, -apple-system, sans-serif"` | `$trellis-font-family` | `--trellis-font-family` | Body text font stack |
 | `heading_font_family` | string | `null` | `$trellis-heading-font-family` | `--trellis-heading-font-family` | Heading font stack (null = inherit body font) |
@@ -51,7 +60,9 @@ All 18 standard params, with their SASS variable names and CSS custom property n
 | **Features** | | | | | |
 | `show_rss_link` | boolean | `true` | `$trellis-show-rss-link` | — | Display RSS/Atom feed `<link>` in `<head>` |
 
-> Verified against `themes/verdant/theme.yaml` and `themes/verdant/sass/_variables.scss`.
+> Verified against `themes/verdant/theme.yaml`, `themes/verdant/sass/_variables.scss` and `themes/verdant/sass/_skins/_dark.scss` (the `_dark` defaults).
+
+> **`--trellis-<name>-dark` has no reader.** `_theme_custom_props.css` (the generated `css/theme-props.css`) emits every non-boolean, non-enum, non-list param, so it gains the seven `-dark` entries. Nothing in a theme reads them: the dark views take their colors from the dark palette inside the theme's own CSS, and a `<name>_dark` param reaches them through it.
 
 > **Defaults are per-theme.** The **Default** column shows the *reference* defaults
 > (the values the `verdant` theme ships). The contract fixes each param's **name,
@@ -64,14 +75,30 @@ All 18 standard params, with their SASS variable names and CSS custom property n
 
 ## Categories
 
-### Skin & Colors (8 params)
+### Skin & Colors (15 params)
 
-The eight color params control every visual surface in the theme. The `skin` param selects a built-in color preset; individual color params override specific values within that preset.
+`skin` plus seven color params and their seven `_dark` twins control every visual surface in the theme. A skin is a complete palette (a map of color entries in the theme's `sass/_skins/`), and a color param sets one entry in it:
+
+- `primary_color` sets the **light** palette's `primary-color` entry. `primary_color_dark` sets the **dark** palette's.
+- The `skin` param selects which palette the theme emits: `light` the light one, `dark` the dark one, `auto` the light one plus a `@media (prefers-color-scheme: dark)` block carrying the dark one.
+
+**Precedence rule.** A plain color param sets the light entry only, under every skin. It never reaches a dark view, so with `skin: dark` (or in the dark block of `skin: auto`) it changes nothing; the `_dark` twin is how a site recolors dark mode.
+
+**Dark is never derived.** A theme does not compute its dark colors from the light ones (no inversion, no lightness shift). Both palettes are authored, and both are overridden independently. (Maintainers: `docs/research/10-skin-vs-override-precedence.md` in the planning repo has the reasoning.)
 
 ```yaml
 theme_params:
   skin: dark
-  primary_color: "#a78bfa"   # Override just the primary on top of dark skin
+  primary_color_dark: "#a78bfa"   # The dark palette's primary
+```
+
+With `skin: auto`, set both to recolor both modes:
+
+```yaml
+theme_params:
+  skin: auto
+  primary_color: "#7c3aed"        # Light mode
+  primary_color_dark: "#a78bfa"   # Dark mode
 ```
 
 The `skin` enum values:
@@ -84,7 +111,10 @@ The `skin` enum values:
 Font stacks are CSS font-family values. `heading_font_family: null` means headings inherit the body font — the theme derives a combined variable:
 
 ```scss
-$trellis-heading-font: if($trellis-heading-font-family, $trellis-heading-font-family, $trellis-font-family);
+$trellis-heading-font: $trellis-font-family;
+@if $trellis-heading-font-family {
+  $trellis-heading-font: $trellis-heading-font-family;
+}
 ```
 
 To use a custom heading font, load it via a `<link>` in `head-extra` and set:
@@ -136,7 +166,7 @@ A CSS hex color string. Stored as a SASS color variable and emitted as a CSS cus
 primary_color: "#2563eb"
 ```
 
-In SASS: `$trellis-primary-color: #2563eb !default;`
+In SASS: `$trellis-primary-color: #2563eb !default;` (the build configures it: `@use "main.scss" with ($trellis-primary-color: tp.$trellis-primary-color)`)
 In CSS: `--trellis-primary-color: #2563eb;`
 In templates: `${theme.primary_color}` (returns the hex string)
 
@@ -150,7 +180,7 @@ max_width: "800px"
 heading_font_family: null    # null omitted from CSS output
 ```
 
-The SASS variable is emitted **unquoted**: the generator interpolates the value (`#{"…"}`) rather than writing a bare quoted literal, so a theme can use the variable directly (`font-family: $trellis-font-family`, `max-width: $trellis-max-width`) and get valid CSS. (A quoted `"800px"` would win the bridge's `!default` and compile to the invalid `max-width: "800px"`, which browsers drop.) Embedded `"` and `\` are escaped, and a SASS interpolation marker `#{…}` in a value is emitted as literal text — never evaluated. Avoid the structural characters `;`, `{`, `}` in a value: they are **not** neutralized, so a string value carrying them compiles but silently corrupts the emitted CSS rather than failing loudly (only a raw `color`-typed value with the same characters aborts the compile). Tracked as TD-011.
+The SASS variable is emitted **unquoted**: the generator interpolates the value (`#{"…"}`) rather than writing a bare quoted literal, so a theme can use the variable directly (`font-family: $trellis-font-family`, `max-width: $trellis-max-width`) and get valid CSS. (A quoted `"800px"` configured onto the theme's `!default` variable would compile to the invalid `max-width: "800px"`, which browsers drop.) Embedded `"` and `\` are escaped, and a SASS interpolation marker `#{…}` in a value is emitted as literal text — never evaluated. Avoid the structural characters `;`, `{`, `}` in a value: they are **not** neutralized, so a string value carrying them compiles but silently corrupts the emitted CSS rather than failing loudly (only a raw `color`-typed value with the same characters aborts the compile). Tracked as TD-011.
 
 In SASS: `$trellis-font-family: #{"system-ui, -apple-system, sans-serif"} !default;` (compiles to the unquoted `system-ui, -apple-system, sans-serif`)
 In CSS: `--trellis-font-family: system-ui, -apple-system, sans-serif;`
@@ -168,13 +198,14 @@ In SASS: `$trellis-show-reading-time: true !default;`
 
 ### `int`
 
-An integer value. Emitted as a SASS variable only. Typically used for counts and lengths in theme logic (not in CSS directly).
+An integer value. Emitted as a SASS variable and a CSS custom property. Typically used for counts and lengths in theme logic (not in CSS directly).
 
 ```yaml
 excerpt_length: 160
 ```
 
 In SASS: `$trellis-excerpt-length: 160 !default;`
+In CSS: `--trellis-excerpt-length: 160;`
 
 ### `enum`
 
@@ -229,7 +260,7 @@ Template:           ${theme.primary_color}
 
 ## Adding Theme-Specific Params
 
-Themes may extend beyond the 18 standard params. Convention:
+Themes may extend beyond the 25 standard params. Convention:
 
 1. Place standard params first in `theme.yaml`, clearly marked
 2. Place theme-specific params in a separate block after the standard ones
@@ -237,14 +268,14 @@ Themes may extend beyond the 18 standard params. Convention:
 
 ```yaml
 params:
-  # === Standard Params (18) ===
+  # === Standard Params (25) ===
   skin:
     type: enum
     values: [light, dark, auto]
     default: auto
     description: Color scheme
 
-  # ... (other 17 standard params)
+  # ... (other 24 standard params)
 
   # === Blog-Specific Params ===
   show_reading_time:

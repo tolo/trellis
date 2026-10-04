@@ -17,8 +17,8 @@ import '../templates/theme/theme_variables_template.dart';
 /// Generates a Trellis theme project scaffold.
 ///
 /// Produces a theme skeleton with theme.yaml, layouts with tl:define blocks,
-/// SASS with !default variables and skin presets, and an example site for
-/// previewing during development.
+/// SASS on the `@use` module contract (a `!default` variables module and
+/// palette-map skins), and an example site for previewing during development.
 class ThemeProjectGenerator {
   /// Creates a generator for a theme project with [projectName], writing files
   /// via [writer].

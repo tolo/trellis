@@ -1,10 +1,30 @@
-/// Generates sass/_skins/_light.scss with light color presets.
-String themeLightSkinTemplate() => r'''// Light skin color presets.
-// These override the default colors when skin: light is selected.
+/// Generates sass/_skins/_light.scss, the light palette map.
+String themeLightSkinTemplate() => r'''// Light palette. Read by _variables.scss, where each entry is the default of its
+// colour param and the base of the light palette: the whole `skin: light` output
+// and the base :root of `skin: auto`. Keep the entries equal to the colour
+// defaults in theme.yaml.
+//
+// A skin file is a palette only: it declares no variable, because Sass
+// configures a variable through the module that declares it (_variables.scss).
+//
+// WCAG 2.1 AA contrast ratios (computed over sRGB, per WCAG relative luminance):
+//   On the page background (#ffffff):
+//     #1f2937 = 14.68:1  (body text — passes 4.5:1)
+//     #6b7280 =  4.83:1  (muted — passes 4.5:1)
+//     #2563eb =  5.17:1  (primary/links — passes 4.5:1)
+//     #3b82f6 =  3.68:1  (accent, hover colour — below 4.5:1, pick a darker one for body text)
+//   On the elevated surface (#f3f4f6):
+//     #1f2937 = 13.34:1  (body text — passes 4.5:1)
+//     #2563eb =  4.70:1  (primary — passes 4.5:1)
+//     #6b7280 =  4.39:1  (muted — below 4.5:1 for normal text)
 
-$trellis-text-color: #1f2937 !default;
-$trellis-muted-color: #6b7280 !default;
-$trellis-bg-color: #ffffff !default;
-$trellis-surface-color: #f3f4f6 !default;
-$trellis-border-color: #e5e7eb !default;
+$palette: (
+  text-color: #1f2937,
+  muted-color: #6b7280,
+  bg-color: #ffffff,
+  surface-color: #f3f4f6,
+  border-color: #e5e7eb,
+  primary-color: #2563eb,
+  accent-color: #3b82f6,
+);
 ''';

@@ -4,7 +4,7 @@ Trellis themes provide complete site designs that are fully configurable through
 
 Related docs:
 - [Theme Authoring Guide](theme-authoring.md) — how to create and publish themes
-- [Standard Params Contract](../reference/standard-params.md) — all 18 configurable standard params
+- [Standard Params Contract](../reference/standard-params.md) — all 25 configurable standard params
 
 
 ## Installing a Theme
@@ -103,7 +103,8 @@ theme: verdant
 # Theme params — all are optional (defaults from theme.yaml apply)
 theme_params:
   skin: auto
-  primary_color: "#7c3aed"
+  primary_color: "#7c3aed"        # Light mode
+  primary_color_dark: "#a78bfa"   # Dark mode
   nav_links:
     - label: Home
       url: /
@@ -122,22 +123,24 @@ theme_params:
 Any param not listed in `theme_params:` uses the theme's default from `theme.yaml`. You only need to specify what you want to change.
 
 
-## The 18 Standard Params
+## The 25 Standard Params
 
-Every official Trellis theme supports the same 18 standard params, grouped into six categories:
+Every official Trellis theme supports the same 25 standard params, grouped into six categories:
 
 | Category | Params |
 |---|---|
-| Skin & Colors | `skin`, `primary_color`, `accent_color`, `text_color`, `muted_color`, `bg_color`, `surface_color`, `border_color` |
+| Skin & Colors | `skin`, `primary_color`, `accent_color`, `text_color`, `muted_color`, `bg_color`, `surface_color`, `border_color`, and the seven dark-mode twins `primary_color_dark`, `accent_color_dark`, `text_color_dark`, `muted_color_dark`, `bg_color_dark`, `surface_color_dark`, `border_color_dark` |
 | Typography | `font_family`, `heading_font_family`, `code_font_family` |
 | Layout | `max_width`, `border_radius` |
 | Navigation | `nav_links`, `social_links` |
 | Footer | `footer_text`, `show_powered_by` |
 | Features | `show_rss_link` |
 
-See the [Standard Params Contract](../reference/standard-params.md) for types, defaults, and descriptions of all 18 params.
+See the [Standard Params Contract](../reference/standard-params.md) for types, defaults, and descriptions of all 25 params.
 
-Themes may also define additional params beyond the 18 standard ones (e.g. Verdant adds `show_reading_time`, `hero_title`, `date_format`, etc.).
+**Colors are per mode.** `primary_color` sets the color in the theme's *light* palette and `primary_color_dark` sets it in the *dark* palette. `skin` picks which palette the theme emits: `light` the light one, `dark` the dark one, `auto` the light one plus a block that applies the dark one when the visitor's OS prefers dark. A plain color param (`primary_color`) sets the light entry only, under every skin, so with `skin: dark` it changes nothing: set `primary_color_dark`. Trellis never derives a dark color from a light one, because a color chosen for a white background has no verified contrast on a dark one.
+
+Themes may also define additional params beyond the 25 standard ones (e.g. Verdant adds `show_reading_time`, `hero_title`, `date_format`, etc.).
 
 
 ## Customization Without Forking
@@ -147,7 +150,7 @@ There are four dimensions of customization, from simplest to most powerful:
 1. **Params** — change values via YAML
 2. **Layout override** — replace a layout file entirely
 3. **Block override** — override one `tl:define` slot via `tl:extends`
-4. **SASS variable override** — change compiled-in values
+4. **Site stylesheets** — your own SASS, reading the theme's merged params
 
 Use the simplest approach that achieves your goal.
 
@@ -158,7 +161,7 @@ The most common case — just set values in `trellis_site.yaml`:
 ```yaml
 theme_params:
   skin: dark
-  primary_color: "#e11d48"
+  primary_color_dark: "#fb7185"   # skin: dark uses the dark palette
   font_family: "Georgia, serif"
   max_width: "720px"
   hero_title: "My Personal Blog"
@@ -234,18 +237,21 @@ Standard `tl:define` blocks provided by themes (Verdant example):
 | `content` | The `<main>` element |
 | `site-footer` | The `<footer>` element |
 
-### Dimension 4: SASS Variable Override
+### Dimension 4: Site Stylesheets
 
-For fine-grained control over compiled styles, add a SASS file to your site's `sass/` directory. The site SASS directory is in the SASS load path before the theme:
+A site can add its own SASS: partials in `sass/` and stylesheets in `static/`. These are compiled with the site's `sass/` and the theme's `sass/` on the load path, and they can read the theme's merged params through the generated `theme_params` module:
 
 ```scss
-/* my-site/sass/_variables.scss — overrides theme variables */
-$trellis-primary-color: #7c3aed;   /* Purple instead of blue */
-$trellis-border-radius: 2px;       /* Sharp corners */
-$trellis-max-width: 700px;
+// my-site/static/site.scss — compiled to output/site.css
+@use 'theme_params' as tp;
+
+.callout {
+  border-left: 4px solid tp.$trellis-primary-color;   // the merged value, e.g. from theme_params:
+  border-radius: tp.$trellis-border-radius;
+}
 ```
 
-Because site SASS takes precedence over theme SASS, these values override the theme's `!default` declarations. Note: this only affects compiled SASS values, not the CSS custom properties (which come from params). For full control, use both `theme_params:` and SASS overrides together.
+What a site SASS file **cannot** do is reconfigure the theme. A `sass/_variables.scss` in your site does not change the theme's variables: Sass resolves the theme's own `@forward 'variables'` relative to the theme file before it consults any load path, and a configured module cannot be reconfigured afterwards. `theme_params:` is the one way to change a theme's values.
 
 
 ## Updating a Theme
@@ -302,7 +308,7 @@ The build process:
 1. Reads `theme:` from `trellis_site.yaml`
 2. Merges `theme_params:` with theme defaults
 3. Generates `.trellis/build/_theme_params.scss` and `css/theme-props.css`
-4. Compiles `<theme>/sass/main.scss` with the merged params
+4. Compiles each theme stylesheet (`<theme>/sass/main.scss`) through a generated `@use … with (…)` wrapper that configures the theme's `!default` variables with the merged params
 5. Copies theme `static/` assets (site `static/` wins on conflict)
 6. Resolves layouts: site layouts checked first, then theme layouts as fallback
 

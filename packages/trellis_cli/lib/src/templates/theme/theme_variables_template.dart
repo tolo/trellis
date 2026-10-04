@@ -1,15 +1,83 @@
-/// Generates sass/_variables.scss with !default variables for all standard params.
-String themeVariablesTemplate() => r'''// Theme variables — all use !default so site can override.
-// These map to params in theme.yaml via the auto-generated _theme_params.scss.
+/// Generates sass/_variables.scss: the standard params as `!default` variables.
+String themeVariablesTemplate() => r'''// Theme variables — one `!default` variable per param in theme.yaml that has a
+// SASS representation.
+//
+// main.scss `@forward`s this module first, so the build can configure every
+// `!default` variable below with the merged params (theme.yaml defaults plus the
+// site's theme_params:) as `@use "main.scss" with (...)`. Sass accepts that only
+// on a module's first load, so nothing may load this file before main.scss
+// forwards it. Never edit this file to change site values — use theme_params:
+// in trellis_site.yaml.
+//
+// Params with no variable here (nav_links, social_links, footer_text) stay inert
+// in SASS; templates read them as ${theme.<name>}.
+
+@use 'sass:map';
+@use '_skins/light' as light;
+@use '_skins/dark' as dark;
 
 // Skin & Colors
-$trellis-primary-color: #2563eb !default;
-$trellis-accent-color: #3b82f6 !default;
-$trellis-text-color: #1f2937 !default;
-$trellis-muted-color: #6b7280 !default;
-$trellis-bg-color: #ffffff !default;
-$trellis-surface-color: #f3f4f6 !default;
-$trellis-border-color: #e5e7eb !default;
+// Each colour param is per mode: `primary_color` sets the light palette's entry,
+// `primary_color_dark` the dark palette's. A forced skin selects a palette; a
+// param sets one entry in it. A plain colour param therefore never reaches the
+// dark palette, and dark colours are never derived from light ones.
+$trellis-skin: auto !default; // light | dark | auto
+
+$trellis-primary-color: map.get(light.$palette, primary-color) !default;
+$trellis-accent-color: map.get(light.$palette, accent-color) !default;
+$trellis-text-color: map.get(light.$palette, text-color) !default;
+$trellis-muted-color: map.get(light.$palette, muted-color) !default;
+$trellis-bg-color: map.get(light.$palette, bg-color) !default;
+$trellis-surface-color: map.get(light.$palette, surface-color) !default;
+$trellis-border-color: map.get(light.$palette, border-color) !default;
+
+$trellis-primary-color-dark: map.get(dark.$palette, primary-color) !default;
+$trellis-accent-color-dark: map.get(dark.$palette, accent-color) !default;
+$trellis-text-color-dark: map.get(dark.$palette, text-color) !default;
+$trellis-muted-color-dark: map.get(dark.$palette, muted-color) !default;
+$trellis-bg-color-dark: map.get(dark.$palette, bg-color) !default;
+$trellis-surface-color-dark: map.get(dark.$palette, surface-color) !default;
+$trellis-border-color-dark: map.get(dark.$palette, border-color) !default;
+
+// The palettes with the site's per-mode overrides applied. Public (not `$_`)
+// because main.scss reads $trellis-palette-dark for the `skin: auto` block.
+$trellis-palette-light: map.merge(
+  light.$palette,
+  (
+    primary-color: $trellis-primary-color,
+    accent-color: $trellis-accent-color,
+    text-color: $trellis-text-color,
+    muted-color: $trellis-muted-color,
+    bg-color: $trellis-bg-color,
+    surface-color: $trellis-surface-color,
+    border-color: $trellis-border-color,
+  )
+);
+$trellis-palette-dark: map.merge(
+  dark.$palette,
+  (
+    primary-color: $trellis-primary-color-dark,
+    accent-color: $trellis-accent-color-dark,
+    text-color: $trellis-text-color-dark,
+    muted-color: $trellis-muted-color-dark,
+    bg-color: $trellis-bg-color-dark,
+    surface-color: $trellis-surface-color-dark,
+    border-color: $trellis-border-color-dark,
+  )
+);
+
+// A forced dark skin selects the dark palette. Every rule keeps reading
+// $trellis-*-color, so this runs before anything derived from them. (@if shares
+// the root scope, so this updates the global variables without !global.)
+@if $trellis-skin == dark {
+  $trellis-primary-color: map.get($trellis-palette-dark, primary-color);
+  $trellis-accent-color: map.get($trellis-palette-dark, accent-color);
+  $trellis-text-color: map.get($trellis-palette-dark, text-color);
+  $trellis-muted-color: map.get($trellis-palette-dark, muted-color);
+  $trellis-bg-color: map.get($trellis-palette-dark, bg-color);
+  $trellis-surface-color: map.get($trellis-palette-dark, surface-color);
+  $trellis-border-color: map.get($trellis-palette-dark, border-color);
+}
 
 // Typography
 $trellis-font-family: system-ui, -apple-system, sans-serif !default;

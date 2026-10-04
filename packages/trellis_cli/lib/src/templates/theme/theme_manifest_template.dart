@@ -1,4 +1,4 @@
-/// Generates theme.yaml with all 18 core standard params.
+/// Generates theme.yaml with all 25 core standard params, the seven `_dark` colour twins included.
 String themeManifestTemplate(String themeName) {
   return '''
 name: $themeName
@@ -57,6 +57,44 @@ params:
     type: color
     default: "#e5e7eb"
     description: Borders, dividers, separators
+
+  # Dark-mode twins: each colour param has a `<name>_dark` sibling that sets the
+  # same entry in the dark palette (skin: dark, and the prefers-color-scheme
+  # block of skin: auto). A plain colour param sets the light entry only.
+  primary_color_dark:
+    type: color
+    default: "#3b82f6"
+    description: Brand/accent color in dark mode — links, buttons, active states
+
+  accent_color_dark:
+    type: color
+    default: "#60a5fa"
+    description: Secondary accent in dark mode — hover states, highlights, borders
+
+  text_color_dark:
+    type: color
+    default: "#f3f4f6"
+    description: Main body text in dark mode
+
+  muted_color_dark:
+    type: color
+    default: "#9ca3af"
+    description: Secondary text in dark mode — dates, metadata, captions
+
+  bg_color_dark:
+    type: color
+    default: "#111827"
+    description: Page background in dark mode
+
+  surface_color_dark:
+    type: color
+    default: "#1f2937"
+    description: Elevated surfaces in dark mode — code blocks, cards, callouts
+
+  border_color_dark:
+    type: color
+    default: "#374151"
+    description: Borders, dividers, separators in dark mode
 
   # === Typography ===
   font_family:

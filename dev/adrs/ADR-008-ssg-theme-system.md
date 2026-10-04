@@ -1,7 +1,8 @@
 # ADR-008: SSG Theme System
 
 ## Status
-Accepted (implemented in SDK Phase 4)
+Accepted (implemented in SDK Phase 4). The SASS bridge mechanism is superseded by
+[ADR-013](ADR-013-sass-module-bridge.md) (0.12); the marked passages below are kept as the original record.
 
 ## Context
 
@@ -57,12 +58,20 @@ theme_params:
 2. **Layout cascading** — site `layouts/` files override theme layouts at the same path
 3. **`tl:extends` block overrides** — extend a theme layout and redefine specific blocks
 4. **SASS variable overrides** — site `sass/_variables.scss` overrides theme `!default` vars
+   *(Superseded by ADR-013. This never held: Sass resolves a theme's own `variables` relative to the theme file before any
+   load path, so site SASS did not shadow it, and under `@use` it cannot reconfigure it. `theme_params:` is the one way to
+   change a theme's SASS values; site SASS can read them with `@use "theme_params"`.)*
 
 ### Build pipeline integration
 
 - Auto-generate `_theme_params.scss` from merged params (SASS variables)
+  *(Superseded by ADR-013: the file is a plain module, without `!default`, that a generated `@use … with()` wrapper reads
+  by namespace.)*
 - Auto-generate CSS custom properties (`:root { --trellis-* }`) for runtime overrides
+  *(Mechanism unchanged; under ADR-013 the file also lists the seven `--trellis-<name>-dark` colour params.)*
 - Theme SASS compiled with load path: `[site/sass/, theme/sass/]`
+  *(Superseded by ADR-013: the load path is `[.trellis/build/, site/sass/, theme/sass/]`, and the theme's entry is
+  compiled through the generated wrapper.)*
 - Theme static assets merged with site static (site wins on conflict)
 - Merged params injected into template context as `${theme.*}`
 
@@ -135,6 +144,8 @@ that carries multiple themes, copying only that subtree into the site. No packag
 - Layout resolver changes from single `layoutsDir` to `List<String> layoutSearchPaths`
 - `CompositeLoader` already exists — theme integration creates `[site, theme]` loader chain
 - SASS `!default` is the standard mechanism for overridable variables (no Trellis-specific invention)
+  *(Still the theme-side convention. Superseded by ADR-013 as the bridge: a `!default` variable is configured through
+  `@use … with()` module configuration, not overridden by `@import` order.)*
 - CSS custom properties generated with `--trellis-{param}` naming convention
 - Theme param deep merge: maps merged recursively, scalars/lists replaced (site wins)
 - `trellis theme add` does a shallow git clone + config update (simple, no Go toolchain). A whole-repository install

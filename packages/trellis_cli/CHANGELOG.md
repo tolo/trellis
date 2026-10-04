@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.12.0
+
+### Breaking
+
+- **`trellis build` compiles a theme through the `@use … with()` bridge with the `@import` deprecation fatal**
+  (ADR-013). For each non-partial stylesheet in a theme's `sass/` it writes `.trellis/build/bridge_<entry>.scss`,
+  which `@use`s the entry and configures the params its `_variables.scss` declares `!default`. A theme whose entry
+  still `@import`s fails the build with Sass's import-deprecation error instead of building with the wrong skin.
+
+### Changed
+
+- `trellis create --template theme` scaffolds a theme on the `@use` contract: `main.scss` forwards
+  `_variables.scss`, skins are `$palette` maps, and `theme.yaml` declares the 25 standard params, including the seven
+  `_dark` colour twins.
+- The scaffold's palettes pass WCAG AA (4.5:1) for every text colour on both the page background and the elevated
+  surface: light muted `#4b5563` and accent `#1d4ed8`, dark primary `#60a5fa` and accent `#93c5fd`.
+- A site's own stylesheets under `static/` are compiled without silencing Sass's `@import` deprecation warning, so
+  a site `@import` now prints it. It still builds; `@import` is removed in Dart Sass 3.0.
+
+### Fixed
+
+- The theme scaffold's `base.html` linked `/theme.css`, which no build produces, so a scaffolded theme rendered
+  unstyled. It now links `css/main.css` and `css/theme-props.css`, prefixed with the site's `pathPrefix`.
+- A themed build embedded the theme entry's native path in the generated stylesheet, which Sass parses as a URL: on
+  Windows `C:\…` read as URL scheme `c:`, and on any platform a `%` in the path read as an escape. The entry is now
+  embedded as the path of its `file:` URL.
+
 ## 0.11.1
 
 ### Changed

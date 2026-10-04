@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.12.0
+
+### Breaking
+
+- **The theme SASS bridge is `@use … with()`, no longer `@import`** (TD-006, ADR-013). A theme stylesheet is compiled
+  through a generated wrapper that `@use`s it and configures the params its `sass/_variables.scss` declares
+  `!default`; a param with no such variable stays inert. Every entry's first module rule must be
+  `@forward 'variables'`, because Sass configures a module only on its first load. Skins are `$palette` maps in
+  `_skins/_light.scss` and `_skins/_dark.scss`, and the bridge no longer injects a skin file. `_theme_params.scss`
+  is a plain module (no `!default`) that site SASS reads with `@use "theme_params" as tp`. A theme on the old
+  `@import` contract fails `trellis build` with Sass's import-deprecation error.
+- **Colour params are per mode.** Every `type: color` param has a `<name>_dark` twin that sets the same entry in the
+  dark palette, taking the standard contract from 18 to 25 params. A plain colour param now sets the light value
+  only: a `skin: dark` site that set `primary_color` must set `primary_color_dark` instead, and the `auto`
+  `prefers-color-scheme: dark` block reads the dark palette, so it follows the `_dark` twins rather than the plain
+  params. Dark values are never derived from light ones.
+
+### Added
+
+- `ThemeBuildConfig.bridgeWrapperSource(themeEntryPath)` returns the wrapper text `trellis build` compiles, and
+  `ThemeBuildConfig.configurableVars` lists the `$trellis-*` variables it configures. The entry is embedded as the
+  path of its `file:` URL, so a Windows path or a path containing `%` resolves.
+
+### Notes
+
+- **All six bundled themes are migrated** – Arbor, Bloom, Folio, Lattice, Meadow and Verdant – and each gains the
+  seven standard `_dark` twins; Bloom's `accent_gradient_start`/`accent_gradient_end` and Meadow's
+  `sky`/`sun`/`bloom`/`coral` colours get twins too. On a dark view, Bloom's plain `accent_gradient_*` no longer
+  apply; set the `_dark` twins. Themes are not part of this package; they live under `themes/` in `tolo/trellis`.
+- `heading_font_family: null` keeps a theme's own non-null heading font (Sass treats a `null` passed through
+  `with()` as unset). For the body font on such a theme, set `heading_font_family` to the `font_family` stack.
+
 ## 0.11.1
 
 ### Changed

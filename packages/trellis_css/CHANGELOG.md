@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.12.0
+
+### Breaking
+
+- `TrellisCss.compileSass` no longer has a `silenceImportDeprecation` parameter. An `@import` rule always surfaces
+  Dart Sass's import-deprecation warning; migrate the source to `@use`/`@forward` (ADR-013).
+
+### Added
+
+- `TrellisCss.compileSass(..., fatalImportDeprecation: true)` fails the compile on an `@import` rule with a
+  `SassCompilationException` carrying Sass's import-deprecation error, so a caller can prove a source tree is ready
+  for Dart Sass 3.0, which removes `@import`.
+
 ## 0.11.1
 
 ### Fixed

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:trellis_cli/trellis_cli.dart';
+import 'package:trellis_site/trellis_site.dart';
 
 import '_workspace_root.dart';
 
@@ -349,7 +350,8 @@ params:
       // Theme SASS
       Directory(p.join(themeDir.path, 'sass')).createSync();
       File(p.join(themeDir.path, 'sass', 'main.scss')).writeAsStringSync(r'''
-@import 'variables';
+@forward 'variables';
+@use 'variables' as *;
 .themed { color: $trellis-primary-color; }
 ''');
       File(p.join(themeDir.path, 'sass', '_variables.scss')).writeAsStringSync(r'''
@@ -503,9 +505,9 @@ params:
         ).writeAsStringSync('<svg xmlns="http://www.w3.org/2000/svg"/>');
 
         Directory(p.join(themeDir.path, 'sass')).createSync(recursive: true);
-        File(
-          p.join(themeDir.path, 'sass', 'main.scss'),
-        ).writeAsStringSync("@import 'variables';\n.themed { color: \$trellis-primary-color; }\n");
+        File(p.join(themeDir.path, 'sass', 'main.scss')).writeAsStringSync(
+          "@forward 'variables';\n@use 'variables' as *;\n.themed { color: \$trellis-primary-color; }\n",
+        );
         File(
           p.join(themeDir.path, 'sass', '_variables.scss'),
         ).writeAsStringSync('\$trellis-primary-color: #ff0000 !default;\n');
@@ -733,12 +735,10 @@ ${tagged ? 'taxonomies:\n  - tags\n' : ''}''');
       });
     });
 
-    // Skin selection (H3): skin: light | dark must force the theme's _skins/
-    // palette; skin: auto (and unset) must emit no skin import so output stays
-    // byte-for-byte identical to the pre-skin behavior. Precedence: the skin file
-    // is imported BEFORE _theme_params.scss, and since both use !default (and SASS
-    // honors the first !default), the skin palette wins over theme.yaml's baked-in
-    // light color defaults.
+    // Skin selection: skin: light | dark selects the theme's palette inside its own
+    // _variables.scss (the bridge injects nothing for a skin), and skin: auto keeps
+    // the light palette and gates the theme's prefers-color-scheme block. Asserted
+    // on compiled CSS through a fixture theme shaped like the shipped ones.
     group('skin selection', () {
       /// Creates a theme with light/dark skin palettes and returns its dir.
       Directory skinTheme(Directory dir) {
@@ -770,19 +770,37 @@ params:
 ''');
         final sassDir = Directory(p.join(themeDir.path, 'sass', '_skins'))..createSync(recursive: true);
         File(p.join(themeDir.path, 'sass', 'main.scss')).writeAsStringSync(r'''
-@import 'variables';
+@forward 'variables';
+@use 'sass:map';
+@use 'variables' as *;
 .bg { background: $trellis-bg-color; }
+@if $trellis-skin == auto {
+  @media (prefers-color-scheme: dark) {
+    .bg { background: map.get($trellis-palette-dark, bg-color); }
+  }
+}
 ''');
         File(p.join(themeDir.path, 'sass', '_variables.scss')).writeAsStringSync(r'''
-$trellis-bg-color: #ffffff !default;
+@use 'sass:map';
+@use '_skins/light' as light;
+@use '_skins/dark' as dark;
+
+$trellis-skin: auto !default;
+$trellis-bg-color: map.get(light.$palette, bg-color) !default;
+$trellis-bg-color-dark: map.get(dark.$palette, bg-color) !default;
+$trellis-palette-dark: map.merge(dark.$palette, (bg-color: $trellis-bg-color-dark));
+
+@if $trellis-skin == dark {
+  $trellis-bg-color: map.get($trellis-palette-dark, bg-color);
+}
 ''');
         File(p.join(sassDir.path, '_light.scss')).writeAsStringSync(r'''
-$trellis-bg-color: #ffffff !default;
+$palette: (bg-color: #ffffff);
 ''');
         // Dark uses a value that survives compression verbatim (#010203 has no
         // shorter form), so the end-to-end assertion is unambiguous.
         File(p.join(sassDir.path, '_dark.scss')).writeAsStringSync(r'''
-$trellis-bg-color: #010203 !default;
+$palette: (bg-color: #010203);
 ''');
         return themeDir;
       }
@@ -805,46 +823,64 @@ theme_params:
 ''');
       }
 
-      test('skin: dark injects the dark skin import before theme_params', () async {
+      Future<String> buildCss() async {
+        expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
+        return File(p.join(tempDir.path, 'output', 'css', 'main.css')).readAsStringSync();
+      }
+
+      test('skin: dark compiles the dark palette and no prefers-color-scheme block', () async {
         minimalSite(tempDir);
         skinTheme(tempDir);
         useSkinTheme(tempDir, 'skin-theme', 'dark');
 
-        expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
+        final css = await buildCss();
 
-        final wrapper = File(p.join(tempDir.path, '.trellis', 'build', 'bridge_main.scss')).readAsStringSync();
-        expect(wrapper, contains('_skins/_dark.scss'));
-        // Skin import must precede theme_params so its !default palette wins.
-        expect(wrapper.indexOf('_dark.scss'), lessThan(wrapper.indexOf('theme_params')));
-
-        // End-to-end: the dark-only color must reach the compiled CSS.
-        final css = File(p.join(tempDir.path, 'output', 'css', 'main.css')).readAsStringSync();
         expect(css, contains('#010203'));
+        expect(css, isNot(contains('prefers-color-scheme')));
       });
 
-      test('skin: light injects the light skin import', () async {
+      test('skin: light compiles the light palette and no prefers-color-scheme block', () async {
         minimalSite(tempDir);
         skinTheme(tempDir);
         useSkinTheme(tempDir, 'skin-theme', 'light');
 
-        expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
+        final css = await buildCss();
 
-        final wrapper = File(p.join(tempDir.path, '.trellis', 'build', 'bridge_main.scss')).readAsStringSync();
-        expect(wrapper, contains('_skins/_light.scss'));
-        expect(wrapper, isNot(contains('_dark.scss')));
+        expect(css, contains('#fff'));
+        expect(css, isNot(contains('#010203')));
+        expect(css, isNot(contains('prefers-color-scheme')));
       });
 
-      test('skin: auto injects no skin import', () async {
+      test('skin: auto compiles the light palette plus the prefers-color-scheme dark block', () async {
         minimalSite(tempDir);
         skinTheme(tempDir);
         useSkinTheme(tempDir, 'skin-theme', 'auto');
 
-        expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
+        final css = await buildCss();
 
+        expect(css, startsWith('.bg{background:#fff}'));
+        expect(css, matches(RegExp(r'@media ?\(prefers-color-scheme: dark\)\{\.bg\{background:#010203\}\}')));
+      });
+
+      test('the bridge wrapper a CLI build compiles is the one ThemeBuildConfig produces', () async {
+        minimalSite(tempDir);
+        final themeDir = skinTheme(tempDir);
+        useSkinTheme(tempDir, 'skin-theme', 'dark');
+        await buildCss();
+
+        final manifest = ThemeManifest.load(themeDir.path);
+        final merged = const ThemeParamMerger().merge(manifest.defaultParams, {'skin': 'dark'}).params;
+        final config = const ThemeSassGenerator().generate(
+          mergedParams: merged,
+          paramTypes: {for (final e in manifest.params.entries) e.key: e.value.type},
+          siteDir: tempDir.path,
+          themeDir: themeDir.path,
+        );
         final wrapper = File(p.join(tempDir.path, '.trellis', 'build', 'bridge_main.scss')).readAsStringSync();
-        expect(wrapper, isNot(contains('_skins')));
-        expect(wrapper, isNot(contains('_dark.scss')));
-        expect(wrapper, isNot(contains('_light.scss')));
+
+        expect(wrapper, config.bridgeWrapperSource(p.canonicalize(p.join(themeDir.path, 'sass', 'main.scss'))));
+        expect(wrapper, isNot(contains('@import')));
+        expect(config.configurableVars, ['trellis-skin', 'trellis-bg-color']);
       });
 
       test('skin: dark and skin: light compile to different CSS', () async {
@@ -915,7 +951,7 @@ theme_params:
         }
       });
 
-      test('theme without _skins/ files skips the skin import (no crash)', () async {
+      test('theme without _skins/ or _variables.scss still compiles through the wrapper', () async {
         minimalSite(tempDir);
         // Theme has a sass/main.scss but no _skins/ directory.
         final themeDir = Directory(p.join(tempDir.path, 'themes', 'no-skins'))..createSync(recursive: true);
@@ -945,8 +981,10 @@ params:
 
         expect(await TrellisCli(workingDirectory: tempDir.path).run(['build']), 0);
         final wrapper = File(p.join(tempDir.path, '.trellis', 'build', 'bridge_main.scss')).readAsStringSync();
+        // Nothing to configure: the entry is `@use`d bare, with no skin file.
+        expect(wrapper, isNot(contains('with')));
         expect(wrapper, isNot(contains('_skins')));
-        expect(File(p.join(tempDir.path, 'output', 'css', 'main.css')).existsSync(), isTrue);
+        expect(File(p.join(tempDir.path, 'output', 'css', 'main.css')).readAsStringSync(), contains('.no-skins'));
       });
     });
 

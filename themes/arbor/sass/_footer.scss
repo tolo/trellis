@@ -2,6 +2,8 @@
 // Footer content components. Footer structure lives in _layout.scss
 // (.site-footer, .footer-inner).
 
+@use 'variables' as *;
+
 .footer-powered-by {
   color: var(--trellis-muted, #{$trellis-muted-color});
 

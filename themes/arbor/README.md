@@ -50,14 +50,19 @@ it without installing the theme first fails with
 ```yaml
 theme_params:
   skin: auto
-  primary_color: "#0f7a4d"
+  primary_color: "#0f7a4d"       # light mode
+  primary_color_dark: "#4ade80"  # dark mode (skin: dark, and auto's dark block)
   sidebar_title: "Guides"
   show_search: true
 ```
 
+Colours are set per mode: `primary_color` sets the light palette's entry and
+`primary_color_dark` the dark one's. A plain `primary_color` has no effect on a
+`skin: dark` site, and dark colours are never derived from light ones.
+
 ## Params
 
-Arbor implements all 18 standard theme params (see
+Arbor implements all 25 standard theme params (see
 `docs/reference/standard-params.md`) plus documentation-specific params:
 
 | Param | Type | Default | Purpose |

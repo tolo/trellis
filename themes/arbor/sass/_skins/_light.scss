@@ -1,6 +1,8 @@
 // Arbor Docs Theme — sass/_skins/_light.scss
-// Light skin color overrides. Imported when skin: light (and as the base for
-// skin: auto). These match the default param values in theme.yaml.
+// Light palette. Read by _variables.scss, where each colour entry is the default
+// of its colour param and the base of the light palette: the whole `skin: light`
+// output and the base :root of `skin: auto`. The colour entries match the
+// default param values in theme.yaml; theme_arbor_use_test.dart fails on drift.
 //
 // WCAG 2.1 AA contrast ratios (computed over sRGB, per WCAG relative luminance):
 //   Body/UI text on page background (#ffffff):
@@ -13,16 +15,18 @@
 //     #5b6470 on #f6f8f6 =  5.62:1  (muted — passes 4.5:1)
 //     #0f7a4d on #f6f8f6 =  5.03:1  (primary — passes 4.5:1)
 
-$trellis-text-color: #1b1f24 !default;
-$trellis-muted-color: #5b6470 !default;
-$trellis-bg-color: #ffffff !default;
-$trellis-surface-color: #f6f8f6 !default;
-$trellis-border-color: #e2e6e2 !default;
-$trellis-primary-color: #0f7a4d !default;
-$trellis-accent-color: #0a6b43 !default;
-$trellis-code-keyword: #8250df !default;
-$trellis-code-string: #0a6b43 !default;
-$trellis-code-number: #953800 !default;
-$trellis-code-comment: #5b6470 !default;
-$trellis-code-function: #0550ae !default;
-$trellis-code-punctuation: #5b6470 !default;
+$palette: (
+  text-color: #1b1f24,
+  muted-color: #5b6470,
+  bg-color: #ffffff,
+  surface-color: #f6f8f6,
+  border-color: #e2e6e2,
+  primary-color: #0f7a4d,
+  accent-color: #0a6b43,
+  code-keyword: #8250df,
+  code-string: #0a6b43,
+  code-number: #953800,
+  code-comment: #5b6470,
+  code-function: #0550ae,
+  code-punctuation: #5b6470,
+);

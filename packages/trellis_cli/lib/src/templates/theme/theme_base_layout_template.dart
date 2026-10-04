@@ -4,15 +4,18 @@
 String themeBaseLayoutTemplate(String themeName) =>
     r'''<!DOCTYPE html>
 <html lang="en">
-<head>
+<!-- assetBase is the root-absolute prefix for asset links: the site's pathPrefix
+     (e.g. /docs/) when set, or / at the root. -->
+<head tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title tl:text="${page.title} + ' — ' + ${site.title}">''' +
     themeName +
     r'''</title>
 
-  <!-- Theme CSS custom properties (auto-generated from params) -->
-  <link rel="stylesheet" href="/theme.css">
+  <!-- Theme CSS compiled from sass/main.scss, and CSS custom properties auto-generated from params -->
+  <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/main.css'" href="/css/main.css">
+  <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/theme-props.css'" href="/css/theme-props.css">
 
   <!-- Head extension point -->
   <meta tl:define="head-extra">

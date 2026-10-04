@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:trellis_cli/trellis_cli.dart';
 
@@ -202,5 +205,50 @@ void main() {
     test('T19: project name used as theme name in theme.yaml', () {
       expect(writer.files['theme.yaml'], contains('name: my_theme'));
     });
+  });
+
+  // The scaffold's base layout must link the stylesheets `trellis build` writes
+  // for a theme. A link to any other path still builds cleanly, but every page
+  // ships unstyled.
+  group('ThemeProjectGenerator — built site', () {
+    late Directory siteDir;
+
+    setUp(() async {
+      siteDir = Directory.systemTemp.createTempSync('trellis_theme_scaffold_');
+      await ThemeProjectGenerator(
+        projectName: 'my_theme',
+        writer: DiskFileWriter(p.join(siteDir.path, 'themes', 'my_theme')),
+      ).generate();
+      File(p.join(siteDir.path, 'content', '_index.md'))
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('---\ntitle: Home\n---\nHome.\n');
+    });
+
+    tearDown(() => siteDir.deleteSync(recursive: true));
+
+    for (final pathPrefix in ['', '/docs/']) {
+      test('T20: base.html links every stylesheet the build writes (pathPrefix: "$pathPrefix")', () async {
+        File(p.join(siteDir.path, 'trellis_site.yaml')).writeAsStringSync(
+          'title: Test Site\nbaseUrl: https://example.com\ntheme: my_theme\npathPrefix: "$pathPrefix"\n',
+        );
+
+        expect(await TrellisCli(workingDirectory: siteDir.path).run(['build']), 0);
+
+        final outputDir = p.join(siteDir.path, 'output');
+        final written = Directory(p.join(outputDir, 'css'))
+            .listSync(recursive: true)
+            .whereType<File>()
+            .map((file) => p.split(p.relative(file.path, from: outputDir)).join('/'))
+            .toSet();
+        expect(written, containsAll(['css/main.css', 'css/theme-props.css']), reason: 'compiled SASS + theme params');
+
+        final home = File(p.join(outputDir, 'index.html')).readAsStringSync();
+        final linked = RegExp(
+          r'<link rel="stylesheet" href="([^"]+)"',
+        ).allMatches(home).map((match) => match[1]!).toSet();
+        final assetBase = pathPrefix.isEmpty ? '/' : pathPrefix;
+        expect(linked, {for (final path in written) '$assetBase$path'});
+      });
+    }
   });
 }

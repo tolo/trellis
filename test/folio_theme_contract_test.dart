@@ -461,7 +461,7 @@ void main() {
       'button-primary',
     };
     final appended = <String>{};
-    for (final layout in Directory(p.join(themeDir, 'layouts')).listSync(recursive: true).whereType<File>()) {
+    for (final layout in sourceFiles(p.join(themeDir, 'layouts'), const {'.html'})) {
       for (final match in RegExp('tl:classappend="(.*?)"', dotAll: true).allMatches(layout.readAsStringSync())) {
         final operandsStripped = match[1]!.replaceAll(RegExp("==\\s*'[^']*'"), '==');
         appended.addAll(RegExp("'([a-zA-Z][\\w-]*)'").allMatches(operandsStripped).map((m) => m[1]!));

@@ -47,20 +47,23 @@ String compileStandalone(String themeDir, {String? configuration}) {
   final tempDir = Directory.systemTemp.createTempSync('trellis_theme_standalone_');
   try {
     final wrapper = File(p.join(tempDir.path, 'standalone.scss'))
-      ..writeAsStringSync('@use "$entry" as theme with ($configuration);\n');
+      ..writeAsStringSync('@use "${p.toUri(entry).path}" as theme with ($configuration);\n');
     return TrellisCss.compileSass(wrapper.path, fatalImportDeprecation: true);
   } finally {
     tempDir.deleteSync(recursive: true);
   }
 }
 
-/// The `.scss`/`.sass` files under [dir] that git would track: a sweep over them gives a clean CI checkout's verdict
-/// on any checkout. Files below a dot-entry (gitignored `.trellis/` build output, `.DS_Store`) and links (the
-/// `example/themes/<theme>` loop back into the theme) are skipped, and non-SASS files are never read as text.
-List<File> sassSources(String dir) => [
+/// The `.scss`/`.sass` files under [dir] that git would track (see [sourceFiles]).
+List<File> sassSources(String dir) => sourceFiles(dir, const {'.scss', '.sass'});
+
+/// The files under [dir] with one of [extensions] that git would track: a sweep over them gives a clean CI checkout's
+/// verdict on any checkout. Files below a dot-entry (gitignored `.trellis/` build output, `.DS_Store`) and links (the
+/// `example/themes/<theme>` loop back into the theme) are skipped, and other files are never read as text.
+List<File> sourceFiles(String dir, Set<String> extensions) => [
   for (final entity in Directory(dir).listSync(recursive: true, followLinks: false))
     if (entity is File &&
-        const {'.scss', '.sass'}.contains(p.extension(entity.path).toLowerCase()) &&
+        extensions.contains(p.extension(entity.path).toLowerCase()) &&
         !p.split(p.relative(entity.path, from: dir)).any((segment) => segment.startsWith('.')))
       entity,
 ];

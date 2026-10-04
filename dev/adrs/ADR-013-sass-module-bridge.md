@@ -186,18 +186,23 @@ none ships one global brand colour applied unchanged to both), is in the private
 ### The hard cut
 
 There is no compatibility mode. The `@import` skin line and the import-deprecation silencing are gone from the build
-path, `silenceImportDeprecation` is removed from `TrellisCss`, and every bundled theme and the `trellis create --template
-theme` scaffold are migrated in 0.12. A third-party `@import` theme fails with a raw Sass error, not a Trellis
-diagnostic; that is accepted. The owner's rationale: *"No one is really using Trellis yet (and no-one has created a
-Trellis theme yet), so it's ok to make breaking changes if this makes things simpler. We don't need backwards
-compatibility."* The break rides the lockstep minor (ADR-009).
+path, `TrellisCss.compileSass` no longer has a parameter to silence the `@import` deprecation, and every bundled theme
+and the `trellis create --template theme` scaffold are migrated in 0.12. A third-party theme whose entry still
+`@import`s compiles through the wrapper on Dart Sass 1.x with only the `@import` deprecation warning, but its skin file
+is no longer injected, so `skin: dark` silently builds light. It fails with a raw Sass error, not a Trellis diagnostic,
+once Dart Sass 3.0 removes `@import`; that is accepted. The owner's rationale: *"No one is really using Trellis yet
+(and no-one has created a Trellis theme yet), so it's ok to make breaking changes if this makes things simpler. We don't
+need backwards compatibility."* The break rides the lockstep minor (ADR-009).
 
 ### Enforcement
 
-A test in `packages/trellis_site/test/` compiles every theme discovered under `themes/`, bridged at each skin and
-standalone, with the `import` deprecation fatal; asserts no `@import` in a theme, a scaffold template or a generated
-bridge file; checks each colour param's twin and default against the palettes; and fails a param variable the bridge
-cannot configure. It is untagged, so the fast CI job runs it. The scaffold has its own test in `trellis_cli`, because
+`packages/trellis_site/test/theme_sass_use_gate_test.dart` compiles every theme discovered under `themes/`, bridged at
+each skin through `ThemeBuildConfig.bridgeWrapperSource` and standalone, with the `import` deprecation fatal; asserts no
+`@import` in a theme, a scaffold template or a generated bridge file; checks each colour param's twin and default
+against the palettes, which it reads by compiling them; and fails a param variable the bridge cannot configure. A theme
+directory without a `theme.yaml`, or a missing bundled theme, fails discovery. Each check also runs on mutated copies of
+a bundled theme to prove it fails. The test is untagged, so the fast CI job (`melos exec --dir-exists=test -- dart test
+--exclude-tags=e2e`) runs it. The scaffold has its own test in `trellis_cli`, because
 `trellis_site` cannot depend on the CLI.
 
 ### What this does not change

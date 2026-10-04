@@ -6,6 +6,8 @@ import 'package:test/test.dart';
 import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
 
+import 'theme_sass_sources.dart';
+
 /// Proves lattice on the `@use` bridge contract: compiled through the same
 /// wrapper `trellis build` compiles, with the `@import` deprecation fatal, at
 /// every skin, with per-mode colour overrides reaching every dark view.
@@ -82,7 +84,7 @@ void main() {
         fatalImportDeprecation: true,
       );
       expect(_props(_rootBlock(css))['--leaf']!.toLowerCase(), '#2e7d4f');
-      for (final file in Directory(p.join(themeDir, 'sass')).listSync(recursive: true).whereType<File>()) {
+      for (final file in sweepFiles(p.join(themeDir, 'sass'))) {
         expect(_stripComments(file.readAsStringSync()), isNot(contains('@import')), reason: file.path);
       }
     });

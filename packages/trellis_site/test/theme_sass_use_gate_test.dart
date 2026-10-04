@@ -6,6 +6,8 @@ import 'package:test/test.dart';
 import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
 
+import 'theme_sass_sources.dart';
+
 /// The compile-every-theme gate (ADR-013, Enforcement).
 ///
 /// Dart Sass 3.0 removes `@import`. This gate compiles every theme found under
@@ -48,12 +50,12 @@ Future<void> main() async {
 
   group('no @import', () {
     test('theme SASS sources', () {
-      expect(importViolations(themesRoot, extensions: _sassExtensions), isEmpty);
+      expect(importViolations(themesRoot), isEmpty);
     });
 
     test('scaffold template sources', () {
       expect(Directory(scaffoldDir).existsSync(), isTrue, reason: scaffoldDir);
-      expect(importViolations(scaffoldDir), isEmpty);
+      expect(importViolations(scaffoldDir, extensions: null), isEmpty);
     });
   });
 
@@ -94,7 +96,7 @@ Future<void> main() async {
 
       expect(discoverThemes(root), [seventh]);
       expect(discoveryViolations(root), isEmpty);
-      expect(importViolations(root, extensions: _sassExtensions), isEmpty);
+      expect(importViolations(root), isEmpty);
       for (final skin in SkinMode.values) {
         expect(bridgedViolations(seventh, skin), isEmpty, reason: skin.name);
       }
@@ -123,7 +125,7 @@ Future<void> main() async {
       final theme = copy();
       _edit(p.join(theme, 'sass', '_footer.scss'), (s) => "@import 'variables';\n$s");
 
-      final hits = importViolations(p.dirname(theme), extensions: _sassExtensions);
+      final hits = importViolations(p.dirname(theme));
       expect(hits, hasLength(1));
       expect(hits.single, contains('_footer.scss'));
       expect(() => compileStandalone(p.join(theme, 'sass', 'main.scss')), throwsA(isA<SassCompilationException>()));
@@ -134,12 +136,12 @@ Future<void> main() async {
     test('an @import in a scaffold template copy trips the text check', () {
       final templates = Directory(p.join(work.path, 'templates'));
       _copyDirectory(Directory(p.join(repoRoot, _scaffoldTemplates)), templates);
-      expect(importViolations(templates.path), isEmpty, reason: 'the untouched copy is clean');
+      expect(importViolations(templates.path, extensions: null), isEmpty, reason: 'the untouched copy is clean');
 
       final template = File(p.join(templates.path, 'theme_main_scss_template.dart'));
       template.writeAsStringSync("// @import 'variables';\n${template.readAsStringSync()}");
 
-      final hits = importViolations(templates.path);
+      final hits = importViolations(templates.path, extensions: null);
       expect(hits, hasLength(1));
       expect(hits.single, contains('theme_main_scss_template.dart'));
     });
@@ -154,7 +156,7 @@ Future<void> main() async {
         p.join(config.buildDir, 'bridge_main.scss'),
       ).writeAsStringSync('@import "${p.join(theme, 'sass', 'main.scss')}";\n');
 
-      final hits = importViolations(config.buildDir, extensions: _sassExtensions);
+      final hits = importViolations(config.buildDir);
       expect(hits, hasLength(1));
       expect(hits.single, contains('bridge_main.scss'));
     });
@@ -170,7 +172,7 @@ Future<void> main() async {
         expect(violations, everyElement(contains('arbor')));
         expect(violations.join('\n'), contains(mentions));
         expect(configurabilityViolations(theme), isEmpty, reason: 'no other check moves');
-        expect(importViolations(p.dirname(theme), extensions: _sassExtensions), isEmpty);
+        expect(importViolations(p.dirname(theme)), isEmpty);
         expect(standaloneViolations(theme), isEmpty);
         expect(bridgedViolations(theme, SkinMode.dark), isEmpty);
       }
@@ -261,7 +263,7 @@ Future<void> main() async {
       expect(twinViolations(theme), isEmpty, reason: 'no other check moves');
       // The compile checks are not asserted: arbor's partials read the moved variable,
       // so moving it past them also breaks the compile.
-      expect(importViolations(p.dirname(theme), extensions: _sassExtensions), isEmpty);
+      expect(importViolations(p.dirname(theme)), isEmpty);
     });
 
     test('a multi-line declaration of a param variable elsewhere is still found', () {
@@ -276,8 +278,6 @@ Future<void> main() async {
     });
   });
 }
-
-const _sassExtensions = {'.scss', '.sass'};
 
 // ---------------------------------------------------------------------------
 // Checks: each returns its violations, empty when the check holds.
@@ -303,12 +303,11 @@ List<Directory> _themeDirectories(String themesRoot) =>
     Directory(themesRoot).listSync().whereType<Directory>().where((d) => !p.basename(d.path).startsWith('.')).toList()
       ..sort((a, b) => a.path.compareTo(b.path));
 
-/// Files under [dir] (all of them, or only those with an extension in [extensions])
+/// Files under [dir] (see [sweepFiles]: only those with an extension in [extensions], every file when null)
 /// that contain `@import`, as paths relative to [dir]. Comments count: the rule is literal.
-List<String> importViolations(String dir, {Set<String>? extensions}) {
+List<String> importViolations(String dir, {Set<String>? extensions = sassExtensions}) {
   final hits = <String>[];
-  for (final file in Directory(dir).listSync(recursive: true).whereType<File>()) {
-    if (extensions != null && !extensions.contains(p.extension(file.path).toLowerCase())) continue;
+  for (final file in sweepFiles(dir, extensions: extensions)) {
     if (file.readAsStringSync().contains('@import')) hits.add("@import in '${p.relative(file.path, from: dir)}'");
   }
   return hits..sort();
@@ -332,8 +331,7 @@ List<String> bridgedViolations(String themeDir, SkinMode skin) {
     }
     return [
       ...violations,
-      for (final hit in importViolations(config.buildDir, extensions: _sassExtensions))
-        "theme '$theme', skin '${skin.name}': $hit",
+      for (final hit in importViolations(config.buildDir)) "theme '$theme', skin '${skin.name}': $hit",
     ];
   } finally {
     site.deleteSync(recursive: true);
@@ -431,10 +429,11 @@ List<String> configurabilityViolations(String themeDir) {
     final configurable = _generate(themeDir, SkinMode.light, site.path).configurableVars.toSet();
     final paramVars = {for (final name in manifest.params.keys) 'trellis-${name.replaceAll('_', '-')}'};
     final violations = <String>[];
-    for (final file in Directory(p.join(themeDir, 'sass')).listSync(recursive: true).whereType<File>()) {
-      final ext = p.extension(file.path).toLowerCase();
-      if (!_sassExtensions.contains(ext)) continue;
-      for (final name in defaultDeclarations(file.readAsStringSync(), indented: ext == '.sass')) {
+    for (final file in sweepFiles(p.join(themeDir, 'sass'))) {
+      for (final name in defaultDeclarations(
+        file.readAsStringSync(),
+        indented: p.extension(file.path).toLowerCase() == '.sass',
+      )) {
         if (paramVars.contains(name) && !configurable.contains(name)) {
           violations.add(
             "theme '$theme': \$$name is declared !default in '${p.relative(file.path, from: themeDir)}' but the "
@@ -456,11 +455,8 @@ List<String> configurabilityViolations(String themeDir) {
 /// Non-partial `.scss`/`.sass` files under `sass/`, as `build_command.dart#_compileSass` selects them.
 List<String> themeEntries(String themeDir) {
   final entries = [
-    for (final file in Directory(p.join(themeDir, 'sass')).listSync(recursive: true, followLinks: false))
-      if (file is File &&
-          _sassExtensions.contains(p.extension(file.path).toLowerCase()) &&
-          !p.basename(file.path).startsWith('_'))
-        p.canonicalize(file.path),
+    for (final file in sweepFiles(p.join(themeDir, 'sass')))
+      if (!p.basename(file.path).startsWith('_')) p.canonicalize(file.path),
   ]..sort();
   if (entries.isEmpty) throw StateError("theme '${p.basename(themeDir)}' has no SASS entry under sass/");
   return entries;

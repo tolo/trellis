@@ -296,7 +296,7 @@ void main() {
     String sass(String relative) => stripComments(File(p.join(themeDir, 'sass', relative)).readAsStringSync());
 
     test('SC01: no @import remains, and the entry compiles standalone with the deprecation fatal', () {
-      for (final file in Directory(p.join(themeDir, 'sass')).listSync(recursive: true).whereType<File>()) {
+      for (final file in sassSources(p.join(themeDir, 'sass'))) {
         expect(stripComments(file.readAsStringSync()), isNot(contains('@import')), reason: file.path);
       }
       final css = compileStandalone(themeDir);

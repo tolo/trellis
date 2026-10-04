@@ -52,6 +52,17 @@ String compileStandalone(String themeDir, {String? configuration}) {
   }
 }
 
+/// The `.scss`/`.sass` files under [dir] that git would track: a sweep over them gives a clean CI checkout's verdict
+/// on any checkout. Files below a dot-entry (gitignored `.trellis/` build output, `.DS_Store`) and links (the
+/// `example/themes/<theme>` loop back into the theme) are skipped, and non-SASS files are never read as text.
+List<File> sassSources(String dir) => [
+  for (final entity in Directory(dir).listSync(recursive: true, followLinks: false))
+    if (entity is File &&
+        const {'.scss', '.sass'}.contains(p.extension(entity.path).toLowerCase()) &&
+        !p.split(p.relative(entity.path, from: dir)).any((segment) => segment.startsWith('.')))
+      entity,
+];
+
 /// Reads a skin's `$palette` map by compiling it, so a test sees what Sass sees.
 /// Keys are the palette keys (`primary-color`), values the compiled colours.
 Map<String, String> readPalette(String themeDir, String mode) {

@@ -6,6 +6,8 @@ import 'package:test/test.dart';
 import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
 
+import 'theme_sass_sources.dart';
+
 /// Proves arbor, the reference theme, on the `@use` bridge contract: compiled
 /// through the same wrapper `trellis build` compiles, with the `@import`
 /// deprecation fatal, at every skin, with per-mode colour overrides.
@@ -242,7 +244,7 @@ void main() {
     final partials = ['_a11y', '_base', '_code', '_components', '_footer', '_layout'];
 
     test('no @import remains in arbor sass/', () {
-      for (final file in Directory(p.join(arborDir, 'sass')).listSync(recursive: true).whereType<File>()) {
+      for (final file in sweepFiles(p.join(arborDir, 'sass'))) {
         expect(_stripComments(file.readAsStringSync()), isNot(contains('@import')), reason: file.path);
       }
     });

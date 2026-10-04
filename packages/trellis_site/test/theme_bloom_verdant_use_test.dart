@@ -6,6 +6,8 @@ import 'package:test/test.dart';
 import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
 
+import 'theme_sass_sources.dart';
+
 /// Proves bloom and verdant on the `@use` bridge contract arbor established
 /// (`theme_arbor_use_test.dart`): compiled through the same wrapper
 /// `trellis build` compiles, with the `@import` deprecation fatal, at every skin,
@@ -319,7 +321,7 @@ void _themeTests(String theme, String Function() repoRoot, Map<String, String> p
     final partials = ['_a11y', '_base', '_code', '_components', '_footer', '_layout'];
 
     test('no @import remains in sass/', () {
-      for (final file in Directory(p.join(h.themeDir, 'sass')).listSync(recursive: true).whereType<File>()) {
+      for (final file in sweepFiles(p.join(h.themeDir, 'sass'))) {
         expect(_stripComments(file.readAsStringSync()), isNot(contains('@import')), reason: file.path);
       }
     });

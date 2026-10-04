@@ -9,7 +9,7 @@ required.
 
 Verdant is a sibling of the `arbor` docs theme and the `bloom` landing theme and
 shares their conventions (manifest shape, the SASS param bridge,
-`tl:extends`/`tl:define` layout inheritance, the 18 standard params). It differs
+`tl:extends`/`tl:define` layout inheritance, the 25 standard params). It differs
 in intent: the content tree *is* the site, so the layouts read `${pages}` and
 front matter rather than composing a page out of front-matter blocks.
 
@@ -51,6 +51,8 @@ paginate: 5
 
 theme_params:
   skin: auto            # light | dark | auto
+  primary_color: "#2563eb"       # light mode
+  primary_color_dark: "#3b82f6"  # dark mode (skin: dark, and auto's dark block)
   show_reading_time: true
   show_date: true
   show_author: true
@@ -61,6 +63,10 @@ theme_params:
     - { label: Posts, url: /posts/ }
     - { label: About, url: /about/ }
 ```
+
+Colours are set per mode: `primary_color` sets the light palette's entry and
+`primary_color_dark` the dark one's. A plain `primary_color` has no effect on a
+`skin: dark` site, and dark colours are never derived from light ones.
 
 Posts are ordinary Markdown under `content/posts/`; nothing about the theme has
 to be edited to change colors, fonts, navigation, or which metadata appears.
@@ -91,7 +97,7 @@ to be edited to change colors, fonts, navigation, or which metadata appears.
 | `excerpt_length` | int | `160` | Character cap for auto-generated summaries |
 | `posts_per_page` | int | `null` | Listing page size, used when the site sets no `paginate:` |
 
-Plus all 18 [standard params](../../docs/reference/standard-params.md).
+Plus all 25 [standard params](../../docs/reference/standard-params.md).
 
 ## Preview
 

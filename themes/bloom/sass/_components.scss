@@ -4,7 +4,8 @@
 // the prose page header (single/list). Colors reference the --trellis-* custom
 // properties so they flip with the active skin.
 
-@import 'layout'; // for $bp-* breakpoints
+@use 'variables' as *;
+@use 'layout' as *; // $bp-* breakpoints
 
 // ── Buttons ──────────────────────────────────────────────────────────────────
 

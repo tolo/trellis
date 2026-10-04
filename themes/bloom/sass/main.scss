@@ -5,63 +5,70 @@
 // Build pipeline (SASS bridge):
 //   1. The bridge generates _theme_params.scss with $trellis-* vars from merged
 //      theme params (theme.yaml defaults + site theme_params:).
-//   2. The CLI wraps this file so _theme_params.scss is imported first, so bridge
-//      values override every !default in _variables.scss.
+//   2. The CLI compiles a wrapper that `@use`s this file with those values
+//      configured: `@use "main.scss" with ($trellis-primary-color: ..., ...)`.
+//      Only variables _variables.scss declares !default are configured.
+//   3. Skins are palette maps (_skins/), selected inside _variables.scss from
+//      $trellis-skin. The bridge injects nothing for a skin.
 //
-// Skin loading:
-//   skin: light  → _skins/_light.scss imported first (matches the light defaults).
-//   skin: dark   → _skins/_dark.scss imported first; the dark palette applies.
-//   skin: auto   → no skin import; light params apply, and the @media block below
-//                  overrides the :root custom properties for OS dark mode at runtime.
+// Skins:
+//   skin: light  → light palette (the defaults).
+//   skin: dark   → _variables.scss reassigns the colours from the dark palette.
+//   skin: auto   → light palette; the @media block below emits the dark palette
+//                  for OS dark mode at runtime.
+//
+// Building standalone (no bridge) uses the light-skin defaults from _variables.scss.
 
 // ── Variables and tokens ──────────────────────────────────────────────────────
-@import 'variables';
+// Sass configures a module only when it is first loaded, so this `@forward` must
+// come before any other rule that loads _variables.scss (the partials below all
+// `@use` it). Reordering it fails the build with "This module was already loaded".
+@forward 'variables';
+@use 'sass:map';
+@use 'variables' as *;
 
 // ── Base styles ───────────────────────────────────────────────────────────────
-@import 'base';
+@use 'base';
 
 // ── Layout (header, containers, footer, breakpoints) ───────────────────────────
-@import 'layout';
+@use 'layout';
 
 // ── Components (hero, features, showcase, stories, pricing, faq, cta band) ──────
-@import 'components';
+@use 'components';
 
 // ── Footer ──────────────────────────────────────────────────────────────────────
-@import 'footer';
+@use 'footer';
 
 // ── Accessibility ─────────────────────────────────────────────────────────────
-@import 'a11y';
+@use 'a11y';
 
 // ── Code / syntax ─────────────────────────────────────────────────────────────
-@import 'code';
+@use 'code';
 
 // ── Auto skin: OS dark-mode override ──────────────────────────────────────────
 // Flips the :root custom properties to the dark palette under OS dark mode, so
-// components reading var(--trellis-*) go dark when skin: auto.
+// components reading var(--trellis-*) go dark when skin: auto. Every value reads
+// $trellis-palette-dark, so a site's `<name>_dark` param reaches this block and
+// _skins/_dark.scss stays the single place the dark colours are written. The
+// gradient pair is in the block too: a plain `accent_gradient_*` sets the light
+// entry only, and `accent_gradient_*_dark` is what dark views read.
 //
 // Gated on `$trellis-skin == auto` so it only emits for auto: under skin: light
 // it would wrongly flip a forced-light site dark for dark-OS visitors, and under
-// skin: dark the base :root is already dark (the CLI injects _skins/_dark.scss),
-// making the block redundant.
-//
-// The dark values are written as LITERALS that MUST mirror _skins/_dark.scss.
-// They can't be #{$trellis-*-color} interpolations: under skin: auto the CLI
-// injects no _skins/ import, so those vars still hold the LIGHT palette here —
-// interpolating them would emit light values and defeat the flip. (A single
-// compile can't make one global SASS var light in the base :root yet dark here.)
-//
-// Gradient tokens are intentionally left to the base :root so a site's
-// accent_gradient_* overrides still carry into dark mode.
+// skin: dark the base :root is already dark (_variables.scss selects the dark
+// palette), making the block redundant.
 @if $trellis-skin == auto {
   @media (prefers-color-scheme: dark) {
     :root {
-      --trellis-text: #f3f0fa;
-      --trellis-muted: #a79fc0;
-      --trellis-bg: #120f1a;
-      --trellis-surface: #1c1730;
-      --trellis-border: #302a45;
-      --trellis-primary: #a78bfa;
-      --trellis-accent: #f472b6;
+      --trellis-text: #{map.get($trellis-palette-dark, text-color)};
+      --trellis-muted: #{map.get($trellis-palette-dark, muted-color)};
+      --trellis-bg: #{map.get($trellis-palette-dark, bg-color)};
+      --trellis-surface: #{map.get($trellis-palette-dark, surface-color)};
+      --trellis-border: #{map.get($trellis-palette-dark, border-color)};
+      --trellis-primary: #{map.get($trellis-palette-dark, primary-color)};
+      --trellis-accent: #{map.get($trellis-palette-dark, accent-color)};
+      --trellis-gradient-start: #{map.get($trellis-palette-dark, accent-gradient-start)};
+      --trellis-gradient-end: #{map.get($trellis-palette-dark, accent-gradient-end)};
     }
   }
 }

@@ -3,6 +3,8 @@
 // The footer is already defined structurally in _layout.scss (.site-footer, .footer-inner).
 // This file handles footer-specific content components.
 
+@use 'variables' as *;
+
 // ── Footer content ────────────────────────────────────────────────────────────
 
 .footer-copy {

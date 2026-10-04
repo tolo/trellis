@@ -1,6 +1,8 @@
 // Verdant Blog Theme — sass/_a11y.scss
 // Accessibility: skip-to-content, focus styles, reduced-motion.
 
+@use 'variables' as *;
+
 // ── Skip to content ───────────────────────────────────────────────────────────
 
 .skip-to-content {

@@ -5,6 +5,8 @@
 // --trellis-code-* colors defined they render plain/monochrome by design — the
 // landing theme's role. The container styles below are always safe defaults.
 
+@use 'variables' as *;
+
 code {
   font-family: var(--trellis-code-font, #{$trellis-code-font-family});
   font-size: 0.875em;

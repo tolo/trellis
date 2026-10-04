@@ -2,6 +2,8 @@
 // Page structure, container, and responsive breakpoints.
 // Mobile-first: base styles target mobile, media queries add desktop complexity.
 
+@use 'variables' as *;
+
 // ── Breakpoints ──────────────────────────────────────────────────────────────
 
 $bp-sm: 640px;   // Tablet

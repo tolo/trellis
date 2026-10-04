@@ -59,7 +59,7 @@ void main() {
       expect(content, contains('params:'));
     });
 
-    test('T04: theme.yaml contains all 18 standard param names', () {
+    test('T04: theme.yaml contains all 25 standard param names', () {
       final content = writer.files['theme.yaml']!;
       const expectedParams = [
         'skin',
@@ -70,6 +70,13 @@ void main() {
         'bg_color',
         'surface_color',
         'border_color',
+        'primary_color_dark',
+        'accent_color_dark',
+        'text_color_dark',
+        'muted_color_dark',
+        'bg_color_dark',
+        'surface_color_dark',
+        'border_color_dark',
         'font_family',
         'heading_font_family',
         'code_font_family',
@@ -81,8 +88,9 @@ void main() {
         'show_powered_by',
         'show_rss_link',
       ];
+      expect(expectedParams, hasLength(25));
       for (final param in expectedParams) {
-        expect(content, contains(param), reason: 'theme.yaml should contain param: $param');
+        expect(content, contains('\n  $param:'), reason: 'theme.yaml should declare param: $param');
       }
       // syntax_highlighting was retired by ADR-010; scaffolds must not emit it.
       expect(content, isNot(contains('syntax_highlighting')), reason: 'retired param must be absent');
@@ -142,25 +150,38 @@ void main() {
       await generator.generate();
     });
 
-    test('T11: _variables.scss has trellis- prefixed variables with !default', () {
+    test('T11: _variables.scss declares a !default pair per colour param and builds both palettes', () {
       final vars = writer.files['sass/_variables.scss']!;
-      expect(vars, contains(r'$trellis-primary-color'));
-      expect(vars, contains('!default'));
+      for (final name in ['primary', 'accent', 'text', 'muted', 'bg', 'surface', 'border']) {
+        expect(vars, contains('\$trellis-$name-color: map.get(light.\$palette, $name-color) !default;'));
+        expect(vars, contains('\$trellis-$name-color-dark: map.get(dark.\$palette, $name-color) !default;'));
+      }
+      expect(vars, contains(r'$trellis-palette-light: map.merge('));
+      expect(vars, contains(r'$trellis-palette-dark: map.merge('));
+      expect(vars, contains(r'$trellis-skin: auto !default;'));
     });
 
-    test('T12: _light.scss has light skin colors', () {
+    test('T12: _light.scss is a palette map with light colours and no !default', () {
       final light = writer.files['sass/_skins/_light.scss']!;
-      expect(light, contains(r'$trellis-bg-color: #ffffff'));
+      expect(light, contains(r'$palette: ('));
+      expect(light, contains('bg-color: #ffffff'));
+      expect(light, isNot(contains('!default')));
     });
 
-    test('T13: _dark.scss has dark skin colors distinct from light', () {
+    test('T13: _dark.scss is a palette map with dark colours distinct from light', () {
       final dark = writer.files['sass/_skins/_dark.scss']!;
-      expect(dark, contains(r'$trellis-bg-color: #111827'));
+      expect(dark, contains(r'$palette: ('));
+      expect(dark, contains('bg-color: #111827'));
+      expect(dark, contains('primary-color: #3b82f6'));
+      expect(dark, isNot(contains('!default')));
     });
 
-    test('T14: main.scss imports variables', () {
+    test("T14: main.scss forwards 'variables' and flips colours for auto from the dark palette", () {
       final main = writer.files['sass/main.scss']!;
-      expect(main, contains("@import 'variables'"));
+      expect(main, contains("@forward 'variables';"));
+      expect(main, isNot(contains('@import')));
+      expect(main, contains(r'@if $trellis-skin == auto'));
+      expect(main, contains(r'map.get($trellis-palette-dark, primary-color)'));
     });
   });
 

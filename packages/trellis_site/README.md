@@ -38,7 +38,7 @@ Then configure in `trellis_site.yaml`:
 theme: verdant
 theme_params:
   skin: dark
-  primary_color: "#e11d48"
+  primary_color_dark: "#fb7185"   # colors are per mode: the dark palette's primary
   nav_links:
     - label: Home
       url: /
@@ -46,7 +46,7 @@ theme_params:
       url: /posts/
 ```
 
-All 18 standard params (colors, fonts, layout, nav, social links, feature toggles) are configurable without forking or editing the theme. Sites can also override individual layouts or `tl:define` blocks for deeper customization.
+All 25 standard params (colors with a dark-mode twin each, fonts, layout, nav, social links, feature toggles) are configurable without forking or editing the theme. A plain color param (`primary_color`) sets the light palette only; its `_dark` twin sets the dark one. Sites can also override individual layouts or `tl:define` blocks for deeper customization.
 
 See the [Theme Usage Guide](../../docs/guides/theme-usage.md) and [Standard Params Contract](../../docs/reference/standard-params.md) for full documentation.
 

@@ -1,11 +1,19 @@
-@import '../dark_tokens';
+// Folio — sass/_skins/_dark.scss
+// Night edition. Read by _variables.scss, where each colour entry is the default
+// of its `<name>_dark` param and the base of the dark palette: the whole
+// `skin: dark` output, and the `prefers-color-scheme: dark` block and the reader
+// toggle's dark selector that main.scss emits for `skin: auto`. Never derived
+// from the light palette.
 
-$trellis-primary-color: $folio-dark-green !default;
-$trellis-accent-color: $folio-dark-rubric !default;
-$trellis-text-color: $folio-dark-ink !default;
-$trellis-muted-color: $folio-dark-muted !default;
-$trellis-bg-color: $folio-dark-paper !default;
-$trellis-surface-color: $folio-dark-surface !default;
-$trellis-border-color: $folio-dark-rule !default;
-$folio-code-number: $folio-dark-code-number !default;
-$folio-code-function: $folio-dark-code-function !default;
+$palette: (
+  primary-color: #80b895,
+  accent-color: #e07b70,
+  text-color: #e8eadf,
+  muted-color: #a8b4aa,
+  bg-color: #111a14,
+  surface-color: #18241c,
+  border-color: #526257,
+  // The sepia and indigo of the light edition, lifted for a dark ground.
+  code-number: #d9a86a,
+  code-function: #97b8dd,
+);

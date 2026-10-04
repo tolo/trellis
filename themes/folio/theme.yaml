@@ -17,6 +17,16 @@ params:
   bg_color: {type: color, default: "#f2f1e8", description: Chart-paper background}
   surface_color: {type: color, default: "#fbfaf4", description: Raised paper surface}
   border_color: {type: color, default: "#bdc4b6", description: Rules and dividers}
+  # Night-edition twins: each colour param has a `<name>_dark` sibling that sets the same entry in the dark
+  # palette (skin: dark, and auto's prefers-color-scheme block and edition toggle). A plain colour param sets
+  # the light entry only.
+  primary_color_dark: {type: color, default: "#80b895", description: Green ink in the night edition}
+  accent_color_dark: {type: color, default: "#e07b70", description: Rubrication in the night edition}
+  text_color_dark: {type: color, default: "#e8eadf", description: Main ink color in the night edition}
+  muted_color_dark: {type: color, default: "#a8b4aa", description: Secondary ink color in the night edition}
+  bg_color_dark: {type: color, default: "#111a14", description: Chart-paper background in the night edition}
+  surface_color_dark: {type: color, default: "#18241c", description: Raised surface in the night edition}
+  border_color_dark: {type: color, default: "#526257", description: Rules and dividers in the night edition}
   font_family: {type: string, default: "EB Garamond, Iowan Old Style, Georgia, serif", description: Body font stack}
   heading_font_family:
     type: string

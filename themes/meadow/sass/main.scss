@@ -1,4 +1,8 @@
-@import 'variables';
+// Sass configures a module only when it is first loaded, so this `@forward` must
+// come before any other rule that loads _variables.scss. Reordering it fails the
+// build with "This module was already loaded".
+@forward 'variables';
+@use 'variables' as *;
 
 @font-face {
   font-family: 'Bricolage Grotesque';

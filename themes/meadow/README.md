@@ -28,7 +28,10 @@ unbreakable 72-character token in every text container.
 
 ## Params
 
-Meadow implements all 18 [standard params](../../docs/reference/standard-params.md) plus the landing params below:
+Meadow implements all 25 [standard params](../../docs/reference/standard-params.md) plus the landing params below.
+Each colour param has a dark-mode twin (`<name>_dark`). A plain colour param sets the light entry only and never reaches
+the dark edition, whether forced with `skin: dark` or reached through `auto`'s `prefers-color-scheme` block and toggle;
+set the `_dark` twin for that.
 
 | Param | Type | Default | Purpose |
 |---|---|---|---|
@@ -40,6 +43,13 @@ Meadow implements all 18 [standard params](../../docs/reference/standard-params.
 | `bg_color` | color | `#f7faee` | Light-skin page background |
 | `surface_color` | color | `#fffef8` | Light-skin raised surface |
 | `border_color` | color | `#d4e2ce` | Light-skin rules and dividers |
+| `primary_color_dark` | color | `#78d397` | Dark-mode leaf green links and accents |
+| `accent_color_dark` | color | `#d8f475` | Dark-mode lime marker and primary highlight |
+| `text_color_dark` | color | `#f2f7e9` | Dark-mode main ink |
+| `muted_color_dark` | color | `#b8c9bb` | Dark-mode secondary ink |
+| `bg_color_dark` | color | `#0f1c14` | Dark-mode page background |
+| `surface_color_dark` | color | `#17271d` | Dark-mode raised surface |
+| `border_color_dark` | color | `#31483a` | Dark-mode rules and dividers |
 | `font_family` | string | `Schibsted Grotesk, …` | Body font stack |
 | `heading_font_family` | string | `Bricolage Grotesque, …` | Display font stack |
 | `code_font_family` | string | `JetBrains Mono, …` | Code font stack |
@@ -59,6 +69,10 @@ Meadow implements all 18 [standard params](../../docs/reference/standard-params.
 | `sun_color` | color | `#ffd367` | Sun card accent |
 | `bloom_color` | color | `#cf91ef` | Bloom card accent |
 | `coral_color` | color | `#fb907b` | Coral illustration accent |
+| `sky_color_dark` | color | `#7bc8f2` | Dark-mode sky card accent |
+| `sun_color_dark` | color | `#ffda7c` | Dark-mode sun card accent |
+| `bloom_color_dark` | color | `#dfaff5` | Dark-mode bloom card accent |
+| `coral_color_dark` | color | `#ff9f8b` | Dark-mode coral illustration accent |
 
 ## Home content
 

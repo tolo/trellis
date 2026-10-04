@@ -9,6 +9,7 @@ import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
 
 import 'theme_font_contract.dart';
+import 'theme_use_support.dart';
 
 void main() {
   final themeDir = p.join(Directory.current.path, 'themes', 'folio');
@@ -24,6 +25,13 @@ void main() {
       'bg_color',
       'surface_color',
       'border_color',
+      'primary_color_dark',
+      'accent_color_dark',
+      'text_color_dark',
+      'muted_color_dark',
+      'bg_color_dark',
+      'surface_color_dark',
+      'border_color_dark',
       'font_family',
       'heading_font_family',
       'code_font_family',
@@ -47,36 +55,28 @@ void main() {
   });
 
   test('S03-S05 TI03/TI04 skins and semantic apparatus use one token authority', () {
-    String compile(String prelude) {
-      final tempDir = Directory.systemTemp.createTempSync('folio_skin_contract_');
-      addTearDown(() => tempDir.deleteSync(recursive: true));
-      final wrapper = File(p.join(tempDir.path, 'main.scss'))
-        ..writeAsStringSync('$prelude\n@import "${p.join(themeDir, 'sass', 'main.scss')}";\n');
-      return TrellisCss.compileSass(wrapper.path, silenceImportDeprecation: true);
-    }
-
-    const shared = r'''
-$trellis-font-family: Arial, sans-serif;
-$trellis-heading-font-family: Georgia, serif;
-$trellis-code-font-family: Courier New, monospace;
-$trellis-max-width: 900px;
-$trellis-border-radius: 7px;
-''';
-    const lightColors = r'''
-$trellis-primary-color: #123456;
-$trellis-accent-color: #654321;
-$trellis-text-color: #112233;
-$trellis-muted-color: #445566;
-$trellis-bg-color: #778899;
-$trellis-surface-color: #aabbcc;
-$trellis-border-color: #ddeeff;
-''';
-    final light = compile(lightColors + shared);
-    final dark = compile(
-      '\$trellis-skin: dark;\n'
-              '@import "${p.join(themeDir, 'sass', '_skins', '_dark.scss')}";\n' +
-          shared,
+    const shared = {
+      'font_family': 'Arial, sans-serif',
+      'heading_font_family': 'Georgia, serif',
+      'code_font_family': 'Courier New, monospace',
+      'max_width': '900px',
+      'border_radius': '7px',
+    };
+    final light = compileBridged(
+      themeDir,
+      'light',
+      siteParams: {
+        ...shared,
+        'primary_color': '#123456',
+        'accent_color': '#654321',
+        'text_color': '#112233',
+        'muted_color': '#445566',
+        'bg_color': '#778899',
+        'surface_color': '#aabbcc',
+        'border_color': '#ddeeff',
+      },
     );
+    final dark = compileBridged(themeDir, 'dark', siteParams: shared);
 
     for (final css in [light, dark]) {
       expect(css, contains('--folio-body: Arial, sans-serif'));
@@ -104,31 +104,244 @@ $trellis-border-color: #ddeeff;
     }
     expect(dark.toLowerCase(), contains('--folio-paper: #111a14'));
     expect(light, contains('border-radius: var(--folio-radius)'));
-    expect(dark, isNot(contains('@media (prefers-color-scheme: dark)')));
-    expect(dark, isNot(contains(":root[data-skin='light']")));
 
-    final apparatusOff = compile(r'''
-$trellis-show-plate-numbers: false;
-$trellis-show-sidenotes: false;
-''');
+    final apparatusOff = compileBridged(
+      themeDir,
+      'light',
+      siteParams: {'show_plate_numbers': false, 'show_sidenotes': false},
+    );
     expect(apparatusOff, isNot(contains('.folio-plate::before')));
     expect(apparatusOff, isNot(contains('.hero-plate::before')));
     expect(apparatusOff, contains('.folio-sidenote'));
     expect(apparatusOff, contains('display: none'));
 
-    final main = File(p.join(themeDir, 'sass', 'main.scss')).readAsStringSync();
-    final darkSkin = File(p.join(themeDir, 'sass', '_skins', '_dark.scss')).readAsStringSync();
-    final darkTokens = File(p.join(themeDir, 'sass', '_dark_tokens.scss')).readAsStringSync();
+    // SC03: the dark palette is the one dark authority. Neither the entry nor the
+    // variables module restates a dark hex, and the auto blocks read the palette.
+    String sass(String relative) => stripComments(File(p.join(themeDir, 'sass', relative)).readAsStringSync());
+    final main = sass('main.scss');
+    final darkPalette = sass('_skins/_dark.scss');
+    final hex = RegExp(r'#[0-9a-fA-F]{6}');
+    final darkValues = hex.allMatches(darkPalette).map((match) => match.group(0)!.toLowerCase()).toSet();
+    expect(darkValues, hasLength(9));
+    for (final source in [main, sass('_variables.scss')]) {
+      for (final value in darkValues) {
+        expect(source.toLowerCase(), isNot(contains(value)), reason: value);
+      }
+    }
+    expect(File(p.join(themeDir, 'sass', '_dark_tokens.scss')).existsSync(), isFalse);
+    expect(main, contains(r'$trellis-palette-dark'));
     expect(main, contains('@media (prefers-color-scheme: dark)'));
     expect(main.indexOf('@media (prefers-color-scheme: dark)'), lessThan(main.indexOf(":root[data-skin='light']")));
-    final darkValues = RegExp(r'#[0-9a-fA-F]{6}').allMatches(darkTokens).map((match) => match.group(0)!);
-    expect(darkValues, isNotEmpty);
-    expect(RegExp(r'#[0-9a-fA-F]{6}').hasMatch(darkSkin), isFalse);
-    for (final value in darkValues) {
-      expect(main.toLowerCase(), isNot(contains(value.toLowerCase())), reason: value);
+  });
+
+  group('per-mode colour params on the @use bridge', () {
+    // Palette key -> the `:root` custom property it feeds. The two code pigments
+    // have no param; they ride in the same palettes.
+    const paletteProps = {
+      'text-color': '--folio-ink',
+      'muted-color': '--folio-muted',
+      'bg-color': '--folio-paper',
+      'surface-color': '--folio-surface',
+      'border-color': '--folio-rule',
+      'primary-color': '--folio-green',
+      'accent-color': '--folio-rubric',
+      'code-number': '--folio-code-number',
+      'code-function': '--folio-code-function',
+    };
+    late Map<String, String> lightPalette;
+    late Map<String, String> darkPalette;
+
+    setUpAll(() {
+      lightPalette = readPalette(themeDir, 'light');
+      darkPalette = readPalette(themeDir, 'dark');
+    });
+
+    void expectPalette(Map<String, String> props, Map<String, String> palette, String reason) {
+      for (final entry in paletteProps.entries) {
+        expect(props[entry.value], palette[entry.key], reason: '$reason ${entry.key}');
+      }
     }
-    expect(darkSkin, contains(r'$folio-dark-paper'));
-    expect(main, contains(r'$folio-dark-paper'));
+
+    // Sass strips the quotes from an attribute selector, so these are the unquoted forms.
+    const autoOnly = ['@media (prefers-color-scheme: dark)', ':root[data-skin=dark]', ':root[data-skin=light]'];
+
+    test('S01: every skin compiles fatal on @import, and each carries its own palette', () {
+      final light = compileBridged(themeDir, 'light');
+      final dark = compileBridged(themeDir, 'dark');
+      final auto = compileBridged(themeDir, 'auto');
+
+      expect(light, isNot(equals(dark)));
+      expectPalette(customProps(rootBlock(light)), lightPalette, 'light');
+      final darkRoot = customProps(rootBlock(dark));
+      expectPalette(darkRoot, darkPalette, 'dark');
+      expect(darkRoot['--folio-paper'], '#111a14');
+      expect(darkRoot['--folio-code-number'], '#d9a86a');
+      expect(darkRoot['--folio-code-function'], '#97b8dd');
+
+      expectPalette(customProps(rootBlock(auto)), lightPalette, 'auto base');
+      expectPalette(customProps(darkMediaRoot(auto)!), darkPalette, 'auto media');
+      expectPalette(customProps(ruleBody(auto, ':root[data-skin=dark]')!), darkPalette, 'auto toggle dark');
+      expectPalette(customProps(ruleBody(auto, ':root[data-skin=light]')!), lightPalette, 'auto toggle light');
+
+      // Each negative is paired with the same query matching under auto: a query that
+      // can never match (a quote style Sass does not emit) would pass vacuously.
+      for (final query in autoOnly) {
+        expect(auto, contains(query), reason: 'auto emits $query');
+        expect(light, isNot(contains(query)), reason: 'light omits $query');
+        expect(dark, isNot(contains(query)), reason: 'dark omits $query');
+      }
+    });
+
+    test('S02: site overrides reach compiled CSS and variable-less params leave it unaffected', () {
+      const overrides = {'max_width': '900px', 'font_family': 'Arial, sans-serif', 'show_sidenotes': false};
+      final plain = compileBridged(themeDir, 'light');
+      final css = compileBridged(themeDir, 'light', siteParams: overrides);
+
+      expect(customProps(rootBlock(css))['--folio-width'], '900px');
+      expect(customProps(rootBlock(css))['--folio-body'], 'Arial, sans-serif');
+      final sidenoteHidden = RegExp(r'\.folio-sidenote\s*\{\s*display: none;\s*\}');
+      expect(sidenoteHidden.hasMatch(css), isTrue);
+      expect(sidenoteHidden.hasMatch(plain), isFalse);
+
+      final withLists = compileBridged(
+        themeDir,
+        'light',
+        siteParams: {
+          ...overrides,
+          'nav_links': [
+            {'label': 'Docs', 'url': '/docs/'},
+          ],
+          'social_links': [
+            {'label': 'Source', 'url': 'https://example.com'},
+          ],
+        },
+      );
+      expect(withLists, css);
+    });
+
+    test('S05: a _dark override reaches a forced dark skin and nothing else moves', () {
+      final plain = customProps(rootBlock(compileBridged(themeDir, 'dark')));
+      final css = compileBridged(themeDir, 'dark', siteParams: {'primary_color_dark': darkOverride});
+      final root = customProps(rootBlock(css));
+
+      expect(root['--folio-green'], darkOverride);
+      expect(Map.of(root)..remove('--folio-green'), Map.of(plain)..remove('--folio-green'), reason: 'dark unchanged');
+      for (final entry in paletteProps.entries) {
+        expect(root[entry.value], isNot(lightPalette[entry.key]), reason: 'no light ${entry.key}');
+      }
+      for (final query in autoOnly) {
+        expect(css, isNot(contains(query)), reason: query);
+      }
+    });
+
+    test('S06: a _dark override reaches every dark view under auto, and no light view', () {
+      final css = compileBridged(themeDir, 'auto', siteParams: {'primary_color_dark': darkOverride});
+      final lightPrimary = lightPalette['primary-color'];
+
+      expect(customProps(rootBlock(css))['--folio-green'], lightPrimary);
+      expect(customProps(ruleBody(css, ':root[data-skin=light]')!)['--folio-green'], lightPrimary);
+      expect(customProps(darkMediaRoot(css)!)['--folio-green'], darkOverride);
+      expect(customProps(ruleBody(css, ':root[data-skin=dark]')!)['--folio-green'], darkOverride);
+    });
+
+    test('S07: a plain colour param sets the light entry only, under every skin', () {
+      // The precedence rule, not load-order luck: a forced skin selects a palette and a
+      // param sets one entry in it, so a plain `primary_color` is the light entry and
+      // never reaches the dark palette.
+      final dark = compileBridged(themeDir, 'dark', siteParams: {'primary_color': lightOverride});
+      expect(customProps(rootBlock(dark))['--folio-green'], darkPalette['primary-color']);
+      expect(dark, isNot(contains(lightOverride)));
+
+      final auto = compileBridged(themeDir, 'auto', siteParams: {'primary_color': lightOverride});
+      expect(customProps(rootBlock(auto))['--folio-green'], lightOverride);
+      expect(customProps(ruleBody(auto, ':root[data-skin=light]')!)['--folio-green'], lightOverride);
+      expect(customProps(darkMediaRoot(auto)!)['--folio-green'], darkPalette['primary-color']);
+      expect(customProps(ruleBody(auto, ':root[data-skin=dark]')!)['--folio-green'], darkPalette['primary-color']);
+
+      final light = compileBridged(themeDir, 'light', siteParams: {'primary_color': lightOverride});
+      expect(customProps(rootBlock(light))['--folio-green'], lightOverride);
+
+      expect(
+        compileBridged(themeDir, 'light', siteParams: {'primary_color_dark': darkOverride}),
+        compileBridged(themeDir, 'light'),
+        reason: 'a _dark-only override changes nothing under light',
+      );
+    });
+
+    test('S09: every colour param has a _dark twin sourced from the palettes', () {
+      final colorParams = {
+        for (final e in ThemeManifest.load(themeDir).params.entries)
+          if (e.value.type == 'color') e.key: e.value,
+      };
+      final bases = colorParams.keys.where((name) => !name.endsWith('_dark')).toList();
+      expect(bases, hasLength(7));
+
+      for (final name in bases) {
+        final key = name.replaceAll('_', '-');
+        final twin = colorParams['${name}_dark'];
+        expect(twin, isNotNull, reason: '$name needs a ${name}_dark twin');
+        expect(twin!.defaultValue, darkPalette[key], reason: '${name}_dark default');
+        expect(colorParams[name]!.defaultValue, lightPalette[key], reason: '$name default');
+        expect(colorParams.containsKey('${name}_dark_dark'), isFalse, reason: 'twins have no twins');
+      }
+      expect(
+        colorParams.keys.where((name) => name.endsWith('_dark')),
+        hasLength(bases.length),
+        reason: 'no orphan twin',
+      );
+    });
+  });
+
+  group('@use module structure', () {
+    String sass(String relative) => stripComments(File(p.join(themeDir, 'sass', relative)).readAsStringSync());
+
+    test('SC01: no @import remains, and the entry compiles standalone with the deprecation fatal', () {
+      for (final file in Directory(p.join(themeDir, 'sass')).listSync(recursive: true).whereType<File>()) {
+        expect(stripComments(file.readAsStringSync()), isNot(contains('@import')), reason: file.path);
+      }
+      final css = compileStandalone(themeDir);
+      expect(customProps(rootBlock(css))['--folio-paper'], '#f2f1e8');
+      final dark = compileStandalone(themeDir, configuration: r'$trellis-skin: dark');
+      expect(customProps(rootBlock(dark))['--folio-paper'], '#111a14');
+    });
+
+    test("SC02: main.scss opens with @forward 'variables' and declares no \$trellis-* of its own", () {
+      final main = sass('main.scss');
+      expect(RegExp(r'@(use|forward)\b[^;]*;').firstMatch(main)!.group(0), "@forward 'variables';");
+      expect(RegExp(r'^\$trellis-[\w-]+\s*:', multiLine: true).hasMatch(main), isFalse);
+      // The bridge scans only _variables.scss, so a variable read anywhere must be declared there.
+      final declared = RegExp(
+        r'^\$(trellis-[\w-]+)\s*:',
+        multiLine: true,
+      ).allMatches(sass('_variables.scss')).map((m) => m.group(1)!).toSet();
+      final read = RegExp(r'\$(trellis-[\w-]+)').allMatches(main).map((m) => m.group(1)!).toSet();
+      expect(declared, containsAll(read));
+    });
+
+    test('SC03: skins expose a palette and declare nothing !default', () {
+      for (final skin in ['_light', '_dark']) {
+        final source = sass('_skins/$skin.scss');
+        expect(source, contains(r'$palette:'), reason: skin);
+        expect(source, isNot(contains('!default')), reason: skin);
+      }
+    });
+
+    test('SC04: the bridge configures what _variables.scss declares, and nothing it cannot', () {
+      final manifest = ThemeManifest.load(themeDir);
+      final siteDir = Directory.systemTemp.createTempSync('folio_bridge_vars_');
+      addTearDown(() => siteDir.deleteSync(recursive: true));
+      final config = const ThemeSassGenerator().generate(
+        mergedParams: manifest.defaultParams,
+        paramTypes: {for (final e in manifest.params.entries) e.key: e.value.type},
+        siteDir: siteDir.path,
+        themeDir: themeDir,
+      );
+      expect(
+        config.configurableVars,
+        containsAll(['trellis-skin', 'trellis-primary-color', 'trellis-primary-color-dark', 'trellis-max-width']),
+      );
+      expect(config.configurableVars, isNot(contains('trellis-nav-links')));
+    });
   });
 
   test('S02-S07 TI02/TI05/TI06/TI07 bridged example builds cleanly', () async {
@@ -144,12 +357,9 @@ $trellis-show-sidenotes: false;
     }
     final tempDir = Directory.systemTemp.createTempSync('folio_sass_contract_');
     addTearDown(() => tempDir.deleteSync(recursive: true));
-    final wrapper = File(p.join(tempDir.path, 'main.scss'))
-      ..writeAsStringSync(
-        '@import "${p.join(bridge.buildDir, '_theme_params.scss')}";\n'
-        '@import "${p.join(themeDir, 'sass', 'main.scss')}";\n',
-      );
-    final css = TrellisCss.compileSass(wrapper.path, loadPaths: bridge.sassLoadPaths, silenceImportDeprecation: true);
+    final entry = File(p.join(themeDir, 'sass', 'main.scss')).resolveSymbolicLinksSync();
+    final wrapper = File(p.join(tempDir.path, 'main.scss'))..writeAsStringSync(bridge.bridgeWrapperSource(entry));
+    final css = TrellisCss.compileSass(wrapper.path, loadPaths: bridge.sassLoadPaths, fatalImportDeprecation: true);
     final cssFile = File(p.join(config.outputDir, 'css', 'main.css'))..parent.createSync(recursive: true);
     cssFile.writeAsStringSync(css);
     expect(css, isNot(contains('--folio-serif: "')));
@@ -440,20 +650,17 @@ $trellis-show-sidenotes: false;
     expect(home, isNot(contains("localStorage.getItem('folio-skin')")));
 
     final bridge = result.themeBuildConfig!;
+    final entry = File(p.join(themeDir, 'sass', 'main.scss')).resolveSymbolicLinksSync();
     final wrapper = File(p.join(tempDir.path, 'forced-dark.scss'))
-      ..writeAsStringSync(
-        '@import "${p.join(themeDir, 'sass', '_skins', '_dark.scss')}";\n'
-        '@import "${p.join(bridge.buildDir, '_theme_params.scss')}";\n'
-        '@import "${p.join(themeDir, 'sass', 'main.scss')}";\n',
-      );
-    final css = TrellisCss.compileSass(wrapper.path, loadPaths: bridge.sassLoadPaths, silenceImportDeprecation: true);
+      ..writeAsStringSync(bridge.bridgeWrapperSource(entry));
+    final css = TrellisCss.compileSass(wrapper.path, loadPaths: bridge.sassLoadPaths, fatalImportDeprecation: true);
     expect(css, contains('--folio-paper: #111a14'));
     // A forced skin never emits the folio-dark mixin, so the code pigments have to arrive
-    // through the skin partial rather than through the media query.
+    // through the forced-dark reassignment rather than through the media query.
     expect(css, contains('--folio-code-number: #d9a86a'));
     expect(css, contains('--folio-code-function: #97b8dd'));
     expect(css, isNot(contains('@media (prefers-color-scheme: dark)')));
-    expect(css, isNot(contains(":root[data-skin='dark']")));
+    expect(css, isNot(contains(':root[data-skin=dark]')));
 
     final skinScript = File(p.join(themeDir, 'static', 'js', 'folio.js')).readAsStringSync();
     expect(skinScript.indexOf('sync()'), lessThan(skinScript.indexOf("button.addEventListener('click'")));
@@ -570,7 +777,7 @@ $trellis-show-sidenotes: false;
   test('the vendored face is the font the stylesheet claims, and draws what the theme emits', () async {
     await expectThemeFontContract(
       themeDir: themeDir,
-      compiledCss: TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true),
+      compiledCss: TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), fatalImportDeprecation: true),
       // Floors sit about a tenth under the shipped size and glyph count: a face that loses a table,
       // its embedded OFL name records or a third of its glyphs fails, while trimming a few
       // codepoints does not. No instancer step runs - `wght` is the family's only axis and the

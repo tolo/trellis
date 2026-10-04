@@ -38,11 +38,11 @@ set the `_dark` twin for that.
 | `skin` | `light \| dark \| auto` | `auto` | Color scheme; auto follows OS until explicitly toggled |
 | `primary_color` | color | `#237a48` | Leaf green links and accents |
 | `accent_color` | color | `#d4f15f` | Lime marker and primary highlight |
-| `text_color` | color | `#14251a` | Main light-skin ink |
-| `muted_color` | color | `#476050` | Secondary light-skin ink |
-| `bg_color` | color | `#f7faee` | Light-skin page background |
-| `surface_color` | color | `#fffef8` | Light-skin raised surface |
-| `border_color` | color | `#d4e2ce` | Light-skin rules and dividers |
+| `text_color` | color | `#14251a` | Main ink in light mode |
+| `muted_color` | color | `#476050` | Secondary ink in light mode |
+| `bg_color` | color | `#f7faee` | Page background in light mode |
+| `surface_color` | color | `#fffef8` | Raised surface in light mode |
+| `border_color` | color | `#d4e2ce` | Rules and dividers in light mode |
 | `primary_color_dark` | color | `#78d397` | Dark-mode leaf green links and accents |
 | `accent_color_dark` | color | `#d8f475` | Dark-mode lime marker and primary highlight |
 | `text_color_dark` | color | `#f2f7e9` | Dark-mode main ink |

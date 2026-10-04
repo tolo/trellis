@@ -113,7 +113,7 @@ params:
   heading_font_family:
     type: string
     default: "Charter, Cambria, Georgia, ui-serif, serif"
-    description: Heading font stack — Arbor's system-serif identity (set null to inherit the body font)
+    description: Heading font stack — Arbor's system-serif identity (set it to the font_family stack for the body font)
 
   code_font_family:
     type: string

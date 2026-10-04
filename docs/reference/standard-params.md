@@ -46,7 +46,7 @@ All 25 standard params, with their SASS variable names and CSS custom property n
 | `border_color_dark` | color | `#374151` | `$trellis-border-color-dark` | `--trellis-border-color-dark` | `border_color` in the dark palette |
 | **Typography** | | | | | |
 | `font_family` | string | `"system-ui, -apple-system, sans-serif"` | `$trellis-font-family` | `--trellis-font-family` | Body text font stack |
-| `heading_font_family` | string | `null` | `$trellis-heading-font-family` | `--trellis-heading-font-family` | Heading font stack (null = inherit body font) |
+| `heading_font_family` | string | `null` | `$trellis-heading-font-family` | `--trellis-heading-font-family` | Heading font stack (null = keep the theme's heading font; the scaffold's is null, so the body font) |
 | `code_font_family` | string | `"ui-monospace, SFMono-Regular, monospace"` | `$trellis-code-font-family` | `--trellis-code-font-family` | Code/pre font stack |
 | **Layout** | | | | | |
 | `max_width` | string | `"800px"` | `$trellis-max-width` | `--trellis-max-width` | Maximum content width |
@@ -69,8 +69,10 @@ All 25 standard params, with their SASS variable names and CSS custom property n
 > type, and semantics** — not its default value. A theme may ship its own default
 > for any param, and most do: e.g. `arbor` uses `primary_color: "#0f7a4d"` and a
 > serif `heading_font_family` (`"Charter, Cambria, Georgia, ui-serif, serif"`),
-> while `bloom` ships a purple palette. `heading_font_family: null` still means
-> "inherit the body font" wherever a theme (or a site) sets it back to null.
+> while `bloom` ships a purple palette. `heading_font_family: null` never blanks a
+> theme's own heading font: Sass treats a `null` passed through `with()` as unset, so
+> the theme's non-null default wins. To use the body font for headings on such a
+> theme, set `heading_font_family` to the `font_family` stack.
 
 
 ## Categories
@@ -108,7 +110,7 @@ The `skin` enum values:
 
 ### Typography (3 params)
 
-Font stacks are CSS font-family values. `heading_font_family: null` means headings inherit the body font — the theme derives a combined variable:
+Font stacks are CSS font-family values. A theme whose `heading_font_family` default is `null` (verdant, bloom, and the `trellis create --template theme` scaffold) gives headings the body font — the theme derives a combined variable:
 
 ```scss
 $trellis-heading-font: $trellis-font-family;

@@ -33,20 +33,20 @@ Lattice-specific surface.
 | Param                 | Default                | Purpose                                     |
 | --------------------- | ---------------------- | ------------------------------------------- |
 | `skin`                | `auto`                 | `light`, `dark`, or OS-aware automatic skin |
-| `primary_color`       | `#2E7D4F`              | Light-skin primary accent                   |
-| `accent_color`        | `#6E9B45`              | Light-skin secondary accent                 |
-| `text_color`          | `#1C2B21`              | Light-skin body text                        |
-| `muted_color`         | `#47584C`              | Light-skin secondary text                   |
-| `bg_color`            | `#FBFAF5`              | Light-skin page background                  |
-| `surface_color`       | `#FFFFFF`              | Light-skin card background                  |
-| `border_color`        | `#E7E3D4`              | Light-skin borders and lattice              |
-| `primary_color_dark`  | `#6fbf8b`              | Dark-skin primary accent                    |
-| `accent_color_dark`   | `#8fbf62`              | Dark-skin secondary accent                  |
-| `text_color_dark`     | `#e6eee5`              | Dark-skin body text                         |
-| `muted_color_dark`    | `#a2b2a4`              | Dark-skin secondary text                    |
-| `bg_color_dark`       | `#101915`              | Dark-skin page background                   |
-| `surface_color_dark`  | `#16221b`              | Dark-skin card background                   |
-| `border_color_dark`   | `#1a2620`              | Dark-skin borders and lattice               |
+| `primary_color`       | `#2E7D4F`              | Primary accent in light mode                |
+| `accent_color`        | `#6E9B45`              | Secondary accent in light mode              |
+| `text_color`          | `#1C2B21`              | Body text in light mode                     |
+| `muted_color`         | `#47584C`              | Secondary text in light mode                |
+| `bg_color`            | `#FBFAF5`              | Page background in light mode               |
+| `surface_color`       | `#FFFFFF`              | Card background in light mode               |
+| `border_color`        | `#E7E3D4`              | Borders and lattice in light mode           |
+| `primary_color_dark`  | `#6fbf8b`              | Primary accent in dark mode                 |
+| `accent_color_dark`   | `#8fbf62`              | Secondary accent in dark mode               |
+| `text_color_dark`     | `#e6eee5`              | Body text in dark mode                      |
+| `muted_color_dark`    | `#a2b2a4`              | Secondary text in dark mode                 |
+| `bg_color_dark`       | `#101915`              | Page background in dark mode                |
+| `surface_color_dark`  | `#16221b`              | Card background in dark mode                |
+| `border_color_dark`   | `#1a2620`              | Borders and lattice in dark mode            |
 | `font_family`         | Instrument Sans stack  | Body font stack                             |
 | `heading_font_family` | Fraunces stack         | Heading font stack                          |
 | `code_font_family`    | Spline Sans Mono stack | Code font stack                             |

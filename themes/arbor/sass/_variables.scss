@@ -101,8 +101,9 @@ $trellis-palette-dark: map.merge(
 $trellis-font-family: system-ui, -apple-system, sans-serif !default;
 // Arbor's identity: a system-serif heading stack (no web fonts, no CDN) paired
 // with the sans body and mono code. Quote-free names sidestep the SASS-bridge
-// value escaping. Set heading_font_family: null in theme_params to inherit the
-// body font instead (the standard "null = inherit body" contract still holds).
+// value escaping. A null heading_font_family in theme_params keeps this stack
+// (Sass treats a null with() value as unset); for the body font, set it to the
+// font_family stack.
 $trellis-heading-font-family: Charter, Cambria, Georgia, ui-serif, serif !default;
 $trellis-code-font-family: ui-monospace, SFMono-Regular, monospace !default;
 

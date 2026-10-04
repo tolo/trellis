@@ -11,20 +11,20 @@ features: [docs, dark-mode, responsive, accessible, syntax-highlighting, search]
 params:
   # Standard params (25).
   skin: { type: enum, values: [light, dark, auto], default: auto, description: Color scheme }
-  primary_color: { type: color, default: "#2E7D4F", description: Light-skin primary accent }
-  accent_color: { type: color, default: "#6E9B45", description: Light-skin secondary accent }
-  text_color: { type: color, default: "#1C2B21", description: Light-skin body text }
-  muted_color: { type: color, default: "#47584C", description: Light-skin muted text }
-  bg_color: { type: color, default: "#FBFAF5", description: Light-skin page background }
-  surface_color: { type: color, default: "#FFFFFF", description: Light-skin surface background }
-  border_color: { type: color, default: "#E7E3D4", description: Light-skin borders }
-  primary_color_dark: { type: color, default: "#6fbf8b", description: Dark-skin primary accent }
-  accent_color_dark: { type: color, default: "#8fbf62", description: Dark-skin secondary accent }
-  text_color_dark: { type: color, default: "#e6eee5", description: Dark-skin body text }
-  muted_color_dark: { type: color, default: "#a2b2a4", description: Dark-skin muted text }
-  bg_color_dark: { type: color, default: "#101915", description: Dark-skin page background }
-  surface_color_dark: { type: color, default: "#16221b", description: Dark-skin surface background }
-  border_color_dark: { type: color, default: "#1a2620", description: Dark-skin borders }
+  primary_color: { type: color, default: "#2E7D4F", description: Primary accent in light mode }
+  accent_color: { type: color, default: "#6E9B45", description: Secondary accent in light mode }
+  text_color: { type: color, default: "#1C2B21", description: Body text in light mode }
+  muted_color: { type: color, default: "#47584C", description: Muted text in light mode }
+  bg_color: { type: color, default: "#FBFAF5", description: Page background in light mode }
+  surface_color: { type: color, default: "#FFFFFF", description: Surface background in light mode }
+  border_color: { type: color, default: "#E7E3D4", description: Borders in light mode }
+  primary_color_dark: { type: color, default: "#6fbf8b", description: Primary accent in dark mode }
+  accent_color_dark: { type: color, default: "#8fbf62", description: Secondary accent in dark mode }
+  text_color_dark: { type: color, default: "#e6eee5", description: Body text in dark mode }
+  muted_color_dark: { type: color, default: "#a2b2a4", description: Muted text in dark mode }
+  bg_color_dark: { type: color, default: "#101915", description: Page background in dark mode }
+  surface_color_dark: { type: color, default: "#16221b", description: Surface background in dark mode }
+  border_color_dark: { type: color, default: "#1a2620", description: Borders in dark mode }
   font_family: { type: string, default: "Instrument Sans, -apple-system, sans-serif", description: Body font stack }
   heading_font_family: { type: string, default: "Fraunces, Georgia, serif", description: Heading font stack }
   code_font_family: { type: string, default: "Spline Sans Mono, ui-monospace, monospace", description: Code font stack }

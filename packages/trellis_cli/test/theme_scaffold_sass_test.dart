@@ -258,11 +258,13 @@ void main() {
 
 /// Reads a skin's `$palette` map by compiling it, so the test sees what Sass sees.
 Map<String, String> _palette(String themeDir, String mode) {
-  final file = p.join(themeDir, 'sass', '_skins', '_$mode.scss');
-  final css = TrellisCss.compileSassString('''
-@use "$file" as skin;
+  final css = TrellisCss.compileSassString(
+    '''
+@use "_skins/$mode" as skin;
 :root { @each \$key, \$value in skin.\$palette { --#{\$key}: #{\$value}; } }
-''');
+''',
+    loadPaths: [p.join(themeDir, 'sass')],
+  );
   return {for (final e in _props(_rootBlock(css)).entries) e.key.substring(2): e.value};
 }
 

@@ -658,7 +658,7 @@ void main() {
   });
 
   test('S01-S07 TI02/TI03/TI06/TI07 bridged default is complete and clean', () async {
-    final config = SiteConfig.load(p.join(themeDir, 'example', 'trellis_site.yaml'));
+    final config = exampleSiteCopy(themeDir);
     final result = await TrellisSite(config).build();
     expect(result.warnings, isEmpty);
     expect(result.pageCount, 4);

@@ -127,6 +127,19 @@ Future<Map<String, dynamic>?> runNodeHarness(String mode, String scriptPath) asy
   }
 }
 
+/// Copies [themeDir]'s example site into a temp dir (its content, the theme linked in under its own name, its config
+/// passed through [edit]), so a build never writes into or reads stale files from the gitignored `example/output`.
+SiteConfig exampleSiteCopy(String themeDir, [String Function(String config)? edit]) {
+  final tempDir = Directory.systemTemp.createTempSync('trellis_example_');
+  addTearDown(() => tempDir.deleteSync(recursive: true));
+  copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
+  Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
+  Link(p.join(tempDir.path, 'themes', p.basename(themeDir))).createSync(themeDir);
+  final source = File(p.join(themeDir, 'example', 'trellis_site.yaml')).readAsStringSync();
+  File(p.join(tempDir.path, 'trellis_site.yaml')).writeAsStringSync(edit == null ? source : edit(source));
+  return SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
+}
+
 void copyDirectory(Directory source, Directory destination) {
   destination.createSync(recursive: true);
   for (final entity in source.listSync()) {

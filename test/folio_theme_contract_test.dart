@@ -344,7 +344,7 @@ void main() {
   });
 
   test('S02-S07 TI02/TI05/TI06/TI07 bridged example builds cleanly', () async {
-    final config = SiteConfig.load(p.join(themeDir, 'example', 'trellis_site.yaml'));
+    final config = exampleSiteCopy(themeDir);
     final result = await TrellisSite(config).build();
     expect(result.warnings, isEmpty);
     expect(result.pageCount, greaterThanOrEqualTo(6));

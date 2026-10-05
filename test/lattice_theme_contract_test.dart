@@ -9,7 +9,7 @@ import 'package:trellis_site/trellis_site.dart';
 import 'package:yaml/yaml.dart';
 
 import 'theme_font_contract.dart';
-import 'theme_use_support.dart' show copyDirectory, runNodeHarness;
+import 'theme_use_support.dart' show copyDirectory, exampleSiteCopy, runNodeHarness;
 
 void main() {
   final themeDir = p.join(Directory.current.path, 'themes', 'lattice');
@@ -287,7 +287,7 @@ void main() {
   });
 
   test('S01-S07/TI08 bridged example builds cleanly with complete rendered pages', () async {
-    final config = _exampleSiteCopy(themeDir);
+    final config = exampleSiteCopy(themeDir);
     final result = await TrellisSite(config).build();
     expect(result.warnings, isEmpty);
     expect(result.pageCount, 5);
@@ -333,7 +333,7 @@ void main() {
   });
 
   test('S03-S05/TI08 sub-path build prefixes URLs once without nesting output', () async {
-    final config = _exampleSiteCopy(themeDir, (source) => '$source\npathPrefix: /trellis/\n');
+    final config = exampleSiteCopy(themeDir, (source) => '$source\npathPrefix: /trellis/\n');
     final result = await TrellisSite(config).build();
     expect(result.warnings, isEmpty);
     expect(result.pageCount, 5);
@@ -369,7 +369,7 @@ void main() {
   test('forced skins select showcase sources server-side at root and sub-path', () async {
     for (final skin in ['light', 'dark']) {
       for (final prefix in ['', '/trellis/']) {
-        final config = _exampleSiteCopy(themeDir, (source) {
+        final config = exampleSiteCopy(themeDir, (source) {
           final configSource = source.replaceFirst('skin: auto', 'skin: $skin');
           return prefix.isEmpty ? configSource : '$configSource\npathPrefix: $prefix\n';
         });
@@ -469,7 +469,7 @@ void main() {
       expect(home, contains(binding), reason: binding);
     }
 
-    final config = _exampleSiteCopy(themeDir);
+    final config = exampleSiteCopy(themeDir);
     await TrellisSite(config).build();
     final document = html_parser.parse(File(p.join(config.outputDir, 'index.html')).readAsStringSync());
     final panes = document.querySelectorAll('.pane pre code, .demo-source pre code');
@@ -712,7 +712,7 @@ $showcaseCards''',
     // .mode-toggle sets display:inline-flex, which outranks the UA [hidden] rule on its own.
     expect(css, matches(RegExp(r'\[hidden\]\s*\{[^}]*display:\s*none\s*!important', dotAll: true)));
 
-    final config = _exampleSiteCopy(themeDir);
+    final config = exampleSiteCopy(themeDir);
     await TrellisSite(config).build();
     final document = html_parser.parse(File(p.join(config.outputDir, 'index.html')).readAsStringSync());
     final toggle = document.querySelector('[data-lattice-theme-toggle]');
@@ -802,7 +802,7 @@ $showcaseCards''',
     expect(_declared(css, '.search-results', 'overflow-y'), 'auto');
 
     // Results appear without a focus change, so the region has to announce them.
-    final config = _exampleSiteCopy(themeDir);
+    final config = exampleSiteCopy(themeDir);
     await TrellisSite(config).build();
     final docs = html_parser.parse(
       File(p.join(config.outputDir, 'docs', 'getting-started', 'index.html')).readAsStringSync(),
@@ -933,7 +933,7 @@ $showcaseCards''',
     expect(css, isNot(contains('#main-content')));
     expect(RegExp(r'\.hero-section\s*\{([^}]*)\}').firstMatch(css)!.group(1), isNot(contains('!important')));
 
-    final config = _exampleSiteCopy(themeDir);
+    final config = exampleSiteCopy(themeDir);
     await TrellisSite(config).build();
     for (final file in Directory(config.outputDir).listSync(recursive: true).whereType<File>()) {
       if (!file.path.endsWith('.html')) continue;
@@ -1082,19 +1082,6 @@ double _contrastRatio(String foreground, String background) {
 
 int _readUint32(List<int> bytes, int offset) =>
     (bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3];
-
-/// Copies the example site into a temp dir (its content, the theme linked in, its config passed through [edit]),
-/// so a build never writes into or reads stale files from the gitignored `example/output`.
-SiteConfig _exampleSiteCopy(String themeDir, [String Function(String config)? edit]) {
-  final tempDir = Directory.systemTemp.createTempSync('lattice_example_');
-  addTearDown(() => tempDir.deleteSync(recursive: true));
-  copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
-  Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
-  Link(p.join(tempDir.path, 'themes', 'lattice')).createSync(themeDir);
-  final source = File(p.join(themeDir, 'example', 'trellis_site.yaml')).readAsStringSync();
-  File(p.join(tempDir.path, 'trellis_site.yaml')).writeAsStringSync(edit == null ? source : edit(source));
-  return SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
-}
 
 void _expectShowcaseSources(String source, {required bool dark}) {
   final images = html_parser.parse(source).querySelectorAll('.theme-card img[data-light][data-dark]');

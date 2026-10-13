@@ -75,7 +75,7 @@ git switch main && git pull --ff-only
 git merge --squash <branch> && git commit          # one commit, one-line subject, e.g. "0.10.1: <summary>"
 git push origin main
 ```
-Guard: `CLAUDE.md` Workflow Rules (squash only). `ci.yml` starts on the push (`check` + `e2e` on `main`), and
+Guard: `AGENTS.md` Workflow Rules (squash only). `ci.yml` starts on the push (`check` + `e2e` on `main`), and
 `font-provenance.yml` beside it. Only `ci.yml` gates the tag.
 
 ## 3. Wait for CI green on `main`

@@ -4,7 +4,8 @@
 Accepted (2026-07-26). Records a previously unrecorded, de-facto decision: HTMX has
 been the load-bearing interactivity story since v0.3 without an ADR. Defers the
 HTMX 4 migration; supersedes nothing. Amended 2026-09-04 after the HTMX 4.0.0 release:
-adapters and scaffolds made version-agnostic, pin unchanged (see Amendment).
+adapters and scaffolds made version-agnostic, pin unchanged (see Amendment). Amended
+2026-10-04: scaffolds self-host HTMX by default, CDN opt-in (see Amendment 2026-10-04).
 
 ## Context
 
@@ -180,7 +181,7 @@ extra asset.
 as a live question — it would align with ADR-010's "self-contained / vendored-over-CDN"
 asset preference order for *themes*. Scaffolded dynamic apps are a different context
 (they already require a server); revisit separately rather than bundling it into a
-version-policy decision.
+version-policy decision. Settled by the 2026-10-04 amendment: self-hosted by default.
 
 **Abstract the hypermedia layer behind a Trellis-owned interface.** Rejected as
 speculative. Coupling is already four header reads in optional packages; an
@@ -220,3 +221,26 @@ project can run HTMX 4 against unchanged packages and a fresh scaffold:
 Still behind the trigger: the `htmxVersion` + SRI bump, `<hx-partial>` adoption, and the
 `includeIndicatorStyles` → `includeIndicatorCSS` rename noted in TD-018. TD-012 is
 resolved by this amendment.
+
+## Amendment (2026-10-04): scaffolds self-host HTMX, CDN opt-in
+
+Settles the live question under Alternatives ("Vendor HTMX into scaffolded projects
+instead of CDN"). Generated projects serve HTMX same-origin by default:
+
+- Layouts load the pinned HTMX from a same-origin path, verified against the pin,
+  and the generated CSP drops `https://cdn.jsdelivr.net` from `script-src`.
+- An opt-in CLI flag keeps the SRI-pinned CDN `<script>` (decision 5) for projects
+  that prefer it: a runtime CDN is not ruled out, but shipped or vendored assets are
+  preferred.
+- `htmx_asset.dart` stays the single pin (decision 3); how the self-hosted path gets
+  the bytes is an implementation choice.
+
+Why: allowing a public npm CDN host in `script-src` admits any script published to
+npm, so the allowlist cancels CSP's script protection. The Trellis UI suite
+([ADR-012](ADR-012-trellis-ui-contract.md)) screens against `script-src 'self'`, and
+a self-hosted default lets generated projects meet it unedited. Also aligns
+scaffolds with ADR-010's vendored-over-CDN preference order.
+
+Unchanged: the version pin and its revisit trigger (decision 1) and the adapter
+boundary. Not covered: `'unsafe-inline'` in the Shelf and Dart Frog scaffolds'
+`script-src`, which their layouts' inline `<script>` still needs.

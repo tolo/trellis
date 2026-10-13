@@ -9,7 +9,7 @@ import 'package:yaml/yaml.dart';
 void main() {
   final root = Directory.current.path;
 
-  test('S01/TI01 site config selects Lattice with the complete settled headline contract', () {
+  test('site config selects Lattice with the complete settled headline contract', () {
     final configPath = p.join(root, 'site', 'trellis_site.yaml');
     final config = SiteConfig.load(configPath);
     final source = loadYaml(File(configPath).readAsStringSync()) as YamlMap;
@@ -27,7 +27,7 @@ void main() {
     }
   });
 
-  test('S01/TI02 site owns the complete Lattice data shape and gallery route', () {
+  test('site owns the complete Lattice data shape and gallery route', () {
     final data = loadYaml(File(p.join(root, 'site', 'data', 'lattice.yaml')).readAsStringSync()) as YamlMap;
     expect(data.keys.toSet(), <Object>{'code_showcase', 'why', 'demo', 'site_demo', 'showcase'});
 
@@ -67,7 +67,7 @@ void main() {
     expect(File(p.join(root, 'site', 'content', 'docs', 'themes', 'gallery.md')).existsSync(), isTrue);
   });
 
-  test('S04/TI04 both workflows gate generated gallery freshness after dependencies and before builds', () {
+  test('both workflows gate generated gallery freshness after dependencies and before builds', () {
     for (final relative in <String>['.github/workflows/ci.yml', '.github/workflows/deploy-docs-site.yml']) {
       final workflow = File(p.join(root, relative)).readAsStringSync();
       final dependencies = workflow.indexOf('dart pub get');
@@ -80,7 +80,7 @@ void main() {
     }
   });
 
-  test('S04/S06 gallery layout is site-local, conditional, prefix-safe, and count-neutral', () {
+  test('gallery layout is site-local, conditional, prefix-safe, and count-neutral', () {
     final source = File(p.join(root, 'site', 'layouts', 'gallery.html')).readAsStringSync();
     final document = html_parser.parse(source);
     expect(source, contains('theme:layouts/base.html'));
@@ -93,7 +93,7 @@ void main() {
   });
 
   // Two full builds and two link checks can exceed package:test's 30-second default under parallel CI load.
-  test('S01-S04/TI02/TI05-TI07 bridged root and sub-path builds preserve the complete site', () async {
+  test('bridged root and sub-path builds preserve the complete site', () async {
     final tempDir = Directory.systemTemp.createTempSync('site_migration_build_');
     addTearDown(() => tempDir.deleteSync(recursive: true));
     final cli = p.join(root, 'packages', 'trellis_cli', 'bin', 'trellis.dart');

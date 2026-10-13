@@ -10,7 +10,8 @@
 // theme_params: in trellis_site.yaml.
 //
 // Every param-backed $trellis-* below carries !default: it is what makes the
-// variable configurable. Non-param values (the palettes) carry none.
+// variable configurable. The dark palette carries none. The two code pigments keep !default
+// but have no manifest param, so the bridge never names them.
 
 @use 'sass:map';
 @use '_skins/light' as light;
@@ -44,20 +45,8 @@ $trellis-border-color-dark: map.get(dark.$palette, border-color) !default;
 $folio-code-number: map.get(light.$palette, code-number) !default;
 $folio-code-function: map.get(light.$palette, code-function) !default;
 
-// The palettes with the site's per-mode overrides applied. Public (not `$_`)
+// The dark palette with the site's `_dark` overrides applied. Public (not `$_`)
 // because main.scss reads $trellis-palette-dark for the `skin: auto` blocks.
-$trellis-palette-light: map.merge(
-  light.$palette,
-  (
-    primary-color: $trellis-primary-color,
-    accent-color: $trellis-accent-color,
-    text-color: $trellis-text-color,
-    muted-color: $trellis-muted-color,
-    bg-color: $trellis-bg-color,
-    surface-color: $trellis-surface-color,
-    border-color: $trellis-border-color,
-  )
-);
 $trellis-palette-dark: map.merge(
   dark.$palette,
   (

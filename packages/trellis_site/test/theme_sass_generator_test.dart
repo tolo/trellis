@@ -290,6 +290,13 @@ $trellis-skin: auto !default;
         variables: r'$trellis-max_width: 1000px !default;',
       );
       expect(config.configurableVars, ['trellis-max-width']);
+
+      final prefixed = generate(
+        {'max_width': 'x'},
+        {'max_width': 'string'},
+        variables: r'$trellis_max_width: 1000px !default;',
+      );
+      expect(prefixed.configurableVars, ['trellis-max-width']);
     });
 
     test('omits a manifest param that is not in the merged params', () {
@@ -325,7 +332,7 @@ $trellis-skin: auto !default;
     final entryUrl = p.toUri(entry).path;
 
     ThemeBuildConfig config(List<String> vars) =>
-        ThemeBuildConfig(buildDir: '/b', sassLoadPaths: const [], skinMode: SkinMode.auto, configurableVars: vars);
+        ThemeBuildConfig(buildDir: '/b', sassLoadPaths: const [], configurableVars: vars);
 
     test('@uses the params module and configures exactly the configurable vars', () {
       final wrapper = config(['trellis-skin', 'trellis-primary-color']).bridgeWrapperSource(entry);
@@ -375,7 +382,7 @@ $trellis-skin: auto !default;
 
 /// Runs [ThemeSassGenerator.generate] in a temp directory and returns the
 /// content of the generated `_theme_params.scss`.
-/// Always injects `skin: light` so the generator doesn't fail on missing skin.
+/// Pins `skin: light` so the output does not depend on the `auto` default.
 String _generateSass(Map<String, dynamic> params, Map<String, String> types) {
   final tempDir = Directory.systemTemp.createTempSync('trellis_sass_test_');
   try {

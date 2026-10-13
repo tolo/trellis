@@ -64,7 +64,7 @@ void main() {
     return TrellisCss.compileSass(wrapper.path, loadPaths: config.sassLoadPaths, fatalImportDeprecation: true);
   }
 
-  group('S01 the scaffold compiles with the import deprecation fatal', () {
+  group('the scaffold compiles with the import deprecation fatal', () {
     for (final skin in ['light', 'dark', 'auto']) {
       test('through the bridge at skin: $skin', () {
         expect(compileScaffold(skin), contains(':root'));
@@ -108,7 +108,7 @@ void main() {
     });
   });
 
-  group('S02 the scaffold skins work', () {
+  group('the scaffold skins work', () {
     test('light and dark differ, and each :root carries its own palette', () {
       final light = compileScaffold('light');
       final dark = compileScaffold('dark');
@@ -141,7 +141,7 @@ void main() {
     });
   });
 
-  group('S03 per-mode colours reach the dark views, and a plain colour does not', () {
+  group('per-mode colours reach the dark views, and a plain colour does not', () {
     test('a _dark override reaches forced dark and nothing else moves', () {
       final plain = _props(_rootBlock(compileScaffold('dark')));
       final css = compileScaffold('dark', siteParams: {'primary_color_dark': _darkOverride});
@@ -190,7 +190,41 @@ void main() {
     });
   });
 
-  group('S04 the scaffold manifest is the 25-param contract', () {
+  group("every colour param and its twin reach exactly their mode's views", () {
+    // A colour no output style abbreviates or names, so it appears only where a param put it.
+    const sentinel = '#0a0b0c';
+
+    for (final key in _paletteProps.keys) {
+      final name = key.replaceAll('-', '_');
+      final twin = '${name}_dark';
+
+      test('$twin reaches the dark views and no light one', () {
+        expect(
+          compileScaffold('light', siteParams: {twin: sentinel}),
+          compileScaffold('light'),
+          reason: 'forced light is not moved by a dark twin',
+        );
+
+        final dark = compileScaffold('dark', siteParams: {twin: sentinel});
+        expect(_rootBlock(dark), contains(sentinel), reason: 'forced dark, :root');
+
+        final auto = compileScaffold('auto', siteParams: {twin: sentinel});
+        expect(_darkMediaBlock(auto)!, contains(sentinel), reason: 'auto, prefers-color-scheme: dark');
+        expect(_withoutDarkMedia(auto), isNot(contains(sentinel)), reason: 'auto, light view');
+      });
+
+      test('$name reaches the light views and no dark one', () {
+        expect(_rootBlock(compileScaffold('light', siteParams: {name: sentinel})), contains(sentinel), reason: 'light');
+        expect(compileScaffold('dark', siteParams: {name: sentinel}), isNot(contains(sentinel)), reason: 'forced dark');
+
+        final auto = compileScaffold('auto', siteParams: {name: sentinel});
+        expect(_rootBlock(auto), contains(sentinel), reason: 'auto, light :root');
+        expect(_darkMediaBlock(auto)!, isNot(contains(sentinel)), reason: 'auto, prefers-color-scheme: dark');
+      });
+    }
+  });
+
+  group('the scaffold manifest is the 25-param contract', () {
     test('every colour has a _dark twin whose default is its dark palette entry', () {
       final colorParams = {
         for (final e in manifest.params.entries)
@@ -219,7 +253,27 @@ void main() {
     });
   });
 
-  group('S05 params with no SASS variable, and unknown names, do not break the build', () {
+  group('heading_font_family', () {
+    /// Declarations of the rule whose selector list is exactly the six heading levels.
+    String headingRule(String css) {
+      final match = RegExp(r'h1,\s*h2,\s*h3,\s*h4,\s*h5,\s*h6\s*\{([^}]*)\}').firstMatch(css);
+      expect(match, isNotNull, reason: 'the scaffold styles h1-h6 in one rule');
+      return match!.group(1)!;
+    }
+
+    test('a site value reaches the heading rule and leaves the body font alone', () {
+      final css = compileScaffold('light', siteParams: {'heading_font_family': 'Georgia, serif'});
+      expect(headingRule(css), contains('font-family: Georgia, serif'));
+      expect(RegExp(r'body\s*\{[^}]*font-family: system-ui').hasMatch(css), isTrue);
+    });
+
+    test('left null, headings use the body font stack', () {
+      final css = compileScaffold('light');
+      expect(headingRule(css), contains('font-family: system-ui, -apple-system, sans-serif'));
+    });
+  });
+
+  group('params with no SASS variable, and unknown names, do not break the build', () {
     test('nav_links, social_links and footer_text have no variable and stay inert', () {
       final config = const ThemeSassGenerator().generate(
         mergedParams: manifest.defaultParams,
@@ -252,6 +306,12 @@ void main() {
       expect(_props(_rootBlock(css))['--trellis-max-width'], '900px');
       expect(css, isNot(contains('no_such_param')));
       expect(css, isNot(contains('no-such-param')));
+      // The merger keeps an unknown name (it warns, nothing more), so the generated params module still declares it.
+      // What drops it is the bridge: `with()` names only variables the theme declares, and Sass fails the build on
+      // one it does not. So the successful compile above is the proof; the wrapper text adds nothing a rejected
+      // compile would not already have caught.
+      final wrapper = File(p.join(siteDir.path, '.trellis', 'build', 'bridge_main.scss')).readAsStringSync();
+      expect(wrapper, contains(r'$trellis-max-width: tp.$trellis-max-width'), reason: 'the wrapper is from this build');
     });
   });
 }
@@ -281,6 +341,21 @@ String? _darkMediaRoot(String css) {
   final root = css.indexOf(':root {', media);
   return css.substring(root + ':root {'.length, css.indexOf('}', root));
 }
+
+/// The whole `@media (prefers-color-scheme: dark) { ... }` rule of [css], or null.
+String? _darkMediaBlock(String css) {
+  final start = css.indexOf('@media (prefers-color-scheme: dark)');
+  if (start == -1) return null;
+  var depth = 0;
+  for (var i = css.indexOf('{', start); i < css.length; i++) {
+    if (css[i] == '{') depth++;
+    if (css[i] == '}' && --depth == 0) return css.substring(start, i + 1);
+  }
+  return css.substring(start);
+}
+
+/// [css] without its dark `@media` rule: the light view.
+String _withoutDarkMedia(String css) => css.replaceFirst(_darkMediaBlock(css) ?? '', '');
 
 /// Custom properties declared in [block] (`--name: value;` lines).
 Map<String, String> _props(String block) => {

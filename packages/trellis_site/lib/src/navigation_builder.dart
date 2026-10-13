@@ -12,9 +12,9 @@ import 'page_generator.dart' show orderedSectionPages, pageWeight;
 /// page is currently rendering).
 ///
 /// Ordering is single-sourced: each section's own-level content pages are obtained
-/// by calling [orderedSectionPages] (S01's canonical weight-aware ordered-section
+/// by calling [orderedSectionPages] (the canonical weight-aware ordered-section
 /// seam), so the sidebar order can never diverge from the `${pages}` listing or
-/// S08's prev/next order. The builder holds no comparator or lineage filter of its
+/// the prev/next order. The builder holds no comparator or lineage filter of its
 /// own — it delegates own-level ordering to that seam and nests strictly by each
 /// page's [Page.sectionPath] lineage.
 ///

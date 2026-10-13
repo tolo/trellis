@@ -34,15 +34,25 @@ their customizations across.
 
 ```bash
 # Scaffold a new theme
-trellis create --template theme my-theme
-cd my-theme
+trellis create --template theme my_theme
+cd my_theme
 
 # Edit the manifest, add layouts and SASS
-# Test with the bundled example site
+# Preview with the bundled example site
 cd example
 trellis build
 trellis serve
 ```
+
+`trellis create` writes `example/trellis_site.yaml` with `theme: my_theme` and
+links the theme root into the example as `example/themes/my_theme` (a relative
+symlink to `../..`), so `trellis build` in `example/` compiles the theme's SASS
+to `css/main.css` and renders the theme's own layouts. The example has no layouts
+of its own, because site layouts shadow theme layouts. If the link cannot be
+created (Windows without symlink rights), `create` prints the command to make it;
+on Windows, from the theme root: `mklink /J example\themes\my_theme .`. Do not
+run `trellis theme add ../` from `example/`: the source contains the site, and
+the command refuses it.
 
 You now have a working theme skeleton. The rest of this guide explains each
 piece in depth.
@@ -50,7 +60,7 @@ piece in depth.
 ## Theme directory structure
 
 ```
-my-theme/
+my_theme/
   theme.yaml                    # Manifest — name, version, params
   layouts/
     base.html                   # Root HTML shell (tl:define blocks)
@@ -62,7 +72,7 @@ my-theme/
       term.html
       list.html
   sass/
-    _variables.scss             # Params as $trellis-* with !default; builds the palettes
+    _variables.scss             # Params as $trellis-* with !default; builds the dark palette
     _skins/
       _light.scss               # Light palette map ($palette)
       _dark.scss                # Dark palette map ($palette)
@@ -84,7 +94,8 @@ my-theme/
       posts/
         _index.md
         welcome.md
-    layouts/                    # Optional site-specific overrides for preview
+    themes/
+      <name> -> ../..           # Symlink to the theme root, made by `trellis create`
 ```
 
 ## The theme.yaml manifest
@@ -100,7 +111,7 @@ author: Trellis Team
 description: >-
   A minimal, accessible blog theme for Trellis. Content-first design with
   three color skins, responsive layout, and full keyboard navigation.
-min_trellis_version: 0.8.0
+min_trellis_version: 0.12.0
 screenshots:
   - screenshots/light.png
   - screenshots/dark.png
@@ -310,16 +321,9 @@ $trellis-primary-color: map.get(light.$palette, primary-color) !default;
 $trellis-primary-color-dark: map.get(dark.$palette, primary-color) !default;
 // …one pair per color param
 
-// The palettes with the site's per-mode overrides applied. No !default: the
-// bridge never configures them. Public (not `$_`), because main.scss reads
+// The dark palette with the site's `_dark` overrides applied. No !default: the
+// bridge never configures it. Public (not `$_`), because main.scss reads
 // $trellis-palette-dark across the module boundary.
-$trellis-palette-light: map.merge(
-  light.$palette,
-  (
-    primary-color: $trellis-primary-color,
-    // …
-  )
-);
 $trellis-palette-dark: map.merge(
   dark.$palette,
   (
@@ -349,7 +353,7 @@ $trellis-heading-font: $trellis-font-family;
 **The `!default` convention is critical.** `!default` is what makes a variable
 configurable. The bridge configures a variable with the merged param value, and
 Sass rejects configuring a variable that is not declared `!default`. Values that
-are not params (the palettes, derived values) carry no `!default`, so the bridge
+are not params (the dark palette, derived values) carry no `!default`, so the bridge
 never touches them.
 
 **Params without a SASS variable are inert.** The bridge configures only the
@@ -446,7 +450,10 @@ $palette: (
 Name the directory `_skins` and import it as `@use '_skins/light'`:
 `@use 'skins/light'` does not find it. Keep the file contents equal to the
 `theme.yaml` defaults (light entries to the plain params, dark entries to the
-`_dark` twins).
+`_dark` twins). In a site build the `theme.yaml` defaults are passed to the theme,
+so they win over the palette map entries: keep each color param's default equal
+to its palette entry (the compile-every-theme gate checks this for bundled
+themes).
 
 ### main.scss – entry point
 
@@ -455,9 +462,6 @@ Name the directory `_skins` and import it as `@use '_skins/light'`:
 @forward 'variables';
 @use 'sass:map';
 @use 'variables' as *;
-@use 'base';
-@use 'layout';
-// …
 
 :root {
   --trellis-primary: #{$trellis-primary-color};
@@ -700,8 +704,8 @@ paginate: 5
 
 The build resolves a theme by joining `<siteDir>/themes/<value>`, so the example
 needs a `themes/mytheme` entry. Because the example lives inside the theme, that
-entry is a relative symlink pointing back at the theme root – create it once with
-`ln -s ../.. example/themes/mytheme`. A bare `theme: ..` does not work: it
+entry is a relative symlink pointing back at the theme root – `trellis create`
+makes it for you; to create it by hand, `ln -s ../.. example/themes/mytheme`. A bare `theme: ..` does not work: it
 resolves to the example directory itself, not the theme.
 
 Run the preview from the example directory:
@@ -767,7 +771,7 @@ pinned.
 - [ ] A skip-to-content link as the first `<body>` element.
 
 The official Verdant theme implements every pattern in this guide – the full
-manifest, `_variables.scss` with `!default` and the palettes, light and dark
+manifest, `_variables.scss` with `!default` and the dark palette merge, light and dark
 palette maps, a `main.scss` that forwards `variables` first and carries the
 auto-skin media query, a `base.html` with all four `tl:define` blocks,
 child layouts with `tl:extends`, taxonomy layouts, and an example preview site.

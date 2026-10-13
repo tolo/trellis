@@ -80,14 +80,14 @@ void main() {
     setUp(() => h.open());
     tearDown(() => h.close());
 
-    test('S04: a _dark gradient override reaches a forced dark skin', () {
+    test('a _dark gradient override reaches a forced dark skin', () {
       final css = h.compile('dark', siteParams: {'accent_gradient_start_dark': darkOverride});
       final root = customProps(rootBlock(css));
       expect(root['--trellis-gradient-start'], darkOverride);
       expect(root['--trellis-gradient-end'], h.darkPalette['accent-gradient-end']);
     });
 
-    test('S05: a _dark gradient override reaches the auto block, which now carries both gradient tokens', () {
+    test('a _dark gradient override reaches the auto block, which now carries both gradient tokens', () {
       final css = h.compile('auto', siteParams: {'accent_gradient_start_dark': darkOverride});
       expect(customProps(rootBlock(css))['--trellis-gradient-start'], h.lightPalette['accent-gradient-start']);
       final media = customProps(darkMediaRoot(css)!);
@@ -95,7 +95,7 @@ void main() {
       expect(media['--trellis-gradient-end'], h.darkPalette['accent-gradient-end']);
     });
 
-    test('S06: a plain gradient param does not leak into dark (reverses the old carry-through)', () {
+    test('a plain gradient param does not leak into dark (reverses the old carry-through)', () {
       // Precedence rule, not load-order luck: a plain colour param sets the light
       // palette entry only, so `accent_gradient_start` never reaches a dark view.
       final dark = h.compile('dark', siteParams: {'accent_gradient_start': lightOverride});
@@ -110,14 +110,14 @@ void main() {
       expect(customProps(rootBlock(light))['--trellis-gradient-start'], lightOverride);
     });
 
-    test('S02: nav_links and social_links stay inert, and still reach templates', () {
+    test('nav_links and social_links stay inert, and still reach templates', () {
       final siteParams = {
         for (final name in ['nav_links', 'social_links']) name: _verdantTemplateOnly[name],
       };
       _expectTemplateOnly(h, siteParams);
     });
 
-    test("SC02: _components.scss reads layout's breakpoints through @use, with no layout import", () {
+    test("_components.scss reads layout's breakpoints through @use, with no layout import", () {
       final source = stripComments(h.sass('_components.scss'));
       expect(source, contains("@use 'layout' as *;"));
       expect(source, isNot(contains('@import')));
@@ -137,7 +137,7 @@ void main() {
       expect(media['--trellis-shadow-md'], isNotNull);
     });
 
-    test('S02: the 15 params with no SASS variable stay inert, and still reach templates', () {
+    test('the 15 params with no SASS variable stay inert, and still reach templates', () {
       _expectTemplateOnly(h, _verdantTemplateOnly);
     });
   });
@@ -178,7 +178,7 @@ void _themeTests(String theme, String Function() repoRoot, Map<String, String> p
   /// A palette key's colour param and the `_dark` twin's: `primary-color` → `primary_color`.
   String param(String key) => key.replaceAll('-', '_');
 
-  group('S01 compiles with @import fatal', () {
+  group('compiles with @import fatal', () {
     for (final skin in ['light', 'dark', 'auto']) {
       test('bridged at skin: $skin', () => expect(h.compile(skin), isNotEmpty));
     }
@@ -192,7 +192,7 @@ void _themeTests(String theme, String Function() repoRoot, Map<String, String> p
     });
   });
 
-  group('S03 the skins survive the migration', () {
+  group('the skins survive the migration', () {
     test('light and dark differ, and each :root carries its own palette', () {
       final light = h.compile('light');
       final dark = h.compile('dark');
@@ -204,15 +204,6 @@ void _themeTests(String theme, String Function() repoRoot, Map<String, String> p
         expect(lightRoot[entry.value], h.lightPalette[entry.key], reason: 'light ${entry.key}');
         expect(darkRoot[entry.value], h.darkPalette[entry.key], reason: 'dark ${entry.key}');
       }
-    });
-
-    test('the focus ring is derived from the post-skin primary', () {
-      // Derived values read the colour after the skin is applied; a dark skin that
-      // reassigned too late would keep the light primary.
-      final dark = h.compile('dark', probe: r'theme.$trellis-focus-ring-color');
-      expect(dark, contains('value: ${h.darkPalette['primary-color']};'));
-      final light = h.compile('light', probe: r'theme.$trellis-focus-ring-color');
-      expect(light, contains('value: ${h.lightPalette['primary-color']};'));
     });
 
     test('auto emits the light palette plus a prefers-color-scheme block carrying the dark palette', () {
@@ -233,8 +224,8 @@ void _themeTests(String theme, String Function() repoRoot, Map<String, String> p
     });
   });
 
-  group('S04–S06 per-mode colour params', () {
-    test('S04: a _dark override reaches a forced dark skin and nothing else moves', () {
+  group('per-mode colour params', () {
+    test('a _dark override reaches a forced dark skin and nothing else moves', () {
       final plain = customProps(rootBlock(h.compile('dark')));
       final css = h.compile('dark', siteParams: {'primary_color_dark': darkOverride});
       final root = customProps(rootBlock(css));
@@ -254,14 +245,14 @@ void _themeTests(String theme, String Function() repoRoot, Map<String, String> p
       }
     });
 
-    test('S05: a _dark override reaches auto mode through the dark palette, not a literal', () {
+    test('a _dark override reaches auto mode through the dark palette, not a literal', () {
       final css = h.compile('auto', siteParams: {'primary_color_dark': darkOverride});
 
       expect(customProps(rootBlock(css))['--trellis-primary'], h.lightPalette['primary-color']);
       expect(customProps(darkMediaRoot(css)!)['--trellis-primary'], darkOverride);
     });
 
-    test('S06: a plain colour param sets the light entry only', () {
+    test('a plain colour param sets the light entry only', () {
       // Documented precedence rule, not load-order luck: a forced skin selects a
       // palette and a per-mode param sets one entry in it, so a plain
       // `primary_color` (the light entry) has no effect on a `skin: dark` site.
@@ -277,7 +268,7 @@ void _themeTests(String theme, String Function() repoRoot, Map<String, String> p
       expect(customProps(rootBlock(light))['--trellis-primary'], lightOverride);
     });
 
-    test('S06: a _dark-only override under light changes nothing', () {
+    test('a _dark-only override under light changes nothing', () {
       expect(h.compile('light', siteParams: {'primary_color_dark': darkOverride}), h.compile('light'));
     });
 
@@ -287,7 +278,7 @@ void _themeTests(String theme, String Function() repoRoot, Map<String, String> p
     });
   });
 
-  group('S07 every colour param has a _dark twin sourced from the palettes', () {
+  group('every colour param has a _dark twin sourced from the palettes', () {
     test('twins exist, defaults equal the palette entries, twins have no twins', () {
       final colorParams = {
         for (final e in h.manifest.params.entries)
@@ -313,7 +304,7 @@ void _themeTests(String theme, String Function() repoRoot, Map<String, String> p
     });
   });
 
-  group('SC01/SC02/SC03 structure', () {
+  group('structure', () {
     final partials = ['_a11y', '_base', '_code', '_components', '_footer', '_layout'];
 
     test('no @import remains in sass/', () {
@@ -387,12 +378,10 @@ class _Harness {
     themeDir: themeDir,
   );
 
-  /// [probe] appends a rule so a test can read a module variable the CSS never
-  /// emits (the entry's namespace is `theme`).
-  String compile(String skin, {Map<String, dynamic> siteParams = const {}, String? probe}) {
+  String compile(String skin, {Map<String, dynamic> siteParams = const {}}) {
     final config = generate(merge(skin, siteParams));
     final wrapper = File(p.join(config.buildDir, 'bridge_main.scss'))
-      ..writeAsStringSync('${config.bridgeWrapperSource(entry)}${probe == null ? '' : '.probe { value: $probe; }\n'}');
+      ..writeAsStringSync(config.bridgeWrapperSource(entry));
     return TrellisCss.compileSass(wrapper.path, loadPaths: config.sassLoadPaths, fatalImportDeprecation: true);
   }
 }

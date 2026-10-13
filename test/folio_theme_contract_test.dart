@@ -13,7 +13,7 @@ import 'theme_use_support.dart';
 void main() {
   final themeDir = p.join(Directory.current.path, 'themes', 'folio');
 
-  test('S03/S07 TI01 manifest exposes the Folio contract', () {
+  test('manifest exposes the Folio contract', () {
     final manifest = ThemeManifest.load(themeDir);
     const standardParams = {
       'skin',
@@ -53,7 +53,7 @@ void main() {
     expect(manifest.screenshots, ['screenshots/light.png', 'screenshots/dark.png']);
   });
 
-  test('S03-S05 TI03/TI04 skins and semantic apparatus use one token authority', () {
+  test('skins and semantic apparatus use one token authority', () {
     const shared = {
       'font_family': 'Arial, sans-serif',
       'heading_font_family': 'Georgia, serif',
@@ -114,7 +114,7 @@ void main() {
     expect(apparatusOff, contains('.folio-sidenote'));
     expect(apparatusOff, contains('display: none'));
 
-    // SC03: the dark palette is the one dark authority. Neither the entry nor the
+    // The dark palette is the one dark authority. Neither the entry nor the
     // variables module restates a dark hex, and the auto blocks read the palette.
     String sass(String relative) => stripComments(File(p.join(themeDir, 'sass', relative)).readAsStringSync());
     final main = sass('main.scss');
@@ -164,7 +164,7 @@ void main() {
     // Sass strips the quotes from an attribute selector, so these are the unquoted forms.
     const autoOnly = ['@media (prefers-color-scheme: dark)', ':root[data-skin=dark]', ':root[data-skin=light]'];
 
-    test('S01: every skin compiles fatal on @import, and each carries its own palette', () {
+    test('every skin compiles fatal on @import, and each carries its own palette', () {
       final light = compileBridged(themeDir, 'light');
       final dark = compileBridged(themeDir, 'dark');
       final auto = compileBridged(themeDir, 'auto');
@@ -191,7 +191,7 @@ void main() {
       }
     });
 
-    test('S02: site overrides reach compiled CSS and variable-less params leave it unaffected', () {
+    test('site overrides reach compiled CSS and variable-less params leave it unaffected', () {
       const overrides = {'max_width': '900px', 'font_family': 'Arial, sans-serif', 'show_sidenotes': false};
       final plain = compileBridged(themeDir, 'light');
       final css = compileBridged(themeDir, 'light', siteParams: overrides);
@@ -218,7 +218,7 @@ void main() {
       expect(withLists, css);
     });
 
-    test('S05: a _dark override reaches a forced dark skin and nothing else moves', () {
+    test('a _dark override reaches a forced dark skin and nothing else moves', () {
       final plain = customProps(rootBlock(compileBridged(themeDir, 'dark')));
       final css = compileBridged(themeDir, 'dark', siteParams: {'primary_color_dark': darkOverride});
       final root = customProps(rootBlock(css));
@@ -233,7 +233,7 @@ void main() {
       }
     });
 
-    test('S06: a _dark override reaches every dark view under auto, and no light view', () {
+    test('a _dark override reaches every dark view under auto, and no light view', () {
       final css = compileBridged(themeDir, 'auto', siteParams: {'primary_color_dark': darkOverride});
       final lightPrimary = lightPalette['primary-color'];
 
@@ -243,7 +243,7 @@ void main() {
       expect(customProps(ruleBody(css, ':root[data-skin=dark]')!)['--folio-green'], darkOverride);
     });
 
-    test('S07: a plain colour param sets the light entry only, under every skin', () {
+    test('a plain colour param sets the light entry only, under every skin', () {
       // The precedence rule, not load-order luck: a forced skin selects a palette and a
       // param sets one entry in it, so a plain `primary_color` is the light entry and
       // never reaches the dark palette.
@@ -267,7 +267,7 @@ void main() {
       );
     });
 
-    test('S09: every colour param has a _dark twin sourced from the palettes', () {
+    test('every colour param has a _dark twin sourced from the palettes', () {
       final colorParams = {
         for (final e in ThemeManifest.load(themeDir).params.entries)
           if (e.value.type == 'color') e.key: e.value,
@@ -294,7 +294,7 @@ void main() {
   group('@use module structure', () {
     String sass(String relative) => stripComments(File(p.join(themeDir, 'sass', relative)).readAsStringSync());
 
-    test('SC01: no @import remains, and the entry compiles standalone with the deprecation fatal', () {
+    test('no @import remains, and the entry compiles standalone with the deprecation fatal', () {
       for (final file in sassSources(p.join(themeDir, 'sass'))) {
         expect(stripComments(file.readAsStringSync()), isNot(contains('@import')), reason: file.path);
       }
@@ -304,7 +304,7 @@ void main() {
       expect(customProps(rootBlock(dark))['--folio-paper'], '#111a14');
     });
 
-    test("SC02: main.scss opens with @forward 'variables' and declares no \$trellis-* of its own", () {
+    test("main.scss opens with @forward 'variables' and declares no \$trellis-* of its own", () {
       final main = sass('main.scss');
       expect(RegExp(r'@(use|forward)\b[^;]*;').firstMatch(main)!.group(0), "@forward 'variables';");
       expect(RegExp(r'^\$trellis-[\w-]+\s*:', multiLine: true).hasMatch(main), isFalse);
@@ -317,7 +317,7 @@ void main() {
       expect(declared, containsAll(read));
     });
 
-    test('SC03: skins expose a palette and declare nothing !default', () {
+    test('skins expose a palette and declare nothing !default', () {
       for (final skin in ['_light', '_dark']) {
         final source = sass('_skins/$skin.scss');
         expect(source, contains(r'$palette:'), reason: skin);
@@ -325,7 +325,7 @@ void main() {
       }
     });
 
-    test('SC04: the bridge configures what _variables.scss declares, and nothing it cannot', () {
+    test('the bridge configures what _variables.scss declares, and nothing it cannot', () {
       final manifest = ThemeManifest.load(themeDir);
       final siteDir = Directory.systemTemp.createTempSync('folio_bridge_vars_');
       addTearDown(() => siteDir.deleteSync(recursive: true));
@@ -343,7 +343,7 @@ void main() {
     });
   });
 
-  test('S02-S07 TI02/TI05/TI06/TI07 bridged example builds cleanly', () async {
+  test('bridged example builds cleanly', () async {
     final config = exampleSiteCopy(themeDir);
     final result = await TrellisSite(config).build();
     expect(result.warnings, isEmpty);
@@ -554,7 +554,7 @@ void main() {
     expect(home.querySelectorAll('link[rel="alternate"]'), hasLength(2));
   });
 
-  test('S02 TI07 prefixed build joins same-origin assets exactly once', () async {
+  test('prefixed build joins same-origin assets exactly once', () async {
     final tempDir = Directory.systemTemp.createTempSync('folio_prefix_contract_');
     addTearDown(() => tempDir.deleteSync(recursive: true));
     copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
@@ -596,7 +596,7 @@ void main() {
     }
   });
 
-  test('S03/S06 TI07 template controls remove their regions', () async {
+  test('template controls remove their regions', () async {
     final tempDir = Directory.systemTemp.createTempSync('folio_controls_contract_');
     addTearDown(() => tempDir.deleteSync(recursive: true));
     copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
@@ -631,7 +631,7 @@ void main() {
     expect(docs.querySelector('link[rel="alternate"]'), isNull);
   });
 
-  test('S05 TI07 forced skin omits auto-only scripts and controls', () async {
+  test('forced skin omits auto-only scripts and controls', () async {
     final tempDir = Directory.systemTemp.createTempSync('folio_forced_skin_contract_');
     addTearDown(() => tempDir.deleteSync(recursive: true));
     copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
@@ -669,7 +669,7 @@ void main() {
     expect(File(p.join(themeDir, 'static', 'js', 'search.js')).readAsStringSync(), contains('shell.hidden = false'));
   });
 
-  test('S05/TI05 auto skin control follows OS only without a stored choice', () async {
+  test('auto skin control follows OS only without a stored choice', () async {
     final result = await runNodeHarness('folio', p.join(themeDir, 'static', 'js', 'folio.js'));
     if (result == null) return;
 
@@ -799,7 +799,7 @@ void main() {
     );
   });
 
-  test('S07 TI08 publishability collateral and local assets are complete', () {
+  test('publishability collateral and local assets are complete', () {
     final manifest = ThemeManifest.load(themeDir);
     final readme = File(p.join(themeDir, 'README.md')).readAsStringSync();
     for (final param in manifest.params.keys) {

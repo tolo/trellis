@@ -52,10 +52,10 @@ void main() {
     return out;
   }
 
-  // --- TI01 / S03 / S04: SiteConfig.normalizePathPrefix ------------------------
+  // --- SiteConfig.normalizePathPrefix ------------------------
 
-  group('SiteConfig.normalizePathPrefix (TI01 · S04)', () {
-    test('all slash variants of a sub-path normalize to the same /trellis/ (S04)', () {
+  group('SiteConfig.normalizePathPrefix', () {
+    test('all slash variants of a sub-path normalize to the same /trellis/', () {
       for (final input in ['trellis', '/trellis', 'trellis/', '/trellis/']) {
         expect(SiteConfig.normalizePathPrefix(input), '/trellis/', reason: "input '$input'");
       }
@@ -67,14 +67,14 @@ void main() {
       }
     });
 
-    test("root-equivalent values '', '/', and null normalize to the no-prefix state (S04)", () {
+    test("root-equivalent values '', '/', and null normalize to the no-prefix state", () {
       expect(SiteConfig.normalizePathPrefix(''), '');
       expect(SiteConfig.normalizePathPrefix('/'), '');
       expect(SiteConfig.normalizePathPrefix('   '), '');
       expect(SiteConfig.normalizePathPrefix(null), '');
     });
 
-    test('a scheme-bearing value throws SiteConfigException naming pathPrefix + the value (S03)', () {
+    test('a scheme-bearing value throws SiteConfigException naming pathPrefix + the value', () {
       expect(
         () => SiteConfig.normalizePathPrefix('http://example.com'),
         throwsA(
@@ -85,14 +85,14 @@ void main() {
       );
     });
 
-    test('a protocol-relative value throws SiteConfigException naming pathPrefix (S03)', () {
+    test('a protocol-relative value throws SiteConfigException naming pathPrefix', () {
       expect(
         () => SiteConfig.normalizePathPrefix('//cdn.example.com/x'),
         throwsA(isA<SiteConfigException>().having((e) => e.message, 'message', contains('pathPrefix'))),
       );
     });
 
-    test('a non-string value throws SiteConfigException naming pathPrefix + the value (S03)', () {
+    test('a non-string value throws SiteConfigException naming pathPrefix + the value', () {
       expect(
         () => SiteConfig.normalizePathPrefix(42),
         throwsA(
@@ -143,7 +143,7 @@ void main() {
     });
   });
 
-  group('SiteConfig.load() pathPrefix parsing (TI01)', () {
+  group('SiteConfig.load() pathPrefix parsing', () {
     test('pathPrefix YAML key loads and normalizes to canonical form', () {
       final tempDir = Directory.systemTemp.createTempSync('cfg_prefix_');
       addTearDown(() => tempDir.deleteSync(recursive: true));
@@ -162,7 +162,7 @@ void main() {
       expect(config.pathPrefix, '');
     });
 
-    test('malformed pathPrefix throws SiteConfigException carrying the config path (S03)', () {
+    test('malformed pathPrefix throws SiteConfigException carrying the config path', () {
       final tempDir = Directory.systemTemp.createTempSync('cfg_prefix_');
       addTearDown(() => tempDir.deleteSync(recursive: true));
       final cfgPath = p.join(tempDir.path, 'trellis_site.yaml');
@@ -178,7 +178,7 @@ void main() {
       );
     });
 
-    test('malformed pathPrefix aborts before any output is written (S03)', () {
+    test('malformed pathPrefix aborts before any output is written', () {
       // A malformed prefix is rejected at config load — before TrellisSite is
       // ever constructed — so a half-applied site can never reach the output dir.
       final tempDir = Directory.systemTemp.createTempSync('cfg_prefix_');
@@ -193,9 +193,9 @@ void main() {
     });
   });
 
-  // --- TI02 / S01 / S05: deriveUrl + applyPathPrefix ---------------------------
+  // --- deriveUrl + applyPathPrefix ---------------------------
 
-  group('deriveUrl with pathPrefix (TI02 · S01)', () {
+  group('deriveUrl with pathPrefix', () {
     test('a page defaulting to /docs/intro/ yields /trellis/docs/intro/', () {
       expect(deriveUrl('docs/intro.md', pathPrefix: '/trellis/'), '/trellis/docs/intro/');
     });
@@ -222,16 +222,16 @@ void main() {
     });
   });
 
-  group('applyPathPrefix — external/absolute URLs untouched (TI02 · S05)', () {
+  group('applyPathPrefix — external/absolute URLs untouched', () {
     test('root-absolute internal path is prefixed', () {
       expect(applyPathPrefix('/docs/intro/', '/trellis/'), '/trellis/docs/intro/');
     });
 
-    test('absolute external https URL passes through verbatim (S05)', () {
+    test('absolute external https URL passes through verbatim', () {
       expect(applyPathPrefix('https://pub.dev/packages/trellis', '/trellis/'), 'https://pub.dev/packages/trellis');
     });
 
-    test('protocol-relative //host URL passes through verbatim (S05)', () {
+    test('protocol-relative //host URL passes through verbatim', () {
       expect(applyPathPrefix('//cdn.example.com/lib.js', '/trellis/'), '//cdn.example.com/lib.js');
     });
 
@@ -241,7 +241,7 @@ void main() {
     });
   });
 
-  group('Prefix flows into every engine-emitted URL (TI02 · S01)', () {
+  group('Prefix flows into every engine-emitted URL', () {
     test('page.url and search-index url both carry the prefix', () async {
       final outputDir = await buildBuildSite(pathPrefix: '/trellis/');
 
@@ -261,9 +261,9 @@ void main() {
     });
   });
 
-  // --- TI03: sitemap + feeds prefixed exactly once -----------------------------
+  // --- sitemap + feeds prefixed exactly once -----------------------------
 
-  group('Sitemap and feeds are prefixed exactly once (TI03)', () {
+  group('Sitemap and feeds are prefixed exactly once', () {
     test('sitemap <loc> is https://example.com/trellis/... (prefix appears once)', () async {
       final outputDir = await buildBuildSite(pathPrefix: '/trellis/');
       final xml = File(p.join(outputDir, 'sitemap.xml')).readAsStringSync();
@@ -287,9 +287,9 @@ void main() {
     });
   });
 
-  // --- TI04: ${site.pathPrefix} theme-author mechanism -------------------------
+  // --- ${site.pathPrefix} theme-author mechanism -------------------------
 
-  group('\${site.pathPrefix} literal-asset mechanism (TI04 · S06)', () {
+  group('\${site.pathPrefix} literal-asset mechanism', () {
     Future<String> buildLiteralAssetSite({required String pathPrefix}) async {
       final tempDir = Directory.systemTemp.createTempSync('prefix_asset_');
       addTearDown(() => tempDir.deleteSync(recursive: true));
@@ -321,7 +321,7 @@ void main() {
       return outputDir;
     }
 
-    test('a layout using \${site.pathPrefix} for a literal href emits /trellis/css/main.css (S06)', () async {
+    test('a layout using \${site.pathPrefix} for a literal href emits /trellis/css/main.css', () async {
       final outputDir = await buildLiteralAssetSite(pathPrefix: '/trellis/');
       final html = File(p.join(outputDir, 'index.html')).readAsStringSync();
       expect(html, contains('href="/trellis/css/main.css"'));
@@ -334,13 +334,13 @@ void main() {
     });
   });
 
-  // --- TI05: no-prefix build is byte-for-byte unchanged ------------------------
+  // --- no-prefix build is byte-for-byte unchanged ------------------------
 
-  group('No-prefix build is byte-for-byte unchanged (TI05 · S02)', () {
+  group('No-prefix build is byte-for-byte unchanged', () {
     test('default build matches the pre-change captured baseline byte-for-byte', () async {
-      // The golden was captured from the pre-pathPrefix engine (the S01-inclusive
-      // working tree) with feeds + search enabled, covering the full artifact set:
-      // HTML tree, sitemap.xml, feed.xml, rss.xml, search-index.json, static.
+      // The golden was captured from the pre-pathPrefix engine (with weight-aware section
+      // ordering already in place) with feeds + search enabled, covering the full artifact
+      // set: HTML tree, sitemap.xml, feed.xml, rss.xml, search-index.json, static.
       final golden = (jsonDecode(File(fixture('pathprefix_regression_golden.json')).readAsStringSync()) as Map)
           .cast<String, dynamic>();
 

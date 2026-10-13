@@ -8,6 +8,7 @@ import '../generator/dart_frog_project_generator.dart';
 import '../generator/file_writer.dart';
 import '../generator/project_generator.dart';
 import '../generator/relic_project_generator.dart';
+import '../generator/theme_example_link.dart';
 import '../generator/theme_project_generator.dart';
 import '../validators.dart';
 
@@ -108,8 +109,10 @@ class CreateCommand extends Command<int> {
     } else if (template == 'theme') {
       final generator = ThemeProjectGenerator(projectName: projectName, writer: writer);
       await generator.generate();
+      final linkWarning = linkThemeIntoExample(dir.path, projectName);
 
       stdout.writeln('Created theme "$projectName".');
+      if (linkWarning != null) stderr.writeln('Warning: $linkWarning');
       stdout.writeln('');
       stdout.writeln('Next steps:');
       stdout.writeln('  cd $projectName');

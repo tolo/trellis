@@ -647,7 +647,7 @@ void main() {
   });
 
   // ──────────────────────────────────────────────────
-  // SiteConfig feeds integration (TI14)
+  // SiteConfig feeds integration
   // ──────────────────────────────────────────────────
   group('SiteConfig feeds', () {
     test('factory constructor accepts feeds parameter', () {
@@ -677,7 +677,7 @@ void main() {
   });
 
   // ──────────────────────────────────────────────────
-  // Template context injection (TI15)
+  // Template context injection
   // ──────────────────────────────────────────────────
   group('template context feeds injection', () {
     test('SiteConfig with atom-only feeds has feeds.atom set', () {

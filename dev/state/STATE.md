@@ -1,12 +1,12 @@
 # Project State — Trellis SDK
 
-Last Updated: 2026-10-04
+Last Updated: 2026-10-05
 
 > Cross-session state tracking. Updated at phase boundaries and when significant context changes.
 
 ## Current Phase
 
-**v0.11.0 is published and fully verified. The 0.12 SASS `@use` migration (TD-006, [ADR-013](../adrs/ADR-013-sass-module-bridge.md)) is implemented and gate-green on the `feat/0.12` branch, awaiting review and release.** The bridge, all six bundled themes, the scaffold and the docs site are on `@use … with()` with per-mode colour params, and `packages/trellis_site/test/theme_sass_use_gate_test.dart` (untagged, so the fast CI job runs it) compiles every theme under `themes/` at each skin and standalone with the `@import` deprecation fatal. On the merged tree the full tier, analyze, format, the gallery check and the macOS visual comparator pass, and each theme's compiled CSS equals its pre-migration baseline except recorded rendering-neutral differences (bloom's duplicate `_layout` block, lattice's light hex case, lattice's and meadow's forced-dark base `:root`). TD-006 and TD-048 are resolved. Sequence decided 2026-09-02: 0.12 sass-use-migration → 0.13 composition primitives (ADR-014) → 0.14 Trellis UI Tier 1 slice (ADR-012); spec at `../trellis-private/docs/specs/0.12/`. All eight lockstep packages, the
+**v0.11.1 (2026-09-07) is the latest published release; v0.11.0 was fully verified (below). The 0.12 SASS `@use` migration (TD-006, [ADR-013](../adrs/ADR-013-sass-module-bridge.md)) is implemented and gate-green on the `feat/0.12` branch, awaiting review and release.** The bridge, all six bundled themes, the scaffold and the docs site are on `@use … with()` with per-mode colour params, and `packages/trellis_site/test/theme_sass_use_gate_test.dart` (untagged, so the fast CI job runs it) compiles every theme under `themes/` at each skin and standalone with the `@import` deprecation fatal. On the merged tree the full tier, analyze, format, the gallery check and the macOS visual comparator pass, and each theme's compiled CSS equals its pre-migration baseline except recorded rendering-neutral differences (bloom's duplicate `_layout` block, lattice's light hex case, lattice's and meadow's forced-dark base `:root`). TD-006 and TD-048 are resolved. Sequence decided 2026-09-02: 0.12 sass-use-migration → 0.13 composition primitives (ADR-014) → 0.14 Trellis UI Tier 1 slice (ADR-012); spec at `../trellis-private/docs/specs/0.12/`. All eight lockstep packages, the
 GitHub Release and 11 assets, Homebrew formula, and Scoop manifest were verified on 2026-08-31 with
 `tool/verify_release.sh 0.11.0`. The release contains Lattice, the redesigned site and six-theme generated gallery,
 Folio, Meadow, authoring guidance, TD-014, and the release-gate hardening described below.
@@ -31,7 +31,8 @@ out to have siblings the review had not named).
 
 | Phase | Completed | Key Deliverables |
 |-------|-----------|------------------|
-| 0.12.0 (implementation) | 2026-10-04 | SASS `@use` migration on the `feat/0.12` branch (ADR-013): module bridge with palette-map skins and `_dark` colour twins, six themes, scaffold and docs site migrated, the import-silencing parameter removed from `TrellisCss.compileSass`, compile-every-theme gate, TD-006 and TD-048 resolved. Awaiting review and release. |
+| 0.12.0 (release) | 2026-10-07 | SASS `@use` migration on the `feat/0.12` branch (ADR-013): module bridge with palette-map skins and `_dark` colour twins, six themes, scaffold and docs site migrated, the import-silencing parameter removed from `TrellisCss.compileSass`, compile-every-theme gate, TD-006 and TD-048 resolved. Ships as the eight-package lockstep 0.12.0: a theme still on `@import` now fails `trellis build` with its file and line, the standard theme contract goes from 18 to 25 params, and the theme scaffold links its CSS and meets WCAG AA. |
+| 0.11.1 (release) | 2026-09-07 | Patch: `trellis create` scaffold pubspecs and package README install snippets track the lockstep version (were unresolvable `^0.1.0`/`^0.8.0` pins); HTMX 4 request-header compatibility (`htmxSource()`, `htmxTrigger()` deprecated) with HTMX 2.0.10 still pinned; Lattice `show_site_demo` param, docs-site Sites section and `examples/docs_site/`. |
 | 0.11.0 (release) | 2026-08-31 | Eight lockstep packages on pub.dev; GitHub Release with 11 assets; Homebrew and Scoop updated; tagged-commit CI, E2E, docs deployment, and font provenance green. |
 | 0.11.0 (implementation) | 2026-08-19 | Lattice docs theme and Lattice-powered site; deterministic six-theme gallery; Folio reference theme; Meadow product-landing theme; theme-data authoring guidance; architecture and unreleased 0.11.0 changelog collateral. |
 | 0.11.0 (UI remediation) | 2026-08-26 | Owner-found rendering defects in Folio and Meadow; Folio design-gap closure against the mockup; compact branding assets; font payloads re-subset; landing showcase set to Arbor/Lattice/Folio. |
@@ -51,6 +52,7 @@ out to have siblings the review had not named).
 - **v0.10.1** (2026-08-18): `FragmentHost` contract (source-break for direct `ProcessorContext` construction, deliberate), SSG prev/next perf, HTMX 2.0.10 scaffolds, push CI + release gate/tooling. Verified with `tool/verify_release.sh 0.10.1`: pub.dev ×8, Release + 11 assets, Homebrew, Scoop.
 - **v0.10.2** (2026-08-18): TD-013 Linux nested-template watching + dev-watch hardening (rename/atomic-save reloads), `listTemplates()` symlink alignment, e2e numeric loopback. Verified with `tool/verify_release.sh 0.10.2`: pub.dev ×8 latest=0.10.2, Release + 11 assets, Homebrew, Scoop.
 - **v0.11.0** (2026-08-31): Lattice docs theme and site redesign, six-theme generated gallery, Folio and Meadow themes, built-in theme installation, timezone-stable front matter dates, and release-gate hardening. Verified with `tool/verify_release.sh 0.11.0`: pub.dev ×8 latest=0.11.0, Release + 11 assets, Homebrew, Scoop.
+- **v0.11.1** (2026-09-07): scaffold pubspec and README install-snippet constraints derived from the lockstep version; HTMX 4 request-header compatibility (`htmxSource()`; `htmxTrigger()` deprecated); Lattice `show_site_demo` param, docs-site Sites section and `examples/docs_site/`.
 - Releases follow `dev/guidelines/RELEASE-RUNBOOK.md`: `tool/release.sh` (lockstep bump, gate, release commit, local tag), then one push; publish is OIDC tag-triggered (`publish.yml`, global `vX.Y.Z` tag per ADR-009) behind the CI release gate (`release-gate.yml`).
 - The 4 `examples/*` packages + root workspace correctly carry `publish_to: none`.
 

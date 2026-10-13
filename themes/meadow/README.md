@@ -9,7 +9,7 @@ theme-owned trellis illustration. It works offline and supports `light`, `dark`,
 Install it from the Trellis repository:
 
 ```sh
-trellis theme add https://github.com/tolo/trellis --theme meadow --ref v0.11.0
+trellis theme add https://github.com/tolo/trellis --theme meadow --ref v0.11.1
 ```
 
 That copies `themes/meadow/` into your site's `themes/` and sets `theme: meadow` in `trellis_site.yaml`. `theme:` names
@@ -31,7 +31,8 @@ unbreakable 72-character token in every text container.
 Meadow implements all 25 [standard params](../../docs/reference/standard-params.md) plus the landing params below.
 Each colour param has a dark-mode twin (`<name>_dark`). A plain colour param sets the light entry only and never reaches
 the dark edition, whether forced with `skin: dark` or reached through `auto`'s `prefers-color-scheme` block and toggle;
-set the `_dark` twin for that.
+set the `_dark` twin for that. The primary button's colours are theme-authored (lime on dark ink in light, dark ink on
+lime in dark) and no colour param drives them.
 
 | Param | Type | Default | Purpose |
 |---|---|---|---|

@@ -67,7 +67,7 @@ void main() {
     return TrellisCss.compileSass(wrapper.path, loadPaths: config.sassLoadPaths, fatalImportDeprecation: true);
   }
 
-  group('S01 compiles with fatal import deprecation, bridged and standalone', () {
+  group('compiles with fatal import deprecation, bridged and standalone', () {
     test('every skin compiles through the bridge', () {
       for (final skin in ['light', 'dark', 'auto']) {
         expect(compileLattice(skin), contains('--leaf:'), reason: skin);
@@ -86,8 +86,8 @@ void main() {
     });
   });
 
-  group('S02/S03 configurable variables and non-colour overrides', () {
-    test('S02: configurableVars covers every lattice variable, multi-line font stacks included', () {
+  group('configurable variables and non-colour overrides', () {
+    test('configurableVars covers every lattice variable, multi-line font stacks included', () {
       const params = [
         'skin',
         'primary_color',
@@ -123,7 +123,7 @@ void main() {
       });
     });
 
-    test('S03: site overrides for non-colour variables win on compiled CSS', () {
+    test('site overrides for non-colour variables win on compiled CSS', () {
       final root = customProps(
         rootBlock(
           compileLattice(
@@ -146,7 +146,7 @@ void main() {
     });
   });
 
-  group('S04 skins survive the migration', () {
+  group('skins survive the migration', () {
     test('light, dark and auto carry their palettes and dark views', () {
       final light = compileLattice('light');
       final dark = compileLattice('dark');
@@ -165,8 +165,8 @@ void main() {
     });
   });
 
-  group('S08-S10 per-mode colour params', () {
-    test('S08: a _dark override reaches a forced dark skin and nothing else moves', () {
+  group('per-mode colour params', () {
+    test('a _dark override reaches a forced dark skin and nothing else moves', () {
       final plain = compileLattice('dark');
       final css = compileLattice('dark', siteParams: {'primary_color_dark': darkOverride});
       final plainRoot = customProps(rootBlock(plain));
@@ -194,7 +194,7 @@ void main() {
       expect(compileLattice('auto'), contains('prefers-color-scheme'), reason: 'the negative query is not vacuous');
     });
 
-    test('S08: every _dark twin reaches its token in the forced dark views', () {
+    test('every _dark twin reaches its token in the forced dark views', () {
       for (final key in _paletteTokens.keys) {
         final css = compileLattice('dark', siteParams: {'${key.replaceAll('-', '_')}_dark': darkOverride});
         final token = _paletteTokens[key]!;
@@ -203,7 +203,7 @@ void main() {
       }
     });
 
-    test('S09: a _dark override reaches both dark views under auto, through the palette', () {
+    test('a _dark override reaches both dark views under auto, through the palette', () {
       final plain = compileLattice('auto');
       final css = compileLattice('auto', siteParams: {'primary_color_dark': darkOverride});
       final media = customProps(_mediaDarkBlock(css)!);
@@ -214,7 +214,7 @@ void main() {
       expect(media['--footer-link'], customProps(_mediaDarkBlock(plain)!)['--footer-link'], reason: 'theme-authored');
     });
 
-    test('S09: every _dark twin reaches its token in the toggle rule and the @media rule', () {
+    test('every _dark twin reaches its token in the toggle rule and the @media rule', () {
       for (final key in _paletteTokens.keys) {
         final css = compileLattice('auto', siteParams: {'${key.replaceAll('-', '_')}_dark': darkOverride});
         final token = _paletteTokens[key]!;
@@ -224,7 +224,7 @@ void main() {
       }
     });
 
-    test('S10: a plain colour param sets the light entry only', () {
+    test('a plain colour param sets the light entry only', () {
       // Documented precedence rule, not load-order luck: a forced skin selects a
       // palette and a per-mode param sets one entry in it, so a plain
       // `primary_color` (the light entry) has no effect on a `skin: dark` site.
@@ -241,7 +241,7 @@ void main() {
       expect(customProps(rootBlock(light))['--leaf'], lightOverride);
     });
 
-    test('S10: a _dark-only override under light leaves :root unchanged', () {
+    test('a _dark-only override under light leaves :root unchanged', () {
       expect(
         rootBlock(compileLattice('light', siteParams: {'primary_color_dark': darkOverride})),
         rootBlock(compileLattice('light')),
@@ -249,7 +249,7 @@ void main() {
     });
   });
 
-  group('S11 every colour param has a _dark twin sourced from the palettes', () {
+  group('every colour param has a _dark twin sourced from the palettes', () {
     test('twins exist, defaults equal the palette entries, twins have no twins', () {
       final colorParams = {
         for (final e in manifest.params.entries)
@@ -278,7 +278,7 @@ void main() {
     });
   });
 
-  group('SC02-SC04 structure', () {
+  group('structure', () {
     String sass(String relative) => stripComments(File(p.join(themeDir, 'sass', relative)).readAsStringSync());
 
     test("main.scss opens with @forward 'variables' as its first module rule", () {

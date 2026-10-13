@@ -195,7 +195,7 @@ class PageGenerator {
   /// - Section pages: this section's own-level single pages in canonical order
   ///   (via [orderedSectionPages] — the single ordering source).
   /// - Home pages: all single pages across all sections, canonical order.
-  /// - Taxonomy term pages: reads `frontMatter['pages']` injected by S06.
+  /// - Taxonomy term pages: reads `frontMatter['pages']` injected by taxonomy collection.
   List<Map<String, dynamic>> _getChildPages(Page page, List<Page> allPages) {
     if (page.frontMatter.containsKey('termName')) {
       final raw = page.frontMatter['pages'];
@@ -320,7 +320,7 @@ class PageGenerator {
     // read like the menu ("Guides", not "docs/guides").
     pageMap['breadcrumbs'] = _buildBreadcrumbs(page, allPages);
 
-    // In-section prev/next (S08): attach immediate neighbors additively for
+    // In-section prev/next: attach immediate neighbors additively for
     // single doc pages only (the non-list render branch of `generateAll`).
     // List pages — section/home/taxonomy — keep their `paginator.dart` prev/next
     // semantics and receive no neighbor keys. Boundary positions omit the
@@ -386,7 +386,7 @@ class PageGenerator {
   /// Resolves [page]'s immediate in-section neighbors as `{prev, next}` submaps.
   ///
   /// The neighbor sequence is the canonical, weight-aware own-level ordering
-  /// produced by [orderedSectionPages] — the single ordering source S02's
+  /// produced by [orderedSectionPages] — the single ordering source the
   /// `NavigationBuilder` and the `${pages}` listing also consume. This helper
   /// adds no comparator or lineage filter of its own; it locates [page]'s index
   /// in that sequence and returns the flanking pages' `{url, title}` submaps.
@@ -536,11 +536,10 @@ class PageGenerator {
 
 /// Returns a section's own-level content pages in canonical order.
 ///
-/// This is the single reusable ordered-section seam — the one ordering source
-/// the plan's "single-source page ordering" decision requires. `_getChildPages`
-/// (section branch) and the non-paginated `_buildContext` fallback both route
-/// through it, and downstream consumers (S02's `NavigationBuilder`, S08's
-/// `_resolvePrevNext`) call it verbatim so every derived ordering matches the
+/// This is the single reusable ordered-section seam — the one ordering source.
+/// `_getChildPages` (section branch) and the non-paginated `_buildContext`
+/// fallback both route through it, and downstream consumers (the
+/// `NavigationBuilder`, `_resolvePrevNext`) call it verbatim so every derived ordering matches the
 /// `${pages}` listing exactly.
 ///
 /// Contract:

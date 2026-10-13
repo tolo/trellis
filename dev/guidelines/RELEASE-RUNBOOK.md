@@ -12,9 +12,17 @@ human action. Steps are in execution order; each names the guard that enforces i
   (see `packages/trellis_css/CHANGELOG.md` `## 0.10.1`):
   `Lockstep version bump to keep all Trellis SDK packages on a single shared version. No functional changes in this package.`
   Guard: `tool/release.sh` refuses to bump if any package lacks the section.
-- **STATE.md and version-pinned doc strings.** `dev/state/STATE.md` records the release on the branch, and every
-  `--ref vX.Y.Z` theme-install pin in `docs/` and `site/content/` names the version being cut (the lockstep script
-  rewrites install snippets, not `--ref` pins). `main` takes no fix-up commits after the squash.
+- **STATE.md.** `dev/state/STATE.md` records the release on the branch (written by hand). Guard: `tool/release.sh`
+  refuses before it bumps, commits or tags anything unless `dev/state/STATE.md` has a row labelled `X.Y.Z (release)`
+  for the version being released (an `(implementation)` row or a passing mention does not count). It checks the label
+  only, so the row's content is still yours to get right. `main` takes no fix-up commits after the squash.
+- **`--ref vX.Y.Z` theme-install pins are script-owned – no manual sweep.** `tool/version_lockstep.sh` rewrites every
+  `https://github.com/tolo/trellis ... --ref v<semver>` pin repo-wide (READMEs, `docs/`, `site/content/`,
+  `themes/*/README.md`; CHANGELOGs, `dev/state/LEARNINGS.md` and third-party theme URLs are left alone) in the release
+  commit. Pins on the branch may name the previous release. Guard: after the bump `tool/release.sh` runs
+  `tool/version_lockstep.sh --check-refs X.Y.Z` and refuses, naming each file and line, if any pin is not on `vX.Y.Z`.
+  The check lives in the lockstep script so the rewrite and the check share one scan. A pin in a shape the scan does
+  not recognise (e.g. `--ref` on a continuation line) is invisible to both: write pins on the `trellis theme add` line.
 - **Do not bump versions on the branch.** Pubspecs stay at the previous version until step 4; `melos version` is
   restricted to `main` (root `pubspec.yaml` → `melos.command.version.branch`) and `tool/version_lockstep.sh` throws
   `RestrictedBranchException` and changes nothing anywhere else.
@@ -95,17 +103,20 @@ before starting this step; `release.sh` fails before the bump if either prerequi
 tool/release.sh X.Y.Z --dry-run   # rehearsal: same checks + bump + gate + a temporary commit, then unwinds everything
 tool/release.sh X.Y.Z
 ```
-It refuses unless: on `main`, tree clean, `HEAD == origin/main`, every changelog has `## X.Y.Z`, CI green for HEAD.
+It refuses unless: on `main`, tree clean, `HEAD == origin/main`, every changelog has `## X.Y.Z`, `dev/state/STATE.md`
+has an `X.Y.Z (release)` row, CI green for HEAD.
 Then: `tool/version_lockstep.sh X.Y.Z` (one `melos version` pass: 8 pubspecs + inter-package constraints, 2
 `version.dart` constants, 2 README download examples, every `trellis*: ^x.y.z` install-snippet line in `README.md`,
-`packages/*/README.md`, `docs/`, `site/content/`, and the docs-site hero version) → asserts **only** those files
-changed → local gate (step 0's five repeated local commands; gallery freshness is supplied by the required green CI
-run) → commit `chore(release): trellis SDK X.Y.Z` → `dart pub publish --dry-run` ×8 (commit is undone if one fails)
-→ `git tag vX.Y.Z` → prints the push command. **Nothing is pushed.**
+`packages/*/README.md`, `docs/`, `site/content/`, every `tolo/trellis` `--ref v<semver>` pin repo-wide, and the
+docs-site hero version) → `--check-refs X.Y.Z` (no stale pin left) → asserts **only** those files changed → local
+gate (step 0's five repeated local commands; gallery freshness is supplied by the required green CI run) → commit
+`chore(release): trellis SDK X.Y.Z` → `dart pub publish --dry-run` ×8 (commit is undone if one fails) →
+`git tag vX.Y.Z` → prints the push command. **Nothing is pushed.**
 
 Check the commit: `git show --stat HEAD` — 13 fixed files (8 `pubspec.yaml`, 2 `lib/src/version.dart`, `README.md`,
 `packages/trellis_cli/README.md`, `site/trellis_site.yaml`) plus every README/docs page holding an install snippet
-(13 at 0.11.1: 6 package READMEs, 6 `site/content/docs/packages/` pages, `docs/guides/framework-integration.md`). The
+(13 at 0.11.1: 6 package READMEs, 6 `site/content/docs/packages/` pages, `docs/guides/framework-integration.md`) plus
+every file holding a `--ref` pin (`tool/version_lockstep.sh --list-ref-files`; `themes/*/README.md` among them). The
 committed root `pubspec.lock` is not rewritten by the bump; release-binary jobs consume it with
 `dart pub get --enforce-lockfile`.
 

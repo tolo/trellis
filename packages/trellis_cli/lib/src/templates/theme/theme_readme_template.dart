@@ -61,6 +61,15 @@ trellis build
 trellis serve
 ```
 
+The example site sets `theme: $themeName`, and `example/themes/$themeName` is a
+link back to this directory, so the build compiles `sass/main.scss` to
+`css/main.css` and renders the theme's own layouts. The example has no layouts of
+its own: a site layout at the same path would take precedence over the theme's.
+Where the link could not be created (Windows without symlink rights), create it
+once from this directory: `mklink /J example\\themes\\$themeName .`
+
+Do not run `trellis theme add ../` from `example/`: the source contains the site.
+
 ## Structure
 
 ```

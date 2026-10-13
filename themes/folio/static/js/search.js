@@ -1,5 +1,5 @@
 /*
- * Arbor Docs Theme — client-side search (S09).
+ * Arbor Docs Theme — client-side search.
  *
  * A self-contained, dependency-free search client over the site's generated
  * `search-index.json`. No npm, no build step, no external host — this file is
@@ -21,7 +21,7 @@
  * the configured fields include `title`, `summary`, `content`, `tags`. Absent
  * keys are tolerated.
  *
- * Shell hooks (from the S04 layout):
+ * Shell hooks (from the layout):
  *   [data-arbor-search]          the search <input> (ships disabled)
  *   [data-arbor-search-results]  the results <ul> (ships hidden)
  *   [data-search-index]          on the .search-shell container (ships hidden): index URL

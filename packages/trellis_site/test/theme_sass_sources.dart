@@ -1,4 +1,5 @@
-/// The one definition of "the files a SASS-source sweep reads", shared by the theme `@use` suites.
+/// "The files a SASS-source sweep reads", shared by this package's theme `@use` suites. The root suite keeps its
+/// own copy of the rule as `sourceFiles` in `test/theme_use_support.dart`: change the two together.
 ///
 /// A sweep over a checkout must give the verdict a clean CI checkout gives. The working tree also holds files git
 /// does not track: gitignored build output (`example/.trellis/build/bridge_main.scss` from an older build), OS

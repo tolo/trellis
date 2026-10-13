@@ -39,7 +39,7 @@
        the SSG emits `.hljs-*` spans, styled by sass/_code.scss. No client-side
        highlighter ships with the theme — code is colored with JavaScript off. -->
 
-  <!-- Client-side search (S09): first-party, same-origin, no CDN.
+  <!-- Client-side search: first-party, same-origin, no CDN.
        Reads the index URL from the shell's data-search-index attribute; on a
        failed index fetch it hides the control so the page stays fully readable. -->
   <script tl:if="${theme.show_search}"
@@ -95,7 +95,7 @@
 
           <div class="docs-sidebar">
             <!-- Search UI shell. The querying behavior lives in the vendored
-                 static/js/search.js (S09). The static script cannot interpolate
+                 static/js/search.js. The static script cannot interpolate
                  ${site.pathPrefix}, so the root-absolute index URL is passed in
                  via data-search-index, computed with the same assetBase rule the
                  <head> asset links use (pathPrefix, or / when served at root).

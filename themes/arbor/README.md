@@ -39,7 +39,7 @@ CDN-loaded** (see [`VENDORED.md`](VENDORED.md)).
 Install it from the Trellis repository:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme arbor --ref v0.11.0
+trellis theme add https://github.com/tolo/trellis --theme arbor --ref v0.11.1
 ```
 
 That copies `themes/arbor/` into your site's `themes/` and sets `theme: arbor`
@@ -67,6 +67,7 @@ Arbor implements all 25 standard theme params (see
 
 | Param | Type | Default | Purpose |
 |---|---|---|---|
+| `excerpt_length` | int | `160` | Character limit of auto-generated summaries |
 | `show_sidebar` | boolean | `true` | Show the `${site.menu}` navigation sidebar |
 | `show_toc` | boolean | `true` | Show the in-page table of contents |
 | `show_prev_next` | boolean | `true` | Show prev/next page links |

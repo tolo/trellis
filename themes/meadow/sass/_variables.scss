@@ -11,7 +11,7 @@
 // theme_params: in trellis_site.yaml.
 //
 // Every param-backed $trellis-* below carries !default: it is what makes the
-// variable configurable. Non-param values (the palettes) carry none.
+// variable configurable. Non-param values (the dark palette) carry none.
 
 @use 'sass:map';
 @use '_skins/light' as light;
@@ -49,26 +49,10 @@ $trellis-sun-color-dark: map.get(dark.$palette, sun-color) !default;
 $trellis-bloom-color-dark: map.get(dark.$palette, bloom-color) !default;
 $trellis-coral-color-dark: map.get(dark.$palette, coral-color) !default;
 
-// The palettes with the site's per-mode overrides applied. Public (not `$_`)
+// The dark palette with the site's `_dark` overrides applied. Public (not `$_`)
 // because main.scss and the dark mixin below read $trellis-palette-dark. The
 // dark palette also holds `strong`, `leaf-deep` and `focus`, dark tokens with no
 // colour param.
-$trellis-palette-light: map.merge(
-  light.$palette,
-  (
-    primary-color: $trellis-primary-color,
-    accent-color: $trellis-accent-color,
-    text-color: $trellis-text-color,
-    muted-color: $trellis-muted-color,
-    bg-color: $trellis-bg-color,
-    surface-color: $trellis-surface-color,
-    border-color: $trellis-border-color,
-    sky-color: $trellis-sky-color,
-    sun-color: $trellis-sun-color,
-    bloom-color: $trellis-bloom-color,
-    coral-color: $trellis-coral-color,
-  )
-);
 $trellis-palette-dark: map.merge(
   dark.$palette,
   (
@@ -143,8 +127,10 @@ $trellis-logo: null !default;
   --meadow-shadow: #173923;
   --meadow-nav: rgba(247, 250, 238, 0.92);
   --meadow-focus: #176aa5;
-  --meadow-primary-bg: #{$trellis-text-color};
-  --meadow-primary-text: #{$trellis-accent-color};
+  // The primary button is theme-authored: a literal pair per mode, in every view
+  // (here, the dark mixin, and main.scss's light toggle rule), driven by no colour param.
+  --meadow-primary-bg: #14251a;
+  --meadow-primary-text: #d4f15f;
   --meadow-panel-bg: #14251a;
   --meadow-panel-text: #f7faee;
   --meadow-panel-muted: #c0d0c0;
@@ -176,6 +162,6 @@ $trellis-logo: null !default;
   --meadow-shadow: #071009;
   --meadow-nav: rgba(15, 28, 20, 0.92);
   --meadow-focus: #{map.get($trellis-palette-dark, focus)};
-  --meadow-primary-bg: #{map.get($trellis-palette-dark, accent-color)};
+  --meadow-primary-bg: #d8f475;
   --meadow-primary-text: #14251a;
 }

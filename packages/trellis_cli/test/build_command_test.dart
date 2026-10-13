@@ -989,7 +989,7 @@ params:
 
       // An @import-era theme would otherwise compile with only a warning while
       // its skin file is no longer injected: `skin: dark` would build light.
-      test('a theme entry that @imports fails the build with Sass\'s import deprecation', () async {
+      test('a theme entry that @imports fails the build, naming the theme', () async {
         minimalSite(tempDir);
         final themeDir = skinTheme(tempDir);
         File(p.join(themeDir.path, 'sass', 'main.scss')).writeAsStringSync(r'''
@@ -1007,9 +1007,8 @@ params:
         );
 
         expect(exitCode, 1);
-        expect(output.toString(), contains('SASS compilation failed'));
-        expect(output.toString(), contains('@import'));
-        expect(output.toString(), contains('import deprecation to be fatal'));
+        expect(output.toString(), contains('theme "skin-theme" uses @import'));
+        expect(output.toString(), contains('import deprecation to be fatal'), reason: 'raw Sass text stays as detail');
       });
 
       test('a site stylesheet that @imports still builds', () async {
@@ -1082,7 +1081,7 @@ params:
       expect(html, isNot(contains('/prism/')));
     });
 
-    test('highlight.enabled: false leaves code plain through the CLI (S08)', () async {
+    test('highlight.enabled: false leaves code plain through the CLI', () async {
       highlightSite(tempDir, highlightEnabled: false);
       final result = await TrellisCli(workingDirectory: tempDir.path).run(['build']);
       expect(result, 0);

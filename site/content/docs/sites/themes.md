@@ -11,7 +11,7 @@ Themes package reusable layouts, styles, assets, and configuration defaults.
 Install one of the themes in the Trellis repository:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.1
 ```
 
 For a repository containing one theme, omit `--theme`:
@@ -155,6 +155,29 @@ trellis theme remove lattice
 An installed single-theme git repository can update in place. A theme copied
 from a multi-theme repository with `--theme` carries no git metadata; remove
 and re-add it at the desired ref instead.
+
+## Upgrading from 0.11
+
+Themes installed with 0.11 use `@import` in their SASS. From 0.12 the build
+compiles theme SASS with `@use` and treats `@import` as an error, so a theme left
+at its 0.11 version fails with a message naming the theme and the file:
+
+```
+Build failed: theme "lattice" uses @import at themes/lattice/sass/main.scss:12:9.
+```
+
+Re-add a built-in theme at 0.12. `theme remove` keeps your `theme_params:`, and
+`theme add` sets `theme:` again; copy any edits you made inside
+`themes/<name>/` over by hand first:
+
+```bash
+trellis theme remove lattice
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.1
+```
+
+Migrate a third-party or locally modified theme to `@use` as the
+[theme authoring guide](/docs/themes/authoring/) describes. A site's own
+stylesheets under `static/` may keep `@import`.
 
 ## Build
 

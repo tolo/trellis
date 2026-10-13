@@ -39,20 +39,8 @@ $trellis-bg-color-dark: map.get(dark.$palette, bg-color) !default;
 $trellis-surface-color-dark: map.get(dark.$palette, surface-color) !default;
 $trellis-border-color-dark: map.get(dark.$palette, border-color) !default;
 
-// The palettes with the site's per-mode overrides applied. Public (not `$_`)
+// The dark palette with the site's `_dark` overrides applied. Public (not `$_`)
 // because main.scss reads $trellis-palette-dark for the `skin: auto` block.
-$trellis-palette-light: map.merge(
-  light.$palette,
-  (
-    primary-color: $trellis-primary-color,
-    accent-color: $trellis-accent-color,
-    text-color: $trellis-text-color,
-    muted-color: $trellis-muted-color,
-    bg-color: $trellis-bg-color,
-    surface-color: $trellis-surface-color,
-    border-color: $trellis-border-color,
-  )
-);
 $trellis-palette-dark: map.merge(
   dark.$palette,
   (
@@ -83,6 +71,13 @@ $trellis-palette-dark: map.merge(
 $trellis-font-family: system-ui, -apple-system, sans-serif !default;
 $trellis-heading-font-family: null !default;
 $trellis-code-font-family: ui-monospace, monospace !default;
+
+// Derived variable: no !default, so it is never configured. @if shares the
+// root scope, so this updates the global variable without !global.
+$trellis-heading-font: $trellis-font-family;
+@if $trellis-heading-font-family {
+  $trellis-heading-font: $trellis-heading-font-family;
+}
 
 // Layout
 $trellis-max-width: 800px !default;

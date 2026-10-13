@@ -14,7 +14,7 @@ import 'theme_use_support.dart';
 void main() {
   final themeDir = p.join(Directory.current.path, 'themes', 'meadow');
 
-  test('S01/S07 TI01 Meadow manifest exposes the exact landing contract', () {
+  test('Meadow manifest exposes the exact landing contract', () {
     final manifest = ThemeManifest.load(themeDir);
     const standard = {
       'skin',
@@ -60,7 +60,7 @@ void main() {
     };
 
     expect(manifest.name, 'meadow');
-    expect(manifest.minTrellisVersion, '0.10.0');
+    expect(manifest.minTrellisVersion, '0.12.0');
     expect(manifest.features.where({'docs', 'landing', 'blog'}.contains), ['landing']);
     expect(manifest.params.keys.toSet(), standard.union(meadow));
     const expectedTypes = {
@@ -145,7 +145,7 @@ void main() {
     for (final param in manifest.params.keys) {
       expect(readme, contains('`$param`'), reason: param);
     }
-    // The font payload's budget, floors, axes and glyph coverage are asserted in S05 TI08.
+    // The font payload's budget, floors, axes and glyph coverage are asserted in the vendored-faces test.
 
     for (final screenshot in manifest.screenshots) {
       final bytes = File(p.join(themeDir, screenshot)).readAsBytesSync();
@@ -156,7 +156,7 @@ void main() {
     expect(File(p.join(themeDir, 'example', '.gitignore')).readAsStringSync(), contains('output/'));
   });
 
-  test('S05 TI08 the vendored faces are the fonts the stylesheet claims, and draw what the theme emits', () async {
+  test('the vendored faces are the fonts the stylesheet claims, and draw what the theme emits', () async {
     await expectThemeFontContract(
       themeDir: themeDir,
       compiledCss: TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), fatalImportDeprecation: true),
@@ -187,7 +187,7 @@ void main() {
     );
   });
 
-  test('S01/S06 TI04/TI05 one dark source drives forced and auto skins', () {
+  test('one dark source drives forced and auto skins', () {
     final light = compileBridged(
       themeDir,
       'auto',
@@ -380,15 +380,18 @@ void main() {
     expect(dark.toLowerCase(), contains('--meadow-paper: #0f1c14'));
     expect(dark, isNot(contains('@media (prefers-color-scheme: dark)')));
 
-    // SC03: the dark palette is the one dark authority. Neither the entry nor the
+    // The dark palette is the one dark authority. Neither the entry nor the
     // variables module restates a dark hex, and the dark mixin reads the palette.
     String sass(String relative) => stripComments(File(p.join(themeDir, 'sass', relative)).readAsStringSync());
     final hex = RegExp(r'#[0-9a-fA-F]{6}');
     final darkValues = hex.allMatches(sass('_skins/_dark.scss')).map((m) => m.group(0)!.toLowerCase()).toSet();
     expect(darkValues, hasLength(14));
+    // The primary button's literals are theme-authored by decision: the dark pair reuses two palette hexes on purpose.
+    final buttonLiteral = RegExp(r'--meadow-primary-(bg|text):\s*#[0-9a-fA-F]{6};');
     for (final source in [sass('main.scss'), sass('_variables.scss')]) {
+      final withoutButton = source.replaceAll(buttonLiteral, '');
       for (final value in darkValues) {
-        expect(source.toLowerCase(), isNot(contains(value)), reason: value);
+        expect(withoutButton.toLowerCase(), isNot(contains(value)), reason: value);
       }
     }
     expect(File(p.join(themeDir, 'sass', '_dark_tokens.scss')).existsSync(), isFalse);
@@ -426,13 +429,23 @@ void main() {
       }
     }
 
-    /// The dark mixin's block also carries the three param-less dark tokens and the accent as `--meadow-primary-bg`.
+    // The primary button is theme-authored: a literal pair per mode, driven by no colour param.
+    const lightButton = {'--meadow-primary-bg': '#14251a', '--meadow-primary-text': '#d4f15f'};
+    const darkButton = {'--meadow-primary-bg': '#d8f475', '--meadow-primary-text': '#14251a'};
+
+    void expectButton(Map<String, String> props, Map<String, String> expected, String reason) {
+      for (final entry in expected.entries) {
+        expect(props[entry.key], entry.value, reason: '$reason ${entry.key}');
+      }
+    }
+
+    /// The dark mixin's block also carries the three param-less dark tokens and the dark button literals.
     void expectDarkBlock(Map<String, String> props, String reason) {
       expectParamColors(props, darkPalette, reason);
       for (final entry in darkOnlyProps.entries) {
         expect(props[entry.value], darkPalette[entry.key], reason: '$reason ${entry.key}');
       }
-      expect(props['--meadow-primary-bg'], darkPalette['accent-color'], reason: '$reason primary-bg');
+      expectButton(props, darkButton, reason);
     }
 
     // Sass strips the quotes from an attribute selector, so these are the unquoted forms.
@@ -441,13 +454,14 @@ void main() {
     /// A forced dark skin emits the base `:root`, then the dark mixin's `:root`, which wins the cascade.
     Map<String, String> forcedDarkFinal(String css) => customProps(rootBlocks(css)[1]);
 
-    test('S01: every skin compiles fatal on @import, and each carries its own palette', () {
+    test('every skin compiles fatal on @import, and each carries its own palette', () {
       final light = compileBridged(themeDir, 'light');
       final dark = compileBridged(themeDir, 'dark');
       final auto = compileBridged(themeDir, 'auto');
 
       expect(light, isNot(equals(dark)));
       expectParamColors(customProps(rootBlock(light)), lightPalette, 'light');
+      expectButton(customProps(rootBlock(light)), lightButton, 'light');
       expectDarkBlock(forcedDarkFinal(dark), 'dark final');
       expect(forcedDarkFinal(dark)['--meadow-paper'], '#0f1c14');
 
@@ -455,6 +469,8 @@ void main() {
       expectDarkBlock(customProps(darkMediaRoot(auto)!), 'auto media');
       expectDarkBlock(customProps(ruleBody(auto, ':root[data-skin=dark]')!), 'auto toggle dark');
       expectParamColors(customProps(ruleBody(auto, ':root[data-skin=light]')!), lightPalette, 'auto toggle light');
+      expectButton(customProps(rootBlock(auto)), lightButton, 'auto base');
+      expectButton(customProps(ruleBody(auto, ':root[data-skin=light]')!), lightButton, 'auto toggle light');
 
       // Each negative is paired with the same query matching under auto: a query that
       // can never match (a quote style Sass does not emit) would pass vacuously.
@@ -465,7 +481,7 @@ void main() {
       }
     });
 
-    test('S02: site overrides reach compiled CSS and variable-less params leave it unaffected', () {
+    test('site overrides reach compiled CSS and variable-less params leave it unaffected', () {
       const overrides = {'max_width': '900px', 'font_family': 'Arial, sans-serif', 'border_radius': '9px'};
       final css = compileBridged(themeDir, 'light', siteParams: overrides);
 
@@ -490,7 +506,7 @@ void main() {
       expect(withLists, css);
     });
 
-    test('S05: a _dark override reaches a forced dark skin and nothing else moves', () {
+    test('a _dark override reaches a forced dark skin and nothing else moves', () {
       final plain = compileBridged(themeDir, 'dark');
       final css = compileBridged(themeDir, 'dark', siteParams: {'primary_color_dark': darkOverride});
 
@@ -515,7 +531,7 @@ void main() {
       }
     });
 
-    test('S06: a _dark override reaches every dark view under auto, and no light view', () {
+    test('a _dark override reaches every dark view under auto, and no light view', () {
       final css = compileBridged(themeDir, 'auto', siteParams: {'primary_color_dark': darkOverride});
       final lightPrimary = lightPalette['primary-color'];
 
@@ -525,7 +541,7 @@ void main() {
       expect(customProps(ruleBody(css, ':root[data-skin=dark]')!)['--meadow-leaf'], darkOverride);
     });
 
-    test('S07: a plain colour param sets the light entry only, under every skin', () {
+    test('a plain colour param sets the light entry only, under every skin', () {
       // The precedence rule, not load-order luck: a forced skin selects a palette and a
       // param sets one entry in it, so a plain `primary_color` is the light entry and
       // never reaches the dark palette.
@@ -550,7 +566,7 @@ void main() {
       );
     });
 
-    test('S08: the four theme colours are per mode too', () {
+    test('the four theme colours are per mode too', () {
       const overrides = {
         'sky_color_dark': '#0a0b0c',
         'sun_color_dark': '#0d0e0f',
@@ -582,7 +598,31 @@ void main() {
       }
     });
 
-    test('S09: every colour param has a _dark twin sourced from the palettes', () {
+    test('the primary button follows no colour param in any view', () {
+      const overrides = {
+        'accent_color': '#abcdef',
+        'accent_color_dark': '#fedcba',
+        'text_color': '#111213',
+        'text_color_dark': '#141516',
+      };
+      // Light views only ever carry the light pair, dark views the dark pair, whatever the params say.
+      final light = compileBridged(themeDir, 'light', siteParams: overrides);
+      expect(light, contains(overrides['accent_color']), reason: 'the overrides reach the CSS, so the check is live');
+      expectButton(customProps(rootBlock(light)), lightButton, 'light');
+
+      final dark = compileBridged(themeDir, 'dark', siteParams: overrides);
+      expect(dark, contains(overrides['accent_color_dark']));
+      expectButton(forcedDarkFinal(dark), darkButton, 'forced dark');
+
+      final auto = compileBridged(themeDir, 'auto', siteParams: overrides);
+      expect(auto, contains(overrides['accent_color']));
+      expectButton(customProps(rootBlock(auto)), lightButton, 'auto base');
+      expectButton(customProps(ruleBody(auto, ':root[data-skin=light]')!), lightButton, 'auto toggle light');
+      expectButton(customProps(darkMediaRoot(auto)!), darkButton, 'auto media');
+      expectButton(customProps(ruleBody(auto, ':root[data-skin=dark]')!), darkButton, 'auto toggle dark');
+    });
+
+    test('every colour param has a _dark twin sourced from the palettes', () {
       final colorParams = {
         for (final e in ThemeManifest.load(themeDir).params.entries)
           if (e.value.type == 'color') e.key: e.value,
@@ -609,7 +649,7 @@ void main() {
   group('@use module structure', () {
     String sass(String relative) => stripComments(File(p.join(themeDir, 'sass', relative)).readAsStringSync());
 
-    test('SC01: no @import remains, and the entry compiles standalone with the deprecation fatal', () {
+    test('no @import remains, and the entry compiles standalone with the deprecation fatal', () {
       for (final file in sassSources(p.join(themeDir, 'sass'))) {
         expect(stripComments(file.readAsStringSync()), isNot(contains('@import')), reason: file.path);
       }
@@ -618,7 +658,7 @@ void main() {
       expect(customProps(rootBlocks(dark)[1])['--meadow-paper'], '#0f1c14');
     });
 
-    test("SC02: main.scss opens with @forward 'variables' and declares no \$trellis-* of its own", () {
+    test("main.scss opens with @forward 'variables' and declares no \$trellis-* of its own", () {
       final main = sass('main.scss');
       expect(RegExp(r'@(use|forward)\b[^;]*;').firstMatch(main)!.group(0), "@forward 'variables';");
       expect(RegExp(r'^\$trellis-[\w-]+\s*:', multiLine: true).hasMatch(main), isFalse);
@@ -631,7 +671,7 @@ void main() {
       expect(declared, containsAll(read));
     });
 
-    test('SC03: skins expose a palette and declare nothing !default', () {
+    test('skins expose a palette and declare nothing !default', () {
       for (final skin in ['_light', '_dark']) {
         final source = sass('_skins/$skin.scss');
         expect(source, contains(r'$palette:'), reason: skin);
@@ -639,7 +679,7 @@ void main() {
       }
     });
 
-    test('SC04: the bridge configures what _variables.scss declares, and nothing it cannot', () {
+    test('the bridge configures what _variables.scss declares, and nothing it cannot', () {
       final manifest = ThemeManifest.load(themeDir);
       final siteDir = Directory.systemTemp.createTempSync('meadow_bridge_vars_');
       addTearDown(() => siteDir.deleteSync(recursive: true));
@@ -657,7 +697,7 @@ void main() {
     });
   });
 
-  test('S01-S07 TI02/TI03/TI06/TI07 bridged default is complete and clean', () async {
+  test('bridged default is complete and clean', () async {
     final config = exampleSiteCopy(themeDir);
     final result = await TrellisSite(config).build();
     expect(result.warnings, isEmpty);
@@ -724,7 +764,7 @@ void main() {
     expect(gzip.encode(js).length, lessThan(15 * 1024));
   });
 
-  test('S02-S04 TI03/TI06 exact fixtures render copy, counts, and absence', () async {
+  test('exact fixtures render copy, counts, and absence', () async {
     for (var count = 2; count <= 6; count++) {
       for (final skin in ['light', 'dark']) {
         final document = await _buildFixture(themeDir, 'count-$count', skin: skin);
@@ -858,7 +898,7 @@ void main() {
     );
   });
 
-  test('S06/S07 TI05/TI06 prefix and progressive-enhancement contracts hold', () async {
+  test('prefix and progressive-enhancement contracts hold', () async {
     final tempDir = Directory.systemTemp.createTempSync('meadow_prefix_');
     addTearDown(() => tempDir.deleteSync(recursive: true));
     copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));

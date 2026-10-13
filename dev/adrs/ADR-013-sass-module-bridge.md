@@ -155,8 +155,9 @@ use (E10). Both Sass errors above are quoted in the theme authoring guide.
 `_skins/_light.scss` and `_skins/_dark.scss` each expose a `$palette` map and declare nothing `!default`. Palette keys
 are the colour params' names in kebab case (`primary-color`), so a param finds its entry mechanically. `_variables.scss`
 declares `$trellis-skin` and, per colour param, `$trellis-<name>` defaulting to its light entry and `$trellis-<name>-dark`
-to its dark entry, both `!default`. It builds the public `$trellis-palette-light` and `$trellis-palette-dark` by merging
-those variables back into the palettes, and under `skin: dark` reassigns the colour variables from the dark palette
+to its dark entry, both `!default`. It builds the public `$trellis-palette-dark` by merging
+the `-dark` variables back into the dark palette (the light side needs no map: each light colour is its `$trellis-<name>`
+variable), and under `skin: dark` reassigns the colour variables from the dark palette
 before anything is derived from them. The bridge injects nothing for a skin.
 
 ### Per-mode colour params
@@ -190,8 +191,10 @@ none ships one global brand colour applied unchanged to both), is in the private
 There is no compatibility mode. The `@import` skin line and the import-deprecation silencing are gone from the build
 path, `TrellisCss.compileSass` no longer has a parameter to silence the `@import` deprecation, and every bundled theme
 and the `trellis create --template theme` scaffold are migrated in 0.12. `trellis build` compiles a theme with the
-`import` deprecation fatal, so a third-party theme whose entry still `@import`s fails with Sass's import-deprecation
-error, not a Trellis diagnostic; that is accepted. Without the fatal flag it would compile with only a warning while its
+`import` deprecation fatal, so a theme that still `@import`s fails the build; that break is accepted. The theme that
+actually hits it is a bundled theme a site installed at 0.11, so the build reports it as a Trellis diagnostic naming the
+theme, the file and line of the `@import`, and the remedy (re-add the theme at the release tag, or migrate it), with
+Sass's text beneath (owner, 2026-10-06). Without the fatal flag it would compile with only a warning while its
 skin file is no longer injected, so `skin: dark` would silently build light. A site's own stylesheets are compiled
 without the flag: their `@import` stays legal until Dart Sass 3.0. The owner's rationale: *"No one is really using
 Trellis yet (and no-one has created a Trellis theme yet), so it's ok to make breaking changes if this makes things
@@ -214,6 +217,14 @@ SASS stays a Dart-native library call (ADR-006); no Node.js or Sass binary is in
 model's first three dimensions, theme distribution and the `_theme_custom_props.css` sink are unchanged. The fourth
 override dimension changes: site SASS may read the merged params (`@use "theme_params" as tp`) but cannot reconfigure a
 theme, as it never could (E6); `theme_params:` is the one way.
+
+### Compiled-CSS differences from 0.11
+
+Arbor, verdant and folio compile byte-identical to the 0.11 `@import` bridge at `light`, `dark` and `auto`. The others differ as follows, and each renders the same:
+
+- bloom: the `_layout` block, which `@import` emitted twice, is emitted once (27 rules, 157 lines expanded, removed from every skin). The second copy was an exact adjacent repeat, so the cascade is unchanged; the unchanged bloom visual baselines still pass. Under `auto` the dark `@media` block also sets both gradient tokens, from the dark palette, which at default params holds the light values.
+- lattice: the light hex values are upper-case, and the forced-dark base `:root` differs. The dark skin file's `$trellis-border-color` was dead in the render, because `[data-skin=dark]` on `<html>` overrides the base `:root` it reached, so every dark view renders the `lattice-dark` mixin's value.
+- meadow: the forced-dark base `:root` differs. The 0.11 dark skin left sky, sun, bloom and coral at their light values and the primary button at the dark text/accent pair; 0.12 takes the four colours from the dark palette and gives the button its light literal pair. The top-level dark `:root` that follows overrides all six, so every dark view renders as before.
 
 ## Consequences
 

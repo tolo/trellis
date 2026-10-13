@@ -18,7 +18,7 @@ reviewed tag or branch with `--ref` in production.
 The six themes that ship with Trellis (`arbor`, `bloom`, `folio`, `lattice`, `meadow`, `verdant`) live under `themes/<name>/` in the [tolo/trellis](https://github.com/tolo/trellis) repository. `--theme <name>` installs one of them out of that repository:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.1
 ```
 
 This copies `themes/lattice/` into your site's `themes/lattice/` and sets `theme: lattice` in `trellis_site.yaml`. Browse the [themes gallery](https://tolo.github.io/trellis/docs/themes/gallery/) to pick one.
@@ -36,7 +36,7 @@ This clones the repository into `themes/orchard/` and sets `theme: orchard`.
 ### Pinning to a Version
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.1
 ```
 
 Use `--ref` to pin to a git tag or branch. Recommended for production sites.
@@ -270,8 +270,31 @@ If you need to change the pinned version, remove and re-add with a new `--ref`:
 
 ```bash
 trellis theme remove lattice
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.1
 ```
+
+
+## Upgrading from 0.11
+
+Themes installed with 0.11 use `@import` in their SASS. From 0.12 the build compiles theme SASS with `@use` and treats `@import` as an error, so a theme left at its 0.11 version fails to build:
+
+```
+Build failed: theme "lattice" uses @import at themes/lattice/sass/main.scss:12:9.
+```
+
+The message names the theme and the file. There are two ways out:
+
+- **Re-add the theme at 0.12.** Remove it and install it again at the current release tag (the `--ref` value from the [pinning example](#pinning-to-a-version)). The six built-in themes are migrated from `v0.12.0` on.
+
+  ```bash
+  trellis theme remove lattice
+  trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.1
+  ```
+
+  `trellis theme remove` clears `theme:` from `trellis_site.yaml` and leaves `theme_params:` in place; `theme add` sets `theme:` again, so your params apply to the new copy. If you edited files inside `themes/<name>/`, copy those edits over by hand first.
+- **Migrate the theme yourself.** For a third-party or locally modified theme, convert its SASS to the `@use` contract described in the [Theme Authoring Guide](theme-authoring.md).
+
+A site's own stylesheets under `static/` may keep `@import`.
 
 
 ## Listing and Inspecting Themes

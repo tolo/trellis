@@ -4,6 +4,11 @@ import 'dart:isolate';
 
 import 'package:test/test.dart';
 
+// Fixture pins are composed from these so the test source holds no literal tolo/trellis pin that
+// tool/version_lockstep.sh would rewrite at the next bump.
+const stale = 'v0.11.0';
+const install = 'trellis theme add https://github.com/tolo/trellis';
+
 void main() {
   late Directory workspaceRoot;
 
@@ -204,6 +209,200 @@ trellis_x:
       for (final fixture in fixtures) {
         expect(fixture.readAsStringSync(), expected, reason: fixture.path);
       }
+    });
+  });
+
+  group('--ref pins for tolo/trellis are script-owned', () {
+    // The 0.11.1 and 0.12 branches both shipped theme-install pins naming the previous tag
+    // because the lockstep script rewrote `trellis*: ^x.y.z` lines but not `--ref v<semver>`.
+    // The fixture pins are composed from `$stale` so these test lines are not themselves pins
+    // the script would rewrite in this repo.
+    test('lockstep bump rewrites every tolo/trellis pin repo-wide and nothing else', () async {
+      final repo = _lockstepFixture(workspaceRoot);
+      addTearDown(() => repo.parent.deleteSync(recursive: true));
+      const thirdParty = 'trellis theme add https://github.com/yourname/trellis-theme-orchard --ref v1.0.0';
+      const lookAlike = 'trellis theme add https://github.com/tolo/trellis-theme-x --ref v1.0.0';
+      const history = '$install --theme lattice --ref $stale';
+      final pinned = {
+        'README.md': 'Install:\n\n```bash\n$install --theme x --ref $stale\n```\n',
+        'docs/guides/theme-usage.md': '$install --theme a --ref $stale\n\nprose\n\n$install --theme b --ref $stale\n',
+        'themes/orchard/README.md': '$install --theme orchard --ref $stale\n',
+        // A pin ending a sentence keeps its full stop.
+        'docs/guides/prose.md': 'Then run $install --theme c --ref $stale.\n',
+      };
+      final untouched = {
+        // The pin scan stops at the next URL, so a third-party pin after a tolo/trellis link keeps its version.
+        'docs/guides/mixed.md': 'Built-ins live at https://github.com/tolo/trellis; $thirdParty\n',
+        'packages/trellis_x/CHANGELOG.md': '$history\n',
+        'dev/state/LEARNINGS.md': 'pinned `--ref $stale` once\n$history\n',
+        '.agent_temp/notes.md': '$history\n',
+        'docs/guides/third-party.md': '$thirdParty\n$lookAlike\n',
+        'docs/guides/no-url.md': 'Pass `--ref $stale` to pick a tag.\n',
+      };
+      for (final entry in {...pinned, ...untouched}.entries) {
+        final file = File('${repo.path}/${entry.key}')..createSync(recursive: true);
+        file.writeAsStringSync(entry.value);
+      }
+
+      final result = await _bash(repo, ['tool/version_lockstep.sh', '9.8.7']);
+
+      expect(result.exitCode, 0, reason: '${result.stdout}${result.stderr}');
+      for (final entry in pinned.entries) {
+        expect(
+          File('${repo.path}/${entry.key}').readAsStringSync(),
+          entry.value.replaceAll(stale, 'v9.8.7'),
+          reason: entry.key,
+        );
+      }
+      for (final entry in untouched.entries) {
+        expect(File('${repo.path}/${entry.key}').readAsStringSync(), entry.value, reason: entry.key);
+      }
+    });
+
+    test('--check-refs names each file and the stale pin, and passes once pins match', () async {
+      final repo = _lockstepFixture(workspaceRoot);
+      addTearDown(() => repo.parent.deleteSync(recursive: true));
+      Directory('${repo.path}/themes/orchard').createSync(recursive: true);
+      File('${repo.path}/themes/orchard/README.md').writeAsStringSync('$install --theme orchard --ref $stale\n');
+      File('${repo.path}/README.md').writeAsStringSync('$install --theme x --ref v9.8.7\n');
+
+      final stalePins = await _bash(repo, ['tool/version_lockstep.sh', '--check-refs', '9.8.7']);
+      expect(stalePins.exitCode, isNot(0));
+      final message = '${stalePins.stdout}${stalePins.stderr}';
+      expect(message, contains('themes/orchard/README.md'));
+      expect(message, contains(stale));
+      expect(message, contains('9.8.7'));
+      expect(message, isNot(contains('README.md:1: --ref v9.8.7')), reason: 'a matching pin must not be reported');
+
+      File('${repo.path}/themes/orchard/README.md').writeAsStringSync('$install --theme orchard --ref v9.8.7\n');
+      final matching = await _bash(repo, ['tool/version_lockstep.sh', '--check-refs', '9.8.7']);
+      expect(matching.exitCode, 0, reason: '${matching.stdout}${matching.stderr}');
+    });
+
+    test('the repo itself carries pins the scan can see', () async {
+      // A regex that drifted from the docs' shape would make rewrite and check vacuous at once.
+      final result = await Process.run('bash', [
+        'tool/version_lockstep.sh',
+        '--list-ref-files',
+      ], workingDirectory: workspaceRoot.path);
+
+      expect(result.exitCode, 0, reason: '${result.stderr}');
+      final files = (result.stdout as String).trim().split('\n');
+      expect(files, contains('docs/guides/theme-usage.md'));
+      expect(files, contains('themes/lattice/README.md'));
+      expect(files.where((f) => f.contains('CHANGELOG') || f.contains('LEARNINGS')), isEmpty);
+      expect(files, isNot(contains('LICENSE')), reason: 'a file without a pin must not be listed');
+      final pin = RegExp(r'github\.com/tolo/trellis\s[^\n]*--ref v\d');
+      for (final file in files) {
+        expect(
+          pin.hasMatch(File('${workspaceRoot.path}/$file').readAsStringSync()),
+          isTrue,
+          reason: '$file has no pin',
+        );
+      }
+    });
+  });
+
+  group('release.sh guards on STATE.md and --ref pins', () {
+    // Runs the real release.sh in a throwaway clone with stub dart/melos/gh. The stub lockstep
+    // bumps one pubspec and delegates only the --check-refs/--list-ref-files modes to the real
+    // script, so a pin that is stale after the "bump" stays stale.
+    test('refuses before bumping when STATE.md has no release row for the version', () async {
+      final fixture = await _ReleaseFixture.create(
+        workspaceRoot,
+        state: '# State\n\n| 0.12.0 (release) | entry only |\n',
+      );
+      addTearDown(fixture.dispose);
+
+      final result = await fixture.release('9.8.7');
+
+      expect(result.exitCode, isNot(0), reason: '${result.stdout}');
+      expect(result.stderr, contains('dev/state/STATE.md'));
+      expect(result.stderr, contains('9.8.7'));
+      expect(await fixture.git(['status', '--porcelain']), isEmpty, reason: 'nothing may be bumped');
+      expect(await fixture.git(['tag']), isEmpty);
+    });
+
+    test('refuses when STATE.md only has a non-release row for the version', () async {
+      // An "(implementation)" row exists before the release does; accepting it would let a
+      // release go out with no release row recorded.
+      final fixture = await _ReleaseFixture.create(
+        workspaceRoot,
+        state: '| 9.8.7 (implementation) | 2026-01-01 | work in progress |\n',
+      );
+      addTearDown(fixture.dispose);
+
+      final result = await fixture.release('9.8.7');
+
+      expect(result.exitCode, isNot(0), reason: '${result.stdout}');
+      expect(result.stderr, contains('dev/state/STATE.md'));
+      expect(result.stderr, contains('9.8.7 (release)'));
+      expect(await fixture.git(['status', '--porcelain']), isEmpty, reason: 'nothing may be bumped');
+      expect(await fixture.git(['tag']), isEmpty);
+    });
+
+    test('refuses when STATE.md names the release only in prose', () async {
+      // A note written ahead of the release is not a record of it; only a table row counts.
+      final fixture = await _ReleaseFixture.create(
+        workspaceRoot,
+        state: '# State\n\nThe 9.8.7 (release) row is written at squash.\n',
+      );
+      addTearDown(fixture.dispose);
+
+      final result = await fixture.release('9.8.7');
+
+      expect(result.exitCode, isNot(0), reason: '${result.stdout}');
+      expect(result.stderr, contains('9.8.7 (release)'));
+      expect(await fixture.git(['tag']), isEmpty);
+    });
+
+    test('does not mistake a longer version for the one being released', () async {
+      final fixture = await _ReleaseFixture.create(
+        workspaceRoot,
+        state: '| 9.8.70 (release) | a |\n| 19.8.7 (release) | b |\n| 0.9.8.7 (release) | c |\n',
+      );
+      addTearDown(fixture.dispose);
+
+      final result = await fixture.release('9.8.7');
+
+      expect(result.exitCode, isNot(0));
+      expect(result.stderr, contains('dev/state/STATE.md'));
+    });
+
+    test('refuses when a tolo/trellis pin still names another version after the bump', () async {
+      final fixture = await _ReleaseFixture.create(workspaceRoot, pin: stale);
+      addTearDown(fixture.dispose);
+
+      final result = await fixture.release('9.8.7');
+
+      expect(result.exitCode, isNot(0), reason: '${result.stdout}');
+      expect(result.stderr, contains('README.md'));
+      expect(result.stderr, contains(stale));
+      expect(result.stderr, contains('9.8.7'));
+      expect(await fixture.git(['tag']), isEmpty);
+      expect(await fixture.git(['rev-list', '--count', 'HEAD']), '1', reason: 'no release commit');
+    });
+
+    test('commits and tags when STATE.md and every pin name the version', () async {
+      final fixture = await _ReleaseFixture.create(workspaceRoot);
+      addTearDown(fixture.dispose);
+
+      final result = await fixture.release('9.8.7');
+
+      expect(result.exitCode, 0, reason: '${result.stdout}${result.stderr}');
+      expect(await fixture.git(['tag']), 'v9.8.7');
+      expect(await fixture.git(['log', '-1', '--pretty=%s']), 'chore(release): trellis SDK 9.8.7');
+    });
+
+    test('a pin-holding file outside the fixed allow-list is still a permitted release change', () async {
+      // themes/*/README.md holds pins but is not under docs/, site/content/ or packages/.
+      final fixture = await _ReleaseFixture.create(workspaceRoot, bumpRewritesThemeReadme: true);
+      addTearDown(fixture.dispose);
+
+      final result = await fixture.release('9.8.7');
+
+      expect(result.exitCode, 0, reason: '${result.stdout}${result.stderr}');
+      expect(await fixture.git(['show', '--stat', '--format=', 'HEAD']), contains('themes/orchard/README.md'));
     });
   });
 
@@ -418,6 +617,125 @@ trellis_x:
       expect(autoUrl, contains(r'$version'));
     });
   });
+}
+
+/// A throwaway git repo holding the real `tool/version_lockstep.sh`, a hero line it requires and a
+/// fake `dart` first on PATH (melos is not run). Its parent directory holds the repo and `bin/`.
+Directory _lockstepFixture(Directory workspaceRoot) {
+  final root = Directory.systemTemp.createTempSync('version_lockstep_refs_');
+  final repo = Directory('${root.path}/repo')..createSync();
+  for (final dir in ['tool', 'site']) {
+    Directory('${repo.path}/$dir').createSync();
+  }
+  _writeExecutable('${root.path}/bin/dart', '#!/usr/bin/env bash\nexit 0\n');
+  _writeExecutable(
+    '${repo.path}/tool/version_lockstep.sh',
+    File('${workspaceRoot.path}/tool/version_lockstep.sh').readAsStringSync(),
+  );
+  File('${repo.path}/site/trellis_site.yaml').writeAsStringSync('      text: trellis 0.10.2 — one dependency\n');
+  expect(Process.runSync('git', ['init', '--quiet'], workingDirectory: repo.path).exitCode, 0);
+  return repo;
+}
+
+void _writeExecutable(String path, String content) {
+  File(path)
+    ..createSync(recursive: true)
+    ..writeAsStringSync(content);
+  expect(Process.runSync('chmod', ['+x', path]).exitCode, 0);
+}
+
+/// Runs `bash <args>` in [repo] with `<repo>/../bin` first on PATH (fake dart, melos, gh).
+Future<ProcessResult> _bash(Directory repo, List<String> args) => Process.run(
+  'bash',
+  args,
+  workingDirectory: repo.path,
+  environment: {...Platform.environment, 'PATH': '${repo.parent.path}/bin:${Platform.environment['PATH']}'},
+);
+
+/// A clone of a bare origin on `main` with all 8 package changelogs at `## 9.8.7`, the real
+/// `tool/release.sh`, and stub `version_lockstep.sh` / `require_green_ci.sh` / dart / melos / gh,
+/// so release.sh can run end to end without a network or a real bump.
+class _ReleaseFixture {
+  _ReleaseFixture._(this.root);
+
+  static const _packages = [
+    'trellis',
+    'trellis_shelf',
+    'trellis_dev',
+    'trellis_cli',
+    'trellis_css',
+    'trellis_site',
+    'trellis_dart_frog',
+    'trellis_relic',
+  ];
+
+  final Directory root;
+  Directory get repo => Directory('${root.path}/repo');
+
+  /// [state] is the STATE.md content, [pin] the `--ref` tag in the root README, and
+  /// [bumpRewritesThemeReadme] makes the stub bump rewrite a stale pin in `themes/orchard/README.md`.
+  static Future<_ReleaseFixture> create(
+    Directory workspaceRoot, {
+    String state = '| 9.8.7 (release) | 2026-01-01 | recorded |\n',
+    String pin = 'v9.8.7',
+    bool bumpRewritesThemeReadme = false,
+  }) async {
+    final root = Directory.systemTemp.createTempSync('release_guard_');
+    final fixture = _ReleaseFixture._(root);
+    final repo = fixture.repo..createSync();
+    String real(String path) => File('${workspaceRoot.path}/$path').readAsStringSync();
+
+    for (final tool in ['dart', 'melos', 'gh']) {
+      _writeExecutable('${root.path}/bin/$tool', '#!/usr/bin/env bash\nexit 0\n');
+    }
+    _writeExecutable('${repo.path}/tool/release.sh', real('tool/release.sh'));
+    _writeExecutable('${repo.path}/tool/real_lockstep.sh', real('tool/version_lockstep.sh'));
+    _writeExecutable('${repo.path}/tool/require_green_ci.sh', '#!/usr/bin/env bash\nexit 0\n');
+    _writeExecutable('${repo.path}/tool/version_lockstep.sh', '''
+#!/usr/bin/env bash
+case "\${1:-}" in --*) exec bash "\$(dirname "\$0")/real_lockstep.sh" "\$@" ;; esac
+perl -pi -e "s/^version: .*/version: \$1/" packages/trellis/pubspec.yaml
+${bumpRewritesThemeReadme ? r"perl -pi -e 's/--ref v\S+/--ref v9.8.7/' themes/orchard/README.md" : ''}
+''');
+    for (final pkg in _packages) {
+      File('${repo.path}/packages/$pkg/pubspec.yaml')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('name: $pkg\nversion: 0.0.1\n');
+      File('${repo.path}/packages/$pkg/CHANGELOG.md').writeAsStringSync('## 9.8.7\n\n- change\n');
+    }
+    File('${repo.path}/dev/state/STATE.md')
+      ..createSync(recursive: true)
+      ..writeAsStringSync(state);
+    File('${repo.path}/README.md').writeAsStringSync('$install --theme x --ref $pin\n');
+    if (bumpRewritesThemeReadme) {
+      File('${repo.path}/themes/orchard/README.md')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('$install --theme orchard --ref $stale\n');
+    }
+
+    await fixture.run('git', ['init', '--quiet', '--bare', '${root.path}/origin.git'], cwd: root);
+    await fixture.git(['init', '--quiet', '-b', 'main']);
+    await fixture.git(['config', 'user.name', 'Fixture']);
+    await fixture.git(['config', 'user.email', 'fixture@example.invalid']);
+    await fixture.git(['config', 'commit.gpgsign', 'false']);
+    await fixture.git(['add', '.']);
+    await fixture.git(['commit', '--quiet', '-m', 'initial']);
+    await fixture.git(['remote', 'add', 'origin', '${root.path}/origin.git']);
+    await fixture.git(['push', '--quiet', 'origin', 'main']);
+    return fixture;
+  }
+
+  void dispose() => root.deleteSync(recursive: true);
+
+  Future<ProcessResult> release(String version) => _bash(repo, ['tool/release.sh', version]);
+
+  Future<String> run(String exe, List<String> args, {Directory? cwd}) async {
+    final result = await Process.run(exe, args, workingDirectory: (cwd ?? repo).path);
+    expect(result.exitCode, 0, reason: '$exe ${args.join(' ')}: ${result.stderr}');
+    return (result.stdout as String).trim();
+  }
+
+  Future<String> git(List<String> args) => run('git', args);
 }
 
 /// The `version:` of a pubspec, or fails the test.

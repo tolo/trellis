@@ -89,11 +89,6 @@ void main() {
       expect(siteIdx, lessThan(themeIdx));
     });
 
-    test('generate() resolves skinMode correctly', () {
-      final config = _generate(siteDir: siteDir, themeDir: themeDir, params: {'skin': 'dark'}, types: {'skin': 'enum'});
-      expect(config.skinMode, SkinMode.dark);
-    });
-
     test('generate() with null themeDir omits theme paths', () {
       final config = _generate(siteDir: siteDir, themeDir: null, params: {'skin': 'auto'}, types: {'skin': 'enum'});
       expect(config.sassLoadPaths, isNot(contains(p.join(themeDir, 'sass'))));

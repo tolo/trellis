@@ -1,7 +1,7 @@
 // main.scss `@forward`s this module first, so the SASS bridge can configure every
 // `!default` variable below as `@use "main.scss" with (...)`. Sass accepts that only
 // on a module's first load, so nothing may load this file before main.scss forwards
-// it. Param-backed variables carry !default; the palettes and derived values do not.
+// it. Param-backed variables carry !default; the dark palette and derived values do not.
 @use 'sass:map';
 @use '_skins/light' as light;
 @use '_skins/dark' as dark;
@@ -25,20 +25,8 @@ $trellis-bg-color-dark: map.get(dark.$palette, bg-color) !default;
 $trellis-surface-color-dark: map.get(dark.$palette, surface-color) !default;
 $trellis-border-color-dark: map.get(dark.$palette, border-color) !default;
 
-// The palettes with the site's per-mode overrides applied. Public because main.scss
+// The dark palette with the site's `_dark` overrides applied. Public because main.scss
 // reads $trellis-palette-dark for every dark view.
-$trellis-palette-light: map.merge(
-  light.$palette,
-  (
-    primary-color: $trellis-primary-color,
-    accent-color: $trellis-accent-color,
-    text-color: $trellis-text-color,
-    muted-color: $trellis-muted-color,
-    bg-color: $trellis-bg-color,
-    surface-color: $trellis-surface-color,
-    border-color: $trellis-border-color,
-  )
-);
 $trellis-palette-dark: map.merge(
   dark.$palette,
   (

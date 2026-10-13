@@ -34,7 +34,7 @@ void main() {
     return (result, outputDir);
   }
 
-  group('Unweighted byte-for-byte regression (AS02/AS07 · TI04/TI07)', () {
+  group('Unweighted byte-for-byte regression', () {
     test('build_site rendered HTML tree equals the pre-change captured baseline byte-for-byte', () async {
       // The golden was captured from the pre-change engine (git-stash baseline);
       // this proves the weight/lineage changes leave unweighted output identical
@@ -69,7 +69,7 @@ void main() {
     });
   });
 
-  group('Malformed weight warns and never aborts (AS04 · TI03)', () {
+  group('Malformed weight warns and never aborts', () {
     test('site with weight: "abc" builds successfully and emits a warning naming the page', () async {
       final (result, _) = await buildFixture('weighted_site');
 
@@ -93,7 +93,7 @@ void main() {
       expect(hrefOrder, ['/docs/guides/alpha/', '/docs/guides/bravo/', '/docs/guides/bad/']);
     });
 
-    test('nested guides listing excludes sibling tutorials sub-section (AS06)', () async {
+    test('nested guides listing excludes sibling tutorials sub-section', () async {
       final (_, outputDir) = await buildFixture('weighted_site');
       final html = File(p.join(outputDir, 'docs', 'guides', 'index.html')).readAsStringSync();
       expect(html, isNot(contains('/docs/tutorials/')));

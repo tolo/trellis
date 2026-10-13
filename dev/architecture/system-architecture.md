@@ -451,11 +451,12 @@ built by `trellis_cli`.
 
 `trellis build` compiles every non-partial `.scss`/`.sass` file in a theme's `sass/` directory through a generated wrapper,
 so a theme's `theme.yaml` defaults and the site's `theme_params:` reach its SASS without the site editing it. The
-generator (`ThemeSassGenerator`, `trellis_site`) writes two files into the site's `.trellis/build/`:
+generator (`ThemeSassGenerator`, `trellis_site`) writes `_theme_params.scss` and `_theme_custom_props.css` into the
+site's `.trellis/build/`, and the CLI build writes one bridge file per entry beside them:
 
 - `_theme_params.scss` – a plain Sass module (no `!default`) with a `$trellis-<name>` variable for every merged param.
-- `bridge_<entry>.scss` – the compile entry, text produced by `ThemeBuildConfig.bridgeWrapperSource` (the CLI writes
-  it, and the bridge tests compile the same text):
+- `bridge_<entry>.scss` – the compile entry, text produced by `ThemeBuildConfig.bridgeWrapperSource` (the bridge tests
+  compile the same text):
   `@use "theme_params" as tp; @use "<theme entry>" as theme with ($trellis-x: tp.$trellis-x, …)`.
 
 The `with()` list is the **intersection** of the manifest's params and the `$trellis-*` variables the theme's
@@ -497,7 +498,7 @@ defaults to `false`; when enabled, the home layout renders its Markdown-to-page 
 `site_demo.markdown_html`, and `site_demo.page_title` are all present. This leaf-level guard preserves existing installs
 and prevents a partial whole-file data override from publishing an empty section or failing the build.
 
-### Client-Side Search Flow (S09)
+### Client-Side Search Flow
 
 The engine and the theme meet at one artifact — `search-index.json`:
 

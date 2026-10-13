@@ -6,7 +6,9 @@ title: $displayName Example
 description: Preview site for the $displayName theme.
 baseUrl: http://localhost:8080
 
-# To preview: copy theme layouts+static into this site, or use
-# trellis theme add ../  from this directory.
+# The theme under development is the parent directory. `trellis create` links it
+# in as themes/$themeName (`../..` from the link), and the build resolves `theme:`
+# as themes/<name>.
+theme: $themeName
 ''';
 }

@@ -14,8 +14,8 @@ void main() {
       await generator.generate();
     });
 
-    test('T01: generates all 15 expected files', () {
-      expect(writer.files, hasLength(15));
+    test('T01: generates all 14 expected files', () {
+      expect(writer.files, hasLength(14));
       expect(
         writer.files.keys,
         containsAll([
@@ -31,7 +31,6 @@ void main() {
           'static/.gitkeep',
           'example/trellis_site.yaml',
           'example/content/_index.md',
-          'example/layouts/home.html',
           'README.md',
           '.gitignore',
         ]),
@@ -150,14 +149,15 @@ void main() {
       await generator.generate();
     });
 
-    test('T11: _variables.scss declares a !default pair per colour param and builds both palettes', () {
+    test('T11: _variables.scss declares a !default pair per colour param and builds the dark palette', () {
       final vars = writer.files['sass/_variables.scss']!;
       for (final name in ['primary', 'accent', 'text', 'muted', 'bg', 'surface', 'border']) {
         expect(vars, contains('\$trellis-$name-color: map.get(light.\$palette, $name-color) !default;'));
         expect(vars, contains('\$trellis-$name-color-dark: map.get(dark.\$palette, $name-color) !default;'));
       }
-      expect(vars, contains(r'$trellis-palette-light: map.merge('));
       expect(vars, contains(r'$trellis-palette-dark: map.merge('));
+      // Nothing reads a merged light palette: each light colour is its $trellis-<name>-color variable.
+      expect(vars, isNot(contains('palette-light')));
       expect(vars, contains(r'$trellis-skin: auto !default;'));
     });
 

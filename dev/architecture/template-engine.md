@@ -2,7 +2,7 @@
 
 Canonical reference for the internal architecture of the core `trellis` template engine package. Covers the render pipeline, processor model, expression evaluation, caching, fragment system, and extension points.
 
-**Current through**: SDK Phase 1 (S06) + 0.10.2 (`FileSystemLoader` per-directory dev-mode watching on Linux; symlink-free `listTemplates()`)
+**Current through**: SDK Phase 1 + 0.10.2 (`FileSystemLoader` per-directory dev-mode watching on Linux; symlink-free `listTemplates()`)
 
 ---
 

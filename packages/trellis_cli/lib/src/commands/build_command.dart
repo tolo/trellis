@@ -5,6 +5,8 @@ import 'package:path/path.dart' as p;
 import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
 
+import '../version.dart';
+
 /// The `trellis build` command.
 ///
 /// Loads `trellis_site.yaml` from the current directory, runs the full SSG
@@ -109,8 +111,8 @@ class BuildCommand extends Command<int> {
     final int sassCount;
     try {
       sassCount = await _compileSass(config, verbose, themeBuildConfig: result.themeBuildConfig);
-    } on SassCompilationException catch (e) {
-      stderr.writeln('SASS compilation failed: $e');
+    } on _SassBuildFailure catch (failure) {
+      stderr.write(_describeSassFailure(failure, siteDir: config.siteDir));
       return 1;
     }
 
@@ -143,7 +145,7 @@ class BuildCommand extends Command<int> {
 ///
 /// Returns the number of SASS files compiled.
 ///
-/// Throws [SassCompilationException] on compilation failure.
+/// Throws [_SassBuildFailure] on compilation failure.
 Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? themeBuildConfig}) async {
   final loadPaths = themeBuildConfig?.sassLoadPaths ?? [config.staticDir];
   var count = 0;
@@ -182,12 +184,17 @@ Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? the
         // warning, but no skin file is injected any more, so `skin: dark` would
         // silently build light (ADR-013). A site's own stylesheets keep @import
         // until Dart Sass 3.0.
-        final css = TrellisCss.compileSass(
-          wrapperPath,
-          outputStyle: OutputStyle.compressed,
-          loadPaths: loadPaths,
-          fatalImportDeprecation: true,
-        );
+        final String css;
+        try {
+          css = TrellisCss.compileSass(
+            wrapperPath,
+            outputStyle: OutputStyle.compressed,
+            loadPaths: loadPaths,
+            fatalImportDeprecation: true,
+          );
+        } on SassCompilationException catch (e) {
+          throw _SassBuildFailure(e, themeName: config.themeConfig!.name);
+        }
         File(outPath).writeAsStringSync(css);
 
         if (verbose) stdout.writeln('  Compiled ${file.path} → $outPath');
@@ -209,7 +216,12 @@ Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? the
       final outPath = p.join(config.outputDir, p.setExtension(relative, '.css'));
       Directory(p.dirname(outPath)).createSync(recursive: true);
 
-      final css = TrellisCss.compileSass(file.path, outputStyle: OutputStyle.compressed, loadPaths: loadPaths);
+      final String css;
+      try {
+        css = TrellisCss.compileSass(file.path, outputStyle: OutputStyle.compressed, loadPaths: loadPaths);
+      } on SassCompilationException catch (e) {
+        throw _SassBuildFailure(e);
+      }
       File(outPath).writeAsStringSync(css);
 
       if (verbose) stdout.writeln('  Compiled ${file.path} → $outPath');
@@ -219,3 +231,64 @@ Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? the
 
   return count;
 }
+
+/// A SASS compilation failure, with the theme it came from when it happened in a
+/// theme entry (as opposed to the site's own stylesheets).
+class _SassBuildFailure implements Exception {
+  _SassBuildFailure(this.error, {this.themeName});
+
+  final SassCompilationException error;
+  final String? themeName;
+}
+
+const _authoringGuideUrl = 'https://tolo.github.io/trellis/docs/themes/authoring/';
+
+/// Renders [failure] for the terminal: the Trellis explanation first, the raw
+/// Sass text beneath it as detail.
+///
+/// An `@import` in a theme gets its own message because Sass's wording ("Remove
+/// this setting") points at a compiler option the user cannot change. Matching
+/// on the message is the only handle: `trellis_css` does not expose the
+/// deprecation id, and an unmatched message just falls through to the generic
+/// rendering, which still carries the location.
+String _describeSassFailure(_SassBuildFailure failure, {required String siteDir}) {
+  final error = failure.error;
+  final themeName = failure.themeName;
+  final location = _sassLocation(error, siteDir);
+  final buffer = StringBuffer();
+
+  if (themeName != null && error.message.contains('@import rules are deprecated')) {
+    buffer
+      ..writeln('Build failed: theme "$themeName" uses @import${location == null ? '' : ' at $location'}.')
+      ..writeln('Theme SASS is compiled with @use/@forward, so an @import theme cannot be built. To fix it, either:')
+      ..writeln('  - if it is a built-in Trellis theme, re-add it at this release:')
+      ..writeln('      trellis theme remove $themeName')
+      ..writeln('      trellis theme add https://github.com/tolo/trellis --theme $themeName --ref v$cliVersion')
+      ..writeln('  - otherwise migrate its SASS to @use: $_authoringGuideUrl')
+      ..writeln()
+      ..writeln('Sass reported:')
+      ..writeln(_indent(error.message));
+    return buffer.toString();
+  }
+
+  buffer.writeln('SASS compilation failed${themeName == null ? '' : ' in theme "$themeName"'}: ${error.message}');
+  if (location != null) buffer.writeln('  at $location');
+  return buffer.toString();
+}
+
+/// `path:line:column` of [error], with the path relative to [siteDir] when it is
+/// inside it. Null when the exception carries no span.
+String? _sassLocation(SassCompilationException error, String siteDir) {
+  final path = error.path;
+  if (path == null) return null;
+  // The theme wrapper imports its entry by canonicalized (absolute, normalized)
+  // path, so normalize both sides before testing containment.
+  final canonicalSite = p.canonicalize(siteDir);
+  final canonicalPath = p.canonicalize(path);
+  final shown = p.isWithin(canonicalSite, canonicalPath) ? p.relative(canonicalPath, from: canonicalSite) : path;
+  final line = error.line;
+  if (line == null) return shown;
+  return error.column == null ? '$shown:$line' : '$shown:$line:${error.column}';
+}
+
+String _indent(String text) => text.trimRight().split('\n').map((line) => line.isEmpty ? line : '  $line').join('\n');

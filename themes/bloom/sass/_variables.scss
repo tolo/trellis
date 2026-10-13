@@ -9,8 +9,9 @@
 // trellis_site.yaml.
 //
 // Every param-backed $trellis-* below carries !default: it is what makes the
-// variable configurable. Non-param values (the palettes, derived values) carry
-// none, so the bridge never touches them.
+// variable configurable. The dark palette and the other derived values carry none. Theme-internal
+// tunables (spacing, type scale, focus ring width) keep !default too, but have no
+// manifest param, so the bridge never names them.
 
 @use 'sass:map';
 @use '_skins/light' as light;
@@ -106,22 +107,8 @@ $trellis-accent-gradient-end-dark: map.get(dark.$palette, accent-gradient-end) !
 $trellis-pill-badges: true !default;
 $trellis-logo: null !default;
 
-// The palettes with the site's per-mode overrides applied. Public (not `$_`)
+// The dark palette with the site's `_dark` overrides applied. Public (not `$_`)
 // because main.scss reads $trellis-palette-dark for the `skin: auto` block.
-$trellis-palette-light: map.merge(
-  light.$palette,
-  (
-    primary-color: $trellis-primary-color,
-    accent-color: $trellis-accent-color,
-    text-color: $trellis-text-color,
-    muted-color: $trellis-muted-color,
-    bg-color: $trellis-bg-color,
-    surface-color: $trellis-surface-color,
-    border-color: $trellis-border-color,
-    accent-gradient-start: $trellis-accent-gradient-start,
-    accent-gradient-end: $trellis-accent-gradient-end,
-  )
-);
 $trellis-palette-dark: map.merge(
   dark.$palette,
   (
@@ -138,8 +125,8 @@ $trellis-palette-dark: map.merge(
 );
 
 // A forced dark skin selects the dark palette. Every partial keeps reading
-// $trellis-*-color, so this runs before anything derived from them (the focus
-// ring, the :root block below). The gradient pair is reassigned as well, so a
+// $trellis-*-color, so this runs before anything derived from them (the
+// :root block below). The gradient pair is reassigned as well, so a
 // plain `accent_gradient_*` never reaches a dark view. (@if shares the root
 // scope, so this updates the global variables without !global.)
 @if $trellis-skin == dark {
@@ -160,9 +147,7 @@ $trellis-palette-dark: map.merge(
 
 // ── Accessibility ────────────────────────────────────────────────────────────
 
-$trellis-focus-ring-color: $trellis-primary-color !default;
 $trellis-focus-ring-width: 2px !default;
-$trellis-focus-ring-offset: 2px !default;
 
 // ── CSS Custom Properties ────────────────────────────────────────────────────
 // Emit :root custom properties from the active compile-time skin. Auto mode uses

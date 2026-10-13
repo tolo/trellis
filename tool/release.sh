@@ -20,12 +20,13 @@ Preconditions (each checked; the script refuses otherwise):
     let CI run — melos refuses to version off main anyway)
   * CI (ci.yml) is green for HEAD — waits if it is still running
   * every packages/*/CHANGELOG.md has a `## <version>` section
+  * dev/state/STATE.md has a '<version> (release)' row (written by hand on the feature branch)
   * <version> is X.Y.Z (the tag pattern the release workflows trigger on)
 
 Then:
   1. tool/version_lockstep.sh <version>   (pubspecs, constraints, version.dart, READMEs,
-                                           docs install snippets, site/trellis_site.yaml)
-  2. asserts only those files changed
+                                           docs install snippets, tolo/trellis --ref pins, site/trellis_site.yaml)
+  2. refuses if any tolo/trellis --ref pin is not on v<version>, then asserts only those files changed
   3. local gate = ci.yml's check tier: melos analyze + format:check + unit
      tests, root tests + root format
   4. commit `chore(release): trellis SDK <version>`, then `dart pub publish
@@ -165,6 +166,16 @@ done
 (( ${#MISSING[@]} == 0 )) \
   || fail "no '## ${VERSION}' section in CHANGELOG.md of: ${MISSING[*]}. Changelogs are hand-written on the feature branch before merging (unchanged packages get the lockstep-alignment note)."
 
+# STATE.md is hand-written on the branch (main takes no fix-up commits after the squash); the
+# script only proves the release is recorded there as a table row whose first cell is
+# "X.Y.Z (release)", so an "(implementation)" row or a passing mention does not count. Dots are
+# escaped and the cell must hold exactly that, so 9.8.70 or 19.8.7 do not count as 9.8.7.
+STATE_FILE=dev/state/STATE.md
+VERSION_RE="$(printf '%s' "${VERSION}" | sed 's/\./\\./g')"
+if ! { [[ -f "${STATE_FILE}" ]] && grep -Eq "^\|[[:space:]]*${VERSION_RE} \(release\)[[:space:]]*\|" "${STATE_FILE}"; }; then
+  fail "${STATE_FILE} has no '${VERSION} (release)' row. Record the release there on the feature branch (current phase, what shipped), squash-merge, then re-run."
+fi
+
 for tool_bin in gh melos; do
   command -v "${tool_bin}" >/dev/null 2>&1 || fail "'${tool_bin}' not on PATH (melos: dart pub global activate melos; gh: brew install gh && gh auth login)"
 done
@@ -177,6 +188,14 @@ tool/require_green_ci.sh "${LOCAL_SHA}"
 step "Lockstep bump to ${VERSION}"
 tool/version_lockstep.sh "${VERSION}"
 dart pub get
+
+# The bump rewrites theme-install pins with the same scan --check-refs uses, so a stale pin
+# here means the rewrite missed a shape. The check lives in the lockstep script (not here) so the
+# scan scope has one owner; release.sh only refuses on its result.
+step "Checking tolo/trellis --ref pins are on v${VERSION}"
+tool/version_lockstep.sh --check-refs "${VERSION}" \
+  || fail "stale --ref pins listed above; bump left in the working tree for inspection; discard it (= ALL uncommitted changes; the tree was clean before the bump) with: git restore --staged --worktree ."
+REF_PIN_FILES="$(tool/version_lockstep.sh --list-ref-files)"
 
 step "Asserting only version files changed"
 # The bump may touch exactly these; anything else means the script or melos did
@@ -221,7 +240,15 @@ while IFS= read -r -d '' entry; do
     # README/docs entries are the install-snippet constraint lines version_lockstep.sh
     # rewrites (plus the two manual-download examples); keep the three file sets identical.
     packages/*/pubspec.yaml | packages/*/lib/src/version.dart | README.md | packages/*/README.md | docs/*.md | site/content/*.md | site/trellis_site.yaml) EXPECTED_CHANGED+=("${changed}") ;;
-    *) UNEXPECTED+=("${changed}") ;;
+    # --ref pins live wherever a theme is documented (themes/*/README.md ...), so the lockstep
+    # script supplies the file set instead of a glob that would drift from its scan.
+    *)
+      if printf '%s\n' "${REF_PIN_FILES}" | grep -Fxq -- "${changed}"; then
+        EXPECTED_CHANGED+=("${changed}")
+      else
+        UNEXPECTED+=("${changed}")
+      fi
+      ;;
   esac
 done < <(git status --porcelain -z)
 if (( ${#UNEXPECTED[@]} > 0 )); then

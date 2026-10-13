@@ -5,7 +5,7 @@ name: $themeName
 version: 0.1.0
 author: Theme Author
 description: A custom Trellis theme.
-min_trellis_version: 0.8.0
+min_trellis_version: 0.12.0
 features:
   - responsive
   - dark-mode

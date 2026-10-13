@@ -9,8 +9,9 @@
 // trellis_site.yaml.
 //
 // Every param-backed $trellis-* below carries !default: it is what makes the
-// variable configurable. Non-param values (the palettes, derived values) carry
-// none, so the bridge never touches them. Params with no variable here
+// variable configurable. The dark palette and the other derived values carry none. Theme-internal
+// tunables (spacing, type scale, code tokens) keep !default too, but have no
+// manifest param, so the bridge never names them. Params with no variable here
 // (nav_links, the blog toggles, hero text, …) are read by templates only.
 
 @use 'sass:map';
@@ -49,20 +50,8 @@ $trellis-code-comment: map.get(light.$palette, code-comment) !default;
 $trellis-code-function: map.get(light.$palette, code-function) !default;
 $trellis-code-punctuation: map.get(light.$palette, code-punctuation) !default;
 
-// The palettes with the site's per-mode overrides applied. Public (not `$_`)
+// The dark palette with the site's `_dark` overrides applied. Public (not `$_`)
 // because main.scss reads $trellis-palette-dark for the `skin: auto` block.
-$trellis-palette-light: map.merge(
-  light.$palette,
-  (
-    primary-color: $trellis-primary-color,
-    accent-color: $trellis-accent-color,
-    text-color: $trellis-text-color,
-    muted-color: $trellis-muted-color,
-    bg-color: $trellis-bg-color,
-    surface-color: $trellis-surface-color,
-    border-color: $trellis-border-color,
-  )
-);
 $trellis-palette-dark: map.merge(
   dark.$palette,
   (
@@ -77,8 +66,8 @@ $trellis-palette-dark: map.merge(
 );
 
 // A forced dark skin selects the dark palette. Every partial keeps reading
-// $trellis-*-color, so this runs before anything derived from them (the focus
-// ring, the :root block below). The six code tokens are not params, so they are
+// $trellis-*-color, so this runs before anything derived from them (the
+// :root block below). The six code tokens are not params, so they are
 // reassigned from the dark palette as well. (@if shares the root scope, so this
 // updates the global variables without !global.)
 @if $trellis-skin == dark {
@@ -141,13 +130,6 @@ $trellis-space-3xl: 4rem !default;
 
 // nav_links and social_links are lists — no SASS variable equivalent;
 // they are accessed in templates via ${theme.nav_links} and ${theme.social_links}.
-
-// ── Accessibility ────────────────────────────────────────────────────────────
-
-// Focus ring derived from primary color
-$trellis-focus-ring-color: $trellis-primary-color !default;
-$trellis-focus-ring-width: 2px !default;
-$trellis-focus-ring-offset: 2px !default;
 
 // ── CSS Custom Properties ────────────────────────────────────────────────────
 // Emit :root custom properties from the active compile-time skin. Auto mode uses

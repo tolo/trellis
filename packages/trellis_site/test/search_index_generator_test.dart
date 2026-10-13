@@ -577,7 +577,7 @@ void main() {
   });
 
   // ──────────────────────────────────────────────────
-  // SiteConfig search config parsing (TI06)
+  // SiteConfig search config parsing
   // ──────────────────────────────────────────────────
   group('SiteConfig searchConfig', () {
     test('no search: section returns default (disabled) config', () {
@@ -601,7 +601,7 @@ void main() {
   });
 
   // ──────────────────────────────────────────────────
-  // Build pipeline integration (TI07)
+  // Build pipeline integration
   // ──────────────────────────────────────────────────
   group('search index integration', () {
     SiteConfig isolatedSearchConfig({required bool enabled}) {

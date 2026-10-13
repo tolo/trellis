@@ -38,9 +38,6 @@ class ThemeBuildConfig {
   /// SASS load paths in priority order: `[.trellis/build/, site/sass/, theme/sass/]`.
   final List<String> sassLoadPaths;
 
-  /// The resolved skin mode.
-  final SkinMode skinMode;
-
   /// SASS variable names (without `$`, e.g. `trellis-primary-color`) the bridge
   /// configures on the theme entry: the manifest params that were merged and that
   /// the theme's `_variables.scss` declares `!default`. Everything else in
@@ -48,12 +45,7 @@ class ThemeBuildConfig {
   /// variable the module does not declare `!default`.
   final List<String> configurableVars;
 
-  const ThemeBuildConfig({
-    required this.buildDir,
-    required this.sassLoadPaths,
-    required this.skinMode,
-    this.configurableVars = const [],
-  });
+  const ThemeBuildConfig({required this.buildDir, required this.sassLoadPaths, this.configurableVars = const []});
 
   /// The compile entry for the theme stylesheet at [themeEntryPath]: a wrapper
   /// that `@use`s the generated params module and configures the theme entry with
@@ -95,14 +87,14 @@ class ThemeBuildConfig {
 ///   the bridge wrapper ([ThemeBuildConfig.bridgeWrapperSource])
 /// - `_theme_custom_props.css` — CSS custom properties with `--trellis-` prefix (plain CSS)
 ///
-/// Also resolves the skin mode from the `skin` param and works out which params
+/// Also validates the `skin` param and works out which params
 /// the theme can be configured with ([ThemeBuildConfig.configurableVars]).
 class ThemeSassGenerator {
   const ThemeSassGenerator();
 
   /// Generates SASS bridge files and returns the build configuration.
   ///
-  /// [mergedParams] — the merged theme params (from S01's `ThemeParamMerger`).
+  /// [mergedParams] — the merged theme params (from `ThemeParamMerger`).
   /// [paramTypes] — maps param names to their type hints (from `ThemeManifest.params`).
   /// [siteDir] — the site root directory.
   /// [themeDir] — the active theme directory (`null` if no theme).
@@ -113,7 +105,7 @@ class ThemeSassGenerator {
   /// - `_theme_custom_props.css` with non-boolean/enum/list/map params as
   ///   `:root { --trellis-*: value; }`
   ///
-  /// Returns a [ThemeBuildConfig] with load paths, skin info and the configurable
+  /// Returns a [ThemeBuildConfig] with load paths and the configurable
   /// variables for the SASS compiler.
   ThemeBuildConfig generate({
     required Map<String, dynamic> mergedParams,
@@ -134,9 +126,10 @@ class ThemeSassGenerator {
     final sassVars = _generateSassVariables(mergedParams, paramTypes);
     File(p.join(buildDir, '_theme_params.scss')).writeAsStringSync(sassVars);
 
-    // 2. Resolve skin mode
-    final skinValue = mergedParams['skin'] as String? ?? 'auto';
-    final skinMode = SkinMode.parse(skinValue);
+    // 2. Reject an unknown skin name here, with a clear message, rather than letting the
+    // theme's `@if $trellis-skin == ...` fall through to the light palette. The theme
+    // itself reads the skin as the `skin` param.
+    SkinMode.parse(mergedParams['skin'] as String? ?? 'auto');
 
     // 3. Generate _theme_custom_props.css (plain CSS, copied directly to output)
     final customProps = _generateCssCustomProperties(mergedParams, paramTypes);
@@ -158,12 +151,7 @@ class ThemeSassGenerator {
         if (mergedParams.containsKey(name) && declared.contains(_toSassName(name))) _toSassName(name),
     ];
 
-    return ThemeBuildConfig(
-      buildDir: buildDir,
-      sassLoadPaths: sassLoadPaths,
-      skinMode: skinMode,
-      configurableVars: configurableVars,
-    );
+    return ThemeBuildConfig(buildDir: buildDir, sassLoadPaths: sassLoadPaths, configurableVars: configurableVars);
   }
 }
 
@@ -342,7 +330,7 @@ Set<String> _declaredDefaultVars(String path) {
   if (!file.existsSync()) return const {};
 
   final names = <String>{};
-  final declaration = RegExp(r'^\s*\$(trellis-[A-Za-z0-9_-]+)\s*:(.*)$', dotAll: true);
+  final declaration = RegExp(r'^\s*\$(trellis[-_][A-Za-z0-9_-]+)\s*:(.*)$', dotAll: true);
   final defaultFlag = RegExp(r'!default\b');
   for (final statement in _statements(file.readAsStringSync())) {
     final match = declaration.firstMatch(statement);

@@ -112,7 +112,7 @@ theme_params:
     - dart pub add trellis
     - dart pub global activate trellis_cli
 
-# Search (S09). Enabled: emits search-index.json consumed by the vendored
+# Search. Enabled: emits search-index.json consumed by the vendored
 # client-side search script. `fields` lists the keys each index entry carries
 # (plus `url`, always present); the client reads title + summary/content.
 search:

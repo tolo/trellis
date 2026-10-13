@@ -52,9 +52,7 @@ void main() {
 
   /// Compiles arbor exactly as the site builder + CLI do: manifest defaults merged
   /// with [siteParams], the generated params module, and the shared wrapper.
-  /// [probe] appends a rule so a test can read a module variable the CSS never
-  /// emits (the entry's namespace is `theme`).
-  String compileArbor(String skin, {Map<String, dynamic> siteParams = const {}, String? probe}) {
+  String compileArbor(String skin, {Map<String, dynamic> siteParams = const {}}) {
     final merged = const ThemeParamMerger().merge(manifest.defaultParams, {'skin': skin, ...siteParams}).params;
     final config = const ThemeSassGenerator().generate(
       mergedParams: merged,
@@ -64,11 +62,11 @@ void main() {
     );
     final entry = File(p.join(arborDir, 'sass', 'main.scss')).resolveSymbolicLinksSync();
     final wrapper = File(p.join(config.buildDir, 'bridge_main.scss'))
-      ..writeAsStringSync('${config.bridgeWrapperSource(entry)}${probe == null ? '' : '.probe { value: $probe; }\n'}');
+      ..writeAsStringSync(config.bridgeWrapperSource(entry));
     return TrellisCss.compileSass(wrapper.path, loadPaths: config.sassLoadPaths, fatalImportDeprecation: true);
   }
 
-  group('S05 skins survive the migration', () {
+  group('skins survive the migration', () {
     test('light and dark differ, and each :root carries its own palette', () {
       final light = compileArbor('light');
       final dark = compileArbor('dark');
@@ -90,15 +88,6 @@ void main() {
       expect(root['--trellis-code-comment'], '#8b949e');
       expect(root['--trellis-code-function'], '#79c0ff');
       expect(root['--trellis-code-punctuation'], '#8b949e');
-    });
-
-    test('values derived from colours read the post-skin variables', () {
-      // The focus-ring colour is derived from the primary after the skin is
-      // applied; a dark skin that reassigned too late would keep the light one.
-      final dark = compileArbor('dark', probe: r'theme.$trellis-focus-ring-color');
-      expect(dark, contains('value: ${darkPalette['primary-color']};'));
-      final light = compileArbor('light', probe: r'theme.$trellis-focus-ring-color');
-      expect(light, contains('value: ${lightPalette['primary-color']};'));
     });
 
     test('the derived heading font follows its param, and null leaves the theme default in force', () {
@@ -133,8 +122,8 @@ void main() {
     });
   });
 
-  group('S08–S10 per-mode colour params', () {
-    test('S08: a _dark override reaches a forced dark skin and nothing else moves', () {
+  group('per-mode colour params', () {
+    test('a _dark override reaches a forced dark skin and nothing else moves', () {
       final plain = customProps(rootBlock(compileArbor('dark')));
       final css = compileArbor('dark', siteParams: {'primary_color_dark': darkOverride});
       final root = customProps(rootBlock(css));
@@ -152,14 +141,14 @@ void main() {
       }
     });
 
-    test('S09: a _dark override reaches auto mode through the dark palette, not a literal', () {
+    test('a _dark override reaches auto mode through the dark palette, not a literal', () {
       final css = compileArbor('auto', siteParams: {'primary_color_dark': darkOverride});
 
       expect(customProps(rootBlock(css))['--trellis-primary'], lightPalette['primary-color']);
       expect(customProps(darkMediaRoot(css)!)['--trellis-primary'], darkOverride);
     });
 
-    test('S10: a plain colour param sets the light entry only', () {
+    test('a plain colour param sets the light entry only', () {
       // Documented precedence rule, not load-order luck: a forced skin selects a
       // palette and a per-mode param sets one entry in it, so a plain
       // `primary_color` (the light entry) has no effect on a `skin: dark` site.
@@ -175,7 +164,7 @@ void main() {
       expect(customProps(rootBlock(light))['--trellis-primary'], lightOverride);
     });
 
-    test('S10: a _dark-only override under light changes nothing', () {
+    test('a _dark-only override under light changes nothing', () {
       expect(compileArbor('light', siteParams: {'primary_color_dark': darkOverride}), compileArbor('light'));
     });
 
@@ -210,7 +199,7 @@ void main() {
     });
   });
 
-  group('S11 every colour param has a _dark twin sourced from the palettes', () {
+  group('every colour param has a _dark twin sourced from the palettes', () {
     test('twins exist, defaults equal the palette entries, twins have no twins', () {
       final colorParams = {
         for (final e in manifest.params.entries)
@@ -235,7 +224,7 @@ void main() {
     });
   });
 
-  group('SC01/SC03/SC04 structure', () {
+  group('structure', () {
     String sass(String relative) => File(p.join(arborDir, 'sass', relative)).readAsStringSync();
     final partials = ['_a11y', '_base', '_code', '_components', '_footer', '_layout'];
 

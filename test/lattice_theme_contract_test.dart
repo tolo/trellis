@@ -9,12 +9,13 @@ import 'package:trellis_site/trellis_site.dart';
 import 'package:yaml/yaml.dart';
 
 import 'theme_font_contract.dart';
-import 'theme_use_support.dart' show copyDirectory, exampleSiteCopy, runNodeHarness;
+import 'theme_use_support.dart'
+    show compileBridged, copyDirectory, customProps, exampleSiteCopy, rootBlock, runNodeHarness;
 
 void main() {
   final themeDir = p.join(Directory.current.path, 'themes', 'lattice');
 
-  test('S01/TI01 manifest exposes the exact standard, docs, and Lattice contract', () {
+  test('manifest exposes the exact standard, docs, and Lattice contract', () {
     final manifest = ThemeManifest.load(themeDir);
     const standardParams = {
       'skin',
@@ -69,7 +70,7 @@ void main() {
     };
 
     expect(manifest.name, 'lattice');
-    expect(manifest.minTrellisVersion, '0.10.0');
+    expect(manifest.minTrellisVersion, '0.12.0');
     expect(manifest.features.where({'docs', 'landing', 'blog'}.contains), ['docs']);
     expect(manifest.params.keys.toSet(), standardParams.union(docsParams).union(latticeParams));
     expect(manifest.params['excerpt_length']!.defaultValue, 160);
@@ -97,7 +98,7 @@ void main() {
     expect(example, isNot(contains('trellis new')));
   });
 
-  test('S03/TI05 showcase screenshot tails are prefix-relative and joined exactly once', () {
+  test('showcase screenshot tails are prefix-relative and joined exactly once', () {
     final data = File(p.join(themeDir, 'data', 'lattice.yaml')).readAsStringSync();
     final paths = RegExp(r'screenshot_(?:light|dark):\s*"([^"]+)"').allMatches(data).map((m) => m.group(1)!);
     expect(paths, isNotEmpty);
@@ -113,31 +114,14 @@ void main() {
     expect(home, contains(r'${data.lattice.showcase.link_url}'));
   });
 
-  test('S02-S05/TI03 bridged overrides preserve shared geometry and dark palette ownership', () {
-    final manifest = ThemeManifest.load(themeDir);
-    String compile(String skin, Map<String, dynamic> siteParams) {
-      final tempDir = Directory.systemTemp.createTempSync('lattice_skin_contract_');
-      addTearDown(() => tempDir.deleteSync(recursive: true));
-      final merged = const ThemeParamMerger().merge(manifest.defaultParams, {'skin': skin, ...siteParams}).params;
-      final config = const ThemeSassGenerator().generate(
-        mergedParams: merged,
-        paramTypes: {for (final e in manifest.params.entries) e.key: e.value.type},
-        siteDir: tempDir.path,
-        themeDir: themeDir,
-      );
-      final entry = File(p.join(themeDir, 'sass', 'main.scss')).resolveSymbolicLinksSync();
-      final wrapper = File(p.join(config.buildDir, 'bridge_main.scss'))
-        ..writeAsStringSync(config.bridgeWrapperSource(entry));
-      return TrellisCss.compileSass(wrapper.path, loadPaths: config.sassLoadPaths, fatalImportDeprecation: true);
-    }
-
+  test('bridged overrides preserve shared geometry, and each forced skin owns its top-level :root palette', () {
     const sharedOverrides = <String, dynamic>{
       'heading_font_family': 'Georgia, serif',
       'max_width': '900px',
       'border_radius': '0',
     };
-    final light = compile('light', {'primary_color': '#7A4FBF', ...sharedOverrides});
-    final dark = compile('dark', sharedOverrides);
+    final light = compileBridged(themeDir, 'light', siteParams: {'primary_color': '#7A4FBF', ...sharedOverrides});
+    final dark = compileBridged(themeDir, 'dark', siteParams: sharedOverrides);
 
     for (final css in [light, dark]) {
       expect(css, contains('--display: Georgia, serif'));
@@ -146,13 +130,16 @@ void main() {
       expect(css, isNot(contains('--display: "')));
       expect(css, isNot(contains('--content-width: "')));
     }
-    expect(light.toLowerCase(), contains('--leaf: #7a4fbf'));
-    expect(dark.toLowerCase(), contains('--leaf: #6fbf8b'));
-    expect(dark, contains('--on-leaf: #0d1710'));
-    expect(dark, contains('--syntax-keyword: #b48bd9'));
+    // The toggle dark rule (with its hard-coded --on-leaf, --syntax-*) is emitted under every skin, so only the
+    // palette-backed tokens in the top-level :root say which palette was compiled.
+    final lightRoot = customProps(rootBlock(light));
+    final darkRoot = customProps(rootBlock(dark));
+    expect(lightRoot['--leaf']!.toLowerCase(), '#7a4fbf');
+    expect(darkRoot['--leaf']!.toLowerCase(), '#6fbf8b');
+    expect(darkRoot['--paper'], isNot(lightRoot['--paper']), reason: 'forced dark takes the dark background');
   });
 
-  test('S04-S06/TI06 progressive enhancement avoids innerHTML and obeys reduced motion', () {
+  test('progressive enhancement avoids innerHTML and obeys reduced motion', () {
     final script = File(p.join(themeDir, 'static', 'js', 'lattice.js')).readAsStringSync();
     final styles = File(p.join(themeDir, 'sass', 'main.scss')).readAsStringSync();
     final home = File(p.join(themeDir, 'layouts', 'home.html')).readAsStringSync();
@@ -250,7 +237,7 @@ void main() {
     });
   });
 
-  test('S04/TI06 headline waits for the interval and stays static with reduced motion', () async {
+  test('headline waits for the interval and stays static with reduced motion', () async {
     final result = await runNodeHarness('lattice', p.join(themeDir, 'static', 'js', 'lattice.js'));
     if (result == null) return;
 
@@ -286,7 +273,7 @@ void main() {
     }
   });
 
-  test('S01-S07/TI08 bridged example builds cleanly with complete rendered pages', () async {
+  test('bridged example builds cleanly with complete rendered pages', () async {
     final config = exampleSiteCopy(themeDir);
     final result = await TrellisSite(config).build();
     expect(result.warnings, isEmpty);
@@ -332,7 +319,7 @@ void main() {
     _expectShowcaseSources(File(p.join(output, 'index.html')).readAsStringSync(), dark: false);
   });
 
-  test('S03-S05/TI08 sub-path build prefixes URLs once without nesting output', () async {
+  test('sub-path build prefixes URLs once without nesting output', () async {
     final config = exampleSiteCopy(themeDir, (source) => '$source\npathPrefix: /trellis/\n');
     final result = await TrellisSite(config).build();
     expect(result.warnings, isEmpty);
@@ -384,7 +371,7 @@ void main() {
     }
   });
 
-  test('TI02 and TI09 documented local assets exist', () {
+  test('documented local assets exist', () {
     for (final asset in [
       'static/js/lattice.js',
       'static/js/search.js',
@@ -603,7 +590,7 @@ $showcaseCards''',
         expect(
           document.querySelector('section[aria-labelledby="lattice-site-demo-title"] code span.t-tag'),
           isNotNull,
-          reason: '${entry.key}: S05 requires server-rendered syntax tokens',
+          reason: '${entry.key}: syntax tokens must be server-rendered',
         );
       }
       for (final heading in document.querySelectorAll('h2, h3')) {

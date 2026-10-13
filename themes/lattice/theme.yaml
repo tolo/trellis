@@ -2,7 +2,7 @@ name: lattice
 version: 1.0.0
 author: Trellis Team
 description: A garden-inspired documentation theme with an expressive home page and complete docs navigation.
-min_trellis_version: 0.10.0
+min_trellis_version: 0.12.0
 screenshots:
   - screenshots/light.png
   - screenshots/dark.png

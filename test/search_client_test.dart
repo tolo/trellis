@@ -2,13 +2,13 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-/// Contract ("smoke") test for the vendored client-side search script (S09):
+/// Contract ("smoke") test for the vendored client-side search script:
 /// `themes/arbor/static/js/search.js`.
 ///
 /// Behavioral coverage (fetch-failure, no-match, empty-query, and happy-path
 /// scenarios, executed against a DOM-harness under system `node`) lives in
 /// `search_client_behavior_test.dart`. This file remains a cheap lexical guard
-/// on top of that: it fails if a defensive branch the S09 FIS requires is
+/// on top of that: it fails if a required defensive branch is
 /// deleted from the source, without needing to run the script.
 void main() {
   final file = File('themes/arbor/static/js/search.js');
@@ -18,7 +18,7 @@ void main() {
     expect(file.existsSync(), isTrue, reason: 'vendored search client must exist');
   });
 
-  group('search.js progressive-enhancement contract (S09)', () {
+  group('search.js progressive-enhancement contract', () {
     test('index URL is read from data-search-index, not hardcoded (pathPrefix-safe)', () {
       expect(source, contains("getAttribute('data-search-index')"));
       // The fetch must use the attribute-derived variable, never a literal path.

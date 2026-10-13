@@ -64,6 +64,10 @@ a {
   }
 }
 
+h1, h2, h3, h4, h5, h6 {
+  font-family: $trellis-heading-font;
+}
+
 code, pre {
   font-family: $trellis-code-font-family;
   background-color: var(--trellis-surface);

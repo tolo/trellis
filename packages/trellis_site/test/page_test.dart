@@ -199,7 +199,7 @@ void main() {
       expect(map['summary'], 'Hello');
     });
 
-    test('exposes additive sectionPath and ancestors while section stays top-level (AS05)', () {
+    test('exposes additive sectionPath and ancestors while section stays top-level', () {
       final page = Page(
         sourcePath: 'docs/guides/a.md',
         url: '/docs/guides/a/',

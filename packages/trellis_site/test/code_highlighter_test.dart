@@ -160,7 +160,7 @@ void main() {
     });
   });
 
-  group('CodeHighlighter — special characters round-trip (S05)', () {
+  group('CodeHighlighter — special characters round-trip', () {
     test('< > & render as entities, " renders literally, no double-escape, no broken spans', () {
       // Real markdown-rendered code (literal quotes), per LEARNINGS.
       final rendered = md.markdownToHtml(
@@ -208,7 +208,7 @@ void main() {
     });
   });
 
-  group('pubspec declares the build-time highlighting dependencies (TI02)', () {
+  group('pubspec declares the build-time highlighting dependencies', () {
     test('highlight: ^0.7.0 and html: are declared', () async {
       final packageUri = await Isolate.resolvePackageUri(Uri.parse('package:trellis_site/'));
       final packageRoot = p.dirname(packageUri!.toFilePath());

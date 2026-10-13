@@ -11,7 +11,7 @@ Canonical reference for the internal architecture of the core `trellis` template
 | Principle | Implication |
 |---|---|
 | Natural HTML templates | Templates are valid HTML; `tl:*` attributes are metadata, not syntax |
-| Single runtime dependency | Only `package:html` (HTML5 parser) — no reflection, no code generation |
+| Minimal runtime dependencies | Dart-team packages only: `html` (HTML5 parser), `string_scanner` (tokenizer), `path`, `args` (`validate` executable), `matcher` (`testing.dart`); no reflection, no code generation |
 | AOT-safe | Context is `Map<String, dynamic>` — no mirrors, works with `dart compile exe` |
 | Clone-before-process | Cached parsed DOM is deep-cloned before each render — templates are immutable |
 | Sync-first | `render()` is synchronous; `renderFile()` is async only for I/O |

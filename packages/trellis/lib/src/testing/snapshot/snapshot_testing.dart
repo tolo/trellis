@@ -16,10 +16,17 @@ bool get updateGoldens {
   return value == 'true' || value == '1';
 }
 
+/// Whether the tests run on CI, where a missing golden file fails instead of
+/// being created: a golden created there is compared against itself and then
+/// discarded with the workspace, so a deleted or uncommitted golden would pass.
+bool get _onCi => Platform.environment['CI'] == 'true';
+
 /// Renders a template file and compares the output against a golden file.
 ///
 /// On first run (golden file does not exist), the golden file is auto-created
-/// and the test passes with an informational print message.
+/// and the test passes with an informational print message. On CI (the `CI`
+/// environment variable is `true`) a missing golden file fails the test
+/// instead, so commit golden files together with their tests.
 ///
 /// On subsequent runs, the rendered output is compared against the golden file.
 /// A mismatch causes a test failure with a readable diff showing expected vs
@@ -92,11 +99,16 @@ void expectSnapshotFromSource(
 /// Core golden file comparison logic. Package-private for testability.
 ///
 /// 1. If [update] is true: write [actual] to [goldenPath], return (pass).
-/// 2. If golden file does not exist: create it with [actual], print info message, return (pass).
+/// 2. If golden file does not exist:
+///    - [createMissing] true: create it with [actual], print info message, return (pass).
+///    - [createMissing] false: throw [TestFailure] naming the missing file.
 /// 3. If golden file exists: read expected, compare with [actual].
 ///    - Match: return (pass).
 ///    - Mismatch: throw [TestFailure] with a readable line-by-line diff.
-void compareOrCreateGolden(String actual, String goldenPath, {bool? update}) {
+///
+/// [update] defaults to [updateGoldens]; [createMissing] defaults to true,
+/// except on CI (`CI=true`).
+void compareOrCreateGolden(String actual, String goldenPath, {bool? update, bool? createMissing}) {
   final shouldUpdate = update ?? updateGoldens;
   final file = File(goldenPath);
 
@@ -108,6 +120,12 @@ void compareOrCreateGolden(String actual, String goldenPath, {bool? update}) {
   }
 
   if (!file.existsSync()) {
+    if (!(createMissing ?? !_onCi)) {
+      fail(
+        'Golden file missing: $goldenPath\n\n'
+        'Create it with a local run (or TRELLIS_UPDATE_GOLDENS=true dart test) and commit it.',
+      );
+    }
     _writeGolden(file, actual);
     // ignore: avoid_print
     print('Golden file created: $goldenPath (first run)');

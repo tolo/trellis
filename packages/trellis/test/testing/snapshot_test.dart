@@ -23,9 +23,19 @@ void main() {
       final path = goldenPath('first_run.html');
       expect(File(path).existsSync(), isFalse);
       // Should not throw
-      compareOrCreateGolden('<h1>Hello</h1>\n', path);
+      compareOrCreateGolden('<h1>Hello</h1>\n', path, createMissing: true);
       expect(File(path).existsSync(), isTrue);
       expect(File(path).readAsStringSync(), equals('<h1>Hello</h1>\n'));
+    });
+
+    // On CI a created golden would be compared against itself and discarded, so a deleted golden must fail.
+    test('missing golden with createMissing false (the CI default): fails and writes nothing', () {
+      final path = goldenPath('deleted.html');
+      expect(
+        () => compareOrCreateGolden('<h1>Hello</h1>\n', path, createMissing: false),
+        throwsA(isA<TestFailure>().having((e) => e.message, 'message', contains('Golden file missing: $path'))),
+      );
+      expect(File(path).existsSync(), isFalse);
     });
 
     test('match: passes when golden matches rendered output', () {
@@ -88,7 +98,7 @@ void main() {
 
     test('creates parent directories if needed', () {
       final path = '${tempDir.path}/nested/deep/golden.html';
-      compareOrCreateGolden('<p>Hello</p>\n', path);
+      compareOrCreateGolden('<p>Hello</p>\n', path, createMissing: true);
       expect(File(path).existsSync(), isTrue);
     });
 
@@ -125,27 +135,20 @@ void main() {
     });
   });
 
+  // The wrappers' tests write their goldens first: creating a missing golden depends on the environment (not on CI),
+  // and that behaviour is covered by the compareOrCreateGolden tests above.
   group('expectSnapshot', () {
-    test('creates golden on first run', () async {
-      final engine = testEngine(templates: {'page': '<h1 tl:text="\${title}">Default</h1>'});
-      final path = goldenPath('es_first.html');
-      await expectSnapshot(engine, 'page', {'title': 'Hello'}, goldenFile: path);
-      expect(File(path).existsSync(), isTrue);
-    });
-
     test('passes when output matches golden', () async {
       final engine = testEngine(templates: {'page': '<h1 tl:text="\${title}">Default</h1>'});
       final path = goldenPath('es_match.html');
-      // First run creates golden
-      await expectSnapshot(engine, 'page', {'title': 'Hello'}, goldenFile: path);
-      // Second run should match
+      File(path).writeAsStringSync('<h1>Hello</h1>\n');
       await expectSnapshot(engine, 'page', {'title': 'Hello'}, goldenFile: path);
     });
 
     test('throws on mismatch', () async {
       final engine = testEngine(templates: {'page': '<h1 tl:text="\${title}">Default</h1>'});
       final path = goldenPath('es_mismatch.html');
-      await expectSnapshot(engine, 'page', {'title': 'First'}, goldenFile: path);
+      File(path).writeAsStringSync('<h1>First</h1>\n');
       await expectLater(expectSnapshot(engine, 'page', {'title': 'Second'}, goldenFile: path), throwsException);
     });
 
@@ -154,36 +157,23 @@ void main() {
         templates: {'page': '<div><p tl:fragment="greeting" tl:text="\${msg}">x</p><footer>ignore</footer></div>'},
       );
       final path = goldenPath('es_fragment.html');
+      File(path).writeAsStringSync('<p>Hi</p>\n');
       await expectSnapshot(engine, 'page', {'msg': 'Hi'}, goldenFile: path, fragment: 'greeting');
-      final content = File(path).readAsStringSync();
-      expect(content, isNot(contains('footer')));
-      expect(content, contains('Hi'));
     });
   });
 
   group('expectSnapshotFromSource', () {
-    test('creates golden on first run', () {
-      final engine = testEngine(templates: {});
-      final path = goldenPath('source_first.html');
-      expectSnapshotFromSource(engine, '<h1 tl:text="\${title}">Default</h1>', {'title': 'Hello'}, goldenFile: path);
-      expect(File(path).existsSync(), isTrue);
-    });
-
     test('passes when output matches golden', () {
       final engine = testEngine(templates: {});
       final path = goldenPath('source_match.html');
-      // First run creates golden
-      expectSnapshotFromSource(engine, '<h1 tl:text="\${title}">Default</h1>', {'title': 'Hello'}, goldenFile: path);
-      // Second run should match
+      File(path).writeAsStringSync('<h1>Hello</h1>\n');
       expectSnapshotFromSource(engine, '<h1 tl:text="\${title}">Default</h1>', {'title': 'Hello'}, goldenFile: path);
     });
 
     test('throws on mismatch', () {
       final engine = testEngine(templates: {});
       final path = goldenPath('source_mismatch.html');
-      // Create golden with one title
-      expectSnapshotFromSource(engine, '<h1 tl:text="\${title}">Default</h1>', {'title': 'First'}, goldenFile: path);
-      // Now expect mismatch
+      File(path).writeAsStringSync('<h1>First</h1>\n');
       expect(
         () => expectSnapshotFromSource(engine, '<h1 tl:text="\${title}">Default</h1>', {
           'title': 'Second',
@@ -195,11 +185,9 @@ void main() {
     test('fragment snapshot renders only specified fragment', () {
       final engine = testEngine(templates: {});
       final path = goldenPath('fragment_source.html');
+      File(path).writeAsStringSync('<p>Hi</p>\n');
       const source = '<div><p tl:fragment="greeting" tl:text="\${msg}">x</p><footer>ignore</footer></div>';
       expectSnapshotFromSource(engine, source, {'msg': 'Hi'}, goldenFile: path, fragment: 'greeting');
-      final content = File(path).readAsStringSync();
-      expect(content, isNot(contains('footer')));
-      expect(content, contains('Hi'));
     });
   });
 }

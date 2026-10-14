@@ -112,13 +112,16 @@ void main() {
       expect(result.params['color'], equals('#2563eb'));
     });
 
-    test('unknown param emits a warning with the param name', () {
+    test('unknown param warning says the theme ignores it and names both param sinks', () {
+      // The merged map feeds _theme_params.scss and css/theme-props.css, so "ignored" alone would be false;
+      // theme_integration_test proves both sinks receive the key.
       final defaults = {'skin': 'auto'};
       final overrides = {'unknown_key': 'value'};
       final result = merger.merge(defaults, overrides);
 
-      expect(result.warnings, hasLength(1));
-      expect(result.warnings.first, contains('unknown_key'));
+      expect(result.warnings, [
+        "Unknown theme param 'unknown_key' — the theme ignores it; site SASS and css/theme-props.css still receive it",
+      ]);
     });
 
     test('multiple unknown params emit multiple warnings', () {
@@ -166,7 +169,7 @@ void main() {
     });
 
     test('stores params and warnings', () {
-      const result = ThemeParamMergeResult(params: {'a': 1}, warnings: ["Unknown theme param 'x' — ignored"]);
+      const result = ThemeParamMergeResult(params: {'a': 1}, warnings: ["Unknown theme param 'x'"]);
       expect(result.params['a'], equals(1));
       expect(result.warnings, hasLength(1));
     });

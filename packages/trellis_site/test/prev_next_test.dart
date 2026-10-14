@@ -16,7 +16,7 @@ import 'package:trellis_site/trellis_site.dart';
 /// neighbor math (index math, boundary absence, weight-not-date order), that
 /// prev/next attach only to single doc pages (never list/section/home/taxonomy),
 /// that only the existing side renders in a guarded region, and that a
-/// prev/next-unused site is byte-for-byte unchanged (FR1 backward-compat).
+/// prev/next-unused site is byte-for-byte unchanged (the backward-compat invariant).
 void main() {
   late String packageRoot;
 
@@ -354,7 +354,7 @@ void main() {
       // The golden was captured from the engine before prev/next existed (injection disabled)
       // via a git-clean baseline build of the same fixture; this proves attaching
       // prev/next keys to single-page maps perturbs no emitted bytes when the
-      // templates do not reference ${page.prev}/${page.next} (FR1 invariant).
+      // templates do not reference ${page.prev}/${page.next} (the backward-compat invariant).
       final golden = (jsonDecode(File(fixture('prevnext_unused_regression_golden.json')).readAsStringSync()) as Map)
           .cast<String, dynamic>();
 

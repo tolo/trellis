@@ -184,8 +184,11 @@ class ThemeAddCommand extends Command<int> {
     final sourceDir = subdirectoryTheme == null
         ? Directory(source)
         : Directory(_resolveThemeSubdirectory(source, subdirectoryTheme, source));
-    _requireNotInstalled(themesDir, themeName);
+    // Before the installed check: in a theme's own example site the link back to
+    // the theme root makes the theme look installed, and `theme update` would
+    // then git pull in the author's own repository through that link.
     _requireSourceOutsideDestination(sourceDir, p.dirname(themesDir), themeName);
+    _requireNotInstalled(themesDir, themeName);
 
     Directory(themesDir).createSync(recursive: true);
     // Copy directory recursively, excluding .git/
@@ -201,14 +204,32 @@ class ThemeAddCommand extends Command<int> {
   /// until the path is too long, leaving a half-written `themes/` behind.
   void _requireSourceOutsideDestination(Directory sourceDir, String siteDir, String themeName) {
     final source = sourceDir.resolveSymbolicLinksSync();
-    final destination = p.join(Directory(siteDir).resolveSymbolicLinksSync(), 'themes', themeName);
+    final site = Directory(siteDir).resolveSymbolicLinksSync();
+    final destination = p.join(site, 'themes', themeName);
     if (p.equals(source, destination) || p.isWithin(source, destination)) {
+      // The link remedy fits only the layout `trellis create` scaffolds: the site is the theme's own example/.
+      final remedy = p.equals(site, p.join(source, 'example'))
+          ? ' To preview a theme from its own example/ site, link the theme root as '
+                'example/themes/${_linkName(source, themeName)} -> ../.. instead (see the theme authoring guide).'
+          : '';
       stderr.writeln(
         'Error: Cannot install from $source: it contains the site at $siteDir, so the copy would recurse into '
-        'itself. To preview a theme from its own example/ site, link it with example/themes/$themeName instead '
-        '(see the theme authoring guide).',
+        'itself.$remedy',
       );
       throw _ThemeAddException();
+    }
+  }
+
+  /// The name `theme:` and the example link must carry: the manifest's, since
+  /// [fallback] is only the basename the source happened to be reached under
+  /// (an alias, a case variant). Falls back when [sourceDir] has no valid
+  /// manifest, or its name is not one `theme:` accepts.
+  String _linkName(String sourceDir, String fallback) {
+    try {
+      final name = ThemeManifest.load(sourceDir).name;
+      return validateThemeName(name) == null ? name : fallback;
+    } on ThemeManifestException {
+      return fallback;
     }
   }
 

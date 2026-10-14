@@ -64,7 +64,6 @@ git history do not carry it, and it outlives the current initiative. -->``.
 | Architecture         | `dev/architecture/`                     | System overview + engine internals; each carries a "Current through" marker |
 | Decisions / ADRs     | `dev/adrs/`                             | Architecture Decision Records (+ curated `dev/adrs/research/`) |
 | Guidelines           | `dev/guidelines/`                       | Dart, packaging, and key dev commands                |
-| State                | `dev/state/STATE.md`                    | Cross-session state: current phase, progress         |
 | Learnings            | `dev/state/LEARNINGS.md`                | Traps, gotchas, and non-obvious patterns             |
 | Tech Debt            | `dev/state/TECH-DEBT-BACKLOG.md`        | Known technical debt (TD-IDs)                        |
 | User docs            | `docs/guides/`, `docs/reference/`       | User-facing guides and reference                     |
@@ -109,9 +108,10 @@ git history do not carry it, and it outlives the current initiative. -->``.
 
 - **Squash merge to `main`** (`git merge --squash`). Stay on the current branch unless told otherwise.
 - **`main` carries only squash commits and `chore(release)` commits.** Everything a release needs is complete on the
-  branch before the squash: `dev/state/STATE.md` entry (`tool/release.sh` refuses without it) and review findings
-  fixed. Install snippets and `--ref vX.Y.Z` pins are rewritten by `tool/version_lockstep.sh` in the release commit,
-  never by hand. Nothing is fixed up on `main` afterwards; a miss waits for the next branch.
+  branch before the squash: a `## X.Y.Z` section in every `packages/*/CHANGELOG.md` (`tool/release.sh` refuses
+  without it) and review findings fixed. Install snippets and `--ref vX.Y.Z` pins are rewritten by
+  `tool/version_lockstep.sh` in the release commit, never by hand. Nothing is fixed up on `main` afterwards; a miss
+  waits for the next branch.
 - **Lockstep versioning (ADR-009).** All publishable packages share one version and release together — never
   bump a single package on its own. Pre-1.0: minor for features, patch for fixes, applied to the whole SDK.
 - **Releases follow [`dev/guidelines/RELEASE-RUNBOOK.md`](dev/guidelines/RELEASE-RUNBOOK.md):** review → squash-merge →

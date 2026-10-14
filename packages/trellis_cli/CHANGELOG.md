@@ -38,7 +38,8 @@
   is null.
 - `trellis theme add` with a local source that is or contains the destination (`theme add ../` from a theme's
   `example/`) copied the theme into itself until "File name too long", leaving a half-written `themes/` behind. It
-  now refuses with exit 1 and writes nothing.
+  now refuses with exit 1 and writes nothing. Run from a theme's own `example/`, the refusal names the link to make
+  from the theme's manifest (`example/themes/<name> -> ../..`).
 
 ## 0.11.1
 

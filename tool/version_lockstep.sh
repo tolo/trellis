@@ -66,9 +66,12 @@ ROOT="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 # so the scan is repo-wide over tracked and untracked-but-not-ignored files, minus history and
 # narrative: CHANGELOGs, dev/state/LEARNINGS.md and the gitignored .agent_temp/. Only the exact
 # repo URL counts - third-party themes (`yourname/trellis-theme-orchard --ref v1.0.0`) keep
-# their own versions, even later on the same line, because the match stops at the next URL. The rewrite, --list-ref-files and --check-refs all share this regex, so
-# what the bump rewrites is exactly what release.sh then verifies and permits in the release commit.
-REF_PIN_RE='github\.com/tolo/trellis(?:\.git)?(?![\w./-])(?:(?!https?://)[^\n])*?--ref v'
+# their own versions, even later on the same line, because the match stops at the next URL or
+# git source (`https://`, `git@host:`, a scheme-less `github.com/` that is not tolo's own repo).
+# A tolo link or a bare `git@` in prose between the URL and `--ref` does not stop it. The
+# rewrite, --list-ref-files and --check-refs all share this regex, so what the bump rewrites is
+# exactly what release.sh then verifies and permits in the release commit.
+REF_PIN_RE='github\.com/tolo/trellis(?:\.git)?(?![\w./-])(?:(?!https?://|git@[\w.-]+:|(?<![\w./])github\.com/(?!tolo/trellis(?![\w-])))[^\n])*?--ref v'
 # The version a pin names: semver with an optional pre-release, never a trailing full stop.
 REF_VERSION_RE='[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]*[0-9A-Za-z])?'
 export REF_PIN_RE REF_VERSION_RE

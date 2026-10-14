@@ -65,8 +65,8 @@ dart run bin/server.dart
 ### Theme scaffold
 
 ```bash
-trellis create my-theme --template theme
-cd my-theme
+trellis create my_theme --template theme
+cd my_theme
 # Edit theme.yaml, layouts/, and sass/
 cd example && trellis build && trellis serve
 ```

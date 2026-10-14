@@ -28,7 +28,9 @@ class ThemeParamMerger {
     final warnings = <String>[];
     for (final key in siteOverrides.keys) {
       if (!themeDefaults.containsKey(key)) {
-        warnings.add("Unknown theme param '$key' — ignored");
+        warnings.add(
+          "Unknown theme param '$key' — the theme ignores it; site SASS and css/theme-props.css still receive it",
+        );
       }
     }
     final merged = deepMerge(themeDefaults, siteOverrides);

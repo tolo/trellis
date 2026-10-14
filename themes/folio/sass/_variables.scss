@@ -9,9 +9,9 @@
 // else is silently inert. Never edit this file to change site values: use
 // theme_params: in trellis_site.yaml.
 //
-// Every param-backed $trellis-* below carries !default: it is what makes the
-// variable configurable. The dark palette carries none. The two code pigments keep !default
-// but have no manifest param, so the bridge never names them.
+// !default is what makes a variable configurable. Every param-backed $trellis-* below carries
+// it; a !default variable with no manifest param is a theme-internal tunable the bridge never
+// names. The dark palette carries none.
 
 @use 'sass:map';
 @use '_skins/light' as light;

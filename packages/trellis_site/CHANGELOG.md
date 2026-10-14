@@ -25,6 +25,11 @@
   `ThemeBuildConfig.configurableVars` lists the `$trellis-*` variables it configures. The entry is embedded as the
   path of its `file:` URL, so a Windows path or a path containing `%` resolves.
 
+### Fixed
+
+- The `Unknown theme param` warning no longer says the param is ignored. The theme ignores it, but it still reaches
+  `_theme_params.scss`, which site SASS reads, and `css/theme-props.css` as a `--trellis-*` custom property.
+
 ### Notes
 
 - **All six bundled themes are migrated** – Arbor, Bloom, Folio, Lattice, Meadow and Verdant – and each gains the

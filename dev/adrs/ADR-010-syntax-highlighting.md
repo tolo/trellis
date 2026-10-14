@@ -247,7 +247,7 @@ but single-language. See the appendix for the full comparison.
 **Implemented as sketched (2026-07-11, branch `feature/0.10.0`).** The steps below
 are retained as an accurate as-built record — all nine were carried out substantially
 as written. Step 9's arch/STATE doc sync (`dev/architecture/system-architecture.md`,
-`dev/state/STATE.md`) was completed 2026-07-12 as part of review remediation.
+`dev/state/STATE.md`, retired in 0.12) was completed 2026-07-12 as part of review remediation.
 
 Original scheduling note (candidate: alongside or just after SDK Phase 5 CSS
 processing, which already assumes `hljs-*` classes):
@@ -293,7 +293,7 @@ processing, which already assumes `hljs-*` classes):
    from the repo `CLAUDE.md` `## Conventions` section; update the stale
    "vendored Prism + SRI / 9 SRI hashes" text in
    `dev/architecture/system-architecture.md` (L434–437, L447) and `dev/state/STATE.md`
-   (L15).
+   (L15; the file was retired in 0.12).
 
 ### ADR location
 This ADR lives in the **public** repo `dev/adrs/` (as ADR-010), consistent with

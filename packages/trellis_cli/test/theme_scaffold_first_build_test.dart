@@ -82,6 +82,23 @@ void main() {
     test('does not suggest the self-copying theme add', () {
       expect(File(p.join(exampleDir, 'trellis_site.yaml')).readAsStringSync(), isNot(contains('theme add')));
     });
+
+    test('theme add of the theme root is refused as a self-copy, not as "already installed"', () async {
+      // The link makes example/themes/my_theme exist, which `theme update` would
+      // treat as a repository to git pull in the author's own theme.
+      final configBefore = File(p.join(exampleDir, 'trellis_site.yaml')).readAsStringSync();
+      late int exitCode;
+      final output = await _captured(() async {
+        exitCode = await TrellisCli(workingDirectory: exampleDir).run(['theme', 'add', p.join(exampleDir, '..')]);
+      });
+
+      expect(exitCode, 1);
+      expect(output.err, contains('contains the site'));
+      expect(output.err, isNot(contains('already installed')));
+      expect(output.err, isNot(contains('theme update')));
+      expect(Link(p.join(exampleDir, 'themes', 'my_theme')).targetSync(), p.join('..', '..'));
+      expect(File(p.join(exampleDir, 'trellis_site.yaml')).readAsStringSync(), configBefore);
+    });
   });
 
   group('linkThemeIntoExample', () {
@@ -124,6 +141,42 @@ void main() {
       expect(File(p.join(exampleDir, 'trellis_site.yaml')).readAsStringSync(), configBefore);
     });
 
+    test('names the link after the manifest, not the directory or the alias the source was reached under', () async {
+      // A theme root whose directory name differs from its manifest name, as a clone under another name has it.
+      final renamedRoot = p.join(workDir.path, 'sc');
+      await ThemeProjectGenerator(projectName: 'my_theme', writer: DiskFileWriter(renamedRoot)).generate();
+      final renamedExample = p.join(renamedRoot, 'example');
+      final alias = p.join(workDir.path, 'alias');
+      Link(alias).createSync(renamedRoot);
+
+      late int exitCode;
+      final output = await _captured(() async {
+        exitCode = await TrellisCli(workingDirectory: renamedExample).run(['theme', 'add', alias]);
+      });
+
+      expect(exitCode, 1);
+      expect(output.err, contains('example/themes/my_theme -> ../..'));
+      expect(output.err, isNot(contains('example/themes/alias')));
+      expect(output.err, isNot(contains('example/themes/sc')));
+      expect(Directory(p.join(renamedExample, 'themes')).existsSync(), isFalse, reason: 'nothing may be written');
+    });
+
+    test('names the link after the directory when the manifest name is not a valid theme name', () async {
+      final manifest = File(p.join(themeRoot, 'theme.yaml'));
+      manifest.writeAsStringSync(
+        manifest.readAsStringSync().replaceFirst(RegExp(r'^name: .*$', multiLine: true), 'name: "Bad Name/../evil"'),
+      );
+
+      late int exitCode;
+      final output = await _captured(() async {
+        exitCode = await TrellisCli(workingDirectory: exampleDir).run(['theme', 'add', themeRoot]);
+      });
+
+      expect(exitCode, 1);
+      expect(output.err, contains('example/themes/my_theme -> ../..'));
+      expect(output.err, isNot(contains('evil')));
+    });
+
     test('refuses the site directory itself as the source', () async {
       File(p.join(workDir.path, 'theme.yaml')).writeAsStringSync('name: top\nversion: 1.0.0\n');
       File(p.join(workDir.path, 'trellis_site.yaml')).writeAsStringSync('title: T\nbaseUrl: https://example.com\n');
@@ -135,6 +188,11 @@ void main() {
 
       expect(exitCode, 1);
       expect(output.err, contains('contains'));
+      expect(
+        output.err,
+        isNot(contains('example/themes/')),
+        reason: "the site is no theme's example/, so no link fits",
+      );
       expect(Directory(p.join(workDir.path, 'themes')).existsSync(), isFalse);
     });
   });

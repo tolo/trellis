@@ -20,7 +20,6 @@ Preconditions (each checked; the script refuses otherwise):
     let CI run — melos refuses to version off main anyway)
   * CI (ci.yml) is green for HEAD — waits if it is still running
   * every packages/*/CHANGELOG.md has a `## <version>` section
-  * dev/state/STATE.md has a '<version> (release)' row (written by hand on the feature branch)
   * <version> is X.Y.Z (the tag pattern the release workflows trigger on)
 
 Then:
@@ -165,16 +164,6 @@ for pkg in "${PACKAGES[@]}"; do
 done
 (( ${#MISSING[@]} == 0 )) \
   || fail "no '## ${VERSION}' section in CHANGELOG.md of: ${MISSING[*]}. Changelogs are hand-written on the feature branch before merging (unchanged packages get the lockstep-alignment note)."
-
-# STATE.md is hand-written on the branch (main takes no fix-up commits after the squash); the
-# script only proves the release is recorded there as a table row whose first cell is
-# "X.Y.Z (release)", so an "(implementation)" row or a passing mention does not count. Dots are
-# escaped and the cell must hold exactly that, so 9.8.70 or 19.8.7 do not count as 9.8.7.
-STATE_FILE=dev/state/STATE.md
-VERSION_RE="$(printf '%s' "${VERSION}" | sed 's/\./\\./g')"
-if ! { [[ -f "${STATE_FILE}" ]] && grep -Eq "^\|[[:space:]]*${VERSION_RE} \(release\)[[:space:]]*\|" "${STATE_FILE}"; }; then
-  fail "${STATE_FILE} has no '${VERSION} (release)' row. Record the release there on the feature branch (current phase, what shipped), squash-merge, then re-run."
-fi
 
 for tool_bin in gh melos; do
   command -v "${tool_bin}" >/dev/null 2>&1 || fail "'${tool_bin}' not on PATH (melos: dart pub global activate melos; gh: brew install gh && gh auth login)"

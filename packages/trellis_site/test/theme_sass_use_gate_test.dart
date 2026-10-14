@@ -336,6 +336,83 @@ Future<void> main() async {
         final violations = colourReachViolations(theme, 'text_color');
         expect(violations.join('\n'), allOf(contains('text_color_dark'), contains('other @media carries it')));
       });
+
+      // Emitted at skin: auto only, so the forced-dark check on the whole output cannot see a base colour leak.
+      void appendAuto(String theme, String rules) => File(
+        p.join(theme, 'sass', 'main.scss'),
+      ).writeAsStringSync('@if \$trellis-skin == auto { $rules }\n', mode: FileMode.append);
+
+      test('a base colour in a dark toggle inside a responsive @media fails', () {
+        final theme = copy();
+        appendAuto(theme, '@media (max-width: 900px) { [data-theme=dark] { --leak: #{\$trellis-text-color}; } }');
+
+        final violations = colourReachViolations(theme, 'text_color');
+        expect(violations.join('\n'), allOf(contains("param 'text_color'"), contains('dark toggle rule carries it')));
+      });
+
+      test('a twin in a dark toggle inside a responsive @media is where it belongs, so it passes', () {
+        final theme = copy();
+        File(p.join(theme, 'sass', 'main.scss')).writeAsStringSync(
+          '@media (max-width: 900px) { [data-theme=dark] { --keep: #{\$trellis-text-color-dark}; } }\n',
+          mode: FileMode.append,
+        );
+
+        expect(colourReachViolations(theme, 'text_color'), isEmpty);
+      });
+
+      test('a base colour is found through @supports, @layer and @container, in a dark toggle or a dark @media', () {
+        // Asserted per message: a new dark toggle also makes the twin's "lacks the override" fire, which alone would
+        // satisfy a bare isNotEmpty.
+        const wrappers = {
+          r'@supports (display: grid) { [data-theme=dark] { --leak: #{$trellis-text-color}; } }':
+              'dark toggle rule carries it',
+          r'@layer base { [data-skin=dark] { --leak: #{$trellis-text-color}; } }': 'dark toggle rule carries it',
+          r'@container side (min-width: 400px) { [data-theme=dark] { --leak: #{$trellis-text-color}; } }':
+              'dark toggle rule carries it',
+          r'@supports (display: grid) { @media (prefers-color-scheme: dark) { :root { --leak: #{$trellis-text-color}; } } }':
+              'dark @media carries it',
+        };
+        for (final entry in wrappers.entries) {
+          final theme = copy('leak${wrappers.keys.toList().indexOf(entry.key)}');
+          appendAuto(theme, entry.key);
+
+          expect(
+            colourReachViolations(theme, 'text_color'),
+            contains(allOf(contains("param 'text_color':"), contains(entry.value))),
+            reason: entry.key,
+          );
+        }
+      });
+
+      test('a base colour in a dark @media that also negates another feature fails', () {
+        // Only a leading `not` negates the whole query; one inside a condition leaves it dark.
+        final theme = copy();
+        appendAuto(
+          theme,
+          r'@media (prefers-color-scheme: dark) and (not (hover: hover)) { :root { --leak: #{$trellis-text-color}; } }',
+        );
+
+        expect(
+          colourReachViolations(theme, 'text_color'),
+          contains(allOf(contains("param 'text_color':"), contains('dark @media carries it'))),
+        );
+      });
+
+      test('a twin in a negated dark @media, or in a light toggle inside the dark @media, fails', () {
+        const wrappers = {
+          r'@media not all and (prefers-color-scheme: dark) { :root { --leak: #{$trellis-text-color-dark}; } }':
+              'other @media carries it',
+          r'@media (prefers-color-scheme: dark) { [data-theme=light] { --leak: #{$trellis-text-color-dark}; } }':
+              'light toggle rule carries it',
+        };
+        for (final entry in wrappers.entries) {
+          final theme = copy('leak${wrappers.keys.toList().indexOf(entry.key)}');
+          appendAuto(theme, entry.key);
+
+          final violations = colourReachViolations(theme, 'text_color');
+          expect(violations.join('\n'), allOf(contains('text_color_dark'), contains(entry.value)), reason: entry.key);
+        }
+      });
     });
 
     test(
@@ -784,17 +861,17 @@ class CssViews {
   /// Every selector outside any `@media` that is not a skin toggle (includes [root]).
   String top = '';
 
-  /// Rules scoped to `[data-skin=light]` / `[data-theme=light]`, outside any `@media`.
+  /// Rules scoped to `[data-skin=light]` / `[data-theme=light]`, wherever they sit.
   String lightToggle = '';
 
-  /// Rules scoped to `[data-skin=dark]` / `[data-theme=dark]`, outside any `@media`.
+  /// Rules scoped to `[data-skin=dark]` / `[data-theme=dark]`, wherever they sit.
   String darkToggle = '';
 
-  /// Everything inside `@media (prefers-color-scheme: dark)`.
+  /// Every non-toggle selector inside `@media (prefers-color-scheme: dark)`.
   String darkMedia = '';
 
-  /// Everything inside any other `@media` (responsive, print, `prefers-color-scheme: light`): light views a twin
-  /// must not reach.
+  /// Every non-toggle selector inside any other `@media` (responsive, print, `prefers-color-scheme: light`): light
+  /// views a twin must not reach.
   String otherMedia = '';
 }
 
@@ -802,11 +879,13 @@ class CssViews {
 /// qualifies a view instead of naming one.
 CssViews cssViews(String css) {
   final views = CssViews();
-  _sortRules(css.replaceAll(RegExp(r'/\*.*?\*/', dotAll: true), ''), '', views);
+  _sortRules(css.replaceAll(RegExp(r'/\*.*?\*/', dotAll: true), ''), views);
   return views;
 }
 
-void _sortRules(String css, String media, CssViews views) {
+/// [inMedia] and [dark] describe the enclosing `@media`s. `@supports`, `@layer` and `@container` are conditions, not
+/// modes, so they are descended into without changing either.
+void _sortRules(String css, CssViews views, {bool inMedia = false, bool dark = false}) {
   var start = 0;
   var i = 0;
   while (i < css.length) {
@@ -818,9 +897,11 @@ void _sortRules(String css, String media, CssViews views) {
       final prelude = css.substring(start, i).trim();
       final body = css.substring(i + 1, end);
       if (prelude.startsWith('@media')) {
-        _sortRules(body, prelude, views);
+        _sortRules(body, views, inMedia: true, dark: dark || _isDarkQuery(prelude));
+      } else if (RegExp(r'^@(?:supports|layer|container)\b').hasMatch(prelude)) {
+        _sortRules(body, views, inMedia: inMedia, dark: dark);
       } else {
-        _addRule(media, prelude, body, views);
+        _addRule(prelude, body, views, inMedia: inMedia, dark: dark);
       }
       start = i = end + 1;
     } else {
@@ -829,15 +910,14 @@ void _sortRules(String css, String media, CssViews views) {
   }
 }
 
-void _addRule(String media, String selectorList, String body, CssViews views) {
-  if (RegExp(r'prefers-color-scheme:\s*dark').hasMatch(media)) {
-    views.darkMedia += body;
-    return;
-  }
-  if (media.isNotEmpty) {
-    views.otherMedia += body;
-    return;
-  }
+/// Whether an `@media` prelude applies in dark mode only. A leading `not` negates the whole query, so
+/// `not all and (prefers-color-scheme: dark)` is its opposite; a `not` inside a condition does not.
+bool _isDarkQuery(String prelude) =>
+    RegExp(r'prefers-color-scheme:\s*dark').hasMatch(prelude) && !RegExp(r'^@media\s+not\b').hasMatch(prelude);
+
+/// A toggle selector feeds its toggle view wherever it sits, so a toggle inside a `@media` is held to the toggle's
+/// mode and not to the media's. Every other selector feeds the view of its enclosing `@media`, if any.
+void _addRule(String selectorList, String body, CssViews views, {required bool inMedia, required bool dark}) {
   for (final selector in selectorList.replaceAll(RegExp(r':not\([^)]*\)'), '').split(',')) {
     if (RegExp(
       r'\[data-(?:skin|theme)=["'
@@ -851,6 +931,10 @@ void _addRule(String media, String selectorList, String body, CssViews views) {
       r']?light',
     ).hasMatch(selector)) {
       views.lightToggle += body;
+    } else if (dark) {
+      views.darkMedia += body;
+    } else if (inMedia) {
+      views.otherMedia += body;
     } else {
       views.top += body;
       if (selector.trim() == ':root') views.root += body;

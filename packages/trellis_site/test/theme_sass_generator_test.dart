@@ -382,7 +382,7 @@ $trellis-skin: auto !default;
 
 /// Runs [ThemeSassGenerator.generate] in a temp directory and returns the
 /// content of the generated `_theme_params.scss`.
-/// Pins `skin: light` so the output does not depend on the `auto` default.
+/// Adds `skin: light`, as merged params from a real manifest always carry `skin`.
 String _generateSass(Map<String, dynamic> params, Map<String, String> types) {
   final tempDir = Directory.systemTemp.createTempSync('trellis_sass_test_');
   try {

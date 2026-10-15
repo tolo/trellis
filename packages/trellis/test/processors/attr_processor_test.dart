@@ -1,4 +1,6 @@
+import 'package:html/parser.dart' as html;
 import 'package:test/test.dart';
+import 'package:trellis/testing.dart';
 import 'package:trellis/trellis.dart';
 
 void main() {
@@ -320,6 +322,177 @@ void main() {
         final result = render('<div data-x="1" tl:attr="_">x</div>', {});
         expect(result, contains('data-x="1"'));
         expect(result, isNot(contains('tl:attr')));
+      });
+    });
+
+    group('tl:attrs', () {
+      const spreadInput = r'<input tl:attrs="${attrs}">';
+
+      test('spreads a map onto an element whose only directive is tl:attrs', () {
+        final result = render(spreadInput, {
+          'attrs': {'type': 'email', 'data-test': 'field', 'hx-post': '/save'},
+        });
+        expect(result, contains('type="email"'));
+        expect(result, contains('data-test="field"'));
+        expect(result, contains('hx-post="/save"'));
+        expect(result, isNot(contains('tl:attrs')));
+      });
+
+      test('explicit tl:attr, tl:class and shorthands win over spread entries', () {
+        final result = render(r'<input class="base" tl:attrs="${attrs}" tl:attr="type=${type}" tl:class="${cls}">', {
+          'attrs': {'type': 'text', 'class': 'spread', 'name': 'email'},
+          'type': 'password',
+          'cls': 'explicit',
+        });
+        expect(result, contains('type="password"'));
+        expect(result, contains('class="explicit"'));
+        expect(result, isNot(contains('spread')));
+        expect(result, contains('name="email"'));
+      });
+
+      test('overwrites literal attributes but appends class and style', () {
+        final result = render(r'<div id="a" class="card" style="color:red" tl:attrs="${attrs}">x</div>', {
+          'attrs': {'id': 'b', 'class': 'active', 'style': 'margin:0'},
+        });
+        expect(result, contains('id="b"'));
+        expect(result, contains('class="card active"'));
+        expect(result, contains('style="color:red; margin:0"'));
+      });
+
+      test('class and style set on an element that has none', () {
+        final result = render(r'<div tl:attrs="${attrs}">x</div>', {
+          'attrs': {'class': 'a', 'style': 'margin:0'},
+        });
+        expect(result, contains('class="a"'));
+        expect(result, contains('style="margin:0"'));
+      });
+
+      test('values follow tl:attr semantics and null class/style is a no-op append', () {
+        final result = render(r'<input class="base" style="color:red" value="x" checked tl:attrs="${attrs}">', {
+          'attrs': {'disabled': true, 'checked': false, 'value': null, 'class': null, 'style': null},
+        });
+        expect(result, contains('disabled'));
+        expect(result, isNot(contains('checked')));
+        expect(result, isNot(contains('value')));
+        expect(result, contains('class="base"'));
+        expect(result, contains('style="color:red"'));
+      });
+
+      test('escapes values like tl:attr', () {
+        final result = render(spreadInput, {
+          'attrs': {'title': 'a"b<c'},
+        });
+        expect(result, contains('title="a&quot;b<c"'));
+      });
+
+      test('tl:attrs="_" is a no-op', () {
+        final result = render('<a href="/home" tl:attrs="_">Home</a>', {});
+        expect(result, contains('<a href="/home">Home</a>'));
+      });
+
+      test('null map is a no-op on a non-strict engine', () {
+        final result = render(r'<a href="/home" tl:attrs="${attrs}">Home</a>', {'attrs': null});
+        expect(result, contains('<a href="/home">Home</a>'));
+      });
+
+      test('absent map throws the inherited undefined-variable error on a strict engine', () {
+        final strict = testEngine();
+        expect(
+          () => strict.render(r'<a href="/home" tl:attrs="${attrs}">Home</a>', {}),
+          throwsA(isA<ExpressionException>()),
+        );
+      });
+
+      test('non-Map value throws TemplateException naming tl:attrs and the value', () {
+        expect(
+          () => render(r'<div tl:attrs="${attrs}">x</div>', {'attrs': 'class=highlight'}),
+          throwsA(
+            isA<TemplateException>().having(
+              (e) => e.message,
+              'message',
+              allOf(contains('tl:attrs'), contains('class=highlight')),
+            ),
+          ),
+        );
+      });
+
+      test('illegal attribute name throws naming the key and writes nothing', () {
+        expect(
+          () => render(r'<div class="card" tl:attrs="${attrs}">x</div>', {
+            'attrs': {'data-ok': '1', 'bad name': 'x'},
+          }),
+          throwsA(isA<TemplateException>().having((e) => e.message, 'message', contains('bad name'))),
+        );
+      });
+
+      test('every illegal name shape throws, even when a valid key precedes it', () {
+        // Rendering throws, so partial mutation is observable only through a shared DOM; the guard is that the
+        // exception is raised for a later bad key although earlier keys were valid.
+        for (final bad in ['1abc', '', 'a b', 'x=y', 'a>b', '-x']) {
+          expect(
+            () => render(spreadInput, {
+              'attrs': {'data-ok': '1', bad: 'x'},
+            }),
+            throwsA(isA<TemplateException>()),
+            reason: 'key "$bad"',
+          );
+        }
+      });
+
+      test('non-String key throws TemplateException', () {
+        expect(
+          () => render(spreadInput, {
+            'attrs': {1: 'x'},
+          }),
+          throwsA(isA<TemplateException>()),
+        );
+      });
+
+      test('keys naming an engine directive are rejected case-insensitively without leaking values', () {
+        final strict = testEngine();
+        const source = r'<div class="card" tl:attrs="${attrs}">x</div>';
+        final maps = [
+          {'tl:remove': 'all'},
+          {'tl:attr': r'data-x=${secret}'},
+          {'TL:Remove': 'all'},
+          {'tl:href': '/x'},
+        ];
+        for (final attrs in maps) {
+          try {
+            final out = strict.render(source, {'attrs': attrs, 'secret': 'API-KEY-123'});
+            fail('expected TemplateException, rendered: $out');
+          } on TemplateException catch (e) {
+            expect(e.message, contains(attrs.keys.single));
+            expect(e.toString(), isNot(contains('API-KEY-123')));
+          }
+        }
+      });
+
+      test('prefix rejection compares against the configured prefix', () {
+        final custom = testEngine(prefix: 'data-tl');
+        expect(
+          () => custom.render(r'<div data-tl-attrs="${attrs}">x</div>', {
+            'attrs': {'data-tl-remove': 'all'},
+          }),
+          throwsA(isA<TemplateException>().having((e) => e.message, 'message', contains('data-tl-remove'))),
+        );
+        final result = custom.render(r'<div data-tl-attrs="${attrs}">x</div>', {
+          'attrs': {'tl:remove': 'all'},
+        });
+        expect(result, contains('tl:remove="all"'));
+        expect(result, contains('>x</div>'));
+      });
+
+      test('browser prototype keeps literal attributes and renders the same with an empty map', () {
+        const source = r'<input class="trellis-field-input" type="text" tl:attrs="${attrs}">';
+        final raw = html.parseFragment(source).children.single;
+        expect(raw.attributes['class'], 'trellis-field-input');
+        expect(raw.attributes['type'], 'text');
+        expect(raw.text, isEmpty);
+        expect(raw.children, isEmpty);
+
+        final rendered = render(source, {'attrs': <String, dynamic>{}});
+        expect(rendered, contains('<input class="trellis-field-input" type="text">'));
       });
     });
   });

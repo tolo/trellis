@@ -1,5 +1,6 @@
 import 'package:html/dom.dart';
 import 'package:test/test.dart';
+import 'package:trellis/testing.dart';
 import 'package:trellis/trellis.dart';
 
 class _TooltipProcessor extends Processor {
@@ -170,6 +171,19 @@ void main() {
         final errors = validator.validate('<div tl:text="\${name}">x</div>');
 
         expect(errors, isEmpty);
+      });
+    });
+
+    group('tl:attrs', () {
+      test('is a recognized attribute', () {
+        expect('<input class="trellis-field-input" type="text" tl:attrs="\${attrs}">', isValidTemplate());
+      });
+
+      test('value is validated as a single expression', () {
+        final errors = TemplateValidator().validate('<input tl:attrs="\${">');
+
+        expect(errors.map((e) => e.attribute), contains('tl:attrs'));
+        expect(errors.map((e) => e.message), isNot(contains(contains('Unknown trellis attribute'))));
       });
     });
   });

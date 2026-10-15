@@ -11,7 +11,7 @@ enum ProcessorPriority {
   afterConditionals, // tl:each
   afterIteration, // tl:insert, tl:replace
   afterInclusion, // tl:text, tl:utext, tl:inline
-  afterContent, // tl:attr + shorthands + classappend + styleappend
+  afterContent, // tl:attrs + tl:attr + shorthands + classappend + styleappend
   afterAttributes, // tl:remove
   lowest, // (custom slot)
 }

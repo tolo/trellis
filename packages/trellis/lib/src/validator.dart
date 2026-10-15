@@ -393,8 +393,8 @@ const _surfacedParseErrors = <String, String>{
 
 const _expressionAttributes = {'text', 'utext', 'if', 'unless', 'switch', 'object'};
 const _bindingAttributes = {'with', 'attr'};
-const _singleExpressionAttributes = {'classappend', 'styleappend', 'href', 'src', 'value', 'class', 'id'};
-const _attrShorthands = {'href', 'src', 'value', 'class', 'id', 'classappend', 'styleappend'};
+const _singleExpressionAttributes = {'classappend', 'styleappend', 'href', 'src', 'value', 'class', 'id', 'attrs'};
+const _attrShorthands = {'href', 'src', 'value', 'class', 'id', 'classappend', 'styleappend', 'attrs'};
 const _inlineValues = {'text', 'javascript', 'css', 'none'};
 const _removeValues = {'all', 'body', 'tag', 'all-but-first', 'none'};
 

@@ -14,7 +14,7 @@ import 'loaders/map_loader.dart';
 import 'message_source.dart';
 import 'processor.dart';
 import 'processor_api.dart';
-import 'processors/fragment_processor.dart' show escapeAttrSelector;
+import 'processors/fragment_processor.dart' show escapeAttrSelector, parseFragmentDef, restParameterName;
 import 'utils/html_normalizer.dart';
 import 'warm_up_result.dart';
 
@@ -151,22 +151,28 @@ final class Trellis {
   }
 
   /// Render a specific named fragment from a template string.
+  ///
+  /// [fragment] is the fragment's bare name (`toast`, not `toast(type, title)`); the first definition in document
+  /// order wins. A parameterised fragment renders fully processed: its declared parameters resolve from the
+  /// same-named [context] keys (absent: `null`, or an error in strict mode) and a `...rest` parameter is an empty
+  /// map. This differs from in-template `tl:replace="toast"`, which binds unpassed parameters to `null` and never
+  /// reads the context.
+  ///
+  /// Throws [FragmentNotFoundException] for an unknown name, and [TemplateException] when [fragment] carries
+  /// arguments in parentheses (an empty `()` is read as the bare name).
   String renderFragment(String source, {required String fragment, required Map<String, dynamic> context}) {
     var doc = _parse(source);
     doc = _resolveInheritance(doc);
     final attrPrefix = '$prefix$separator';
-    final fragEl = doc.querySelector('[${escapeAttrSelector(attrPrefix)}fragment="$fragment"]');
-    if (fragEl == null) {
-      throw FragmentNotFoundException(fragment);
-    }
+    final fragEl = _findFragment(doc, fragment, attrPrefix);
     final clone = fragEl.clone(true);
     final processor = _createProcessor()..collectFragments(doc);
-    processor.process(clone, context);
-    clone.attributes.remove('${attrPrefix}fragment');
-    return _elementHtml(clone, attrPrefix);
+    return _renderFragmentRoot(processor, clone, context, attrPrefix);
   }
 
   /// Render a specific named fragment from a template file.
+  ///
+  /// Addresses [fragment] by bare name exactly as [renderFragment] does.
   Future<String> renderFileFragment(
     String name, {
     required String fragment,
@@ -180,36 +186,31 @@ final class Trellis {
   ///
   /// Designed for HTMX OOB (out-of-band) swap responses. Each fragment is
   /// processed independently with the same context. Fails fast if any
-  /// fragment is missing — no partial output is returned.
+  /// fragment is missing or named with arguments — no partial output is returned.
+  /// Names are bare names with the semantics of [renderFragment]; all fragments read the one shared [context].
   String renderFragments(String source, {required List<String> fragments, required Map<String, dynamic> context}) {
     if (fragments.isEmpty) return '';
 
     var doc = _parse(source);
     doc = _resolveInheritance(doc);
     final attrPrefix = '$prefix$separator';
-    final escapedPrefix = escapeAttrSelector(attrPrefix);
 
     // Fail-fast: find and clone all fragment elements before processing any
-    final clones = <Element>[];
-    for (final name in fragments) {
-      final el = doc.querySelector('[${escapedPrefix}fragment="$name"]');
-      if (el == null) throw FragmentNotFoundException(name);
-      clones.add(el.clone(true));
-    }
+    final clones = [for (final name in fragments) _findFragment(doc, name, attrPrefix).clone(true)];
 
     // Process each clone independently
     final processor = _createProcessor()..collectFragments(doc);
     final buffer = StringBuffer();
     for (final clone in clones) {
-      processor.process(clone, context);
-      clone.attributes.remove('${attrPrefix}fragment');
-      buffer.write(_elementHtml(clone, attrPrefix));
+      buffer.write(_renderFragmentRoot(processor, clone, context, attrPrefix));
     }
 
     return buffer.toString();
   }
 
   /// Render multiple named fragments from a template file, concatenated in order.
+  ///
+  /// Addresses [fragments] by bare name exactly as [renderFragments] does.
   Future<String> renderFileFragments(
     String name, {
     required List<String> fragments,
@@ -217,6 +218,39 @@ final class Trellis {
   }) async {
     final source = await loader.load(name);
     return renderFragments(source, fragments: fragments, context: context);
+  }
+
+  /// The first element in document order whose `tl:fragment` declares the bare name [requested].
+  Element _findFragment(Document doc, String requested, String attrPrefix) {
+    final name = requested.trim();
+    final parenIdx = name.indexOf('(');
+    if (parenIdx >= 0) {
+      final bare = name.substring(0, parenIdx).trim();
+      if (name.substring(parenIdx).replaceAll(RegExp(r'\s'), '') != '()') {
+        throw TemplateException(
+          'Fragment "$requested" is addressed with arguments; pass the bare name "$bare" instead. '
+          'Parameters resolve from the render context.',
+        );
+      }
+      return _findFragment(doc, bare, attrPrefix);
+    }
+    final attr = '${attrPrefix}fragment';
+    for (final el in doc.querySelectorAll('[${escapeAttrSelector(attrPrefix)}fragment]')) {
+      if (parseFragmentDef(el.attributes[attr]!).$1 == name) return el;
+    }
+    throw FragmentNotFoundException(requested);
+  }
+
+  /// Process a looked-up fragment [root] as a top-level render root and return its markup.
+  ///
+  /// A parameterised root is rendered rather than removed as a definition. A `...rest` parameter is an empty map,
+  /// since no invoking host exists.
+  String _renderFragmentRoot(DomProcessor processor, Element root, Map<String, dynamic> context, String attrPrefix) {
+    final fragAttr = '${attrPrefix}fragment';
+    final restName = restParameterName(parseFragmentDef(root.attributes[fragAttr]!).$2);
+    processor.processRenderRoot(root, restName == null ? context : {...context, restName: <String, dynamic>{}});
+    root.attributes.remove(fragAttr);
+    return _elementHtml(root, attrPrefix);
   }
 
   Document _resolveInheritance(Document doc) {

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>ADR-012 candidate components, as plain fragments</title>
+</head>
+<body>
+
+<!-- field: label + input; the caller's attributes land on the input, caller text fills the hint -->
+<label tl:fragment="field(label, name, ...attrs)" class="trellis-field">
+  <span class="trellis-field-label" tl:text="${label}">Label</span>
+  <input class="trellis-field-input" type="text" tl:attr="name=${name}" tl:attrs="${attrs}">
+  <span class="trellis-field-hint" tl:slot="hint"></span>
+</label>
+
+<!-- dialog: id and caller attributes on the root, body and footer slots -->
+<dialog tl:fragment="dialog(id, title, ...attrs)" class="trellis-dialog"
+        tl:id="${id}" tl:attrs="${attrs}">
+  <header><h2 tl:text="${title}">Title</h2></header>
+  <div class="trellis-dialog-body" tl:slot>Body</div>
+  <footer tl:slot="footer"><button>Close</button></footer>
+</dialog>
+
+<!-- dropdown: trigger button plus a menu body slot and an action footer slot (dialog-shaped) -->
+<div tl:fragment="dropdown(id, label, ...attrs)" class="trellis-dropdown" tl:attrs="${attrs}">
+  <button class="trellis-dropdown-trigger" type="button" tl:attr="aria-controls=${id}" tl:text="${label}">Menu</button>
+  <div class="trellis-dropdown-menu" role="menu" tl:id="${id}" tl:slot>
+    <a role="menuitem" href="#">Item</a>
+  </div>
+  <div class="trellis-dropdown-footer" tl:slot="footer"></div>
+</div>
+
+<!-- combobox: field-shaped over a <select>; the caller marks an <optgroup> of real <option> elements -->
+<label tl:fragment="combobox(label, name, ...attrs)" class="trellis-combobox">
+  <span class="trellis-combobox-label" tl:text="${label}">Label</span>
+  <select class="trellis-combobox-select" tl:attr="name=${name}" tl:attrs="${attrs}" tl:slot="options">
+    <option value="">Choose&hellip;</option>
+  </select>
+</label>
+
+<!-- table: the row region is the iterated <tr>, so caller row markup is cloned per row and sees the loop variable -->
+<table class="trellis-table-prototype">
+  <thead><tr><th>Name</th></tr></thead>
+  <tbody tl:fragment="table(rows, ...attrs)" class="trellis-table-body" tl:attrs="${attrs}">
+    <tr tl:each="row : ${rows}" tl:slot="row"><td tl:text="${row.name}">Name</td></tr>
+  </tbody>
+</table>
+
+<!-- toast: dialog-shaped; type becomes a modifier class -->
+<div tl:fragment="toast(type, title, ...attrs)" class="trellis-toast" role="status"
+     tl:classappend="${type}" tl:attrs="${attrs}">
+  <strong class="trellis-toast-title" tl:text="${title}">Title</strong>
+  <div class="trellis-toast-body" tl:slot>Message</div>
+  <div class="trellis-toast-actions" tl:slot="actions"></div>
+</div>
+
+</body>
+</html>

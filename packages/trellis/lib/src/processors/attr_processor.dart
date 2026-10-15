@@ -30,6 +30,9 @@ const _booleanHtmlAttrs = {
 /// Shorthand attribute names mapped by `tl:$name` → HTML `$name`.
 const _shorthands = {'href', 'src', 'value', 'class', 'id'};
 
+/// Every `tl:*` directive the attribute group evaluates, so detection and capture-time stripping share one list.
+const _groupDirectives = {'attrs', 'attr', 'classappend', 'styleappend', ..._shorthands};
+
 /// Attributes known to contain URLs — values from `@{}` expressions are
 /// percent-encoded via `Uri.encodeComponent()` (RFC 3986) at the evaluator
 /// layer. Plain `${var}` values are assumed pre-built and are not re-encoded.
@@ -156,14 +159,32 @@ void _setAttribute(Element element, String attrName, dynamic value) {
 
 /// Returns true if the element has any attribute-related tl:* attributes.
 bool hasAttrAttributes(Element element, String attrPrefix) {
-  if (element.attributes.containsKey('${attrPrefix}attrs')) return true;
-  if (element.attributes.containsKey('${attrPrefix}attr')) return true;
-  if (element.attributes.containsKey('${attrPrefix}classappend')) return true;
-  if (element.attributes.containsKey('${attrPrefix}styleappend')) return true;
-  for (final name in _shorthands) {
-    if (element.attributes.containsKey('$attrPrefix$name')) return true;
+  return _groupDirectives.any((name) => element.attributes.containsKey('$attrPrefix$name'));
+}
+
+/// Runs the attribute group once on the invoking [host] and returns its resulting non-directive attributes, for a
+/// fragment's `...rest` parameter.
+///
+/// Reuses [_processAttributesImpl] so the merge order has one implementation (including `tl:attrs` as step 0).
+/// The consumed group directives are stripped from [host] afterwards so the host's own `AttrProcessor` pass cannot
+/// evaluate them a second time; a surviving `tl:insert` host keeps their results. Every `tl:*` control attribute
+/// (`tl:if`, `tl:replace`, ...) is left on the host and excluded from the map.
+Map<String, dynamic> captureHostAttributes(
+  Element host,
+  String attrPrefix,
+  ExpressionEvaluator evaluator,
+  Map<String, dynamic> context,
+) {
+  if (hasAttrAttributes(host, attrPrefix)) {
+    _processAttributesImpl(host, attrPrefix, evaluator, context);
+    for (final name in _groupDirectives) {
+      host.attributes.remove('$attrPrefix$name');
+    }
   }
-  return false;
+  return {
+    for (final MapEntry(:key, :value) in host.attributes.entries)
+      if (key is String && !key.startsWith(attrPrefix)) key: value,
+  };
 }
 
 /// Processor class for `tl:attr` and related attributes — attribute mutation.

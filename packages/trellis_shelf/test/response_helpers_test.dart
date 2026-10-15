@@ -118,4 +118,37 @@ void main() {
       expect(() => renderPage(request, 'page', {}), throwsStateError);
     });
   });
+
+  group('parameterised fragments by bare name', () {
+    const toast = '<div class="error"><b>Saved</b></div>';
+    const ctx = {'type': 'error', 'title': 'Saved'};
+
+    setUp(() {
+      engine = Trellis(
+        loader: MapLoader({
+          'ui': '<div tl:fragment="toast(type, title)" tl:classappend="\${type}"><b tl:text="\${title}">T</b></div>',
+        }),
+      );
+    });
+
+    test('renderFragment resolves parameters from the context', () async {
+      final response = await renderFragment(makeRequest(), 'ui', 'toast', ctx);
+      expect(await response.readAsString(), toast);
+    });
+
+    test('renderOobFragments resolves parameters from the context', () async {
+      final response = await renderOobFragments(makeRequest(), 'ui', ['toast'], ctx);
+      expect(await response.readAsString(), toast);
+    });
+
+    test('renderPage with htmxFragment resolves parameters from the context', () async {
+      final request = makeRequest(headers: {'hx-request': 'true'});
+      final response = await renderPage(request, 'ui', ctx, htmxFragment: 'toast');
+      expect(await response.readAsString(), toast);
+    });
+
+    test('a name with arguments throws TemplateException', () {
+      expect(() => renderFragment(makeRequest(), 'ui', 'toast(type, title)', ctx), throwsA(isA<TemplateException>()));
+    });
+  });
 }

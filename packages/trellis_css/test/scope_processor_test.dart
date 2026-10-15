@@ -25,6 +25,21 @@ void main() {
         expect(result, isNot(contains('tl:scope')));
       });
 
+      test('a parameterised fragment rendered top-level by bare name is scoped by its bare name', () {
+        final result = _engine().renderFragment(
+          '<div tl:fragment="card(title)">'
+          '<style tl:scope>h2 { color: navy; }</style>'
+          r'<h2 tl:text="${title}">T</h2>'
+          '</div>',
+          fragment: 'card',
+          context: <String, dynamic>{'title': 'Hi'},
+        );
+        expect(result, contains('class="tl-scope-card"'));
+        expect(result, contains('@scope (.tl-scope-card)'));
+        expect(result, contains('<h2>Hi</h2>'));
+        expect(result, isNot(contains('tl:')));
+      });
+
       test('T02: existing class on fragment root is preserved — scope class appended', () {
         final engine = _engine();
         final result = engine.renderFragment(

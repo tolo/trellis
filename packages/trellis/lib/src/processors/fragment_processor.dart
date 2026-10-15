@@ -7,6 +7,7 @@ import '../loaders/template_loader.dart';
 import '../processor_api.dart';
 import '../truthiness.dart';
 import '../utils/binding_parser.dart';
+import 'attr_processor.dart' show captureHostAttributes;
 
 /// Regex for cross-file fragment syntax: ~{filename :: fragmentName}
 /// Uses greedy match for group 2 to handle nested braces in `${...}` expressions.
@@ -35,18 +36,63 @@ final _crossFilePattern = RegExp(r'^~\{(.+?)\s*::\s*(.+)\}$');
 (String name, List<String> argExprs) _parseFragmentInvocation(String value) =>
     _parseFragmentValue(value, splitNested: true);
 
+/// Marks a fragment's trailing rest parameter, e.g. `field(label, ...attrs)`.
+const _restMarker = '...';
+
+/// The author-chosen name of the rest parameter declared last in [paramNames], or null when there is none.
+///
+/// The rest parameter travels as the literal last `paramNames` entry (`'...attrs'`) so the registry record type
+/// and `FragmentHost` stay unchanged.
+String? restParameterName(List<String> paramNames) => paramNames.isNotEmpty && paramNames.last.startsWith(_restMarker)
+    ? paramNames.last.substring(_restMarker.length)
+    : null;
+
+/// Reject a fragment definition whose `...rest` parameter is repeated, not last, or unnamed.
+///
+/// Called by both definition-collection sites, because a rest parameter that is not final would silently bind an
+/// argument over the forwarded attribute map.
+void validateFragmentParams(String name, List<String> paramNames) {
+  for (var i = 0; i < paramNames.length; i++) {
+    final param = paramNames[i];
+    if (!param.startsWith(_restMarker)) continue;
+    if (i != paramNames.length - 1) {
+      throw TemplateException(
+        'Fragment "$name": rest parameter "$param" must be the last parameter and may appear only once',
+      );
+    }
+    if (param.length == _restMarker.length) {
+      throw TemplateException('Fragment "$name": rest parameter "..." needs a name, e.g. "...attrs"');
+    }
+  }
+}
+
 /// Bind fragment arguments to parameter names, creating an augmented context.
+///
+/// A trailing rest parameter binds [rest] (the invoking host's attributes) under its author-chosen name and
+/// accepts no positional argument: an extra one throws instead of overwriting the map. Fragments without a rest
+/// parameter keep ignoring extra arguments.
 Map<String, dynamic> _bindArgs(
+  String fragmentName,
   List<String> paramNames,
   List<String> argExprs,
   ExpressionEvaluator evaluator,
-  Map<String, dynamic> context,
-) {
+  Map<String, dynamic> context, {
+  Map<String, dynamic>? rest,
+}) {
   if (paramNames.isEmpty) return context;
-  final augmented = {...context};
-  for (var i = 0; i < paramNames.length; i++) {
-    augmented[paramNames[i]] = i < argExprs.length ? evaluator.evaluate(argExprs[i], context) : null;
+  final restName = restParameterName(paramNames);
+  final positional = restName == null ? paramNames : paramNames.sublist(0, paramNames.length - 1);
+  if (restName != null && argExprs.length > positional.length) {
+    throw TemplateException(
+      'Fragment "$fragmentName" takes ${positional.length} positional argument(s) before its rest parameter '
+      '"...$restName" but got ${argExprs.length}',
+    );
   }
+  final augmented = {...context};
+  for (var i = 0; i < positional.length; i++) {
+    augmented[positional[i]] = i < argExprs.length ? evaluator.evaluate(argExprs[i], context) : null;
+  }
+  if (restName != null) augmented[restName] = rest ?? <String, dynamic>{};
   return augmented;
 }
 
@@ -174,6 +220,7 @@ Map<String, (Element, List<String>)> _collectFragmentRegistry(Document doc, Stri
     final fragValue = node.attributes['${attrPrefix}fragment'];
     if (fragValue != null) {
       final (name, paramNames) = parseFragmentDef(fragValue);
+      validateFragmentParams(name, paramNames);
       registry[name] = (node, paramNames);
     }
   }
@@ -302,7 +349,19 @@ Element _resolveAndProcess(String value, ProcessorContext context, Element host)
   final attrPrefix = context.attrPrefix;
   final (_, argExprs) = _parseFragmentInvocation(value);
   final resolved = _resolveFragment(value, attrPrefix, context.loader, dp);
-  final effectiveContext = _bindArgs(resolved.paramNames, argExprs, dp.evaluator, context.variables);
+  // Capture only for a rest-parameter callee: it consumes the host's attribute directives, which a non-rest
+  // invocation must leave exactly as before (inert on a tl:replace host).
+  final rest = restParameterName(resolved.paramNames) == null
+      ? null
+      : captureHostAttributes(host, attrPrefix, dp.evaluator, context.variables);
+  final effectiveContext = _bindArgs(
+    resolved.fragmentId,
+    resolved.paramNames,
+    argExprs,
+    dp.evaluator,
+    context.variables,
+    rest: rest,
+  );
   final clone = resolved.element.clone(true);
   _graftSlots(clone, host, byName: resolved.byName, context: context, scope: effectiveContext);
   _applyFragment(

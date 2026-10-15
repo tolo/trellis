@@ -116,4 +116,43 @@ void main() {
       expect(response.statusCode, 500);
     });
   });
+
+  group('parameterised fragments by bare name', () {
+    const toast = '<div class="error"><b>Saved</b></div>';
+    const ctx = {'type': 'error', 'title': 'Saved'};
+
+    setUp(() {
+      engine = Trellis(
+        loader: MapLoader({
+          'ui': '<div tl:fragment="toast(type, title)" tl:classappend="\${type}"><b tl:text="\${title}">T</b></div>',
+        }),
+      );
+    });
+
+    Handler handlerFor(Future<Response> Function(RequestContext context) render) =>
+        const Pipeline().addMiddleware(trellisProvider(engine)).addHandler(render);
+
+    test('renderFragment resolves parameters from the context', () async {
+      final response = await testGet(handlerFor((context) => renderFragment(context, 'ui', 'toast', ctx)));
+      expect(response.body, toast);
+    });
+
+    test('renderOobFragments resolves parameters from the context', () async {
+      final response = await testGet(handlerFor((context) => renderOobFragments(context, 'ui', ['toast'], ctx)));
+      expect(response.body, toast);
+    });
+
+    test('renderPage with htmxFragment resolves parameters from the context', () async {
+      final response = await testGet(
+        handlerFor((context) => renderPage(context, 'ui', ctx, htmxFragment: 'toast')),
+        headers: {'hx-request': 'true'},
+      );
+      expect(response.body, toast);
+    });
+
+    test('a name with arguments is rejected (500, TemplateException)', () async {
+      final response = await testGet(handlerFor((context) => renderFragment(context, 'ui', 'toast(type, title)', ctx)));
+      expect(response.statusCode, 500);
+    });
+  });
 }

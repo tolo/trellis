@@ -1,6 +1,7 @@
 import 'package:test/test.dart';
 import 'package:trellis/testing.dart';
 import 'package:trellis/trellis.dart';
+import 'package:trellis/src/processors/fragment_processor.dart' show parseFragmentDef;
 
 void main() {
   group('Fragment processor', () {
@@ -1056,6 +1057,177 @@ void main() {
         );
         expect(out, contains('<span class="trellis-field-hint">Hint fallback</span>'));
         expect(out, isNot(contains('tl:slot')));
+      });
+    });
+  });
+  group('rest parameter', () {
+    String render(String template, {Map<String, String> files = const {}, Map<String, dynamic> context = const {}}) {
+      final out = testEngine(templates: files).render(template, context);
+      return out.replaceFirst('<html><head></head><body>', '').replaceFirst('</body></html>', '');
+    }
+
+    Matcher throwsTemplate(Pattern message) =>
+        throwsA(isA<TemplateException>().having((e) => e.message, 'message', contains(message)));
+
+    const field =
+        '<label tl:fragment="field(label, name, ...attrs)">'
+        r'<input type="text" tl:attr="name=${name}" tl:attrs="${attrs}"></label>';
+    const card = r'<article tl:fragment="card(title, ...attrs)" tl:attrs="${attrs}" tl:text="${title}">T</article>';
+    const inner =
+        r'<article tl:fragment="inner(title, ...attrs)"><span tl:attrs="${attrs}" tl:text="${title}">T</span></article>';
+
+    group('definition collection (TI01)', () {
+      test('the rest entry stays the literal last paramNames entry', () {
+        expect(parseFragmentDef('card(a, ...rest)').$2, ['a', '...rest']);
+      });
+
+      for (final bad in ['card(...a, ...b)', 'card(...a, b)']) {
+        test('$bad throws naming the fragment, same-file, even when nothing invokes it', () {
+          expect(() => render('<p tl:fragment="$bad">x</p>'), throwsTemplate('Fragment "card"'));
+        });
+
+        test('$bad throws cross-file, only once an invocation resolves the file', () {
+          final files = {'ui.html': '<p tl:fragment="$bad">x</p><i tl:fragment="other">y</i>'};
+          expect(render('<b>no invocation</b>', files: files), contains('no invocation'));
+          expect(
+            () => render('<div tl:replace="~{ui.html :: other}"></div>', files: files),
+            throwsTemplate('Fragment "card"'),
+          );
+        });
+      }
+
+      test('a bare ... without a name throws', () {
+        expect(() => render('<p tl:fragment="card(...)">x</p>'), throwsTemplate('needs a name'));
+      });
+    });
+
+    group('host attribute capture (TI02, TI03)', () {
+      test('caller attributes reach the inner element and overwrite the component literal [S01]', () {
+        final out = render(
+          '$field<div tl:replace="field(\'Email\', \'email\')" type="email" required hx-post="/validate"></div>',
+        );
+        expect(out, contains('<label><input type="email" required="" hx-post="/validate" name="email"></label>'));
+        expect(out, isNot(contains('tl:')));
+      });
+
+      test('the rest name is the author-chosen one, never the literal ...name', () {
+        final out = render(
+          r'<i tl:fragment="f(...props)" tl:text="${props.a}">x</i><b tl:replace="f" a="1" b="2"></b>',
+        );
+        expect(out, contains('<i>1</i>'));
+      });
+
+      test('a tl:insert host keeps its directives\' results, applied once, and forwards them [S02]', () {
+        // tl:insert keeps only the fragment's children, so the spread sits on an inner element to be observable.
+        final template = '$inner<div class="wrap" tl:attr="data-id=\${item.id}" tl:insert="inner(\'Report\')"></div>';
+        final out = render(
+          template,
+          context: {
+            'item': {'id': 7},
+          },
+        );
+        expect(out, contains('<div class="wrap" data-id="7"><span class="wrap" data-id="7">Report</span></div>'));
+        expect(out, isNot(contains('tl:')));
+      });
+
+      test('a tl:replace host yields the identical fragment root [S02]', () {
+        final template = '$card<div class="wrap" tl:attr="data-id=\${item.id}" tl:replace="card(\'Report\')"></div>';
+        final out = render(
+          template,
+          context: {
+            'item': {'id': 7},
+          },
+        );
+        expect(out, endsWith('<article class="wrap" data-id="7">Report</article>'));
+      });
+
+      test('the host\'s own tl:attrs is forwarded in the step-0 merge order [S03]', () {
+        final extra = {'data-id': 7, 'class': 'hi'};
+        final out = render(
+          '$card<div tl:replace="card(\'Report\')" class="wrap" tl:attrs="\${extra}"></div>',
+          context: {'extra': extra},
+        );
+        expect(out, endsWith('<article class="wrap hi" data-id="7">Report</article>'));
+      });
+
+      test('from a tl:insert host the same entries also land on the surviving host [S03]', () {
+        final out = render(
+          '$inner<div tl:insert="inner(\'Report\')" class="wrap" tl:attrs="\${extra}"></div>',
+          context: {
+            'extra': {'data-id': 7, 'class': 'hi'},
+          },
+        );
+        expect(out, contains('<div class="wrap hi" data-id="7"><span class="wrap hi" data-id="7">Report</span></div>'));
+      });
+
+      test('single shared merge order: shorthand overrides a spread entry, tl:* never forwarded', () {
+        final out = render(
+          '<i tl:fragment="f(...a)" tl:attrs="\${a}">x</i>'
+          '<b tl:replace="f" class="a" hx-get="/x" disabled tl:attrs="\${m}" tl:attr="data-id=\${id}" tl:class="\${cls}"></b>',
+          context: {
+            'm': {'data-role': 'r', 'class': 'spread'},
+            'id': 3,
+            'cls': 'shorthand',
+          },
+        );
+        expect(out, contains('<i class="shorthand" hx-get="/x" disabled="" data-role="r" data-id="3">x</i>'));
+        expect(out, isNot(contains('tl:')));
+      });
+
+      test('a null attr value removes the attribute from the forwarded map', () {
+        final out = render(
+          '<i tl:fragment="f(...a)" tl:attrs="\${a}">x</i><b tl:replace="f" tl:attr="title=\${none}" title="t"></b>',
+          context: {'none': null},
+        );
+        expect(out, contains('<i>x</i>'));
+      });
+
+      test('a host with no forwardable attributes yields an empty map in strict mode [S04]', () {
+        final out = render(
+          '<i tl:fragment="f(...a)" tl:attrs="\${a}" id="own">x</i><b tl:replace="f" tl:if="\${show}"></b>',
+          context: {'show': true},
+        );
+        expect(out, contains('<i id="own">x</i>'));
+      });
+    });
+
+    group('activation and misuse (TI04)', () {
+      test('a third positional argument throws, not overwriting the forwarded map [S05]', () {
+        expect(() => render('$field<div tl:replace="field(\'a\', \'b\', \'c\')"></div>'), throwsTemplate('"...attrs"'));
+      });
+
+      test('a fragment without a rest parameter still ignores extra arguments', () {
+        final out = render('<b tl:fragment="g(a)" tl:text="\${a}">x</b><div tl:replace="g(1, 2, 3)"></div>');
+        expect(out, contains('<b>1</b>'));
+      });
+
+      test('a non-rest invocation keeps the host\'s attribute directives inert on tl:replace', () {
+        final out = render(
+          '<b tl:fragment="g">frag</b><div tl:replace="g" tl:class="\${x}" tl:attr="data-x=\${x}" title="t"></div>',
+          context: {'x': 'boom'},
+        );
+        expect(out, endsWith('<b>frag</b>'));
+      });
+
+      test('a non-rest tl:insert host keeps the ordinary attribute pass', () {
+        final out = render(
+          '<b tl:fragment="g">frag</b><div tl:insert="g" tl:class="\${x}" title="t"></div>',
+          context: {'x': 'k'},
+        );
+        expect(out, contains('<div title="t" class="k">frag</div>'));
+      });
+
+      test('selector and tag-name targeting bind no rest map', () {
+        final out = render('<p id="x" tl:text="\${a}">ph</p><div tl:replace="#x"></div>', context: {'a': 'ctx'});
+        expect(out, contains('<p id="x">ctx</p><p id="x">ctx</p>'));
+      });
+
+      test('cross-file rest fragments capture too', () {
+        final out = render(
+          '<div tl:replace="~{ui.html :: field(\'L\', \'n\')}" required></div>',
+          files: {'ui.html': field},
+        );
+        expect(out, contains('<label><input type="text" required="" name="n"></label>'));
       });
     });
   });

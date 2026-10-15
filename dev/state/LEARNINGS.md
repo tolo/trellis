@@ -35,6 +35,7 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
 - **Dart `_` prefix is library-private, not class-private**: Processors in separate files cannot access `_evaluator` on `ProcessorContext` — must be public despite being "internal."
 - **`ProcessorPriority.afterIteration.index` can't use dot shorthand**: Dart infers context type as `num` (from `.index`), not `ProcessorPriority`. Explicit `ProcessorPriority.afterIteration.index` is required.
 - **Attribute conflict: both custom and built-in fire**: When a custom processor has the same attribute as a built-in, both execute (built-in first). True replacement requires `Dialect` with `includeStandard: false`.
+- **A rest parameter's spread on the fragment root is invisible under `tl:insert`**: `tl:insert` keeps only the fragment root's *children* and discards the root, so `<label tl:fragment="f(...attrs)" tl:attrs="${attrs}">` forwards nothing when invoked by `tl:insert` (the host keeps the caller's attributes itself). Spread on an inner element, or invoke with `tl:replace`, which keeps the root. Capture still applies the host's attribute directives exactly once either way.
 
 ## Filter System
 

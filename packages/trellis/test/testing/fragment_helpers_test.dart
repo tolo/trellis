@@ -60,4 +60,27 @@ void main() {
       );
     });
   });
+
+  group('parameterised fragments by bare name', () {
+    const toast = r'<div tl:fragment="toast(type, title)" tl:classappend="${type}"><b tl:text="${title}">T</b></div>';
+    const ctx = {'type': 'error', 'title': 'Saved'};
+    late Trellis engine;
+
+    setUp(() {
+      engine = testEngine(templates: {'ui': toast});
+    });
+
+    test('testFragment resolves parameters from the context', () {
+      expect(testFragment(engine, 'ui', 'toast', ctx), '<div class="error"><b>Saved</b></div>');
+    });
+
+    test('testFragmentFile resolves parameters from the context', () async {
+      expect(await testFragmentFile(engine, 'ui', 'toast', ctx), '<div class="error"><b>Saved</b></div>');
+    });
+
+    test('a name with arguments throws TemplateException', () async {
+      expect(() => testFragment(engine, 'ui', 'toast(type, title)', ctx), throwsA(isA<TemplateException>()));
+      await expectLater(testFragmentFile(engine, 'ui', 'toast(type, title)', ctx), throwsA(isA<TemplateException>()));
+    });
+  });
 }

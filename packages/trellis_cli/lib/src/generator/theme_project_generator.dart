@@ -3,7 +3,6 @@ import '../templates/theme/theme_base_layout_template.dart';
 import '../templates/theme/theme_dark_skin_template.dart';
 import '../templates/theme/theme_example_config_template.dart';
 import '../templates/theme/theme_example_content_template.dart';
-import '../templates/theme/theme_example_layout_template.dart';
 import '../templates/theme/theme_gitignore_template.dart';
 import '../templates/theme/theme_home_layout_template.dart';
 import '../templates/theme/theme_light_skin_template.dart';
@@ -17,8 +16,8 @@ import '../templates/theme/theme_variables_template.dart';
 /// Generates a Trellis theme project scaffold.
 ///
 /// Produces a theme skeleton with theme.yaml, layouts with tl:define blocks,
-/// SASS with !default variables and skin presets, and an example site for
-/// previewing during development.
+/// SASS on the `@use` module contract (a `!default` variables module and
+/// palette-map skins), and an example site for previewing during development.
 class ThemeProjectGenerator {
   /// Creates a generator for a theme project with [projectName], writing files
   /// via [writer].
@@ -30,10 +29,13 @@ class ThemeProjectGenerator {
   /// The file writer used to create project files.
   final FileWriter writer;
 
-  /// Generates all theme project files (15 total).
+  /// Generates all theme project files (14 total).
   ///
   /// Creates: theme.yaml, 4 layouts, 4 SASS files, static/.gitkeep,
-  /// 3 example files, README.md, and .gitignore.
+  /// 2 example files, README.md, and .gitignore. The example has no layouts of
+  /// its own: layouts resolve site-first, so one would shadow the theme's.
+  /// The `example/themes/<name>` link is not written here: a [FileWriter]
+  /// writes files only, so `trellis create` makes it ([linkThemeIntoExample]).
   Future<void> generate() async {
     // Theme manifest
     await writer.writeFile('theme.yaml', themeManifestTemplate(projectName));
@@ -56,7 +58,6 @@ class ThemeProjectGenerator {
     // Example site
     await writer.writeFile('example/trellis_site.yaml', themeExampleConfigTemplate(projectName));
     await writer.writeFile('example/content/_index.md', themeExampleContentTemplate());
-    await writer.writeFile('example/layouts/home.html', themeExampleLayoutTemplate());
 
     // Project files
     await writer.writeFile('README.md', themeReadmeTemplate(projectName));

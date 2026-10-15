@@ -1,6 +1,8 @@
 // Arbor Docs Theme — sass/_a11y.scss
 // Accessibility: skip-to-content, screen-reader-only, focus-visible, reduced-motion.
 
+@use 'variables' as *;
+
 // ── Skip to content ───────────────────────────────────────────────────────────
 
 .skip-to-content {

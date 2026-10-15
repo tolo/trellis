@@ -48,7 +48,7 @@ void main() {
     test('section index → section name', () => expect(deriveSection('posts/_index.md'), 'posts'));
   });
 
-  group('deriveSectionPath (nested lineage — AS05/TI05)', () {
+  group('deriveSectionPath (nested lineage)', () {
     test('root file → empty string', () => expect(deriveSectionPath('about.md'), ''));
     test('root _index.md → empty string', () => expect(deriveSectionPath('_index.md'), ''));
     test('one level deep → top-level path', () => expect(deriveSectionPath('posts/hello.md'), 'posts'));
@@ -172,7 +172,7 @@ void main() {
       expect(advancedSection.section, 'docs');
     });
 
-    test('nested site: sectionPath is full lineage while section stays top-level (AS05/TI05)', () async {
+    test('nested site: sectionPath is full lineage while section stays top-level', () async {
       final discovery = ContentDiscovery(nestedSiteDir);
       final pages = await discovery.discover();
 

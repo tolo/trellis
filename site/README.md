@@ -94,7 +94,7 @@ runs on every push to `main` (and via manual `workflow_dispatch`). It:
 2. builds the production (sub-path) site with `trellis build`;
 3. runs the link-integrity check against `site/output` with `--base-path /trellis/` as
    a **required gate** — a broken link fails the pipeline and blocks the deploy;
-4. builds and checks a root-served variant as an FR10 portability regression guard
+4. builds and checks a root-served variant as a portability regression guard
    (pipeline-gating, does not change the live deploy);
 5. publishes `site/output` to GitHub Pages — only after the build and both checks pass,
    so nothing partial or broken reaches Pages.

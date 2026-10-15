@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -10,11 +9,13 @@ import 'package:trellis_site/trellis_site.dart';
 import 'package:yaml/yaml.dart';
 
 import 'theme_font_contract.dart';
+import 'theme_use_support.dart'
+    show compileBridged, copyDirectory, customProps, exampleSiteCopy, rootBlock, runNodeHarness;
 
 void main() {
   final themeDir = p.join(Directory.current.path, 'themes', 'lattice');
 
-  test('S01/TI01 manifest exposes the exact standard, docs, and Lattice contract', () {
+  test('manifest exposes the exact standard, docs, and Lattice contract', () {
     final manifest = ThemeManifest.load(themeDir);
     const standardParams = {
       'skin',
@@ -25,6 +26,13 @@ void main() {
       'bg_color',
       'surface_color',
       'border_color',
+      'primary_color_dark',
+      'accent_color_dark',
+      'text_color_dark',
+      'muted_color_dark',
+      'bg_color_dark',
+      'surface_color_dark',
+      'border_color_dark',
       'font_family',
       'heading_font_family',
       'code_font_family',
@@ -62,7 +70,7 @@ void main() {
     };
 
     expect(manifest.name, 'lattice');
-    expect(manifest.minTrellisVersion, '0.10.0');
+    expect(manifest.minTrellisVersion, '0.12.0');
     expect(manifest.features.where({'docs', 'landing', 'blog'}.contains), ['docs']);
     expect(manifest.params.keys.toSet(), standardParams.union(docsParams).union(latticeParams));
     expect(manifest.params['excerpt_length']!.defaultValue, 160);
@@ -90,7 +98,7 @@ void main() {
     expect(example, isNot(contains('trellis new')));
   });
 
-  test('S03/TI05 showcase screenshot tails are prefix-relative and joined exactly once', () {
+  test('showcase screenshot tails are prefix-relative and joined exactly once', () {
     final data = File(p.join(themeDir, 'data', 'lattice.yaml')).readAsStringSync();
     final paths = RegExp(r'screenshot_(?:light|dark):\s*"([^"]+)"').allMatches(data).map((m) => m.group(1)!);
     expect(paths, isNotEmpty);
@@ -106,25 +114,14 @@ void main() {
     expect(home, contains(r'${data.lattice.showcase.link_url}'));
   });
 
-  test('S02-S05/TI03 bridged overrides preserve shared geometry and dark palette ownership', () {
-    String compile(String prelude) {
-      final tempDir = Directory.systemTemp.createTempSync('lattice_skin_contract_');
-      addTearDown(() => tempDir.deleteSync(recursive: true));
-      final wrapper = File(p.join(tempDir.path, 'main.scss'))
-        ..writeAsStringSync(
-          '$prelude\n'
-          '@import "${p.join(themeDir, 'sass', 'main.scss')}";\n',
-        );
-      return TrellisCss.compileSass(wrapper.path, silenceImportDeprecation: true);
-    }
-
-    const sharedOverrides = r'''
-$trellis-heading-font-family: Georgia, serif;
-$trellis-max-width: 900px;
-$trellis-border-radius: 0;
-''';
-    final light = compile(r'$trellis-primary-color: #7A4FBF;' + sharedOverrides);
-    final dark = compile('@import "${p.join(themeDir, 'sass', '_skins', '_dark.scss')}";\n$sharedOverrides');
+  test('bridged overrides preserve shared geometry, and each forced skin owns its top-level :root palette', () {
+    const sharedOverrides = <String, dynamic>{
+      'heading_font_family': 'Georgia, serif',
+      'max_width': '900px',
+      'border_radius': '0',
+    };
+    final light = compileBridged(themeDir, 'light', siteParams: {'primary_color': '#7A4FBF', ...sharedOverrides});
+    final dark = compileBridged(themeDir, 'dark', siteParams: sharedOverrides);
 
     for (final css in [light, dark]) {
       expect(css, contains('--display: Georgia, serif'));
@@ -133,13 +130,16 @@ $trellis-border-radius: 0;
       expect(css, isNot(contains('--display: "')));
       expect(css, isNot(contains('--content-width: "')));
     }
-    expect(light.toLowerCase(), contains('--leaf: #7a4fbf'));
-    expect(dark.toLowerCase(), contains('--leaf: #6fbf8b'));
-    expect(dark, contains('--on-leaf: #0d1710'));
-    expect(dark, contains('--syntax-keyword: #b48bd9'));
+    // The toggle dark rule (with its hard-coded --on-leaf, --syntax-*) is emitted under every skin, so only the
+    // palette-backed tokens in the top-level :root say which palette was compiled.
+    final lightRoot = customProps(rootBlock(light));
+    final darkRoot = customProps(rootBlock(dark));
+    expect(lightRoot['--leaf']!.toLowerCase(), '#7a4fbf');
+    expect(darkRoot['--leaf']!.toLowerCase(), '#6fbf8b');
+    expect(darkRoot['--paper'], isNot(lightRoot['--paper']), reason: 'forced dark takes the dark background');
   });
 
-  test('S04-S06/TI06 progressive enhancement avoids innerHTML and obeys reduced motion', () {
+  test('progressive enhancement avoids innerHTML and obeys reduced motion', () {
     final script = File(p.join(themeDir, 'static', 'js', 'lattice.js')).readAsStringSync();
     final styles = File(p.join(themeDir, 'sass', 'main.scss')).readAsStringSync();
     final home = File(p.join(themeDir, 'layouts', 'home.html')).readAsStringSync();
@@ -165,7 +165,7 @@ $trellis-border-radius: 0;
   });
 
   test('owner spacing polish keeps terminal groups legible and centers the closing card', () {
-    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'));
     expect(css, matches(RegExp(r'\.window-bar span\s*\{[^}]*margin-left:\s*8px', dotAll: true)));
     expect(
       css,
@@ -194,7 +194,7 @@ $trellis-border-radius: 0;
   });
 
   test('subpage shell provides spacing, utility type, and compact navigation', () async {
-    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'));
     expect(css, matches(RegExp(r'\.docs-shell\s*\{[^}]*padding-block:\s*64px 96px', dotAll: true)));
     expect(
       css,
@@ -221,7 +221,7 @@ $trellis-border-radius: 0;
     final base = File(p.join(themeDir, 'layouts', 'base.html')).readAsStringSync();
     expect(base, contains('class="sidebar-disclosure" open data-docs-sidebar'));
 
-    final result = await _runNodeHarness('lattice', p.join(themeDir, 'static', 'js', 'lattice.js'));
+    final result = await runNodeHarness('lattice', p.join(themeDir, 'static', 'js', 'lattice.js'));
     if (result == null) return;
     expect((result['motion']! as Map<String, dynamic>)['sidebar'], {
       'initial': true,
@@ -237,8 +237,8 @@ $trellis-border-radius: 0;
     });
   });
 
-  test('S04/TI06 headline waits for the interval and stays static with reduced motion', () async {
-    final result = await _runNodeHarness('lattice', p.join(themeDir, 'static', 'js', 'lattice.js'));
+  test('headline waits for the interval and stays static with reduced motion', () async {
+    final result = await runNodeHarness('lattice', p.join(themeDir, 'static', 'js', 'lattice.js'));
     if (result == null) return;
 
     final motion = result['motion']! as Map<String, dynamic>;
@@ -273,8 +273,8 @@ $trellis-border-radius: 0;
     }
   });
 
-  test('S01-S07/TI08 bridged example builds cleanly with complete rendered pages', () async {
-    final config = SiteConfig.load(p.join(themeDir, 'example', 'trellis_site.yaml'));
+  test('bridged example builds cleanly with complete rendered pages', () async {
+    final config = exampleSiteCopy(themeDir);
     final result = await TrellisSite(config).build();
     expect(result.warnings, isEmpty);
     expect(result.pageCount, 5);
@@ -284,10 +284,9 @@ $trellis-border-radius: 0;
     addTearDown(() => tempDir.deleteSync(recursive: true));
     final wrapper = File(p.join(tempDir.path, 'main.scss'))
       ..writeAsStringSync(
-        '@import "${p.join(bridge.buildDir, '_theme_params.scss')}";\n'
-        '@import "${p.join(themeDir, 'sass', 'main.scss')}";\n',
+        bridge.bridgeWrapperSource(File(p.join(themeDir, 'sass', 'main.scss')).resolveSymbolicLinksSync()),
       );
-    final css = TrellisCss.compileSass(wrapper.path, loadPaths: bridge.sassLoadPaths, silenceImportDeprecation: true);
+    final css = TrellisCss.compileSass(wrapper.path, loadPaths: bridge.sassLoadPaths, fatalImportDeprecation: true);
     final cssFile = File(p.join(config.outputDir, 'css', 'main.css'))..parent.createSync(recursive: true);
     cssFile.writeAsStringSync(css);
     expect(css, contains('--body: Instrument Sans, -apple-system, sans-serif'));
@@ -295,7 +294,7 @@ $trellis-border-radius: 0;
     expect(css, isNot(contains('--body: "')));
     expect(css, isNot(contains('--content-width: "')));
 
-    final output = p.join(themeDir, 'example', 'output');
+    final output = config.outputDir;
     final pages = Directory(
       output,
     ).listSync(recursive: true).whereType<File>().where((file) => file.path.endsWith('.html'));
@@ -320,16 +319,8 @@ $trellis-border-radius: 0;
     _expectShowcaseSources(File(p.join(output, 'index.html')).readAsStringSync(), dark: false);
   });
 
-  test('S03-S05/TI08 sub-path build prefixes URLs once without nesting output', () async {
-    final tempDir = Directory.systemTemp.createTempSync('lattice_subpath_contract_');
-    addTearDown(() => tempDir.deleteSync(recursive: true));
-    _copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
-    Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
-    Link(p.join(tempDir.path, 'themes', 'lattice')).createSync(themeDir);
-    final sourceConfig = File(p.join(themeDir, 'example', 'trellis_site.yaml')).readAsStringSync();
-    File(p.join(tempDir.path, 'trellis_site.yaml')).writeAsStringSync('$sourceConfig\npathPrefix: /trellis/\n');
-
-    final config = SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
+  test('sub-path build prefixes URLs once without nesting output', () async {
+    final config = exampleSiteCopy(themeDir, (source) => '$source\npathPrefix: /trellis/\n');
     final result = await TrellisSite(config).build();
     expect(result.warnings, isEmpty);
     expect(result.pageCount, 5);
@@ -363,19 +354,12 @@ $trellis-border-radius: 0;
   });
 
   test('forced skins select showcase sources server-side at root and sub-path', () async {
-    final sourceConfig = File(p.join(themeDir, 'example', 'trellis_site.yaml')).readAsStringSync();
     for (final skin in ['light', 'dark']) {
       for (final prefix in ['', '/trellis/']) {
-        final tempDir = Directory.systemTemp.createTempSync('lattice_forced_skin_contract_');
-        addTearDown(() => tempDir.deleteSync(recursive: true));
-        _copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
-        Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
-        Link(p.join(tempDir.path, 'themes', 'lattice')).createSync(themeDir);
-        var configSource = sourceConfig.replaceFirst('skin: auto', 'skin: $skin');
-        if (prefix.isNotEmpty) configSource = '$configSource\npathPrefix: $prefix\n';
-        File(p.join(tempDir.path, 'trellis_site.yaml')).writeAsStringSync(configSource);
-
-        final config = SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
+        final config = exampleSiteCopy(themeDir, (source) {
+          final configSource = source.replaceFirst('skin: auto', 'skin: $skin');
+          return prefix.isEmpty ? configSource : '$configSource\npathPrefix: $prefix\n';
+        });
         final result = await TrellisSite(config).build();
         expect(result.warnings, isEmpty, reason: '$skin $prefix');
         final home = File(p.join(config.outputDir, 'index.html')).readAsStringSync();
@@ -387,7 +371,7 @@ $trellis-border-radius: 0;
     }
   });
 
-  test('TI02 and TI09 documented local assets exist', () {
+  test('documented local assets exist', () {
     for (final asset in [
       'static/js/lattice.js',
       'static/js/search.js',
@@ -472,7 +456,7 @@ $trellis-border-radius: 0;
       expect(home, contains(binding), reason: binding);
     }
 
-    final config = SiteConfig.load(p.join(themeDir, 'example', 'trellis_site.yaml'));
+    final config = exampleSiteCopy(themeDir);
     await TrellisSite(config).build();
     final document = html_parser.parse(File(p.join(config.outputDir, 'index.html')).readAsStringSync());
     final panes = document.querySelectorAll('.pane pre code, .demo-source pre code');
@@ -571,7 +555,7 @@ $showcaseCards''',
     for (final entry in fixtures.entries) {
       final tempDir = Directory.systemTemp.createTempSync('lattice_partial_data_');
       addTearDown(() => tempDir.deleteSync(recursive: true));
-      _copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
+      copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
       Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
       Link(p.join(tempDir.path, 'themes', 'lattice')).createSync(themeDir);
       final (data, expectedSections, themeParams) = entry.value;
@@ -606,7 +590,7 @@ $showcaseCards''',
         expect(
           document.querySelector('section[aria-labelledby="lattice-site-demo-title"] code span.t-tag'),
           isNotNull,
-          reason: '${entry.key}: S05 requires server-rendered syntax tokens',
+          reason: '${entry.key}: syntax tokens must be server-rendered',
         );
       }
       for (final heading in document.querySelectorAll('h2, h3')) {
@@ -649,7 +633,7 @@ $showcaseCards''',
   });
 
   test('L4/L13 every code token clears WCAG AA and covers what the site emits', () async {
-    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'));
     for (final (skin, selector) in [('light', ':root'), ('dark', r'\[data-skin="?dark"?\]')]) {
       final props = _customProperties(css, selector);
       final surface = props['--card']!;
@@ -711,11 +695,11 @@ $showcaseCards''',
     // button stuck on "Copy" with nothing on the clipboard.
     expect(script, contains("button.textContent = 'Copy failed'"));
 
-    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'));
     // .mode-toggle sets display:inline-flex, which outranks the UA [hidden] rule on its own.
     expect(css, matches(RegExp(r'\[hidden\]\s*\{[^}]*display:\s*none\s*!important', dotAll: true)));
 
-    final config = SiteConfig.load(p.join(themeDir, 'example', 'trellis_site.yaml'));
+    final config = exampleSiteCopy(themeDir);
     await TrellisSite(config).build();
     final document = html_parser.parse(File(p.join(config.outputDir, 'index.html')).readAsStringSync());
     final toggle = document.querySelector('[data-lattice-theme-toggle]');
@@ -752,7 +736,7 @@ $showcaseCards''',
 
   test('search results carry the classes the client builds, styled, capped, and announced', () async {
     final script = File(p.join(themeDir, 'static', 'js', 'search.js')).readAsStringSync();
-    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'));
 
     // The client built bare <li><a> with no class at all: results rendered as inline, underlined,
     // unpadded body text in an uncapped list, on the published docs site. The class set is derived
@@ -805,7 +789,7 @@ $showcaseCards''',
     expect(_declared(css, '.search-results', 'overflow-y'), 'auto');
 
     // Results appear without a focus change, so the region has to announce them.
-    final config = SiteConfig.load(p.join(themeDir, 'example', 'trellis_site.yaml'));
+    final config = exampleSiteCopy(themeDir);
     await TrellisSite(config).build();
     final docs = html_parser.parse(
       File(p.join(config.outputDir, 'docs', 'getting-started', 'index.html')).readAsStringSync(),
@@ -814,7 +798,7 @@ $showcaseCards''',
   });
 
   test('article code blocks wrap rather than becoming an unreachable scrollable region', () {
-    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'));
     // The SSG emits article <pre> with no tabindex, so a horizontally scrolling one is content a
     // keyboard-only visitor cannot reach (axe scrollable-region-focusable, WCAG 2.1.1). The base
     // `pre` rule is `overflow: auto`; `.prose pre` is what keeps article code out of that state.
@@ -863,7 +847,7 @@ $showcaseCards''',
   }, timeout: const Timeout(Duration(minutes: 3)));
 
   test('L7/L8/L9/L12 sticky-header offsets, capped mobile contents, unscaled no-JS headline', () async {
-    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'));
     final script = File(p.join(themeDir, 'static', 'js', 'lattice.js')).readAsStringSync();
     final home = File(p.join(themeDir, 'layouts', 'home.html')).readAsStringSync();
 
@@ -936,7 +920,7 @@ $showcaseCards''',
     expect(css, isNot(contains('#main-content')));
     expect(RegExp(r'\.hero-section\s*\{([^}]*)\}').firstMatch(css)!.group(1), isNot(contains('!important')));
 
-    final config = SiteConfig.load(p.join(themeDir, 'example', 'trellis_site.yaml'));
+    final config = exampleSiteCopy(themeDir);
     await TrellisSite(config).build();
     for (final file in Directory(config.outputDir).listSync(recursive: true).whereType<File>()) {
       if (!file.path.endsWith('.html')) continue;
@@ -950,7 +934,7 @@ $showcaseCards''',
   test('L14 the vendored faces are the fonts the stylesheet claims, and draw what the theme emits', () async {
     await expectThemeFontContract(
       themeDir: themeDir,
-      compiledCss: TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true),
+      compiledCss: TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss')),
       // Floors sit about a tenth under the shipped sizes and glyph counts: a face that loses a
       // table, its embedded OFL name records or a third of its glyphs fails, while trimming a few
       // codepoints does not. `axes` is exact, and is what the old `fraunces-latin.woff2 <= 70KB`
@@ -991,7 +975,7 @@ $showcaseCards''',
   });
 
   test('terminal-card prefixes stay one column wide so the text column stays flush', () {
-    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true);
+    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'));
     // The mechanism the one-character rule depends on: the prompt has no width of its own and the
     // text is offset from it by exactly one column, so prefix length *is* the text column's origin.
     // Give .terminal-prompt a fixed width and this constraint can be relaxed on purpose.
@@ -1086,19 +1070,6 @@ double _contrastRatio(String foreground, String background) {
 int _readUint32(List<int> bytes, int offset) =>
     (bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3];
 
-Future<Map<String, dynamic>?> _runNodeHarness(String mode, String scriptPath) async {
-  try {
-    final harnessPath = p.join(Directory.current.path, 'test', 'theme_client_behavior_harness.js');
-    final result = await Process.run('node', [harnessPath, mode, scriptPath]);
-    expect(result.exitCode, 0, reason: 'theme client harness failed: ${result.stderr}');
-    return jsonDecode(result.stdout as String) as Map<String, dynamic>;
-  } on ProcessException {
-    _requireNodeInCi('the theme client behavioural harness');
-    markTestSkipped('system node not found – theme client behavioral harness skipped');
-    return null;
-  }
-}
-
 void _expectShowcaseSources(String source, {required bool dark}) {
   final images = html_parser.parse(source).querySelectorAll('.theme-card img[data-light][data-dark]');
   expect(images, isNotEmpty);
@@ -1111,26 +1082,5 @@ void _expectShowcaseSources(String source, {required bool dark}) {
     for (final attribute in ['src', 'data-light', 'data-dark']) {
       expect(image.attributes[attribute], isNot(startsWith('//')), reason: image.outerHtml);
     }
-  }
-}
-
-void _copyDirectory(Directory source, Directory destination) {
-  destination.createSync(recursive: true);
-  for (final entity in source.listSync()) {
-    final target = p.join(destination.path, p.basename(entity.path));
-    if (entity is Directory) {
-      _copyDirectory(entity, Directory(target));
-    } else if (entity is File) {
-      entity.copySync(target);
-    }
-  }
-}
-
-/// Skipping a node-gated check is a local convenience; in CI it is a silent hole
-/// - the run reports "All tests passed!" with [what] never executed. Fail loudly
-/// there instead, so the gate cannot go green on an assertion that did not run.
-void _requireNodeInCi(String what) {
-  if (Platform.environment['CI'] == 'true') {
-    fail('node is required in CI: $what did not run');
   }
 }

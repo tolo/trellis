@@ -1,25 +1,13 @@
-$trellis-skin: auto !default;
-$trellis-primary-color: #315f46 !default;
-$trellis-accent-color: #912f27 !default;
-$trellis-text-color: #17291f !default;
-$trellis-muted-color: #59695e !default;
-$trellis-bg-color: #f2f1e8 !default;
-$trellis-surface-color: #fbfaf4 !default;
-$trellis-border-color: #bdc4b6 !default;
-$trellis-font-family: EB Garamond, Iowan Old Style, Georgia, serif !default;
-$trellis-heading-font-family: EB Garamond, Iowan Old Style, Georgia, serif !default;
-$trellis-code-font-family: SFMono-Regular, Consolas, Liberation Mono, monospace !default;
-$trellis-max-width: 1180px !default;
-$trellis-border-radius: 2px !default;
-$trellis-plate-label: 'Plate' !default;
-$trellis-show-plate-numbers: true !default;
-$trellis-show-sidenotes: true !default;
-// Code needs more than the two inks: sepia for literals, indigo for types and titles.
-// Overridden per skin like the seven palette params, so a forced skin gets them too.
-$folio-code-number: #7a4a12 !default;
-$folio-code-function: #2c4a72 !default;
+// Folio sass/main.scss. Compiled to css/main.css by the SASS bridge, which
+// `@use`s this file with the merged theme params configured (`with (...)`).
+// Only the variables _variables.scss declares !default are configurable.
 
-@import 'dark_tokens';
+// Sass configures a module only when it is first loaded, so this `@forward` must
+// come before any other rule that loads _variables.scss. Reordering it fails the
+// build with "This module was already loaded".
+@forward 'variables';
+@use 'sass:map';
+@use 'variables' as *;
 
 @font-face {
   font-family: 'EB Garamond';
@@ -33,16 +21,19 @@ $folio-code-function: #2c4a72 !default;
   size-adjust: 118%;
 }
 
+// Every colour reads $trellis-palette-dark, so a site's `<name>_dark` param reaches
+// the `skin: auto` blocks and _skins/_dark.scss stays the one place the dark
+// colours are written.
 @mixin folio-dark {
-  --folio-ink: #{$folio-dark-ink};
-  --folio-muted: #{$folio-dark-muted};
-  --folio-paper: #{$folio-dark-paper};
-  --folio-surface: #{$folio-dark-surface};
-  --folio-rule: #{$folio-dark-rule};
-  --folio-green: #{$folio-dark-green};
-  --folio-rubric: #{$folio-dark-rubric};
-  --folio-code-number: #{$folio-dark-code-number};
-  --folio-code-function: #{$folio-dark-code-function};
+  --folio-ink: #{map.get($trellis-palette-dark, text-color)};
+  --folio-muted: #{map.get($trellis-palette-dark, muted-color)};
+  --folio-paper: #{map.get($trellis-palette-dark, bg-color)};
+  --folio-surface: #{map.get($trellis-palette-dark, surface-color)};
+  --folio-rule: #{map.get($trellis-palette-dark, border-color)};
+  --folio-green: #{map.get($trellis-palette-dark, primary-color)};
+  --folio-rubric: #{map.get($trellis-palette-dark, accent-color)};
+  --folio-code-number: #{map.get($trellis-palette-dark, code-number)};
+  --folio-code-function: #{map.get($trellis-palette-dark, code-function)};
 }
 
 :root {

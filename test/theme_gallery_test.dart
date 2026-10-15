@@ -73,7 +73,7 @@ $screenshotsYaml
 
   ThemeGalleryGenerator generator() => ThemeGalleryGenerator(root.path, warningSink: warnings.add);
 
-  test('S04 writes sorted count-neutral metadata and both declared screenshots', () {
+  test('writes sorted count-neutral metadata and both declared screenshots', () {
     addTheme('zeta', features: 'responsive, landing, dark-mode');
     addTheme('alpha', features: 'search, docs');
 
@@ -95,7 +95,7 @@ $screenshotsYaml
     expect(generator().check().isFresh, isTrue);
   });
 
-  test('S05 rejects missing, repeated, and multiple recognized archetype occurrences', () {
+  test('rejects missing, repeated, and multiple recognized archetype occurrences', () {
     addTheme('none', features: 'responsive, accessible');
     expect(
       generator().write,
@@ -122,7 +122,7 @@ $screenshotsYaml
     );
   });
 
-  test('S06 warns, omits a missing declared screenshot, removes stale copy, and renders one image', () async {
+  test('warns, omits a missing declared screenshot, removes stale copy, and renders one image', () async {
     addTheme('partial', features: 'blog, other', darkExists: false);
     final staleDark = File(p.join(root.path, 'site', 'static', 'themes', 'partial', 'dark.png'))
       ..parent.createSync(recursive: true)
@@ -165,7 +165,7 @@ $screenshotsYaml
     expect(gallery.querySelector('img[src="/themes/partial/light.png"]'), isNotNull);
   });
 
-  test('S04 accepts a theme that does not declare screenshots', () {
+  test('accepts a theme that does not declare screenshots', () {
     addTheme('text-only', declareScreenshots: false, lightExists: false, darkExists: false);
 
     generator().write();
@@ -178,7 +178,7 @@ $screenshotsYaml
     expect(generator().check().isFresh, isTrue);
   });
 
-  test('S07 check reports metadata, byte, inventory, and orphan drift without mutating outputs', () {
+  test('check reports metadata, byte, inventory, and orphan drift without mutating outputs', () {
     addTheme('alpha');
     generator().write();
 
@@ -206,7 +206,7 @@ $screenshotsYaml
     expect(removed.problems.join('\n'), allOf(contains('beta'), contains('beta/light.png')));
   });
 
-  test('S07 identical-byte screenshot relocation is stale until regeneration', () {
+  test('identical-byte screenshot relocation is stale until regeneration', () {
     addTheme('alpha');
     generator().write();
     final themeDir = p.join(root.path, 'themes', 'alpha');
@@ -225,7 +225,7 @@ $screenshotsYaml
     expect(relocated.existsSync(), isTrue);
   });
 
-  test('S07 swapped screenshot bytes fail even after gallery regeneration', () {
+  test('swapped screenshot bytes fail even after gallery regeneration', () {
     addTheme('alpha');
     addTheme('beta', features: 'landing');
     generator().write();
@@ -241,7 +241,7 @@ $screenshotsYaml
     );
   });
 
-  test('S04 rejects unsafe or mismatched manifest names before mutating outputs', () {
+  test('rejects unsafe or mismatched manifest names before mutating outputs', () {
     for (final unsafeName in <String>['../escape', 'other/name', r'other\name']) {
       addTheme('safe', name: unsafeName);
       final sentinel = File(p.join(root.path, 'site', 'data', 'themes.yaml'))
@@ -266,7 +266,7 @@ $screenshotsYaml
     );
   });
 
-  test('S04 rejects screenshot symlinks that resolve outside the theme', () {
+  test('rejects screenshot symlinks that resolve outside the theme', () {
     addTheme('safe');
     final external = File(p.join(root.path, 'secret.txt'))..writeAsStringSync('not public');
     final source = File(p.join(root.path, 'themes', 'safe', 'screenshots', 'light.png'))..deleteSync();
@@ -283,7 +283,7 @@ $screenshotsYaml
     expect(File(p.join(root.path, 'site', 'static', 'themes', 'safe', 'light.png')).existsSync(), isFalse);
   });
 
-  test('S04 does not traverse generated-output symlinks', () {
+  test('does not traverse generated-output symlinks', () {
     addTheme('safe');
     final externalDir = Directory(p.join(root.path, 'external'))..createSync();
     final sentinel = File(p.join(externalDir.path, 'sentinel.txt'))..writeAsStringSync('keep');
@@ -300,7 +300,7 @@ $screenshotsYaml
     expect(check.problems.join('\n'), contains('unsafe symbolic link'));
   });
 
-  test('S04 rejects in-repository symlinked output parents', () {
+  test('rejects in-repository symlinked output parents', () {
     addTheme('safe');
     final themeDir = Directory(p.join(root.path, 'themes', 'safe'));
     final sentinel = File(p.join(themeDir.path, 'sentinel.txt'))..writeAsStringSync('keep');
@@ -388,7 +388,7 @@ $screenshotsYaml
     expect(((loadYaml(text) as YamlMap)['themes'] as YamlList).single, isA<YamlMap>());
   });
 
-  test('S05/S07 CLI exits non-zero with actionable validation and drift output', () async {
+  test('CLI exits non-zero with actionable validation and drift output', () async {
     addTheme('alpha');
     final toolPath = p.join(Directory.current.path, 'tool', 'generate_theme_gallery.dart');
 

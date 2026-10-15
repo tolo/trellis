@@ -5,6 +5,8 @@ import 'package:path/path.dart' as p;
 import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
 
+import '../version.dart';
+
 /// The `trellis build` command.
 ///
 /// Loads `trellis_site.yaml` from the current directory, runs the full SSG
@@ -109,8 +111,8 @@ class BuildCommand extends Command<int> {
     final int sassCount;
     try {
       sassCount = await _compileSass(config, verbose, themeBuildConfig: result.themeBuildConfig);
-    } on SassCompilationException catch (e) {
-      stderr.writeln('SASS compilation failed: $e');
+    } on _SassBuildFailure catch (failure) {
+      stderr.write(_describeSassFailure(failure, siteDir: config.siteDir));
       return 1;
     }
 
@@ -143,15 +145,15 @@ class BuildCommand extends Command<int> {
 ///
 /// Returns the number of SASS files compiled.
 ///
-/// Throws [SassCompilationException] on compilation failure.
+/// Throws [_SassBuildFailure] on compilation failure.
 Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? themeBuildConfig}) async {
   final loadPaths = themeBuildConfig?.sassLoadPaths ?? [config.staticDir];
   var count = 0;
 
   // Compile theme SASS files from theme's sass/ directory.
-  // When a theme bridge is active, generate a wrapper entry file that imports
-  // _theme_params.scss before the theme's SCSS file. This ensures merged params
-  // (theme defaults + site theme_params:) override the theme's !default values.
+  // When a theme bridge is active, each entry is compiled through a generated
+  // wrapper (ThemeBuildConfig.bridgeWrapperSource) that `@use`s the entry with
+  // the merged params (theme defaults + site theme_params:) configured onto it.
   if (themeBuildConfig != null && config.themeConfig != null) {
     // Normalize so a relative `theme:` value (e.g. `../../themes/arbor`) collapses
     // its `..` segments — matches the engine's theme resolution in
@@ -170,40 +172,29 @@ Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? the
         final outPath = p.join(config.outputDir, 'css', p.setExtension(relative, '.css'));
         Directory(p.dirname(outPath)).createSync(recursive: true);
 
-        // Generate a bridge wrapper that imports _theme_params.scss first.
-        // The wrapper lives in .trellis/build/ so its @import "theme_params"
+        // The wrapper lives in .trellis/build/ so its `@use "theme_params"`
         // resolves to the adjacent _theme_params.scss. The theme's actual SCSS
-        // file is imported via absolute path so its own relative @imports
-        // resolve correctly from its original directory.
+        // file is `@use`d via absolute path so its own relative `@use`s resolve
+        // from its original directory.
         final wrapperBaseName = p.basenameWithoutExtension(file.path);
         final wrapperPath = p.join(themeBuildConfig.buildDir, 'bridge_$wrapperBaseName.scss');
-        final themeFileAbsolute = p.canonicalize(file.path);
+        File(wrapperPath).writeAsStringSync(themeBuildConfig.bridgeWrapperSource(p.canonicalize(file.path)));
 
-        // For skin: light | dark, force the corresponding palette by importing
-        // the theme's _skins/_<skin>.scss BEFORE theme_params. The skin file's
-        // color vars are `!default`, and SASS honors the FIRST `!default`
-        // assignment — so the skin palette wins over the light color defaults
-        // that theme.yaml bakes into _theme_params.scss (which are also
-        // `!default`), while every non-color param in theme_params still applies
-        // untouched. skin: auto (and unset) emits no skin import, keeping output
-        // byte-for-byte identical to before this feature; auto's OS dark-mode
-        // handling stays in the theme's own @media block. A theme without the
-        // skin file is handled gracefully by skipping the import.
-        final skinImport = _skinImportLine(themeDir, themeBuildConfig.skinMode);
-
-        File(wrapperPath).writeAsStringSync(
-          '// Auto-generated bridge wrapper — do not edit\n'
-          '$skinImport'
-          '@import "theme_params";\n'
-          '@import "$themeFileAbsolute";\n',
-        );
-
-        final css = TrellisCss.compileSass(
-          wrapperPath,
-          outputStyle: OutputStyle.compressed,
-          loadPaths: loadPaths,
-          silenceImportDeprecation: true,
-        );
+        // Fatal for themes only: an @import-era theme would compile with a
+        // warning, but no skin file is injected any more, so `skin: dark` would
+        // silently build light (ADR-013). A site's own stylesheets keep @import
+        // until Dart Sass 3.0.
+        final String css;
+        try {
+          css = TrellisCss.compileSass(
+            wrapperPath,
+            outputStyle: OutputStyle.compressed,
+            loadPaths: loadPaths,
+            fatalImportDeprecation: true,
+          );
+        } on SassCompilationException catch (e) {
+          throw _SassBuildFailure(e, themeName: config.themeConfig!.name);
+        }
         File(outPath).writeAsStringSync(css);
 
         if (verbose) stdout.writeln('  Compiled ${file.path} → $outPath');
@@ -225,12 +216,12 @@ Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? the
       final outPath = p.join(config.outputDir, p.setExtension(relative, '.css'));
       Directory(p.dirname(outPath)).createSync(recursive: true);
 
-      final css = TrellisCss.compileSass(
-        file.path,
-        outputStyle: OutputStyle.compressed,
-        loadPaths: loadPaths,
-        silenceImportDeprecation: true,
-      );
+      final String css;
+      try {
+        css = TrellisCss.compileSass(file.path, outputStyle: OutputStyle.compressed, loadPaths: loadPaths);
+      } on SassCompilationException catch (e) {
+        throw _SassBuildFailure(e);
+      }
       File(outPath).writeAsStringSync(css);
 
       if (verbose) stdout.writeln('  Compiled ${file.path} → $outPath');
@@ -241,25 +232,63 @@ Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? the
   return count;
 }
 
-/// Returns the bridge `@import` line that forces the [skinMode] palette, or an
-/// empty string for [SkinMode.auto] (and when the theme ships no matching skin
-/// file).
-///
-/// Imports `<themeDir>/sass/_skins/_<skin>.scss` via an absolute (canonical)
-/// path so the file resolves regardless of the wrapper's location. Emitted
-/// BEFORE `@import "theme_params"` so the skin's `!default` color vars win over
-/// theme.yaml's baked-in light defaults (see caller for the ordering rationale).
-/// Auto returns `''`, preserving the pre-feature wrapper byte-for-byte.
-String _skinImportLine(String themeDir, SkinMode skinMode) {
-  final skinName = switch (skinMode) {
-    SkinMode.light => 'light',
-    SkinMode.dark => 'dark',
-    SkinMode.auto => null,
-  };
-  if (skinName == null) return '';
+/// A SASS compilation failure, with the theme it came from when it happened in a
+/// theme entry (as opposed to the site's own stylesheets).
+class _SassBuildFailure implements Exception {
+  _SassBuildFailure(this.error, {this.themeName});
 
-  final skinFile = File(p.join(themeDir, 'sass', '_skins', '_$skinName.scss'));
-  if (!skinFile.existsSync()) return ''; // theme without _skins/ — skip gracefully
-
-  return '@import "${p.canonicalize(skinFile.path)}";\n';
+  final SassCompilationException error;
+  final String? themeName;
 }
+
+const _authoringGuideUrl = 'https://tolo.github.io/trellis/docs/themes/authoring/';
+
+/// Renders [failure] for the terminal: the Trellis explanation first, the raw
+/// Sass text beneath it as detail.
+///
+/// An `@import` in a theme gets its own message because Sass's wording ("Remove
+/// this setting") points at a compiler option the user cannot change. Matching
+/// on the message is the only handle: `trellis_css` does not expose the
+/// deprecation id, and an unmatched message just falls through to the generic
+/// rendering, which still carries the location.
+String _describeSassFailure(_SassBuildFailure failure, {required String siteDir}) {
+  final error = failure.error;
+  final themeName = failure.themeName;
+  final location = _sassLocation(error, siteDir);
+  final buffer = StringBuffer();
+
+  if (themeName != null && error.message.contains('@import rules are deprecated')) {
+    buffer
+      ..writeln('Build failed: theme "$themeName" uses @import${location == null ? '' : ' at $location'}.')
+      ..writeln('Theme SASS is compiled with @use/@forward, so an @import theme cannot be built. To fix it, either:')
+      ..writeln('  - if it is a built-in Trellis theme, re-add it at this release:')
+      ..writeln('      trellis theme remove $themeName')
+      ..writeln('      trellis theme add https://github.com/tolo/trellis --theme $themeName --ref v$cliVersion')
+      ..writeln('  - otherwise migrate its SASS to @use: $_authoringGuideUrl')
+      ..writeln()
+      ..writeln('Sass reported:')
+      ..writeln(_indent(error.message));
+    return buffer.toString();
+  }
+
+  buffer.writeln('SASS compilation failed${themeName == null ? '' : ' in theme "$themeName"'}: ${error.message}');
+  if (location != null) buffer.writeln('  at $location');
+  return buffer.toString();
+}
+
+/// `path:line:column` of [error], with the path relative to [siteDir] when it is
+/// inside it. Null when the exception carries no span.
+String? _sassLocation(SassCompilationException error, String siteDir) {
+  final path = error.path;
+  if (path == null) return null;
+  // The theme wrapper imports its entry by canonicalized (absolute, normalized)
+  // path, so normalize both sides before testing containment.
+  final canonicalSite = p.canonicalize(siteDir);
+  final canonicalPath = p.canonicalize(path);
+  final shown = p.isWithin(canonicalSite, canonicalPath) ? p.relative(canonicalPath, from: canonicalSite) : path;
+  final line = error.line;
+  if (line == null) return shown;
+  return error.column == null ? '$shown:$line' : '$shown:$line:${error.column}';
+}
+
+String _indent(String text) => text.trimRight().split('\n').map((line) => line.isEmpty ? line : '  $line').join('\n');

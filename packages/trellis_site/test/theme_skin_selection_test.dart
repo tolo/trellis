@@ -20,7 +20,7 @@ void main() {
     });
   });
 
-  group('ThemeSassGenerator — skin mode resolution', () {
+  group('ThemeSassGenerator — skin validation', () {
     late Directory tempDir;
     late String themeDir;
 
@@ -32,23 +32,17 @@ void main() {
 
     tearDown(() => tempDir.deleteSync(recursive: true));
 
-    test('skin: light resolves to SkinMode.light', () {
-      final config = _generate(tempDir.path, themeDir, 'light');
-      expect(config.skinMode, SkinMode.light);
-    });
+    for (final skin in ['light', 'dark', 'auto']) {
+      test('skin: $skin is accepted', () {
+        expect(() => _generate(tempDir.path, themeDir, skin), returnsNormally);
+      });
+    }
 
-    test('skin: dark resolves to SkinMode.dark', () {
-      final config = _generate(tempDir.path, themeDir, 'dark');
-      expect(config.skinMode, SkinMode.dark);
-    });
-
-    test('skin: auto resolves to SkinMode.auto', () {
-      final config = _generate(tempDir.path, themeDir, 'auto');
-      expect(config.skinMode, SkinMode.auto);
-    });
-
-    test('invalid skin value throws ArgumentError', () {
-      expect(() => SkinMode.parse('invalid'), throwsA(isA<ArgumentError>()));
+    test('an unknown skin value is rejected before any theme compile', () {
+      expect(
+        () => _generate(tempDir.path, themeDir, 'invalid'),
+        throwsA(isA<ArgumentError>().having((e) => e.message, 'message', contains("Unknown skin 'invalid'"))),
+      );
     });
   });
 }

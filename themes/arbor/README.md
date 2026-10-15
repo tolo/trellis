@@ -39,7 +39,7 @@ CDN-loaded** (see [`VENDORED.md`](VENDORED.md)).
 Install it from the Trellis repository:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme arbor --ref v0.11.0
+trellis theme add https://github.com/tolo/trellis --theme arbor --ref v0.11.1
 ```
 
 That copies `themes/arbor/` into your site's `themes/` and sets `theme: arbor`
@@ -50,18 +50,24 @@ it without installing the theme first fails with
 ```yaml
 theme_params:
   skin: auto
-  primary_color: "#0f7a4d"
+  primary_color: "#0f7a4d"       # light mode
+  primary_color_dark: "#4ade80"  # dark mode (skin: dark, and auto's dark block)
   sidebar_title: "Guides"
   show_search: true
 ```
 
+Colours are set per mode: `primary_color` sets the light palette's entry and
+`primary_color_dark` the dark one's. A plain `primary_color` has no effect on a
+`skin: dark` site, and dark colours are never derived from light ones.
+
 ## Params
 
-Arbor implements all 18 standard theme params (see
+Arbor implements all 25 standard theme params (see
 `docs/reference/standard-params.md`) plus documentation-specific params:
 
 | Param | Type | Default | Purpose |
 |---|---|---|---|
+| `excerpt_length` | int | `160` | Character limit of auto-generated summaries |
 | `show_sidebar` | boolean | `true` | Show the `${site.menu}` navigation sidebar |
 | `show_toc` | boolean | `true` | Show the in-page table of contents |
 | `show_prev_next` | boolean | `true` | Show prev/next page links |

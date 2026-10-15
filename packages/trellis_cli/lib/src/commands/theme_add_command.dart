@@ -83,9 +83,7 @@ class ThemeAddCommand extends Command<int> {
       return 1;
     }
 
-    // Create themes/ directory if needed
     final themesDir = p.join(baseDir, 'themes');
-    Directory(themesDir).createSync(recursive: true);
 
     // Determine if source is a local path or git URL
     final isLocal = _isLocalPath(source);
@@ -93,11 +91,13 @@ class ThemeAddCommand extends Command<int> {
     final String themeName;
     try {
       if (isLocal) {
+        // Creates themes/ itself, once the source has passed its checks.
         themeName = await _addFromLocalPath(source, themesDir, subdirectoryTheme);
-      } else if (subdirectoryTheme != null) {
-        themeName = await _addFromGitSubdirectory(source, themesDir, ref, subdirectoryTheme);
       } else {
-        themeName = await _addFromGit(source, themesDir, ref);
+        Directory(themesDir).createSync(recursive: true);
+        themeName = subdirectoryTheme != null
+            ? await _addFromGitSubdirectory(source, themesDir, ref, subdirectoryTheme)
+            : await _addFromGit(source, themesDir, ref);
       }
     } on _ThemeAddException {
       return 1;
@@ -184,11 +184,53 @@ class ThemeAddCommand extends Command<int> {
     final sourceDir = subdirectoryTheme == null
         ? Directory(source)
         : Directory(_resolveThemeSubdirectory(source, subdirectoryTheme, source));
+    // Before the installed check: in a theme's own example site the link back to
+    // the theme root makes the theme look installed, and `theme update` would
+    // then git pull in the author's own repository through that link.
+    _requireSourceOutsideDestination(sourceDir, p.dirname(themesDir), themeName);
     _requireNotInstalled(themesDir, themeName);
 
+    Directory(themesDir).createSync(recursive: true);
     // Copy directory recursively, excluding .git/
     _copyDirectory(sourceDir, Directory(p.join(themesDir, themeName)));
     return themeName;
+  }
+
+  /// Refuses a [sourceDir] that is, or contains, the install destination
+  /// `<siteDir>/themes/<themeName>`.
+  ///
+  /// The case is `trellis theme add ../` from a theme's own example site: the
+  /// destination sits inside the source, so the copy would recurse into itself
+  /// until the path is too long, leaving a half-written `themes/` behind.
+  void _requireSourceOutsideDestination(Directory sourceDir, String siteDir, String themeName) {
+    final source = sourceDir.resolveSymbolicLinksSync();
+    final site = Directory(siteDir).resolveSymbolicLinksSync();
+    final destination = p.join(site, 'themes', themeName);
+    if (p.equals(source, destination) || p.isWithin(source, destination)) {
+      // The link remedy fits only the layout `trellis create` scaffolds: the site is the theme's own example/.
+      final remedy = p.equals(site, p.join(source, 'example'))
+          ? ' To preview a theme from its own example/ site, link the theme root as '
+                'example/themes/${_linkName(source, themeName)} -> ../.. instead (see the theme authoring guide).'
+          : '';
+      stderr.writeln(
+        'Error: Cannot install from $source: it contains the site at $siteDir, so the copy would recurse into '
+        'itself.$remedy',
+      );
+      throw _ThemeAddException();
+    }
+  }
+
+  /// The name `theme:` and the example link must carry: the manifest's, since
+  /// [fallback] is only the basename the source happened to be reached under
+  /// (an alias, a case variant). Falls back when [sourceDir] has no valid
+  /// manifest, or its name is not one `theme:` accepts.
+  String _linkName(String sourceDir, String fallback) {
+    try {
+      final name = ThemeManifest.load(sourceDir).name;
+      return validateThemeName(name) == null ? name : fallback;
+    } on ThemeManifestException {
+      return fallback;
+    }
   }
 
   Future<String> _addFromGit(String url, String themesDir, String? ref) async {

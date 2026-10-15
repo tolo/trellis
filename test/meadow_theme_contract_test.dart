@@ -9,11 +9,12 @@ import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
 
 import 'theme_font_contract.dart';
+import 'theme_use_support.dart';
 
 void main() {
   final themeDir = p.join(Directory.current.path, 'themes', 'meadow');
 
-  test('S01/S07 TI01 Meadow manifest exposes the exact landing contract', () {
+  test('Meadow manifest exposes the exact landing contract', () {
     final manifest = ThemeManifest.load(themeDir);
     const standard = {
       'skin',
@@ -24,6 +25,13 @@ void main() {
       'bg_color',
       'surface_color',
       'border_color',
+      'primary_color_dark',
+      'accent_color_dark',
+      'text_color_dark',
+      'muted_color_dark',
+      'bg_color_dark',
+      'surface_color_dark',
+      'border_color_dark',
       'font_family',
       'heading_font_family',
       'code_font_family',
@@ -44,11 +52,15 @@ void main() {
       'sun_color',
       'bloom_color',
       'coral_color',
+      'sky_color_dark',
+      'sun_color_dark',
+      'bloom_color_dark',
+      'coral_color_dark',
       'favicon',
     };
 
     expect(manifest.name, 'meadow');
-    expect(manifest.minTrellisVersion, '0.10.0');
+    expect(manifest.minTrellisVersion, '0.12.0');
     expect(manifest.features.where({'docs', 'landing', 'blog'}.contains), ['landing']);
     expect(manifest.params.keys.toSet(), standard.union(meadow));
     const expectedTypes = {
@@ -60,6 +72,13 @@ void main() {
       'bg_color': 'color',
       'surface_color': 'color',
       'border_color': 'color',
+      'primary_color_dark': 'color',
+      'accent_color_dark': 'color',
+      'text_color_dark': 'color',
+      'muted_color_dark': 'color',
+      'bg_color_dark': 'color',
+      'surface_color_dark': 'color',
+      'border_color_dark': 'color',
       'font_family': 'string',
       'heading_font_family': 'string',
       'code_font_family': 'string',
@@ -78,6 +97,10 @@ void main() {
       'sun_color': 'color',
       'bloom_color': 'color',
       'coral_color': 'color',
+      'sky_color_dark': 'color',
+      'sun_color_dark': 'color',
+      'bloom_color_dark': 'color',
+      'coral_color_dark': 'color',
       'favicon': 'string',
     };
     for (final entry in expectedTypes.entries) {
@@ -122,7 +145,7 @@ void main() {
     for (final param in manifest.params.keys) {
       expect(readme, contains('`$param`'), reason: param);
     }
-    // The font payload's budget, floors, axes and glyph coverage are asserted in S05 TI08.
+    // The font payload's budget, floors, axes and glyph coverage are asserted in the vendored-faces test.
 
     for (final screenshot in manifest.screenshots) {
       final bytes = File(p.join(themeDir, screenshot)).readAsBytesSync();
@@ -133,10 +156,10 @@ void main() {
     expect(File(p.join(themeDir, 'example', '.gitignore')).readAsStringSync(), contains('output/'));
   });
 
-  test('S05 TI08 the vendored faces are the fonts the stylesheet claims, and draw what the theme emits', () async {
+  test('the vendored faces are the fonts the stylesheet claims, and draw what the theme emits', () async {
     await expectThemeFontContract(
       themeDir: themeDir,
-      compiledCss: TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), silenceImportDeprecation: true),
+      compiledCss: TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'), fatalImportDeprecation: true),
       // Floors sit about a tenth under the shipped sizes and glyph counts: a face that loses a
       // table, its embedded OFL name records or a third of its glyphs fails, while trimming a few
       // codepoints does not. `axes` is exact - Bricolage keeps `opsz` because CSS
@@ -164,30 +187,26 @@ void main() {
     );
   });
 
-  test('S01/S06 TI04/TI05 one dark source drives forced and auto skins', () {
-    String compile(String prelude) {
-      final tempDir = Directory.systemTemp.createTempSync('meadow_sass_');
-      addTearDown(() => tempDir.deleteSync(recursive: true));
-      final wrapper = File(p.join(tempDir.path, 'main.scss'))
-        ..writeAsStringSync('$prelude\n@import "${p.join(themeDir, 'sass', 'main.scss')}";\n');
-      return TrellisCss.compileSass(wrapper.path, silenceImportDeprecation: true);
-    }
-
-    final light = compile(r'''
-$trellis-primary-color: #123456;
-$trellis-accent-color: #abcdef;
-$trellis-text-color: #112233;
-$trellis-muted-color: #445566;
-$trellis-bg-color: #778899;
-$trellis-surface-color: #aabbcc;
-$trellis-border-color: #ddeeff;
-$trellis-font-family: Arial, sans-serif;
-$trellis-heading-font-family: Georgia, serif;
-$trellis-code-font-family: Courier New, monospace;
-$trellis-max-width: 900px;
-$trellis-border-radius: 7px;
-''');
-    final dark = compile('\$trellis-skin: dark;\n@import "${p.join(themeDir, 'sass', '_skins', '_dark.scss')}";');
+  test('one dark source drives forced and auto skins', () {
+    final light = compileBridged(
+      themeDir,
+      'auto',
+      siteParams: {
+        'primary_color': '#123456',
+        'accent_color': '#abcdef',
+        'text_color': '#112233',
+        'muted_color': '#445566',
+        'bg_color': '#778899',
+        'surface_color': '#aabbcc',
+        'border_color': '#ddeeff',
+        'font_family': 'Arial, sans-serif',
+        'heading_font_family': 'Georgia, serif',
+        'code_font_family': 'Courier New, monospace',
+        'max_width': '900px',
+        'border_radius': '7px',
+      },
+    );
+    final dark = compileBridged(themeDir, 'dark');
 
     for (final token in [
       '--meadow-leaf: #123456',
@@ -208,7 +227,7 @@ $trellis-border-radius: 7px;
     expect(light, isNot(contains('--meadow-body: "')));
     expect(light, isNot(contains('--meadow-width: "')));
     expect(light, contains('@media (prefers-color-scheme: dark)'));
-    expect(light, contains('data-skin=dark'));
+    expect(light, contains(':root[data-skin=dark]'));
     expect(light, contains('@media (prefers-reduced-motion: reduce)'));
     // The marker is a background on the inline box, not an absolutely-positioned ::before, so a
     // wrapped emphasis gets one band per line fragment instead of one box sized to the whole run.
@@ -361,16 +380,325 @@ $trellis-border-radius: 7px;
     expect(dark.toLowerCase(), contains('--meadow-paper: #0f1c14'));
     expect(dark, isNot(contains('@media (prefers-color-scheme: dark)')));
 
-    final darkTokens = File(p.join(themeDir, 'sass', '_dark_tokens.scss')).readAsStringSync();
-    final darkSkin = File(p.join(themeDir, 'sass', '_skins', '_dark.scss')).readAsStringSync();
-    expect(RegExp(r'#[0-9a-fA-F]{6}').hasMatch(darkSkin), isFalse);
-    for (final value in RegExp(r'#[0-9a-fA-F]{6}').allMatches(darkTokens).map((m) => m.group(0)!)) {
-      expect(File(p.join(themeDir, 'sass', 'main.scss')).readAsStringSync(), isNot(contains(value)));
+    // The dark palette is the one dark authority. Neither the entry nor the
+    // variables module restates a dark hex, and the dark mixin reads the palette.
+    String sass(String relative) => stripComments(File(p.join(themeDir, 'sass', relative)).readAsStringSync());
+    final hex = RegExp(r'#[0-9a-fA-F]{6}');
+    final darkValues = hex.allMatches(sass('_skins/_dark.scss')).map((m) => m.group(0)!.toLowerCase()).toSet();
+    expect(darkValues, hasLength(14));
+    // The primary button's literals are theme-authored by decision: the dark pair reuses two palette hexes on purpose.
+    final buttonLiteral = RegExp(r'--meadow-primary-(bg|text):\s*#[0-9a-fA-F]{6};');
+    for (final source in [sass('main.scss'), sass('_variables.scss')]) {
+      final withoutButton = source.replaceAll(buttonLiteral, '');
+      for (final value in darkValues) {
+        expect(withoutButton.toLowerCase(), isNot(contains(value)), reason: value);
+      }
     }
+    expect(File(p.join(themeDir, 'sass', '_dark_tokens.scss')).existsSync(), isFalse);
+    expect(sass('_variables.scss'), contains(r'$trellis-palette-dark'));
   });
 
-  test('S01-S07 TI02/TI03/TI06/TI07 bridged default is complete and clean', () async {
-    final config = SiteConfig.load(p.join(themeDir, 'example', 'trellis_site.yaml'));
+  group('per-mode colour params on the @use bridge', () {
+    // Palette key -> the `:root` custom property it feeds. The first eleven are
+    // colour params; the last three are dark tokens with no param.
+    const paramProps = {
+      'text-color': '--meadow-ink',
+      'muted-color': '--meadow-muted',
+      'bg-color': '--meadow-paper',
+      'surface-color': '--meadow-surface',
+      'border-color': '--meadow-line',
+      'primary-color': '--meadow-leaf',
+      'accent-color': '--meadow-lime',
+      'sky-color': '--meadow-sky',
+      'sun-color': '--meadow-sun',
+      'bloom-color': '--meadow-bloom',
+      'coral-color': '--meadow-coral',
+    };
+    const darkOnlyProps = {'strong': '--meadow-strong', 'leaf-deep': '--meadow-leaf-deep', 'focus': '--meadow-focus'};
+    late Map<String, String> lightPalette;
+    late Map<String, String> darkPalette;
+
+    setUpAll(() {
+      lightPalette = readPalette(themeDir, 'light');
+      darkPalette = readPalette(themeDir, 'dark');
+    });
+
+    void expectParamColors(Map<String, String> props, Map<String, String> palette, String reason) {
+      for (final entry in paramProps.entries) {
+        expect(props[entry.value], palette[entry.key], reason: '$reason ${entry.key}');
+      }
+    }
+
+    // The primary button is theme-authored: a literal pair per mode, driven by no colour param.
+    const lightButton = {'--meadow-primary-bg': '#14251a', '--meadow-primary-text': '#d4f15f'};
+    const darkButton = {'--meadow-primary-bg': '#d8f475', '--meadow-primary-text': '#14251a'};
+
+    void expectButton(Map<String, String> props, Map<String, String> expected, String reason) {
+      for (final entry in expected.entries) {
+        expect(props[entry.key], entry.value, reason: '$reason ${entry.key}');
+      }
+    }
+
+    /// The dark mixin's block also carries the three param-less dark tokens and the dark button literals.
+    void expectDarkBlock(Map<String, String> props, String reason) {
+      expectParamColors(props, darkPalette, reason);
+      for (final entry in darkOnlyProps.entries) {
+        expect(props[entry.value], darkPalette[entry.key], reason: '$reason ${entry.key}');
+      }
+      expectButton(props, darkButton, reason);
+    }
+
+    // Sass strips the quotes from an attribute selector, so these are the unquoted forms.
+    const autoOnly = ['@media (prefers-color-scheme: dark)', ':root[data-skin=dark]', ':root[data-skin=light]'];
+
+    /// A forced dark skin emits the base `:root`, then the dark mixin's `:root`, which wins the cascade.
+    Map<String, String> forcedDarkFinal(String css) => customProps(rootBlocks(css)[1]);
+
+    test('every skin compiles fatal on @import, and each carries its own palette', () {
+      final light = compileBridged(themeDir, 'light');
+      final dark = compileBridged(themeDir, 'dark');
+      final auto = compileBridged(themeDir, 'auto');
+
+      expect(light, isNot(equals(dark)));
+      expectParamColors(customProps(rootBlock(light)), lightPalette, 'light');
+      expectButton(customProps(rootBlock(light)), lightButton, 'light');
+      expectDarkBlock(forcedDarkFinal(dark), 'dark final');
+      expect(forcedDarkFinal(dark)['--meadow-paper'], '#0f1c14');
+
+      expectParamColors(customProps(rootBlock(auto)), lightPalette, 'auto base');
+      expectDarkBlock(customProps(darkMediaRoot(auto)!), 'auto media');
+      expectDarkBlock(customProps(ruleBody(auto, ':root[data-skin=dark]')!), 'auto toggle dark');
+      expectParamColors(customProps(ruleBody(auto, ':root[data-skin=light]')!), lightPalette, 'auto toggle light');
+      expectButton(customProps(rootBlock(auto)), lightButton, 'auto base');
+      expectButton(customProps(ruleBody(auto, ':root[data-skin=light]')!), lightButton, 'auto toggle light');
+
+      // Each negative is paired with the same query matching under auto: a query that
+      // can never match (a quote style Sass does not emit) would pass vacuously.
+      for (final query in autoOnly) {
+        expect(auto, contains(query), reason: 'auto emits $query');
+        expect(light, isNot(contains(query)), reason: 'light omits $query');
+        expect(dark, isNot(contains(query)), reason: 'dark omits $query');
+      }
+    });
+
+    test('site overrides reach compiled CSS and variable-less params leave it unaffected', () {
+      const overrides = {'max_width': '900px', 'font_family': 'Arial, sans-serif', 'border_radius': '9px'};
+      final css = compileBridged(themeDir, 'light', siteParams: overrides);
+
+      final root = customProps(rootBlock(css));
+      expect(root['--meadow-width'], '900px');
+      expect(root['--meadow-body'], 'Arial, sans-serif');
+      expect(root['--meadow-radius'], '9px');
+
+      final withLists = compileBridged(
+        themeDir,
+        'light',
+        siteParams: {
+          ...overrides,
+          'nav_links': [
+            {'label': 'Docs', 'url': '/docs/'},
+          ],
+          'social_links': [
+            {'platform': 'github', 'label': 'Source', 'url': 'https://example.com'},
+          ],
+        },
+      );
+      expect(withLists, css);
+    });
+
+    test('a _dark override reaches a forced dark skin and nothing else moves', () {
+      final plain = compileBridged(themeDir, 'dark');
+      final css = compileBridged(themeDir, 'dark', siteParams: {'primary_color_dark': darkOverride});
+
+      for (final (index, name) in ['base', 'final'].indexed) {
+        final before = customProps(rootBlocks(plain)[index]);
+        final after = customProps(rootBlocks(css)[index]);
+        expect(after['--meadow-leaf'], darkOverride, reason: '$name block');
+        expect(
+          Map.of(after)..remove('--meadow-leaf'),
+          Map.of(before)..remove('--meadow-leaf'),
+          reason: '$name block: every other dark entry is unchanged',
+        );
+      }
+      for (final props in [customProps(rootBlock(css)), forcedDarkFinal(css)]) {
+        // Only palette-backed properties: a literal such as `--meadow-panel-bg` may equal a light entry.
+        for (final entry in paramProps.entries) {
+          expect(props[entry.value], isNot(lightPalette[entry.key]), reason: 'no light ${entry.key}');
+        }
+      }
+      for (final query in autoOnly) {
+        expect(css, isNot(contains(query)), reason: query);
+      }
+    });
+
+    test('a _dark override reaches every dark view under auto, and no light view', () {
+      final css = compileBridged(themeDir, 'auto', siteParams: {'primary_color_dark': darkOverride});
+      final lightPrimary = lightPalette['primary-color'];
+
+      expect(customProps(rootBlock(css))['--meadow-leaf'], lightPrimary);
+      expect(customProps(ruleBody(css, ':root[data-skin=light]')!)['--meadow-leaf'], lightPrimary);
+      expect(customProps(darkMediaRoot(css)!)['--meadow-leaf'], darkOverride);
+      expect(customProps(ruleBody(css, ':root[data-skin=dark]')!)['--meadow-leaf'], darkOverride);
+    });
+
+    test('a plain colour param sets the light entry only, under every skin', () {
+      // The precedence rule, not load-order luck: a forced skin selects a palette and a
+      // param sets one entry in it, so a plain `primary_color` is the light entry and
+      // never reaches the dark palette.
+      final dark = compileBridged(themeDir, 'dark', siteParams: {'primary_color': lightOverride});
+      expect(customProps(rootBlock(dark))['--meadow-leaf'], darkPalette['primary-color']);
+      expect(forcedDarkFinal(dark)['--meadow-leaf'], darkPalette['primary-color']);
+      expect(dark, isNot(contains(lightOverride)));
+
+      final auto = compileBridged(themeDir, 'auto', siteParams: {'primary_color': lightOverride});
+      expect(customProps(rootBlock(auto))['--meadow-leaf'], lightOverride);
+      expect(customProps(ruleBody(auto, ':root[data-skin=light]')!)['--meadow-leaf'], lightOverride);
+      expect(customProps(darkMediaRoot(auto)!)['--meadow-leaf'], darkPalette['primary-color']);
+      expect(customProps(ruleBody(auto, ':root[data-skin=dark]')!)['--meadow-leaf'], darkPalette['primary-color']);
+
+      final light = compileBridged(themeDir, 'light', siteParams: {'primary_color': lightOverride});
+      expect(customProps(rootBlock(light))['--meadow-leaf'], lightOverride);
+
+      expect(
+        compileBridged(themeDir, 'light', siteParams: {'primary_color_dark': darkOverride}),
+        compileBridged(themeDir, 'light'),
+        reason: 'a _dark-only override changes nothing under light',
+      );
+    });
+
+    test('the four theme colours are per mode too', () {
+      const overrides = {
+        'sky_color_dark': '#0a0b0c',
+        'sun_color_dark': '#0d0e0f',
+        'bloom_color_dark': '#101112',
+        'coral_color_dark': '#131415',
+      };
+      const props = {
+        'sky_color_dark': '--meadow-sky',
+        'sun_color_dark': '--meadow-sun',
+        'bloom_color_dark': '--meadow-bloom',
+        'coral_color_dark': '--meadow-coral',
+      };
+      void expectOverrides(Map<String, String> block, String reason) {
+        for (final entry in props.entries) {
+          expect(block[entry.value], overrides[entry.key], reason: '$reason ${entry.key}');
+        }
+      }
+
+      final dark = compileBridged(themeDir, 'dark', siteParams: overrides);
+      expectOverrides(forcedDarkFinal(dark), 'dark final');
+
+      final auto = compileBridged(themeDir, 'auto', siteParams: overrides);
+      expectOverrides(customProps(darkMediaRoot(auto)!), 'auto media');
+      expectOverrides(customProps(ruleBody(auto, ':root[data-skin=dark]')!), 'auto toggle dark');
+      for (final light in [customProps(rootBlock(auto)), customProps(ruleBody(auto, ':root[data-skin=light]')!)]) {
+        for (final prop in props.values) {
+          expect(light[prop], lightPalette['${prop.substring('--meadow-'.length)}-color'], reason: 'light $prop');
+        }
+      }
+    });
+
+    test('the primary button follows no colour param in any view', () {
+      const overrides = {
+        'accent_color': '#abcdef',
+        'accent_color_dark': '#fedcba',
+        'text_color': '#111213',
+        'text_color_dark': '#141516',
+      };
+      // Light views only ever carry the light pair, dark views the dark pair, whatever the params say.
+      final light = compileBridged(themeDir, 'light', siteParams: overrides);
+      expect(light, contains(overrides['accent_color']), reason: 'the overrides reach the CSS, so the check is live');
+      expectButton(customProps(rootBlock(light)), lightButton, 'light');
+
+      final dark = compileBridged(themeDir, 'dark', siteParams: overrides);
+      expect(dark, contains(overrides['accent_color_dark']));
+      expectButton(forcedDarkFinal(dark), darkButton, 'forced dark');
+
+      final auto = compileBridged(themeDir, 'auto', siteParams: overrides);
+      expect(auto, contains(overrides['accent_color']));
+      expectButton(customProps(rootBlock(auto)), lightButton, 'auto base');
+      expectButton(customProps(ruleBody(auto, ':root[data-skin=light]')!), lightButton, 'auto toggle light');
+      expectButton(customProps(darkMediaRoot(auto)!), darkButton, 'auto media');
+      expectButton(customProps(ruleBody(auto, ':root[data-skin=dark]')!), darkButton, 'auto toggle dark');
+    });
+
+    test('every colour param has a _dark twin sourced from the palettes', () {
+      final colorParams = {
+        for (final e in ThemeManifest.load(themeDir).params.entries)
+          if (e.value.type == 'color') e.key: e.value,
+      };
+      final bases = colorParams.keys.where((name) => !name.endsWith('_dark')).toList();
+      expect(bases, hasLength(11));
+
+      for (final name in bases) {
+        final key = name.replaceAll('_', '-');
+        final twin = colorParams['${name}_dark'];
+        expect(twin, isNotNull, reason: '$name needs a ${name}_dark twin');
+        expect(twin!.defaultValue, darkPalette[key], reason: '${name}_dark default');
+        expect(colorParams[name]!.defaultValue, lightPalette[key], reason: '$name default');
+        expect(colorParams.containsKey('${name}_dark_dark'), isFalse, reason: 'twins have no twins');
+      }
+      expect(
+        colorParams.keys.where((name) => name.endsWith('_dark')),
+        hasLength(bases.length),
+        reason: 'no orphan twin',
+      );
+    });
+  });
+
+  group('@use module structure', () {
+    String sass(String relative) => stripComments(File(p.join(themeDir, 'sass', relative)).readAsStringSync());
+
+    test('no @import remains, and the entry compiles standalone with the deprecation fatal', () {
+      for (final file in sassSources(p.join(themeDir, 'sass'))) {
+        expect(stripComments(file.readAsStringSync()), isNot(contains('@import')), reason: file.path);
+      }
+      expect(customProps(rootBlock(compileStandalone(themeDir)))['--meadow-paper'], '#f7faee');
+      final dark = compileStandalone(themeDir, configuration: r'$trellis-skin: dark');
+      expect(customProps(rootBlocks(dark)[1])['--meadow-paper'], '#0f1c14');
+    });
+
+    test("main.scss opens with @forward 'variables' and declares no \$trellis-* of its own", () {
+      final main = sass('main.scss');
+      expect(RegExp(r'@(use|forward)\b[^;]*;').firstMatch(main)!.group(0), "@forward 'variables';");
+      expect(RegExp(r'^\$trellis-[\w-]+\s*:', multiLine: true).hasMatch(main), isFalse);
+      // The bridge scans only _variables.scss, so a variable read anywhere must be declared there.
+      final declared = RegExp(
+        r'^\$(trellis-[\w-]+)\s*:',
+        multiLine: true,
+      ).allMatches(sass('_variables.scss')).map((m) => m.group(1)!).toSet();
+      final read = RegExp(r'\$(trellis-[\w-]+)').allMatches(main).map((m) => m.group(1)!).toSet();
+      expect(declared, containsAll(read));
+    });
+
+    test('skins expose a palette and declare nothing !default', () {
+      for (final skin in ['_light', '_dark']) {
+        final source = sass('_skins/$skin.scss');
+        expect(source, contains(r'$palette:'), reason: skin);
+        expect(source, isNot(contains('!default')), reason: skin);
+      }
+    });
+
+    test('the bridge configures what _variables.scss declares, and nothing it cannot', () {
+      final manifest = ThemeManifest.load(themeDir);
+      final siteDir = Directory.systemTemp.createTempSync('meadow_bridge_vars_');
+      addTearDown(() => siteDir.deleteSync(recursive: true));
+      final config = const ThemeSassGenerator().generate(
+        mergedParams: manifest.defaultParams,
+        paramTypes: {for (final e in manifest.params.entries) e.key: e.value.type},
+        siteDir: siteDir.path,
+        themeDir: themeDir,
+      );
+      expect(
+        config.configurableVars,
+        containsAll(['trellis-skin', 'trellis-primary-color', 'trellis-sky-color-dark', 'trellis-max-width']),
+      );
+      expect(config.configurableVars, isNot(contains('trellis-nav-links')));
+    });
+  });
+
+  test('bridged default is complete and clean', () async {
+    final config = exampleSiteCopy(themeDir);
     final result = await TrellisSite(config).build();
     expect(result.warnings, isEmpty);
     expect(result.pageCount, 4);
@@ -413,12 +741,9 @@ $trellis-border-radius: 7px;
     final bridge = result.themeBuildConfig!;
     final tempDir = Directory.systemTemp.createTempSync('meadow_bridge_');
     addTearDown(() => tempDir.deleteSync(recursive: true));
-    final wrapper = File(p.join(tempDir.path, 'main.scss'))
-      ..writeAsStringSync(
-        '@import "${p.join(bridge.buildDir, '_theme_params.scss')}";\n'
-        '@import "${p.join(themeDir, 'sass', 'main.scss')}";\n',
-      );
-    final css = TrellisCss.compileSass(wrapper.path, loadPaths: bridge.sassLoadPaths, silenceImportDeprecation: true);
+    final entry = File(p.join(themeDir, 'sass', 'main.scss')).resolveSymbolicLinksSync();
+    final wrapper = File(p.join(tempDir.path, 'main.scss'))..writeAsStringSync(bridge.bridgeWrapperSource(entry));
+    final css = TrellisCss.compileSass(wrapper.path, loadPaths: bridge.sassLoadPaths, fatalImportDeprecation: true);
     expect(css, isNot(contains('--meadow-body: "')));
     expect(css, isNot(contains('--meadow-width: "')));
 
@@ -439,7 +764,7 @@ $trellis-border-radius: 7px;
     expect(gzip.encode(js).length, lessThan(15 * 1024));
   });
 
-  test('S02-S04 TI03/TI06 exact fixtures render copy, counts, and absence', () async {
+  test('exact fixtures render copy, counts, and absence', () async {
     for (var count = 2; count <= 6; count++) {
       for (final skin in ['light', 'dark']) {
         final document = await _buildFixture(themeDir, 'count-$count', skin: skin);
@@ -447,14 +772,7 @@ $trellis-border-radius: 7px;
       }
     }
 
-    final tempDir = Directory.systemTemp.createTempSync('meadow_feature_css_');
-    addTearDown(() => tempDir.deleteSync(recursive: true));
-    final wrapper = File(p.join(tempDir.path, 'main.scss'))
-      ..writeAsStringSync(
-        '\$trellis-skin: light;\n'
-        '@import "${p.join(themeDir, 'sass', 'main.scss')}";\n',
-      );
-    final css = TrellisCss.compileSass(wrapper.path, silenceImportDeprecation: true).replaceAll(RegExp(r'\s+'), '');
+    final css = compileBridged(themeDir, 'light').replaceAll(RegExp(r'\s+'), '');
     const treatments = {
       '.feature-card:nth-child(4n + 1)': '--meadow-lime-soft',
       '.feature-card:nth-child(4n + 2)': '--meadow-sky-soft',
@@ -580,10 +898,10 @@ $trellis-border-radius: 7px;
     );
   });
 
-  test('S06/S07 TI05/TI06 prefix and progressive-enhancement contracts hold', () async {
+  test('prefix and progressive-enhancement contracts hold', () async {
     final tempDir = Directory.systemTemp.createTempSync('meadow_prefix_');
     addTearDown(() => tempDir.deleteSync(recursive: true));
-    _copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
+    copyDirectory(Directory(p.join(themeDir, 'example', 'content')), Directory(p.join(tempDir.path, 'content')));
     Directory(p.join(tempDir.path, 'themes')).createSync(recursive: true);
     Link(p.join(tempDir.path, 'themes', 'meadow')).createSync(themeDir);
     final source = File(p.join(themeDir, 'example', 'trellis_site.subpath.yaml')).readAsStringSync();
@@ -637,7 +955,7 @@ Future<Map<String, dynamic>?> _runMenuHarness(String scriptPath) async {
     expect(result.exitCode, 0, reason: 'menu harness failed: ${result.stderr}');
     return jsonDecode(result.stdout as String) as Map<String, dynamic>;
   } on ProcessException {
-    _requireNodeInCi('the mobile-menu behavioural harness');
+    requireNodeInCi('the mobile-menu behavioural harness');
     markTestSkipped('system node not found - mobile menu behavioural harness skipped');
     return null;
   }
@@ -754,25 +1072,4 @@ ${params.entries.map((e) => '  ${e.key}: ${e.value}\n').join()}''');
   final source = File(p.join(config.outputDir, 'index.html')).readAsStringSync();
   tempDir.deleteSync(recursive: true);
   return html_parser.parse(source);
-}
-
-void _copyDirectory(Directory source, Directory destination) {
-  destination.createSync(recursive: true);
-  for (final entity in source.listSync()) {
-    final target = p.join(destination.path, p.basename(entity.path));
-    if (entity is Directory) {
-      _copyDirectory(entity, Directory(target));
-    } else if (entity is File) {
-      entity.copySync(target);
-    }
-  }
-}
-
-/// Skipping a node-gated check is a local convenience; in CI it is a silent hole
-/// - the run reports "All tests passed!" with [what] never executed. Fail loudly
-/// there instead, so the gate cannot go green on an assertion that did not run.
-void _requireNodeInCi(String what) {
-  if (Platform.environment['CI'] == 'true') {
-    fail('node is required in CI: $what did not run');
-  }
 }

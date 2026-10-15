@@ -116,13 +116,13 @@ class TrellisSite {
   ///
   /// Pipeline stages:
   /// 1. Clean output directory
-  /// 2. Discover pages (S01)
-  /// 3. Parse front matter (S02)
-  /// 3.5. Process pre-Markdown shortcodes (S09)
-  /// 4. Render Markdown (S03)
-  /// 4.5. Process post-Markdown shortcodes (S09)
-  /// 5. Collect taxonomy terms and inject virtual pages (S06)
-  /// 6. Generate HTML pages (S04)
+  /// 2. Discover pages
+  /// 3. Parse front matter
+  /// 3.5. Process pre-Markdown shortcodes
+  /// 4. Render Markdown
+  /// 4.5. Process post-Markdown shortcodes
+  /// 5. Collect taxonomy terms and inject virtual pages
+  /// 6. Generate HTML pages
   /// 7. Copy static assets
   /// 8. Generate sitemap
   /// 8.5. Generate feeds (when `feeds:` config section exists)

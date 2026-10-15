@@ -140,8 +140,8 @@ Then open http://localhost:8080 in your browser.
 ### Theme scaffold
 
 ```bash
-trellis create my-theme --template theme
-cd my-theme
+trellis create my_theme --template theme
+cd my_theme
 # Edit theme.yaml, layouts/, and sass/
 cd example && trellis build && trellis serve
 ```
@@ -259,13 +259,13 @@ Options:
 
 ```bash
 # Install a built-in theme out of the Trellis repository
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.1
 
 # Install a single-theme repository (name derived from the repository)
 trellis theme add https://github.com/yourname/trellis-theme-orchard
 
 # Pin to a published release tag
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.1
 
 # Install from a local path (theme development)
 trellis theme add ./path/to/my-theme

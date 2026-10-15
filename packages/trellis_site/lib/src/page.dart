@@ -29,9 +29,9 @@ enum PageKind {
 
 /// Represents a content page in the site.
 ///
-/// Immutable fields are populated during content discovery (S01). Mutable
+/// Immutable fields are populated during content discovery. Mutable
 /// fields are populated by later pipeline stages: [frontMatter] and
-/// [rawContent] by S02, [content]/[summary]/[toc] by S03.
+/// [rawContent] by front-matter parsing, [content]/[summary]/[toc] by Markdown rendering.
 class Page {
   /// Relative path to the source file from the content directory (e.g. `posts/hello-world.md`).
   final String sourcePath;
@@ -53,7 +53,7 @@ class Page {
   /// The kind of page: single content page, section listing, or home page.
   final PageKind kind;
 
-  /// Whether this page is a draft. Initially `false`; S02 sets from front matter.
+  /// Whether this page is a draft. Initially `false`; front-matter parsing sets it.
   bool isDraft;
 
   /// Whether this page is part of a page bundle (a directory with `index.md`).
@@ -63,25 +63,25 @@ class Page {
   /// Empty list for non-bundle pages.
   final List<String> bundleAssets;
 
-  /// Front matter from the content file. Populated by S02; empty map initially.
+  /// Front matter from the content file. Populated by front-matter parsing; empty map initially.
   Map<String, dynamic> frontMatter;
 
-  /// Raw Markdown content (everything after front matter). Populated by S02.
+  /// Raw Markdown content (everything after front matter). Populated by front-matter parsing.
   String rawContent;
 
-  /// Rendered HTML content. Populated by S03.
+  /// Rendered HTML content. Populated by Markdown rendering.
   String content;
 
-  /// Page summary. Populated by S03.
+  /// Page summary. Populated by Markdown rendering.
   String summary;
 
-  /// Table of contents entries. Populated by S03.
+  /// Table of contents entries. Populated by Markdown rendering.
   List<TocEntry> toc;
 
   /// Creates a [Page] with required discovery-phase fields.
   ///
   /// Mutable pipeline fields default to empty values and are populated by
-  /// subsequent pipeline stages (S02, S03).
+  /// subsequent pipeline stages (front-matter parsing, Markdown rendering).
   Page({
     required this.sourcePath,
     required this.url,

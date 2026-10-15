@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.12.0
+
+### Breaking
+
+- **`trellis build` compiles a theme through the `@use … with()` bridge with the `@import` deprecation fatal**
+  (ADR-013). For each non-partial stylesheet in a theme's `sass/` it writes `.trellis/build/bridge_<entry>.scss`,
+  which `@use`s the entry and configures the params its `_variables.scss` declares `!default`. A theme that still
+  `@import`s fails the build instead of building with the wrong skin, and the error names the theme, the file and line
+  of the `@import`, and the remedy. **Upgrading:** themes installed with 0.11 use `@import`; re-add them at
+  `--ref v0.12.0` (`trellis theme remove <name>`, then `trellis theme add … --theme <name> --ref v0.12.0`) or migrate
+  them to `@use` (theme usage guide, "Upgrading from 0.11").
+
+### Changed
+
+- `trellis create --template theme` scaffolds a theme on the `@use` contract: `main.scss` forwards
+  `_variables.scss`, skins are `$palette` maps, and `theme.yaml` declares the 25 standard params, including the seven
+  `_dark` colour twins.
+- The theme scaffold's example site previews the theme: `example/trellis_site.yaml` sets `theme: <name>`, `trellis
+  create` links the theme root in as `example/themes/<name>` (a relative symlink; if it cannot be made, `create`
+  prints the command, `mklink /J` on Windows), and the example no longer ships a `layouts/home.html` that shadowed
+  the theme's. `cd example && trellis build` now compiles the theme to `css/main.css`.
+- Every SASS compile failure, theme or site, prints the failing file as `path:line:column`.
+- The scaffold's palettes pass WCAG AA (4.5:1) for every text colour on both the page background and the elevated
+  surface: light muted `#4b5563` and accent `#1d4ed8`, dark primary `#60a5fa` and accent `#93c5fd`.
+- A site's own stylesheets under `static/` are compiled without silencing Sass's `@import` deprecation warning, so
+  a site `@import` now prints it. It still builds; `@import` is removed in Dart Sass 3.0.
+
+### Fixed
+
+- The theme scaffold's `base.html` linked `/theme.css`, which no build produces, so a scaffolded theme rendered
+  unstyled. It now links `css/main.css` and `css/theme-props.css`, prefixed with the site's `pathPrefix`.
+- A themed build embedded the theme entry's native path in the generated stylesheet, which Sass parses as a URL: on
+  Windows `C:\…` read as URL scheme `c:`, and on any platform a `%` in the path read as an escape. The entry is now
+  embedded as the path of its `file:` URL.
+- The theme scaffold ignored `heading_font_family`: no rule read it. Headings now use it, and the body font when it
+  is null.
+- `trellis theme add` with a local source that is or contains the destination (`theme add ../` from a theme's
+  `example/`) copied the theme into itself until "File name too long", leaving a half-written `themes/` behind. It
+  now refuses with exit 1 and writes nothing. Run from a theme's own `example/`, the refusal names the link to make
+  from the theme's manifest (`example/themes/<name> -> ../..`).
+
 ## 0.11.1
 
 ### Changed

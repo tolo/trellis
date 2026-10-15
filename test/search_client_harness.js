@@ -1,4 +1,4 @@
-// Behavioral DOM-harness for the vendored client-side search script (S09):
+// Behavioral DOM-harness for the vendored client-side search script:
 // themes/arbor/static/js/search.js.
 //
 // Runs under plain system `node` — no npm, no package.json, no build step. It
@@ -104,7 +104,7 @@ function makeElement(tag) {
   return el;
 }
 
-// Builds a fresh document graph mirroring the S04 shell contract:
+// Builds a fresh document graph mirroring the search shell contract:
 //   .search-shell[data-search-index] > input[data-arbor-search] + ul[data-arbor-search-results]
 function buildDom({ withIndexUrl = true, withShell = true } = {}) {
   const input = makeElement('input');

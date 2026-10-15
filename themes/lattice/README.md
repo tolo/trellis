@@ -9,7 +9,7 @@ highlighting; and progressive enhancements that never gate access to content.
 Install it from the Trellis repository:
 
 ```sh
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.1
 ```
 
 That copies `themes/lattice/` into your site's `themes/` and sets `theme: lattice` in `trellis_site.yaml`. `theme:`
@@ -21,10 +21,11 @@ theme: lattice
 theme_params:
   skin: auto
   primary_color: "#2E7D4F"
+  primary_color_dark: "#6fbf8b"
   max_width: "1056px"
 ```
 
-Lattice implements all 18 standard params, two branding params, Arbor's docs params, and the following
+Lattice implements all 25 standard params, two branding params, Arbor's docs params, and the following
 Lattice-specific surface.
 
 ### Standard params
@@ -32,13 +33,20 @@ Lattice-specific surface.
 | Param                 | Default                | Purpose                                     |
 | --------------------- | ---------------------- | ------------------------------------------- |
 | `skin`                | `auto`                 | `light`, `dark`, or OS-aware automatic skin |
-| `primary_color`       | `#2E7D4F`              | Light-skin primary accent                   |
-| `accent_color`        | `#6E9B45`              | Light-skin secondary accent                 |
-| `text_color`          | `#1C2B21`              | Light-skin body text                        |
-| `muted_color`         | `#47584C`              | Light-skin secondary text                   |
-| `bg_color`            | `#FBFAF5`              | Light-skin page background                  |
-| `surface_color`       | `#FFFFFF`              | Light-skin card background                  |
-| `border_color`        | `#E7E3D4`              | Light-skin borders and lattice              |
+| `primary_color`       | `#2E7D4F`              | Primary accent in light mode                |
+| `accent_color`        | `#6E9B45`              | Secondary accent in light mode              |
+| `text_color`          | `#1C2B21`              | Body text in light mode                     |
+| `muted_color`         | `#47584C`              | Secondary text in light mode                |
+| `bg_color`            | `#FBFAF5`              | Page background in light mode               |
+| `surface_color`       | `#FFFFFF`              | Card background in light mode               |
+| `border_color`        | `#E7E3D4`              | Borders and lattice in light mode           |
+| `primary_color_dark`  | `#6fbf8b`              | Primary accent in dark mode                 |
+| `accent_color_dark`   | `#8fbf62`              | Secondary accent in dark mode               |
+| `text_color_dark`     | `#e6eee5`              | Body text in dark mode                      |
+| `muted_color_dark`    | `#a2b2a4`              | Secondary text in dark mode                 |
+| `bg_color_dark`       | `#101915`              | Page background in dark mode                |
+| `surface_color_dark`  | `#16221b`              | Card background in dark mode                |
+| `border_color_dark`   | `#1a2620`              | Borders and lattice in dark mode            |
 | `font_family`         | Instrument Sans stack  | Body font stack                             |
 | `heading_font_family` | Fraunces stack         | Heading font stack                          |
 | `code_font_family`    | Spline Sans Mono stack | Code font stack                             |
@@ -87,19 +95,25 @@ Lattice-specific surface.
 | `cta_body`                 | Placeholder sentence   | Closing CTA body              |
 | `cta_commands`             | Two commands           | Closing CTA commands          |
 
-Light-skin color tokens map as follows:
+Color tokens map as follows. Each color param sets one entry in one palette: `<name>` the light palette's, `<name>_dark`
+the dark palette's. Every dark view (`skin: dark`, the `prefers-color-scheme` block under `skin: auto`, and the reader
+toggle's dark state) reads the dark tokens from the dark palette.
 
-| Param           | Token                                      |
-| --------------- | ------------------------------------------ |
-| `primary_color` | `--leaf`                                   |
-| `accent_color`  | `--tendril`                                |
-| `bg_color`      | `--paper`                                  |
-| `surface_color` | `--card`                                   |
-| `text_color`    | `--ink`                                    |
-| `muted_color`   | `--ink-soft`                               |
-| `border_color`  | `--lattice` and derived `--lattice-strong` |
+| Param                       | Light token                                | Dark token                              |
+| --------------------------- | ------------------------------------------ | --------------------------------------- |
+| `primary_color[_dark]`      | `--leaf`                                   | `--leaf`                                |
+| `accent_color[_dark]`       | `--tendril`                                | `--tendril`                             |
+| `bg_color[_dark]`           | `--paper`                                  | `--paper`                               |
+| `surface_color[_dark]`      | `--card`                                   | `--card`                                |
+| `text_color[_dark]`         | `--ink`                                    | `--ink`                                 |
+| `muted_color[_dark]`        | `--ink-soft`                               | `--ink-soft`                            |
+| `border_color[_dark]`       | `--lattice` and derived `--lattice-strong` | `--lattice`                             |
 
-The dark palette is deliberately theme-owned. Font stacks, `max_width`, and `border_radius` affect every skin.
+A plain color param sets the light entry only, under every skin: `primary_color` has no effect on `skin: dark`, and
+`primary_color_dark` has none on `skin: light`. Dark values are never derived from light ones. Tokens with no color
+param stay theme-authored in dark: `--footer-link`, `--lattice-strong`, `--bg-lattice`, `--leaf-hover`, `--on-leaf`, the
+washes, chips, shadows and `--syntax-*`, so a `primary_color_dark` override does not retune hover or washes. Font
+stacks, `max_width`, and `border_radius` affect every skin.
 
 ## Structured home data
 

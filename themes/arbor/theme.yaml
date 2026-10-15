@@ -6,7 +6,7 @@ description: >-
   table of contents, prev/next links, and build-time syntax highlighting: the
   SSG bakes the highlight spans into the HTML, so no highlighter JavaScript is
   shipped. Fully readable with JavaScript disabled.
-min_trellis_version: 0.8.0
+min_trellis_version: 0.12.0
 screenshots:
   - screenshots/light.png
   - screenshots/dark.png
@@ -19,7 +19,7 @@ features:
   - search
 
 params:
-  # === Standard Params (18) ===
+  # === Standard Params (25) ===
   # Contract: docs/reference/standard-params.md. Every standard param is present
   # with the contract type. Non-null defaults required except optional strings
   # (heading_font_family, footer_text).
@@ -66,6 +66,44 @@ params:
     default: "#e2e6e2"
     description: Borders, dividers
 
+  # Dark-mode twins: each colour param has a `<name>_dark` sibling that sets the
+  # same entry in the dark palette (skin: dark, and the prefers-color-scheme
+  # block of skin: auto). A plain colour param sets the light entry only.
+  primary_color_dark:
+    type: color
+    default: "#4ade80"
+    description: Brand/accent color in dark mode — links, buttons, active states
+
+  accent_color_dark:
+    type: color
+    default: "#6ee7a8"
+    description: Secondary accent in dark mode — hover states, highlights
+
+  text_color_dark:
+    type: color
+    default: "#e6edf3"
+    description: Main body text in dark mode
+
+  muted_color_dark:
+    type: color
+    default: "#9aa5b1"
+    description: Secondary text in dark mode — metadata, captions, TOC links
+
+  bg_color_dark:
+    type: color
+    default: "#0d1117"
+    description: Page background in dark mode
+
+  surface_color_dark:
+    type: color
+    default: "#161b22"
+    description: Elevated surfaces in dark mode — code blocks, sidebar, cards
+
+  border_color_dark:
+    type: color
+    default: "#2d333b"
+    description: Borders, dividers in dark mode
+
   # Typography
   font_family:
     type: string
@@ -75,7 +113,7 @@ params:
   heading_font_family:
     type: string
     default: "Charter, Cambria, Georgia, ui-serif, serif"
-    description: Heading font stack — Arbor's system-serif identity (set null to inherit the body font)
+    description: Heading font stack — Arbor's system-serif identity (set it to the font_family stack for the body font)
 
   code_font_family:
     type: string
@@ -125,12 +163,12 @@ params:
     default: true
     description: Display RSS/Atom feed link
 
+  # === Docs-Specific Params ===
+
   excerpt_length:
     type: int
     default: 160
     description: Auto-generated summary/excerpt character limit (plain-text, word-boundary truncated)
-
-  # === Docs-Specific Params ===
 
   show_sidebar:
     type: boolean

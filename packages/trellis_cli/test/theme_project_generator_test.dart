@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:trellis_cli/trellis_cli.dart';
 
@@ -11,8 +14,8 @@ void main() {
       await generator.generate();
     });
 
-    test('T01: generates all 15 expected files', () {
-      expect(writer.files, hasLength(15));
+    test('T01: generates all 14 expected files', () {
+      expect(writer.files, hasLength(14));
       expect(
         writer.files.keys,
         containsAll([
@@ -28,7 +31,6 @@ void main() {
           'static/.gitkeep',
           'example/trellis_site.yaml',
           'example/content/_index.md',
-          'example/layouts/home.html',
           'README.md',
           '.gitignore',
         ]),
@@ -56,7 +58,7 @@ void main() {
       expect(content, contains('params:'));
     });
 
-    test('T04: theme.yaml contains all 18 standard param names', () {
+    test('T04: theme.yaml contains all 25 standard param names', () {
       final content = writer.files['theme.yaml']!;
       const expectedParams = [
         'skin',
@@ -67,6 +69,13 @@ void main() {
         'bg_color',
         'surface_color',
         'border_color',
+        'primary_color_dark',
+        'accent_color_dark',
+        'text_color_dark',
+        'muted_color_dark',
+        'bg_color_dark',
+        'surface_color_dark',
+        'border_color_dark',
         'font_family',
         'heading_font_family',
         'code_font_family',
@@ -78,8 +87,9 @@ void main() {
         'show_powered_by',
         'show_rss_link',
       ];
+      expect(expectedParams, hasLength(25));
       for (final param in expectedParams) {
-        expect(content, contains(param), reason: 'theme.yaml should contain param: $param');
+        expect(content, contains('\n  $param:'), reason: 'theme.yaml should declare param: $param');
       }
       // syntax_highlighting was retired by ADR-010; scaffolds must not emit it.
       expect(content, isNot(contains('syntax_highlighting')), reason: 'retired param must be absent');
@@ -139,25 +149,39 @@ void main() {
       await generator.generate();
     });
 
-    test('T11: _variables.scss has trellis- prefixed variables with !default', () {
+    test('T11: _variables.scss declares a !default pair per colour param and builds the dark palette', () {
       final vars = writer.files['sass/_variables.scss']!;
-      expect(vars, contains(r'$trellis-primary-color'));
-      expect(vars, contains('!default'));
+      for (final name in ['primary', 'accent', 'text', 'muted', 'bg', 'surface', 'border']) {
+        expect(vars, contains('\$trellis-$name-color: map.get(light.\$palette, $name-color) !default;'));
+        expect(vars, contains('\$trellis-$name-color-dark: map.get(dark.\$palette, $name-color) !default;'));
+      }
+      expect(vars, contains(r'$trellis-palette-dark: map.merge('));
+      // Nothing reads a merged light palette: each light colour is its $trellis-<name>-color variable.
+      expect(vars, isNot(contains('palette-light')));
+      expect(vars, contains(r'$trellis-skin: auto !default;'));
     });
 
-    test('T12: _light.scss has light skin colors', () {
+    test('T12: _light.scss is a palette map with light colours and no !default', () {
       final light = writer.files['sass/_skins/_light.scss']!;
-      expect(light, contains(r'$trellis-bg-color: #ffffff'));
+      expect(light, contains(r'$palette: ('));
+      expect(light, contains('bg-color: #ffffff'));
+      expect(light, isNot(contains('!default')));
     });
 
-    test('T13: _dark.scss has dark skin colors distinct from light', () {
+    test('T13: _dark.scss is a palette map with dark colours distinct from light', () {
       final dark = writer.files['sass/_skins/_dark.scss']!;
-      expect(dark, contains(r'$trellis-bg-color: #111827'));
+      expect(dark, contains(r'$palette: ('));
+      expect(dark, contains('bg-color: #111827'));
+      expect(dark, contains('primary-color: #60a5fa'));
+      expect(dark, isNot(contains('!default')));
     });
 
-    test('T14: main.scss imports variables', () {
+    test("T14: main.scss forwards 'variables' and flips colours for auto from the dark palette", () {
       final main = writer.files['sass/main.scss']!;
-      expect(main, contains("@import 'variables'"));
+      expect(main, contains("@forward 'variables';"));
+      expect(main, isNot(contains('@import')));
+      expect(main, contains(r'@if $trellis-skin == auto'));
+      expect(main, contains(r'map.get($trellis-palette-dark, primary-color)'));
     });
   });
 
@@ -202,5 +226,50 @@ void main() {
     test('T19: project name used as theme name in theme.yaml', () {
       expect(writer.files['theme.yaml'], contains('name: my_theme'));
     });
+  });
+
+  // The scaffold's base layout must link the stylesheets `trellis build` writes
+  // for a theme. A link to any other path still builds cleanly, but every page
+  // ships unstyled.
+  group('ThemeProjectGenerator — built site', () {
+    late Directory siteDir;
+
+    setUp(() async {
+      siteDir = Directory.systemTemp.createTempSync('trellis_theme_scaffold_');
+      await ThemeProjectGenerator(
+        projectName: 'my_theme',
+        writer: DiskFileWriter(p.join(siteDir.path, 'themes', 'my_theme')),
+      ).generate();
+      File(p.join(siteDir.path, 'content', '_index.md'))
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('---\ntitle: Home\n---\nHome.\n');
+    });
+
+    tearDown(() => siteDir.deleteSync(recursive: true));
+
+    for (final pathPrefix in ['', '/docs/']) {
+      test('T20: base.html links every stylesheet the build writes (pathPrefix: "$pathPrefix")', () async {
+        File(p.join(siteDir.path, 'trellis_site.yaml')).writeAsStringSync(
+          'title: Test Site\nbaseUrl: https://example.com\ntheme: my_theme\npathPrefix: "$pathPrefix"\n',
+        );
+
+        expect(await TrellisCli(workingDirectory: siteDir.path).run(['build']), 0);
+
+        final outputDir = p.join(siteDir.path, 'output');
+        final written = Directory(p.join(outputDir, 'css'))
+            .listSync(recursive: true)
+            .whereType<File>()
+            .map((file) => p.split(p.relative(file.path, from: outputDir)).join('/'))
+            .toSet();
+        expect(written, containsAll(['css/main.css', 'css/theme-props.css']), reason: 'compiled SASS + theme params');
+
+        final home = File(p.join(outputDir, 'index.html')).readAsStringSync();
+        final linked = RegExp(
+          r'<link rel="stylesheet" href="([^"]+)"',
+        ).allMatches(home).map((match) => match[1]!).toSet();
+        final assetBase = pathPrefix.isEmpty ? '/' : pathPrefix;
+        expect(linked, {for (final path in written) '$assetBase$path'});
+      });
+    }
   });
 }

@@ -1,14 +1,102 @@
+// Meadow — sass/_variables.scss
+// All SASS-representable theme params as $trellis-* variables with !default, the
+// :root block they feed, and the dark-token mixin.
+//
+// main.scss `@forward`s this module first, so the SASS bridge can configure every
+// `!default` variable below with the merged params (theme.yaml defaults plus the
+// site's theme_params:) as `@use "main.scss" with (...)`. Sass accepts that only
+// on a module's first load, so nothing may load this file before main.scss
+// forwards it. The bridge scans only this file: a `$trellis-*` declared anywhere
+// else is silently inert. Never edit this file to change site values: use
+// theme_params: in trellis_site.yaml.
+//
+// Every param-backed $trellis-* below carries !default: it is what makes the
+// variable configurable. Non-param values (the dark palette) carry none.
+
+@use 'sass:map';
+@use '_skins/light' as light;
+@use '_skins/dark' as dark;
+
+// ── Skin & Colors ────────────────────────────────────────────────────────────
+// Each colour param is per mode: `primary_color` sets the light palette's entry,
+// `primary_color_dark` the dark palette's. A forced skin selects a palette; a
+// param sets one entry in it. A plain colour param therefore never reaches the
+// dark palette, and dark colours are never derived from light ones.
+
 $trellis-skin: auto !default;
-$trellis-primary-color: #237a48 !default;
-$trellis-accent-color: #d4f15f !default;
-$trellis-text-color: #14251a !default;
-$trellis-muted-color: #476050 !default;
-$trellis-bg-color: #f7faee !default;
-$trellis-surface-color: #fffef8 !default;
-$trellis-border-color: #d4e2ce !default;
+
+$trellis-primary-color: map.get(light.$palette, primary-color) !default;
+$trellis-accent-color: map.get(light.$palette, accent-color) !default;
+$trellis-text-color: map.get(light.$palette, text-color) !default;
+$trellis-muted-color: map.get(light.$palette, muted-color) !default;
+$trellis-bg-color: map.get(light.$palette, bg-color) !default;
+$trellis-surface-color: map.get(light.$palette, surface-color) !default;
+$trellis-border-color: map.get(light.$palette, border-color) !default;
+$trellis-sky-color: map.get(light.$palette, sky-color) !default;
+$trellis-sun-color: map.get(light.$palette, sun-color) !default;
+$trellis-bloom-color: map.get(light.$palette, bloom-color) !default;
+$trellis-coral-color: map.get(light.$palette, coral-color) !default;
+
+$trellis-primary-color-dark: map.get(dark.$palette, primary-color) !default;
+$trellis-accent-color-dark: map.get(dark.$palette, accent-color) !default;
+$trellis-text-color-dark: map.get(dark.$palette, text-color) !default;
+$trellis-muted-color-dark: map.get(dark.$palette, muted-color) !default;
+$trellis-bg-color-dark: map.get(dark.$palette, bg-color) !default;
+$trellis-surface-color-dark: map.get(dark.$palette, surface-color) !default;
+$trellis-border-color-dark: map.get(dark.$palette, border-color) !default;
+$trellis-sky-color-dark: map.get(dark.$palette, sky-color) !default;
+$trellis-sun-color-dark: map.get(dark.$palette, sun-color) !default;
+$trellis-bloom-color-dark: map.get(dark.$palette, bloom-color) !default;
+$trellis-coral-color-dark: map.get(dark.$palette, coral-color) !default;
+
+// The dark palette with the site's `_dark` overrides applied. Public (not `$_`)
+// because main.scss and the dark mixin below read $trellis-palette-dark. The
+// dark palette also holds `strong`, `leaf-deep` and `focus`, dark tokens with no
+// colour param.
+$trellis-palette-dark: map.merge(
+  dark.$palette,
+  (
+    primary-color: $trellis-primary-color-dark,
+    accent-color: $trellis-accent-color-dark,
+    text-color: $trellis-text-color-dark,
+    muted-color: $trellis-muted-color-dark,
+    bg-color: $trellis-bg-color-dark,
+    surface-color: $trellis-surface-color-dark,
+    border-color: $trellis-border-color-dark,
+    sky-color: $trellis-sky-color-dark,
+    sun-color: $trellis-sun-color-dark,
+    bloom-color: $trellis-bloom-color-dark,
+    coral-color: $trellis-coral-color-dark,
+  )
+);
+
+// A forced dark skin selects the dark palette. Everything below keeps reading
+// $trellis-*-color, so this runs before anything derived from them (the :root
+// block). It covers the four theme colours as well as the seven standard ones.
+// (@if shares the root scope, so this updates the global variables without
+// !global.)
+@if $trellis-skin == dark {
+  $trellis-primary-color: map.get($trellis-palette-dark, primary-color);
+  $trellis-accent-color: map.get($trellis-palette-dark, accent-color);
+  $trellis-text-color: map.get($trellis-palette-dark, text-color);
+  $trellis-muted-color: map.get($trellis-palette-dark, muted-color);
+  $trellis-bg-color: map.get($trellis-palette-dark, bg-color);
+  $trellis-surface-color: map.get($trellis-palette-dark, surface-color);
+  $trellis-border-color: map.get($trellis-palette-dark, border-color);
+  $trellis-sky-color: map.get($trellis-palette-dark, sky-color);
+  $trellis-sun-color: map.get($trellis-palette-dark, sun-color);
+  $trellis-bloom-color: map.get($trellis-palette-dark, bloom-color);
+  $trellis-coral-color: map.get($trellis-palette-dark, coral-color);
+}
+
+// ── Typography ───────────────────────────────────────────────────────────────
+
 $trellis-font-family: Schibsted Grotesk, Inter, ui-sans-serif, system-ui, sans-serif !default;
 $trellis-heading-font-family: Bricolage Grotesque, Arial Rounded MT Bold, Trebuchet MS, sans-serif !default;
 $trellis-code-font-family: JetBrains Mono, SFMono-Regular, Consolas, monospace !default;
+
+// ── Layout & features ────────────────────────────────────────────────────────
+
 $trellis-max-width: 1180px !default;
 $trellis-border-radius: 24px !default;
 $trellis-show-powered-by: true !default;
@@ -17,12 +105,6 @@ $trellis-excerpt-length: 160 !default;
 $trellis-hero-align: split !default;
 $trellis-pill-badges: true !default;
 $trellis-logo: null !default;
-$trellis-sky-color: #69b9ea !default;
-$trellis-sun-color: #ffd367 !default;
-$trellis-bloom-color: #cf91ef !default;
-$trellis-coral-color: #fb907b !default;
-
-@import 'dark_tokens';
 
 :root {
   --meadow-ink: #{$trellis-text-color};
@@ -45,8 +127,10 @@ $trellis-coral-color: #fb907b !default;
   --meadow-shadow: #173923;
   --meadow-nav: rgba(247, 250, 238, 0.92);
   --meadow-focus: #176aa5;
-  --meadow-primary-bg: #{$trellis-text-color};
-  --meadow-primary-text: #{$trellis-accent-color};
+  // The primary button is theme-authored: a literal pair per mode, in every view
+  // (here, the dark mixin, and main.scss's light toggle rule), driven by no colour param.
+  --meadow-primary-bg: #14251a;
+  --meadow-primary-text: #d4f15f;
   --meadow-panel-bg: #14251a;
   --meadow-panel-text: #f7faee;
   --meadow-panel-muted: #c0d0c0;
@@ -58,26 +142,26 @@ $trellis-coral-color: #fb907b !default;
 }
 
 @mixin meadow-dark-tokens {
-  --meadow-ink: #{$meadow-dark-ink};
-  --meadow-muted: #{$meadow-dark-muted};
-  --meadow-paper: #{$meadow-dark-paper};
-  --meadow-surface: #{$meadow-dark-surface};
-  --meadow-strong: #{$meadow-dark-strong};
-  --meadow-leaf: #{$meadow-dark-leaf};
-  --meadow-leaf-deep: #{$meadow-dark-leaf-deep};
-  --meadow-lime: #{$meadow-dark-lime};
+  --meadow-ink: #{map.get($trellis-palette-dark, text-color)};
+  --meadow-muted: #{map.get($trellis-palette-dark, muted-color)};
+  --meadow-paper: #{map.get($trellis-palette-dark, bg-color)};
+  --meadow-surface: #{map.get($trellis-palette-dark, surface-color)};
+  --meadow-strong: #{map.get($trellis-palette-dark, strong)};
+  --meadow-leaf: #{map.get($trellis-palette-dark, primary-color)};
+  --meadow-leaf-deep: #{map.get($trellis-palette-dark, leaf-deep)};
+  --meadow-lime: #{map.get($trellis-palette-dark, accent-color)};
   --meadow-lime-soft: #2a431f;
-  --meadow-sky: #7bc8f2;
+  --meadow-sky: #{map.get($trellis-palette-dark, sky-color)};
   --meadow-sky-soft: #17394b;
-  --meadow-sun: #ffda7c;
+  --meadow-sun: #{map.get($trellis-palette-dark, sun-color)};
   --meadow-sun-soft: #493b19;
-  --meadow-bloom: #dfaff5;
+  --meadow-bloom: #{map.get($trellis-palette-dark, bloom-color)};
   --meadow-bloom-soft: #3b2847;
-  --meadow-coral: #ff9f8b;
-  --meadow-line: #{$meadow-dark-line};
+  --meadow-coral: #{map.get($trellis-palette-dark, coral-color)};
+  --meadow-line: #{map.get($trellis-palette-dark, border-color)};
   --meadow-shadow: #071009;
   --meadow-nav: rgba(15, 28, 20, 0.92);
-  --meadow-focus: #{$meadow-dark-focus};
-  --meadow-primary-bg: #{$meadow-dark-lime};
+  --meadow-focus: #{map.get($trellis-palette-dark, focus)};
+  --meadow-primary-bg: #d8f475;
   --meadow-primary-text: #14251a;
 }

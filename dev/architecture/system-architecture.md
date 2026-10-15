@@ -4,7 +4,8 @@ Canonical reference for understanding the Trellis SDK architecture: how the pack
 
 **Current through**: v0.11.0 SDK + the 2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
 Lattice `site_demo` home block, and the `examples/docs_site/` proof) + the 2026-09-04 HTMX 4 adapter
-compatibility (ADR-011 amendment).
+compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme stylesheets compile through
+`@use … with()` instead of `@import`, with per-mode colour params.
 
 ---
 
@@ -331,7 +332,7 @@ The content model is additive-nested: `Page.section` stays the top-level folder,
 
 ### Navigation Menu Tree
 
-`NavigationBuilder` produces one nested `${site.menu}` tree of `{title, url, children}` map nodes, mirroring the content section hierarchy. It is built once from the discovered pages and injected into the shared `siteParams` (`site.menu`) at both assembly sites (with and without taxonomy), so it rides the existing every-page context to **every** render — single, section, home, and taxonomy virtual pages — satisfying FR3's every-page requirement with a single injection point (list-page-only assembly would omit it from single/home renders). Own-level page order comes from `orderedSectionPages` (the builder holds no comparator or lineage filter of its own); sections nest by `Page.sectionPath` lineage. Because the tree is shared across renders it carries **no** per-page active flag: a theme resolves the active page and its ancestor trail by comparing each `node.url` against `${page.url}` at render time. Title precedence is `menu_title` → `title` → humanized URL slug. Drafts and `menu_exclude: true` pages are filtered (mirroring `!isDraft`); an opted-out section drops its own node but hoists surviving children to its parent, while a folder with no `_index.md` still yields a synthesized node. Empty content yields `[]`, and sites not referencing `${site.menu}` stay byte-for-byte unchanged. Taxonomy virtual pages are injected after the tree is built, so they receive the menu but never appear as menu nodes.
+`NavigationBuilder` produces one nested `${site.menu}` tree of `{title, url, children}` map nodes, mirroring the content section hierarchy. It is built once from the discovered pages and injected into the shared `siteParams` (`site.menu`) at both assembly sites (with and without taxonomy), so it rides the existing every-page context to **every** render — single, section, home, and taxonomy virtual pages — from a single injection point (list-page-only assembly would omit it from single/home renders). Own-level page order comes from `orderedSectionPages` (the builder holds no comparator or lineage filter of its own); sections nest by `Page.sectionPath` lineage. Because the tree is shared across renders it carries **no** per-page active flag: a theme resolves the active page and its ancestor trail by comparing each `node.url` against `${page.url}` at render time. Title precedence is `menu_title` → `title` → humanized URL slug. Drafts and `menu_exclude: true` pages are filtered (mirroring `!isDraft`); an opted-out section drops its own node but hoists surviving children to its parent, while a folder with no `_index.md` still yields a synthesized node. Empty content yields `[]`, and sites not referencing `${site.menu}` stay byte-for-byte unchanged. Taxonomy virtual pages are injected after the tree is built, so they receive the menu but never appear as menu nodes.
 
 ### In-Section Prev/Next
 
@@ -440,15 +441,43 @@ No CSRF support (Relic lacks a form body parser). Middleware only fires for matc
 
 ---
 
-## Themes & Docs Site (through the 0.11 implementation milestone)
+## Themes & Docs Site (through the 0.12 SASS module bridge)
 
 Themes ship in `themes/` alongside the packages, and the **Trellis docs site** lives in `site/`. Themes are installable
 assets consumed through a `theme:` reference; neither themes nor the site are publishable packages. The site is content
 built by `trellis_cli`.
 
+### Theme SASS Bridge (ADR-013)
+
+`trellis build` compiles every non-partial `.scss`/`.sass` file in a theme's `sass/` directory through a generated wrapper,
+so a theme's `theme.yaml` defaults and the site's `theme_params:` reach its SASS without the site editing it. The
+generator (`ThemeSassGenerator`, `trellis_site`) writes `_theme_params.scss` and `_theme_custom_props.css` into the
+site's `.trellis/build/`, and the CLI build writes one bridge file per entry beside them:
+
+- `_theme_params.scss` – a plain Sass module (no `!default`) with a `$trellis-<name>` variable for every merged param.
+- `bridge_<entry>.scss` – the compile entry, text produced by `ThemeBuildConfig.bridgeWrapperSource` (the bridge tests
+  compile the same text):
+  `@use "theme_params" as tp; @use "<theme entry>" as theme with ($trellis-x: tp.$trellis-x, …)`.
+
+The `with()` list is the **intersection** of the manifest's params and the `$trellis-*` variables the theme's
+`sass/_variables.scss` declares `!default` (found by a whole-statement scan). Sass fails the build when `with()` names a
+variable the module does not declare `!default`, so a param with no SASS variable stays inert. A theme entry's first
+module rule is `@forward 'variables'`: Sass configures a module only on its first load, and the entry has to forward the
+configured variables to the wrapper. Skins are `$palette` maps (`_skins/_light.scss`, `_skins/_dark.scss`) that
+`_variables.scss` selects from by the `skin` param; the bridge injects no skin import.
+
+Colour params are per mode: each `type: color` param has a `<name>_dark` twin that sets the dark palette's entry, and a
+plain colour sets the light entry only. Every dark view (forced `skin: dark`, the `skin: auto` `prefers-color-scheme`
+block, a reader toggle's dark selectors) reads `$trellis-palette-dark`, which `_variables.scss` builds by merging the
+twins into the dark palette. The load path is `.trellis/build/`, `<site>/sass/`, `<theme>/sass/`; a theme's own `@use`
+resolves relative to its file first, so site SASS never shadows a theme partial and cannot reconfigure the theme.
+`@use` emits a module's CSS once, at its first load, where `@import` re-emitted it per occurrence. The module bridge
+replaces ADR-008's `@import` load-order bridge as a hard cut: no compatibility mode, and the CLI scaffold and all bundled
+themes are on it.
+
 ### Arbor Docs Theme (`themes/arbor/`)
 
-A documentation-oriented theme sitting beside the `verdant` blog theme (both are standard-params-contract themes). It consumes the SSG's navigation surfaces directly: a hierarchical sidebar from `${site.menu}` (active/active-trail highlighting resolved at render time), an in-page TOC from `${page.toc}`, a breadcrumb bar from `${page.breadcrumbs}`, and prev/next links from `${page.prev}`/`${page.next}`. A CLI-generated SASS **bridge wrapper** in the consuming site's `.trellis/build/` directory `@import`s the selected theme's params + `sass/main.scss` so `trellis build` compiles the theme's stylesheet with the site's `theme_params` bound.
+A documentation-oriented theme sitting beside the `verdant` blog theme (both are standard-params-contract themes). It consumes the SSG's navigation surfaces directly: a hierarchical sidebar from `${site.menu}` (active/active-trail highlighting resolved at render time), an in-page TOC from `${page.toc}`, a breadcrumb bar from `${page.breadcrumbs}`, and prev/next links from `${page.prev}`/`${page.next}`. The SASS bridge (see [Theme SASS Bridge](#theme-sass-bridge-adr-013)) compiles the theme's stylesheet with the site's `theme_params` bound.
 
 **Build-time syntax highlighting (ADR-010)** — arbor ships **no** highlighter JS. `trellis_site` colors fenced code at build time (`CodeHighlighter`, `package:highlight`), baking `.hljs-*` token spans into the HTML; the theme carries only the matching token CSS (`sass/_code.scss`), so code is colored with JavaScript disabled. See [ADR-010](../adrs/ADR-010-syntax-highlighting.md).
 
@@ -469,7 +498,7 @@ defaults to `false`; when enabled, the home layout renders its Markdown-to-page 
 `site_demo.markdown_html`, and `site_demo.page_title` are all present. This leaf-level guard preserves existing installs
 and prevents a partial whole-file data override from publishing an empty section or failing the build.
 
-### Client-Side Search Flow (S09)
+### Client-Side Search Flow
 
 The engine and the theme meet at one artifact — `search-index.json`:
 
@@ -582,7 +611,7 @@ integrity check is the real gate: a wrong-base-path link produces valid HTML and
 green build but a dead link in production, so it runs (with `--base-path` matching
 `pathPrefix`) between build and publish and blocks the deploy on any broken internal
 ref. A second, non-live root-served variant is built and checked with no base-path as
-an FR10 portability regression guard.
+a portability regression guard.
 
 ### CLI distribution channels
 

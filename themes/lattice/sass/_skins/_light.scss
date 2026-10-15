@@ -1,7 +1,11 @@
-$trellis-primary-color: #2e7d4f !default;
-$trellis-accent-color: #6e9b45 !default;
-$trellis-text-color: #1c2b21 !default;
-$trellis-muted-color: #47584c !default;
-$trellis-bg-color: #fbfaf5 !default;
-$trellis-surface-color: #ffffff !default;
-$trellis-border-color: #e7e3d4 !default;
+// Light palette. Read by _variables.scss, where each entry is the default of its
+// colour param and the base of the light palette. Declares nothing !default.
+$palette: (
+  primary-color: #2e7d4f,
+  accent-color: #6e9b45,
+  text-color: #1c2b21,
+  muted-color: #47584c,
+  bg-color: #fbfaf5,
+  surface-color: #ffffff,
+  border-color: #e7e3d4,
+);

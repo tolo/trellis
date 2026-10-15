@@ -17,7 +17,7 @@ Page _page(String rawContent) => Page(
 );
 
 void main() {
-  group('MarkdownRenderer wiring (TI03)', () {
+  group('MarkdownRenderer wiring', () {
     test('with a highlighter, a dart fence yields hljs-* spans in page.content, class retained', () {
       const renderer = MarkdownRenderer(highlighter: CodeHighlighter());
       final page = _page('Intro.\n\n```dart\nvoid main() {}\n```\n');
@@ -29,7 +29,7 @@ void main() {
       expect(page.content, contains('<span class="hljs-'));
     });
 
-    test('without a highlighter (highlight.enabled: false), a dart fence stays plain (S08)', () {
+    test('without a highlighter (highlight.enabled: false), a dart fence stays plain', () {
       const renderer = MarkdownRenderer(); // highlighter == null
       final page = _page('```dart\nvoid main() {}\n```\n');
       renderer.render(page);
@@ -39,7 +39,7 @@ void main() {
     });
   });
 
-  group('ShortcodeProcessor wiring (TI03)', () {
+  group('ShortcodeProcessor wiring', () {
     test('a fenced block inside a content shortcode body is highlighted', () {
       final tmpDir = Directory.systemTemp.createTempSync('trellis_hl_sc_');
       addTearDown(() => tmpDir.deleteSync(recursive: true));
@@ -73,7 +73,7 @@ void main() {
     });
   });
 
-  group('Highlighting does not collide with the path-prefix pass (TI03)', () {
+  group('Highlighting does not collide with the path-prefix pass', () {
     test('href="/x" inside highlighted <code> is NOT rewritten; a real prose link IS', () {
       const renderer = MarkdownRenderer(highlighter: CodeHighlighter());
       // A prose link (rewritten) and a code example showing href="/x" (never rewritten).

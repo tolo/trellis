@@ -1,17 +1,21 @@
-@import "variables";
+// `@forward` must be the first module rule: the bridge configures `variables` through
+// this file, and Sass accepts configuration only on a module's first load.
+@forward 'variables';
+@use 'sass:map';
+@use 'variables' as *;
 
 @mixin lattice-dark {
-  --paper: #101915;
-  --ink: #e6eee5;
-  --ink-soft: #a2b2a4;
-  --leaf: #6fbf8b;
+  --paper: #{map.get($trellis-palette-dark, bg-color)};
+  --ink: #{map.get($trellis-palette-dark, text-color)};
+  --ink-soft: #{map.get($trellis-palette-dark, muted-color)};
+  --leaf: #{map.get($trellis-palette-dark, primary-color)};
   --footer-link: #6fbf8b;
   --leaf-hover: #8fd3a6;
   --on-leaf: #0d1710;
-  --tendril: #8fbf62;
-  --lattice: #1a2620;
+  --tendril: #{map.get($trellis-palette-dark, accent-color)};
+  --lattice: #{map.get($trellis-palette-dark, border-color)};
   --lattice-strong: #27392c;
-  --card: #16221b;
+  --card: #{map.get($trellis-palette-dark, surface-color)};
   --tint: #131f19;
   --foot-bg: #15211b;
   --start-bg: #182b1f;

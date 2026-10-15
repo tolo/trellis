@@ -8,15 +8,15 @@ import 'package:test/test.dart';
 import 'fixture_mtimes.dart';
 import 'package:trellis_site/trellis_site.dart';
 
-/// Tests for S08 — in-section `${page.prev}`/`${page.next}` neighbor references.
+/// Tests for in-section `${page.prev}`/`${page.next}` neighbor references.
 ///
-/// Neighbor resolution reuses S01's canonical `orderedSectionPages` seam (the
-/// same ordering source S02's `NavigationBuilder` and the list `${pages}` use);
-/// S08 holds no comparator or lineage filter of its own. These tests prove the
+/// Neighbor resolution reuses the canonical `orderedSectionPages` seam (the
+/// same ordering source `NavigationBuilder` and the list `${pages}` use);
+/// prev/next holds no comparator or lineage filter of its own. These tests prove the
 /// neighbor math (index math, boundary absence, weight-not-date order), that
 /// prev/next attach only to single doc pages (never list/section/home/taxonomy),
 /// that only the existing side renders in a guarded region, and that a
-/// prev/next-unused site is byte-for-byte unchanged (FR1 backward-compat).
+/// prev/next-unused site is byte-for-byte unchanged (the backward-compat invariant).
 void main() {
   late String packageRoot;
 
@@ -58,8 +58,8 @@ void main() {
   /// `_default/list.html` echo the prev/next contract so rendered output can be
   /// asserted. The single template mirrors the arbor `_default/single.html`
   /// prev/next region: a `tl:if`-guarded nav where each side renders only when
-  /// its neighbor exists (the region markup itself is S04's; here it proves the
-  /// S08 data drives the guards). Returns the site dir path.
+  /// its neighbor exists (the region markup itself belongs to the theme; here it proves the
+  /// prev/next data drives the guards). Returns the site dir path.
   String prevNextSiteDir() {
     final dir = Directory.systemTemp.createTempSync('prevnext_site_');
     addTearDown(() => dir.deleteSync(recursive: true));
@@ -107,7 +107,7 @@ void main() {
     return dir.path;
   }
 
-  /// The three-page guides section [a(1), b(2), c(3)] whose canonical S01 order
+  /// The three-page guides section [a(1), b(2), c(3)] whose canonical order
   /// is [a, b, c] (weight ascending), plus the section `_index.md`.
   List<Page> guidesSection() => [
     makePage(
@@ -148,9 +148,9 @@ void main() {
     return File(p.join(outputDir, rel, 'index.html')).readAsStringSync();
   }
 
-  // --- S01 [TI01,TI02] Middle page exposes both neighbors in section order ----
+  // --- Middle page exposes both neighbors in section order ----
 
-  group('S01/TI01 — middle page exposes both neighbors in section order', () {
+  group('middle page exposes both neighbors in section order', () {
     test('b exposes prev=a{url,title} and next=c{url,title}', () async {
       final siteDir = prevNextSiteDir();
       final html = await renderSingle(siteDir, guidesSection(), '/docs/guides/b/');
@@ -163,9 +163,9 @@ void main() {
     });
   });
 
-  // --- S02 [TI01] First page has no prev; last page has no next --------------
+  // --- First page has no prev; last page has no next --------------
 
-  group('S02/TI01 — boundaries handled by absence', () {
+  group('boundaries handled by absence', () {
     test('first page a exposes next=b but no prev (no \${...} leak)', () async {
       final siteDir = prevNextSiteDir();
       final html = await renderSingle(siteDir, guidesSection(), '/docs/guides/a/');
@@ -190,9 +190,9 @@ void main() {
     });
   });
 
-  // --- S03 [TI01] Single-page section yields neither neighbor ----------------
+  // --- Single-page section yields neither neighbor ----------------
 
-  group('S03/TI01 — single-page section yields neither neighbor', () {
+  group('single-page section yields neither neighbor', () {
     test('solo page builds and renders with no prev/next region', () async {
       final siteDir = prevNextSiteDir();
       final pages = [
@@ -221,9 +221,9 @@ void main() {
     });
   });
 
-  // --- S04 [TI01,TI02] Weighted neighbor order matches S01, not date order ----
+  // --- Weighted neighbor order matches the canonical order, not date order ----
 
-  group('S04/TI01 — weighted order matches S01, not date order', () {
+  group('weighted order matches the canonical section order, not date order', () {
     test('a.next is b by weight even though b is newer (date-desc would flip)', () async {
       final siteDir = prevNextSiteDir();
       // authored weight order [a(1), b(2)] is the REVERSE of date-desc (b newer).
@@ -253,7 +253,7 @@ void main() {
       ];
       final html = await renderSingle(siteDir, pages, '/docs/guides/a/');
       // Weight order → a.next = b. A date-desc sort would make b first (b.next=a),
-      // leaving a with no next; the presence of a next=b proves S01 weight order.
+      // leaving a with no next; the presence of a next=b proves weight order.
       expect(html, contains('href="/docs/guides/b/"'));
       expect(html, contains('>B</span>'));
       expect(html, isNot(contains('page-nav-prev')));
@@ -266,9 +266,9 @@ void main() {
     });
   });
 
-  // --- S05 [TI02] Only existing neighbor link renders in the guarded region ---
+  // --- Only existing neighbor link renders in the guarded region ---
 
-  group('S05/TI02 — only existing neighbor side renders', () {
+  group('only existing neighbor side renders', () {
     test('first page renders only the next link, prev side omitted', () async {
       final siteDir = prevNextSiteDir();
       final html = await renderSingle(siteDir, guidesSection(), '/docs/guides/a/');
@@ -280,9 +280,9 @@ void main() {
     });
   });
 
-  // --- TI02 — list/section/home/taxonomy pages receive NO neighbor keys ------
+  // --- list/section/home/taxonomy pages receive NO neighbor keys ------
 
-  group('TI02 — prev/next attach to single pages only', () {
+  group('prev/next attach to single pages only', () {
     test('section list page exposes neither prev nor next', () async {
       final siteDir = prevNextSiteDir();
       final outputDir = tempOutputDir();
@@ -347,14 +347,14 @@ void main() {
     });
   });
 
-  // --- S06 [TI03] Prev/next-unused site is byte-for-byte unchanged -----------
+  // --- Prev/next-unused site is byte-for-byte unchanged -----------
 
-  group('S06/TI03 — prev/next-unused site byte-for-byte regression', () {
-    test('build_site output equals the pre-S08 captured baseline byte-for-byte', () async {
-      // The golden was captured from the pre-S08 engine (S08 injection disabled)
+  group('prev/next-unused site byte-for-byte regression', () {
+    test('build_site output equals the pre-prev/next captured baseline byte-for-byte', () async {
+      // The golden was captured from the engine before prev/next existed (injection disabled)
       // via a git-clean baseline build of the same fixture; this proves attaching
       // prev/next keys to single-page maps perturbs no emitted bytes when the
-      // templates do not reference ${page.prev}/${page.next} (FR1 invariant).
+      // templates do not reference ${page.prev}/${page.next} (the backward-compat invariant).
       final golden = (jsonDecode(File(fixture('prevnext_unused_regression_golden.json')).readAsStringSync()) as Map)
           .cast<String, dynamic>();
 

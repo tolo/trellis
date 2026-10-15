@@ -219,7 +219,7 @@ void main() {
       expect(config.searchConfig.enabled, isFalse);
     });
 
-    // Build-time syntax highlighting (ADR-010, TI01).
+    // Build-time syntax highlighting (ADR-010).
     test('no highlight: section produces default (enabled) HighlightConfig', () {
       final tempDir = Directory.systemTemp.createTempSync('site_cfg_hl_');
       addTearDown(() => tempDir.deleteSync(recursive: true));

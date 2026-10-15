@@ -25,6 +25,7 @@ pubspec_overrides.yaml
 
 # Agent temp
 .agent_temp/
+*-andthen-*-review-*.md
 .codex
 CLAUDE.local.md
 

@@ -11,7 +11,15 @@ human action. Steps are in execution order; each names the guard that enforces i
   `### Breaking` when it applies). Packages with no functional change get the lockstep note verbatim
   (see `packages/trellis_css/CHANGELOG.md` `## 0.10.1`):
   `Lockstep version bump to keep all Trellis SDK packages on a single shared version. No functional changes in this package.`
-  Guard: `tool/release.sh` refuses to bump if any package lacks the section.
+  Guard: `tool/release.sh` refuses to bump if any package lacks the section. The changelogs are the release record;
+  `main` takes no fix-up commits after the squash.
+- **`--ref vX.Y.Z` theme-install pins are script-owned – no manual sweep.** `tool/version_lockstep.sh` rewrites every
+  `https://github.com/tolo/trellis ... --ref v<semver>` pin repo-wide (READMEs, `docs/`, `site/content/`,
+  `themes/*/README.md`; CHANGELOGs, `dev/state/LEARNINGS.md` and third-party theme URLs are left alone) in the release
+  commit. Pins on the branch may name the previous release. Guard: after the bump `tool/release.sh` runs
+  `tool/version_lockstep.sh --check-refs X.Y.Z` and refuses, naming each file and line, if any pin is not on `vX.Y.Z`.
+  The check lives in the lockstep script so the rewrite and the check share one scan. A pin in a shape the scan does
+  not recognise (e.g. `--ref` on a continuation line) is invisible to both: write pins on the `trellis theme add` line.
 - **Do not bump versions on the branch.** Pubspecs stay at the previous version until step 4; `melos version` is
   restricted to `main` (root `pubspec.yaml` → `melos.command.version.branch`) and `tool/version_lockstep.sh` throws
   `RestrictedBranchException` and changes nothing anywhere else.
@@ -72,7 +80,7 @@ git switch main && git pull --ff-only
 git merge --squash <branch> && git commit          # one commit, one-line subject, e.g. "0.10.1: <summary>"
 git push origin main
 ```
-Guard: `CLAUDE.md` Workflow Rules (squash only). `ci.yml` starts on the push (`check` + `e2e` on `main`), and
+Guard: `AGENTS.md` Workflow Rules (squash only). `ci.yml` starts on the push (`check` + `e2e` on `main`), and
 `font-provenance.yml` beside it. Only `ci.yml` gates the tag.
 
 ## 3. Wait for CI green on `main`
@@ -95,14 +103,16 @@ tool/release.sh X.Y.Z
 It refuses unless: on `main`, tree clean, `HEAD == origin/main`, every changelog has `## X.Y.Z`, CI green for HEAD.
 Then: `tool/version_lockstep.sh X.Y.Z` (one `melos version` pass: 8 pubspecs + inter-package constraints, 2
 `version.dart` constants, 2 README download examples, every `trellis*: ^x.y.z` install-snippet line in `README.md`,
-`packages/*/README.md`, `docs/`, `site/content/`, and the docs-site hero version) → asserts **only** those files
-changed → local gate (step 0's five repeated local commands; gallery freshness is supplied by the required green CI
-run) → commit `chore(release): trellis SDK X.Y.Z` → `dart pub publish --dry-run` ×8 (commit is undone if one fails)
-→ `git tag vX.Y.Z` → prints the push command. **Nothing is pushed.**
+`packages/*/README.md`, `docs/`, `site/content/`, every `tolo/trellis` `--ref v<semver>` pin repo-wide, and the
+docs-site hero version) → `--check-refs X.Y.Z` (no stale pin left) → asserts **only** those files changed → local
+gate (step 0's five repeated local commands; gallery freshness is supplied by the required green CI run) → commit
+`chore(release): trellis SDK X.Y.Z` → `dart pub publish --dry-run` ×8 (commit is undone if one fails) →
+`git tag vX.Y.Z` → prints the push command. **Nothing is pushed.**
 
 Check the commit: `git show --stat HEAD` — 13 fixed files (8 `pubspec.yaml`, 2 `lib/src/version.dart`, `README.md`,
 `packages/trellis_cli/README.md`, `site/trellis_site.yaml`) plus every README/docs page holding an install snippet
-(13 at 0.11.1: 6 package READMEs, 6 `site/content/docs/packages/` pages, `docs/guides/framework-integration.md`). The
+(13 at 0.11.1: 6 package READMEs, 6 `site/content/docs/packages/` pages, `docs/guides/framework-integration.md`) plus
+every file holding a `--ref` pin (`tool/version_lockstep.sh --list-ref-files`; `themes/*/README.md` among them). The
 committed root `pubspec.lock` is not rewritten by the bump; release-binary jobs consume it with
 `dart pub get --enforce-lockfile`.
 
@@ -139,7 +149,7 @@ tool/verify_release.sh X.Y.Z --wait 20
 ```
 pub.dev ×8, GitHub Release published with 11 assets (5 binaries + 5 `.sha256` + `SHA256SUMS.txt`), Homebrew formula,
 Scoop manifest. The same script runs as the last job (`verify`) of `release-binaries.yml`, so a half-published release
-is red in the run. Then update `dev/state/STATE.md` (Published Versions).
+is red in the run.
 
 ## 7. If something is red after the push
 

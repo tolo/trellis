@@ -24,8 +24,8 @@ Preconditions (each checked; the script refuses otherwise):
 
 Then:
   1. tool/version_lockstep.sh <version>   (pubspecs, constraints, version.dart, READMEs,
-                                           docs install snippets, site/trellis_site.yaml)
-  2. asserts only those files changed
+                                           docs install snippets, tolo/trellis --ref pins, site/trellis_site.yaml)
+  2. refuses if any tolo/trellis --ref pin is not on v<version>, then asserts only those files changed
   3. local gate = ci.yml's check tier: melos analyze + format:check + unit
      tests, root tests + root format
   4. commit `chore(release): trellis SDK <version>`, then `dart pub publish
@@ -178,6 +178,14 @@ step "Lockstep bump to ${VERSION}"
 tool/version_lockstep.sh "${VERSION}"
 dart pub get
 
+# The bump rewrites theme-install pins with the same scan --check-refs uses, so a stale pin
+# here means the rewrite missed a shape. The check lives in the lockstep script (not here) so the
+# scan scope has one owner; release.sh only refuses on its result.
+step "Checking tolo/trellis --ref pins are on v${VERSION}"
+tool/version_lockstep.sh --check-refs "${VERSION}" \
+  || fail "stale --ref pins listed above; bump left in the working tree for inspection; discard it (= ALL uncommitted changes; the tree was clean before the bump) with: git restore --staged --worktree ."
+REF_PIN_FILES="$(tool/version_lockstep.sh --list-ref-files)"
+
 step "Asserting only version files changed"
 # The bump may touch exactly these; anything else means the script or melos did
 # something new and a human should look before it becomes the release commit.
@@ -221,7 +229,15 @@ while IFS= read -r -d '' entry; do
     # README/docs entries are the install-snippet constraint lines version_lockstep.sh
     # rewrites (plus the two manual-download examples); keep the three file sets identical.
     packages/*/pubspec.yaml | packages/*/lib/src/version.dart | README.md | packages/*/README.md | docs/*.md | site/content/*.md | site/trellis_site.yaml) EXPECTED_CHANGED+=("${changed}") ;;
-    *) UNEXPECTED+=("${changed}") ;;
+    # --ref pins live wherever a theme is documented (themes/*/README.md ...), so the lockstep
+    # script supplies the file set instead of a glob that would drift from its scan.
+    *)
+      if printf '%s\n' "${REF_PIN_FILES}" | grep -Fxq -- "${changed}"; then
+        EXPECTED_CHANGED+=("${changed}")
+      else
+        UNEXPECTED+=("${changed}")
+      fi
+      ;;
   esac
 done < <(git status --porcelain -z)
 if (( ${#UNEXPECTED[@]} > 0 )); then

@@ -2,6 +2,9 @@
 // Header nav, sidebar tree (with active + active-trail markers), mobile sidebar
 // disclosure, in-page TOC, prev/next, search shell, hero, and doc cards.
 
+@use 'variables' as *;
+@use 'layout' as *;
+
 // ── Header navigation ────────────────────────────────────────────────────────
 
 .nav-list {

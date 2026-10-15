@@ -9,7 +9,7 @@ import 'fixture_mtimes.dart';
 import 'package:trellis/trellis.dart';
 import 'package:trellis_site/trellis_site.dart';
 
-/// Tests for S02 — the hierarchical `${site.menu}` navigation tree.
+/// Tests for the hierarchical `${site.menu}` navigation tree.
 ///
 /// Unit tests drive [NavigationBuilder.build] directly with constructed pages
 /// (fast, precise assertions on tree shape/order/title/exclusion). Integration
@@ -107,7 +107,7 @@ void main() {
     ),
   ];
 
-  group('S01/TI01 — nested weight-ordered tree', () {
+  group('nested weight-ordered tree', () {
     test('docs→guides branch children are [a, b] in ascending weight (via orderedSectionPages)', () {
       final tree = const NavigationBuilder().build(nestedWeightedPages());
 
@@ -154,7 +154,7 @@ void main() {
     });
   });
 
-  group('S02/TI03 — active trail resolvable from node.url vs page.url', () {
+  group('active trail resolvable from node.url vs page.url', () {
     test('node with url == /docs/guides/a/ and its docs+guides ancestors are all present as urls', () {
       final tree = const NavigationBuilder().build(nestedWeightedPages());
       const pageUrl = '/docs/guides/a/';
@@ -175,7 +175,7 @@ void main() {
     });
   });
 
-  group('S03/TI04 — draft and menu_exclude pages absent', () {
+  group('draft and menu_exclude pages absent', () {
     List<Page> pagesWithExclusions({bool draftC = true}) => [
       makePage(
         url: '/docs/',
@@ -236,7 +236,7 @@ void main() {
     });
   });
 
-  group('S04/S05/TI05 — title fallback and empty tree', () {
+  group('title fallback and empty tree', () {
     test('empty page set yields [] (never null)', () {
       expect(const NavigationBuilder().build(const []), isEmpty);
     });
@@ -366,7 +366,7 @@ void main() {
     });
   });
 
-  group('S02/TI02 — \${site.menu} present on every page render (full build)', () {
+  group('\${site.menu} present on every page render (full build)', () {
     Future<String> buildMenuSiteAndRead(String relativeHtmlPath) async {
       final siteDir = fixture('menu_site');
       final loaded = SiteConfig.load(p.join(siteDir, 'trellis_site.yaml'));
@@ -428,8 +428,8 @@ void main() {
     );
   });
 
-  group('S06/TI06 — menu-unused site byte-for-byte regression', () {
-    test('build_site output (pages + feeds + sitemap + pagination + taxonomy) equals pre-S02 golden', () async {
+  group('menu-unused site byte-for-byte regression', () {
+    test('build_site output (pages + feeds + sitemap + pagination + taxonomy) equals the pre-menu golden', () async {
       final golden = (jsonDecode(File(fixture('menu_unused_regression_golden.json')).readAsStringSync()) as Map)
           .cast<String, dynamic>();
 

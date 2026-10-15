@@ -2,7 +2,7 @@ name: meadow
 version: 1.0.0
 author: Trellis Team
 description: A fresh, energetic product-landing theme with content-driven sections.
-min_trellis_version: 0.10.0
+min_trellis_version: 0.12.0
 screenshots: [screenshots/light.png, screenshots/dark.png]
 features: [landing, dark-mode, responsive, accessible]
 
@@ -15,6 +15,16 @@ params:
   bg_color: {type: color, default: "#f7faee", description: Page background}
   surface_color: {type: color, default: "#fffef8", description: Raised surface color}
   border_color: {type: color, default: "#d4e2ce", description: Rules and dividers}
+  # Dark-edition twins: each colour param has a `<name>_dark` sibling that sets the same entry in the dark
+  # palette (skin: dark, and auto's prefers-color-scheme block and toggle). A plain colour param sets the
+  # light entry only.
+  primary_color_dark: {type: color, default: "#78d397", description: Leaf green links and accents in dark mode}
+  accent_color_dark: {type: color, default: "#d8f475", description: Lime marker and primary highlight in dark mode}
+  text_color_dark: {type: color, default: "#f2f7e9", description: Main ink color in dark mode}
+  muted_color_dark: {type: color, default: "#b8c9bb", description: Secondary ink color in dark mode}
+  bg_color_dark: {type: color, default: "#0f1c14", description: Page background in dark mode}
+  surface_color_dark: {type: color, default: "#17271d", description: Raised surface color in dark mode}
+  border_color_dark: {type: color, default: "#31483a", description: Rules and dividers in dark mode}
   font_family:
     type: string
     default: "Schibsted Grotesk, Inter, ui-sans-serif, system-ui, sans-serif"
@@ -50,3 +60,7 @@ params:
   sun_color: {type: color, default: "#ffd367", description: Sun feature-card color}
   bloom_color: {type: color, default: "#cf91ef", description: Bloom feature-card color}
   coral_color: {type: color, default: "#fb907b", description: Coral feature-card color}
+  sky_color_dark: {type: color, default: "#7bc8f2", description: Sky feature-card color in dark mode}
+  sun_color_dark: {type: color, default: "#ffda7c", description: Sun feature-card color in dark mode}
+  bloom_color_dark: {type: color, default: "#dfaff5", description: Bloom feature-card color in dark mode}
+  coral_color_dark: {type: color, default: "#ff9f8b", description: Coral feature-card color in dark mode}

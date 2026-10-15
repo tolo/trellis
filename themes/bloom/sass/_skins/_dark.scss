@@ -1,6 +1,10 @@
 // Bloom Landing Theme — sass/_skins/_dark.scss
-// Dark skin color overrides. Imported when skin: dark; also mirrored as the
-// prefers-color-scheme: dark :root overrides in main.scss for skin: auto.
+// Dark palette. Read by _variables.scss, where each entry is the default of its
+// `<name>_dark` param and the base of the dark palette: the whole `skin: dark`
+// output, and the `prefers-color-scheme: dark` :root block that main.scss emits
+// for `skin: auto`. Never derived from the light palette. The gradient pair
+// equals the light one: the skin files never set gradients, so dark has always
+// rendered them at these values.
 //
 // WCAG 2.1 AA contrast ratios (computed over sRGB, per WCAG relative luminance):
 //   On the page background (#120f1a):
@@ -13,10 +17,14 @@
 //     #a79fc0 on #1c1730 =  6.89:1  (muted — passes 4.5:1)
 //     #a78bfa on #1c1730 =  6.35:1  (primary — passes 4.5:1)
 
-$trellis-text-color: #f3f0fa !default;
-$trellis-muted-color: #a79fc0 !default;
-$trellis-bg-color: #120f1a !default;
-$trellis-surface-color: #1c1730 !default;
-$trellis-border-color: #302a45 !default;
-$trellis-primary-color: #a78bfa !default;
-$trellis-accent-color: #f472b6 !default;
+$palette: (
+  text-color: #f3f0fa,
+  muted-color: #a79fc0,
+  bg-color: #120f1a,
+  surface-color: #1c1730,
+  border-color: #302a45,
+  primary-color: #a78bfa,
+  accent-color: #f472b6,
+  accent-gradient-start: #6d28d9,
+  accent-gradient-end: #db2777,
+);

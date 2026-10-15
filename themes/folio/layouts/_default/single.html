@@ -48,8 +48,8 @@
               <p>Doc content renders here.</p>
             </div>
 
-            <!-- Prev / next region (S08). Each side renders only when its neighbor
-                 exists; absent today, the whole region collapses to nothing. -->
+            <!-- Prev / next region. Each side renders only when its neighbor
+                 exists; with neither neighbor, the whole region collapses to nothing. -->
             <nav class="page-nav"
                  tl:if="${theme.show_prev_next} and (${page.prev} or ${page.next})"
                  aria-label="Page navigation">

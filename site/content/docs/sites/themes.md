@@ -11,7 +11,7 @@ Themes package reusable layouts, styles, assets, and configuration defaults.
 Install one of the themes in the Trellis repository:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.0
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.1
 ```
 
 For a repository containing one theme, omit `--theme`:
@@ -44,6 +44,7 @@ theme: lattice
 theme_params:
   skin: auto
   primary_color: "#2E7D4F"
+  primary_color_dark: "#6FCF97"
   max_width: 1056px
   nav_links:
     - label: Docs
@@ -53,9 +54,9 @@ theme_params:
 Unspecified values come from the theme's `theme.yaml`. Run
 `trellis theme info lattice` to inspect its full parameter surface.
 
-## The 18 standard params
+## The 25 standard params
 
-Every standard-contract theme accepts these 18 standard parameters:
+Every standard-contract theme accepts these 25 standard parameters:
 
 | Param | Controls |
 |---|---|
@@ -67,6 +68,13 @@ Every standard-contract theme accepts these 18 standard parameters:
 | `bg_color` | Page background |
 | `surface_color` | Card and surface background |
 | `border_color` | Borders and dividers |
+| `primary_color_dark` | `primary_color` in the dark palette |
+| `accent_color_dark` | `accent_color` in the dark palette |
+| `text_color_dark` | `text_color` in the dark palette |
+| `muted_color_dark` | `muted_color` in the dark palette |
+| `bg_color_dark` | `bg_color` in the dark palette |
+| `surface_color_dark` | `surface_color` in the dark palette |
+| `border_color_dark` | `border_color` in the dark palette |
 | `font_family` | Body font stack |
 | `heading_font_family` | Heading font stack |
 | `code_font_family` | Monospace font stack |
@@ -77,6 +85,15 @@ Every standard-contract theme accepts these 18 standard parameters:
 | `footer_text` | Footer copy |
 | `show_powered_by` | Trellis attribution |
 | `show_rss_link` | Feed discovery link |
+
+Colors are per mode. A plain color param such as `primary_color` sets the
+theme's light palette only, under every skin; its `_dark` twin sets the dark
+palette. `skin: light` emits the light palette, `skin: dark` the dark one, and
+`skin: auto` the light one plus a block that applies the dark one when the
+visitor's OS prefers dark. With `skin: dark`, `primary_color` therefore changes
+nothing – set `primary_color_dark`. Trellis never derives a dark color from a
+light one, because a color chosen for a white background has no verified
+contrast on a dark one.
 
 Individual themes can add their own parameters; those are documented in the
 theme manifest and README.
@@ -111,12 +128,15 @@ Extend a theme layout and replace named blocks when the theme exposes them:
 
 This keeps the theme's outer shell and changes only the declared block.
 
-### 4. SASS variable override
+### 4. Site stylesheets
 
-Put `_variables.scss` in the site's SASS directory to override variables the
-theme marks with `!default`. Parameter values still arrive through the
-generated SASS bridge; use variables for theme-specific styling that is not a
-manifest parameter.
+Add your own SASS in the site's `sass/` directory or as `static/*.scss`. These
+files can read the theme's merged parameters through the generated module
+(`@use 'theme_params' as tp;`, then `tp.$trellis-primary-color`), but they
+cannot reconfigure the theme: Sass resolves the theme's own
+`@forward 'variables'` relative to the theme file before any load path, so a
+site `sass/_variables.scss` changes nothing in the theme's CSS. `theme_params`
+is the one way to change a theme's values.
 
 For designing and publishing a new theme, see
 [Theme Authoring](/docs/themes/authoring/). Browse the shipped designs in the
@@ -135,6 +155,29 @@ trellis theme remove lattice
 An installed single-theme git repository can update in place. A theme copied
 from a multi-theme repository with `--theme` carries no git metadata; remove
 and re-add it at the desired ref instead.
+
+## Upgrading from 0.11
+
+Themes installed with 0.11 use `@import` in their SASS. From 0.12 the build
+compiles theme SASS with `@use` and treats `@import` as an error, so a theme left
+at its 0.11 version fails with a message naming the theme and the file:
+
+```
+Build failed: theme "lattice" uses @import at themes/lattice/sass/main.scss:12:9.
+```
+
+Re-add a built-in theme at 0.12. `theme remove` keeps your `theme_params:`, and
+`theme add` sets `theme:` again; copy any edits you made inside
+`themes/<name>/` over by hand first:
+
+```bash
+trellis theme remove lattice
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.1
+```
+
+Migrate a third-party or locally modified theme to `@use` as the
+[theme authoring guide](/docs/themes/authoring/) describes. A site's own
+stylesheets under `static/` may keep `@import`.
 
 ## Build
 

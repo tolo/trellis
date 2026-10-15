@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.12.0
+
+### Changed
+
+- Lockstep version bump to keep all Trellis SDK packages on a single shared version.
+- `expectSnapshot`, `expectSnapshotFromSource` and `compareOrCreateGolden` now **fail on a missing golden file when the `CI` environment variable is `true`**, instead of creating it and passing. On CI the created file was compared against itself and then discarded with the workspace, so a deleted or never-committed golden passed unnoticed. Local runs still create missing goldens on first run. `compareOrCreateGolden` takes a new `createMissing` parameter to override the default.
+
 ## 0.11.1
 
 ### Changed

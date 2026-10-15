@@ -32,11 +32,11 @@ separately on the baseline-authoring host when comparing those captures.
 | run one test | `dart test "{file}" --plain-name "{test}"` |
 
 ```bash
-# All tests
+# Root suite only (release/distribution contracts, tool/); package suites run through the tiers above
 dart test
 
-# Single test file
-dart test test/engine_test.dart
+# Single test file: run from its package directory so the package's dart_test.yaml applies
+cd packages/trellis && dart test test/engine_test.dart
 ```
 
 ## Workspace-wide (Melos, from the repo root)

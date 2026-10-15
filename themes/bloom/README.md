@@ -9,7 +9,7 @@ contrast, `prefers-reduced-motion` support, and a mobile-first responsive layout
 
 Bloom is a sibling of the `arbor` docs theme and the `verdant` blog theme and
 shares their conventions (manifest shape, the SASS param bridge,
-`tl:extends`/`tl:define` layout inheritance, the 18 standard params). It differs
+`tl:extends`/`tl:define` layout inheritance, the 25 standard params). It differs
 in intent: instead of a content tree, the landing page is a **data-driven
 composition** — each section renders only when its front-matter block is present,
 so a site builder assembles the whole page from `content/_index.md` with zero
@@ -45,7 +45,7 @@ hand-authored output HTML.
 Install it from the Trellis repository:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme bloom --ref v0.11.0
+trellis theme add https://github.com/tolo/trellis --theme bloom --ref v0.11.1
 ```
 
 That copies `themes/bloom/` into your site's `themes/` and sets `theme: bloom`
@@ -59,14 +59,21 @@ theme: bloom
 theme_params:
   skin: auto            # light | dark | auto
   hero_align: split     # center | split (split needs a hero image)
-  accent_gradient_start: "#6d28d9"
+  accent_gradient_start: "#6d28d9"       # light mode
+  accent_gradient_start_dark: "#6d28d9"  # dark mode (skin: dark, and auto's dark block)
   accent_gradient_end: "#db2777"
+  accent_gradient_end_dark: "#db2777"
   pill_badges: true
   nav_links:
     - { label: Features, url: "#features" }
     - { label: Pricing,  url: "#pricing" }
     - { label: FAQ,      url: "#faq" }
 ```
+
+Colours are set per mode: `primary_color` sets the light palette's entry and
+`primary_color_dark` the dark one's, and the gradient pair works the same way. A
+plain `primary_color` or `accent_gradient_start` has no effect on a `skin: dark`
+site, and dark colours are never derived from light ones.
 
 Then author the landing page in `content/_index.md` with `layout: home` and the
 section blocks in front matter. See [`example/content/_index.md`](example/content/_index.md)
@@ -133,7 +140,9 @@ trellis build && trellis serve
 | `hero_align` | enum | `center` | `center` or `split` (split needs a hero image) |
 | `accent_gradient_start` | color | `#6d28d9` | Gradient start — hero title + primary buttons |
 | `accent_gradient_end` | color | `#db2777` | Gradient end — hero title + primary buttons |
+| `accent_gradient_start_dark` | color | `#6d28d9` | `accent_gradient_start` in dark mode |
+| `accent_gradient_end_dark` | color | `#db2777` | `accent_gradient_end` in dark mode |
 | `pill_badges` | boolean | `true` | Render eyebrow/badge labels as rounded pills |
 | `logo` | string | `null` | Optional header logo image path (null = text title) |
 
-Plus all 18 [standard params](../../docs/reference/standard-params.md).
+Plus all 25 [standard params](../../docs/reference/standard-params.md).

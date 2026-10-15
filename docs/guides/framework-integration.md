@@ -797,7 +797,8 @@ test('page matches golden snapshot', () async {
 });
 ```
 
-**First run:** The golden file is auto-created and the test passes with an info message.
+**First run:** The golden file is auto-created and the test passes with an info message. On CI (`CI=true`) a missing
+golden file fails the test instead, so commit golden files together with their tests.
 
 **Mismatch:** The test fails with a readable line-by-line diff.
 

@@ -1,8 +1,24 @@
-@import '../dark_tokens';
-$trellis-text-color: $meadow-dark-ink;
-$trellis-muted-color: $meadow-dark-muted;
-$trellis-bg-color: $meadow-dark-paper;
-$trellis-surface-color: $meadow-dark-surface;
-$trellis-border-color: $meadow-dark-line;
-$trellis-primary-color: $meadow-dark-leaf;
-$trellis-accent-color: $meadow-dark-lime;
+// Meadow — sass/_skins/_dark.scss
+// Dark palette. Read by _variables.scss, where each colour entry is the default
+// of its `<name>_dark` param and the base of the dark palette: the whole
+// `skin: dark` output, and the `prefers-color-scheme: dark` block and the reader
+// toggle's dark selector that main.scss emits for `skin: auto`. Never derived
+// from the light palette. `strong`, `leaf-deep` and `focus` are dark tokens with
+// no colour param.
+
+$palette: (
+  primary-color: #78d397,
+  accent-color: #d8f475,
+  text-color: #f2f7e9,
+  muted-color: #b8c9bb,
+  bg-color: #0f1c14,
+  surface-color: #17271d,
+  border-color: #31483a,
+  sky-color: #7bc8f2,
+  sun-color: #ffda7c,
+  bloom-color: #dfaff5,
+  coral-color: #ff9f8b,
+  strong: #203628,
+  leaf-deep: #4aa96d,
+  focus: #92d8ff,
+);

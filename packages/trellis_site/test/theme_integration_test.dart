@@ -87,7 +87,7 @@ void main() {
       expect(result.pageCount, equals(1));
     });
 
-    test('unknown theme_params: key produces build warning', () async {
+    test('unknown theme_params: key warns and still reaches site SASS and the custom properties', () async {
       final tempDir = Directory.systemTemp.createTempSync('unknown_param_site_');
       addTearDown(() => tempDir.deleteSync(recursive: true));
 
@@ -113,6 +113,15 @@ void main() {
 
       expect(result.warnings, isNotEmpty);
       expect(result.warnings.any((w) => w.message.contains('no_such_param')), isTrue);
+      // The warning tells the author both sinks still receive the key, so that is pinned here.
+      expect(
+        File(p.join(tempDir.path, '.trellis', 'build', '_theme_params.scss')).readAsStringSync(),
+        contains(r'$trellis-no-such-param:'),
+      );
+      expect(
+        File(p.join(tempOutput.path, 'css', 'theme-props.css')).readAsStringSync(),
+        contains('--trellis-no-such-param:'),
+      );
     });
 
     test('missing theme directory throws SiteConfigException', () async {

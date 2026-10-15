@@ -342,8 +342,7 @@ void main() {
   });
 
   group('orderedSectionPages (canonical ordering seam)', () {
-    // AS08/TI09: the single reusable ordered-section sequence.
-    test('AS01/AS08: weighted pages sort ahead of unweighted, ascending by weight', () {
+    test('weighted pages sort ahead of unweighted, ascending by weight', () {
       final guide = makePage(
         sourcePath: 'docs/guides/guide.md',
         url: '/docs/guides/guide/',
@@ -371,7 +370,7 @@ void main() {
       expect(ordered.map((p) => p.url), ['/docs/guides/guide/', '/docs/guides/intro/', '/docs/guides/misc/']);
     });
 
-    test('AS03: ties among equal weights fall back to date-desc-then-URL', () {
+    test('ties among equal weights fall back to date-desc-then-URL', () {
       final older = makePage(
         sourcePath: 'docs/guides/older.md',
         url: '/docs/guides/older/',
@@ -396,7 +395,7 @@ void main() {
       expect(ordered.map((p) => p.url), ['/docs/guides/newer/', '/docs/guides/older/', '/docs/guides/plain/']);
     });
 
-    test('AS04: malformed weight is treated as unweighted (sorts in unweighted group)', () {
+    test('malformed weight is treated as unweighted (sorts in unweighted group)', () {
       final weighted = makePage(
         sourcePath: 'docs/guides/weighted.md',
         url: '/docs/guides/weighted/',
@@ -415,7 +414,7 @@ void main() {
       expect(ordered.map((p) => p.url), ['/docs/guides/weighted/', '/docs/guides/bad/']);
     });
 
-    test('AS06/TI06: nested listing contains own-level pages and excludes sibling sub-sections', () {
+    test('nested listing contains own-level pages and excludes sibling sub-sections', () {
       final guidesA = makePage(
         sourcePath: 'docs/guides/a.md',
         url: '/docs/guides/a/',
@@ -454,7 +453,7 @@ void main() {
       expect(ordered.map((p) => p.url), ['/docs/guides/a/']);
     });
 
-    test('AS02/TI04: unweighted section keeps date-desc-then-URL order (no new tiebreak)', () {
+    test('unweighted section keeps date-desc-then-URL order (no new tiebreak)', () {
       // Same date → tiebreak is URL ascending (existing behavior).
       final z = makePage(
         sourcePath: 'posts/z.md',
@@ -486,7 +485,7 @@ void main() {
     });
   });
 
-  group('_getChildPages routes through orderedSectionPages (AS08 single ordering source)', () {
+  group('_getChildPages routes through orderedSectionPages (single ordering source)', () {
     test('section _index.md \${pages} order equals orderedSectionPages output exactly', () async {
       final outputDir = tempOutputDir();
       final generator = PageGenerator(siteDir: _siteFixtureDir, outputDir: outputDir);

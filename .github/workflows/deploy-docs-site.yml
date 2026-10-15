@@ -67,7 +67,7 @@ jobs:
       - name: Link-integrity check (sub-path)
         run: dart run tool/link_check.dart site/output --base-path /trellis/
 
-      # FR10 portability regression guard (pipeline-gating, does NOT change the
+      # Portability regression guard (pipeline-gating, does NOT change the
       # live deploy): build a root-served variant and check it with no base-path,
       # so the root-served code path can't silently rot while production is
       # sub-path served. Runs into a throwaway output dir.

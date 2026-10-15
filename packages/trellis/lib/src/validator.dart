@@ -73,7 +73,6 @@ final class TemplateValidator {
 
   late final String _separator = prefix.contains('-') ? '-' : ':';
   late final String _attrPrefix = '$prefix$_separator';
-  late final String _prefixedBlock = '${_attrPrefix}block';
   late final Set<String> _knownAttributes = _buildKnownAttributes();
 
   TemplateValidator({
@@ -361,7 +360,7 @@ final class TemplateValidator {
               message:
                   '$attribute marker is not a direct child of its tl:insert/tl:replace host, so it can never '
                   'bind and is ignored. Move it to be a literal direct child of the host '
-                  '(a <$_prefixedBlock> wrapper is not looked through).',
+                  '(a <${_attrPrefix}block> wrapper is not looked through).',
               element: marker.localName,
               attribute: attribute,
               severity: ValidationSeverity.warning,

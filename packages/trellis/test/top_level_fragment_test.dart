@@ -156,7 +156,7 @@ void main() {
         expect(() => engine.renderFragment(_toast, fragment: value, context: ctx), _templateException('"toast"'));
         expect(
           () => engine.renderFileFragment('ui.html', fragment: value, context: ctx),
-          throwsA(isA<TemplateException>().having((e) => e.toString(), 'message', contains('"toast"'))),
+          _templateException('"toast"'),
         );
         expect(
           () => engine.renderFragments('$_toast$_note', fragments: ['note', value], context: ctx),
@@ -164,7 +164,7 @@ void main() {
         );
         expect(
           () => engine.renderFileFragments('ui.html', fragments: ['note', value], context: ctx),
-          throwsA(isA<TemplateException>().having((e) => e.toString(), 'message', contains('"toast"'))),
+          _templateException('"toast"'),
         );
       });
     }

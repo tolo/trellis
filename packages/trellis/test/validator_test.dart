@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:html/dom.dart';
 import 'package:test/test.dart';
 import 'package:trellis/testing.dart';
@@ -202,6 +204,165 @@ void main() {
 
         expect(errors.map((e) => e.message), isNot(contains(contains('Unknown trellis attribute'))));
       });
+
+      group('markers that can never bind', () {
+        List<ValidationError> slotWarnings(String source) =>
+            TemplateValidator().validate(source).where((e) => e.message.contains('tl:slot')).toList();
+
+        test('warns once, at the marker line, for a marker nested below the invocation host', () {
+          final warnings = slotWarnings(
+            '<div tl:replace="~{ui :: card}">\n<div>\n<span tl:slot="footer">x</span></div></div>',
+          );
+
+          expect(warnings, hasLength(1));
+          expect(warnings.single.severity, ValidationSeverity.warning);
+          expect(warnings.single.line, 3);
+          expect(warnings.single.attribute, 'tl:slot');
+        });
+
+        test('does not look through a <tl:block> grouping wrapper', () {
+          final warnings = slotWarnings(
+            '<div tl:insert="~{ui :: card}"><tl:block><span tl:slot="footer">x</span></tl:block></div>',
+          );
+
+          expect(warnings, hasLength(1));
+          expect(warnings.single.severity, ValidationSeverity.warning);
+        });
+
+        test('warns for a marker nested inside another marker', () {
+          final warnings = slotWarnings('<div tl:replace="card"><b tl:slot="a"><i tl:slot="b">x</i></b></div>');
+
+          expect(warnings, hasLength(1));
+        });
+
+        test('is silent for a literal direct child of the host, named or anonymous', () {
+          expect(
+            '<div tl:replace="~{ui :: card}"><span tl:slot="footer">x</span><b tl:slot>y</b></div>',
+            isValidTemplate(),
+          );
+          expect('<div tl:insert="card"><tl:block tl:slot="footer">x</tl:block></div>', isValidTemplate());
+        });
+
+        test('is silent for a definition-side region, with or without a host in the document', () {
+          expect('<label tl:fragment="field(label, name)"><span tl:slot="hint"></span></label>', isValidTemplate());
+          expect('<div><span tl:slot="hint"><i tl:slot="inner"></i></span></div>', isValidTemplate());
+        });
+
+        test('treats a definition nested under a host as definition-side', () {
+          expect(
+            '<div tl:replace="card"><section tl:fragment="inner(x)"><p tl:slot="body"></p></section></div>',
+            isValidTemplate(),
+          );
+        });
+
+        test('honours a custom prefix', () {
+          final errors = TemplateValidator(
+            prefix: 'data-tl',
+          ).validate('<div data-tl-replace="card"><div><span data-tl-slot="a">x</span></div></div>');
+
+          expect(errors.where((e) => e.message.contains('data-tl-slot')), hasLength(1));
+        });
+      });
+    });
+
+    group('literal id in a parameterized fragment', () {
+      List<ValidationError> idWarnings(String source) =>
+          TemplateValidator().validate(source).where((e) => e.message.contains('id="')).toList();
+
+      test('warns at the offending element, naming the id and the dynamic alternative', () {
+        final warnings = idWarnings(
+          '<div tl:fragment="card(title)">\n<h2 id="card-title" tl:text="\${title}">T</h2></div>',
+        );
+
+        expect(warnings, hasLength(1));
+        expect(warnings.single.severity, ValidationSeverity.warning);
+        expect(warnings.single.message, allOf(contains('card-title'), contains('tl:id'), contains('tl:attrs')));
+        expect(warnings.single.line, 2);
+        expect(warnings.single.element, 'h2');
+      });
+
+      test('warns for an id on the fragment root and for each descendant id', () {
+        final warnings = idWarnings(
+          '<div tl:fragment="card(a, ...rest)" id="root"><i id="x"></i><b><u id="y"></u></b></div>',
+        );
+
+        expect(warnings.map((w) => w.element), ['div', 'i', 'u']);
+      });
+
+      test('stays silent for a parameterless fragment (HTMX swap-target idiom)', () {
+        expect('<div tl:fragment="todo-list"><div id="todo-list"></div></div>', isValidTemplate());
+        expect('<div tl:fragment="todo-list()" id="todo-list"></div>', isValidTemplate());
+      });
+
+      test('stays silent for a dynamic id and for a literal id overridden by tl:id or tl:attr', () {
+        expect('<div tl:fragment="card(id)" tl:id="\${id}"><h2 tl:id="\${id}">T</h2></div>', isValidTemplate());
+        expect('<div tl:fragment="card(id)"><h2 id="proto" tl:id="\${id}">T</h2></div>', isValidTemplate());
+        expect(
+          '<div tl:fragment="card(id)"><h2 id="proto" tl:attr="title=\'t\',id=\${id}">T</h2></div>',
+          isValidTemplate(),
+        );
+      });
+
+      test('stops at a nested fragment and leaves it to its own parameter list', () {
+        final source =
+            '<div tl:fragment="outer(a)"><section tl:fragment="inner" id="swap"><i id="s"></i></section>'
+            '<p tl:fragment="deep(b)"><u id="d"></u></p></div>';
+
+        final warnings = idWarnings(source);
+
+        expect(warnings.map((w) => w.element), ['u']);
+      });
+
+      test('stays silent for an id outside any fragment', () {
+        expect('<div id="a"><span id="b"></span></div>', isValidTemplate());
+      });
+    });
+
+    group('<tl:block tl:slot> in a table', () {
+      test('reports the foster-parenting warning once and no slot-specific warning', () {
+        final errors = TemplateValidator().validate(
+          '<table><tbody><tr tl:replace="~{ui :: row}"><tl:block tl:slot="cells"><td>x</td></tl:block></tr></tbody></table>',
+        );
+
+        expect(errors.where((e) => e.message.contains('foster-parented')), hasLength(1));
+        expect(errors.where((e) => e.message.contains('tl:slot')), isEmpty);
+      });
+    });
+
+    group('component fixtures', () {
+      for (final name in ['components.html', 'application.html']) {
+        test('validate clean: $name', () {
+          expect(File('test/fixtures/components/$name').readAsStringSync(), isValidTemplate());
+        });
+      }
+    });
+
+    group('real example and theme templates', () {
+      // Run from packages/trellis (how `dart test` and Melos run it); the repo root is two levels up.
+      // The paths are explicit because themes/<theme>/example/themes/<theme> links back to the theme.
+      const templates = [
+        'examples/todo_app/templates/app.html',
+        'examples/relic_app/templates/index.html',
+        'examples/dart_frog_app/templates/pages/index.html',
+        'examples/shelf_app/templates/pages/index.html',
+        'themes/arbor/layouts/base.html',
+        'themes/lattice/layouts/base.html',
+        'themes/folio/layouts/base.html',
+        'themes/arbor/example/themes/arbor/layouts/base.html',
+        'themes/lattice/example/themes/lattice/layouts/base.html',
+        'themes/folio/example/themes/folio/layouts/base.html',
+      ];
+
+      for (final template in templates) {
+        test('raises no composition warning for $template', () {
+          final file = File('../../$template');
+          if (!file.existsSync()) fail('$template not found: run from the packages/trellis directory');
+
+          final errors = TemplateValidator().validate(file.readAsStringSync());
+
+          expect(errors.where((e) => e.message.contains('tl:slot') || e.message.contains('id="')), isEmpty);
+        });
+      }
     });
   });
 }

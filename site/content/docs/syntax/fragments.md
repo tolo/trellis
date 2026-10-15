@@ -1,6 +1,6 @@
 ---
 title: Fragments
-description: Define reusable pieces with tl:fragment and include them with tl:insert or tl:replace, including cross-file and CSS-selector targeting.
+description: Define reusable pieces with tl:fragment and include them with tl:insert or tl:replace, including cross-file and CSS-selector targeting, and render a fragment as a response.
 weight: 60
 ---
 
@@ -58,6 +58,13 @@ Instead of a fragment name, target an element in another file by `#id` or
 
 Circular fragment inclusions are detected and reported with the full cycle path.
 
+## Components
+
+Fragments can also take content and extra attributes from the caller, through
+`tl:slot`, `tl:attrs` and a trailing `...rest` parameter. See
+[Composition](/docs/syntax/composition/). Those work through name-based
+invocation only (`tl:replace="~{file :: name(...)}"`), not CSS-selector targeting.
+
 ## Rendering a fragment directly
 
 From Dart, render just a named fragment – this is what an HTMX partial response
@@ -70,3 +77,82 @@ final fragment = engine.renderFragment(
   context: {'items': items},
 );
 ```
+
+## Rendering a parameterised fragment as a response
+
+`renderFragment`, `renderFragments`, `renderFileFragment` and `renderFileFragments`
+(and the Shelf, dart_frog and Relic helpers and the testing helpers built on them)
+address a fragment by its **bare name**, even when it declares parameters. A
+fragment declared `toast(type, title)` is rendered with `fragment: 'toast'`, and
+its parameters resolve from the same-named keys of the render context, like any
+other variable:
+
+```html render=toast-top fragment=toast
+<div tl:fragment="toast(type, title)" class="toast" tl:classappend="${type}">
+  <strong tl:text="${title}">Title</strong>
+</div>
+```
+
+```json context=toast-top
+{"type": "error", "title": "Saved"}
+```
+
+```html output=toast-top
+<div class="toast error"><strong>Saved</strong></div>
+```
+
+An absent key is null, or throws in strict mode, as for any variable. A `...rest`
+parameter is bound to an empty map, so a component that spreads it renders in
+strict mode too. The result is fully processed.
+
+A fragment name **with arguments** throws, naming the bare name to pass instead:
+
+```html render=toast-args fragment=toast('error','Saved')
+<div tl:fragment="toast(type, title)"><strong tl:text="${title}">Title</strong></div>
+```
+
+```text throws=toast-args
+is addressed with arguments; pass the bare name "toast" instead
+```
+
+An empty `()` is read as the bare name.
+
+### The one difference from in-template invocation
+
+Invoked from another template, `tl:replace="toast"` without arguments leaves the
+parameters **unpassed, and they stay null** – the context is not consulted. Only
+`renderFragment` reads them from the context:
+
+```html file=ui/toast.html
+<div tl:fragment="toast(type, title)" class="toast" tl:classappend="${type}">
+  <strong tl:text="${title}">Title</strong>
+</div>
+```
+
+```html render=toast-bare
+<div tl:replace="~{ui/toast.html :: toast}"></div>
+<div tl:replace="~{ui/toast.html :: toast('warning', 'Careful')}"></div>
+```
+
+```json context=toast-bare
+{"type": "error", "title": "Saved"}
+```
+
+```html output=toast-bare
+<div class="toast"><strong></strong></div>
+<div class="toast warning"><strong>Careful</strong></div>
+```
+
+Both forms of the in-template call are valid; pass arguments when you want values.
+
+Two caveats:
+
+- Two fragments sharing a name is an authoring error with no engine rule: a
+  top-level render takes the first in document order, an in-template call the
+  last.
+- `renderFragments` renders several fragments against **one** context, so two
+  fragments that both declare `title` read the same `title`.
+
+A fragment that is rendered as a response must not carry `tl:each`, or a `tl:if`
+that may be false, on the `tl:fragment` element itself: the element is rendered
+in place and these are unsupported there. Put them on an inner element.

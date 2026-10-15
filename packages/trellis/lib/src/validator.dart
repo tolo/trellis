@@ -73,6 +73,7 @@ final class TemplateValidator {
 
   late final String _separator = prefix.contains('-') ? '-' : ':';
   late final String _attrPrefix = '$prefix$_separator';
+  late final String _prefixedBlock = '${_attrPrefix}block';
   late final Set<String> _knownAttributes = _buildKnownAttributes();
 
   TemplateValidator({
@@ -242,6 +243,9 @@ final class TemplateValidator {
         }
       case 'fragment':
         _validateFragmentDefinition(element, attribute, value, errors);
+        _warnOnLiteralIds(element, value, errors);
+      case 'slot':
+        _warnOnUnbindableSlot(element, attribute, errors);
       case 'insert':
       case 'replace':
         _validateFragmentReference(element, attribute, value, errors);
@@ -337,6 +341,93 @@ final class TemplateValidator {
       }
     } on Exception catch (error) {
       _addError(errors, element: element, attribute: attribute, message: '$error');
+    }
+  }
+
+  /// Warn when a `tl:slot` marker sits under a visible `tl:insert`/`tl:replace` host without being its direct child.
+  ///
+  /// The engine only reads a host's literal direct children, so a deeper marker is inert. A marker with no host
+  /// ancestor, or one reached through a `tl:fragment` element first, may be a definition-side region and is never
+  /// reported: the validator cannot see cross-file definitions.
+  void _warnOnUnbindableSlot(Element marker, String attribute, List<ValidationError> errors) {
+    for (var ancestor = marker.parent; ancestor != null; ancestor = ancestor.parent) {
+      if (_hasDirective(ancestor, 'fragment')) {
+        return;
+      }
+      if (_hasDirective(ancestor, 'insert') || _hasDirective(ancestor, 'replace')) {
+        if (!identical(ancestor, marker.parent)) {
+          errors.add(
+            ValidationError(
+              message:
+                  '$attribute marker is not a direct child of its tl:insert/tl:replace host, so it can never '
+                  'bind and is ignored. Move it to be a literal direct child of the host '
+                  '(a <$_prefixedBlock> wrapper is not looked through).',
+              element: marker.localName,
+              attribute: attribute,
+              severity: ValidationSeverity.warning,
+              line: _lineFor(marker),
+            ),
+          );
+        }
+        return;
+      }
+    }
+  }
+
+  /// Warn on each literal `id` on or inside a parameterized fragment definition.
+  ///
+  /// The fragment may render several times on one page, repeating the id. A parameterless fragment is the HTMX
+  /// swap-target idiom (one render, one stable id), so it never warns. A literal id that `tl:id` or a `tl:attr` `id`
+  /// binding overrides is only a prototype placeholder and is skipped, and the scan stops at a nested fragment, which
+  /// has its own parameter list.
+  void _warnOnLiteralIds(Element fragment, String value, List<ValidationError> errors) {
+    final List<String> params;
+    try {
+      params = parseFragmentDef(value).$2;
+    } on Exception {
+      return;
+    }
+    if (params.isEmpty) {
+      return;
+    }
+
+    void scan(Element element) {
+      final id = element.attributes['id'];
+      if (id != null && !_overridesId(element)) {
+        errors.add(
+          ValidationError(
+            message:
+                'Literal id="$id" inside a parameterized fragment repeats on every render of the fragment. '
+                'Set it per use with tl:id or tl:attrs.',
+            element: element.localName,
+            attribute: 'id',
+            severity: ValidationSeverity.warning,
+            line: _lineFor(element),
+          ),
+        );
+      }
+      for (final child in element.children) {
+        if (!_hasDirective(child, 'fragment')) {
+          scan(child);
+        }
+      }
+    }
+
+    scan(fragment);
+  }
+
+  bool _hasDirective(Element element, String suffix) => element.attributes.containsKey('$_attrPrefix$suffix');
+
+  /// Whether `tl:id` or a `tl:attr` `id` binding replaces [element]'s literal `id` at render time.
+  bool _overridesId(Element element) {
+    if (_hasDirective(element, 'id')) return true;
+    final bindings = element.attributes['${_attrPrefix}attr'];
+    if (bindings == null) return false;
+    try {
+      return parseBindings(bindings).any((binding) => binding.$1 == 'id');
+    } on TemplateException {
+      // Malformed bindings are already reported by _validateBindings.
+      return false;
     }
   }
 

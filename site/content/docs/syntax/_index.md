@@ -27,9 +27,13 @@ expression syntax once and it applies everywhere.
   `tl:switch`, `tl:case`.
 - [**Iteration**](/docs/syntax/iteration/) – `tl:each` and its status variables.
 - [**Attributes**](/docs/syntax/attributes/) – `tl:attr`, `tl:href`, `tl:src`,
-  `tl:value`, `tl:class`, `tl:id`, `tl:classappend`, `tl:styleappend`.
+  `tl:value`, `tl:class`, `tl:id`, `tl:classappend`, `tl:styleappend`,
+  `tl:attrs`.
 - [**Fragments**](/docs/syntax/fragments/) – `tl:fragment`, `tl:insert`,
-  `tl:replace`.
+  `tl:replace`, and rendering a fragment as a response.
+- [**Composition**](/docs/syntax/composition/) – `tl:slot` content slots,
+  `tl:attrs` spreading and the `...rest` fragment parameter, for building
+  components from fragments.
 - [**Template inheritance**](/docs/syntax/inheritance/) – `tl:extends`,
   `tl:define`.
 - [**Local variables & selection**](/docs/syntax/local-variables/) – `tl:with`,
@@ -51,7 +55,12 @@ fixed priority order, highest first:
 5. `tl:each` – iteration
 6. `tl:insert` / `tl:replace` – fragment inclusion
 7. `tl:text` / `tl:utext` – content
-8. `tl:attr` and the attribute shorthands – attribute mutation
+8. `tl:attr` and the attribute shorthands – attribute mutation. Within this
+   group `tl:attrs` (spread) runs first, so the other attribute directives
+   override its entries.
+
+`tl:slot` is not a processing step: it is resolved while a fragment is included
+(step 6) and holds no place in this order.
 
 Understanding this order explains, for example, why `tl:if` on the same element
 as `tl:each` is evaluated before the loop runs.

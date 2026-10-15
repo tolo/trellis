@@ -2,7 +2,7 @@
 
 Canonical reference for the internal architecture of the core `trellis` template engine package. Covers the render pipeline, processor model, expression evaluation, caching, fragment system, and extension points.
 
-**Current through**: SDK Phase 1 + 0.10.2 (`FileSystemLoader` per-directory dev-mode watching on Linux; symlink-free `listTemplates()`)
+**Current through**: 0.13 (composition primitives: `tl:slot` content slots, `tl:attrs` spreading, `...rest` fragment parameter, top-level rendering of parameterised fragments; the processor table below is pinned to `ProcessorPriority` by `test/processor_table_test.dart`)
 
 ---
 
@@ -92,7 +92,7 @@ ProcessorPriority.afterLocals       ← (open for custom processors)
 ProcessorPriority.afterConditionals ← tl:each
 ProcessorPriority.afterIteration    ← tl:insert, tl:replace
 ProcessorPriority.afterInclusion    ← tl:text, tl:utext, tl:inline
-ProcessorPriority.afterContent      ← tl:attr + shorthands (tl:href, tl:src, etc.)
+ProcessorPriority.afterContent      ← tl:attrs + tl:attr + shorthands (tl:href, tl:src, etc.)
 ProcessorPriority.afterAttributes   ← tl:remove
 ProcessorPriority.lowest            ← (open for custom processors)
 ```
@@ -103,7 +103,7 @@ Within a priority slot, registration order is preserved: StandardDialect built-i
 
 For each element in the DOM tree:
 
-1. **Fragment-def check**: If the element has a parameterized `tl:fragment`, skip it (fragments are rendered on demand, not inline)
+1. **Fragment-def check**: If the element has a parameterized `tl:fragment`, remove it (fragments are rendered on demand, not inline) — except the top-level render root of `renderFragment`, see [Fragment Rendering](#fragment-rendering)
 2. **Processor loop**: For each processor in priority order:
    - Check if the element has the processor's attribute (e.g., `tl:if`)
    - Call `processor.process(element, value, processorContext)` → returns `bool`
@@ -134,7 +134,7 @@ Context-modifying processors (`tl:with`, `tl:object`) update `processorContext.v
 | 9 | `TextProcessor` | `text` | afterInclusion | Never | HTML-escapes value, replaces element text |
 | 10 | `UtextProcessor` | `utext` | afterInclusion | Never | Raw HTML insertion (no escaping) |
 | 11 | `InlineProcessor` | `inline` | afterInclusion | Never | `[[${expr}]]` escaped, `[(${expr})]` unescaped |
-| 12 | `AttrProcessor` | `attr` + shorthands | afterContent | Never | Sets/appends/removes attributes |
+| 12 | `AttrProcessor` | `attr` + shorthands + `attrs` | afterContent | Never | Sets/appends/removes attributes; `tl:attrs` (map spread) runs first in the group, so explicit directives override it |
 | 13 | `RemoveProcessor` | `remove` | afterAttributes | Varies | Modes: `all`, `body`, `tag`, `all-but-first`, `none` |
 
 ---
@@ -229,10 +229,25 @@ Pre-scan pass (`collectFragments`) before rendering:
 `renderFragment(source, fragment: name, context: ctx)`:
 1. Parse and clone the full template DOM
 2. Collect fragments from the cloned DOM
-3. Look up the named fragment in the registry
+3. Look up the fragment by **bare name** (`toast`, not `toast(type, title)`); a value with arguments in parentheses throws `TemplateException`, an empty `()` is the bare name
 4. Clone the fragment element
-5. Process the cloned fragment with merged context (caller context + fragment parameters)
-6. Serialize and return
+5. Bind its declared parameters from the same-named context keys (an absent key is null, or throws in strict mode), and a rest parameter to an empty map
+6. Process the clone as a render root (`DomProcessor.processRenderRoot`): unlike a definition met in a document, a parameterised render root is rendered, not removed, and keeps its `tl:fragment` attribute while processing because `trellis_css`'s `ScopeProcessor` keys on it
+7. Serialize and return
+
+A render root carrying `tl:each` or a `tl:if` that may be false is unsupported (the detached clone has no parent). Bare in-template `tl:replace="toast"` differs in one respect: its unpassed parameters stay null and the context is not consulted.
+
+### Slots and the Rest Parameter
+
+Both are resolved inside `_resolveAndProcess` (`fragment_processor.dart`), the seam `InsertProcessor` and `ReplaceProcessor` share at `afterIteration`. `tl:slot` is **not** a registered processor and holds no priority slot: it is structural, like `tl:fragment` collection. Fragment registry entries stay `(Element, List<String>)` and `FragmentHost` is unchanged, so neither feature adds registry state:
+
+- **Rest parameter**: carried as the literal last `paramNames` entry (`...attrs`); `validateFragmentParams` rejects a repeated, non-final or unnamed one when definitions are collected. For a rest-parameter callee only, `captureHostAttributes` runs the attribute group once on the invoking host and binds the resulting non-`tl:*` attributes as a map; the consumed group directives are stripped from the host so its own `AttrProcessor` pass cannot re-fire them. An extra positional argument to a rest fragment throws.
+- **Definition-side regions**: `_collectSlotRegions` scans the fragment clone for `tl:slot` elements on each invocation (the `InheritanceResolver` collection rule: a matched region is not descended into). Duplicates and a slot on the fragment root throw at invocation.
+- **Caller-side markers**: `_graftSlots` reads the host's literal direct children *after* argument binding and *before* `processFragmentContent`. A marker is discarded and its children replace the region's children (the `tl:define` merge rule: region kept, content replaced). Unmarked children fill the anonymous slot only if declared; whitespace-only text and comments do not count. A marker's unknown-slot and unsupported-`tl:*` errors are checked before its `tl:if`/`tl:unless` gate, which is evaluated at graft time in the fragment's effective scope, so a loop variable of the fragment's own `tl:each` is not yet bound.
+- **Scope**: grafted nodes stay unprocessed and run as part of the fragment subtree, so slot content sees caller variables plus fragment parameters, with parameters shadowing same-named caller variables.
+- **Name-based invocation only**: selector and tag-name targets never bind parameters, so a marker on them throws the unknown-slot error.
+
+`tl:attrs` is handled inside `AttrProcessor` (step 0 of the group), not as a registered processor, so it can order itself ahead of the shorthands within the shared `afterContent` slot. Attribute names are validated (`^[A-Za-z][A-Za-z0-9_:.-]*$`) and keys starting with the attribute prefix throw, so a spread map cannot inject a directive.
 
 ### Cross-File Fragment Inclusion
 
@@ -246,7 +261,7 @@ Pre-scan pass (`collectFragments`) before rendering:
 
 ### Cycle Detection
 
-Fragment inclusions are tracked via an inclusion stack. If a fragment ID (template + fragment name) appears twice, a `TemplateException` is thrown with the full cycle path. Maximum inclusion depth: 32.
+Fragment inclusions are tracked via an inclusion stack. If a fragment ID (template + fragment name) appears twice, a `TemplateException` is thrown with the full cycle path. Maximum inclusion depth: 32. The key is the fragment *name*, so a component invoked inside its own slot content trips the cycle error even though the nesting is author-bounded.
 
 ---
 
@@ -359,7 +374,7 @@ lib/
     ├── context_builder.dart ......... TrellisContext fluent builder
     ├── message_source.dart .......... MessageSource + MapMessageSource (i18n)
     ├── truthiness.dart .............. isTruthy() per Thymeleaf semantics
-    ├── validator.dart ............... TemplateValidator (v0.6)
+    ├── validator.dart ............... TemplateValidator (v0.6; slot-binding and literal-id warnings 0.13)
     ├── warm_up_result.dart .......... WarmUpResult (v0.6)
     ├── utils/
     │   ├── binding_parser.dart ...... parseBindings() / splitTopLevel()

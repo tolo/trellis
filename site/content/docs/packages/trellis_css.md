@@ -19,7 +19,7 @@ processor.
 
 ```yaml
 dependencies:
-  trellis_css: ^0.11.1
+  trellis_css: ^0.12.0
 ```
 
 ## SASS compilation

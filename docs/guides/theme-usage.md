@@ -18,7 +18,7 @@ reviewed tag or branch with `--ref` in production.
 The six themes that ship with Trellis (`arbor`, `bloom`, `folio`, `lattice`, `meadow`, `verdant`) live under `themes/<name>/` in the [tolo/trellis](https://github.com/tolo/trellis) repository. `--theme <name>` installs one of them out of that repository:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.1
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.12.0
 ```
 
 This copies `themes/lattice/` into your site's `themes/lattice/` and sets `theme: lattice` in `trellis_site.yaml`. Browse the [themes gallery](https://tolo.github.io/trellis/docs/themes/gallery/) to pick one.
@@ -36,7 +36,7 @@ This clones the repository into `themes/orchard/` and sets `theme: orchard`.
 ### Pinning to a Version
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.1
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.12.0
 ```
 
 Use `--ref` to pin to a git tag or branch. Recommended for production sites.
@@ -270,7 +270,7 @@ If you need to change the pinned version, remove and re-add with a new `--ref`:
 
 ```bash
 trellis theme remove lattice
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.1
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.12.0
 ```
 
 
@@ -288,7 +288,7 @@ The message names the theme and the file. There are two ways out:
 
   ```bash
   trellis theme remove lattice
-  trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.1
+  trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.12.0
   ```
 
   `trellis theme remove` clears `theme:` from `trellis_site.yaml` and leaves `theme_params:` in place; `theme add` sets `theme:` again, so your params apply to the new copy. If you edited files inside `themes/<name>/`, copy those edits over by hand first.

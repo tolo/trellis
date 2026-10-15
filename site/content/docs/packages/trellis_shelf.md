@@ -13,8 +13,8 @@ protection, and security-header defaults.
 
 ```yaml
 dependencies:
-  trellis: ^0.11.1
-  trellis_shelf: ^0.11.1
+  trellis: ^0.12.0
+  trellis_shelf: ^0.12.0
 ```
 
 ## Quick start

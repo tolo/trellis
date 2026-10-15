@@ -43,7 +43,7 @@ and put it on your `PATH`.
 macOS / Linux:
 
 ```bash
-VERSION=0.11.1
+VERSION=0.12.0
 BASE=https://github.com/tolo/trellis/releases/download/v$VERSION
 ASSET=trellis-v$VERSION-macos-arm64.tar.gz
 curl -LO $BASE/$ASSET
@@ -56,7 +56,7 @@ sudo mv trellis /usr/local/bin/
 Windows (PowerShell):
 
 ```powershell
-$Version = "0.11.1" # no leading "v"
+$Version = "0.12.0" # no leading "v"
 $Base = "https://github.com/tolo/trellis/releases/download/v$Version"
 $Asset = "trellis-v$Version-windows-x64.zip"
 Invoke-WebRequest "$Base/$Asset" -OutFile $Asset
@@ -259,13 +259,13 @@ Options:
 
 ```bash
 # Install a built-in theme out of the Trellis repository
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.1
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.12.0
 
 # Install a single-theme repository (name derived from the repository)
 trellis theme add https://github.com/yourname/trellis-theme-orchard
 
 # Pin to a published release tag
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.1
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.12.0
 
 # Install from a local path (theme development)
 trellis theme add ./path/to/my-theme

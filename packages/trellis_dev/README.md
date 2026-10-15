@@ -18,7 +18,7 @@ Three public APIs are provided:
 
 ```yaml
 dev_dependencies:
-  trellis_dev: ^0.11.1
+  trellis_dev: ^0.12.0
 ```
 
 ## Usage

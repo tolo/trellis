@@ -11,7 +11,7 @@ Themes package reusable layouts, styles, assets, and configuration defaults.
 Install one of the themes in the Trellis repository:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.1
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.12.0
 ```
 
 For a repository containing one theme, omit `--theme`:
@@ -172,7 +172,7 @@ Re-add a built-in theme at 0.12. `theme remove` keeps your `theme_params:`, and
 
 ```bash
 trellis theme remove lattice
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.11.1
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.12.0
 ```
 
 Migrate a third-party or locally modified theme to `@use` as the

@@ -12,8 +12,8 @@ detection, and security headers.
 
 ```yaml
 dependencies:
-  trellis: ^0.11.1
-  trellis_relic: ^0.11.1
+  trellis: ^0.12.0
+  trellis_relic: ^0.12.0
 ```
 
 ## Quick start

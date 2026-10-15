@@ -237,8 +237,9 @@ instead of CDN"). Generated projects serve HTMX same-origin by default:
 
 Why: allowing a public npm CDN host in `script-src` admits any script published to
 npm, so the allowlist cancels CSP's script protection. The Trellis UI suite
-([ADR-012](ADR-012-trellis-ui-contract.md)) screens against `script-src 'self'`, and
-a self-hosted default lets generated projects meet it unedited. Also aligns
+([ADR-012](ADR-012-trellis-ui-contract.md)) screens against `script-src 'self'`.
+Self-hosting removes the CDN host from `script-src`, so the Relic scaffold then
+meets it; the Shelf and Dart Frog scaffolds still need `'unsafe-inline'`. Also aligns
 scaffolds with ADR-010's vendored-over-CDN preference order.
 
 Unchanged: the version pin and its revisit trigger (decision 1) and the adapter

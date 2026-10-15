@@ -413,7 +413,8 @@ fragment takes its values from the context until core addresses it.
   runtime CDN dependency.
 - **ADR-011** – HTMX coupling remains outside core and confined to the optional UI
   lifecycle; scaffolds self-host HTMX by default (ADR-011 amendment 2026-10-04), so
-  generated projects meet `script-src 'self'`.
+  the Relic scaffold meets `script-src 'self'`; the Shelf and Dart Frog scaffolds
+  still need `'unsafe-inline'` for their inline CSRF script.
 - **ADR-014** – composition primitives are the prerequisite for Tier 1 authoring.
 - Aligns with one-version-at-a-time, opt-in complexity, security-by-default,
   HTMX-first, no-npm, pragmatic-escape-hatch, and maintainer-burnout constraints.

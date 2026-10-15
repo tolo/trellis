@@ -38,13 +38,14 @@ theme's example directory, and a link into the repo makes the build write throug
 `buildExample` in `tool/visual_baseline.dart`.
 
 ```sh
-D=.agent_temp/validation/theme-lattice
+R=$PWD
+D=$R/.agent_temp/validation/theme-lattice
 mkdir -p $D/themes/lattice
-cp -R themes/lattice/example/content themes/lattice/example/trellis_site.yaml $D/
-for x in layouts sass static theme.yaml; do cp -R themes/lattice/$x $D/themes/lattice/; done
+rsync -a --exclude themes --exclude output --exclude .trellis --exclude .dart_tool themes/lattice/example/ $D/
+rsync -a --exclude example themes/lattice/ $D/themes/lattice/
 cd $D
-dart run <repo-root>/packages/trellis_cli/bin/trellis.dart build        # Built 5 pages; css/main.css must exist
-dart run <repo-root>/packages/trellis_cli/bin/trellis.dart serve --port 8766 &
+dart run $R/packages/trellis_cli/bin/trellis.dart build        # Built 5 pages; css/main.css must exist
+dart run $R/packages/trellis_cli/bin/trellis.dart serve --port 8766 &
 ```
 
 Use the `trellis` CLI build, not the SSG alone: only the CLI compiles the SASS and bridges `theme_params`, and a site

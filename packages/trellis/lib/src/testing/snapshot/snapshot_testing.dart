@@ -96,7 +96,7 @@ void expectSnapshotFromSource(
   compareOrCreateGolden(normalizeHtml(rendered), goldenFile);
 }
 
-/// Core golden file comparison logic. Package-private for testability.
+/// Core golden file comparison logic.
 ///
 /// 1. If [update] is true: write [actual] to [goldenPath], return (pass).
 /// 2. If golden file does not exist:

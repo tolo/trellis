@@ -28,7 +28,8 @@ Run from `packages/trellis_cli/`. `dart_test.yaml` declares the `e2e` tag, which
 - **`cliVersion` in `lib/src/version.dart` must equal the pubspec version.** `tool/version_lockstep.sh` syncs it, and
   `test/version_test.dart` fails on drift. Every `trellis*` constraint a scaffold writes must admit it
   (`test/scaffold_pubspec_constraints_test.dart`).
-- **Scaffolds support HTMX 2 and 4 and self-host HTMX by default** (`templates/htmx_asset.dart`, ADR-011). The layouts
+- **Scaffolds support HTMX 2 and 4 and load HTMX from the SRI-pinned jsDelivr URL** (`templates/htmx_asset.dart`).
+  ADR-011's 2026-10-04 amendment decides self-hosting by default, not yet implemented. The layouts
   register both `htmx:configRequest` and `htmx:config:request` for the CSRF header.
 - **E2E tests boot servers with `bootServer` in `test/_e2e_server.dart`**: a port allocated per run, a numeric loopback
   address, and the child's output kept for failure messages. Never use fixed ports or kill by port (LEARNINGS,

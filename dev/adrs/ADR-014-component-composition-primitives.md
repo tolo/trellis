@@ -2,9 +2,14 @@
 
 ## Status
 
-Proposed (2026-08-18). Design pass for PB-012 (Stage 1 of the composition-primitives
-PRD); implementation follows in a later release under the standard plan/FIS flow.
-Prerequisite for the ADR-012 first component slice.
+Accepted (2026-10-15; proposed 2026-08-18). Amended at acceptance after an engine
+re-verification (ledger AC-01…AC-15 in the private specs repo): prefix-named spread
+keys throw (§2), extra rest-position arguments throw, parameterised fragments render
+top-level by bare name, and a `tl:insert` host keeps its own directive results (§3),
+slot collection and bare caller markers are pinned (§1), and Consequences and
+Implementation Notes are corrected. Design pass for PB-012 (Stage 1 of the
+composition-primitives PRD); implementation lands in 0.13 under the standard plan/FIS
+flow. Prerequisite for the ADR-012 first component slice.
 
 ## Context
 
@@ -57,7 +62,10 @@ elements – no new elements, no new expression grammar, no new priority slots.
 **Definition side**: inside a fragment, any element may carry `tl:slot="name"`; a
 bare `tl:slot` marks the single anonymous (default) slot. The element's children are
 the fallback content. When the slot is filled, the element is preserved and only its
-children are replaced – the same merge rule as `tl:define` block override.
+children are replaced – the same merge rule as `tl:define` block override. Declared
+regions are collected without recursing into a matched region (the `tl:define`
+collection rule), so a `tl:slot` inside another region's fallback content is part of
+that fallback, not a second declaration.
 
 **Caller side**: direct children of the element carrying `tl:insert`/`tl:replace`
 provide slot content. A direct child with `tl:slot="name"` fills the named slot; its
@@ -65,13 +73,15 @@ children move into the slot and the marker element itself is discarded (again th
 `tl:define` rule – use `<tl:block tl:slot="name">` for wrapper-free multi-element
 content, outside tables). Markers must be *literal* direct children: a plain
 `<tl:block>` grouping wrapper is not looked through (its contents count as unmarked
-content), and markers nested deeper are inert – a `TemplateValidator` warning
-candidate. Unmarked children fill the anonymous slot **only if the fragment declares
+content), and markers nested deeper are inert and draw a `TemplateValidator`
+warning. Unmarked children fill the anonymous slot **only if the fragment declares
 one**; otherwise they are discarded exactly as today, preserving the existing
 placeholder idiom and the current test suite. Whitespace-only text nodes never count
 as unmarked children – a pretty-printed invocation filling only named slots keeps
 the anonymous slot's fallback. Multiple markers for the same slot concatenate in
-document order.
+document order. A bare caller-side `tl:slot` marker targets the anonymous slot
+explicitly and, being a marker, throws the unknown-slot error when the fragment
+declares none, unlike unmarked children, which are discarded.
 
 **Control attributes on markers**: `tl:if`/`tl:unless` on a caller-side marker are
 evaluated at graft time in the same scope as the slot content (the fragment's
@@ -105,7 +115,9 @@ unknown-slot error.
 
 ### 2. Attribute spreading – `tl:attrs="${map}"`
 
-A new processor in the existing attribute group. The value is a single expression
+A new first step inside the existing `AttrProcessor` group, not a registered
+processor, which could not order itself within its own priority slot. The value is a
+single expression
 evaluating to a `Map`; `null` is a no-op, and any other non-`Map` value throws
 `TemplateException`. Merge rules:
 
@@ -123,10 +135,17 @@ evaluating to a `Map`; `null` is a no-op, and any other non-`Map` value throws
   name is literal in the template source and only the value is dynamic; `tl:attrs`
   is the first mechanism where the name itself is runtime-determined. Names must
   match `^[A-Za-z][A-Za-z0-9_:.-]*$`, anything else throws `TemplateException`.
+  Keys beginning with the engine's configured attribute prefix (`tl:` by default,
+  compared case-insensitively) also throw. The engine re-reads an element's
+  attributes on every processor pass, so a spread key such as `tl:attr` or
+  `tl:remove` would execute as a directive: in the same attribute-group pass, by
+  `tl:remove` at `afterAttributes`, or by a custom processor at `lowest`. Keys for
+  already-passed slots would be stripped silently. Rejecting the prefix keeps the
+  spread map a data surface only.
   Lowercase names are the recommended authoring convention (HTML5 parsers lowercase
   attribute names on re-parse, so `data-myFoo` never reaches `dataset.myFoo`
-  client-side – a pre-existing HTML fact, but a validator warning candidate for
-  mixed-case dynamic names). Values are serializer-escaped exactly like `tl:attr`
+  client-side – a pre-existing HTML fact, documented rather than validated, because
+  spread keys exist only at runtime). Values are serializer-escaped exactly like `tl:attr`
   values today. `on*` names stay allowed: the map is developer-supplied server-side
   data, and `tl:attr` can already set an `on*` value dynamically under a literal
   name.
@@ -143,22 +162,32 @@ fragment definition is collected:
 <label tl:fragment="field(label, name, ...attrs)">
 ```
 
+An invocation that supplies more positional arguments than the declared non-rest
+parameters throws `TemplateException`; fragments without a rest parameter keep
+ignoring extra arguments as today.
+
 At invocation, the engine binds it to a map of the invoking element's **effective
 attribute set**: its literal non-`tl:*` attributes plus its own attribute-group
-directives (`tl:attr`, shorthands, appends) evaluated once in caller scope – minus
+directives (`tl:attrs`, `tl:attr`, shorthands, appends: the whole attribute group, in
+its normal merge order) evaluated once in caller scope – minus
 all `tl:*` control attributes. The fragment places them wherever it wants via
 spreading (`tl:attrs="${attrs}"`) – on the root, on an inner `<input>`, anywhere.
 `hx-*` and `data-*` entries flow through as opaque strings (the core stays
 hypermedia-agnostic per ADR-011); valueless boolean attributes arrive as `''` and
 re-render valueless. The map is empty for `renderFragment()` calls and hosts with no
-forwardable attributes. Fragments without a rest parameter are completely unaffected
-– pass-through is opt-in, so no reserved variable name exists and no existing
-template changes behavior.
+forwardable attributes. `renderFragment()` and `renderFragments()` address a
+parameterised fragment by its bare name: its declared parameters resolve from the
+same-named context keys, and a rest parameter is bound to an empty map. A fragment
+name with arguments in parentheses throws `TemplateException`; an empty `()` is read
+as the bare name. Fragments without a rest parameter are unaffected by pass-through –
+it is opt-in, so no reserved variable name exists and no existing template changes
+behavior.
 
 Pass-through is meaningful chiefly with `tl:replace` (where host attributes are
-otherwise lost). With `tl:insert` the map is bound identically for consistency, but
-spreading it duplicates attributes already on the surviving host – documentation
-steers component invocation to `tl:replace`.
+otherwise lost). With `tl:insert` the map is bound identically: the host's own
+attribute directives are applied to it and forwarded, the rule its literal attributes
+already follow, so spreading the map duplicates attributes already on the surviving
+host – documentation steers component invocation to `tl:replace`.
 
 ### Priority-order fit
 
@@ -240,7 +269,12 @@ satisfied.
   declares a slot.
 - Natural templates survive end-to-end: both component and application files above
   open as sensible HTML prototypes; no new element means no new foster-parenting
-  trap, and slots work on `<tr>`/`<option>`.
+  trap; definition-side regions work on `<tr>`/`<option>` because they already sit in
+  table/select context. Caller-side markers must be elements the HTML5 parser accepts
+  as children of the invocation host (`<tr>`/`<td>` only when the host sits inside a
+  real `<table>`, `<option>` under `<select>`, `<span>`/`<tl:block>` otherwise). The
+  parser reshapes anything else before the engine runs, so this is an authoring rule,
+  not a runtime check.
 - Slot semantics reuse the already-shipped `tl:define` merge mental model; spreading
   and pass-through converge on one mechanism (`tl:attrs`).
 - No new dependencies, no reflection, pure DOM + map operations – AOT-safe.
@@ -251,14 +285,24 @@ satisfied.
   same-named caller variable inside slot content. Inherent to the existing
   augment-not-isolate context model; documented rather than prevented.
 - Dynamic attribute names (spread map keys) are a net-new template-injection
-  surface with no `tl:attr` analogue, mitigated by name validation and serializer
-  escaping; for attribute *values* the trust boundary matches `tl:attr` (a hostile
-  developer-supplied map can still set `on*` handlers).
+  surface with no `tl:attr` analogue, mitigated by name validation (shape regex plus
+  rejection of prefix-named keys) and serializer escaping; for attribute *values*
+  the trust boundary matches `tl:attr` (a hostile developer-supplied map can still
+  set `on*` handlers).
 - Nesting a component inside its own slot content trips the name-keyed fragment
   cycle error in this version (open item below).
 - `slot` and `attrs` join the built-in `tl:*` attribute namespace: a custom dialect
-  already registering either name will double-fire per the existing
-  conflict-warning behavior.
+  already registering either name will double-fire silently: the conflict warning
+  compares `Processor.attribute` values only, and neither name (nor `classappend`,
+  `styleappend`, or the shorthands) is processor-backed. Extending that check is a
+  small follow-up outside this ADR.
+- One API behavior change: `renderFragment()`/`renderFragments()` throw on a fragment
+  name with arguments in parentheses, where they previously returned the definition
+  unprocessed. An empty `()` keeps resolving. The release CHANGELOG states it.
+- Strict mode makes the rest map unprobeable: `${attrs.type} ?: 'text'` throws on an
+  absent key before the elvis applies, and filters are unary. Components spread the
+  whole map and carry defaults as literal attributes the spread overwrites; a
+  key-probing helper is a separate ergonomic question.
 - `<tl:block tl:slot>` inherits the known `<tl:block>` table foster-parenting trap;
   the mitigation is the same documented rule (mark a real element instead).
 - The `tl:define`-style "marker element is discarded, children move" rule is a
@@ -311,38 +355,47 @@ Full matrices in the [research digest](research/ADR-014-research.md).
 
 For the Stage 2 plan/FIS (not binding on internals, binding on semantics):
 
-- Fragment registry entries need a rest-parameter flag alongside `paramNames`
-  (captured at `collectFragments` pre-scan, since `tl:fragment` is stripped during
-  processing), and equally a per-fragment set of declared slot names – required for
-  the unknown-slot error (same-file pre-scan; cross-file at
-  `_collectFragmentRegistry` time). `FragmentHost` needs no signature change.
-- Host effective-attribute capture must evaluate the host's attribute-group
-  directives exactly once (evaluate, merge into the map, strip the consumed `tl:*`
-  attributes so they do not re-fire on a surviving `tl:insert` host). Note this is
-  new behavior, not a relocation: on a `tl:replace` host today, attribute
-  directives never fire at all (`ReplaceProcessor` returns false before the
-  attribute group runs), so capture must activate only for rest-parameter
-  fragments – a `tl:replace` invocation of a fragment without `...rest` keeps
-  today's silently-inert host directives.
+- Fragment registry entries stay `(Element, List<String>)`: the record type is part
+  of `FragmentHost`'s signature. The rest parameter travels as the literal `...name`
+  last entry of `paramNames`; declared slot names are derived by scanning the
+  resolved fragment element at invocation (same-file lookups read the pre-processing
+  clone stored by `collectFragments`, cross-file lookups a fresh parse).
+  Rest-placement errors surface at definition collection; slot declaration errors
+  (duplicate, root-level) at invocation, so an uninvoked malformed definition does
+  not throw.
+- Host effective-attribute capture runs the attribute group (including `tl:attrs`)
+  once on the host itself at resolution time, harvests the resulting non-`tl:*`
+  attributes into the map, then strips the consumed directives so they cannot re-fire
+  at `afterContent`. A surviving `tl:insert` host therefore renders with its own
+  directive results and forwards them; a `tl:replace` host is discarded, so one code
+  path serves both. Note this is new behavior, not a relocation: on a `tl:replace`
+  host today, attribute directives never fire at all (`ReplaceProcessor` returns
+  false before the attribute group runs), so capture must activate only for
+  rest-parameter fragments – a `tl:replace` invocation of a fragment without
+  `...rest` keeps today's silently-inert host directives.
 - Slot grafting for cross-file fragments happens after the external registry push;
   a same-file fragment reference inside slot content therefore resolves
   innermost-registry-first (included file wins on a name collision). Accepted
   default; revisit only on real-world confusion.
-- `TemplateValidator` candidates: warn on `tl:slot` markers that are not direct
-  children of an invocation host, on `<tl:block tl:slot>` in table context
-  (existing foster-parenting warning already fires), on mixed-case spread map keys,
-  and on a literal `id` inside a fragment definition (repeat-invocable components
-  amplify the documented duplicate-id trap).
+- `TemplateValidator`: warn on `tl:slot` markers under a visible invocation host that
+  are not its literal direct children, and on a literal `id` on or inside a
+  parameterized fragment definition (parameterless fragments are the HTMX swap-target
+  idiom: 15 fragment/id pairs across `examples/` and `themes/` today, all
+  parameterless). `<tl:block tl:slot>` in table context is already covered by the
+  shipped foster-parenting warning, so no second check. Mixed-case spread keys are
+  not statically decidable (the expression grammar has no map literal), so
+  documentation only.
 - Tests must map to this ADR's scenarios: slot fill/fallback/anonymous/error cases,
-  scoped slot inside `tl:each`, spread merge/override/boolean/null/name-validation,
-  pass-through with `tl:replace`/`tl:insert`/`renderFragment()`, cross-file
+  scoped slot inside `tl:each`, spread merge/override/boolean/null/name-validation
+  (prefix-key rejection included), pass-through with
+  `tl:replace`/`tl:insert`/`renderFragment()`, bare-name top-level rendering, cross-file
   variants, strict mode, and the pinned placeholder-discard behavior.
 - Update [template-engine.md](../architecture/template-engine.md) (fragment system,
   processor table) as part of implementation, per the architecture-maintenance
-  rule. Its current Built-in Processors priority table is stale against the
-  `ProcessorPriority` enum (text/utext/inline are `afterInclusion`, `tl:attr` is
-  `afterContent`, `tl:remove` is `afterAttributes`) – correct it, don't just extend
-  it.
+  rule. Its Built-in Processors priority table was corrected against the
+  `ProcessorPriority` enum in `0bb00bd` (text/utext/inline are `afterInclusion`,
+  `tl:attr` is `afterContent`, `tl:remove` is `afterAttributes`); verify it against
+  the enum again, then extend it.
 
 ### Open items (defaults stated)
 

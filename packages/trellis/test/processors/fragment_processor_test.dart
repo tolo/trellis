@@ -1,4 +1,5 @@
 import 'package:test/test.dart';
+import 'package:trellis/testing.dart';
 import 'package:trellis/trellis.dart';
 
 void main() {
@@ -636,6 +637,425 @@ void main() {
         expect(result, contains('FragContent'));
         expect(result, isNot(contains('SHOULD_NOT_APPEAR')));
         expect(result, isNot(contains('tl:replace')));
+      });
+    });
+  });
+
+  group('tl:slot', () {
+    String render(String template, {Map<String, String> files = const {}, Map<String, dynamic> context = const {}}) {
+      final out = testEngine(templates: files).render(template, context);
+      return out.replaceFirst('<html><head></head><body>', '').replaceFirst('</body></html>', '');
+    }
+
+    Matcher throwsSlotError(Pattern message) =>
+        throwsA(isA<TemplateException>().having((e) => e.message, 'message', contains(message)));
+
+    const dlg = '<dialog tl:fragment="dlg"><footer tl:slot="footer"><button>Close</button></footer></dialog>';
+
+    group('caller-side filling', () {
+      test('named slot filled: region kept, marker discarded, fallback gone [S01]', () {
+        final out = render('$dlg<div tl:replace="dlg"><span tl:slot="footer"><b>Delete</b></span></div>');
+        expect(out, endsWith('<dialog><footer><b>Delete</b></footer></dialog>'));
+        expect(out, isNot(contains('<span')));
+        expect(out, isNot(contains('tl:slot')));
+        // Only the fragment definition itself still shows the fallback.
+        expect('Close'.allMatches(out), hasLength(1));
+      });
+
+      test('unfilled named slot keeps fallback; pretty-printed whitespace is not anonymous content [S02]', () {
+        final out = render(
+          '<div tl:fragment="dlg"><div tl:slot>Body</div><footer tl:slot="footer">F</footer></div>'
+          '<div tl:replace="dlg">\n  <span tl:slot="footer">Mine</span>\n</div>',
+        );
+        expect(out, endsWith('<div><div>Body</div><footer>Mine</footer></div>'));
+      });
+
+      test('anonymous slot filled by unmarked children [S03]', () {
+        final out = render(
+          '<div tl:fragment="dlg"><div tl:slot>Body</div></div>'
+          '<div tl:replace="dlg"><p>This cannot be undone.</p></div>',
+        );
+        expect(out, endsWith('<div><div><p>This cannot be undone.</p></div></div>'));
+      });
+
+      test('tl:insert keeps its host and grafts the same way', () {
+        final out = render('$dlg<section tl:insert="dlg"><i tl:slot="footer">X</i></section>');
+        expect(out, endsWith('<section><footer>X</footer></section>'));
+      });
+
+      test('multiple markers for one slot concatenate in document order [S05]', () {
+        final out = render(
+          '<div tl:fragment="f"><footer tl:slot="footer">-</footer></div>'
+          '<div tl:replace="f"><span tl:slot="footer">A</span><span tl:slot="footer">B</span></div>',
+        );
+        expect(out, endsWith('<div><footer>AB</footer></div>'));
+      });
+
+      test('tl:block marker is wrapper-free; a plain tl:block is whole anonymous content [S06]', () {
+        final out = render(
+          '<div tl:fragment="f"><main tl:slot>Body</main><footer tl:slot="footer">-</footer></div>'
+          '<div tl:replace="f"><tl:block tl:slot="footer"><button>Del</button><button>Cancel</button></tl:block>'
+          '<tl:block><em>x</em></tl:block></div>',
+        );
+        expect(
+          out,
+          endsWith('<div><main><em>x</em></main><footer><button>Del</button><button>Cancel</button></footer></div>'),
+        );
+      });
+
+      test('a marker nested deeper than a direct child is inert [S07]', () {
+        final out = render(
+          '<div tl:fragment="f"><main tl:slot>Body</main><footer tl:slot="footer">Fallback</footer></div>'
+          '<div tl:replace="f"><div><span tl:slot="footer">X</span></div></div>',
+        );
+        expect(out, endsWith('<div><main><div><span>X</span></div></main><footer>Fallback</footer></div>'));
+        expect(out, isNot(contains('tl:slot')));
+      });
+
+      test('a comment on the host neither fills nor displaces the anonymous fallback', () {
+        final out = render(
+          '<div tl:fragment="f"><main tl:slot>Body</main></div><div tl:replace="f"><!-- body goes here --></div>',
+        );
+        expect(out, endsWith('<div><main>Body</main></div>'));
+      });
+
+      test('a truthy marker with no children clears the fallback', () {
+        final out = render(
+          '<div tl:fragment="f"><footer tl:slot="footer">Fallback</footer></div>'
+          '<div tl:replace="f"><span tl:slot="footer"></span></div>',
+        );
+        expect(out, endsWith('<div><footer></footer></div>'));
+      });
+
+      test('a non-breaking space is anonymous content, not pretty-printing whitespace', () {
+        final out = render('<div tl:fragment="f"><main tl:slot>Body</main></div><div tl:replace="f">&nbsp;</div>');
+        expect(out, endsWith('<div><main>&nbsp;</main></div>'));
+      });
+    });
+
+    group('marker gating', () {
+      const field = '<label tl:fragment="field(label)"><span tl:slot="hint">Default hint</span></label>';
+
+      String field_({required bool showHint, String attr = 'tl:if'}) => render(
+        '$field<div tl:replace="field(\'Email\')"><span tl:slot="hint" $attr="\${showHint}">Custom</span></div>',
+        context: {'showHint': showHint},
+      );
+
+      test('tl:if gates the contribution [S08]', () {
+        expect(field_(showHint: false), endsWith('<label><span>Default hint</span></label>'));
+        expect(field_(showHint: true), endsWith('<label><span>Custom</span></label>'));
+      });
+
+      test('tl:unless inverts [S08]', () {
+        expect(field_(showHint: true, attr: 'tl:unless'), endsWith('<span>Default hint</span></label>'));
+        expect(field_(showHint: false, attr: 'tl:unless'), endsWith('<span>Custom</span></label>'));
+      });
+
+      test('gating uses engine truthiness: empty string is truthy', () {
+        final out = render(
+          '$field<div tl:replace="field(\'E\')"><span tl:slot="hint" tl:if="\${v}">Custom</span></div>',
+          context: {'v': ''},
+        );
+        expect(out, endsWith('<span>Custom</span></label>'));
+      });
+
+      test('gating sees fragment parameters', () {
+        final out = render(
+          '$field<div tl:replace="field(\'Email\')"><span tl:slot="hint" tl:if="\${label == \'Email\'}">Hit</span></div>',
+        );
+        expect(out, endsWith('<span>Hit</span></label>'));
+      });
+
+      test('bare marker is the only way to gate anonymous content [S16]', () {
+        String run(bool show) => render(
+          '<div tl:fragment="dlg"><div tl:slot>Body</div></div>'
+          '<div tl:replace="dlg"><span tl:slot tl:if="\${show}">Custom</span></div>',
+          context: {'show': show},
+        );
+        expect(run(false), endsWith('<div><div>Body</div></div>'));
+        expect(run(true), endsWith('<div><div>Custom</div></div>'));
+      });
+    });
+
+    group('anonymous slot via bare marker', () {
+      const anon = '<div tl:fragment="dlg"><div tl:slot>Body</div></div>';
+
+      test('bare marker fills the anonymous slot with the marker discarded [S16]', () {
+        final out = render('$anon<div tl:replace="dlg"><span tl:slot><b>Hello</b></span></div>');
+        expect(out, endsWith('<div><div><b>Hello</b></div></div>'));
+      });
+
+      test('bare marker and unmarked children concatenate in document order [S16]', () {
+        final out = render('$anon<div tl:replace="dlg"><i>1</i><span tl:slot>2</span><i>3</i></div>');
+        expect(out, endsWith('<div><div><i>1</i>2<i>3</i></div></div>'));
+      });
+    });
+
+    group('scope', () {
+      test('slot content resolves fragment parameters and caller variables', () {
+        final out = render(
+          '<div tl:fragment="card(title)"><div tl:slot>-</div></div>'
+          '<div tl:replace="card(\'T\')"><p tl:text="\${title + who}">x</p></div>',
+          context: {'who': '!'},
+        );
+        expect(out, endsWith('<div><div><p>T!</p></div></div>'));
+      });
+
+      test('region nested inside a fragment tl:each sees the loop variable [S09]', () {
+        final out = render(
+          '<table tl:fragment="tbl(rows)"><tbody><tr tl:each="r : \${rows}"><td tl:slot="cell">-</td></tr></tbody></table>'
+          '<div tl:replace="tbl(\${rows})"><tl:block tl:slot="cell"><span tl:text="\${r.n}">x</span></tl:block></div>',
+          context: {
+            'rows': [
+              {'n': 'a'},
+              {'n': 'b'},
+            ],
+          },
+        );
+        expect(
+          out,
+          endsWith('<table><tbody><tr><td><span>a</span></td></tr><tr><td><span>b</span></td></tr></tbody></table>'),
+        );
+        expect(out, isNot(contains('tl:slot')));
+      });
+
+      test('region co-located on the fragment tl:each element [S09]', () {
+        final out = render(
+          '<table><tbody tl:fragment="rows(items)"><tr tl:each="r : \${items}" tl:slot="row"><td>-</td></tr></tbody></table>'
+          '<table><tbody tl:replace="rows(\${rows})"><tr tl:slot="row"><td tl:text="\${r.n}">x</td></tr></tbody></table>',
+          context: {
+            'rows': [
+              {'n': 'a'},
+              {'n': 'b'},
+            ],
+          },
+        );
+        // The fixture's own definition table renders its fallback; the invoking table follows it.
+        expect(out, endsWith('<table><tbody><tr><td>a</td></tr><tr><td>b</td></tr></tbody></table>'));
+        expect(out, isNot(contains('tl:slot')));
+      });
+
+      test('cross-file invocation fills slots and resolves slot content against the included file first [S10]', () {
+        final out = render(
+          '<div tl:fragment="btn"><b>caller btn</b></div>'
+          '<div tl:replace="~{ui/components.html :: dialog(\'Delete?\')}">'
+          '<tl:block tl:slot="footer"><div tl:replace="btn"></div></tl:block></div>',
+          files: {
+            'ui/components.html':
+                '<dialog tl:fragment="dialog(title)"><h2 tl:text="\${title}">T</h2>'
+                '<footer tl:slot="footer">F</footer></dialog>'
+                '<i tl:fragment="btn">file btn</i>',
+          },
+        );
+        expect(out, endsWith('<dialog><h2>Delete?</h2><footer><i>file btn</i></footer></dialog>'));
+      });
+    });
+
+    group('nested regions', () {
+      const panel =
+          '<section tl:fragment="panel"><div tl:slot="outer"><span tl:slot="inner">Inner fallback</span></div></section>';
+
+      test('unfilled: nested region is fallback content, attribute stripped [S15a]', () {
+        expect(
+          render('$panel<div tl:replace="panel"></div>'),
+          endsWith('<section><div><span>Inner fallback</span></div></section>'),
+        );
+      });
+
+      test('filling the outer region replaces the nested fallback wholesale [S15b]', () {
+        final out = render('$panel<div tl:replace="panel"><b tl:slot="outer"><p>X</p></b></div>');
+        expect(out, endsWith('<section><div><p>X</p></div></section>'));
+      });
+
+      test('the nested region is not a declaration: filling it throws [S15c]', () {
+        expect(
+          () => render('$panel<div tl:replace="panel"><b tl:slot="inner">Y</b></div>'),
+          throwsSlotError('"inner"'),
+        );
+      });
+
+      test('the same name at top level and inside a fallback is not a duplicate [S15]', () {
+        final out = render(
+          '<section tl:fragment="p"><i tl:slot="inner">top</i><div tl:slot="outer"><i tl:slot="inner">nested</i></div></section>'
+          '<div tl:replace="p"><b tl:slot="inner">Y</b></div>',
+        );
+        expect(out, endsWith('<section><i>Y</i><div><i>nested</i></div></section>'));
+      });
+    });
+
+    group('errors', () {
+      test('marker naming an undeclared slot throws [S11]', () {
+        expect(
+          () => render('$dlg<div tl:replace="dlg"><span tl:slot="body">X</span></div>'),
+          throwsSlotError('"body"'),
+        );
+      });
+
+      test('markers throw on selector-targeted and tag-name invocation [S11]', () {
+        expect(
+          () => render('<nav id="main-nav">N</nav><div tl:replace="#main-nav"><span tl:slot="x">X</span></div>'),
+          throwsSlotError('"x"'),
+        );
+        expect(
+          () => render('<footer>F</footer><div tl:replace="footer"><span tl:slot="x">X</span></div>'),
+          throwsSlotError('"x"'),
+        );
+        expect(
+          () => render('<nav id="main-nav">N</nav><div tl:replace="#main-nav"><span tl:slot>X</span></div>'),
+          throwsSlotError('anonymous'),
+        );
+      });
+
+      test('a marker throws even when its gate is false', () {
+        expect(
+          () => render('$dlg<div tl:replace="dlg"><span tl:slot="nope" tl:if="\${false}">X</span></div>'),
+          throwsSlotError('"nope"'),
+        );
+      });
+
+      test('duplicate slot names in a definition throw at invocation [S12]', () {
+        expect(
+          () => render('<div tl:fragment="f"><i tl:slot="x"></i><b tl:slot="x"></b></div><div tl:replace="f"></div>'),
+          throwsSlotError('Duplicate tl:slot "x"'),
+        );
+      });
+
+      test('duplicate anonymous slots throw [S12]', () {
+        expect(
+          () => render('<div tl:fragment="f"><i tl:slot></i><b tl:slot></b></div><div tl:replace="f"></div>'),
+          throwsSlotError('Duplicate anonymous'),
+        );
+      });
+
+      test('tl:slot on the tl:fragment root throws [S12]', () {
+        expect(
+          () => render('<div tl:fragment="f" tl:slot="x">F</div><div tl:replace="f"></div>'),
+          throwsSlotError('fragment root'),
+        );
+      });
+
+      test('an uninvoked malformed definition does not throw (AC-15)', () {
+        expect(render('<div tl:fragment="f"><i tl:slot="x"></i><b tl:slot="x"></b></div>'), contains('<i></i>'));
+      });
+
+      test('another tl:* on a marker throws [S13]', () {
+        expect(
+          () => render('$dlg<div tl:replace="dlg"><span tl:slot="footer" tl:each="i : \${[1]}">X</span></div>'),
+          throwsSlotError('tl:each'),
+        );
+      });
+
+      test('a bare marker on a fragment with no anonymous slot throws; unmarked children are discarded [S17]', () {
+        expect(() => render('$dlg<div tl:replace="dlg"><span tl:slot>X</span></div>'), throwsSlotError('anonymous'));
+        final out = render('$dlg<div tl:replace="dlg"><p>X</p></div>');
+        expect(out, endsWith('<dialog><footer><button>Close</button></footer></dialog>'));
+      });
+    });
+
+    group('no-slot fragments keep today\'s semantics', () {
+      // Expected strings were captured from the engine before this change (see the story's baseline run).
+      const cases = <(String, String, String)>[
+        (
+          'tl:insert same-file',
+          '<div tl:fragment="menu"><a>L</a></div><main><section tl:insert="menu">old <b>content</b></section></main>',
+          '<div><a>L</a></div><main><section><a>L</a></section></main>',
+        ),
+        (
+          'tl:replace same-file',
+          '<div tl:fragment="tag"><i>T</i></div><div tl:replace="tag">old <b>x</b></div>',
+          '<div><i>T</i></div><div><i>T</i></div>',
+        ),
+        (
+          'tl:replace pretty-printed host',
+          '<div tl:fragment="tag"><i>T</i></div>\n<div tl:replace="tag">\n  <p>old</p>\n</div>',
+          '<div><i>T</i></div>\n<div><i>T</i></div>',
+        ),
+        (
+          'tl:insert with args',
+          '<div tl:fragment="card(t)"><h2 tl:text="\${t}">x</h2></div><div tl:insert="card(\'A\')">old<span>z</span></div>',
+          '<div><h2>A</h2></div>',
+        ),
+        (
+          '#id selector replace',
+          '<aside id="nav"><b>N</b></aside><div tl:replace="#nav">old <u>x</u></div>',
+          '<aside id="nav"><b>N</b></aside><aside id="nav"><b>N</b></aside>',
+        ),
+        (
+          '#id selector insert',
+          '<aside id="nav"><b>N</b></aside><div tl:insert="#nav">old <u>x</u></div>',
+          '<aside id="nav"><b>N</b></aside><div><b>N</b></div>',
+        ),
+        (
+          'tag-name replace',
+          '<footer><i>F</i></footer><div tl:replace="footer">old</div>',
+          '<footer><i>F</i></footer><footer><i>F</i></footer>',
+        ),
+        (
+          'tag-name insert',
+          '<footer><i>F</i></footer><div tl:insert="footer">old</div>',
+          '<footer><i>F</i></footer><div><i>F</i></div>',
+        ),
+      ];
+      for (final (name, template, expected) in cases) {
+        test(name, () => expect(render(template), expected));
+      }
+
+      final files = {
+        'ui.html':
+            '<nav tl:fragment="menu"><a>Link</a></nav><div tl:fragment="card(t)"><h2 tl:text="\${t}">x</h2></div>'
+            '<aside id="side">Side</aside>',
+      };
+      const crossCases = <(String, String, String)>[
+        (
+          'cross-file insert',
+          '<section tl:insert="~{ui.html :: menu}">old</section>',
+          '<section><a>Link</a></section>',
+        ),
+        (
+          'cross-file replace with args',
+          '<div tl:replace="~{ui.html :: card(\'B\')}">old <em>x</em></div>',
+          '<div><h2>B</h2></div>',
+        ),
+        ('cross-file selector', '<div tl:replace="~{ui.html :: #side}">old</div>', '<aside id="side">Side</aside>'),
+      ];
+      for (final (name, template, expected) in crossCases) {
+        test(name, () => expect(render(template, files: files), expected));
+      }
+    });
+
+    group('natural-template degradation', () {
+      const component =
+          '<label tl:fragment="field(label)" class="trellis-field">\n'
+          '  <span tl:text="\${label}">Label</span>\n'
+          '  <input class="trellis-field-input" type="text">\n'
+          '  <span class="trellis-field-hint" tl:slot="hint">Hint fallback</span>\n'
+          '</label>';
+      const application =
+          '<div tl:replace="~{ui/components.html :: field(\'Email\')}" type="email">\n'
+          '  <span tl:slot="hint">We never share your email.</span>\n'
+          '</div>';
+
+      test('both sources validate and show their placeholder text unprocessed [S14]', () {
+        expect(component, isValidTemplate());
+        expect(application, isValidTemplate());
+        expect(component, contains('Hint fallback'));
+        expect(application, contains('We never share your email.'));
+      });
+
+      test('the pair renders end to end', () {
+        final out = render(application, files: {'ui/components.html': component});
+        expect(out, contains('<span class="trellis-field-hint">We never share your email.</span>'));
+        expect(out, isNot(contains('Hint fallback')));
+      });
+
+      test('a stray tl:slot outside any invocation is stripped, fallback kept [S14]', () {
+        final out = testEngine().renderFragment(
+          component.replaceFirst('field(label)', 'field'),
+          fragment: 'field',
+          context: {'label': 'Email'},
+        );
+        expect(out, contains('<span class="trellis-field-hint">Hint fallback</span>'));
+        expect(out, isNot(contains('tl:slot')));
       });
     });
   });

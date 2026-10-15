@@ -186,5 +186,22 @@ void main() {
         expect(errors.map((e) => e.message), isNot(contains(contains('Unknown trellis attribute'))));
       });
     });
+
+    group('tl:slot', () {
+      test('definition and caller sides validate with no findings', () {
+        const component =
+            '<label tl:fragment="field(label)"><span tl:slot="hint">Hint</span><div tl:slot>Body</div></label>';
+        const caller = '<div tl:replace="field(\'Email\')"><span tl:slot="hint">Mine</span><b tl:slot>Body</b></div>';
+
+        expect(component, isValidTemplate());
+        expect(caller, isValidTemplate());
+      });
+
+      test('is not reported as an unknown attribute', () {
+        final errors = TemplateValidator().validate('<div tl:slot="x">a</div><div tl:slot>b</div>');
+
+        expect(errors.map((e) => e.message), isNot(contains(contains('Unknown trellis attribute'))));
+      });
+    });
   });
 }

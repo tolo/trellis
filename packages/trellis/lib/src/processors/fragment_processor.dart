@@ -5,6 +5,7 @@ import '../evaluator.dart';
 import '../exceptions.dart';
 import '../loaders/template_loader.dart';
 import '../processor_api.dart';
+import '../truthiness.dart';
 import '../utils/binding_parser.dart';
 
 /// Regex for cross-file fragment syntax: ~{filename :: fragmentName}
@@ -55,7 +56,17 @@ final class _ResolvedFragment {
   final List<String> paramNames;
   final String fragmentId;
 
-  _ResolvedFragment(this.element, {this.registry, this.paramNames = const [], required this.fragmentId});
+  /// Whether the fragment was found by `tl:fragment` name. Only these declare content slots; CSS-selector and
+  /// tag-name targets keep their pre-slot semantics.
+  final bool byName;
+
+  _ResolvedFragment(
+    this.element, {
+    this.registry,
+    this.paramNames = const [],
+    required this.fragmentId,
+    this.byName = false,
+  });
 }
 
 void _applyFragment(
@@ -99,7 +110,7 @@ _ResolvedFragment _resolveSameFile(String name, FragmentHost domProcessor) {
   }
   // Named fragment lookup
   final found = domProcessor.lookupFragment(name);
-  if (found != null) return _ResolvedFragment(found.$1, paramNames: found.$2, fragmentId: name);
+  if (found != null) return _ResolvedFragment(found.$1, paramNames: found.$2, fragmentId: name, byName: true);
   // Tag name fallback
   if (_isTagName(name)) {
     final tagFound = domProcessor.querySelectorFromDoc(name);
@@ -134,12 +145,18 @@ _ResolvedFragment _resolveCrossFile(
   final registry = _collectFragmentRegistry(doc, attrPrefix);
   final regEntry = registry[fragName];
   if (regEntry != null) {
-    return _ResolvedFragment(regEntry.$1, registry: registry, paramNames: regEntry.$2, fragmentId: fragmentId);
+    return _ResolvedFragment(
+      regEntry.$1,
+      registry: registry,
+      paramNames: regEntry.$2,
+      fragmentId: fragmentId,
+      byName: true,
+    );
   }
 
   // Legacy: try exact attribute match for fragments without params
   final found = doc.querySelector('[${escapedPrefix}fragment="$fragName"]');
-  if (found != null) return _ResolvedFragment(found, registry: registry, fragmentId: fragmentId);
+  if (found != null) return _ResolvedFragment(found, registry: registry, fragmentId: fragmentId, byName: true);
 
   // Tag name fallback
   if (_isTagName(fragName)) {
@@ -175,14 +192,119 @@ bool _isCssSelector(String ref) => ref.startsWith('#') || ref.startsWith('.');
 final _tagNamePattern = RegExp(r'^[a-z][a-z0-9]*$');
 bool _isTagName(String ref) => _tagNamePattern.hasMatch(ref);
 
-/// Resolve, bind, clone, and process a fragment invocation.
-Element _resolveAndProcess(String value, ProcessorContext context) {
+/// Declared content slots of a fragment clone, keyed by slot name (`''` is the anonymous slot).
+///
+/// Mirrors `InheritanceResolver._collectBlocks`: depth-first, and a matched region is not descended into, so a
+/// `tl:slot` inside another region's fallback content is that fallback, not a second declaration. Derived on each
+/// invocation rather than stored in the fragment registry, so definition errors surface at invocation.
+Map<String, Element> _collectSlotRegions(Element fragmentRoot, String attrPrefix) {
+  final slotAttr = '${attrPrefix}slot';
+  if (fragmentRoot.attributes.containsKey(slotAttr)) {
+    throw TemplateException(
+      'tl:slot cannot be on the tl:fragment root element <${fragmentRoot.localName}>; '
+      'declare the region on an inner element instead',
+    );
+  }
+  final regions = <String, Element>{};
+  void walk(Element element) {
+    final name = element.attributes[slotAttr];
+    if (name != null) {
+      final key = name.trim();
+      if (regions.containsKey(key)) {
+        throw TemplateException(
+          key.isEmpty
+              ? 'Duplicate anonymous tl:slot in fragment "${_fragmentLabel(fragmentRoot, attrPrefix)}"'
+              : 'Duplicate tl:slot "$key" in fragment "${_fragmentLabel(fragmentRoot, attrPrefix)}"',
+        );
+      }
+      regions[key] = element;
+      return;
+    }
+    element.children.forEach(walk);
+  }
+
+  fragmentRoot.children.forEach(walk);
+  return regions;
+}
+
+String _fragmentLabel(Element fragmentRoot, String attrPrefix) =>
+    parseFragmentDef(fragmentRoot.attributes['${attrPrefix}fragment'] ?? '').$1;
+
+/// Collect the invoking [host]'s slot contributions from its literal direct children and graft them into the
+/// matching regions of [clone] with the `tl:define` merge rule: region element kept, children replaced.
+///
+/// Must run before the host's children are cleared or the host is replaced. Grafted nodes stay unprocessed, so
+/// processing [clone] afterwards resolves them in the fragment's effective [scope].
+void _graftSlots(
+  Element clone,
+  Element host, {
+  required bool byName,
+  required ProcessorContext context,
+  required Map<String, dynamic> scope,
+}) {
+  final attrPrefix = context.attrPrefix;
+  final regions = byName ? _collectSlotRegions(clone, attrPrefix) : const <String, Element>{};
+  final slotAttr = '${attrPrefix}slot';
+  final controlAttrs = {slotAttr, '${attrPrefix}if', '${attrPrefix}unless'};
+  final contributions = <String, List<Node>>{};
+
+  for (final node in host.nodes) {
+    if (node is Element && node.attributes.containsKey(slotAttr)) {
+      for (final key in node.attributes.keys) {
+        if (key is String && key.startsWith(attrPrefix) && !controlAttrs.contains(key)) {
+          throw TemplateException(
+            'Unsupported attribute "$key" on slot marker <${node.localName} $slotAttr>; '
+            'only ${attrPrefix}if and ${attrPrefix}unless may accompany $slotAttr',
+          );
+        }
+      }
+      final name = node.attributes[slotAttr]!.trim();
+      if (!regions.containsKey(name)) {
+        throw TemplateException(
+          name.isEmpty
+              ? 'Slot marker <${node.localName} $slotAttr> targets the anonymous slot, which the fragment does not declare'
+              : 'Slot marker $slotAttr="$name" targets a slot the fragment does not declare',
+        );
+      }
+      final ifExpr = node.attributes['${attrPrefix}if'];
+      final unlessExpr = node.attributes['${attrPrefix}unless'];
+      if (ifExpr != null && !isTruthy(context.evaluate(ifExpr, scope))) continue;
+      if (unlessExpr != null && isTruthy(context.evaluate(unlessExpr, scope))) continue;
+      contributions.putIfAbsent(name, () => []).addAll(node.nodes);
+    } else if (_isUnmarkedContent(node) && regions.containsKey('')) {
+      contributions.putIfAbsent('', () => []).add(node);
+    }
+  }
+
+  for (final MapEntry(:key, :value) in contributions.entries) {
+    final region = regions[key]!;
+    region.nodes.clear();
+    for (final node in value) {
+      region.append(node.clone(true));
+    }
+  }
+}
+
+/// Whether a host child is content for the anonymous slot: whitespace-only text (pretty-printing) and comments
+/// are not, so they neither fill the slot nor displace its fallback. Whitespace means HTML ASCII whitespace, not
+/// `String.trim`'s Unicode set, so an `&nbsp;` is content.
+bool _isUnmarkedContent(Node node) => switch (node) {
+  Text(:final data) => _nonHtmlWhitespace.hasMatch(data),
+  Comment() => false,
+  _ => true,
+};
+
+final _nonHtmlWhitespace = RegExp(r'[^\t\n\f\r ]');
+
+/// Resolve, bind, clone, graft slot content from [host], and process a fragment invocation.
+Element _resolveAndProcess(String value, ProcessorContext context, Element host) {
   final dp = context.domProcessor;
   final attrPrefix = context.attrPrefix;
   final (_, argExprs) = _parseFragmentInvocation(value);
   final resolved = _resolveFragment(value, attrPrefix, context.loader, dp);
   final effectiveContext = _bindArgs(resolved.paramNames, argExprs, dp.evaluator, context.variables);
   final clone = resolved.element.clone(true);
+  _graftSlots(clone, host, byName: resolved.byName, context: context, scope: effectiveContext);
   _applyFragment(
     resolved,
     clone,
@@ -208,7 +330,7 @@ class InsertProcessor extends Processor {
 
   @override
   bool process(Element element, String value, ProcessorContext context) {
-    final clone = _resolveAndProcess(value, context);
+    final clone = _resolveAndProcess(value, context, element);
     element.nodes.clear();
     for (final child in clone.nodes.toList()) {
       element.append(child);
@@ -230,7 +352,7 @@ class ReplaceProcessor extends Processor {
 
   @override
   bool process(Element element, String value, ProcessorContext context) {
-    final clone = _resolveAndProcess(value, context);
+    final clone = _resolveAndProcess(value, context, element);
     element.replaceWith(clone);
     return false;
   }

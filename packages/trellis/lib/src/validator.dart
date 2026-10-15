@@ -152,7 +152,7 @@ final class TemplateValidator {
   }
 
   Set<String> _buildKnownAttributes() {
-    final known = <String>{'fragment', 'case', 'extends', 'define'};
+    final known = <String>{'fragment', 'case', 'extends', 'define', 'slot'};
     for (final processor in _configuredProcessors()) {
       known.add(processor.attribute);
       if (processor is AttrProcessor) {

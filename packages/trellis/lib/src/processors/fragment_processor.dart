@@ -344,7 +344,15 @@ bool _isUnmarkedContent(Node node) => switch (node) {
 final _nonHtmlWhitespace = RegExp(r'[^\t\n\f\r ]');
 
 /// Resolve, bind, clone, graft slot content from [host], and process a fragment invocation.
-Element _resolveAndProcess(String value, ProcessorContext context, Element host) {
+///
+/// [attach] places the clone in the document before it is processed. Processors that act on the fragment root
+/// through its parent (`tl:block` unwrap, `tl:if` removal, `tl:each` expansion) are no-ops on a detached clone.
+Element _resolveAndProcess(
+  String value,
+  ProcessorContext context,
+  Element host, {
+  void Function(Element clone)? attach,
+}) {
   final dp = context.domProcessor;
   final attrPrefix = context.attrPrefix;
   final (_, argExprs) = _parseFragmentInvocation(value);
@@ -364,6 +372,7 @@ Element _resolveAndProcess(String value, ProcessorContext context, Element host)
   );
   final clone = resolved.element.clone(true);
   _graftSlots(clone, host, byName: resolved.byName, context: context, scope: effectiveContext);
+  attach?.call(clone);
   _applyFragment(
     resolved,
     clone,
@@ -411,8 +420,7 @@ class ReplaceProcessor extends Processor {
 
   @override
   bool process(Element element, String value, ProcessorContext context) {
-    final clone = _resolveAndProcess(value, context, element);
-    element.replaceWith(clone);
+    _resolveAndProcess(value, context, element, attach: element.replaceWith);
     return false;
   }
 }

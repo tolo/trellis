@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.0
+
+### Fixed
+
+- `tl:replace` with a fragment whose root is `<tl:block>` no longer leaves the `<tl:block>` tag in the output. It leaked in `render()`, `renderFragment()`, inside `tl:insert`ed fragments and in `tl:each` bodies, and an unknown inline element there collapses to 0×0 in the browser. The fragment clone was processed before it took the host's place, so every processor that acts on the root through its parent did nothing. `tl:replace` now puts the clone in place first, which also fixes a `tl:if`/`tl:unless` on a replaced fragment's root (a false condition rendered the root anyway, raw `tl:if` attribute included) and a root `tl:each` (threw a null-check error).
+
 ## 0.12.0
 
 ### Changed

@@ -186,5 +186,71 @@ void main() {
         expect(spanResult, contains('<span>from span</span>'));
       });
     });
+
+    group('tl:replace with a tl:block fragment root', () {
+      const avatar = r'<tl:block tl:fragment="avatar(a)"><span class="p" tl:text="${a}">X</span></tl:block>';
+      late Trellis e;
+
+      setUp(() {
+        e = Trellis(loader: MapLoader({'av': avatar}), cache: false);
+      });
+
+      test('cross-file replace inside renderFragment leaves no wrapper', () {
+        final result = e.renderFragment(
+          r'<tl:block tl:fragment="direct"><section><tl:block tl:replace="~{av :: avatar(${s})}"></tl:block></section></tl:block>',
+          fragment: 'direct',
+          context: {'s': 'JM'},
+        );
+        expect(result, '<section><span class="p">JM</span></section>');
+      });
+
+      test('same-file replace inside render leaves no wrapper', () {
+        final result = e.render('$avatar<main><div tl:replace="avatar(\'JM\')">placeholder</div></main>', {});
+        expect(result, contains('<main><span class="p">JM</span></main>'));
+        expect(result, isNot(contains('tl:block')));
+      });
+
+      test('replace inside a tl:insert-ed fragment leaves no wrapper', () {
+        final result = e.render(
+          r'<div tl:fragment="wrap(s)"><tl:block tl:replace="~{av :: avatar(${s})}"></tl:block></div>'
+          r'<section tl:insert="wrap(${s})"></section>',
+          {'s': 'JM'},
+        );
+        expect(result, contains('<section><span class="p">JM</span></section>'));
+        expect(result, isNot(contains('tl:block')));
+      });
+
+      test('replace in a tl:each body leaves no wrapper', () {
+        final result = e.render(
+          r'<ul><li tl:each="s : ${names}"><tl:block tl:replace="~{av :: avatar(${s})}"></tl:block></li></ul>',
+          {
+            'names': ['A', 'B'],
+          },
+        );
+        expect(result, contains('<ul><li><span class="p">A</span></li><li><span class="p">B</span></li></ul>'));
+        expect(result, isNot(contains('tl:block')));
+      });
+
+      test('a root removed by tl:if leaves nothing behind', () {
+        final result = e.render(
+          r'<tl:block tl:fragment="opt(show)" tl:if="${show}"><b>shown</b></tl:block>'
+          r'<main><div tl:replace="opt(false)"></div></main>',
+          {},
+        );
+        expect(result, contains('<main></main>'));
+        expect(result, isNot(contains('tl:')));
+      });
+
+      test('a root expanded by tl:each leaves one copy per item', () {
+        final result = e.render(
+          r'<tl:block tl:fragment="list(xs)" tl:each="x : ${xs}"><i tl:text="${x}">-</i></tl:block>'
+          r'<main><div tl:replace="list(${names})"></div></main>',
+          {
+            'names': ['A', 'B'],
+          },
+        );
+        expect(result, contains('<main><i>A</i><i>B</i></main>'));
+      });
+    });
   });
 }

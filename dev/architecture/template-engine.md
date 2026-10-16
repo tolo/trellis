@@ -235,7 +235,7 @@ Pre-scan pass (`collectFragments`) before rendering:
 6. Process the clone as a render root (`DomProcessor.processRenderRoot`): unlike a definition met in a document, a parameterised render root is rendered, not removed, and keeps its `tl:fragment` attribute while processing because `trellis_css`'s `ScopeProcessor` keys on it
 7. Serialize and return
 
-A render root carrying `tl:each` or a `tl:if` that may be false is unsupported (the detached clone has no parent). Bare in-template `tl:replace="toast"` differs in one respect: its unpassed parameters stay null and the context is not consulted.
+A render root carrying `tl:each` or a `tl:if` that may be false is unsupported (the detached clone has no parent). Bare in-template `tl:replace="toast"` differs in one respect: its unpassed parameters stay null and the context is not consulted. It has no detached-root limit: `ReplaceProcessor` puts the clone in the host's place before processing it, so a `tl:block`, `tl:if` or `tl:each` on the fragment root acts in place. `tl:insert` still processes a detached clone and moves only its children, so the limit applies to its fragment roots too.
 
 ### Slots and the Rest Parameter
 

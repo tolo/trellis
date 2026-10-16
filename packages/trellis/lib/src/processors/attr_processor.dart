@@ -54,7 +54,7 @@ void _spreadAttributes(Element element, Object? map, String attrPrefix) {
     if (key is! String || !_spreadNamePattern.hasMatch(key)) {
       throw TemplateException('${attrPrefix}attrs: illegal attribute name "$key"');
     }
-    // A prefixed key would be re-read as a directive by later processor passes (see ADR-014 AC-02).
+    // A prefixed key would be re-read as a directive by later processor passes (ADR-014 §2).
     if (key.toLowerCase().startsWith(lowerPrefix)) {
       throw TemplateException(
         '${attrPrefix}attrs: attribute name "$key" starts with the directive prefix "$attrPrefix"',

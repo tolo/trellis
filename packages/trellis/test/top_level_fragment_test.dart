@@ -1,5 +1,4 @@
-// Top-level rendering of parameterised fragments by bare name (ADR-014 AC-06,
-// prd.md#top-level-rendering-of-parameterised-fragments).
+// Top-level rendering of parameterised fragments by bare name (ADR-014 §3).
 import 'package:test/test.dart';
 import 'package:trellis/testing.dart';
 import 'package:trellis/trellis.dart';
@@ -19,7 +18,7 @@ void main() {
 
   setUp(() => engine = withTemplates({'ui.html': '$_toast$_note'}));
 
-  group('rest-parameter fragment rendered top-level (S06)', () {
+  group('rest-parameter fragment rendered top-level', () {
     const source =
         r'<label tl:fragment="field(label, name, ...attrs)"><span tl:text="${label}">L</span>'
         r'<input type="text" tl:attr="name=${name}" tl:attrs="${attrs}"></label>';
@@ -45,7 +44,7 @@ void main() {
     });
   });
 
-  group('bare name in all four APIs (S10)', () {
+  group('bare name in all four APIs', () {
     const ctx = {'type': 'error', 'title': 'Saved', 'text': 'hi'};
 
     test('renderFragment and renderFileFragment', () async {
@@ -64,7 +63,7 @@ void main() {
     });
   });
 
-  group('parameters from the context (S11)', () {
+  group('parameters from the context', () {
     test('resolve from same-named keys', () {
       expect(engine.renderFragment(_toast, fragment: 'toast', context: {'type': 'error', 'title': 'Saved'}), _toastOut);
     });
@@ -85,7 +84,7 @@ void main() {
     });
   });
 
-  test('the rendered fragment is fully processed (S12)', () {
+  test('the rendered fragment is fully processed', () {
     const source =
         r'<section tl:fragment="panel(title, items)" tl:attr="data-t=${title}">'
         r'<h2 tl:if="${title}" tl:text="${title}">T</h2>'
@@ -110,7 +109,7 @@ void main() {
     expect(html, isNot(contains(r'${')));
   });
 
-  group('parameterless fragments render exactly as before (S13)', () {
+  group('parameterless fragments render exactly as before', () {
     const source =
         '<ul tl:fragment="todo-list"><li tl:each="t : \${todos}" tl:text="\${t}">t</li></ul>'
         '<h2 tl:fragment="todo-list-header">Todos</h2>';
@@ -135,7 +134,85 @@ void main() {
     });
   });
 
-  group('bare in-template invocation is unchanged (S14)', () {
+  group('directives on the render root act as they would in place', () {
+    const leaf = r'<b tl:fragment="leaf(y)" tl:text="${y}">L</b>';
+    const alias = r'<div tl:fragment="w(x)" tl:replace="leaf(${x})"></div>';
+
+    test('tl:replace renders the target, in all four APIs', () async {
+      final eng = withTemplates({'ui.html': '$leaf$alias'});
+      const ctx = {'x': 9, 'y': 1};
+
+      expect(eng.renderFragment('$leaf$alias', fragment: 'w', context: ctx), '<b>9</b>');
+      expect(await eng.renderFileFragment('ui.html', fragment: 'w', context: ctx), '<b>9</b>');
+      expect(eng.renderFragments('$leaf$alias', fragments: ['w', 'leaf'], context: ctx), '<b>9</b><b>1</b>');
+      expect(await eng.renderFileFragments('ui.html', fragments: ['leaf', 'w'], context: ctx), '<b>1</b><b>9</b>');
+    });
+
+    test('a rest-forwarding alias passes its own attributes to the target', () {
+      // The root's rest map is empty (no invoking host), but the alias's literal hx-swap-oob is a host attribute, which
+      // a rest-parameter target captures and spreads exactly as it does for an in-template invocation.
+      const source =
+          r'<div tl:fragment="toast(type, ...attrs)" tl:attrs="${attrs}" tl:classappend="${type}">T</div>'
+          r'<div tl:fragment="toastOob(...r)" tl:replace="toast(${t})" hx-swap-oob="true"></div>';
+
+      expect(
+        engine.renderFragment(source, fragment: 'toastOob', context: {'t': 'error'}),
+        '<div hx-swap-oob="true" class="error">T</div>',
+      );
+    });
+
+    test('a parameterised tl:each root renders one element per item', () {
+      expect(
+        engine.renderFragment(
+          r'<div tl:fragment="c(xs)" tl:each="v : ${xs}" tl:text="${v}">x</div>',
+          fragment: 'c',
+          context: {
+            'xs': [1, 2],
+          },
+        ),
+        '<div>1</div><div>2</div>',
+      );
+    });
+
+    test('tl:if false, tl:unless true and tl:remove="all" render nothing, and renderFragments skips them', () {
+      for (final directive in [r'tl:if="${false}"', r'tl:unless="${true}"', 'tl:remove="all"']) {
+        final source = '<p tl:fragment="gone" $directive>X</p><i tl:fragment="kept">K</i>';
+
+        expect(
+          engine.renderFragment(source, fragment: 'gone', context: {}),
+          '',
+          reason: directive,
+        );
+        expect(engine.renderFragments(source, fragments: ['gone', 'kept', 'gone'], context: {}), '<i>K</i>');
+      }
+    });
+
+    test('tl:remove="tag" and a tl:block root render their processed children', () {
+      const children = r'<b>k</b><i tl:text="${1}">x</i>';
+      const expected = '<b>k</b><i>1</i>';
+
+      expect(
+        engine.renderFragment('<div tl:fragment="c" tl:remove="tag">$children</div>', fragment: 'c', context: {}),
+        expected,
+      );
+      expect(
+        engine.renderFragment('<tl:block tl:fragment="c">$children</tl:block>', fragment: 'c', context: {}),
+        expected,
+      );
+    });
+
+    test('a root tl:replace still works when the fragment is invoked from a page, same-file and cross-file', () {
+      final eng = withTemplates({'ui.html': '$leaf$alias'});
+
+      expect(eng.render('$leaf$alias<p tl:replace="w(7)">h</p>', {}), contains('<b>7</b>'));
+      expect(
+        eng.render('<p tl:replace="~{ui.html :: w(7)}">h</p>', {}),
+        allOf(contains('<b>7</b>'), isNot(contains('<p'))),
+      );
+    });
+  });
+
+  group('bare in-template invocation is unchanged', () {
     test('unpassed parameters bind to null and the context is not read', () {
       final lenient = withTemplates({}, strict: false);
       final html = lenient.render(
@@ -149,7 +226,7 @@ void main() {
     });
   });
 
-  group('a name with arguments throws and names the bare name (S15)', () {
+  group('a name with arguments throws and names the bare name', () {
     for (final value in ['toast(type, title)', "toast('error', \${x})", "toast('error')"]) {
       test(value, () async {
         const ctx = {'x': 1};
@@ -179,7 +256,7 @@ void main() {
     });
   });
 
-  group('unknown name (S16)', () {
+  group('unknown name', () {
     test('renderFragment throws FragmentNotFoundException naming it', () {
       expect(
         () => engine.renderFragment(_toast, fragment: 'nope', context: {}),
@@ -195,7 +272,7 @@ void main() {
     });
   });
 
-  group('two fragments sharing a name (S17)', () {
+  group('two fragments sharing a name', () {
     const parameterless = '<i tl:fragment="toast">A</i>';
     const parameterised = '<u tl:fragment="toast(type)">B</u>';
 
@@ -212,7 +289,7 @@ void main() {
     });
   });
 
-  test('renderFragments reads one shared context (S18)', () {
+  test('renderFragments reads one shared context', () {
     final html = engine.renderFragments(
       r'<i tl:fragment="a(title)" tl:text="${title}">a</i><u tl:fragment="b(title)" tl:text="${title}">b</u>',
       fragments: ['a', 'b'],
@@ -221,7 +298,7 @@ void main() {
     expect(html, '<i>Shared</i><u>Shared</u>');
   });
 
-  group('lookup runs on the resolved tl:extends document (S19)', () {
+  group('lookup runs on the resolved tl:extends document', () {
     test('fragment declared in an overriding block', () {
       final eng = withTemplates({'layout.html': '<html><body><main tl:define="content">default</main></body></html>'});
       final html = eng.renderFragment(
@@ -245,7 +322,7 @@ void main() {
     });
   });
 
-  test('slot regions render their fallback in a top-level component (S20)', () {
+  test('slot regions render their fallback in a top-level component', () {
     final html = engine.renderFragment(
       r'<dialog tl:fragment="dlg(title)"><h2 tl:text="${title}">T</h2><div tl:slot>Body</div>'
       r'<footer tl:slot="footer">Close</footer></dialog>',
@@ -255,19 +332,24 @@ void main() {
     expect(html, '<dialog><h2>Hi</h2><div>Body</div><footer>Close</footer></dialog>');
   });
 
-  test('one toast definition serves both in-page and out-of-band use (S22)', () async {
+  test('one toast definition serves in-page, bare-name and stacking out-of-band use', () async {
+    // htmx 2 inserts only the children of a non-outerHTML out-of-band element, so a stacking toast needs a wrapper;
+    // it stays thin by delegating to the one toast definition with its own parameters as arguments.
+    const stack =
+        r'<div tl:fragment="toastStack(type, title)" hx-swap-oob="beforeend:#toasts">'
+        r'<div tl:replace="toast(${type}, ${title})"></div></div>';
     final eng = withTemplates({
-      'ui.html': _toast,
+      'ui.html': '$_toast$stack',
       'page.html': "<div tl:replace=\"~{ui.html :: toast('error', \${msg})}\"></div>",
     });
+    const ctx = {'type': 'error', 'title': 'Saved'};
     final inPage = await eng.renderFile('page.html', {'msg': 'Saved'});
-    final oob = await eng.renderFileFragments(
-      'ui.html',
-      fragments: ['toast'],
-      context: {'type': 'error', 'title': 'Saved'},
-    );
-    expect(oob, _toastOut);
-    expect(inPage, contains(oob));
+    final bare = await eng.renderFileFragments('ui.html', fragments: ['toast'], context: ctx);
+    final stacked = await eng.renderFileFragments('ui.html', fragments: ['toastStack'], context: ctx);
+
+    expect(bare, _toastOut);
+    expect(inPage, contains(bare));
     expect(RegExp('<div').allMatches(inPage), hasLength(1), reason: 'the page holds only the replaced toast');
+    expect(stacked, '<div hx-swap-oob="beforeend:#toasts">$bare</div>');
   });
 }

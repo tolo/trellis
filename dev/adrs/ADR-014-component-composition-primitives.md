@@ -9,7 +9,10 @@ top-level by bare name, and a `tl:insert` host keeps its own directive results (
 slot collection and bare caller markers are pinned (§1), and Consequences and
 Implementation Notes are corrected. Design pass for PB-012 (Stage 1 of the
 composition-primitives PRD); implementation lands in 0.13 under the standard plan/FIS
-flow. Prerequisite for the ADR-012 first component slice.
+flow. Prerequisite for the ADR-012 first component slice. Amended 2026-10-16: a
+`tl:slot` in an inner invocation host's unmarked content inside a definition throws
+instead of declaring a region (§1), and the forwarding open item is decided as
+explicit re-marking only.
 
 ## Context
 
@@ -73,8 +76,9 @@ children move into the slot and the marker element itself is discarded (again th
 `tl:define` rule – use `<tl:block tl:slot="name">` for wrapper-free multi-element
 content, outside tables). Markers must be *literal* direct children: a plain
 `<tl:block>` grouping wrapper is not looked through (its contents count as unmarked
-content), and markers nested deeper are inert and draw a `TemplateValidator`
-warning. Unmarked children fill the anonymous slot **only if the fragment declares
+content), and on a page, markers nested deeper are inert and draw a
+`TemplateValidator` warning; inside a fragment definition they throw (see Errors).
+Unmarked children fill the anonymous slot **only if the fragment declares
 one**; otherwise they are discarded exactly as today, preserving the existing
 placeholder idiom and the current test suite. Whitespace-only text nodes never count
 as unmarked children – a pretty-printed invocation filling only named slots keeps
@@ -103,9 +107,19 @@ to caller-supplied row markup (needed for the table component).
 names within one fragment definition likewise; `tl:slot` on the element carrying
 `tl:fragment` itself likewise – the fragment root is the component boundary, and a
 root-level slot would collide with the documented fragment-root processing traps
-(declare the region on an inner element instead). A `tl:slot` outside any fragment
-definition or invocation is inert – the attribute is stripped, the default content
-remains (graceful degradation, including direct `renderFragment()` calls).
+(declare the region on an inner element instead). Inside a definition, a `tl:slot`
+in the *unmarked* content of an inner `tl:insert`/`tl:replace` host (the fragment root
+counts as a host when it carries one) throws `TemplateException` at invocation of the
+enclosing fragment: it can neither fill that invocation's slot (it is not a direct
+child) nor declare a slot of the enclosing fragment without guessing between the two.
+The error fires whether or not the caller fills the slot and even when the inner
+invocation is gated off by `tl:if`, and it names the marker, the host directive and the
+fragment. A nested host inside that content starts over for its own children, and a
+nested `tl:fragment` owns its own slots. To forward a slot, re-mark it explicitly
+inside a direct-child marker (`<tl:block tl:slot>` for the anonymous slot). A `tl:slot`
+outside any fragment definition or invocation is inert – the attribute is stripped,
+the default content remains (graceful degradation, including direct
+`renderFragment()` calls).
 
 **Scope of invocation forms**: slots (and the rest parameter below) work through
 *name-based* fragment invocation only – CSS-selector and tag-name fragment
@@ -377,14 +391,16 @@ For the Stage 2 plan/FIS (not binding on internals, binding on semantics):
   a same-file fragment reference inside slot content therefore resolves
   innermost-registry-first (included file wins on a name collision). Accepted
   default; revisit only on real-world confusion.
-- `TemplateValidator`: warn on `tl:slot` markers under a visible invocation host that
-  are not its literal direct children, and on a literal `id` on or inside a
-  parameterized fragment definition (parameterless fragments are the HTMX swap-target
-  idiom: 15 fragment/id pairs across `examples/` and `themes/` today, all
-  parameterless). `<tl:block tl:slot>` in table context is already covered by the
-  shipped foster-parenting warning, so no second check. Mixed-case spread keys are
-  not statically decidable (the expression grammar has no map literal), so
-  documentation only.
+- `TemplateValidator`: report `tl:slot` markers under a visible invocation host that
+  are not its literal direct children: a warning on a page, where they are inert, and
+  an error inside a definition, mirroring the engine's wrapped-marker message (a
+  marker inside a direct-child marker re-marks a region and stays clean). Also warn
+  on a literal `id` on or inside a parameterized fragment definition (parameterless
+  fragments are the HTMX swap-target idiom: 15 fragment/id pairs across `examples/`
+  and `themes/` today, all parameterless). `<tl:block tl:slot>` in table context is
+  already covered by the shipped foster-parenting warning, so no second check.
+  Mixed-case spread keys are not statically decidable (the expression grammar has no
+  map literal), so documentation only.
 - Tests must map to this ADR's scenarios: slot fill/fallback/anonymous/error cases,
   scoped slot inside `tl:each`, spread merge/override/boolean/null/name-validation
   (prefix-key rejection included), pass-through with
@@ -401,9 +417,10 @@ For the Stage 2 plan/FIS (not binding on internals, binding on semantics):
 
 - **Named fragment arguments** (`field(label='X')`): default – stay positional;
   reconsider if component invocations grow long parameter lists.
-- **Forwarding slot content through nested components**: default – explicit
-  re-marking; a `tl:slot` marker binds to its nearest enclosing invocation host
-  (direct-children rule).
+- **Forwarding slot content through nested components**: decided – explicit
+  re-marking only; a `tl:slot` marker binds to its nearest enclosing invocation host
+  (direct-children rule), and the wrapped case (a marker in an inner host's unmarked
+  content) throws rather than forwarding implicitly (§1 Errors).
 - **Duplicate caller markers for one slot**: default – concatenate in document
   order.
 - **Self-nesting a fragment via its own slot content**: default – the name-keyed

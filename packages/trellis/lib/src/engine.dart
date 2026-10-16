@@ -243,14 +243,16 @@ final class Trellis {
 
   /// Process a looked-up fragment [root] as a top-level render root and return its markup.
   ///
-  /// A parameterised root is rendered rather than removed as a definition. A `...rest` parameter is an empty map,
-  /// since no invoking host exists.
+  /// The root gets a temporary parent so its own directives act as they would in place: `tl:replace` swaps it,
+  /// `tl:each` copies it, and `tl:if`, `tl:unless`, `tl:remove` and `tl:block` remove or unwrap it. What the parent
+  /// holds afterwards is the result. A parameterised root is rendered rather than removed as a definition. A `...rest`
+  /// parameter is an empty map, since no invoking host exists.
   String _renderFragmentRoot(DomProcessor processor, Element root, Map<String, dynamic> context, String attrPrefix) {
     final fragAttr = '${attrPrefix}fragment';
     final restName = restParameterName(parseFragmentDef(root.attributes[fragAttr]!).$2);
+    final holder = Element.tag('div')..append(root);
     processor.processRenderRoot(root, restName == null ? context : {...context, restName: <String, dynamic>{}});
-    root.attributes.remove(fragAttr);
-    return _elementHtml(root, attrPrefix);
+    return holder.innerHtml;
   }
 
   Document _resolveInheritance(Document doc) {
@@ -271,13 +273,6 @@ final class Trellis {
       locale: locale,
       expressionCache: _expressionCache,
     );
-  }
-
-  /// Return outerHtml for regular elements, innerHtml for block elements
-  /// (virtual wrappers that should not appear in output).
-  String _elementHtml(Element element, String attrPrefix) {
-    if (element.localName == '${attrPrefix}block') return element.innerHtml;
-    return element.outerHtml;
   }
 
   Document _parse(String source) {

@@ -7,7 +7,7 @@ import 'expression/parser.dart';
 import 'loaders/template_loader.dart';
 import 'processor_api.dart';
 import 'processors/attr_processor.dart';
-import 'processors/fragment_processor.dart' show parseFragmentDef;
+import 'processors/fragment_processor.dart' show parseFragmentDef, slotInHostContentMessage, validateFragmentParams;
 import 'utils/binding_parser.dart';
 import 'utils/html_normalizer.dart';
 
@@ -337,39 +337,66 @@ final class TemplateValidator {
       }
       if (params.any((param) => param.isEmpty)) {
         _addError(errors, element: element, attribute: attribute, message: 'Fragment parameters cannot be empty');
+      } else if (name.isNotEmpty) {
+        // Skipped once an error is reported, so one malformed list does not also report as a misplaced rest.
+        validateFragmentParams(name, params);
       }
+    } on TemplateException catch (error) {
+      _addError(errors, element: element, attribute: attribute, message: error.message);
     } on Exception catch (error) {
       _addError(errors, element: element, attribute: attribute, message: '$error');
     }
   }
 
-  /// Warn when a `tl:slot` marker sits under a visible `tl:insert`/`tl:replace` host without being its direct child.
+  /// Report a `tl:slot` marker that sits under a visible `tl:insert`/`tl:replace` host without being its direct child.
   ///
-  /// The engine only reads a host's literal direct children, so a deeper marker is inert. A marker with no host
-  /// ancestor, or one reached through a `tl:fragment` element first, may be a definition-side region and is never
-  /// reported: the validator cannot see cross-file definitions.
+  /// The engine only reads a host's literal direct children. On a page a deeper marker is inert, so it is a warning.
+  /// Inside a definition (the host is, or sits inside, a `tl:fragment`) the engine throws for a marker in the host's
+  /// unmarked content, so it is an error with the engine's own message. A marker inside one of the host's
+  /// direct-child markers re-marks a region of the enclosing fragment (slot forwarding), so it is clean. A marker
+  /// with no host ancestor, or one reached through a `tl:fragment` element first, may be a definition-side region and
+  /// is never reported: the validator cannot see cross-file definitions.
   void _warnOnUnbindableSlot(Element marker, String attribute, List<ValidationError> errors) {
-    for (var ancestor = marker.parent; ancestor != null; ancestor = ancestor.parent) {
-      if (_hasDirective(ancestor, 'fragment')) {
-        return;
+    Element child = marker;
+    for (var ancestor = marker.parent; ancestor != null; child = ancestor, ancestor = ancestor.parent) {
+      // Host first: a fragment root can itself be the invocation host.
+      final hostAttribute = ['insert', 'replace'].where((suffix) => _hasDirective(ancestor!, suffix)).firstOrNull;
+      if (hostAttribute == null) {
+        if (_hasDirective(ancestor, 'fragment')) return;
+        continue;
       }
-      if (_hasDirective(ancestor, 'insert') || _hasDirective(ancestor, 'replace')) {
-        if (!identical(ancestor, marker.parent)) {
-          errors.add(
-            ValidationError(
-              message:
-                  '$attribute marker is not a direct child of its tl:insert/tl:replace host, so it can never '
-                  'bind and is ignored. Move it to be a literal direct child of the host '
-                  '(a <${_attrPrefix}block> wrapper is not looked through).',
-              element: marker.localName,
-              attribute: attribute,
-              severity: ValidationSeverity.warning,
-              line: _lineFor(marker),
+      if (identical(ancestor, marker.parent)) return;
+      final definition = _enclosingFragment(ancestor);
+      if (definition == null) {
+        errors.add(
+          ValidationError(
+            message:
+                '$attribute marker is not a direct child of its ${_attrPrefix}insert/${_attrPrefix}replace host, '
+                'so it can never bind and is ignored. Move it to be a literal direct child of the host '
+                '(a <${_attrPrefix}block> wrapper is not looked through).',
+            element: marker.localName,
+            attribute: attribute,
+            severity: ValidationSeverity.warning,
+            line: _lineFor(marker),
+          ),
+        );
+      } else if (!_hasDirective(child, 'slot')) {
+        errors.add(
+          ValidationError(
+            message: slotInHostContentMessage(
+              attrPrefix: _attrPrefix,
+              slotName: marker.attributes[attribute]!.trim(),
+              hostAttribute: '$_attrPrefix$hostAttribute',
+              fragmentName: parseFragmentDef(definition.attributes['${_attrPrefix}fragment']!).$1,
             ),
-          );
-        }
-        return;
+            element: marker.localName,
+            attribute: attribute,
+            severity: ValidationSeverity.error,
+            line: _lineFor(marker),
+          ),
+        );
       }
+      return;
     }
   }
 
@@ -397,7 +424,7 @@ final class TemplateValidator {
           ValidationError(
             message:
                 'Literal id="$id" inside a parameterized fragment repeats on every render of the fragment. '
-                'Set it per use with tl:id or tl:attrs.',
+                'Set it per use with ${_attrPrefix}id or ${_attrPrefix}attrs.',
             element: element.localName,
             attribute: 'id',
             severity: ValidationSeverity.warning,
@@ -416,6 +443,14 @@ final class TemplateValidator {
   }
 
   bool _hasDirective(Element element, String suffix) => element.attributes.containsKey('$_attrPrefix$suffix');
+
+  /// The nearest `tl:fragment` element that is [element] or contains it, or null on a page.
+  Element? _enclosingFragment(Element element) {
+    for (Element? current = element; current != null; current = current.parent) {
+      if (_hasDirective(current, 'fragment')) return current;
+    }
+    return null;
+  }
 
   /// Whether `tl:id` or a `tl:attr` `id` binding replaces [element]'s literal `id` at render time.
   bool _overridesId(Element element) {

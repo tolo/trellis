@@ -302,8 +302,10 @@ is not available:
 only tl:if and tl:unless may accompany tl:slot
 ```
 
-A duplicate slot name in one fragment, and `tl:slot` on the `tl:fragment` element
-itself, also throw when the fragment is invoked.
+A duplicate slot name in one fragment, `tl:slot` on the `tl:fragment` element
+itself, and a `tl:slot` in the unmarked content of an inner host inside a
+definition ([below](#composing-slotted-fragments)) also throw when the fragment
+is invoked.
 
 Slots, like the rest parameter, work through **name-based** invocation only.
 `~{file :: #id}` and tag-name targets never bound parameters, and a marker on
@@ -312,9 +314,10 @@ fragment is inert: the attribute is dropped and the content stays.
 
 ### A marker must be a direct child of the host
 
-Only literal direct children count. A marker nested deeper, or inside a
-`<tl:block>` wrapper, is not looked through: it is inert and its container
-becomes unmarked content.
+Only literal direct children count. On a page, a marker nested deeper, or inside
+a `<tl:block>` wrapper, is not looked through: it is inert and its container
+becomes unmarked content. Inside a fragment definition the same shape is an
+error, see [Composing slotted fragments](#composing-slotted-fragments).
 
 ```html render=nested-marker
 <div tl:replace="~{ui/dialog.html :: dialog('d', 'Title')}">
@@ -331,6 +334,82 @@ becomes unmarked content.
 ```
 
 `TemplateValidator` warns about this mistake, see [Validation](#validation).
+
+### Composing slotted fragments
+
+A fragment can invoke another from inside its own definition. A marker binds to
+its **nearest** enclosing host, so the direct-child markers of the inner host are
+that invocation's contribution, not slots of the outer fragment. To pass a slot
+through, **re-mark** it: put a `tl:slot` region inside the contribution. The
+outer fragment then declares it, and its caller fills it as usual. A bare
+`<tl:block tl:slot>` contribution forwards its content into the inner fragment's
+anonymous slot the same way:
+
+```html file=ui/confirm.html
+<section tl:fragment="confirm(title)" class="confirm">
+  <div tl:replace="~{ui/dialog.html :: dialog('confirm', ${title})}">
+    <tl:block tl:slot>
+      <p tl:slot="message">Are you sure?</p>
+    </tl:block>
+    <tl:block tl:slot="footer">
+      <span tl:slot="actions"><button>OK</button></span>
+    </tl:block>
+  </div>
+</section>
+```
+
+```html render=confirm-forward
+<div tl:replace="~{ui/confirm.html :: confirm('Delete item?')}">
+  <p tl:slot="message">This cannot be undone.</p>
+  <tl:block tl:slot="actions"><button>Delete</button><button>Cancel</button></tl:block>
+</div>
+
+<div tl:replace="~{ui/confirm.html :: confirm('Archive item?')}"></div>
+```
+
+```html output=confirm-forward
+<section class="confirm">
+  <dialog class="dialog" id="confirm">
+    <header><h2>Delete item?</h2></header>
+    <div class="dialog-body"><p>This cannot be undone.</p></div>
+    <footer><span><button>Delete</button><button>Cancel</button></span></footer>
+  </dialog>
+</section>
+<section class="confirm">
+  <dialog class="dialog" id="confirm">
+    <header><h2>Archive item?</h2></header>
+    <div class="dialog-body"><p>Are you sure?</p></div>
+    <footer><span><button>OK</button></span></footer>
+  </dialog>
+</section>
+```
+
+A `tl:slot` that sits in the **unmarked** content of the inner host, wrapped in
+some other element, is neither: it is not a direct child, so it cannot fill the
+inner slot, and nothing says it should declare a slot of the outer fragment.
+Rather than guess, the engine throws when the outer fragment is invoked, filled
+or not, and even when the inner invocation is gated off by `tl:if`. The message
+names the marker, the host directive and the fragment, and points at the two
+fixes: make the marker a direct child of the host, or re-mark it inside a
+direct-child marker.
+
+```html render=wrapped-marker
+<section tl:fragment="confirm">
+  <div tl:replace="~{ui/dialog.html :: dialog('c', 'Title')}">
+    <p><i tl:slot="footer">OK</i></p>
+  </div>
+</section>
+<div tl:replace="confirm"></div>
+```
+
+```text throws=wrapped-marker
+is inside the unmarked content of a tl:replace host
+```
+
+A host nested in that unmarked content starts over for its own children, and a
+nested `tl:fragment` owns its own slots. On a page there is no enclosing
+fragment to declare anything, so a wrapped marker stays inert and only draws a
+validator warning.
 
 ## Attribute spreading – `tl:attrs`
 
@@ -436,7 +515,7 @@ Undefined member: "type"
 | Dynamic attribute names | `tl:attrs` is the first place a name, not only a value, is decided at runtime | Names are validated and `tl:`-prefixed keys throw, but never build the map from untrusted keys |
 | Mixed-case keys | `Class` or `ID` passes name validation and writes a second attribute instead of appending | Spread keys are case-sensitive: write them lowercase |
 | `data-*` camel case | HTML parsers lowercase attribute names, so `data-myFoo` never reaches `dataset.myFoo` | Use lowercase names |
-| Custom dialects | `slot` and `attrs` are now built-in `tl:*` names; a dialect processor registered under either name fires twice | Rename the custom attribute |
+| Custom dialects | `slot` and `attrs` are now built-in `tl:*` names; a dialect processor registered under either name runs alongside the built-in slot or spread handling, silently | Rename the custom attribute |
 
 The self-nesting case, for reference:
 
@@ -452,14 +531,17 @@ Fragment cycle detected
 
 ## Validation
 
-`TemplateValidator` (and `dart run trellis:validate`) reports two composition mistakes as
-**warnings**:
+`TemplateValidator` (and `dart run trellis:validate`) reports these composition
+mistakes:
 
 - A `tl:slot` marker under a visible `tl:insert`/`tl:replace` host that is not
-  the host's literal direct child, so it can never bind. A marker with no host in
-  the same document is assumed to be a definition-side region and is not
-  reported.
-- A literal `id` on or inside a parameterized fragment. The fragment may render
+  the host's literal direct child. On a page it can never bind, so this is a
+  **warning**. Inside a fragment definition it is an **error** with the engine's
+  message, see [Composing slotted fragments](#composing-slotted-fragments); a
+  marker inside one of the host's direct-child markers re-marks a region and is
+  clean. A marker with no host in the same document is assumed to be a
+  definition-side region and is not reported.
+- A literal `id` on or inside a parameterized fragment (a **warning**). The fragment may render
   several times on one page, repeating the id. Set it per use with `tl:id` or
   `tl:attrs`. Parameterless fragments are the usual HTMX swap-target pattern
   (`tl:fragment="todo-list"` around `<div id="todo-list">`) and never warn; a

@@ -187,7 +187,6 @@ _ResolvedFragment _resolveCrossFile(
   }
 
   // Named fragment — search by name prefix (handles both "name" and "name(params)")
-  final escapedPrefix = escapeAttrSelector(attrPrefix);
   final registry = _collectFragmentRegistry(doc, attrPrefix);
   final regEntry = registry[fragName];
   if (regEntry != null) {
@@ -199,10 +198,6 @@ _ResolvedFragment _resolveCrossFile(
       byName: true,
     );
   }
-
-  // Legacy: try exact attribute match for fragments without params
-  final found = doc.querySelector('[${escapedPrefix}fragment="$fragName"]');
-  if (found != null) return _ResolvedFragment(found, registry: registry, fragmentId: fragmentId, byName: true);
 
   // Tag name fallback
   if (_isTagName(fragName)) {
@@ -244,8 +239,16 @@ bool _isTagName(String ref) => _tagNamePattern.hasMatch(ref);
 /// Mirrors `InheritanceResolver._collectBlocks`: depth-first, and a matched region is not descended into, so a
 /// `tl:slot` inside another region's fallback content is that fallback, not a second declaration. Derived on each
 /// invocation rather than stored in the fragment registry, so definition errors surface at invocation.
+///
+/// A marker binds to its nearest enclosing invocation host, so the direct-child markers of a `tl:insert`/`tl:replace`
+/// host, the fragment root included, are that invocation's contributions, not declarations; a region inside such a
+/// marker is declared (explicit re-marking forwards a slot). Any other `tl:slot` in a host's unmarked content binds
+/// to nothing, so it throws rather than guess between filling the inner slot and declaring one. A nested host inside
+/// that content starts over for its own children, and a nested `tl:fragment` owns its own slots.
 Map<String, Element> _collectSlotRegions(Element fragmentRoot, String attrPrefix) {
   final slotAttr = '${attrPrefix}slot';
+  final fragmentAttr = '${attrPrefix}fragment';
+  final hostAttrs = ['${attrPrefix}insert', '${attrPrefix}replace'];
   if (fragmentRoot.attributes.containsKey(slotAttr)) {
     throw TemplateException(
       'tl:slot cannot be on the tl:fragment root element <${fragmentRoot.localName}>; '
@@ -253,10 +256,21 @@ Map<String, Element> _collectSlotRegions(Element fragmentRoot, String attrPrefix
     );
   }
   final regions = <String, Element>{};
-  void walk(Element element) {
+  // [hostContent] is the host directive whose unmarked content [element] sits in, or null outside any.
+  void walk(Element element, {String? hostContent}) {
     final name = element.attributes[slotAttr];
     if (name != null) {
       final key = name.trim();
+      if (hostContent != null) {
+        throw TemplateException(
+          slotInHostContentMessage(
+            attrPrefix: attrPrefix,
+            slotName: key,
+            hostAttribute: hostContent,
+            fragmentName: _fragmentLabel(fragmentRoot, attrPrefix),
+          ),
+        );
+      }
       if (regions.containsKey(key)) {
         throw TemplateException(
           key.isEmpty
@@ -267,11 +281,37 @@ Map<String, Element> _collectSlotRegions(Element fragmentRoot, String attrPrefix
       regions[key] = element;
       return;
     }
-    element.children.forEach(walk);
+    // Walked from the root, which can itself be an invocation host (`<div tl:fragment="c" tl:insert="dlg">`).
+    if (!identical(element, fragmentRoot) && element.attributes.containsKey(fragmentAttr)) return;
+    final host = hostAttrs.where(element.attributes.containsKey).firstOrNull;
+    for (final child in element.children) {
+      if (host != null && child.attributes.containsKey(slotAttr)) {
+        child.children.forEach(walk);
+      } else {
+        walk(child, hostContent: host ?? hostContent);
+      }
+    }
   }
 
-  fragmentRoot.children.forEach(walk);
+  walk(fragmentRoot);
   return regions;
+}
+
+/// The error for a `tl:slot` met inside the unmarked content of an invocation host within a fragment definition.
+///
+/// Shared with the validator so its static error cannot drift from the engine's. [hostAttribute] is the full
+/// attribute name present on the host (`tl:replace`), [slotName] is empty for the anonymous slot.
+String slotInHostContentMessage({
+  required String attrPrefix,
+  required String slotName,
+  required String hostAttribute,
+  required String fragmentName,
+}) {
+  final marker = slotName.isEmpty ? 'anonymous ${attrPrefix}slot' : '${attrPrefix}slot="$slotName"';
+  return '$marker in fragment "$fragmentName" is inside the unmarked content of a $hostAttribute host, so it '
+      'neither fills that invocation\'s slot nor declares a slot of "$fragmentName". To fill the inner slot, make it '
+      'a direct child of the host; to forward a slot of "$fragmentName", put it inside a direct-child slot marker, '
+      'e.g. <${attrPrefix}block ${attrPrefix}slot>.';
 }
 
 String _fragmentLabel(Element fragmentRoot, String attrPrefix) =>
@@ -309,7 +349,8 @@ void _graftSlots(
       if (!regions.containsKey(name)) {
         throw TemplateException(
           name.isEmpty
-              ? 'Slot marker <${node.localName} $slotAttr> targets the anonymous slot, which the fragment does not declare'
+              ? 'Slot marker <${node.localName} $slotAttr> targets the anonymous slot, '
+                    'which the fragment does not declare'
               : 'Slot marker $slotAttr="$name" targets a slot the fragment does not declare',
         );
       }

@@ -84,7 +84,7 @@ List<String> tableProblems(String doc, List<String> enumOrder, Map<String, _Proc
       if (!RegExp('`${processor.attribute}`').hasMatch(row.attributes)) {
         problems.add('$name: table attribute column ${row.attributes.trim()} lacks `${processor.attribute}`');
       }
-      if (!(model[processor.priority] ?? '').contains('tl:${processor.attribute}')) {
+      if (!RegExp('tl:${processor.attribute}\\b(?![-:])').hasMatch(model[processor.priority] ?? '')) {
         problems.add('$name: Priority Model line ${processor.priority} lacks tl:${processor.attribute}');
       }
     }
@@ -133,6 +133,13 @@ void main() {
       final mutated = doc.replaceFirst('tl:each', 'tl:iterate');
 
       expect(tableProblems(mutated, order, code), contains(contains('EachProcessor: Priority Model line')));
+    });
+
+    test('a processor named only as a prefix of another attribute on its Priority Model line', () {
+      final mutated = doc.replaceFirst('tl:attrs + tl:attr + ', 'tl:attrs + ');
+
+      expect(mutated, isNot(doc));
+      expect(tableProblems(mutated, order, code), contains(contains('AttrProcessor: Priority Model line')));
     });
 
     test('a processor class with no table row', () {

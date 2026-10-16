@@ -203,19 +203,22 @@ final class DomProcessor implements FragmentHost {
     _fragmentRegistryStack.removeLast();
   }
 
-  /// The top-level render root being processed by [processRenderRoot], exempt from definition removal.
-  Element? _renderRoot;
+  /// The temporary parent of the render root being processed by [processRenderRoot]. Its direct children, the root
+  /// and any `tl:each` copies of it, are exempt from definition removal.
+  Node? _renderHolder;
 
   /// Process a looked-up fragment as a top-level render root.
   ///
+  /// [root] must already have a parent (the caller's temporary holder), because the processors that act on an element
+  /// through its parent (`tl:replace`, `tl:each`, `tl:if`, `tl:remove`, `tl:block`) are no-ops on a detached one.
   /// Unlike a definition met in a document, a parameterised render root is rendered, not removed. Its `tl:fragment`
   /// attribute stays in place while processing so a processor registered on it (e.g. `tl:scope`'s) still fires.
   void processRenderRoot(Element root, Map<String, dynamic> context) {
-    _renderRoot = root;
+    _renderHolder = root.parentNode;
     try {
       process(root, context);
     } finally {
-      _renderRoot = null;
+      _renderHolder = null;
     }
   }
 
@@ -313,7 +316,7 @@ final class DomProcessor implements FragmentHost {
 
   /// Remove parameterized fragment definitions from output (step 3.5).
   bool _removeFragmentDefinition(Element element) {
-    if (identical(element, _renderRoot)) return false;
+    if (_renderHolder != null && identical(element.parentNode, _renderHolder)) return false;
     final fragDef = element.attributes['${attrPrefix}fragment'];
     if (fragDef != null) {
       final (_, paramNames) = parseFragmentDef(fragDef);

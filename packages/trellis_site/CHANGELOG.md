@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.0
+
+### Changed
+
+- Lockstep version bump to keep all Trellis SDK packages on a single shared version. No functional changes in this package. Raw `tl:*` attributes in Markdown are no longer processed, through the `tl:utext` change in `trellis` 0.13.0.
+
 ## 0.12.0
 
 ### Breaking

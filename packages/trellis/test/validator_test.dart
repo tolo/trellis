@@ -87,6 +87,32 @@ void main() {
       expect(errors.map((error) => error.attribute), containsAll(['tl:inline', 'tl:fragment']));
     });
 
+    test('reports a misplaced, repeated or unnamed rest parameter, as rendering does', () {
+      final validator = TemplateValidator();
+
+      for (final def in ['card(...attrs, x)', 'card(...)', 'card(...a, ...b)']) {
+        final errors = validator.validate('<div tl:fragment="$def"></div>');
+        expect(
+          errors.where((error) => error.severity == ValidationSeverity.error && error.attribute == 'tl:fragment'),
+          [isA<ValidationError>().having((e) => e.message, 'message', startsWith('Fragment "card": rest parameter'))],
+          reason: def,
+        );
+      }
+      expect('<div tl:fragment="card(x, ...attrs)"></div>', isValidTemplate());
+    });
+
+    test('reports a trailing empty parameter once, not also as a misplaced rest parameter', () {
+      final errors = TemplateValidator().validate('<div tl:fragment="card(...a,)"></div>');
+
+      expect(errors.map((error) => error.message), ['Fragment parameters cannot be empty']);
+    });
+
+    test('reports an empty fragment name once, not also as a rest parameter of fragment ""', () {
+      final errors = TemplateValidator().validate('<div tl:fragment="(...a, b)"></div>');
+
+      expect(errors.map((error) => error.message), ['Fragment name cannot be empty']);
+    });
+
     test('applies self-closing block normalization', () {
       final validator = TemplateValidator();
 
@@ -248,6 +274,60 @@ void main() {
           expect('<div><span tl:slot="hint"><i tl:slot="inner"></i></span></div>', isValidTemplate());
         });
 
+        test('is silent for a region re-marked inside a passed marker, which forwards a slot', () {
+          const reMarked =
+              '<section tl:fragment="confirm"><div tl:replace="dlg">'
+              '<span tl:slot="footer"><em tl:slot="actions">default</em></span></div></section>';
+          expect(reMarked, isValidTemplate());
+          expect(reMarked.replaceAll('tl:replace', 'tl:insert'), isValidTemplate());
+        });
+
+        group('in a definition, a marker in a host\'s unmarked content', () {
+          List<ValidationError> slotErrors(String source) => TemplateValidator()
+              .validate(source)
+              .where((e) => e.message.contains('tl:slot') && e.severity == ValidationSeverity.error)
+              .toList();
+
+          test('is an error mirroring the engine message', () {
+            final errors = slotErrors(
+              '<section tl:fragment="confirm">\n<div tl:replace="dlg"><p>\n<i tl:slot="footer">OK</i></p></div></section>',
+            );
+
+            expect(errors, hasLength(1));
+            expect(errors.single.line, 3);
+            expect(errors.single.attribute, 'tl:slot');
+            expect(
+              errors.single.message,
+              'tl:slot="footer" in fragment "confirm" is inside the unmarked content of a tl:replace host, so it '
+              'neither fills that invocation\'s slot nor declares a slot of "confirm". To fill the inner slot, make '
+              'it a direct child of the host; to forward a slot of "confirm", put it inside a direct-child slot '
+              'marker, e.g. <tl:block tl:slot>.',
+            );
+          });
+
+          test('is an error when the fragment root is itself the host', () {
+            final errors = slotErrors('<div tl:fragment="confirm" tl:insert="dlg"><p><i tl:slot="x">OK</i></p></div>');
+
+            expect(errors, hasLength(1));
+            expect(errors.single.message, contains('unmarked content of a tl:insert host'));
+          });
+
+          test('stays a warning on a page, where the marker is merely inert', () {
+            final findings = TemplateValidator().validate('<div tl:replace="dlg"><p><i tl:slot="x">OK</i></p></div>');
+
+            expect(slotErrors('<div tl:replace="dlg"><p><i tl:slot="x">OK</i></p></div>'), isEmpty);
+            expect(findings.where((e) => e.message.contains('tl:slot')).single.severity, ValidationSeverity.warning);
+          });
+
+          test('is clean for a region re-marked inside a nested host\'s direct-child marker', () {
+            expect(
+              '<section tl:fragment="confirm"><div tl:replace="dlg"><div><p tl:replace="dlg">'
+              '<span tl:slot="footer"><em tl:slot="actions">d</em></span></p></div></div></section>',
+              isValidTemplate(),
+            );
+          });
+        });
+
         test('treats a definition nested under a host as definition-side', () {
           expect(
             '<div tl:replace="card"><section tl:fragment="inner(x)"><p tl:slot="body"></p></section></div>',
@@ -260,7 +340,9 @@ void main() {
             prefix: 'data-tl',
           ).validate('<div data-tl-replace="card"><div><span data-tl-slot="a">x</span></div></div>');
 
-          expect(errors.where((e) => e.message.contains('data-tl-slot')), hasLength(1));
+          final warnings = errors.where((e) => e.message.contains('data-tl-slot'));
+          expect(warnings, hasLength(1));
+          expect(warnings.single.message, allOf(contains('data-tl-insert/data-tl-replace'), isNot(contains('tl:'))));
         });
       });
     });
@@ -279,6 +361,14 @@ void main() {
         expect(warnings.single.message, allOf(contains('card-title'), contains('tl:id'), contains('tl:attrs')));
         expect(warnings.single.line, 2);
         expect(warnings.single.element, 'h2');
+      });
+
+      test('names the configured prefix in its remedy', () {
+        final warnings = TemplateValidator(
+          prefix: 'data-tl',
+        ).validate('<div data-tl-fragment="card(t)"><h2 id="x">T</h2></div>').where((e) => e.message.contains('id="'));
+
+        expect(warnings.single.message, allOf(contains('data-tl-id or data-tl-attrs'), isNot(contains('tl:'))));
       });
 
       test('warns for an id on the fragment root and for each descendant id', () {
@@ -321,7 +411,8 @@ void main() {
     group('<tl:block tl:slot> in a table', () {
       test('reports the foster-parenting warning once and no slot-specific warning', () {
         final errors = TemplateValidator().validate(
-          '<table><tbody><tr tl:replace="~{ui :: row}"><tl:block tl:slot="cells"><td>x</td></tl:block></tr></tbody></table>',
+          '<table><tbody><tr tl:replace="~{ui :: row}"><tl:block tl:slot="cells"><td>x</td></tl:block></tr></tbody>'
+          '</table>',
         );
 
         expect(errors.where((e) => e.message.contains('foster-parented')), hasLength(1));

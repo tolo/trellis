@@ -719,7 +719,7 @@ void main() {
     const dlg = '<dialog tl:fragment="dlg"><footer tl:slot="footer"><button>Close</button></footer></dialog>';
 
     group('caller-side filling', () {
-      test('named slot filled: region kept, marker discarded, fallback gone [S01]', () {
+      test('named slot filled: region kept, marker discarded, fallback gone', () {
         final out = render('$dlg<div tl:replace="dlg"><span tl:slot="footer"><b>Delete</b></span></div>');
         expect(out, endsWith('<dialog><footer><b>Delete</b></footer></dialog>'));
         expect(out, isNot(contains('<span')));
@@ -728,7 +728,7 @@ void main() {
         expect('Close'.allMatches(out), hasLength(1));
       });
 
-      test('unfilled named slot keeps fallback; pretty-printed whitespace is not anonymous content [S02]', () {
+      test('unfilled named slot keeps fallback; pretty-printed whitespace is not anonymous content', () {
         final out = render(
           '<div tl:fragment="dlg"><div tl:slot>Body</div><footer tl:slot="footer">F</footer></div>'
           '<div tl:replace="dlg">\n  <span tl:slot="footer">Mine</span>\n</div>',
@@ -736,7 +736,7 @@ void main() {
         expect(out, endsWith('<div><div>Body</div><footer>Mine</footer></div>'));
       });
 
-      test('anonymous slot filled by unmarked children [S03]', () {
+      test('anonymous slot filled by unmarked children', () {
         final out = render(
           '<div tl:fragment="dlg"><div tl:slot>Body</div></div>'
           '<div tl:replace="dlg"><p>This cannot be undone.</p></div>',
@@ -749,7 +749,7 @@ void main() {
         expect(out, endsWith('<section><footer>X</footer></section>'));
       });
 
-      test('multiple markers for one slot concatenate in document order [S05]', () {
+      test('multiple markers for one slot concatenate in document order', () {
         final out = render(
           '<div tl:fragment="f"><footer tl:slot="footer">-</footer></div>'
           '<div tl:replace="f"><span tl:slot="footer">A</span><span tl:slot="footer">B</span></div>',
@@ -757,7 +757,7 @@ void main() {
         expect(out, endsWith('<div><footer>AB</footer></div>'));
       });
 
-      test('tl:block marker is wrapper-free; a plain tl:block is whole anonymous content [S06]', () {
+      test('tl:block marker is wrapper-free; a plain tl:block is whole anonymous content', () {
         final out = render(
           '<div tl:fragment="f"><main tl:slot>Body</main><footer tl:slot="footer">-</footer></div>'
           '<div tl:replace="f"><tl:block tl:slot="footer"><button>Del</button><button>Cancel</button></tl:block>'
@@ -769,7 +769,7 @@ void main() {
         );
       });
 
-      test('a marker nested deeper than a direct child is inert [S07]', () {
+      test('a marker nested deeper than a direct child is inert', () {
         final out = render(
           '<div tl:fragment="f"><main tl:slot>Body</main><footer tl:slot="footer">Fallback</footer></div>'
           '<div tl:replace="f"><div><span tl:slot="footer">X</span></div></div>',
@@ -807,12 +807,12 @@ void main() {
         context: {'showHint': showHint},
       );
 
-      test('tl:if gates the contribution [S08]', () {
+      test('tl:if gates the contribution', () {
         expect(field_(showHint: false), endsWith('<label><span>Default hint</span></label>'));
         expect(field_(showHint: true), endsWith('<label><span>Custom</span></label>'));
       });
 
-      test('tl:unless inverts [S08]', () {
+      test('tl:unless inverts', () {
         expect(field_(showHint: true, attr: 'tl:unless'), endsWith('<span>Default hint</span></label>'));
         expect(field_(showHint: false, attr: 'tl:unless'), endsWith('<span>Custom</span></label>'));
       });
@@ -827,12 +827,13 @@ void main() {
 
       test('gating sees fragment parameters', () {
         final out = render(
-          '$field<div tl:replace="field(\'Email\')"><span tl:slot="hint" tl:if="\${label == \'Email\'}">Hit</span></div>',
+          '$field<div tl:replace="field(\'Email\')"><span tl:slot="hint" tl:if="\${label == \'Email\'}">Hit</span>'
+          '</div>',
         );
         expect(out, endsWith('<span>Hit</span></label>'));
       });
 
-      test('bare marker is the only way to gate anonymous content [S16]', () {
+      test('bare marker is the only way to gate anonymous content', () {
         String run(bool show) => render(
           '<div tl:fragment="dlg"><div tl:slot>Body</div></div>'
           '<div tl:replace="dlg"><span tl:slot tl:if="\${show}">Custom</span></div>',
@@ -846,12 +847,12 @@ void main() {
     group('anonymous slot via bare marker', () {
       const anon = '<div tl:fragment="dlg"><div tl:slot>Body</div></div>';
 
-      test('bare marker fills the anonymous slot with the marker discarded [S16]', () {
+      test('bare marker fills the anonymous slot with the marker discarded', () {
         final out = render('$anon<div tl:replace="dlg"><span tl:slot><b>Hello</b></span></div>');
         expect(out, endsWith('<div><div><b>Hello</b></div></div>'));
       });
 
-      test('bare marker and unmarked children concatenate in document order [S16]', () {
+      test('bare marker and unmarked children concatenate in document order', () {
         final out = render('$anon<div tl:replace="dlg"><i>1</i><span tl:slot>2</span><i>3</i></div>');
         expect(out, endsWith('<div><div><i>1</i>2<i>3</i></div></div>'));
       });
@@ -867,9 +868,10 @@ void main() {
         expect(out, endsWith('<div><div><p>T!</p></div></div>'));
       });
 
-      test('region nested inside a fragment tl:each sees the loop variable [S09]', () {
+      test('region nested inside a fragment tl:each sees the loop variable', () {
         final out = render(
-          '<table tl:fragment="tbl(rows)"><tbody><tr tl:each="r : \${rows}"><td tl:slot="cell">-</td></tr></tbody></table>'
+          '<table tl:fragment="tbl(rows)"><tbody><tr tl:each="r : \${rows}"><td tl:slot="cell">-</td></tr></tbody>'
+          '</table>'
           '<div tl:replace="tbl(\${rows})"><tl:block tl:slot="cell"><span tl:text="\${r.n}">x</span></tl:block></div>',
           context: {
             'rows': [
@@ -885,10 +887,12 @@ void main() {
         expect(out, isNot(contains('tl:slot')));
       });
 
-      test('region co-located on the fragment tl:each element [S09]', () {
+      test('region co-located on the fragment tl:each element', () {
         final out = render(
-          '<table><tbody tl:fragment="rows(items)"><tr tl:each="r : \${items}" tl:slot="row"><td>-</td></tr></tbody></table>'
-          '<table><tbody tl:replace="rows(\${rows})"><tr tl:slot="row"><td tl:text="\${r.n}">x</td></tr></tbody></table>',
+          '<table><tbody tl:fragment="rows(items)"><tr tl:each="r : \${items}" tl:slot="row"><td>-</td></tr></tbody>'
+          '</table>'
+          '<table><tbody tl:replace="rows(\${rows})"><tr tl:slot="row"><td tl:text="\${r.n}">x</td></tr></tbody>'
+          '</table>',
           context: {
             'rows': [
               {'n': 'a'},
@@ -901,7 +905,7 @@ void main() {
         expect(out, isNot(contains('tl:slot')));
       });
 
-      test('cross-file invocation fills slots and resolves slot content against the included file first [S10]', () {
+      test('cross-file invocation fills slots and resolves slot content against the included file first', () {
         final out = render(
           '<div tl:fragment="btn"><b>caller btn</b></div>'
           '<div tl:replace="~{ui/components.html :: dialog(\'Delete?\')}">'
@@ -919,45 +923,261 @@ void main() {
 
     group('nested regions', () {
       const panel =
-          '<section tl:fragment="panel"><div tl:slot="outer"><span tl:slot="inner">Inner fallback</span></div></section>';
+          '<section tl:fragment="panel"><div tl:slot="outer"><span tl:slot="inner">Inner fallback</span></div>'
+          '</section>';
 
-      test('unfilled: nested region is fallback content, attribute stripped [S15a]', () {
+      test('unfilled: nested region is fallback content, attribute stripped', () {
         expect(
           render('$panel<div tl:replace="panel"></div>'),
           endsWith('<section><div><span>Inner fallback</span></div></section>'),
         );
       });
 
-      test('filling the outer region replaces the nested fallback wholesale [S15b]', () {
+      test('filling the outer region replaces the nested fallback wholesale', () {
         final out = render('$panel<div tl:replace="panel"><b tl:slot="outer"><p>X</p></b></div>');
         expect(out, endsWith('<section><div><p>X</p></div></section>'));
       });
 
-      test('the nested region is not a declaration: filling it throws [S15c]', () {
+      test('the nested region is not a declaration: filling it throws', () {
         expect(
           () => render('$panel<div tl:replace="panel"><b tl:slot="inner">Y</b></div>'),
           throwsSlotError('"inner"'),
         );
       });
 
-      test('the same name at top level and inside a fallback is not a duplicate [S15]', () {
+      test('the same name at top level and inside a fallback is not a duplicate', () {
         final out = render(
-          '<section tl:fragment="p"><i tl:slot="inner">top</i><div tl:slot="outer"><i tl:slot="inner">nested</i></div></section>'
+          '<section tl:fragment="p"><i tl:slot="inner">top</i><div tl:slot="outer"><i tl:slot="inner">nested</i>'
+          '</div></section>'
           '<div tl:replace="p"><b tl:slot="inner">Y</b></div>',
         );
         expect(out, endsWith('<section><i>Y</i><div><i>nested</i></div></section>'));
       });
     });
 
+    group('composing slotted fragments', () {
+      // A marker binds to its nearest enclosing invocation host, so markers a definition passes to an inner
+      // invocation are that invocation's contributions, never the outer fragment's own slots.
+      const dialog =
+          '<dialog tl:fragment="dlg"><div tl:slot>Body</div><footer tl:slot="footer">Close</footer>'
+          '</dialog>';
+
+      test('unmarked caller content is discarded when the outer fragment declares no slot', () {
+        final out = render(
+          '$dialog<section tl:fragment="confirm"><div tl:replace="dlg"><span tl:slot><b>OK</b></span></div></section>'
+          '<div tl:replace="confirm"><p>caller</p></div>',
+        );
+        expect(out, endsWith('<section><dialog><div><b>OK</b></div><footer>Close</footer></dialog></section>'));
+      });
+
+      test('a caller marker naming only an inner slot throws instead of overriding it', () {
+        expect(
+          () => render(
+            '$dialog<section tl:fragment="confirm"><div tl:replace="dlg"><i tl:slot="footer">OK</i></div></section>'
+            '<div tl:replace="confirm"><i tl:slot="footer">HIJACK</i></div>',
+          ),
+          throwsSlotError('"footer"'),
+        );
+      });
+
+      test('the outer fragment may declare the same names it passes to the inner one', () {
+        final out = render(
+          '$dialog<section tl:fragment="confirm"><h2 tl:slot>Title</h2><p tl:slot="footer">own</p>'
+          '<div tl:replace="dlg"><span tl:slot>Inner</span><i tl:slot="footer">OK</i></div></section>'
+          '<div tl:replace="confirm"><b>T</b><u tl:slot="footer">mine</u></div>',
+        );
+        expect(
+          out,
+          endsWith(
+            '<section><h2><b>T</b></h2><p>mine</p><dialog><div>Inner</div><footer>OK</footer></dialog>'
+            '</section>',
+          ),
+        );
+      });
+
+      test('explicit re-marking forwards a slot: a region inside a passed marker is declared', () {
+        const confirm =
+            '<section tl:fragment="confirm"><div tl:replace="dlg">'
+            '<span tl:slot="footer"><em tl:slot="actions">default</em></span></div></section>';
+        expect(
+          render('$dialog$confirm<div tl:replace="confirm"><b tl:slot="actions">Go</b></div>'),
+          endsWith('<section><dialog><div>Body</div><footer><em>Go</em></footer></dialog></section>'),
+        );
+        expect(
+          render('$dialog$confirm<div tl:replace="confirm"></div>'),
+          endsWith('<section><dialog><div>Body</div><footer><em>default</em></footer></dialog></section>'),
+        );
+      });
+
+      test('a tl:insert inner host binds its markers the same way', () {
+        expect(
+          () => render(
+            '$dialog<section tl:fragment="confirm"><div tl:insert="dlg"><i tl:slot="footer">OK</i></div></section>'
+            '<div tl:replace="confirm"><i tl:slot="footer">HIJACK</i></div>',
+          ),
+          throwsSlotError('"footer"'),
+        );
+      });
+
+      test('a fragment root that is itself the host binds its markers the same way', () {
+        const confirm =
+            '<div tl:fragment="confirm" tl:insert="dlg">'
+            '<span tl:slot="footer"><em tl:slot="actions">default</em></span></div>';
+        expect(
+          () => render('$dialog$confirm<p tl:replace="confirm"><b tl:slot="footer">HIJACK</b></p>'),
+          throwsSlotError('"footer"'),
+        );
+        expect(
+          render('$dialog$confirm<p tl:replace="confirm"><b tl:slot="actions">Go</b></p>'),
+          endsWith('<div><div>Body</div><footer><em>Go</em></footer></div>'),
+        );
+      });
+
+      test('a custom prefix re-marks and forwards a slot', () {
+        final out = testEngine(prefix: 'data-tl').render(
+          '<dialog data-tl-fragment="dlg"><footer data-tl-slot="footer">Close</footer></dialog>'
+          '<section data-tl-fragment="confirm"><div data-tl-replace="dlg">'
+          '<span data-tl-slot="footer"><em data-tl-slot="actions">default</em></span></div></section>'
+          '<div data-tl-replace="confirm"><b data-tl-slot="actions">Go</b></div>',
+          {},
+        );
+        expect(out, contains('<section><dialog><footer><em>Go</em></footer></dialog></section>'));
+      });
+
+      test('slots of a nested fragment definition belong to that definition', () {
+        final out = render(
+          '<div tl:fragment="outer"><i tl:slot="a">o</i><section tl:fragment="inner"><b tl:slot="a">n</b></section>'
+          '</div>'
+          '<div tl:replace="outer"><u tl:slot="a">X</u></div>',
+        );
+        expect(out, endsWith('<div><i>X</i><section><b>n</b></section></div>'));
+      });
+
+      group('a marker in an inner host\'s unmarked content', () {
+        // Neither the inner invocation's contribution nor an explicit declaration, so the definition is ambiguous
+        // and throws at invocation, filled or not.
+        const wrapped =
+            '<section tl:fragment="confirm"><div tl:replace="dlg"><p><i tl:slot="footer">OK</i></p></div></section>';
+
+        test('throws whether or not the caller fills it, naming the marker, host and fragment', () {
+          for (final caller in [
+            '<div tl:replace="confirm"><b tl:slot="footer">Go</b></div>',
+            '<div tl:replace="confirm"></div>',
+          ]) {
+            expect(
+              () => render('$dialog$wrapped$caller'),
+              throwsSlotError(
+                'tl:slot="footer" in fragment "confirm" is inside the unmarked content of a tl:replace host, '
+                'so it neither fills that invocation\'s slot nor declares a slot of "confirm"',
+              ),
+            );
+          }
+        });
+
+        test('throws under a root tl:insert host', () {
+          expect(
+            () => render(
+              '$dialog<div tl:fragment="confirm" tl:insert="dlg"><p><i tl:slot="footer">OK</i></p></div>'
+              '<div tl:replace="confirm"></div>',
+            ),
+            throwsSlotError('inside the unmarked content of a tl:insert host'),
+          );
+        });
+
+        test('throws under a tl:insert inner host', () {
+          expect(
+            () => render(
+              '$dialog<section tl:fragment="confirm"><div tl:insert="dlg"><p><i tl:slot="footer">OK</i></p></div>'
+              '</section><div tl:replace="confirm"></div>',
+            ),
+            throwsSlotError('inside the unmarked content of a tl:insert host'),
+          );
+        });
+
+        test('throws even when the inner invocation is gated off', () {
+          expect(
+            () => render(
+              '$dialog<section tl:fragment="confirm"><div tl:if="\${false}" tl:replace="dlg"><p>'
+              '<i tl:slot="footer">OK</i></p></div></section><div tl:replace="confirm"></div>',
+            ),
+            throwsSlotError('inside the unmarked content of a tl:replace host'),
+          );
+        });
+
+        test('two wrapped markers of one name report this error, not a duplicate', () {
+          expect(
+            () => render(
+              '$dialog<section tl:fragment="confirm"><div tl:replace="dlg"><p><i tl:slot="footer">A</i></p>'
+              '<p><i tl:slot="footer">B</i></p></div></section><div tl:replace="confirm"></div>',
+            ),
+            throwsA(
+              isA<TemplateException>().having(
+                (e) => e.message,
+                'message',
+                allOf(contains('unmarked content'), isNot(contains('Duplicate'))),
+              ),
+            ),
+          );
+        });
+
+        test('names an anonymous marker as anonymous', () {
+          expect(
+            () => render(
+              '$dialog<section tl:fragment="confirm"><div tl:replace="dlg"><p><i tl:slot>OK</i></p></div></section>'
+              '<div tl:replace="confirm"></div>',
+            ),
+            throwsSlotError('anonymous tl:slot in fragment "confirm" is inside the unmarked content'),
+          );
+        });
+
+        test('uses the configured prefix in the message', () {
+          expect(
+            () => testEngine(prefix: 'data-tl').render(
+              '<dialog data-tl-fragment="dlg"><footer data-tl-slot="footer">Close</footer></dialog>'
+              '<section data-tl-fragment="confirm"><div data-tl-replace="dlg"><p><i data-tl-slot="footer">OK</i></p>'
+              '</div></section><div data-tl-replace="confirm"></div>',
+              {},
+            ),
+            throwsSlotError(
+              'data-tl-slot="footer" in fragment "confirm" is inside the unmarked content of a data-tl-replace host',
+            ),
+          );
+        });
+
+        test('a bare direct-child marker forwards the slots of its content', () {
+          const confirm =
+              '<section tl:fragment="confirm"><div tl:replace="dlg"><tl:block tl:slot>'
+              '<p><i tl:slot="x">d</i></p></tl:block></div></section>';
+          expect(
+            render('$dialog$confirm<div tl:replace="confirm"><b tl:slot="x">Go</b></div>'),
+            endsWith('<section><dialog><div><p><i>Go</i></p></div><footer>Close</footer></dialog></section>'),
+          );
+        });
+
+        test('a nested host inside host content binds its own direct-child markers', () {
+          // The shell declares no anonymous slot, so the outer host's unmarked content (the nested host) is discarded.
+          const shell = '<aside tl:fragment="shell"><footer tl:slot="footer">S</footer></aside>';
+          const confirm =
+              '<section tl:fragment="confirm"><div tl:replace="shell"><div><p tl:replace="dlg">'
+              '<span tl:slot="footer"><em tl:slot="actions">d</em></span></p></div></div></section>';
+          // Filling "actions" proves the re-marked region is declared; a plain wrapped marker would have thrown.
+          expect(
+            render('$dialog$shell$confirm<div tl:replace="confirm"><b tl:slot="actions">Go</b></div>'),
+            endsWith('<section><aside><footer>S</footer></aside></section>'),
+          );
+        });
+      });
+    });
+
     group('errors', () {
-      test('marker naming an undeclared slot throws [S11]', () {
+      test('marker naming an undeclared slot throws', () {
         expect(
           () => render('$dlg<div tl:replace="dlg"><span tl:slot="body">X</span></div>'),
           throwsSlotError('"body"'),
         );
       });
 
-      test('markers throw on selector-targeted and tag-name invocation [S11]', () {
+      test('markers throw on selector-targeted and tag-name invocation', () {
         expect(
           () => render('<nav id="main-nav">N</nav><div tl:replace="#main-nav"><span tl:slot="x">X</span></div>'),
           throwsSlotError('"x"'),
@@ -979,39 +1199,39 @@ void main() {
         );
       });
 
-      test('duplicate slot names in a definition throw at invocation [S12]', () {
+      test('duplicate slot names in a definition throw at invocation', () {
         expect(
           () => render('<div tl:fragment="f"><i tl:slot="x"></i><b tl:slot="x"></b></div><div tl:replace="f"></div>'),
           throwsSlotError('Duplicate tl:slot "x"'),
         );
       });
 
-      test('duplicate anonymous slots throw [S12]', () {
+      test('duplicate anonymous slots throw', () {
         expect(
           () => render('<div tl:fragment="f"><i tl:slot></i><b tl:slot></b></div><div tl:replace="f"></div>'),
           throwsSlotError('Duplicate anonymous'),
         );
       });
 
-      test('tl:slot on the tl:fragment root throws [S12]', () {
+      test('tl:slot on the tl:fragment root throws', () {
         expect(
           () => render('<div tl:fragment="f" tl:slot="x">F</div><div tl:replace="f"></div>'),
           throwsSlotError('fragment root'),
         );
       });
 
-      test('an uninvoked malformed definition does not throw (AC-15)', () {
+      test('an uninvoked malformed definition does not throw', () {
         expect(render('<div tl:fragment="f"><i tl:slot="x"></i><b tl:slot="x"></b></div>'), contains('<i></i>'));
       });
 
-      test('another tl:* on a marker throws [S13]', () {
+      test('another tl:* on a marker throws', () {
         expect(
           () => render('$dlg<div tl:replace="dlg"><span tl:slot="footer" tl:each="i : \${[1]}">X</span></div>'),
           throwsSlotError('tl:each'),
         );
       });
 
-      test('a bare marker on a fragment with no anonymous slot throws; unmarked children are discarded [S17]', () {
+      test('a bare marker on a fragment with no anonymous slot throws; unmarked children are discarded', () {
         expect(() => render('$dlg<div tl:replace="dlg"><span tl:slot>X</span></div>'), throwsSlotError('anonymous'));
         final out = render('$dlg<div tl:replace="dlg"><p>X</p></div>');
         expect(out, endsWith('<dialog><footer><button>Close</button></footer></dialog>'));
@@ -1019,7 +1239,7 @@ void main() {
     });
 
     group('no-slot fragments keep today\'s semantics', () {
-      // Expected strings were captured from the engine before this change (see the story's baseline run).
+      // Expected strings were captured from the 0.12 engine, before slots existed.
       const cases = <(String, String, String)>[
         (
           'tl:insert same-file',
@@ -1038,7 +1258,8 @@ void main() {
         ),
         (
           'tl:insert with args',
-          '<div tl:fragment="card(t)"><h2 tl:text="\${t}">x</h2></div><div tl:insert="card(\'A\')">old<span>z</span></div>',
+          '<div tl:fragment="card(t)"><h2 tl:text="\${t}">x</h2></div><div tl:insert="card(\'A\')">old<span>z</span>'
+              '</div>',
           '<div><h2>A</h2></div>',
         ),
         (
@@ -1101,7 +1322,7 @@ void main() {
           '  <span tl:slot="hint">We never share your email.</span>\n'
           '</div>';
 
-      test('both sources validate and show their placeholder text unprocessed [S14]', () {
+      test('both sources validate and show their placeholder text unprocessed', () {
         expect(component, isValidTemplate());
         expect(application, isValidTemplate());
         expect(component, contains('Hint fallback'));
@@ -1114,7 +1335,7 @@ void main() {
         expect(out, isNot(contains('Hint fallback')));
       });
 
-      test('a stray tl:slot outside any invocation is stripped, fallback kept [S14]', () {
+      test('a stray tl:slot outside any invocation is stripped, fallback kept', () {
         final out = testEngine().renderFragment(
           component.replaceFirst('field(label)', 'field'),
           fragment: 'field',
@@ -1139,9 +1360,10 @@ void main() {
         r'<input type="text" tl:attr="name=${name}" tl:attrs="${attrs}"></label>';
     const card = r'<article tl:fragment="card(title, ...attrs)" tl:attrs="${attrs}" tl:text="${title}">T</article>';
     const inner =
-        r'<article tl:fragment="inner(title, ...attrs)"><span tl:attrs="${attrs}" tl:text="${title}">T</span></article>';
+        r'<article tl:fragment="inner(title, ...attrs)"><span tl:attrs="${attrs}" tl:text="${title}">T</span>'
+        r'</article>';
 
-    group('definition collection (TI01)', () {
+    group('definition collection', () {
       test('the rest entry stays the literal last paramNames entry', () {
         expect(parseFragmentDef('card(a, ...rest)').$2, ['a', '...rest']);
       });
@@ -1166,8 +1388,8 @@ void main() {
       });
     });
 
-    group('host attribute capture (TI02, TI03)', () {
-      test('caller attributes reach the inner element and overwrite the component literal [S01]', () {
+    group('host attribute capture', () {
+      test('caller attributes reach the inner element and overwrite the component literal', () {
         final out = render(
           '$field<div tl:replace="field(\'Email\', \'email\')" type="email" required hx-post="/validate"></div>',
         );
@@ -1182,7 +1404,7 @@ void main() {
         expect(out, contains('<i>1</i>'));
       });
 
-      test('a tl:insert host keeps its directives\' results, applied once, and forwards them [S02]', () {
+      test('a tl:insert host keeps its directives\' results, applied once, and forwards them', () {
         // tl:insert keeps only the fragment's children, so the spread sits on an inner element to be observable.
         final template = '$inner<div class="wrap" tl:attr="data-id=\${item.id}" tl:insert="inner(\'Report\')"></div>';
         final out = render(
@@ -1195,7 +1417,7 @@ void main() {
         expect(out, isNot(contains('tl:')));
       });
 
-      test('a tl:replace host yields the identical fragment root [S02]', () {
+      test('a tl:replace host yields the identical fragment root', () {
         final template = '$card<div class="wrap" tl:attr="data-id=\${item.id}" tl:replace="card(\'Report\')"></div>';
         final out = render(
           template,
@@ -1206,7 +1428,7 @@ void main() {
         expect(out, endsWith('<article class="wrap" data-id="7">Report</article>'));
       });
 
-      test('the host\'s own tl:attrs is forwarded in the step-0 merge order [S03]', () {
+      test('the host\'s own tl:attrs is forwarded in the step-0 merge order', () {
         final extra = {'data-id': 7, 'class': 'hi'};
         final out = render(
           '$card<div tl:replace="card(\'Report\')" class="wrap" tl:attrs="\${extra}"></div>',
@@ -1215,7 +1437,7 @@ void main() {
         expect(out, endsWith('<article class="wrap hi" data-id="7">Report</article>'));
       });
 
-      test('from a tl:insert host the same entries also land on the surviving host [S03]', () {
+      test('from a tl:insert host the same entries also land on the surviving host', () {
         final out = render(
           '$inner<div tl:insert="inner(\'Report\')" class="wrap" tl:attrs="\${extra}"></div>',
           context: {
@@ -1228,7 +1450,8 @@ void main() {
       test('single shared merge order: shorthand overrides a spread entry, tl:* never forwarded', () {
         final out = render(
           '<i tl:fragment="f(...a)" tl:attrs="\${a}">x</i>'
-          '<b tl:replace="f" class="a" hx-get="/x" disabled tl:attrs="\${m}" tl:attr="data-id=\${id}" tl:class="\${cls}"></b>',
+          '<b tl:replace="f" class="a" hx-get="/x" disabled tl:attrs="\${m}" '
+          'tl:attr="data-id=\${id}" tl:class="\${cls}"></b>',
           context: {
             'm': {'data-role': 'r', 'class': 'spread'},
             'id': 3,
@@ -1247,7 +1470,7 @@ void main() {
         expect(out, contains('<i>x</i>'));
       });
 
-      test('a host with no forwardable attributes yields an empty map in strict mode [S04]', () {
+      test('a host with no forwardable attributes yields an empty map in strict mode', () {
         final out = render(
           '<i tl:fragment="f(...a)" tl:attrs="\${a}" id="own">x</i><b tl:replace="f" tl:if="\${show}"></b>',
           context: {'show': true},
@@ -1256,8 +1479,8 @@ void main() {
       });
     });
 
-    group('activation and misuse (TI04)', () {
-      test('a third positional argument throws, not overwriting the forwarded map [S05]', () {
+    group('activation and misuse', () {
+      test('a third positional argument throws, not overwriting the forwarded map', () {
         expect(() => render('$field<div tl:replace="field(\'a\', \'b\', \'c\')"></div>'), throwsTemplate('"...attrs"'));
       });
 
@@ -1267,9 +1490,9 @@ void main() {
       });
 
       test('a non-rest invocation keeps the host\'s attribute directives inert on tl:replace', () {
+        // `missing` is undefined, so the strict test engine throws if the discarded host's directives are evaluated.
         final out = render(
-          '<b tl:fragment="g">frag</b><div tl:replace="g" tl:class="\${x}" tl:attr="data-x=\${x}" title="t"></div>',
-          context: {'x': 'boom'},
+          '<b tl:fragment="g">frag</b><div tl:replace="g" tl:class="\${missing}" tl:attr="data-x=\${missing}"></div>',
         );
         expect(out, endsWith('<b>frag</b>'));
       });

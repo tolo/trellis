@@ -223,6 +223,7 @@ final class DomProcessor implements FragmentHost {
   void process(Element element, Map<String, dynamic> context) {
     var effectiveContext = context;
     var autoProcessChildren = true;
+    var unwrap = element.localName == '${attrPrefix}block';
     var fragmentDefChecked = false;
 
     // Orphan tl:case detection — before running processors
@@ -275,6 +276,7 @@ final class DomProcessor implements FragmentHost {
       // Any processor that manages its own subtree opts the element out; a later processor (e.g. tl:attr after
       // tl:utext) must not opt it back in.
       autoProcessChildren = autoProcessChildren && processor.autoProcessChildren;
+      unwrap = unwrap || processorContext.unwrapsAfterChildren;
 
       if (!keepElement) return;
     }
@@ -295,10 +297,8 @@ final class DomProcessor implements FragmentHost {
       }
     }
 
-    // Block unwrap
-    if (element.localName == '${attrPrefix}block') {
-      _unwrapBlock(element);
-    }
+    // Unwrap (tl:block, tl:remove="tag"): runs after child recursion so the promoted children are already processed
+    if (unwrap) _unwrap(element);
   }
 
   /// Get the attribute value for a processor, handling special cases.
@@ -325,7 +325,7 @@ final class DomProcessor implements FragmentHost {
     return false;
   }
 
-  void _unwrapBlock(Element element) {
+  void _unwrap(Element element) {
     final parent = element.parentNode;
     if (parent == null) return;
     for (final child in List<Node>.from(element.nodes)) {

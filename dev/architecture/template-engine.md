@@ -111,7 +111,7 @@ For each element in the DOM tree:
    - If `true`: element remains — capture any context mutations
 3. **Attribute cleanup**: Remove all `tl:*` attributes from the element
 4. **Child recursion**: Unless a processor that fired returned `autoProcessChildren == false` (one is enough; a later processor cannot opt back in), recursively process child elements with the (possibly mutated) context
-5. **Block unwrap**: If the element is a `<tl:block>` virtual container, replace it with its children
+5. **Unwrap**: If the element is a `<tl:block>` virtual container, or a processor asked for it (`tl:remove="tag"`, through the engine-internal `ProcessorContext.unwrapAfterChildren()`), replace it with its now-processed children. A detached element (a render root) stays wrapped
 
 ### Context Mutation
 
@@ -235,7 +235,7 @@ Pre-scan pass (`collectFragments`) before rendering:
 6. Process the clone as a render root (`DomProcessor.processRenderRoot`): unlike a definition met in a document, a parameterised render root is rendered, not removed, and keeps its `tl:fragment` attribute while processing because `trellis_css`'s `ScopeProcessor` keys on it
 7. Serialize and return
 
-A render root carrying `tl:each` or a `tl:if` that may be false is unsupported (the detached clone has no parent). Bare in-template `tl:replace="toast"` differs in one respect: its unpassed parameters stay null and the context is not consulted. It has no detached-root limit: `ReplaceProcessor` puts the clone in the host's place before processing it, so a `tl:block`, `tl:if` or `tl:each` on the fragment root acts in place. `tl:insert` has no such limit either, although it drops the root: `InsertProcessor` copies the root into a `tl:block` that becomes the host's only child, so the root's directives act in place and what is left of it unwraps into the host. A removed root leaves the host empty, and a root `tl:each` repeats the children once per item.
+A render root carrying `tl:each`, a `tl:if` that may be false or `tl:remove="tag"` is unsupported (the detached clone has no parent; a `tag` root renders its processed children inside its own tag). Bare in-template `tl:replace="toast"` differs in one respect: its unpassed parameters stay null and the context is not consulted. It has no detached-root limit: `ReplaceProcessor` puts the clone in the host's place before processing it, so a `tl:block`, `tl:if` or `tl:each` on the fragment root acts in place. `tl:insert` has no such limit either, although it drops the root: `InsertProcessor` copies the root into a `tl:block` that becomes the host's only child, so the root's directives act in place and what is left of it unwraps into the host. A removed root leaves the host empty, and a root `tl:each` repeats the children once per item.
 
 ### Slots and the Rest Parameter
 

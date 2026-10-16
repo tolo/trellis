@@ -115,4 +115,16 @@ class ProcessorContext {
   void processChildren(Element element, Map<String, dynamic> context) {
     _processChildren(element, context);
   }
+
+  bool _unwrap = false;
+}
+
+/// Engine-internal [ProcessorContext] members. Not exported from `package:trellis`, so the public processor API is
+/// unchanged; widen it only when a custom processor needs to unwrap.
+extension ProcessorContextInternal on ProcessorContext {
+  /// Asks the engine to replace the element with its children once they are processed, as `tl:block` does.
+  void unwrapAfterChildren() => _unwrap = true;
+
+  /// Whether the processor called [unwrapAfterChildren].
+  bool get unwrapsAfterChildren => _unwrap;
 }

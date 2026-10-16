@@ -345,13 +345,14 @@ final _nonHtmlWhitespace = RegExp(r'[^\t\n\f\r ]');
 
 /// Resolve, bind, clone, graft slot content from [host], and process a fragment invocation.
 ///
-/// [attach] places the clone in the document before it is processed. Processors that act on the fragment root
-/// through its parent (`tl:block` unwrap, `tl:if` removal, `tl:each` expansion) are no-ops on a detached clone.
-Element _resolveAndProcess(
+/// [attach] places the clone in the document and returns the element to process as the fragment root. Processors
+/// that act on the root through its parent (`tl:block` unwrap, `tl:if` removal, `tl:each` expansion, `tl:remove`)
+/// are no-ops on a detached clone.
+void _resolveAndProcess(
   String value,
   ProcessorContext context,
   Element host, {
-  void Function(Element clone)? attach,
+  required Element Function(Element clone) attach,
 }) {
   final dp = context.domProcessor;
   final attrPrefix = context.attrPrefix;
@@ -372,17 +373,15 @@ Element _resolveAndProcess(
   );
   final clone = resolved.element.clone(true);
   _graftSlots(clone, host, byName: resolved.byName, context: context, scope: effectiveContext);
-  attach?.call(clone);
   _applyFragment(
     resolved,
-    clone,
+    attach(clone),
     effectiveContext,
     dp.processFragmentContent,
     dp,
     attrPrefix,
     fragmentId: resolved.fragmentId,
   );
-  return clone;
 }
 
 /// Processor class for `tl:insert` — fragment inclusion inside host element.
@@ -398,11 +397,21 @@ class InsertProcessor extends Processor {
 
   @override
   bool process(Element element, String value, ProcessorContext context) {
-    final clone = _resolveAndProcess(value, context, element);
-    element.nodes.clear();
-    for (final child in clone.nodes.toList()) {
-      element.append(child);
-    }
+    _resolveAndProcess(
+      value,
+      context,
+      element,
+      attach: (clone) {
+        // tl:insert drops the fragment root, so the root becomes a tl:block, the host's only child: its
+        // directives act in place and whatever tl:if, tl:each or tl:remove leave of it unwraps into the host.
+        final root = Element.tag('${context.attrPrefix}block')..attributes.addAll(clone.attributes);
+        clone.reparentChildren(root);
+        element.nodes
+          ..clear()
+          ..add(root);
+        return root;
+      },
+    );
     return true;
   }
 }
@@ -420,7 +429,15 @@ class ReplaceProcessor extends Processor {
 
   @override
   bool process(Element element, String value, ProcessorContext context) {
-    _resolveAndProcess(value, context, element, attach: element.replaceWith);
+    _resolveAndProcess(
+      value,
+      context,
+      element,
+      attach: (clone) {
+        element.replaceWith(clone);
+        return clone;
+      },
+    );
     return false;
   }
 }

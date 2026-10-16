@@ -39,6 +39,71 @@ void main() {
       });
     });
 
+    // tl:insert drops the fragment root, so the root's own directives decide what of it reaches the host: removed
+    // means an empty host, repeated means the children once per item. The host itself is the caller's to keep.
+    group('tl:insert with directives on the fragment root', () {
+      late Trellis engine;
+
+      setUp(() {
+        engine = Trellis(loader: MapLoader({}), cache: false);
+      });
+
+      test('a root tl:if gates the children and leaves the host in place', () {
+        final result = engine.render(
+          r'<div tl:fragment="opt(show)" tl:if="${show}"><b tl:text="${show}">raw</b></div>'
+          r'<main tl:insert="opt(true)"></main><aside tl:insert="opt(false)">placeholder</aside>',
+          {},
+        );
+        expect(result, contains('<main><b>true</b></main><aside></aside>'));
+        expect(result, isNot(contains('tl:')));
+      });
+
+      test('a true root tl:unless leaves the host empty', () {
+        final result = engine.render(
+          r'<div tl:fragment="opt(hide)" tl:unless="${hide}"><b>shown</b></div><main tl:insert="opt(true)"></main>',
+          {},
+        );
+        expect(result, contains('<main></main>'));
+      });
+
+      test('a root tl:each repeats the children per item inside the one host', () {
+        final result = engine.render(
+          r'<div tl:fragment="list(xs)" tl:each="x : ${xs}"><i tl:text="${x}">-</i></div>'
+          r'<main tl:insert="list(${names})"></main>',
+          {
+            'names': ['A', 'B'],
+          },
+        );
+        expect(result, contains('<main><i>A</i><i>B</i></main>'));
+      });
+
+      test('a root tl:remove="all" leaves the host empty', () {
+        final result = engine.render(
+          r'<div tl:fragment="gone(x)" tl:remove="all"><b tl:text="${x}">raw</b></div><main tl:insert="gone(1)"></main>',
+          {},
+        );
+        expect(result, contains('<main></main>'));
+      });
+
+      test('a root tl:replace fills the host with its replacement', () {
+        final result = engine.render(
+          '<b tl:fragment="leaf(x)">L</b><div tl:fragment="wrap(x)" tl:replace="leaf(1)"></div>'
+          '<main tl:insert="wrap(1)"></main>',
+          {},
+        );
+        expect(result, contains('<main><b>L</b></main>'));
+      });
+
+      test('a cross-file root tl:if leaves the host empty', () {
+        final crossFile = Trellis(
+          loader: MapLoader({'parts': r'<div tl:fragment="opt(show)" tl:if="${show}"><b>shown</b></div>'}),
+          cache: false,
+        );
+        final result = crossFile.render('<main tl:insert="~{parts :: opt(false)}"></main>', {});
+        expect(result, contains('<main></main>'));
+      });
+    });
+
     group('tl:replace same-file', () {
       test('replaces host element with fragment', () {
         final engine = Trellis(loader: MapLoader({}), cache: false);

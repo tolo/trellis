@@ -110,7 +110,7 @@ For each element in the DOM tree:
    - If `false`: element was removed/consumed — stop processing this element
    - If `true`: element remains — capture any context mutations
 3. **Attribute cleanup**: Remove all `tl:*` attributes from the element
-4. **Child recursion**: If `autoProcessChildren` is true, recursively process child elements with the (possibly mutated) context
+4. **Child recursion**: Unless a processor that fired returned `autoProcessChildren == false` (one is enough; a later processor cannot opt back in), recursively process child elements with the (possibly mutated) context
 5. **Block unwrap**: If the element is a `<tl:block>` virtual container, replace it with its children
 
 ### Context Mutation
@@ -132,7 +132,7 @@ Context-modifying processors (`tl:with`, `tl:object`) update `processorContext.v
 | 7 | `InsertProcessor` | `insert` | afterIteration | Never | Loads fragment, inserts as children |
 | 8 | `ReplaceProcessor` | `replace` | afterIteration | Always (replaces element) | Loads fragment, replaces element |
 | 9 | `TextProcessor` | `text` | afterInclusion | Never | HTML-escapes value, replaces element text |
-| 10 | `UtextProcessor` | `utext` | afterInclusion | Never | Raw HTML insertion (no escaping) |
+| 10 | `UtextProcessor` | `utext` | afterInclusion | Never | Raw HTML insertion (no escaping); `autoProcessChildren=false`, so `tl:*` in the inserted HTML is output, not evaluated |
 | 11 | `InlineProcessor` | `inline` | afterInclusion | Never | `[[${expr}]]` escaped, `[(${expr})]` unescaped |
 | 12 | `AttrProcessor` | `attr` + shorthands + `attrs` | afterContent | Never | Sets/appends/removes attributes; `tl:attrs` (map spread) runs first in the group, so explicit directives override it |
 | 13 | `RemoveProcessor` | `remove` | afterAttributes | Varies | Modes: `all`, `body`, `tag`, `all-but-first`, `none` |

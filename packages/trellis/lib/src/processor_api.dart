@@ -25,7 +25,9 @@ abstract class Processor {
   ProcessorPriority get priority;
 
   /// Whether children are auto-processed after process() returns true [D04].
-  /// Override to false for processors that manage their own subtree.
+  /// Override to false for processors that manage their own subtree. One
+  /// processor returning false on an element is enough: other processors
+  /// firing on the same element cannot opt its children back in.
   bool get autoProcessChildren => true;
 
   /// Process an element. Returns true if element remains in DOM,

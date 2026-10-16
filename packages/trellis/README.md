@@ -589,7 +589,7 @@ final result = evaluator.evaluate(r'${a} + ${b}', {'a': 1, 'b': 2}); // 3
 
 ## Security
 
-- `tl:utext` renders **unescaped HTML** -- only use with trusted content to avoid XSS
+- `tl:utext` renders **unescaped HTML** -- only use with trusted content to avoid XSS. The inserted HTML is output, never template code: `tl:*` attributes in it are emitted as-is, not evaluated
 - `tl:inline` in `javascript`/`css` mode escapes output including `</script>` and `</style>` closing tags
 - `FileSystemLoader` rejects absolute paths, `..` traversal, and symlink escapes outside the base directory
 - `tl:text` always HTML-escapes output

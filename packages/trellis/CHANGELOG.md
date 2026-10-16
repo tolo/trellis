@@ -2,7 +2,13 @@
 
 ## 0.13.0
 
+### Changed
+
+- **Behaviour change:** `tl:utext` no longer processes `tl:*` attributes in the HTML it inserts; they are output as-is, as Thymeleaf's `th:utext` does. Processing them let any HTML that reached `tl:utext` read every render-context value (`<i tl:text="${secret}">`) and include any template the loader can reach (`tl:insert`), which is server-side template injection, not only XSS. Markup that relied on it, such as raw `tl:*` HTML in `trellis_site` Markdown, now shows those attributes literally; move it into a template or shortcode. `tl:utext="_"` and an element where `tl:text` wins keep their template content, which is still processed.
+
 ### Fixed
+
+- A processor with `autoProcessChildren => false` now keeps the element's children unprocessed when a later-priority processor also fires on the element (`tl:class`, `tl:attr`, `tl:remove`, or a custom one). Only the last processor's flag counted, so the later one opted the children back in.
 
 - `tl:replace` with a fragment whose root is `<tl:block>` no longer leaves the `<tl:block>` tag in the output. It leaked in `render()`, `renderFragment()`, inside `tl:insert`ed fragments and in `tl:each` bodies, and an unknown inline element there collapses to 0×0 in the browser. The fragment clone was processed before it took the host's place, so every processor that acts on the root through its parent did nothing. `tl:replace` now puts the clone in place first, which also fixes a `tl:if`/`tl:unless` on a replaced fragment's root (a false condition rendered the root anyway, raw `tl:if` attribute included) and a root `tl:each` (threw a null-check error).
 - `tl:insert` now applies a `tl:if`, `tl:unless`, `tl:each`, `tl:remove` or `tl:replace` on the fragment's root. It processed the root detached and moved only its children into the host, so a false condition or `tl:remove="all"` still inserted the children, unprocessed with their raw `tl:*` attributes, and a root `tl:each` or `tl:replace` threw. The root now acts as a `<tl:block>` that is the host's only child: a removed root leaves the host empty, and a root `tl:each` repeats the children once per item inside the host.

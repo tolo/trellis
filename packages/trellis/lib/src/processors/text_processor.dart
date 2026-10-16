@@ -31,12 +31,22 @@ class UtextProcessor extends Processor {
   @override
   ProcessorPriority get priority => .afterInclusion;
 
+  /// The inserted value is output, not template code: processing its `tl:*` attributes would let any HTML that
+  /// reaches `tl:utext` read the render context and include other templates.
+  @override
+  bool get autoProcessChildren => false;
+
   @override
   bool process(Element element, String value, ProcessorContext context) {
-    // tl:text wins over tl:utext — if tl:text is also present, skip
-    if (element.attributes.containsKey('${context.attrPrefix}text')) return true;
+    // tl:text wins over tl:utext, and `_` is a no-op: either way the element keeps template content, which is
+    // processed as usual.
+    if (element.attributes.containsKey('${context.attrPrefix}text') || value == '_') {
+      for (final child in List<Element>.from(element.children)) {
+        context.processChildren(child, context.variables);
+      }
+      return true;
+    }
 
-    if (value == '_') return true; // no-op sentinel
     final result = context.evaluate(value, context.variables);
     final text = result?.toString() ?? '';
     element.nodes.clear();

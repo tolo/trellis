@@ -326,6 +326,22 @@ void main() {
         expect(doc.body!.querySelector('p')!.attributes.containsKey('tl:text'), isTrue);
       });
 
+      test('false holds when a later-priority processor also fires on the element', () {
+        final processor = _TestProcessor(
+          attribute: 'skip',
+          priority: ProcessorPriority.afterInclusion,
+          autoProcessChildren: false,
+          handler: (element, value, context) => true,
+        );
+        final element = _processHtml(
+          r'<div tl:skip="yes" tl:class="${cls}"><p tl:text="${msg}">old</p></div>',
+          {'msg': 'new', 'cls': 'c'},
+          processors: [processor],
+        );
+        expect(element.className, 'c', reason: 'the later tl:class processor ran');
+        expect(element.querySelector('p')!.text, 'old');
+      });
+
       test('false and process() returns false — children NOT processed', () {
         final processor = _TestProcessor(
           attribute: 'remove-all',

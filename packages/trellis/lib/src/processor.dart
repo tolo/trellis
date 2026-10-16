@@ -222,7 +222,7 @@ final class DomProcessor implements FragmentHost {
   /// Process an element and its children, applying all `tl:*` directives.
   void process(Element element, Map<String, dynamic> context) {
     var effectiveContext = context;
-    var lastAutoProcessChildren = true;
+    var autoProcessChildren = true;
     var fragmentDefChecked = false;
 
     // Orphan tl:case detection — before running processors
@@ -272,7 +272,9 @@ final class DomProcessor implements FragmentHost {
 
       // Context-modifying processors update processorContext.variables
       effectiveContext = processorContext.variables;
-      lastAutoProcessChildren = processor.autoProcessChildren;
+      // Any processor that manages its own subtree opts the element out; a later processor (e.g. tl:attr after
+      // tl:utext) must not opt it back in.
+      autoProcessChildren = autoProcessChildren && processor.autoProcessChildren;
 
       if (!keepElement) return;
     }
@@ -287,7 +289,7 @@ final class DomProcessor implements FragmentHost {
     }
 
     // Child recursion (respecting autoProcessChildren)
-    if (lastAutoProcessChildren) {
+    if (autoProcessChildren) {
       for (final child in List<Element>.from(element.children)) {
         process(child, effectiveContext);
       }

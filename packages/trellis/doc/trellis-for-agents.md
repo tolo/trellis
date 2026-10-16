@@ -37,7 +37,9 @@ Thymeleaf-inspired HTML template engine for Dart: templates are valid HTML annot
 ```
 
 If a value *could* contain unsafe HTML, never pass it to `tl:utext`. There is no sanitizer in
-the engine — sanitize in Dart before marking something trusted.
+the engine — sanitize in Dart before marking something trusted. The inserted HTML is output only:
+`tl:*` attributes in it are emitted as-is, never evaluated, so build dynamic markup in the template
+or a fragment, not in the value.
 
 
 ## Keep templates dumb

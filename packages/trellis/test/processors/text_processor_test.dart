@@ -74,6 +74,39 @@ void main() {
         expect(result, contains('<em>italic</em>'));
         expect(result, contains('<a href="#">link</a>'));
       });
+
+      // The inserted value is output, not template code: evaluating its tl:* attributes would let any HTML that
+      // reaches tl:utext read the render context and include other templates.
+      group('inserted HTML is not processed', () {
+        const html = r'<i tl:text="${secret}">y</i><span tl:insert="~{admin :: panel}">z</span>';
+        final ctx = {'secret': 'LEAKED', 'html': html, 'cls': 'c'};
+        late Trellis withAdmin;
+
+        setUp(() {
+          withAdmin = Trellis(loader: MapLoader({'admin': '<div tl:fragment="panel">ADMIN-ONLY</div>'}), cache: false);
+        });
+
+        test('tl:* attributes in the value are output verbatim', () {
+          final result = withAdmin.render(r'<div tl:utext="${html}">x</div>', ctx);
+          expect(result, contains('<div>$html</div>'));
+          expect(result, isNot(contains('LEAKED')));
+          expect(result, isNot(contains('ADMIN-ONLY')));
+        });
+
+        for (final directive in [r'tl:class="${cls}"', r'tl:attr="title=${cls}"', 'tl:remove="none"']) {
+          test('stays verbatim alongside $directive', () {
+            final result = withAdmin.render('<div tl:utext="\${html}" $directive>x</div>', ctx);
+            expect(result, contains(html));
+            expect(result, isNot(contains('LEAKED')));
+            expect(result, isNot(contains('ADMIN-ONLY')));
+          });
+        }
+
+        test('stays verbatim through a tl:block host', () {
+          final result = withAdmin.render(r'<p><tl:block tl:utext="${html}">x</tl:block></p>', ctx);
+          expect(result, contains('<p>$html</p>'));
+        });
+      });
     });
 
     group('attribute removal', () {
@@ -99,6 +132,19 @@ void main() {
         final result = render('<div tl:utext="_"><b>original</b></div>', {});
         expect(result, contains('<b>original</b>'));
         expect(result, isNot(contains('tl:utext')));
+      });
+
+      test('tl:utext="_" still processes the template content it keeps', () {
+        final result = render(r'<div tl:utext="_"><b tl:text="${name}">x</b></div>', {'name': 'Alice'});
+        expect(result, contains('<div><b>Alice</b></div>'));
+      });
+
+      test('tl:utext defers to tl:text="_" and the kept template content is processed', () {
+        final result = render(r'<div tl:text="_" tl:utext="${html}"><b tl:text="${name}">x</b></div>', {
+          'name': 'Alice',
+          'html': '<i>raw</i>',
+        });
+        expect(result, contains('<div><b>Alice</b></div>'));
       });
 
       test(r'tl:text="${x}" where x is "_" is NOT no-op', () {

@@ -79,7 +79,8 @@ void main() {
 
       test('a root tl:remove="all" leaves the host empty', () {
         final result = engine.render(
-          r'<div tl:fragment="gone(x)" tl:remove="all"><b tl:text="${x}">raw</b></div><main tl:insert="gone(1)"></main>',
+          r'<div tl:fragment="gone(x)" tl:remove="all"><b tl:text="${x}">raw</b></div>'
+          '<main tl:insert="gone(1)"></main>',
           {},
         );
         expect(result, contains('<main></main>'));
@@ -1094,6 +1095,17 @@ void main() {
           );
         });
 
+        test('names the innermost host when inner hosts nest', () {
+          expect(
+            () => render(
+              '$dialog<div tl:fragment="box"><tl:block tl:slot>b</tl:block></div>'
+              '<section tl:fragment="confirm"><div tl:replace="dlg"><div tl:insert="box"><p>'
+              '<i tl:slot="footer">OK</i></p></div></div></section><div tl:replace="confirm"></div>',
+            ),
+            throwsSlotError('inside the unmarked content of a tl:insert host'),
+          );
+        });
+
         test('throws even when the inner invocation is gated off', () {
           expect(
             () => render(
@@ -1118,6 +1130,56 @@ void main() {
               ),
             ),
           );
+        });
+
+        group('inside a region\'s fallback content', () {
+          // ADR-014 §1: a region's fallback is not exempt. Only the declaration rule skips it.
+          const fallbackMessage = 'tl:slot="footer" in fragment "c" is inside the unmarked content of a tl:insert host';
+
+          test('a wrapped marker in an inner host in the fallback throws, filled or not', () {
+            const c =
+                '<section tl:fragment="c"><div tl:slot="body"><div tl:insert="dlg"><p><i tl:slot="footer">X</i></p>'
+                '</div></div></section>';
+            for (final caller in ['<div tl:replace="c"></div>', '<div tl:replace="c"><b tl:slot="body">Y</b></div>']) {
+              expect(() => render('$dialog$c$caller'), throwsSlotError(fallbackMessage));
+            }
+          });
+
+          test('a region element that is itself a host throws for a wrapped marker', () {
+            const c =
+                '<section tl:fragment="c"><div tl:slot="body" tl:insert="dlg"><p><i tl:slot="footer">X</i></p></div>'
+                '</section>';
+            expect(() => render('$dialog$c<div tl:replace="c"></div>'), throwsSlotError(fallbackMessage));
+          });
+
+          test('a direct-child marker of a host in the fallback is still that invocation\'s contribution', () {
+            const c =
+                '<section tl:fragment="c"><div tl:slot="body"><div tl:replace="dlg"><i tl:slot="footer">F</i></div>'
+                '</div></section>';
+            expect(
+              render('$dialog$c<div tl:replace="c"></div>'),
+              endsWith('<section><div><dialog><div>Body</div><footer>F</footer></dialog></div></section>'),
+            );
+            expect(
+              render('$dialog$c<div tl:replace="c"><b tl:slot="body">Y</b></div>'),
+              endsWith('<section><div>Y</div></section>'),
+            );
+          });
+
+          test('a slot inside such a marker in the fallback is fallback, not a declaration', () {
+            const c =
+                '<section tl:fragment="c"><div tl:slot="body"><div tl:replace="dlg"><i tl:slot="footer">'
+                '<em tl:slot="x">d</em></i></div></div></section>';
+            expect(() => render('$dialog$c<div tl:replace="c"><b tl:slot="x">Y</b></div>'), throwsSlotError('"x"'));
+          });
+
+          test('a nested fragment definition in the fallback stops the scan', () {
+            const c =
+                '<section tl:fragment="c"><div tl:slot="body"><aside tl:fragment="inner"><div tl:insert="dlg"><p>'
+                '<i tl:slot="footer">X</i></p></div></aside></div></section>';
+            // The inner definition owns its slots, so its inert wrapped marker is not this fragment's error.
+            expect(render('$dialog$c<div tl:replace="c"></div>'), contains('<aside><div><div><p><i>X</i></p></div>'));
+          });
         });
 
         test('names an anonymous marker as anonymous', () {
@@ -1174,6 +1236,31 @@ void main() {
         expect(
           () => render('$dlg<div tl:replace="dlg"><span tl:slot="body">X</span></div>'),
           throwsSlotError('"body"'),
+        );
+      });
+
+      test('the unknown-slot error names the fragment', () {
+        expect(
+          () => render('$dlg<div tl:replace="dlg"><span tl:slot="body">X</span></div>'),
+          throwsSlotError('Slot marker tl:slot="body" targets a slot fragment "dlg" does not declare'),
+        );
+        expect(
+          () => render('$dlg<div tl:replace="dlg"><span tl:slot>X</span></div>'),
+          throwsSlotError('targets the anonymous slot, which fragment "dlg" does not declare'),
+        );
+        expect(
+          () => render('<nav id="main-nav">N</nav><div tl:replace="#main-nav"><span tl:slot="x">X</span></div>'),
+          throwsSlotError('targets a slot fragment "#main-nav" does not declare'),
+        );
+      });
+
+      test('a slot an inner host consumed as its contribution names the outer fragment', () {
+        const dialog = '<dialog tl:fragment="dlg"><footer tl:slot="footer">Close</footer></dialog>';
+        const confirm3 =
+            '<section tl:fragment="confirm3"><div tl:replace="dlg"><i tl:slot="footer">OK</i></div></section>';
+        expect(
+          () => render('$dialog$confirm3<div tl:replace="confirm3"><b tl:slot="footer">X</b></div>'),
+          throwsSlotError('targets a slot fragment "confirm3" does not declare'),
         );
       });
 

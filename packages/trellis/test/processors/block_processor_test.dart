@@ -197,7 +197,8 @@ void main() {
 
       test('cross-file replace inside renderFragment leaves no wrapper', () {
         final result = e.renderFragment(
-          r'<tl:block tl:fragment="direct"><section><tl:block tl:replace="~{av :: avatar(${s})}"></tl:block></section></tl:block>',
+          r'<tl:block tl:fragment="direct"><section><tl:block tl:replace="~{av :: avatar(${s})}"></tl:block>'
+          '</section></tl:block>',
           fragment: 'direct',
           context: {'s': 'JM'},
         );

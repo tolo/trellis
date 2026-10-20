@@ -19,7 +19,7 @@ import 'package:trellis/trellis.dart';
 const _docs = '../../site/content/docs/syntax';
 
 /// Pages whose labelled examples run, and how many renders each must yield (guards against silently running none).
-const _pages = {'composition.md': 17, 'attributes.md': 6, 'fragments.md': 4};
+const _pages = {'composition.md': 17, 'attributes.md': 6, 'fragments.md': 5};
 
 final class _Fence {
   final String lang;

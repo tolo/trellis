@@ -236,15 +236,18 @@ bool _isTagName(String ref) => _tagNamePattern.hasMatch(ref);
 
 /// Declared content slots of a fragment clone, keyed by slot name (`''` is the anonymous slot).
 ///
-/// Mirrors `InheritanceResolver._collectBlocks`: depth-first, and a matched region is not descended into, so a
-/// `tl:slot` inside another region's fallback content is that fallback, not a second declaration. Derived on each
-/// invocation rather than stored in the fragment registry, so definition errors surface at invocation.
+/// Mirrors `InheritanceResolver._collectBlocks`: depth-first, and a `tl:slot` inside a region's fallback content is
+/// that fallback, not a second declaration. Derived on each invocation rather than stored in the fragment registry,
+/// so definition errors surface at invocation.
 ///
 /// A marker binds to its nearest enclosing invocation host, so the direct-child markers of a `tl:insert`/`tl:replace`
 /// host, the fragment root included, are that invocation's contributions, not declarations; a region inside such a
 /// marker is declared (explicit re-marking forwards a slot). Any other `tl:slot` in a host's unmarked content binds
 /// to nothing, so it throws rather than guess between filling the inner slot and declaring one. A nested host inside
 /// that content starts over for its own children, and a nested `tl:fragment` owns its own slots.
+///
+/// A region's fallback is scanned too, but check-only: it declares nothing there, while a wrapped marker in an inner
+/// host within it (or under a region element that is itself a host) still throws.
 Map<String, Element> _collectSlotRegions(Element fragmentRoot, String attrPrefix) {
   final slotAttr = '${attrPrefix}slot';
   final fragmentAttr = '${attrPrefix}fragment';
@@ -256,8 +259,9 @@ Map<String, Element> _collectSlotRegions(Element fragmentRoot, String attrPrefix
     );
   }
   final regions = <String, Element>{};
-  // [hostContent] is the host directive whose unmarked content [element] sits in, or null outside any.
-  void walk(Element element, {String? hostContent}) {
+  // [hostContent] is the host directive whose unmarked content [element] sits in, or null outside any. [inFallback]
+  // is set below a region, where the walk only checks and declares nothing.
+  void walk(Element element, {String? hostContent, bool inFallback = false}) {
     final name = element.attributes[slotAttr];
     if (name != null) {
       final key = name.trim();
@@ -271,24 +275,28 @@ Map<String, Element> _collectSlotRegions(Element fragmentRoot, String attrPrefix
           ),
         );
       }
-      if (regions.containsKey(key)) {
-        throw TemplateException(
-          key.isEmpty
-              ? 'Duplicate anonymous tl:slot in fragment "${_fragmentLabel(fragmentRoot, attrPrefix)}"'
-              : 'Duplicate tl:slot "$key" in fragment "${_fragmentLabel(fragmentRoot, attrPrefix)}"',
-        );
+      if (!inFallback) {
+        if (regions.containsKey(key)) {
+          throw TemplateException(
+            key.isEmpty
+                ? 'Duplicate anonymous tl:slot in fragment "${_fragmentLabel(fragmentRoot, attrPrefix)}"'
+                : 'Duplicate tl:slot "$key" in fragment "${_fragmentLabel(fragmentRoot, attrPrefix)}"',
+          );
+        }
+        regions[key] = element;
       }
-      regions[key] = element;
-      return;
+      inFallback = true;
     }
     // Walked from the root, which can itself be an invocation host (`<div tl:fragment="c" tl:insert="dlg">`).
     if (!identical(element, fragmentRoot) && element.attributes.containsKey(fragmentAttr)) return;
     final host = hostAttrs.where(element.attributes.containsKey).firstOrNull;
     for (final child in element.children) {
       if (host != null && child.attributes.containsKey(slotAttr)) {
-        child.children.forEach(walk);
+        for (final grandchild in child.children) {
+          walk(grandchild, inFallback: inFallback);
+        }
       } else {
-        walk(child, hostContent: host ?? hostContent);
+        walk(child, hostContent: host ?? hostContent, inFallback: inFallback);
       }
     }
   }
@@ -325,12 +333,12 @@ String _fragmentLabel(Element fragmentRoot, String attrPrefix) =>
 void _graftSlots(
   Element clone,
   Element host, {
-  required bool byName,
+  required _ResolvedFragment resolved,
   required ProcessorContext context,
   required Map<String, dynamic> scope,
 }) {
   final attrPrefix = context.attrPrefix;
-  final regions = byName ? _collectSlotRegions(clone, attrPrefix) : const <String, Element>{};
+  final regions = resolved.byName ? _collectSlotRegions(clone, attrPrefix) : const <String, Element>{};
   final slotAttr = '${attrPrefix}slot';
   final controlAttrs = {slotAttr, '${attrPrefix}if', '${attrPrefix}unless'};
   final contributions = <String, List<Node>>{};
@@ -347,11 +355,13 @@ void _graftSlots(
       }
       final name = node.attributes[slotAttr]!.trim();
       if (!regions.containsKey(name)) {
+        // Selector and tag-name targets carry no fragment name, so the invocation target stands in.
+        final label = resolved.byName ? _fragmentLabel(clone, attrPrefix) : resolved.fragmentId;
         throw TemplateException(
           name.isEmpty
               ? 'Slot marker <${node.localName} $slotAttr> targets the anonymous slot, '
-                    'which the fragment does not declare'
-              : 'Slot marker $slotAttr="$name" targets a slot the fragment does not declare',
+                    'which fragment "$label" does not declare'
+              : 'Slot marker $slotAttr="$name" targets a slot fragment "$label" does not declare',
         );
       }
       final ifExpr = node.attributes['${attrPrefix}if'];
@@ -413,7 +423,7 @@ void _resolveAndProcess(
     rest: rest,
   );
   final clone = resolved.element.clone(true);
-  _graftSlots(clone, host, byName: resolved.byName, context: context, scope: effectiveContext);
+  _graftSlots(clone, host, resolved: resolved, context: context, scope: effectiveContext);
   _applyFragment(
     resolved,
     attach(clone),

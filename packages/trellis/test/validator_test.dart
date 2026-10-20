@@ -290,7 +290,8 @@ void main() {
 
           test('is an error mirroring the engine message', () {
             final errors = slotErrors(
-              '<section tl:fragment="confirm">\n<div tl:replace="dlg"><p>\n<i tl:slot="footer">OK</i></p></div></section>',
+              '<section tl:fragment="confirm">\n<div tl:replace="dlg"><p>\n'
+              '<i tl:slot="footer">OK</i></p></div></section>',
             );
 
             expect(errors, hasLength(1));
@@ -305,11 +306,34 @@ void main() {
             );
           });
 
+          test('names a padded slot name trimmed, as the engine does', () {
+            final errors = slotErrors(
+              '<section tl:fragment="confirm"><div tl:replace="dlg"><p><i tl:slot=" footer ">OK</i></p></div>'
+              '</section>',
+            );
+
+            expect(errors.single.message, startsWith('tl:slot="footer" in fragment "confirm" is inside'));
+          });
+
           test('is an error when the fragment root is itself the host', () {
             final errors = slotErrors('<div tl:fragment="confirm" tl:insert="dlg"><p><i tl:slot="x">OK</i></p></div>');
 
             expect(errors, hasLength(1));
             expect(errors.single.message, contains('unmarked content of a tl:insert host'));
+          });
+
+          test('is an error inside a region\'s fallback content, as in the engine', () {
+            for (final definition in [
+              '<section tl:fragment="c"><div tl:slot="body"><div tl:insert="dlg"><p><i tl:slot="footer">X</i></p></div>'
+                  '</div></section>',
+              '<section tl:fragment="c"><div tl:slot="body" tl:insert="dlg"><p><i tl:slot="footer">X</i></p></div>'
+                  '</section>',
+            ]) {
+              final errors = slotErrors(definition);
+
+              expect(errors, hasLength(1), reason: definition);
+              expect(errors.single.message, startsWith('tl:slot="footer" in fragment "c" is inside the unmarked'));
+            }
           });
 
           test('stays a warning on a page, where the marker is merely inert', () {

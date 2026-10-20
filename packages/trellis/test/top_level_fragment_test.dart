@@ -201,6 +201,26 @@ void main() {
       );
     });
 
+    test('only the root and its tl:each copies are exempt: a nested parameterised definition is still removed', () {
+      const helper = '<p tl:fragment="helper(z)">H</p>';
+
+      expect(
+        engine.renderFragment('<tl:block tl:fragment="c">$helper<i>k</i></tl:block>', fragment: 'c', context: {}),
+        '<i>k</i>',
+      );
+      expect(
+        engine.renderFragment(
+          r'<div tl:fragment="c" tl:each="v : ${xs}">'
+          '$helper<i>k</i></div>',
+          fragment: 'c',
+          context: {
+            'xs': [1, 2],
+          },
+        ),
+        '<div><i>k</i></div><div><i>k</i></div>',
+      );
+    });
+
     test('a root tl:replace still works when the fragment is invoked from a page, same-file and cross-file', () {
       final eng = withTemplates({'ui.html': '$leaf$alias'});
 

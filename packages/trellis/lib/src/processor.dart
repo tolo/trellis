@@ -278,7 +278,8 @@ final class DomProcessor implements FragmentHost {
       effectiveContext = processorContext.variables;
       // Any processor that manages its own subtree opts the element out; a later processor (e.g. tl:attr after
       // tl:utext) must not opt it back in.
-      autoProcessChildren = autoProcessChildren && processor.autoProcessChildren;
+      autoProcessChildren =
+          autoProcessChildren && processor.autoProcessChildren && !processorContext.skipsChildRecursion;
       unwrap = unwrap || processorContext.unwrapsAfterChildren;
 
       if (!keepElement) return;

@@ -107,14 +107,16 @@ strict mode too. The result is fully processed.
 
 ### An out-of-band toast
 
-htmx swaps out of band only an element that carries `hx-swap-oob`. For an
-`outerHTML` swap by id, render the component itself by bare name, as above, with
-`hx-swap-oob="true"` and an id matching the element it replaces on its root; set
-the id per use with `tl:id`, since a literal id repeats on every render. A
-stacking swap such as `beforeend` needs a wrapper, because htmx 2
-inserts only the *children* of a non-`outerHTML` out-of-band element. Keep the
-wrapper thin: it declares the same parameters, carries only `hx-swap-oob`, and
-invokes `toast` with them, so all toast markup stays in the one definition:
+htmx swaps out of band only an element that carries `hx-swap-oob`. Put that
+attribute on a thin wrapper, not on the toast's own root: the root is also what
+every in-page `tl:replace="toast(…)"` renders, and inside an htmx response an
+in-page toast carrying `hx-swap-oob` would be pulled out of the main swap. Keep
+each wrapper thin: it declares the toast's parameters, carries only `hx-swap-oob`
+(and an id where the swap needs one), and invokes `toast` with them, so all toast
+markup stays in the one definition.
+
+A stacking swap such as `beforeend` needs the wrapper anyway, because htmx 2
+inserts only the *children* of a non-`outerHTML` out-of-band element:
 
 ```html render=toast-oob fragment=toastStack
 <div tl:fragment="toast(type, title)" class="toast" tl:classappend="${type}">
@@ -131,6 +133,27 @@ invokes `toast` with them, so all toast markup stays in the one definition:
 
 ```html output=toast-oob
 <div hx-swap-oob="beforeend:#toasts"><div class="toast error"><strong>Saved</strong></div></div>
+```
+
+For an `outerHTML` swap by id, the wrapper takes the id of the element it
+replaces as a parameter and sets it with `tl:id`, since a literal id repeats on
+every render:
+
+```html render=toast-oob-id fragment=toastById
+<div tl:fragment="toast(type, title)" class="toast" tl:classappend="${type}">
+  <strong tl:text="${title}">Title</strong>
+</div>
+<div tl:fragment="toastById(id, type, title)" tl:id="${id}" hx-swap-oob="true">
+  <div tl:replace="toast(${type}, ${title})"></div>
+</div>
+```
+
+```json context=toast-oob-id
+{"id": "flash", "type": "error", "title": "Saved"}
+```
+
+```html output=toast-oob-id
+<div hx-swap-oob="true" id="flash"><div class="toast error"><strong>Saved</strong></div></div>
 ```
 
 In a handler, list the wrapper beside the main fragment, for example
@@ -186,6 +209,8 @@ Two caveats:
 - `renderFragments` renders several fragments against **one** context, so two
   fragments that both declare `title` read the same `title`.
 
-A fragment that is rendered as a response must not carry `tl:each`, or a `tl:if`
-that may be false, on the `tl:fragment` element itself: the element is rendered
-in place and these are unsupported there. Put them on an inner element.
+Directives on the `tl:fragment` element itself act as they would in place when
+the fragment is rendered as a response: a `tl:each` renders one element per item,
+a removed root (`tl:if` false, `tl:unless` true, `tl:remove="all"`) renders
+nothing and `renderFragments` concatenates the others, and a `tl:replace` renders
+its target.

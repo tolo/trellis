@@ -272,7 +272,7 @@ These throw `TemplateException`, and a marker is checked before its `tl:if` or
 ```
 
 ```text throws=unknown-slot
-targets a slot the fragment does not declare
+targets a slot fragment "card" does not declare
 ```
 
 ```html render=bare-marker
@@ -280,7 +280,7 @@ targets a slot the fragment does not declare
 ```
 
 ```text throws=bare-marker
-targets the anonymous slot, which the fragment does not declare
+targets the anonymous slot, which fragment "field" does not declare
 ```
 
 Unmarked children draw no error when there is no anonymous slot, but a bare
@@ -540,7 +540,10 @@ mistakes:
   message, see [Composing slotted fragments](#composing-slotted-fragments); a
   marker inside one of the host's direct-child markers re-marks a region and is
   clean. A marker with no host in the same document is assumed to be a
-  definition-side region and is not reported.
+  definition-side region and is not reported. The error is reported for a
+  wrapped marker inside any fragment definition, because invoking it by name
+  throws, even where the definition is only rendered inline, by
+  `renderFragment` or by selector, which leave the marker inert.
 - A literal `id` on or inside a parameterized fragment (a **warning**). The fragment may render
   several times on one page, repeating the id. Set it per use with `tl:id` or
   `tl:attrs`. Parameterless fragments are the usual HTMX swap-target pattern

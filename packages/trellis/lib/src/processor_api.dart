@@ -117,14 +117,22 @@ class ProcessorContext {
   }
 
   bool _unwrap = false;
+  bool _skipChildren = false;
 }
 
 /// Engine-internal [ProcessorContext] members. Not exported from `package:trellis`, so the public processor API is
-/// unchanged; widen it only when a custom processor needs to unwrap.
+/// unchanged; widen it only when a custom processor needs to unwrap or to skip child recursion per invocation.
 extension ProcessorContextInternal on ProcessorContext {
   /// Asks the engine to replace the element with its children once they are processed, as `tl:block` does.
   void unwrapAfterChildren() => _unwrap = true;
 
   /// Whether the processor called [unwrapAfterChildren].
   bool get unwrapsAfterChildren => _unwrap;
+
+  /// Asks the engine not to recurse into the element's children, for this invocation only. Unlike
+  /// [Processor.autoProcessChildren], it leaves recursion on when the processor kept the content it found.
+  void skipChildRecursion() => _skipChildren = true;
+
+  /// Whether the processor called [skipChildRecursion].
+  bool get skipsChildRecursion => _skipChildren;
 }

@@ -68,7 +68,8 @@ the fallback content. When the slot is filled, the element is preserved and only
 children are replaced – the same merge rule as `tl:define` block override. Declared
 regions are collected without recursing into a matched region (the `tl:define`
 collection rule), so a `tl:slot` inside another region's fallback content is part of
-that fallback, not a second declaration.
+that fallback, not a second declaration. The fallback is still scanned for the
+wrapped-marker error below.
 
 **Caller side**: direct children of the element carrying `tl:insert`/`tl:replace`
 provide slot content. A direct child with `tl:slot="name"` fills the named slot; its
@@ -114,12 +115,12 @@ enclosing fragment: it can neither fill that invocation's slot (it is not a dire
 child) nor declare a slot of the enclosing fragment without guessing between the two.
 The error fires whether or not the caller fills the slot and even when the inner
 invocation is gated off by `tl:if`, and it names the marker, the host directive and the
-fragment. A nested host inside that content starts over for its own children, and a
-nested `tl:fragment` owns its own slots. To forward a slot, re-mark it explicitly
-inside a direct-child marker (`<tl:block tl:slot>` for the anonymous slot). A `tl:slot`
-outside any fragment definition or invocation is inert – the attribute is stripped,
-the default content remains (graceful degradation, including direct
-`renderFragment()` calls).
+fragment, in a region's fallback content too. A nested host inside that content starts
+over for its own children, and a nested `tl:fragment` owns its own slots. To forward a
+slot, re-mark it explicitly inside a direct-child marker (`<tl:block tl:slot>` for the
+anonymous slot). A `tl:slot` outside any fragment definition or invocation is inert –
+the attribute is stripped, the default content remains (graceful degradation,
+including direct `renderFragment()` calls).
 
 **Scope of invocation forms**: slots (and the rest parameter below) work through
 *name-based* fragment invocation only – CSS-selector and tag-name fragment
@@ -394,7 +395,10 @@ For the Stage 2 plan/FIS (not binding on internals, binding on semantics):
 - `TemplateValidator`: report `tl:slot` markers under a visible invocation host that
   are not its literal direct children: a warning on a page, where they are inert, and
   an error inside a definition, mirroring the engine's wrapped-marker message (a
-  marker inside a direct-child marker re-marks a region and stays clean). Also warn
+  marker inside a direct-child marker re-marks a region and stays clean). The
+  validator reports a wrapped marker inside any fragment definition, because invoking
+  it by name throws, even where the definition is only rendered inline, by
+  `renderFragment` or by selector, which leave the marker inert. Also warn
   on a literal `id` on or inside a parameterized fragment definition (parameterless
   fragments are the HTMX swap-target idiom: 15 fragment/id pairs across `examples/`
   and `themes/` today, all parameterless). `<tl:block tl:slot>` in table context is

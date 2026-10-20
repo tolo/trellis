@@ -11,6 +11,30 @@ void main() {
 
     String render(String template, Map<String, dynamic> context) => engine.render(template, context);
 
+    // tl:text and tl:utext output is data, not template text: inlining it would let a value read the render context.
+    group('with tl:text or tl:utext on the same element', () {
+      const ctx = {'v': r'[[${secret}]] [(${secret})]', 'secret': 'SECRET', 'name': 'World'};
+
+      for (final content in [r'tl:text="${v}"', r'tl:utext="${v}"', r'tl:text="${v}" tl:utext="_"']) {
+        test('leaves the $content output literal', () {
+          final result = render('<p $content tl:inline="text">Hello, [[\${name}]]</p>', ctx);
+          expect(result, contains(r'<p>[[${secret}]] [(${secret})]</p>'));
+          expect(result, isNot(contains('SECRET')));
+        });
+      }
+
+      for (final content in ['tl:text="_"', 'tl:utext="_"', r'tl:text="_" tl:utext="${v}"']) {
+        test('still inlines the template text $content keeps', () {
+          final result = render('<p $content tl:inline="text">Hello, [[\${name}]]</p>', ctx);
+          expect(result, contains('<p>Hello, World</p>'));
+        });
+      }
+
+      test('still rejects an invalid mode', () {
+        expect(() => render(r'<p tl:text="${v}" tl:inline="bogus"></p>', ctx), throwsA(isA<TemplateException>()));
+      });
+    });
+
     group('text mode', () {
       test('evaluates escaped inline expression', () {
         final result = render(r'<p tl:inline="text">Hello, [[${name}]]!</p>', {'name': 'World'});

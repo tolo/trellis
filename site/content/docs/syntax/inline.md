@@ -37,4 +37,5 @@ The supported modes are `text`, `javascript`, `css`, and `none`.
 
 > **Security:** in `javascript` and `css` modes, inline output is escaped –
 > including `</script>` and `</style>` closing sequences – to prevent context
-> breakout.
+> breakout. Only template text is inlined: on an element whose `tl:text` or
+> `tl:utext` replaces the content, `[[...]]` in that output stays literal.

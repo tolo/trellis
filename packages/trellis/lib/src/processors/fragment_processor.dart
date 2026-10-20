@@ -178,6 +178,7 @@ _ResolvedFragment _resolveCrossFile(
     throw TemplateNotFoundException(templateName);
   }
   final doc = html_parser.parse(source);
+  markTemplateText(doc);
 
   // CSS selector (#id, .class)
   if (_isCssSelector(fragName)) {

@@ -136,3 +136,28 @@ extension ProcessorContextInternal on ProcessorContext {
   /// Whether the processor called [skipChildRecursion].
   bool get skipsChildRecursion => _skipChildren;
 }
+
+/// A text node parsed from template source, the only text `tl:inline` evaluates.
+///
+/// An allow-list rather than a mark on output: a text node any processor adds (`tl:text`, `tl:utext`, a custom one,
+/// inlining itself) is a plain [Text] and stays literal wherever it ends up, e.g. moved into a `tl:insert` host by the
+/// fragment that produced it, so a value can never be evaluated as an inline expression and read the render context.
+/// A processor that rewrites template text and wants it still inlined edits the node's `data` in place, as
+/// `trellis_css`'s `tl:scope` does. Not exported, like [ProcessorContextInternal].
+final class TemplateText extends Text {
+  TemplateText(super.data);
+
+  @override
+  TemplateText clone(bool deep) => TemplateText(data);
+}
+
+/// Marks every text node under [root] as [TemplateText]. Call on each DOM parsed from template source.
+void markTemplateText(Node root) {
+  for (final node in List<Node>.from(root.nodes)) {
+    if (node is Text) {
+      node.replaceWith(TemplateText(node.data));
+    } else {
+      markTemplateText(node);
+    }
+  }
+}

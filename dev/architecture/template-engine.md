@@ -133,7 +133,7 @@ Context-modifying processors (`tl:with`, `tl:object`) update `processorContext.v
 | 8 | `ReplaceProcessor` | `replace` | afterIteration | Always (replaces element) | Loads fragment, replaces element |
 | 9 | `TextProcessor` | `text` | afterInclusion | Never | HTML-escapes value, replaces element text |
 | 10 | `UtextProcessor` | `utext` | afterInclusion | Never | Raw HTML insertion (no escaping); skips child recursion when it inserts, so `tl:*` in the inserted HTML is output, not evaluated. With `_`, or when `tl:text` wins, it keeps the content and leaves recursion to the element's other directives |
-| 11 | `InlineProcessor` | `inline` | afterInclusion | Never | `[[${expr}]]` escaped, `[(${expr})]` unescaped; skipped when `tl:text`/`tl:utext` replaced the content, so their output is never inlined |
+| 11 | `InlineProcessor` | `inline` | afterInclusion | Never | `[[${expr}]]` escaped, `[(${expr})]` unescaped; evaluates only `TemplateText`, the text nodes `markTemplateText` marks when template source is parsed (`Trellis._parse`, cross-file fragment loading). A text node any processor adds, built-in or custom, stays literal, even after `tl:insert` moves it into the host; a processor that edits a template text node's `data` in place (`trellis_css`'s `tl:scope`) keeps it inlinable |
 | 12 | `AttrProcessor` | `attr` + shorthands + `attrs` | afterContent | Never | Sets/appends/removes attributes; `tl:attrs` (map spread) runs first in the group, so explicit directives override it |
 | 13 | `RemoveProcessor` | `remove` | afterAttributes | Varies | Modes: `all`, `body`, `tag`, `all-but-first`, `none` |
 

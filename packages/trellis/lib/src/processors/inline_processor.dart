@@ -4,25 +4,17 @@ import '../evaluator.dart';
 import '../exceptions.dart';
 import '../processor_api.dart';
 
-void _processInlineImpl(
-  Element element,
-  String modeAttr,
-  ExpressionEvaluator evaluator,
-  Map<String, dynamic> context, {
-  required bool replaced,
-}) {
+void _processInlineImpl(Element element, String modeAttr, ExpressionEvaluator evaluator, Map<String, dynamic> context) {
   final mode = modeAttr.trim().toLowerCase();
   if (mode == 'none') return;
   if (mode != 'text' && mode != 'javascript' && mode != 'css') {
     throw TemplateException('Invalid tl:inline mode: "$mode"');
   }
-  if (replaced) return;
-
   for (final node in List<Node>.from(element.nodes)) {
-    if (node is! Text) continue;
+    if (node is! TemplateText) continue;
     final text = node.data;
     if (!text.contains('[[') && !text.contains('[(')) continue;
-    node.data = _processInlineText(text, mode, evaluator, context);
+    node.replaceWith(Text(_processInlineText(text, mode, evaluator, context)));
   }
 }
 
@@ -133,17 +125,7 @@ class InlineProcessor extends Processor {
 
   @override
   bool process(Element element, String value, ProcessorContext context) {
-    // tl:text and tl:utext ran first and replaced the content unless the one that wins (tl:text) is `_`. Their output
-    // is data, not template text: inlining it would let a value read the render context, as Thymeleaf never does.
-    final attrs = element.attributes;
-    final content = attrs['${context.attrPrefix}text'] ?? attrs['${context.attrPrefix}utext'];
-    _processInlineImpl(
-      element,
-      value,
-      context.evaluator,
-      context.variables,
-      replaced: content != null && content != '_',
-    );
+    _processInlineImpl(element, value, context.evaluator, context.variables);
     return true;
   }
 }

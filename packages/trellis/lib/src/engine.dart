@@ -285,6 +285,7 @@ final class Trellis {
     }
     if (cache) _cacheMisses++;
     final doc = html_parser.parse(normalizedSource);
+    markTemplateText(doc);
     if (cache) {
       _cache[normalizedSource] = doc;
       if (_cache.length > maxCacheSize) {

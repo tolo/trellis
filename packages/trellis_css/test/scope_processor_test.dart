@@ -106,6 +106,16 @@ void main() {
         expect(result, contains('tl-scope-card'));
         expect(result, contains('Hello'));
       });
+
+      // tl:inline evaluates only text parsed from the template, so the rewrite must keep that text node.
+      test('tl:inline="css" on a scoped style still evaluates its expressions', () {
+        const template =
+            '<div tl:fragment="card">'
+            '<style tl:scope tl:inline="css">.t { color: [[\${c}]]; }</style>'
+            '</div>';
+        final result = _engine().renderFragment(template, fragment: 'card', context: <String, dynamic>{'c': 'red'});
+        expect(result, contains('@scope (.tl-scope-card) {\n  .t { color: red; }\n}'));
+      });
     });
 
     group('multiple fragments', () {

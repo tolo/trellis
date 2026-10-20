@@ -1,5 +1,23 @@
+import 'package:html/dom.dart';
 import 'package:test/test.dart';
 import 'package:trellis/trellis.dart';
+
+/// Writes a context value as the element's text, before tl:inline runs, as a custom dialect might.
+class _ValueProcessor extends Processor {
+  @override
+  String get attribute => 'show';
+
+  @override
+  ProcessorPriority get priority => .afterIteration;
+
+  @override
+  bool process(Element element, String value, ProcessorContext context) {
+    element.nodes
+      ..clear()
+      ..add(Text('${context.evaluate(value, context.variables)}'));
+    return true;
+  }
+}
 
 void main() {
   group('Inline processor', () {
@@ -11,8 +29,9 @@ void main() {
 
     String render(String template, Map<String, dynamic> context) => engine.render(template, context);
 
-    // tl:text and tl:utext output is data, not template text: inlining it would let a value read the render context.
-    group('with tl:text or tl:utext on the same element', () {
+    // tl:text, tl:utext and inline output is data, not template text: inlining it would let a value read the render
+    // context.
+    group('output of tl:text, tl:utext and tl:inline', () {
       const ctx = {'v': r'[[${secret}]] [(${secret})]', 'secret': 'SECRET', 'name': 'World'};
 
       for (final content in [r'tl:text="${v}"', r'tl:utext="${v}"', r'tl:text="${v}" tl:utext="_"']) {
@@ -29,6 +48,52 @@ void main() {
           expect(result, contains('<p>Hello, World</p>'));
         });
       }
+
+      // tl:insert processes the fragment before the host's own tl:inline runs, so output reaches the host as text.
+      for (final fragment in [
+        r'<span tl:fragment="f" tl:text="${v}">x</span>',
+        r'<span tl:fragment="f" tl:utext="${v}">x</span>',
+        r'<span tl:fragment="f"><tl:block tl:text="${v}">x</tl:block></span>',
+        r'<span tl:fragment="f" tl:inline="text">[(${v})]</span>',
+      ]) {
+        test('leaves output a tl:insert host receives from $fragment literal', () {
+          final result = render('$fragment<div tl:insert="f" tl:inline="text"></div>', ctx);
+          expect(result, contains(r'<div>[[${secret}]] [(${secret})]</div>'));
+          expect(result, isNot(contains('SECRET')));
+        });
+      }
+
+      test('still inlines fragment template text a tl:insert host receives', () {
+        final result = render(
+          r'<span tl:fragment="f">Hello, [[${name}]]</span><div tl:insert="f" tl:inline="text">',
+          ctx,
+        );
+        expect(result, contains('<div>Hello, World</div>'));
+      });
+
+      test('leaves a custom processor\'s value output literal', () {
+        final custom = Trellis(loader: MapLoader({}), cache: false, processors: [_ValueProcessor()]);
+        final result = custom.render(r'<p tl:show="${v}" tl:inline="text">x</p>', ctx);
+        expect(result, contains(r'<p>[[${secret}]] [(${secret})]</p>'));
+      });
+
+      test('inlines template text from a cached template on every render', () {
+        final cached = Trellis(loader: MapLoader({}));
+        for (final name in ['A', 'B']) {
+          expect(cached.render(r'<p tl:inline="text">[[${name}]]</p>', {'name': name}), contains('<p>$name</p>'));
+        }
+      });
+
+      test('inlines template text of a cross-file fragment', () {
+        final files = Trellis(
+          loader: MapLoader({'f.html': r'<span tl:fragment="f">Hi [[${name}]]</span>'}),
+          cache: false,
+        );
+        expect(
+          files.render(r'<div tl:insert="~{f.html :: f}" tl:inline="text"></div>', ctx),
+          contains('<div>Hi World</div>'),
+        );
+      });
 
       test('still rejects an invalid mode', () {
         expect(() => render(r'<p tl:text="${v}" tl:inline="bogus"></p>', ctx), throwsA(isA<TemplateException>()));

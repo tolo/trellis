@@ -107,6 +107,9 @@ git history do not carry it, and it outlives the current initiative. -->``.
 ## Workflow Rules
 
 - **Squash merge to `main`** (`git merge --squash`). Stay on the current branch unless told otherwise.
+- **Commit each verified fix round on the `feat/*` branch**, your own paths only (`git commit -- <paths>`), with a
+  one-line message. The squash merge absorbs these commits, so they cost nothing, and an uncommitted pile mixes with
+  other sessions' edits.
 - **`main` carries only squash commits and `chore(release)` commits.** Everything a release needs is complete on the
   branch before the squash: a `## X.Y.Z` section in every `packages/*/CHANGELOG.md` (`tool/release.sh` refuses
   without it) and review findings fixed. Install snippets and `--ref vX.Y.Z` pins are rewritten by

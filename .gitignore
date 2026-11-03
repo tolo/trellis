@@ -35,3 +35,6 @@ __pycache__/
 
 # Python venv for the pinned font-subsetting toolchain (tool/subset_fonts.py)
 .venv/
+
+# Claude Code per-user settings
+.claude/settings.local.json

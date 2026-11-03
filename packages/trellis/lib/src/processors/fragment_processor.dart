@@ -3,10 +3,10 @@ import 'package:html/parser.dart' as html_parser;
 
 import '../evaluator.dart';
 import '../exceptions.dart';
-import '../loaders/template_loader.dart';
 import '../processor_api.dart';
 import '../truthiness.dart';
 import '../utils/binding_parser.dart';
+import '../utils/html_normalizer.dart';
 import 'attr_processor.dart' show captureHostAttributes;
 
 /// Regex for cross-file fragment syntax: ~{filename :: fragmentName}
@@ -134,16 +134,16 @@ void _applyFragment(
 }
 
 /// Resolve a fragment by name — same-file or cross-file.
-_ResolvedFragment _resolveFragment(String value, String attrPrefix, TemplateLoader loader, FragmentHost domProcessor) {
+_ResolvedFragment _resolveFragment(String value, ProcessorContext context) {
   final crossMatch = _crossFilePattern.firstMatch(value);
   if (crossMatch != null) {
     final templateName = crossMatch.group(1)!;
     final fragmentRef = crossMatch.group(2)!;
     final (fragName, _) = _parseFragmentInvocation(fragmentRef);
-    return _resolveCrossFile(templateName, fragName, attrPrefix, loader, fragmentId: '$templateName::$fragName');
+    return _resolveCrossFile(templateName, fragName, context, fragmentId: '$templateName::$fragName');
   }
   final (name, _) = _parseFragmentInvocation(value);
-  return _resolveSameFile(name, domProcessor);
+  return _resolveSameFile(name, context.domProcessor);
 }
 
 /// Find fragment in the pre-collected registry, with CSS selector fallback.
@@ -169,15 +169,15 @@ _ResolvedFragment _resolveSameFile(String name, FragmentHost domProcessor) {
 _ResolvedFragment _resolveCrossFile(
   String templateName,
   String fragName,
-  String attrPrefix,
-  TemplateLoader loader, {
+  ProcessorContext context, {
   required String fragmentId,
 }) {
-  final source = loader.loadSync(templateName);
+  final attrPrefix = context.attrPrefix;
+  final source = context.loader.loadSync(templateName);
   if (source == null) {
     throw TemplateNotFoundException(templateName);
   }
-  final doc = html_parser.parse(source);
+  final doc = html_parser.parse(fixSelfClosingBlocks(source, prefix: context.prefix, separator: context.separator));
   markTemplateText(doc);
 
   // CSS selector (#id, .class)
@@ -409,7 +409,7 @@ void _resolveAndProcess(
   final dp = context.domProcessor;
   final attrPrefix = context.attrPrefix;
   final (_, argExprs) = _parseFragmentInvocation(value);
-  final resolved = _resolveFragment(value, attrPrefix, context.loader, dp);
+  final resolved = _resolveFragment(value, context);
   // Capture only for a rest-parameter callee: it consumes the host's attribute directives, which a non-rest
   // invocation must leave exactly as before (inert on a tl:replace host).
   final rest = restParameterName(resolved.paramNames) == null

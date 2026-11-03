@@ -1,6 +1,8 @@
+import 'package:html/parser.dart' as html_parser;
 import 'package:test/test.dart';
 import 'package:trellis/testing.dart';
 import 'package:trellis/trellis.dart';
+import 'package:trellis/src/processor.dart';
 import 'package:trellis/src/processors/fragment_processor.dart' show parseFragmentDef;
 
 void main() {
@@ -150,6 +152,15 @@ void main() {
         final result = engine.render('<div tl:replace="~{components :: sidebar}">placeholder</div>', {});
         expect(result, contains('<nav><ul><li>Item</li></ul></nav>'));
         expect(result, isNot(contains('placeholder')));
+      });
+
+      test('a self-closing tl:block in a cross-file fragment keeps its siblings', () {
+        const fragment = r'<div tl:fragment="card"><tl:block tl:text="${a}"/><p>after</p></div>';
+        final engine = Trellis(loader: MapLoader({'lib': fragment}), cache: false);
+        final sameFile = engine.render('$fragment<div tl:replace="card"></div>', {'a': 'A'});
+        final crossFile = engine.render('<div tl:replace="~{lib :: card}"></div>', {'a': 'A'});
+        expect(sameFile, contains('<div>A<p>after</p></div>'));
+        expect(crossFile, contains('<div>A<p>after</p></div>'));
       });
     });
 
@@ -556,6 +567,84 @@ void main() {
           {'name': 'Alice'},
         );
         expect(result, contains('<b>Alice</b>'));
+      });
+
+      // Selector and tag-name targets copy the template, not the earlier element's output, so HTML an earlier
+      // tl:utext inserted is never processed as template code.
+      for (final (label, source, ref) in [
+        ('#id', r'<div id="src" tl:utext="${h}"></div>', '#src'),
+        ('tag name', r'<article tl:utext="${h}"></article>', 'article'),
+      ]) {
+        test('$label target before the host does not evaluate tl:* attributes tl:utext inserted', () {
+          final engine = Trellis(loader: MapLoader({'admin': '<p tl:fragment="panel">ADMIN</p>'}), cache: false);
+          final result = engine.render('$source<section tl:insert="$ref"></section>', {
+            'h': r'<b tl:text="${secret}">x</b><i tl:insert="~{admin :: panel}"></i>',
+            'secret': 'LEAKED',
+          });
+          expect(result, isNot(contains('LEAKED')));
+          expect(result, isNot(contains('ADMIN')));
+        });
+      }
+
+      test('a selector target evaluates in the host scope, not its own processed output', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false);
+        final result = engine.render(
+          r'''<div tl:with="n='source'"><p id="src" tl:text="${n}">x</p></div>'''
+          r'''<div tl:with="n='host'"><div tl:replace="#src"></div></div>''',
+          {},
+        );
+        expect(result, contains('<p id="src">source</p>'));
+        expect(result, contains('<div><p id="src">host</p></div>'));
+      });
+
+      test('the template copy is built only when a selector or tag-name target is resolved, at most once', () {
+        var builds = 0;
+        int processWith(String html) {
+          builds = 0;
+          final doc = html_parser.parse(html);
+          final templateDoc = html_parser.parse(html);
+          DomProcessor(prefix: 'tl', separator: ':', loader: MapLoader({}))
+            ..collectFragments(
+              doc,
+              templateDocument: () {
+                builds++;
+                return templateDoc;
+              },
+            )
+            ..process(doc.documentElement!, {});
+          return builds;
+        }
+
+        expect(processWith('<p tl:fragment="f">F</p><div tl:insert="f"></div>'), 0);
+        expect(processWith('<p id="src">S</p><div tl:insert="#src"></div><div tl:insert="p"></div>'), 1);
+      });
+
+      test('a selector target in a tl:extends child is copied from the template', () {
+        final engine = Trellis(
+          loader: MapLoader({'base.html': '<html><body><main tl:define="m">base</main></body></html>'}),
+        );
+        const page =
+            r'<html tl:extends="base.html"><body><main tl:define="m"><div id="src" tl:utext="${h}"></div>'
+            r'<section tl:insert="#src"></section></main></body></html>';
+        final context = {'h': r'<b tl:text="${secret}">x</b>', 'secret': 'LEAKED'};
+        final first = engine.render(page, context);
+        final stats = engine.cacheStats;
+        final second = engine.render(page, context);
+        expect(first, isNot(contains('LEAKED')));
+        expect(first, contains(r'<section><b tl:text="${secret}">x</b></section>'));
+        expect(second, first);
+        // Rebuilding the template copy is not a render's own cache lookup.
+        expect(engine.cacheStats.hits - stats.hits, 2);
+      });
+
+      test('the template copy of a tl:extends page uses the parent the render loaded', () {
+        final loader = _ChangingLoader();
+        final result = Trellis(loader: loader, cache: false).render(
+          '<html tl:extends="base"><body><main tl:define="m"><div tl:insert="#t"></div></main></body></html>',
+          {},
+        );
+        expect(result, contains('<main><div>V1</div></main>'));
+        expect(loader.loads, 1);
       });
     });
 
@@ -1606,4 +1695,16 @@ void main() {
       });
     });
   });
+}
+
+/// Serves a `base` layout whose `#t` reads `V1` on the first load and `V2` after, as a template edited mid-render.
+class _ChangingLoader extends TemplateLoader {
+  int loads = 0;
+
+  @override
+  Future<String> load(String name) async => loadSync(name)!;
+
+  @override
+  String? loadSync(String name) =>
+      '<html><body><p id="t">V${++loads == 1 ? 1 : 2}</p><main tl:define="m"></main></body></html>';
 }

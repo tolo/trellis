@@ -95,9 +95,17 @@ final class Trellis {
 
   /// Render a template string with the given context.
   String render(String source, Map<String, dynamic> context) {
-    var doc = _parse(source);
-    doc = _resolveInheritance(doc);
-    final processor = _createProcessor()..collectFragments(doc);
+    // The template copy for selector targets is rebuilt from the parent sources this render loaded, so it matches the
+    // page even when a parent changes on disk in between.
+    final parents = <String, String?>{};
+    String? loadParent(String name) => parents.putIfAbsent(name, () => loader.loadSync(name));
+    final doc = _resolveInheritance(_parse(source), load: loadParent);
+    final processor = _createProcessor()
+      ..collectFragments(
+        doc,
+        templateDocument: () =>
+            _resolveInheritance(_parse(source, countStats: false), load: loadParent, countStats: false),
+      );
     processor.process(doc.documentElement!, context);
     return doc.outerHtml;
   }
@@ -166,7 +174,8 @@ final class Trellis {
     final attrPrefix = '$prefix$separator';
     final fragEl = _findFragment(doc, fragment, attrPrefix);
     final clone = fragEl.clone(true);
-    final processor = _createProcessor()..collectFragments(doc);
+    // Only clones of doc are processed, so doc itself stays the unprocessed template.
+    final processor = _createProcessor()..collectFragments(doc, templateDocument: () => doc);
     return _renderFragmentRoot(processor, clone, context, attrPrefix);
   }
 
@@ -198,8 +207,8 @@ final class Trellis {
     // Fail-fast: find and clone all fragment elements before processing any
     final clones = [for (final name in fragments) _findFragment(doc, name, attrPrefix).clone(true)];
 
-    // Process each clone independently
-    final processor = _createProcessor()..collectFragments(doc);
+    // Process each clone independently; doc itself stays the unprocessed template.
+    final processor = _createProcessor()..collectFragments(doc, templateDocument: () => doc);
     final buffer = StringBuffer();
     for (final clone in clones) {
       buffer.write(_renderFragmentRoot(processor, clone, context, attrPrefix));
@@ -255,8 +264,14 @@ final class Trellis {
     return holder.innerHtml;
   }
 
-  Document _resolveInheritance(Document doc) {
-    return InheritanceResolver(attrPrefix: '$prefix$separator', loader: loader, parse: _parse).resolve(doc);
+  /// [load] loads parent sources, [loader] by default. [countStats] is false when rebuilding a template a render
+  /// already parsed, which is no cache lookup of its own.
+  Document _resolveInheritance(Document doc, {String? Function(String name)? load, bool countStats = true}) {
+    return InheritanceResolver(
+      attrPrefix: '$prefix$separator',
+      load: load ?? loader.loadSync,
+      parse: (source) => _parse(source, countStats: countStats),
+    ).resolve(doc);
   }
 
   DomProcessor _createProcessor() {
@@ -275,15 +290,15 @@ final class Trellis {
     );
   }
 
-  Document _parse(String source) {
+  Document _parse(String source, {bool countStats = true}) {
     final normalizedSource = fixSelfClosingBlocks(source, prefix: prefix, separator: separator);
     if (cache && _cache.containsKey(normalizedSource)) {
-      _cacheHits++;
+      if (countStats) _cacheHits++;
       final doc = _cache.remove(normalizedSource)!;
       _cache[normalizedSource] = doc;
       return doc.clone(true);
     }
-    if (cache) _cacheMisses++;
+    if (cache && countStats) _cacheMisses++;
     final doc = html_parser.parse(normalizedSource);
     markTemplateText(doc);
     if (cache) {

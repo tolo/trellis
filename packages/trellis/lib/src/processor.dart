@@ -29,8 +29,14 @@ final class DomProcessor implements FragmentHost {
   static const int maxFragmentDepth = 32;
   int _fragmentDepth = 0;
 
-  /// Document reference for CSS selector queries on same-file fragments.
+  /// Unprocessed copy of the document, for same-file CSS selector and tag-name fragment targets.
+  ///
+  /// A copy rather than the live document, because an element that precedes its host is already processed by the
+  /// time the host queries it: copying that output would process it again, `tl:utext` HTML included. Name lookups
+  /// clone their definitions at collection for the same reason. Built by [_buildDocument] on the first query, since
+  /// few templates use these targets and a copy per render costs every render.
   Document? _document;
+  Document Function()? _buildDocument;
 
   /// Inclusion stack for cycle detection — tracks fragment IDs being processed.
   final List<String> _inclusionStack = [];
@@ -164,8 +170,14 @@ final class DomProcessor implements FragmentHost {
   }
 
   /// Pre-scan a DOM tree to collect fragment definitions before processing.
-  void collectFragments(Node root) {
-    if (root is Document) _document = root;
+  ///
+  /// For a [Document] root, [templateDocument] returns that document unprocessed when a selector or tag-name target
+  /// first needs it. Without one, the root is copied now.
+  void collectFragments(Node root, {Document Function()? templateDocument}) {
+    if (root is Document) {
+      _document = templateDocument == null ? root.clone(true) : null;
+      _buildDocument = templateDocument;
+    }
     if (root is Element) {
       final fragValue = root.attributes['${attrPrefix}fragment'];
       if (fragValue != null) {
@@ -181,7 +193,7 @@ final class DomProcessor implements FragmentHost {
 
   /// Query the stored document by CSS selector (for same-file CSS selector fragment targeting).
   @override
-  Element? querySelectorFromDoc(String selector) => _document?.querySelector(selector);
+  Element? querySelectorFromDoc(String selector) => (_document ??= _buildDocument?.call())?.querySelector(selector);
 
   /// Look up a same-file fragment by name from the pre-collected registry.
   @override

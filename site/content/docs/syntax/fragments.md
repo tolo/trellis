@@ -56,6 +56,10 @@ Instead of a fragment name, target an element in another file by `#id` or
 <div tl:insert="~{components :: #main-nav}">loads by id</div>
 ```
 
+In the same file, `tl:insert="#main-nav"` and a bare tag name (`tl:insert="footer"`,
+when no fragment has that name) work too. The target is copied as written in the
+template, not as rendered, and evaluated with the host's variables.
+
 Circular fragment inclusions are detected and reported with the full cycle path.
 
 ## Components

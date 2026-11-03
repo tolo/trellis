@@ -4,7 +4,7 @@
 
 ### Changed
 
-- Lockstep version bump to keep all Trellis SDK packages on a single shared version. No functional changes in this package.
+- `tl:scope` follows trellis 0.13's `tl:inline` rule: a scoped `<style tl:inline="css">` still evaluates its template text, and text another processor added to the style stays literal. When another processor added text to the style, none of the style is inlined.
 
 ## 0.12.0
 

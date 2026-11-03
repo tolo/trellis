@@ -95,6 +95,23 @@ void main() {
         );
       });
 
+      test('inlines template text of a tl:extends parent and the child\'s tl:define content', () {
+        final child = Trellis(
+          loader: MapLoader({
+            'base.html':
+                r'<html><body><p tl:inline="text">Base [[${name}]]</p><main tl:define="m" tl:inline="text">x</main>'
+                '</body></html>',
+          }),
+          cache: false,
+        );
+        final result = child.render(
+          r'<html tl:extends="base.html"><body><main tl:define="m">Child [[${name}]]</main></body></html>',
+          ctx,
+        );
+        expect(result, contains('<p>Base World</p>'));
+        expect(result, contains('<main>Child World</main>'));
+      });
+
       test('still rejects an invalid mode', () {
         expect(() => render(r'<p tl:text="${v}" tl:inline="bogus"></p>', ctx), throwsA(isA<TemplateException>()));
       });

@@ -223,6 +223,7 @@ Pre-scan pass (`collectFragments`) before rendering:
 1. Walk the DOM tree
 2. Find all elements with `tl:fragment="name"` or `tl:fragment="name(param1, param2)"`
 3. Build registry: `Map<String, (Element, List<String>)>` — name → (cloned element, parameter names)
+4. Keep a source of the unprocessed document for same-file CSS selector and tag-name targets (`querySelectorFromDoc`). Both kinds of target are copied from unprocessed template: an element before its host is already processed when the host runs, and copying that output would process it again, `tl:utext` HTML included. The copy is built on the first such query, at most once per render: `render()` re-runs `_parse` and inheritance over the parent sources it already loaded, without counting cache stats, and `renderFragment(s)` use their document as is, because only clones of it are processed. Few templates use these targets, so an eager copy cost every render 3-8%
 
 ### Fragment Rendering
 
@@ -253,7 +254,7 @@ Both are resolved inside `_resolveAndProcess` (`fragment_processor.dart`), the s
 
 `tl:insert="~{template :: fragment}"` / `tl:replace="~{template :: fragment}"`:
 1. Load the external template via the loader
-2. Parse and collect fragments from the external template
+2. Parse the external template (after `fixSelfClosingBlocks`, as `_parse` does) and collect its fragments
 3. Push external fragment registry onto `_fragmentRegistryStack`
 4. Resolve the named fragment
 5. Process the included fragment

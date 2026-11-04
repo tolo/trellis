@@ -47,7 +47,7 @@ final _spreadNamePattern = RegExp(r'^[A-Za-z][A-Za-z0-9_:.-]*$');
 void _spreadAttributes(Element element, Object? map, String attrPrefix) {
   if (map == null) return;
   if (map is! Map) {
-    throw TemplateException('${attrPrefix}attrs expects a Map but got ${map.runtimeType}: $map');
+    throw TemplateException('${attrPrefix}attrs expects a Map but got ${map.runtimeType}');
   }
   final lowerPrefix = attrPrefix.toLowerCase();
   for (final key in map.keys) {

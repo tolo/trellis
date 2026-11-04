@@ -196,6 +196,24 @@ void main() {
         expect(fired, isTrue);
       });
 
+      test('lowest runs on a tl:remove="tag" element before it unwraps, as on a <tl:block>', () {
+        final processor = _TestProcessor(
+          attribute: 'final',
+          priority: ProcessorPriority.lowest,
+          handler: (element, value, context) {
+            element.attributes['data-gone'] = 'with the tag';
+            element.children.first.attributes['data-seen'] = value;
+            return true;
+          },
+        );
+        final wrapper = _processHtml(
+          '<div><p tl:remove="tag" tl:final="yes"><b>kept</b></p></div>',
+          {},
+          processors: [processor],
+        );
+        expect(wrapper.innerHtml, '<b data-seen="yes">kept</b>');
+      });
+
       test('two custom at same priority preserve registration order', () {
         final order = <String>[];
         final first = _TestProcessor(

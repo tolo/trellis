@@ -3,7 +3,7 @@
 ## Status
 
 Accepted (2026-10-15; proposed 2026-08-18). Amended at acceptance after an engine
-re-verification (ledger AC-01…AC-15 in the private specs repo): prefix-named spread
+re-verification (PRD 0.13): prefix-named spread
 keys throw (§2), extra rest-position arguments throw, parameterised fragments render
 top-level by bare name, and a `tl:insert` host keeps its own directive results (§3),
 slot collection and bare caller markers are pinned (§1), and Consequences and
@@ -106,8 +106,7 @@ to caller-supplied row markup (needed for the table component).
 **Errors**: a caller marker naming a slot the fragment doesn't declare throws
 `TemplateException` (new syntax, so erroring is compatibility-safe); duplicate slot
 names within one fragment definition likewise; `tl:slot` on the element carrying
-`tl:fragment` itself likewise – the fragment root is the component boundary, and a
-root-level slot would collide with the documented fragment-root processing traps
+`tl:fragment` itself likewise – the fragment root is the component boundary
 (declare the region on an inner element instead). Inside a definition, a `tl:slot`
 in the *unmarked* content of an inner `tl:insert`/`tl:replace` host (the fragment root
 counts as a host when it carries one) throws `TemplateException` at invocation of the
@@ -413,7 +412,7 @@ For the Stage 2 plan/FIS (not binding on internals, binding on semantics):
 - Update [template-engine.md](../architecture/template-engine.md) (fragment system,
   processor table) as part of implementation, per the architecture-maintenance
   rule. Its Built-in Processors priority table was corrected against the
-  `ProcessorPriority` enum in `0bb00bd` (text/utext/inline are `afterInclusion`,
+  `ProcessorPriority` enum in 0.10.2 (text/utext/inline are `afterInclusion`,
   `tl:attr` is `afterContent`, `tl:remove` is `afterAttributes`); verify it against
   the enum again, then extend it.
 

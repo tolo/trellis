@@ -403,14 +403,15 @@ void main() {
         );
       });
 
-      test('non-Map value throws TemplateException naming tl:attrs and the value', () {
+      test('non-Map value throws TemplateException naming tl:attrs and the type, never the value', () {
+        // The value is render-context data, such as a token, and exception messages reach logs and error pages.
         expect(
           () => render(r'<div tl:attrs="${attrs}">x</div>', {'attrs': 'class=highlight'}),
           throwsA(
             isA<TemplateException>().having(
               (e) => e.message,
               'message',
-              allOf(contains('tl:attrs'), contains('class=highlight')),
+              allOf(contains('tl:attrs'), contains('String'), isNot(contains('class=highlight'))),
             ),
           ),
         );

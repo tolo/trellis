@@ -2,10 +2,13 @@
 
 ## 0.13.0
 
+### Breaking
+
+- Raw `tl:*` attributes in Markdown are no longer processed; they are output as-is. This follows from the `tl:utext` change in `trellis` 0.13.0. Move such markup into a template or shortcode.
+
 ### Changed
 
 - Lockstep version bump to keep all Trellis SDK packages on a single shared version. No code changes in this package.
-- **Behaviour change:** raw `tl:*` attributes in Markdown are no longer processed; they are output as-is. This follows from the `tl:utext` change in `trellis` 0.13.0. Move such markup into a template or shortcode.
 
 ## 0.12.0
 

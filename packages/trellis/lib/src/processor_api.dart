@@ -51,17 +51,22 @@ abstract interface class FragmentHost {
   /// [fragmentId] identifies the invocation for cycle detection.
   void processFragmentContent(Element element, Map<String, dynamic> context, {String? fragmentId});
 
-  /// Queries the stored document by CSS selector, for same-file selector-based
-  /// fragment targeting.
+  /// Queries by CSS selector, for selector and tag-name fragment targets: the
+  /// innermost pushed document first, then the page's own, as
+  /// [lookupFragment] does for names.
   Element? querySelectorFromDoc(String selector);
 
-  /// Looks up a same-file fragment by name, innermost pushed registry first.
+  /// Looks up a fragment by name, innermost pushed registry first, then the
+  /// page's own.
   ///
   /// Returns the fragment element and its declared parameter names.
   (Element, List<String>)? lookupFragment(String name);
 
   /// Pushes a fragment registry, shadowing outer ones for nested resolution.
-  void pushFragmentRegistry(Map<String, (Element, List<String>)> registry);
+  ///
+  /// [document] is the unprocessed file that defines the registry, so selector
+  /// targets inside its fragments resolve in that file too.
+  void pushFragmentRegistry(Map<String, (Element, List<String>)> registry, {Document? document});
 
   /// Pops the most recently pushed fragment registry.
   void popFragmentRegistry();

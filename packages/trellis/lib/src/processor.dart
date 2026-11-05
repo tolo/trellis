@@ -44,7 +44,7 @@ final class DomProcessor implements FragmentHost {
   /// Pre-collected fragment definitions for same-file lookup.
   /// Each entry maps fragment name → (element, paramNames).
   final Map<String, (Element, List<String>)> _fragmentRegistry = {};
-  final List<Map<String, (Element, List<String>)>> _fragmentRegistryStack = [];
+  final List<({Map<String, (Element, List<String>)> registry, Document? document})> _fragmentRegistryStack = [];
 
   /// Sorted list of all processors (built-in + custom), in priority order.
   late final List<Processor> _processors;
@@ -191,23 +191,29 @@ final class DomProcessor implements FragmentHost {
     }
   }
 
-  /// Query the stored document by CSS selector (for same-file CSS selector fragment targeting).
+  /// Query by CSS selector, innermost cross-file document first, then the page's unprocessed copy.
   @override
-  Element? querySelectorFromDoc(String selector) => (_document ??= _buildDocument?.call())?.querySelector(selector);
+  Element? querySelectorFromDoc(String selector) {
+    for (final scope in _fragmentRegistryStack.reversed) {
+      final found = scope.document?.querySelector(selector);
+      if (found != null) return found;
+    }
+    return (_document ??= _buildDocument?.call())?.querySelector(selector);
+  }
 
-  /// Look up a same-file fragment by name from the pre-collected registry.
+  /// Look up a fragment by name, innermost pushed registry first, then the page's own.
   @override
   (Element, List<String>)? lookupFragment(String name) {
-    for (final registry in _fragmentRegistryStack.reversed) {
-      final found = registry[name];
+    for (final scope in _fragmentRegistryStack.reversed) {
+      final found = scope.registry[name];
       if (found != null) return found;
     }
     return _fragmentRegistry[name];
   }
 
   @override
-  void pushFragmentRegistry(Map<String, (Element, List<String>)> registry) {
-    _fragmentRegistryStack.add(registry);
+  void pushFragmentRegistry(Map<String, (Element, List<String>)> registry, {Document? document}) {
+    _fragmentRegistryStack.add((registry: registry, document: document));
   }
 
   @override

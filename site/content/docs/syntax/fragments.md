@@ -58,7 +58,10 @@ Instead of a fragment name, target an element in another file by `#id` or
 
 In the same file, `tl:insert="#main-nav"` and a bare tag name (`tl:insert="footer"`,
 when no fragment has that name) work too. The target is copied as written in the
-template, not as rendered, and evaluated with the host's variables.
+template, not as rendered, and evaluated with the host's variables. Inside a
+fragment included from another file, such a target is looked up in that file
+first, then in the page, the same order as a fragment name. A bare tag name is
+tried only when no fragment of that name exists in either.
 
 Circular fragment inclusions are detected and reported with the full cycle path.
 

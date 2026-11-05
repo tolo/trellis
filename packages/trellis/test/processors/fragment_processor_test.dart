@@ -695,6 +695,90 @@ void main() {
       });
     });
 
+    group('selector targets inside a cross-file fragment resolve in its own file', () {
+      const comp =
+          r'<div tl:fragment="r"><div id="z"><b tl:text="${a}">own</b></div><p tl:insert="#z"></p>'
+          '<aside><i>own aside</i></aside><nav tl:insert="aside"></nav></div>';
+
+      test('an #id self-reference renders its own element, not the page element with the same id', () {
+        final engine = Trellis(loader: MapLoader({'comp': comp}), cache: false);
+        final result = engine.render(
+          '<html><body><div id="z"><em>PAGE</em></div><section tl:insert="~{comp :: r}"></section></body></html>',
+          {'a': 'A'},
+        );
+        expect(result, contains('<p><b>A</b></p>'));
+        expect(result, isNot(contains('<p><em>PAGE</em></p>')));
+      });
+
+      test('an #id self-reference resolves when the page has no such id', () {
+        final engine = Trellis(loader: MapLoader({'comp': comp}), cache: false);
+        final result = engine.render('<html><body><section tl:insert="~{comp :: r}"></section></body></html>', {
+          'a': 'A',
+        });
+        expect(result, contains('<p><b>A</b></p>'));
+      });
+
+      test('a tag-name self-reference renders its own element', () {
+        final engine = Trellis(loader: MapLoader({'comp': comp}), cache: false);
+        final result = engine.render(
+          '<html><body><aside><i>page aside</i></aside><section tl:insert="~{comp :: r}"></section></body></html>',
+          {'a': 'A'},
+        );
+        expect(result, contains('<nav><i>own aside</i></nav>'));
+      });
+
+      test('a nested cross-file fragment resolves in its own file, not its includer', () {
+        final engine = Trellis(
+          loader: MapLoader({
+            'outer': '<div tl:fragment="o"><b id="x">OUTER</b><div tl:insert="~{inner :: i}"></div></div>',
+            'inner': '<div tl:fragment="i"><b id="x">INNER</b><p tl:insert="#x"></p></div>',
+          }),
+          cache: false,
+        );
+        final result = engine.render('<html><body><div tl:insert="~{outer :: o}"></div></body></html>', {});
+        expect(result, contains('<p>INNER</p>'));
+      });
+
+      test('a target missing from the fragment file falls back to the page, as a by-name target does', () {
+        final engine = Trellis(
+          loader: MapLoader({'comp': '<div tl:fragment="r"><p tl:insert="#pg"></p></div>'}),
+          cache: false,
+        );
+        final result = engine.render(
+          '<html><body><template id="pg">PAGE</template><div tl:insert="~{comp :: r}"></div></body></html>',
+          {},
+        );
+        expect(result, contains('<p>PAGE</p>'));
+      });
+
+      test('caller slot content tries the fragment file first, as its by-name targets do', () {
+        final engine = Trellis(
+          loader: MapLoader({'comp': '<div tl:fragment="r"><b id="pg">COMP</b><div tl:slot></div></div>'}),
+          cache: false,
+        );
+        final result = engine.render(
+          '<html><body><b id="pg">PAGE</b><div tl:replace="~{comp :: r}"><p tl:insert="#pg"></p></div></body></html>',
+          {},
+        );
+        expect(result, contains('<p>COMP</p>'));
+      });
+
+      test('a cross-file target is copied unprocessed, so tl:utext output is never processed', () {
+        final engine = Trellis(
+          loader: MapLoader({
+            'comp': r'<div tl:fragment="r"><div id="z" tl:utext="${h}"></div><p tl:insert="#z"></p></div>',
+          }),
+        );
+        final ctx = {'h': r'<b tl:text="${secret}">x</b>', 'secret': 'LEAK'};
+        for (var i = 0; i < 2; i++) {
+          expect(
+            engine.render('<html><body><div tl:insert="~{comp :: r}"></div></body></html>', ctx),
+            isNot(contains('LEAK')),
+          );
+        }
+      });
+    });
+
     group('cycle detection', () {
       test('self-inclusion (A includes A) detected as cycle', () {
         final engine = Trellis(

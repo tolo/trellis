@@ -99,6 +99,9 @@ Map<String, dynamic> _bindArgs(
 final class _ResolvedFragment {
   final Element element;
   final Map<String, (Element, List<String>)>? registry;
+
+  /// The unprocessed file a cross-file fragment came from, pushed with [registry] for selector targets inside it.
+  final Document? document;
   final List<String> paramNames;
   final String fragmentId;
 
@@ -109,6 +112,7 @@ final class _ResolvedFragment {
   _ResolvedFragment(
     this.element, {
     this.registry,
+    this.document,
     this.paramNames = const [],
     required this.fragmentId,
     this.byName = false,
@@ -125,7 +129,7 @@ void _applyFragment(
   String? fragmentId,
 }) {
   clone.attributes.remove('${attrPrefix}fragment');
-  if (resolved.registry != null) domProcessor.pushFragmentRegistry(resolved.registry!);
+  if (resolved.registry != null) domProcessor.pushFragmentRegistry(resolved.registry!, document: resolved.document);
   try {
     processCallback(clone, context, fragmentId: fragmentId);
   } finally {
@@ -184,7 +188,12 @@ _ResolvedFragment _resolveCrossFile(
   if (_isCssSelector(fragName)) {
     final found = doc.querySelector(fragName);
     if (found == null) throw FragmentNotFoundException(fragName, templateName: templateName);
-    return _ResolvedFragment(found, registry: _collectFragmentRegistry(doc, attrPrefix), fragmentId: fragmentId);
+    return _ResolvedFragment(
+      found,
+      registry: _collectFragmentRegistry(doc, attrPrefix),
+      document: doc,
+      fragmentId: fragmentId,
+    );
   }
 
   // Named fragment — search by name prefix (handles both "name" and "name(params)")
@@ -194,6 +203,7 @@ _ResolvedFragment _resolveCrossFile(
     return _ResolvedFragment(
       regEntry.$1,
       registry: registry,
+      document: doc,
       paramNames: regEntry.$2,
       fragmentId: fragmentId,
       byName: true,
@@ -203,7 +213,7 @@ _ResolvedFragment _resolveCrossFile(
   // Tag name fallback
   if (_isTagName(fragName)) {
     final tagFound = doc.querySelector(fragName);
-    if (tagFound != null) return _ResolvedFragment(tagFound, registry: registry, fragmentId: fragmentId);
+    if (tagFound != null) return _ResolvedFragment(tagFound, registry: registry, document: doc, fragmentId: fragmentId);
   }
 
   throw FragmentNotFoundException(fragName, templateName: templateName);

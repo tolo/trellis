@@ -82,6 +82,41 @@ void main() {
         throwsA(isA<ExpressionException>()),
       );
     });
+
+    test('the strict error names the fragment and that the parameter is resolved from the render context', () {
+      const message =
+          'Fragment "toast": parameter "title" is resolved from the render context: '
+          'Undefined variable: "title"';
+      Matcher missingTitle() => throwsA(isA<ExpressionException>().having((e) => e.message, 'message', message));
+
+      expect(() => engine.renderFragment(_toast, fragment: 'toast', context: {'type': 'error'}), missingTitle());
+      expect(
+        () =>
+            engine.renderFragments('$_note$_toast', fragments: ['note', 'toast'], context: {'type': 'e', 'text': 't'}),
+        missingTitle(),
+      );
+    });
+
+    test('the annotated strict error keeps the evaluator stack trace', () {
+      Object? thrown;
+      StackTrace? trace;
+      try {
+        engine.renderFragment(_toast, fragment: 'toast', context: {'type': 'error'});
+      } on ExpressionException catch (e, st) {
+        thrown = e;
+        trace = st;
+      }
+      expect(thrown, isA<ExpressionException>());
+      expect(trace.toString(), contains('_evalVariable'));
+    });
+
+    test('an undefined variable that is not a declared parameter keeps the plain error', () {
+      const source = r'<p tl:fragment="note(text)" tl:text="${text} + ${other}">n</p>';
+      expect(
+        () => engine.renderFragment(source, fragment: 'note', context: {'text': 'hi'}),
+        throwsA(isA<ExpressionException>().having((e) => e.message, 'message', 'Undefined variable: "other"')),
+      );
+    });
   });
 
   test('the rendered fragment is fully processed', () {
@@ -273,6 +308,58 @@ void main() {
         engine.renderFragment(source, fragment: 'header', context: {}),
       );
       expect(engine.renderFragment(source, fragment: 'header()', context: {}), '<header><h1>H</h1></header>');
+    });
+  });
+
+  group('name edge forms, through renderFragment and renderFragments', () {
+    const ctx = {'type': 'error', 'title': 'Saved', 'text': 'hi'};
+
+    String one(String name) => engine.renderFragment('$_toast$_note', fragment: name, context: ctx);
+    String many(String name) => engine.renderFragments('$_toast$_note', fragments: [name], context: ctx);
+
+    for (final name in [' toast ', 'toast()', 'toast ( )', ' toast\t(\n) ']) {
+      test("'${name.replaceAll('\n', r'\n').replaceAll('\t', r'\t')}' reads as the bare name", () {
+        expect(one(name), _toastOut);
+        expect(many(name), _toastOut);
+      });
+    }
+
+    // An unbalanced `toast(` is read as arguments, not as a bare name with a stray paren.
+    for (final name in ['toast ( a )', 'toast(', 'toast ()x']) {
+      test("'$name' is rejected as arguments, naming the bare name, not as not-found", () {
+        for (final call in [() => one(name), () => many(name)]) {
+          expect(
+            call,
+            throwsA(
+              isA<TemplateException>()
+                  .having((e) => e, 'type', isNot(isA<FragmentNotFoundException>()))
+                  .having((e) => e.message, 'message', allOf(contains('"$name"'), contains('bare name "toast"'))),
+            ),
+          );
+        }
+      });
+    }
+
+    test('an unknown name is not found, with or without an empty ()', () {
+      for (final name in ['nope', ' nope ', 'nope()', 'nope ( )']) {
+        for (final call in [() => one(name), () => many(name)]) {
+          expect(
+            call,
+            throwsA(isA<FragmentNotFoundException>().having((e) => e.fragmentName, 'name', contains('nope'))),
+          );
+        }
+      }
+    });
+
+    test('arguments on an unknown name are rejected before lookup', () {
+      expect(
+        () => one('nope ( x )'),
+        throwsA(isA<TemplateException>().having((e) => e, 'type', isNot(isA<FragmentNotFoundException>()))),
+      );
+    });
+
+    test('a stray closing paren is part of the name, so it is not found', () {
+      expect(() => one('toast)'), throwsA(isA<FragmentNotFoundException>()));
     });
   });
 

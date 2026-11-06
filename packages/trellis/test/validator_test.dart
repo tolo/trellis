@@ -101,6 +101,16 @@ void main() {
       expect('<div tl:fragment="card(x, ...attrs)"></div>', isValidTemplate());
     });
 
+    test('reports a rest name repeating a positional parameter, and trims whitespace after ...', () {
+      final errors = TemplateValidator().validate('<div tl:fragment="card(attrs, ...attrs)"></div>');
+
+      expect(errors.where((error) => error.severity == ValidationSeverity.error).map((error) => error.message), [
+        'Fragment "card": rest parameter "...attrs" repeats the positional parameter "attrs"',
+      ]);
+      expect('<div tl:fragment="card(a, ... a)"></div>', isNot(isValidTemplate()));
+      expect('<div tl:fragment="card(x, ... attrs)"></div>', isValidTemplate());
+    });
+
     test('reports a trailing empty parameter once, not also as a misplaced rest parameter', () {
       final errors = TemplateValidator().validate('<div tl:fragment="card(...a,)"></div>');
 

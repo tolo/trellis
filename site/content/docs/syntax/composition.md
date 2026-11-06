@@ -92,6 +92,31 @@ Inside a fragment, any element may carry `tl:slot="name"`. Its children are the
 slot. Each slot name may be declared once per fragment, and the fragment's own
 root element cannot be a slot: declare the region on an inner element.
 
+A region may carry its own directives. When the caller fills the region, its
+`tl:text`, `tl:utext`, `tl:insert` and `tl:replace` are dropped so the caller's
+content shows. Unfilled, they render as the default, which suits a slot that
+falls back to a parameter. `tl:if`, `tl:each` and `tl:attr` apply either way.
+
+```html file=ui/popover.html
+<div tl:fragment="popover(label)" class="popover">
+  <button tl:slot="trigger" tl:text="${label}">Open</button>
+  <div class="popover-body" tl:slot>Details</div>
+</div>
+```
+
+```html render=slot-default-text
+<div tl:replace="~{ui/popover.html :: popover('Menu')}"></div>
+
+<div tl:replace="~{ui/popover.html :: popover('Menu')}">
+  <i tl:slot="trigger">Custom</i>
+</div>
+```
+
+```html output=slot-default-text
+<div class="popover"><button>Menu</button><div class="popover-body">Details</div></div>
+<div class="popover"><button>Custom</button><div class="popover-body">Details</div></div>
+```
+
 ### Filling slots
 
 The **direct children** of the element carrying `tl:insert` or `tl:replace`
@@ -213,6 +238,48 @@ else. This is an authoring rule, not a runtime check. To fill a `<select>` from 
 non-`select` host, mark an `<optgroup tl:slot>` holding real `<option>` elements.
 Definition-side regions can be `<tr>` or `<option>` freely, because they already
 sit in table or select context.
+
+The parser also wraps `<tr>` children of a `<table>` in an implicit `<tbody>`. A
+`<tr tl:slot>` written directly under a `<table>` host is therefore not a direct
+child, and its fill is lost. `<thead>`, `<tbody>`, `<tfoot>`, `<caption>` and
+`<colgroup>` markers need a `<table>` host: under a `<div>` host the parser drops
+them. So a table component that takes a header and rows in one call declares a
+region per section, and the caller marks whole sections:
+
+```html file=ui/data-table.html
+<table tl:fragment="data-table(rows)" class="data-table">
+  <thead tl:slot="head"><tr><th>Name</th></tr></thead>
+  <tbody tl:slot="body"><tr tl:each="row : ${rows}"><td tl:text="${row.name}">Name</td></tr></tbody>
+</table>
+```
+
+```html render=table-sections
+<table tl:replace="~{ui/data-table.html :: data-table(${people})}">
+  <thead tl:slot="head"><tr><th>Person</th></tr></thead>
+</table>
+
+<table tl:replace="~{ui/data-table.html :: data-table(${people})}">
+  <tbody tl:slot="body"><tr><td>Fixed</td></tr></tbody>
+</table>
+```
+
+```json context=table-sections
+{"people": [{"name": "Ada"}, {"name": "Grace"}]}
+```
+
+```html output=table-sections
+<table class="data-table">
+  <thead><tr><th>Person</th></tr></thead>
+  <tbody><tr><td>Ada</td></tr><tr><td>Grace</td></tr></tbody>
+</table>
+<table class="data-table">
+  <thead><tr><th>Name</th></tr></thead>
+  <tbody><tr><td>Fixed</td></tr></tbody>
+</table>
+```
+
+To repeat a caller row per item, as in the scoped-slot example above, make the
+host a `<tbody>` inside the page's own `<table>` and mark `<tr>` children.
 
 ### Nested regions
 
@@ -470,8 +537,9 @@ not visible under `tl:insert`. Spread on an inner element instead:
 
 ### Rules
 
-- A rest parameter that is repeated, not last or unnamed throws when the
-  fragment definition is collected.
+- A rest parameter that is repeated, not last, unnamed or named like a
+  positional parameter throws when the fragment definition is collected.
+  Whitespace after `...` is ignored, so `... attrs` declares `attrs`.
 - An invocation with more positional arguments than the declared non-rest
   parameters throws. Fragments without a rest parameter keep ignoring extras.
 - `renderFragment()` binds the rest parameter to an empty map, see
@@ -511,9 +579,11 @@ Undefined member: "type"
 | Slot content shadowing | A fragment parameter hides a same-named caller variable inside slot content | Name parameters distinctly, or pass the value as an argument |
 | Self-nesting | A component inside its own slot content trips the name-keyed fragment cycle error | Restructure, or invoke a differently named fragment |
 | `<tl:block tl:slot>` in a table | The HTML5 parser foster-parents `<tl:block>` out of `<table>`, detaching its `tl:*` attributes | Mark a real element: `<tr>` or `<td>` |
+| Directive on a filled region | A region's own `tl:text`, `tl:utext`, `tl:insert` and `tl:replace` are dropped when the caller fills it | Expect the caller's content to win; put a default there only to show when unfilled |
+| `<tr tl:slot>` under a `<table>` host | The parser wraps the rows in an implicit `<tbody>`, so they are not direct children and the fill is lost | Mark `<tbody tl:slot>`, or host on a `<tbody>` |
 | Marker timing | `tl:if` on a marker runs before the fragment's `tl:each` | Gate on caller data |
 | Dynamic attribute names | `tl:attrs` is the first place a name, not only a value, is decided at runtime | Names are validated and `tl:`-prefixed keys throw, but never build the map from untrusted keys |
-| Mixed-case keys | `Class` or `ID` passes name validation and writes a second attribute instead of appending | Spread keys are case-sensitive: write them lowercase |
+| Mixed-case keys | `Class` or `ID` replaces the existing `class` or `id` instead of appending | Write spread keys lowercase; only the exact keys `class` and `style` append |
 | `data-*` camel case | HTML parsers lowercase attribute names, so `data-myFoo` never reaches `dataset.myFoo` | Use lowercase names |
 | Custom dialects | `slot` and `attrs` are now built-in `tl:*` names; a dialect processor registered under either name runs alongside the built-in slot or spread handling, silently | Rename the custom attribute |
 

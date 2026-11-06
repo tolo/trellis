@@ -23,6 +23,14 @@ const _pageTemplate = '''
 </html>
 ''';
 
+/// An argument rejection, which must not be mistaken for the not-found path (`FragmentNotFoundException` is a
+/// `TemplateException` too).
+Matcher rejectsArguments() => throwsA(
+  isA<TemplateException>()
+      .having((e) => e, 'type', isNot(isA<FragmentNotFoundException>()))
+      .having((e) => e.message, 'message', contains('bare name "toast"')),
+);
+
 void main() {
   late Trellis engine;
 
@@ -188,10 +196,7 @@ void main() {
     });
 
     test('a name with arguments throws TemplateException', () {
-      expect(
-        () => renderFragment(makeRequest(), engine, 'ui', 'toast(type, title)', ctx),
-        throwsA(isA<TemplateException>()),
-      );
+      expect(() => renderFragment(makeRequest(), engine, 'ui', 'toast(type, title)', ctx), rejectsArguments());
     });
   });
 }

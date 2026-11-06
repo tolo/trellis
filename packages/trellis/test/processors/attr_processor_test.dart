@@ -1,5 +1,6 @@
 import 'package:html/parser.dart' as html;
 import 'package:test/test.dart';
+import 'package:trellis/src/processors/attr_processor.dart' show captureHostAttributes;
 import 'package:trellis/testing.dart';
 import 'package:trellis/trellis.dart';
 
@@ -427,17 +428,61 @@ void main() {
       });
 
       test('every illegal name shape throws, even when a valid key precedes it', () {
-        // Rendering throws, so partial mutation is observable only through a shared DOM; the guard is that the
-        // exception is raised for a later bad key although earlier keys were valid.
-        for (final bad in ['1abc', '', 'a b', 'x=y', 'a>b', '-x']) {
+        const bad = [
+          '',
+          'a b',
+          'a\tb',
+          'a\nb',
+          'a\u0000b',
+          'a\u007Fb',
+          'a\u0085b',
+          'x=y',
+          'a>b',
+          'a/b',
+          'a"b',
+          "a'b",
+          'a\uFDD0b',
+          'a\u{1FFFF}b',
+        ];
+        for (final key in bad) {
           expect(
             () => render(spreadInput, {
-              'attrs': {'data-ok': '1', bad: 'x'},
+              'attrs': {'data-ok': '1', key: 'x'},
             }),
             throwsA(isA<TemplateException>()),
-            reason: 'key "$bad"',
+            reason: 'key ${key.codeUnits}',
           );
         }
+      });
+
+      test('names the HTML attribute-name grammar allows are accepted', () {
+        final result = render(spreadInput, {
+          'attrs': {'@click': 'x', ':class': 'y', '_': 'z', '1abc': '1', '-x': '2', 'x-on:click': '3', 'data-é': '4'},
+        });
+        for (final entry in [
+          '@click="x"',
+          ':class="y"',
+          '_="z"',
+          '1abc="1"',
+          '-x="2"',
+          'x-on:click="3"',
+          'data-é="4"',
+        ]) {
+          expect(result, contains(entry));
+        }
+      });
+
+      test('a rejected map leaves the element untouched', () {
+        // Falsifiable atomicity: a write-as-you-go implementation sets data-ok and class before reaching the bad key.
+        final host = html.parseFragment(r'<div class="card" tl:attrs="${attrs}">x</div>').children.single;
+        final before = Map<Object, String>.of(host.attributes);
+        expect(
+          () => captureHostAttributes(host, 'tl:', ExpressionEvaluator(), {
+            'attrs': {'data-ok': '1', 'class': 'extra', 'bad name': 'x'},
+          }),
+          throwsA(isA<TemplateException>()),
+        );
+        expect(host.attributes, before);
       });
 
       test('non-String key throws TemplateException', () {
@@ -482,6 +527,130 @@ void main() {
         });
         expect(result, contains('tl:remove="all"'));
         expect(result, contains('>x</div>'));
+      });
+
+      test('...rest forwards Alpine and hyperscript host attributes through tl:attrs', () {
+        final result = render(
+          r'<i tl:fragment="btn(...attrs)" tl:attrs="${attrs}">x</i>'
+          r'<b tl:replace="btn" @click="x" :class="y" _="z"></b>',
+          {},
+        );
+        expect(result, contains('<i @click="x" :class="y" _="z">x</i>'));
+      });
+
+      test('a captured host attribute name that is not a legal key still throws', () {
+        const callee = r'<i tl:fragment="btn(...attrs)" tl:attrs="${attrs}">x</i>';
+        for (final host in ['<b tl:replace="btn" a"b="1"></b>']) {
+          expect(() => render('$callee$host', {}), throwsA(isA<TemplateException>()), reason: host);
+        }
+      });
+
+      test('blank literal class and style are treated as absent', () {
+        final result = render(r'<div class="" style=" " tl:attrs="${attrs}">x</div>', {
+          'attrs': {'class': 'a', 'style': 'margin:0'},
+        });
+        expect(result, contains('class="a"'));
+        expect(result, contains('style="margin:0"'));
+      });
+
+      test('tl:classappend and tl:styleappend treat blank literals as absent', () {
+        final result = render(r'<div class=" " style="" tl:classappend="${c}" tl:styleappend="${s}">x</div>', {
+          'c': 'a',
+          's': 'margin:0',
+        });
+        expect(result, contains('class="a"'));
+        expect(result, contains('style="margin:0"'));
+      });
+
+      test('an explicit directive overrides a case-variant spread key', () {
+        final result = render(r'<a tl:href="${safe}" tl:attrs="${m}" tl:attr="onclick=${h}">x</a>', {
+          'safe': '/ok',
+          'h': 'ok()',
+          'm': {'HREF': 'javascript:alert(1)', 'ONCLICK': 'evil()'},
+        });
+        expect(result, contains('<a href="/ok" onclick="ok()">x</a>'));
+        expect(result.toLowerCase(), isNot(contains('javascript')));
+      });
+
+      test('a case-variant key replaces the literal it names', () {
+        final result = render(r'<a href="/old" tl:attrs="${m}">x</a>', {
+          'm': {'HREF': '/new'},
+        });
+        expect(result, contains('<a HREF="/new">x</a>'));
+      });
+
+      test('null removes a case variant written earlier in the same pass', () {
+        final result = render(r'<a tl:attrs="${m}" tl:attr="id=${null}">x</a>', {
+          'm': {'ID': 'x'},
+        });
+        expect(result, contains('<a>x</a>'));
+      });
+
+      test('a namespaced foreign attribute is replaced by the same qualified name, ignoring case', () {
+        final result = render(
+          r'<svg><use xlink:href="#a" tl:attr="xlink:href=${u}"></use>'
+          r'<use xlink:href="#a" tl:attrs="${m}"></use></svg>',
+          {
+            'u': '#b',
+            'm': {'XLINK:HREF': '#c'},
+          },
+        );
+        expect(result, contains('<use xlink:href="#b"></use>'));
+        expect(result, contains('<use XLINK:HREF="#c"></use>'));
+        expect(RegExp('xlink:href', caseSensitive: false).allMatches(result), hasLength(2));
+      });
+
+      test('null removes a namespaced foreign attribute', () {
+        final result = render(r'<svg><use xlink:href="#a" tl:attr="xlink:href=${null}"></use></svg>', {});
+        expect(result, contains('<use></use>'));
+      });
+
+      test('boolean attributes are classified ignoring ASCII case', () {
+        final result = render(
+          r'<button disabled tl:attrs="${m}">x</button><button disabled tl:attr="DISABLED=${false}">y</button>'
+          r'<button tl:attrs="${on}">z</button>',
+          {
+            'm': {'DISABLED': false},
+            'on': {'Disabled': true},
+          },
+        );
+        expect(result, contains('<button>x</button>'));
+        expect(result, contains('<button>y</button>'));
+        expect(result, contains('<button Disabled="">z</button>'));
+      });
+
+      test('class append finds a case-variant class written earlier in the same pass', () {
+        final result = render(
+          r'''<div tl:attrs="${m}" tl:classappend="'b'">x</div>''',
+          {
+            'm': {'CLASS': 'a'},
+          },
+        );
+        expect(result, contains('class="a b"'));
+        expect(result, isNot(contains('CLASS')));
+      });
+
+      test('camelCase SVG attribute names survive', () {
+        final result = render(r'<svg tl:attrs="${m}"></svg>', {
+          'm': {'viewBox': '0 0 1 1'},
+        });
+        expect(result, contains('viewBox="0 0 1 1"'));
+      });
+
+      test('...rest capture drops a tl:* name written by tl:attr, matching a non-rest callee', () {
+        const host = '<b tl:insert="link" tl:attr="tl:text=\'x\'">h</b>';
+        final rest = render('<i tl:fragment="link(...a)">l</i>$host', {});
+        final plain = render('<i tl:fragment="link()">l</i>$host', {});
+        expect(rest, contains('<b>l</b>'));
+        expect(plain, contains('<b>l</b>'));
+      });
+
+      test('...rest capture keeps the host\'s own tl:* attributes', () {
+        final result = render(
+          r'''<i tl:fragment="link(...a)">l</i><b tl:insert="link" tl:attr="tl:text='x'" tl:class="${c}">h</b>''',
+          {'c': 'k'},
+        );
+        expect(result, contains('<b class="k">l</b>'));
       });
 
       test('browser prototype keeps literal attributes and renders the same with an empty map', () {

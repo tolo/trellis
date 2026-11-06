@@ -70,6 +70,10 @@ regions are collected without recursing into a matched region (the `tl:define`
 collection rule), so a `tl:slot` inside another region's fallback content is part of
 that fallback, not a second declaration. The fallback is still scanned for the
 wrapped-marker error below.
+A filled region's own content directives (`tl:text`, `tl:utext`, `tl:insert`,
+`tl:replace`) are removed with the fill, so the caller's content shows (a region such as
+`<button tl:slot="trigger" tl:text="${label}">` renders the label only when unfilled);
+decided for 0.13 over throwing or warning.
 
 **Caller side**: direct children of the element carrying `tl:insert`/`tl:replace`
 provide slot content. A direct child with `tl:slot="name"` fills the named slot; its
@@ -148,7 +152,11 @@ evaluating to a `Map`; `null` is a no-op, and any other non-`Map` value throws
   capability: everywhere else in the engine, including `tl:attr`, the attribute
   name is literal in the template source and only the value is dynamic; `tl:attrs`
   is the first mechanism where the name itself is runtime-determined. Names must
-  match `^[A-Za-z][A-Za-z0-9_:.-]*$`, anything else throws `TemplateException`.
+  be valid HTML attribute names (no whitespace, control characters, `"`, `'`,
+  `>`, `/`, `=` or noncharacters, decided for 0.13 so `...rest` can forward Alpine
+  and hyperscript names), anything else throws `TemplateException`. A write
+  replaces any attribute whose name differs only in ASCII case, so a `HREF` key
+  cannot shadow an explicit `tl:href`.
   Keys beginning with the engine's configured attribute prefix (`tl:` by default,
   compared case-insensitively) also throw. The engine re-reads an element's
   attributes on every processor pass, so a spread key such as `tl:attr` or
@@ -169,8 +177,10 @@ evaluating to a `Map`; `null` is a no-op, and any other non-`Map` value throws
 ### 3. Attribute pass-through – `...rest` fragment parameter
 
 A fragment opts in by declaring a rest parameter – at most one, and it must be
-last; a duplicate or non-final rest parameter throws `TemplateException` when the
-fragment definition is collected:
+last; whitespace after `...` is trimmed, so `... attrs` names `attrs`. A duplicate,
+non-final or unnamed rest parameter, or one named like a positional parameter
+(`f(a, ...a)`), throws `TemplateException` when the fragment definition is
+collected:
 
 ```html
 <label tl:fragment="field(label, name, ...attrs)">

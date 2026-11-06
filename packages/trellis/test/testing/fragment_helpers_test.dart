@@ -2,6 +2,14 @@ import 'package:test/test.dart';
 import 'package:trellis/trellis.dart';
 import 'package:trellis/testing.dart';
 
+/// An argument rejection, which must not be mistaken for the not-found path (`FragmentNotFoundException` is a
+/// `TemplateException` too).
+Matcher rejectsArguments() => throwsA(
+  isA<TemplateException>()
+      .having((e) => e, 'type', isNot(isA<FragmentNotFoundException>()))
+      .having((e) => e.message, 'message', contains('bare name "toast"')),
+);
+
 void main() {
   group('testFragment', () {
     late Trellis engine;
@@ -11,7 +19,8 @@ void main() {
         templates: {
           'nav':
               '<nav>'
-              '<a tl:fragment="mainNav" tl:each="item : \${items}" tl:href="@{\${item.url}}" tl:text="\${item.label}">link</a>'
+              '<a tl:fragment="mainNav" tl:each="item : \${items}" tl:href="@{\${item.url}}" '
+              'tl:text="\${item.label}">link</a>'
               '</nav>',
           'simple': '<div tl:fragment="greeting"><p tl:text="\${msg}">x</p></div>',
         },
@@ -79,8 +88,8 @@ void main() {
     });
 
     test('a name with arguments throws TemplateException', () async {
-      expect(() => testFragment(engine, 'ui', 'toast(type, title)', ctx), throwsA(isA<TemplateException>()));
-      await expectLater(testFragmentFile(engine, 'ui', 'toast(type, title)', ctx), throwsA(isA<TemplateException>()));
+      expect(() => testFragment(engine, 'ui', 'toast(type, title)', ctx), rejectsArguments());
+      await expectLater(testFragmentFile(engine, 'ui', 'toast(type, title)', ctx), rejectsArguments());
     });
   });
 }

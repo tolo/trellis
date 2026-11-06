@@ -22,6 +22,7 @@ A natural HTML template engine for Dart — templates are valid HTML that browse
 - **Filter arguments** -- `| filterName:arg1:arg2` parameterized filter syntax
 - **Switch/case, block, remove, inline** -- multi-branch conditionals, virtual elements, output control, inline JS/CSS processing
 - **Parameterized fragments** -- `tl:fragment="card(title, body)"` with argument passing at inclusion
+- **Components** -- `tl:slot` content slots, `tl:attrs` attribute spreading and a `...rest` fragment parameter build reusable components from plain fragments; `renderFragment()` renders a parameterised fragment by bare name
 - **CSS selector targeting** -- `tl:insert="~{file :: #id}"` and `tl:insert="~{file :: .class}"`
 - **Custom processors & dialects** -- register `Processor` implementations; compose feature sets with `Dialect`
 - **Template validation** -- `TemplateValidator`, `isValidTemplate()`, and `dart run trellis:validate` for test/CI checks
@@ -128,6 +129,43 @@ Status variables are available as `${itemStat}` (or custom name via `item, stat 
 ```
 
 Circular fragment inclusions are detected and reported with the full cycle path.
+
+### Components
+
+A fragment becomes a component with three additions, none of which needs new syntax:
+
+```html
+<!-- ui/field.html -->
+<label tl:fragment="field(label, name, ...attrs)" class="field">
+  <span tl:text="${label}">Label</span>
+  <input type="text" tl:attr="name=${name}" tl:attrs="${attrs}">
+  <small tl:slot="hint"></small>
+</label>
+
+<!-- caller: attributes on the host land on the <input>, the child fills the hint -->
+<div tl:replace="~{ui/field.html :: field('Email', 'email')}"
+     type="email" required hx-post="/validate">
+  <span tl:slot="hint">We never share your email.</span>
+</div>
+<!-- renders:
+<label class="field">
+  <span>Email</span>
+  <input type="email" required="" hx-post="/validate" name="email">
+  <small>We never share your email.</small>
+</label> -->
+```
+
+- **`tl:slot="name"`** marks a region in the fragment; its children are the fallback. The caller fills it with a direct child carrying the same `tl:slot`, and a bare `tl:slot` is the default slot for unmarked children.
+- **`tl:attrs="${map}"`** writes a map as attributes (`null` removes one; `class` and `style` append). Keys are validated, but values are not: never build the map from untrusted data.
+- **`...rest`** is a trailing fragment parameter bound to the invoking element's attributes. Prefer `tl:replace` when invoking a component.
+- **Bare name:** `renderFragment()` renders a parameterised fragment by its bare name, with its parameters read from the same-named context keys:
+
+```dart
+engine.renderFragment(source, fragment: 'toast', context: {'type': 'error', 'title': 'Saved'});
+// for tl:fragment="toast(type, title)"
+```
+
+Slot rules, composing slotted components, table components and the traps: [Composition guide](https://tolo.github.io/trellis/docs/syntax/composition/).
 
 ### Local Variables
 

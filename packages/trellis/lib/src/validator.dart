@@ -433,6 +433,7 @@ final class TemplateValidator {
         );
       }
       for (final child in element.children) {
+        // Stops at every nested fragment: a nested parameterless one is usually an htmx swap target rendered once.
         if (!_hasDirective(child, 'fragment')) {
           scan(child);
         }

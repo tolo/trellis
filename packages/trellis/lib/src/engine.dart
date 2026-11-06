@@ -162,9 +162,10 @@ final class Trellis {
   ///
   /// [fragment] is the fragment's bare name (`toast`, not `toast(type, title)`); the first definition in document
   /// order wins. A parameterised fragment renders fully processed: its declared parameters resolve from the
-  /// same-named [context] keys (absent: `null`, or an error in strict mode) and a `...rest` parameter is an empty
-  /// map. This differs from in-template `tl:replace="toast"`, which binds unpassed parameters to `null` and never
-  /// reads the context.
+  /// same-named [context] keys (absent: `null`; in strict mode, a parameter the fragment reads but the context lacks
+  /// throws an [ExpressionException] naming the fragment and parameter) and a `...rest` parameter is an empty map.
+  /// This differs from in-template `tl:replace="toast"`, which binds unpassed parameters to `null` and never reads the
+  /// context.
   ///
   /// Throws [FragmentNotFoundException] for an unknown name, and [TemplateException] when [fragment] carries
   /// arguments in parentheses (an empty `()` is read as the bare name).
@@ -258,9 +259,23 @@ final class Trellis {
   /// parameter is an empty map, since no invoking host exists.
   String _renderFragmentRoot(DomProcessor processor, Element root, Map<String, dynamic> context, String attrPrefix) {
     final fragAttr = '${attrPrefix}fragment';
-    final restName = restParameterName(parseFragmentDef(root.attributes[fragAttr]!).$2);
+    final (name, paramNames) = parseFragmentDef(root.attributes[fragAttr]!);
+    final restName = restParameterName(paramNames);
     final holder = Element.tag('div')..append(root);
-    processor.processRenderRoot(root, restName == null ? context : {...context, restName: <String, dynamic>{}});
+    try {
+      processor.processRenderRoot(root, restName == null ? context : {...context, restName: <String, dynamic>{}});
+    } on UndefinedVariableException catch (e, st) {
+      if (!paramNames.contains(e.name)) rethrow;
+      // A bare `Undefined variable: "title"` names neither the fragment nor why `title` is looked up in the context.
+      Error.throwWithStackTrace(
+        ExpressionException(
+          'Fragment "$name": parameter "${e.name}" is resolved from the render context: ${e.message}',
+          expression: e.expression,
+          position: e.position,
+        ),
+        st,
+      );
+    }
     return holder.innerHtml;
   }
 

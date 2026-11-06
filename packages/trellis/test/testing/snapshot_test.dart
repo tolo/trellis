@@ -2,7 +2,15 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 import 'package:trellis/testing.dart';
-import 'package:trellis/trellis.dart' show TemplateException;
+import 'package:trellis/trellis.dart' show FragmentNotFoundException, TemplateException;
+
+/// An argument rejection, which must not be mistaken for the not-found path (`FragmentNotFoundException` is a
+/// `TemplateException` too).
+Matcher rejectsArguments() => throwsA(
+  isA<TemplateException>()
+      .having((e) => e, 'type', isNot(isA<FragmentNotFoundException>()))
+      .having((e) => e.message, 'message', contains('bare name "toast"')),
+);
 
 void main() {
   late Directory tempDir;
@@ -214,11 +222,11 @@ void main() {
       final path = goldenPath('param_args.html');
       await expectLater(
         expectSnapshot(engine, 'ui', ctx, goldenFile: path, fragment: 'toast(type, title)'),
-        throwsA(isA<TemplateException>()),
+        rejectsArguments(),
       );
       expect(
         () => expectSnapshotFromSource(engine, toast, ctx, goldenFile: path, fragment: 'toast(type, title)'),
-        throwsA(isA<TemplateException>()),
+        rejectsArguments(),
       );
     });
   });

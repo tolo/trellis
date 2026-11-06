@@ -39,8 +39,57 @@ const _groupDirectives = {'attrs', 'attr', 'classappend', 'styleappend', ..._sho
 // ignore: unused_element
 const _urlAttributes = {'href', 'src', 'action', 'formaction', 'poster', 'data'};
 
-/// Shape of a runtime attribute name accepted from a `tl:attrs` map.
-final _spreadNamePattern = RegExp(r'^[A-Za-z][A-Za-z0-9_:.-]*$');
+/// Whether [name] is an HTML attribute name (WHATWG "attribute name" state): non-empty, and no ASCII whitespace,
+/// control character, `"`, `'`, `>`, `/`, `=` or noncharacter. Shorthands such as `@click`, `:class` and `_` qualify,
+/// which is why the Alpine/hyperscript names a parser produces pass when a `...rest` map is forwarded through
+/// `tl:attrs`. A name the parser accepts but this rule does not (`x"y`) still throws.
+bool _isAttributeName(String name) {
+  if (name.isEmpty) return false;
+  for (final c in name.runes) {
+    final illegal =
+        c <= 0x20 ||
+        (c >= 0x7F && c <= 0x9F) ||
+        c == 0x22 || // "
+        c == 0x27 || // '
+        c == 0x3E || // >
+        c == 0x2F || // /
+        c == 0x3D || // =
+        (c >= 0xFDD0 && c <= 0xFDEF) ||
+        (c & 0xFFFE) == 0xFFFE;
+    if (illegal) return false;
+  }
+  return true;
+}
+
+int _foldAscii(int c) => c >= 0x41 && c <= 0x5A ? c + 0x20 : c;
+
+bool _sameNameIgnoringAsciiCase(String a, String b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (_foldAscii(a.codeUnitAt(i)) != _foldAscii(b.codeUnitAt(i))) return false;
+  }
+  return true;
+}
+
+/// Removes every attribute whose name equals [name] ignoring ASCII case but is not [name] itself, and returns the first
+/// removed value. HTML attribute names are case-insensitive and the tokenizer keeps the first of two duplicates, so a
+/// stale `HREF` written earlier would otherwise shadow the `href` written later; the later write must win. A foreign
+/// attribute (an `AttributeName` key such as `xlink:href` on SVG) matches by its qualified `prefix:local` name.
+String? _dropCaseVariants(Element element, String name) {
+  String? dropped;
+  for (final key in element.attributes.keys.toList()) {
+    final qualified = switch (key) {
+      String() => key,
+      AttributeName(:final prefix, :final name) => prefix == null ? name : '$prefix:$name',
+      _ => null,
+    };
+    if (qualified != null && key != name && _sameNameIgnoringAsciiCase(qualified, name)) {
+      final value = element.attributes.remove(key);
+      dropped ??= value;
+    }
+  }
+  return dropped;
+}
 
 /// Applies a `tl:attrs` map to [element]. Runs before every other directive in the group, so explicit directives
 /// override spread entries. Keys are validated up front so a rejected map leaves the element untouched.
@@ -51,7 +100,7 @@ void _spreadAttributes(Element element, Object? map, String attrPrefix) {
   }
   final lowerPrefix = attrPrefix.toLowerCase();
   for (final key in map.keys) {
-    if (key is! String || !_spreadNamePattern.hasMatch(key)) {
+    if (key is! String || !_isAttributeName(key)) {
       throw TemplateException('${attrPrefix}attrs: illegal attribute name "$key"');
     }
     // A prefixed key would be re-read as a directive by later processor passes (ADR-014 §2).
@@ -73,12 +122,20 @@ void _spreadAttributes(Element element, Object? map, String attrPrefix) {
   }
 }
 
+/// Current value of [name], or `null` when absent or blank (a blank literal behaves like an absent one). A case-variant
+/// spelling written earlier in the pass counts as the same attribute.
+String? _nonBlankValue(Element element, String name) {
+  final variant = _dropCaseVariants(element, name);
+  final value = element.attributes[name] ?? variant;
+  return value == null || value.trim().isEmpty ? null : value;
+}
+
 /// Appends to the class attribute; `null` or blank is a no-op (never a removal).
 void _appendClass(Element element, Object? value) {
   if (value == null) return;
   final toAppend = value.toString().trim();
   if (toAppend.isEmpty) return;
-  final existing = element.attributes['class'];
+  final existing = _nonBlankValue(element, 'class');
   element.attributes['class'] = existing != null ? '$existing $toAppend' : toAppend;
 }
 
@@ -87,7 +144,7 @@ void _appendStyle(Element element, Object? value) {
   if (value == null) return;
   final toAppend = value.toString().trim();
   if (toAppend.isEmpty) return;
-  final existing = element.attributes['style'];
+  final existing = _nonBlankValue(element, 'style');
   if (existing != null) {
     final base = existing.trimRight().endsWith(';') ? existing.trimRight() : '${existing.trimRight()};';
     element.attributes['style'] = '$base $toAppend';
@@ -142,9 +199,10 @@ void _processAttributesImpl(
 }
 
 void _setAttribute(Element element, String attrName, dynamic value) {
+  _dropCaseVariants(element, attrName);
   if (value == null) {
     element.attributes.remove(attrName);
-  } else if (_booleanHtmlAttrs.contains(attrName)) {
+  } else if (_booleanHtmlAttrs.contains(attrName.toLowerCase())) {
     if (value == true) {
       element.attributes[attrName] = '';
     } else if (value == false) {
@@ -162,28 +220,43 @@ bool hasAttrAttributes(Element element, String attrPrefix) {
   return _groupDirectives.any((name) => element.attributes.containsKey('$attrPrefix$name'));
 }
 
+bool _hasPrefix(Object key, String lowerPrefix) => key is String && key.toLowerCase().startsWith(lowerPrefix);
+
 /// Runs the attribute group once on the invoking [host] and returns its resulting non-directive attributes, for a
 /// fragment's `...rest` parameter.
 ///
 /// Reuses [_processAttributesImpl] so the merge order has one implementation (including `tl:attrs` as step 0).
 /// The consumed group directives are stripped from [host] afterwards so the host's own `AttrProcessor` pass cannot
 /// evaluate them a second time; a surviving `tl:insert` host keeps their results. Every `tl:*` control attribute
-/// (`tl:if`, `tl:replace`, ...) is left on the host and excluded from the map.
+/// (`tl:if`, `tl:replace`, ...) is left on the host and excluded from the map. A `tl:*` name that `tl:attr` wrote
+/// during the run is undone, because it would otherwise execute later on a surviving host, which a non-rest callee's
+/// host never does (the attribute group runs after every directive it could name).
 Map<String, dynamic> captureHostAttributes(
   Element host,
   String attrPrefix,
   ExpressionEvaluator evaluator,
   Map<String, dynamic> context,
 ) {
+  final lowerPrefix = attrPrefix.toLowerCase();
   if (hasAttrAttributes(host, attrPrefix)) {
+    final directives = {
+      for (final MapEntry(:key, :value) in host.attributes.entries)
+        if (_hasPrefix(key, lowerPrefix)) key: value,
+    };
     _processAttributesImpl(host, attrPrefix, evaluator, context);
+    for (final key in host.attributes.keys.toList()) {
+      if (_hasPrefix(key, lowerPrefix) && !directives.containsKey(key)) host.attributes.remove(key);
+    }
+    for (final MapEntry(:key, :value) in directives.entries) {
+      host.attributes[key] = value;
+    }
     for (final name in _groupDirectives) {
       host.attributes.remove('$attrPrefix$name');
     }
   }
   return {
     for (final MapEntry(:key, :value) in host.attributes.entries)
-      if (key is String && !key.startsWith(attrPrefix)) key: value,
+      if (key is String && !_hasPrefix(key, lowerPrefix)) key: value,
   };
 }
 

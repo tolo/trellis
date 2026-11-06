@@ -109,7 +109,7 @@ class ExpressionEvaluator {
 
   dynamic _evalVariable(String name, String expr, Map<String, dynamic> context) {
     if (_strict && !context.containsKey(name)) {
-      throw ExpressionException('Undefined variable: "$name"', expression: expr);
+      throw UndefinedVariableException(name, expression: expr);
     }
     return context[name];
   }

@@ -5,6 +5,14 @@ import 'package:trellis_dart_frog/trellis_dart_frog.dart';
 
 import 'test_utils.dart';
 
+/// An argument rejection, which must not be mistaken for the not-found path (`FragmentNotFoundException` is a
+/// `TemplateException` too).
+Matcher rejectsArguments() => throwsA(
+  isA<TemplateException>()
+      .having((e) => e, 'type', isNot(isA<FragmentNotFoundException>()))
+      .having((e) => e.message, 'message', contains('bare name "toast"')),
+);
+
 void main() {
   late Trellis engine;
 
@@ -150,9 +158,21 @@ void main() {
       expect(response.body, toast);
     });
 
-    test('a name with arguments is rejected (500, TemplateException)', () async {
-      final response = await testGet(handlerFor((context) => renderFragment(context, 'ui', 'toast(type, title)', ctx)));
+    test('a name with arguments is rejected (500, TemplateException, not not-found)', () async {
+      // The server turns any throw into a bare 500, so the handler records what the helper threw.
+      Object? thrown;
+      final response = await testGet(
+        handlerFor((context) async {
+          try {
+            return await renderFragment(context, 'ui', 'toast(type, title)', ctx);
+          } on Object catch (e) {
+            thrown = e;
+            rethrow;
+          }
+        }),
+      );
       expect(response.statusCode, 500);
+      expect(() => throw thrown!, rejectsArguments());
     });
   });
 }

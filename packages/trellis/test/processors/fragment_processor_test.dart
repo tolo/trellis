@@ -3,7 +3,7 @@ import 'package:test/test.dart';
 import 'package:trellis/testing.dart';
 import 'package:trellis/trellis.dart';
 import 'package:trellis/src/processor.dart';
-import 'package:trellis/src/processors/fragment_processor.dart' show parseFragmentDef;
+import 'package:trellis/src/processors/fragment_processor.dart' show parseFragmentDef, restParameterName;
 
 void main() {
   group('Fragment processor', () {
@@ -973,6 +973,74 @@ void main() {
       });
     });
 
+    group('a region\'s own content directive', () {
+      const trigger = r'<div tl:fragment="menu(label)"><button tl:slot="trigger" tl:text="${label}">L</button></div>';
+
+      test('the fill wins over tl:text; unfilled, the directive renders the default', () {
+        expect(
+          render('$trigger<div tl:replace="menu(\'Open\')"><i tl:slot="trigger">Custom</i></div>'),
+          endsWith('<div><button>Custom</button></div>'),
+        );
+        expect(render('$trigger<div tl:replace="menu(\'Open\')"></div>'), endsWith('<div><button>Open</button></div>'));
+      });
+
+      for (final directive in ['tl:text', 'tl:utext']) {
+        test('the fill wins over $directive', () {
+          final out = render(
+            '<div tl:fragment="f(v)"><p tl:slot="s" $directive="\${v}">d</p></div>'
+            '<div tl:replace="f(\'<b>x</b>\')"><i tl:slot="s">Mine</i></div>',
+          );
+          expect(out, endsWith('<div><p>Mine</p></div>'));
+        });
+      }
+
+      test('the fill wins over tl:insert and tl:replace on the region, which are removed with the fill', () {
+        const parts = '<u tl:fragment="part">P</u>';
+        expect(
+          render(
+            '$parts<div tl:fragment="f"><p tl:slot="s" tl:insert="part">d</p></div>'
+            '<div tl:replace="f"><i tl:slot="s">Mine</i></div>',
+          ),
+          endsWith('<div><p>Mine</p></div>'),
+        );
+        expect(
+          render(
+            '$parts<div tl:fragment="f"><p tl:slot="s" tl:replace="part">d</p></div>'
+            '<div tl:replace="f"><i tl:slot="s">Mine</i></div>',
+          ),
+          endsWith('<div><p>Mine</p></div>'),
+        );
+        expect(
+          render('$parts<div tl:fragment="f"><p tl:slot="s" tl:replace="part">d</p></div><div tl:replace="f"></div>'),
+          endsWith('<div><u>P</u></div>'),
+        );
+      });
+
+      test('an anonymous region filled by unmarked children also drops its directive', () {
+        final out = render(
+          r'<div tl:fragment="f(v)"><main tl:slot tl:text="${v}">d</main></div><div tl:replace="f(1)"><em>x</em></div>',
+        );
+        expect(out, endsWith('<div><main><em>x</em></main></div>'));
+      });
+
+      test('a gated-out marker leaves the region unfilled, so its directive still renders', () {
+        final out = render(
+          r'<div tl:fragment="f(v)"><main tl:slot="s" tl:text="${v}">d</main></div>'
+          r'<div tl:replace="f(1)"><i tl:slot="s" tl:if="${false}">Mine</i></div>',
+        );
+        expect(out, endsWith('<div><main>1</main></div>'));
+      });
+
+      test('other region directives are untouched by a fill', () {
+        final out = render(
+          '<div tl:fragment="f"><p tl:slot="s" tl:if="\${show}" class="c">d</p></div>'
+          '<div tl:replace="f"><i tl:slot="s">Mine</i></div>',
+          context: {'show': false},
+        );
+        expect(out, endsWith('<div></div>'));
+      });
+    });
+
     group('marker gating', () {
       const field = '<label tl:fragment="field(label)"><span tl:slot="hint">Default hint</span></label>';
 
@@ -1645,6 +1713,23 @@ void main() {
 
       test('a bare ... without a name throws', () {
         expect(() => render('<p tl:fragment="card(...)">x</p>'), throwsTemplate('needs a name'));
+      });
+
+      test('whitespace after ... is trimmed, so the rest map binds under the written name', () {
+        final out = render('<i tl:fragment="f(... attrs)" tl:attrs="\${attrs}">x</i><div tl:replace="f" a="1"></div>');
+        expect(out, endsWith('<i a="1">x</i>'));
+        expect(restParameterName(parseFragmentDef('f(... attrs)').$2), 'attrs');
+      });
+
+      test('a rest name equal to a positional parameter throws at definition', () {
+        expect(
+          () => render('<p tl:fragment="f(attrs, ...attrs)">x</p>'),
+          throwsTemplate('Fragment "f": rest parameter "...attrs" repeats the positional parameter "attrs"'),
+        );
+        expect(
+          () => render('<p tl:fragment="f(a, ... a)">x</p>'),
+          throwsTemplate('rest parameter "... a" repeats the positional parameter "a"'),
+        );
       });
     });
 

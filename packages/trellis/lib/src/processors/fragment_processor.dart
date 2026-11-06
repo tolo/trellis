@@ -44,13 +44,14 @@ const _restMarker = '...';
 /// The rest parameter travels as the literal last `paramNames` entry (`'...attrs'`) so the registry record type
 /// and `FragmentHost` stay unchanged.
 String? restParameterName(List<String> paramNames) => paramNames.isNotEmpty && paramNames.last.startsWith(_restMarker)
-    ? paramNames.last.substring(_restMarker.length)
+    ? paramNames.last.substring(_restMarker.length).trim()
     : null;
 
-/// Reject a fragment definition whose `...rest` parameter is repeated, not last, or unnamed.
+/// Reject a fragment definition whose `...rest` parameter is repeated, not last, unnamed, or named like a positional
+/// parameter.
 ///
-/// Called by both definition-collection sites, because a rest parameter that is not final would silently bind an
-/// argument over the forwarded attribute map.
+/// Called by both definition-collection sites, because a rest parameter that is not final, or that shares a
+/// positional name, would silently bind an argument over the forwarded attribute map.
 void validateFragmentParams(String name, List<String> paramNames) {
   for (var i = 0; i < paramNames.length; i++) {
     final param = paramNames[i];
@@ -60,8 +61,12 @@ void validateFragmentParams(String name, List<String> paramNames) {
         'Fragment "$name": rest parameter "$param" must be the last parameter and may appear only once',
       );
     }
-    if (param.length == _restMarker.length) {
+    final restName = restParameterName([param])!;
+    if (restName.isEmpty) {
       throw TemplateException('Fragment "$name": rest parameter "..." needs a name, e.g. "...attrs"');
+    }
+    if (paramNames.sublist(0, i).contains(restName)) {
+      throw TemplateException('Fragment "$name": rest parameter "$param" repeats the positional parameter "$restName"');
     }
   }
 }
@@ -336,6 +341,9 @@ String slotInHostContentMessage({
 String _fragmentLabel(Element fragmentRoot, String attrPrefix) =>
     parseFragmentDef(fragmentRoot.attributes['${attrPrefix}fragment'] ?? '').$1;
 
+/// Directives that produce a region's content, dropped from a region its caller fills.
+const _regionContentDirectives = ['text', 'utext', 'insert', 'replace'];
+
 /// Collect the invoking [host]'s slot contributions from its literal direct children and graft them into the
 /// matching regions of [clone] with the `tl:define` merge rule: region element kept, children replaced.
 ///
@@ -387,6 +395,11 @@ void _graftSlots(
 
   for (final MapEntry(:key, :value) in contributions.entries) {
     final region = regions[key]!;
+    // The fill wins: a region's own content directive (`<button tl:slot="trigger" tl:text="${label}">`) is its
+    // default, and would otherwise overwrite the grafted content. An unfilled region keeps it.
+    for (final directive in _regionContentDirectives) {
+      region.attributes.remove('$attrPrefix$directive');
+    }
     region.nodes.clear();
     for (final node in value) {
       region.append(node.clone(true));

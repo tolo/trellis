@@ -56,6 +56,9 @@ attribute, leaving what is already there in place:
 
 The first renders `class="card active"` when `active` is truthy.
 
+A blank existing `class` or `style` (empty or whitespace only) counts as absent, so
+`<div class="" tl:classappend="'a'">` renders `class="a"`, not `class=" a"`.
+
 ## `tl:attrs` – spread a map of attributes
 
 `tl:attrs` takes a single expression that evaluates to a `Map` and writes each
@@ -98,9 +101,11 @@ The merge rules:
 ```
 
 Attribute **names** come from the map at runtime, which no other directive does,
-so they are validated. A name must match `^[A-Za-z][A-Za-z0-9_:.-]*$`, a non-`Map`
-value throws, and a key starting with the configured attribute prefix (`tl:` by
-default, compared case-insensitively) throws, so a spread map can carry data but
+so they are validated. Any name HTML allows passes (`@click`, `:class`, `_`),
+but an empty name, or one with whitespace, a control character, `"`, `'`, `>`,
+`/`, `=` or a Unicode noncharacter throws. A non-`Map` value throws, and a key
+starting with the configured attribute prefix (`tl:` by default, compared
+case-insensitively) throws, so a spread map can carry data but
 never a directive:
 
 ```html render=attrs-prefix
@@ -132,15 +137,16 @@ tl:attrs expects a Map but got String
 ```
 
 ```json context=attrs-bad-name
-{"attrs": {"1st": "x"}}
+{"attrs": {"bad name": "x"}}
 ```
 
 ```text throws=attrs-bad-name
-illegal attribute name "1st"
+illegal attribute name "bad name"
 ```
 
-Keys are **case-sensitive; write them lowercase**. `class` appends, but `Class`
-passes the name check and writes a second attribute:
+A key that differs from an existing attribute only in case **replaces** it, so
+an element never carries two spellings of one name. Only the exact key `class`
+(or `style`) appends; write keys lowercase:
 
 ```html render=attrs-case
 <p class="a" tl:attrs="${attrs}"></p>
@@ -151,8 +157,36 @@ passes the name check and writes a second attribute:
 ```
 
 ```html output=attrs-case
-<p class="a" Class="b"></p>
+<p Class="b"></p>
 ```
 
 An element carries at most one `tl:attrs` (the HTML5 parser drops duplicates, as
 with `tl:attr`).
+
+### Trust the map
+
+Entries are written as given: values are only HTML-escaped, never checked for
+meaning, and keys are only checked for syntax. Keep the map out of reach of
+untrusted input:
+
+- **Never let untrusted data choose keys.** A key picks which attribute is set,
+  so it decides what the element does.
+- **Validate values under `href`, `src`, `srcdoc`, `on*` and `style`** exactly as
+  you would for `tl:attr`. A `javascript:` URL, a `srcdoc` document or an event
+  handler passes through verbatim.
+- **A `null` value removes the attribute**, even a literal one on the element. A
+  map can drop `sandbox` from an iframe or `action` from a form.
+
+```html render=attrs-trust
+<iframe sandbox src="/ok" tl:attrs="${attrs}"></iframe>
+<a href="/safe" tl:attrs="${link}">go</a>
+```
+
+```json context=attrs-trust
+{"attrs": {"sandbox": null, "srcdoc": "<p>hi</p>"}, "link": {"href": "javascript:alert(1)"}}
+```
+
+```html output=attrs-trust
+<iframe src="/ok" srcdoc="<p>hi</p>"></iframe>
+<a href="javascript:alert(1)">go</a>
+```

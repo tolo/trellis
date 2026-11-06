@@ -54,3 +54,11 @@ class ExpressionException extends TemplateException {
     return buffer.toString();
   }
 }
+
+/// An expression read variable [name] that a strict context lacks. Internal, so the engine can tell which variable
+/// without matching message text; callers catch [ExpressionException].
+final class UndefinedVariableException extends ExpressionException {
+  final String name;
+
+  UndefinedVariableException(this.name, {required super.expression}) : super('Undefined variable: "$name"');
+}

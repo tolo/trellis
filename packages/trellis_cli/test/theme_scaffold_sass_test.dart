@@ -58,10 +58,7 @@ void main() {
       siteDir: siteDir.path,
       themeDir: themeDir,
     );
-    final entry = File(p.join(themeDir, 'sass', 'main.scss')).resolveSymbolicLinksSync();
-    final wrapper = File(p.join(config.buildDir, 'bridge_main.scss'))
-      ..writeAsStringSync(config.bridgeWrapperSource(entry));
-    return TrellisCss.compileSass(wrapper.path, loadPaths: config.sassLoadPaths, fatalImportDeprecation: true);
+    return compileThemeEntry(config, p.join(themeDir, 'sass', 'main.scss'), outputStyle: OutputStyle.expanded).css;
   }
 
   group('the scaffold compiles with the import deprecation fatal', () {

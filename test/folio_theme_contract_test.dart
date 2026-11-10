@@ -354,11 +354,7 @@ void main() {
     for (final param in ThemeManifest.load(themeDir).params.keys) {
       expect(bridgeParams, contains('\$trellis-${param.replaceAll('_', '-')}:'), reason: param);
     }
-    final tempDir = Directory.systemTemp.createTempSync('folio_sass_contract_');
-    addTearDown(() => tempDir.deleteSync(recursive: true));
-    final entry = File(p.join(themeDir, 'sass', 'main.scss')).resolveSymbolicLinksSync();
-    final wrapper = File(p.join(tempDir.path, 'main.scss'))..writeAsStringSync(bridge.bridgeWrapperSource(entry));
-    final css = TrellisCss.compileSass(wrapper.path, loadPaths: bridge.sassLoadPaths, fatalImportDeprecation: true);
+    final css = compileThemeEntry(bridge, p.join(themeDir, 'sass', 'main.scss'), outputStyle: OutputStyle.expanded).css;
     final cssFile = File(p.join(config.outputDir, 'css', 'main.css'))..parent.createSync(recursive: true);
     cssFile.writeAsStringSync(css);
     expect(css, isNot(contains('--folio-serif: "')));
@@ -649,10 +645,7 @@ void main() {
     expect(home, isNot(contains("localStorage.getItem('folio-skin')")));
 
     final bridge = result.themeBuildConfig!;
-    final entry = File(p.join(themeDir, 'sass', 'main.scss')).resolveSymbolicLinksSync();
-    final wrapper = File(p.join(tempDir.path, 'forced-dark.scss'))
-      ..writeAsStringSync(bridge.bridgeWrapperSource(entry));
-    final css = TrellisCss.compileSass(wrapper.path, loadPaths: bridge.sassLoadPaths, fatalImportDeprecation: true);
+    final css = compileThemeEntry(bridge, p.join(themeDir, 'sass', 'main.scss'), outputStyle: OutputStyle.expanded).css;
     expect(css, contains('--folio-paper: #111a14'));
     // A forced skin never emits the folio-dark mixin, so the code pigments have to arrive
     // through the forced-dark reassignment rather than through the media query.

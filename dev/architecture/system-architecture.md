@@ -5,7 +5,9 @@ Canonical reference for understanding the Trellis SDK architecture: how the pack
 **Current through**: v0.11.0 SDK + the 2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
 Lattice `site_demo` home block, and the `examples/docs_site/` proof) + the 2026-09-04 HTMX 4 adapter
 compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme stylesheets compile through
-`@use … with()` instead of `@import`, with per-mode colour params.
+`@use … with()` instead of `@import`, with per-mode colour params + 0.13 bridge hardening: one shared
+`compileThemeEntry` that configures each entry with the params Sass accepts and reports the ones it drops, and
+build-time warnings for palette-default drift and for a site override Sass cannot apply (`trellis_site` now depends on `trellis_css`).
 
 ---
 
@@ -31,7 +33,7 @@ Trellis is a Dart toolkit for building server-rendered web applications and stat
 | **`trellis_relic`** | Serverpod Relic integration: response helpers with explicit engine passing, HTMX detection, `trellisSecurityHeaders()` middleware. No CSRF (Relic form parser gap). | `trellis`, `relic` | v0.11.0 (published) |
 | **`trellis_dev`** | Dev tools: SSE browser hot reload, script injection middleware | `trellis`, `shelf` | v0.11.0 (published) |
 | **`trellis_css`** | CSS processing: Dart-native SASS/SCSS compilation via `package:sass`, `tl:scope` fragment-scoped CSS via CSS `@scope` | `trellis`, `sass`, `html` | v0.11.0 (published) |
-| **`trellis_site`** | Static site generation: content discovery, front matter, Markdown, taxonomies, pagination, sitemap, shortcodes, data cascade, Atom/RSS feed generation, JSON search index | `trellis`, `markdown`, `yaml` | v0.11.0 (published) |
+| **`trellis_site`** | Static site generation: content discovery, front matter, Markdown, taxonomies, pagination, sitemap, shortcodes, data cascade, Atom/RSS feed generation, JSON search index | `trellis`, `trellis_css`, `markdown`, `yaml` | v0.11.0 (published) |
 | **`trellis_cli`** | CLI tool: `trellis create` (htmx + blog + dart_frog + relic templates), `trellis build` (SSG pipeline + SASS), `trellis serve` (local preview server), and `trellis theme` (`add`, `update`, `list`, `info`, `remove`) | `args`, `shelf`, `shelf_static`, `trellis_css`, `trellis_site` | v0.11.0 (published) |
 | ~~`trellis_test`~~ | *Merged into `trellis` core as `testing.dart` entry point (2026-03-18)* | — | — |
 
@@ -50,6 +52,7 @@ From [ADR-004](../adrs/ADR-004-sdk-package-architecture.md):
 ```bash
 trellis_cli ──► trellis_site ──► trellis ──► package:html
      │               │
+     │               ├──► trellis_css
      │               ├──► markdown
      │               └──► yaml
      ├──► trellis_css ──► trellis
@@ -452,19 +455,35 @@ built by `trellis_cli`.
 `trellis build` compiles every non-partial `.scss`/`.sass` file in a theme's `sass/` directory through a generated wrapper,
 so a theme's `theme.yaml` defaults and the site's `theme_params:` reach its SASS without the site editing it. The
 generator (`ThemeSassGenerator`, `trellis_site`) writes `_theme_params.scss` and `_theme_custom_props.css` into the
-site's `.trellis/build/`, and the CLI build writes one bridge file per entry beside them:
+site's `.trellis/build/`, and `compileThemeEntry` (`trellis_site`, used by the CLI build and the theme tests alike)
+writes one bridge file per entry beside them and compiles it with the `@import` deprecation fatal:
 
 - `_theme_params.scss` – a plain Sass module (no `!default`) with a `$trellis-<name>` variable for every merged param.
 - `bridge_<entry>.scss` – the compile entry, text produced by `ThemeBuildConfig.bridgeWrapperSource` (the bridge tests
   compile the same text):
   `@use "theme_params" as tp; @use "<theme entry>" as theme with ($trellis-x: tp.$trellis-x, …)`.
 
-The `with()` list is the **intersection** of the manifest's params and the `$trellis-*` variables the theme's
-`sass/_variables.scss` declares `!default` (found by a whole-statement scan). Sass fails the build when `with()` names a
-variable the module does not declare `!default`, so a param with no SASS variable stays inert. A theme entry's first
-module rule is `@forward 'variables'`: Sass configures a module only on its first load, and the entry has to forward the
-configured variables to the wrapper. Skins are `$palette` maps (`_skins/_light.scss`, `_skins/_dark.scss`) that
-`_variables.scss` selects from by the `skin` param; the bridge injects no skin import.
+The `with()` list is what **Sass accepts** on that entry. `ThemeSassGenerator` offers as candidates (`configurableVars`)
+the merged manifest params whose `$trellis-*` variable any `sass/` file declares with a `!default` (a text prefilter that
+only over-includes: a declaration runs to the next one, so `url(data:…;…)` and `url(//…)` cannot hide it). Sass fails
+the build when `with()` names a variable the entry does not forward `!default`, so `compileThemeEntry` compiles the
+wrapper, drops each candidate Sass rejects (read from the error's line in the wrapper, never from an error in the theme's
+own files) and retries. The compile that succeeds is the only one: Lattice (27 candidates, none rejected) costs one
+compile per entry, and a rejected candidate costs one more. A param with no SASS variable stays inert, and so does a
+`!default` Sass cannot configure (in a mixin, a string, or a file the entry only `@use`s): `compileThemeEntry` returns
+those dropped names (`ThemeEntryCompilation.dropped`), the CLI warns once per theme and param when the site overrides
+one (`affectsOutput`) and lists all of them under `--verbose`, and the compile-every-theme gate names the file for
+bundled themes. A theme entry's first module rule is
+`@forward 'variables'`: Sass configures a module only on its first load, and the entry has to forward the configured
+variables to the wrapper. Skins are `$palette` maps (`_skins/_light.scss`, `_skins/_dark.scss`) that `_variables.scss`
+selects from by the `skin` param; the bridge injects no skin import.
+
+The builder also compares each colour param's `theme.yaml` default, not the site's override, with its palette entry
+(`paletteDefaultMismatches`, compared in Sass so `#fff`, `#ffffff` and `white` agree), because the bridge configures
+defaults too (unless the site overrides the param) and a palette edit alone never reaches a site build. A drift goes
+into `BuildResult.warnings` (`affectsOutput`, so `trellis build` prints it to stderr without `--verbose`); a palette
+without the key, and a colour param without a default, are not reported.
+The compile-every-theme gate calls the same function.
 
 Colour params are per mode: each `type: color` param has a `<name>_dark` twin that sets the dark palette's entry, and a
 plain colour sets the light entry only. Every dark view (forced `skin: dark`, the `skin: auto` `prefers-color-scheme`

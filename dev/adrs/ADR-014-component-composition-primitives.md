@@ -210,8 +210,10 @@ behavior.
 Pass-through is meaningful chiefly with `tl:replace` (where host attributes are
 otherwise lost). With `tl:insert` the map is bound identically: the host's own
 attribute directives are applied to it and forwarded, the rule its literal attributes
-already follow, so spreading the map duplicates attributes already on the surviving
-host – documentation steers component invocation to `tl:replace`.
+already follow, so spreading the map on an inner element repeats attributes the
+surviving host already carries (a spread on the fragment root is invisible, since
+`tl:insert` keeps only the root's children) – documentation steers component
+invocation to `tl:replace`.
 
 ### Priority-order fit
 

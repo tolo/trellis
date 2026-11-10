@@ -1,8 +1,10 @@
 // Pins dev/architecture/template-engine.md's Built-in Processors table and Priority Model block to the code, so the
 // architecture doc cannot silently drift from `ProcessorPriority` and the processors' `priority` getters.
 //
-// Text-vs-source on purpose: the root suite has no dependency on `trellis`. Run from the repository root.
+// Text-vs-source on purpose: the root suite has no dependency on `trellis`. The workspace root is found from where
+// `trellis_site` (a package the root suite does resolve) lives, so the working directory does not matter.
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -13,9 +15,25 @@ const _processorsDir = 'packages/trellis/lib/src/processors';
 
 typedef _Processor = ({String attribute, String priority});
 
+late final Directory _root;
+
+/// The nearest ancestor of the resolved `trellis_site` package whose pubspec names the workspace root.
+Future<Directory> _findWorkspaceRoot() async {
+  final uri = await Isolate.resolvePackageUri(Uri.parse('package:trellis_site/trellis_site.dart'));
+  if (uri == null || uri.scheme != 'file') throw StateError('Could not resolve package:trellis_site');
+  for (var dir = File(uri.toFilePath()).parent; ; dir = dir.parent) {
+    final pubspec = File(p.join(dir.path, 'pubspec.yaml'));
+    if (pubspec.existsSync() &&
+        pubspec.readAsStringSync().contains(RegExp(r'^name: trellis_workspace$', multiLine: true))) {
+      return dir;
+    }
+    if (dir.parent.path == dir.path) throw StateError('trellis_workspace root not found above ${uri.toFilePath()}');
+  }
+}
+
 String _read(String path) {
-  final file = File(path);
-  if (!file.existsSync()) fail('$path not found: run from the repository root');
+  final file = File(p.join(_root.path, path));
+  if (!file.existsSync()) fail('$path not found under ${_root.path}');
   return file.readAsStringSync();
 }
 
@@ -30,7 +48,7 @@ List<String> _enumOrder(String source) {
 Map<String, _Processor> _codeProcessors() {
   final result = <String, _Processor>{};
   final files = Directory(
-    _processorsDir,
+    p.join(_root.path, _processorsDir),
   ).listSync(followLinks: false).whereType<File>().where((f) => f.path.endsWith('.dart'));
   for (final file in files) {
     final parts = file.readAsStringSync().split(RegExp(r'^class ', multiLine: true)).skip(1);
@@ -92,7 +110,8 @@ List<String> tableProblems(String doc, List<String> enumOrder, Map<String, _Proc
   return problems;
 }
 
-void main() {
+Future<void> main() async {
+  _root = await _findWorkspaceRoot();
   final doc = _read(_doc);
   final order = _enumOrder(_read(_api));
   final code = _codeProcessors();

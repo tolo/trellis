@@ -61,10 +61,7 @@ void main() {
   /// with [siteParams], the generated params module, and the shared wrapper.
   String compileLattice(String skin, {Map<String, dynamic> siteParams = const {}}) {
     final config = generate(skin, siteParams);
-    final entry = File(p.join(themeDir, 'sass', 'main.scss')).resolveSymbolicLinksSync();
-    final wrapper = File(p.join(config.buildDir, 'bridge_main.scss'))
-      ..writeAsStringSync(config.bridgeWrapperSource(entry));
-    return TrellisCss.compileSass(wrapper.path, loadPaths: config.sassLoadPaths, fatalImportDeprecation: true);
+    return compileThemeEntry(config, p.join(themeDir, 'sass', 'main.scss'), outputStyle: OutputStyle.expanded).css;
   }
 
   group('compiles with fatal import deprecation, bridged and standalone', () {

@@ -405,7 +405,12 @@ final class TemplateValidator {
   /// The fragment may render several times on one page, repeating the id. A parameterless fragment is the HTMX
   /// swap-target idiom (one render, one stable id), so it never warns. A literal id that `tl:id` or a `tl:attr` `id`
   /// binding overrides is only a prototype placeholder and is skipped, and the scan stops at a nested fragment, which
-  /// has its own parameter list.
+  /// has its own parameter list. Markup the render discards is skipped too: a `tl:replace` element itself, anything
+  /// under `tl:remove="all"`, and the children of a `tl:text`/`tl:utext` element that replaces them (`_` is a no-op
+  /// that keeps them). A `tl:replace`/`tl:insert` host's own children are discarded except the content of its
+  /// direct-child `tl:slot` markers, which renders in the invoked fragment, so that content is scanned. Not scanned:
+  /// a host's unmarked children, which render only when the target declares an anonymous slot, a fact one file does
+  /// not show.
   void _warnOnLiteralIds(Element fragment, String value, List<ValidationError> errors) {
     final List<String> params;
     try {
@@ -418,8 +423,11 @@ final class TemplateValidator {
     }
 
     void scan(Element element) {
+      if (element.attributes['${_attrPrefix}remove']?.trim() == 'all') {
+        return;
+      }
       final id = element.attributes['id'];
-      if (id != null && !_overridesId(element)) {
+      if (id != null && !_overridesId(element) && !_hasDirective(element, 'replace')) {
         errors.add(
           ValidationError(
             message:
@@ -432,7 +440,7 @@ final class TemplateValidator {
           ),
         );
       }
-      for (final child in element.children) {
+      for (final child in _renderedChildren(element)) {
         // Stops at every nested fragment: a nested parameterless one is usually an htmx swap target rendered once.
         if (!_hasDirective(child, 'fragment')) {
           scan(child);
@@ -441,6 +449,22 @@ final class TemplateValidator {
     }
 
     scan(fragment);
+  }
+
+  /// The children of [element] that survive the render and are not otherwise handled by the id scan.
+  Iterable<Element> _renderedChildren(Element element) {
+    if (_hasDirective(element, 'replace') || _hasDirective(element, 'insert')) {
+      // The invoked fragment renders instead; only the marker content is grafted into it (the marker itself is not).
+      return [
+        for (final marker in element.children)
+          if (_hasDirective(marker, 'slot')) ...marker.children,
+      ];
+    }
+    final text = element.attributes['${_attrPrefix}text'];
+    final utext = element.attributes['${_attrPrefix}utext'];
+    // `_` is a no-op that keeps the children, and tl:text wins over tl:utext (also as a no-op).
+    final replaced = text != null ? text != '_' : utext != null && utext != '_';
+    return replaced ? const [] : element.children;
   }
 
   bool _hasDirective(Element element, String suffix) => element.attributes.containsKey('$_attrPrefix$suffix');

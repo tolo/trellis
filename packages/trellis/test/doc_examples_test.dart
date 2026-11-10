@@ -8,7 +8,8 @@
 //   throws=<id>                  a fence whose first line must appear in the TemplateException message of <id>
 //   static                       deliberately not executed (syntax or error text)
 //
-// Every html fence in composition.md must carry one of these labels, so no example there is unexecuted prose.
+// Every html fence in every page below must carry one of file, render, output or static, so no example is unexecuted
+// prose. Label an illustrative fence (it needs a loader or context the page does not define) `static`.
 import 'dart:convert';
 import 'dart:io';
 
@@ -16,7 +17,9 @@ import 'package:test/test.dart';
 import 'package:trellis/testing.dart';
 import 'package:trellis/trellis.dart';
 
-const _docs = '../../site/content/docs/syntax';
+import 'test_paths.dart';
+
+final _docs = '${repoRoot.path}/site/content/docs/syntax';
 
 /// Pages whose labelled examples run, and how many renders each must yield (guards against silently running none).
 const _pages = {'composition.md': 17, 'attributes.md': 6, 'fragments.md': 5};
@@ -31,7 +34,7 @@ final class _Fence {
 
 List<_Fence> _fences(String page) {
   final file = File('$_docs/$page');
-  if (!file.existsSync()) fail('$_docs/$page not found: run from the packages/trellis directory');
+  if (!file.existsSync()) fail('$_docs/$page not found');
   final lines = file.readAsLinesSync();
   final fences = <_Fence>[];
   for (var i = 0; i < lines.length; i++) {
@@ -114,14 +117,12 @@ void main() {
         }
       });
 
-      if (page == 'composition.md') {
-        test('every html fence is labelled', () {
-          const labels = {'file', 'render', 'output', 'static'};
-          for (final f in fences.where((f) => f.lang == 'html')) {
-            expect(f.labels.keys.any(labels.contains), isTrue, reason: '$page:${f.line} html fence has no label');
-          }
-        });
-      }
+      test('every html fence is labelled', () {
+        const labels = {'file', 'render', 'output', 'static'};
+        for (final f in fences.where((f) => f.lang == 'html')) {
+          expect(f.labels.keys.any(labels.contains), isTrue, reason: '$page:${f.line} html fence has no label');
+        }
+      });
     });
   }
 }

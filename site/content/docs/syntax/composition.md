@@ -621,10 +621,17 @@ mistakes:
   literal `id` that `tl:id` or a `tl:attr` `id` binding overrides is a prototype
   placeholder and does not warn either.
 
-The id check does not model which markup the render discards, so two shapes warn
-although the `id` never repeats: a parameterized swap target with a literal root
-`id`, and a literal `id` on prototype content that is replaced at render time (an
-element carrying `tl:replace`, or a child of a `tl:text` element). Move the `id`
-to `tl:id`, make the fragment parameterless, or drop the prototype `id`.
+The id check skips markup the render discards: an element carrying `tl:replace`
+(its own `id`), anything under `tl:remove="all"`, and the children of a
+`tl:text` or `tl:utext` element that replaces them (`tl:text="_"` is a no-op
+that keeps them, so they are checked). A `tl:replace` or `tl:insert` host's own
+children are discarded too, except the content of its direct-child `tl:slot`
+markers, which renders in the invoked fragment and is checked. An element that
+survives (a `tl:insert` host, a `tl:text` element) keeps its own `id` in the
+check. Not checked: a host's unmarked children, which render only when the
+invoked fragment declares an anonymous slot, and one file does not show that.
+One shape still warns although the `id` never repeats: a parameterized swap
+target with a literal root `id`. Move the `id` to `tl:id` or make the fragment
+parameterless.
 `isValidTemplate()` treats warnings as failures, and `dart run trellis:validate --strict`
 exits non-zero on them.

@@ -2,9 +2,26 @@
 
 ## 0.13.0
 
+### Added
+
+- **`trellis build` warns when a theme's palette disagrees with its defaults.** For each colour param, the `theme.yaml`
+  default (not the site's override) is compared in Sass with its palette entry in `sass/_skins/` (`#fff`, `#ffffff` and
+  `white` are equal). A mismatch prints `Warning:` naming the theme, the param and both values, because the build
+  configures the default unless the site overrides it, so a palette edit alone never reaches a site (TD-055). Theme
+  warnings are build warnings: they are counted in the `Built … (N warnings)` summary, and a warning that
+  `affectsOutput` prints to stderr without `--verbose` (other builder warnings still need `--verbose`).
+- **`trellis build` warns when a site overrides a theme param that Sass cannot configure** (TD-056): the param's
+  `!default` sits in a mixin, a string, an `@if` or a partial the entry does not forward, so the override has no effect
+  on the theme's Sass. The warning names the theme, entry, param and reason, and prints once per theme and param.
+  `--verbose` lists every such variable per entry, overridden or not.
+
 ### Changed
 
-- Lockstep version bump to keep all Trellis SDK packages on a single shared version. No functional changes in this package.
+- `trellis build` compiles theme entries through `trellis_site`'s `compileThemeEntry` (TD-057), which configures each
+  entry with the params Sass accepts. A `url(//…)` or `url(data:…;…)` default, or a `!default` declared in another
+  forwarded partial, now takes the site's override (it was silently inert), and a `!default` inside a string, mixin or
+  `@if` no longer fails the build (TD-056). Its override is not applied, as for a `!default` in a file the entry only
+  `@use`s: the variable stays unconfigured, and the warning above tells the theme author.
 
 ## 0.12.0
 

@@ -5,6 +5,8 @@ import 'package:test/test.dart';
 import 'package:trellis/testing.dart';
 import 'package:trellis/trellis.dart';
 
+import 'test_paths.dart';
+
 class _TooltipProcessor extends Processor {
   @override
   String get attribute => 'tooltip';
@@ -437,6 +439,87 @@ void main() {
         expect(warnings.map((w) => w.element), ['u']);
       });
 
+      group('markup the render discards', () {
+        test('skips a tl:replace element and its subtree', () {
+          expect(
+            '<div tl:fragment="card(a)"><p id="gone" tl:replace="~{x :: y}"><i id="inner"></i></p></div>',
+            isValidTemplate(),
+          );
+        });
+
+        test('skips markup under tl:remove="all" and keeps scanning other tl:remove values', () {
+          expect('<div tl:fragment="card(a)"><p tl:remove="all" id="a"><i id="b"></i></p></div>', isValidTemplate());
+          expect(idWarnings('<div tl:fragment="card(a)"><p tl:remove="tag" id="a"></p></div>'), hasLength(1));
+        });
+
+        test('scans a tl:text/tl:utext element itself but not the children it replaces', () {
+          for (final attribute in ['text', 'utext']) {
+            final warnings = idWarnings(
+              '<div tl:fragment="card(a)"><p id="kept" tl:$attribute="\${a}"><i id="gone"></i></p></div>',
+            );
+
+            expect(warnings.map((w) => w.element), ['p'], reason: attribute);
+          }
+        });
+
+        test('scans a tl:insert host itself but not the children it replaces', () {
+          final warnings = idWarnings(
+            '<div tl:fragment="card(a)"><p id="kept" tl:insert="~{x :: y}"><i id="gone"></i></p></div>',
+          );
+
+          expect(warnings.map((w) => w.element), ['p']);
+        });
+
+        test('scans the content of a host\'s direct-child slot markers, which render in the invoked fragment', () {
+          for (final host in ['replace', 'insert']) {
+            final warnings = idWarnings(
+              '<div tl:fragment="card(t)"><div tl:$host="~{lib :: panel}">'
+              '<div tl:slot="body" id="marker"><p id="dup"></p><span id="deep"><i id="deeper"></i></span></div>'
+              '<p id="unmarked"></p></div></div>',
+            );
+
+            // The marker element itself is dropped by the graft, and unmarked host content only renders in an
+            // anonymous slot (documented, not scanned).
+            expect(warnings.map((w) => w.element), ['p', 'span', 'i'], reason: host);
+            expect(warnings.map((w) => w.message), [
+              contains('id="dup"'),
+              contains('id="deep"'),
+              contains('id="deeper"'),
+            ]);
+          }
+        });
+
+        test('scans the children of tl:text="_" and tl:utext="_", which are a no-op that keeps them', () {
+          for (final attribute in ['text', 'utext']) {
+            final warnings = idWarnings(
+              '<div tl:fragment="card(a)"><p tl:$attribute="_"><i id="kept-child"></i></p></div>',
+            );
+
+            expect(warnings.map((w) => w.element), ['i'], reason: attribute);
+          }
+          // tl:text wins over tl:utext, and a no-op tl:text leaves the children to the utext no-op rule.
+          expect(
+            idWarnings('<div tl:fragment="card(a)"><p tl:text="_" tl:utext="\${a}"><i id="x"></i></p></div>'),
+            hasLength(1),
+          );
+          expect(
+            idWarnings('<div tl:fragment="card(a)"><p tl:text="\${a}" tl:utext="_"><i id="x"></i></p></div>'),
+            isEmpty,
+          );
+        });
+
+        test('uses the configured prefix', () {
+          final warnings = TemplateValidator(prefix: 'data-tl')
+              .validate(
+                '<div data-tl-fragment="card(a)"><p id="a" data-tl-replace="~{x :: y}"></p>'
+                '<p id="b" data-tl-remove="all"></p><p id="c" data-tl-text="\${a}"><i id="d"></i></p></div>',
+              )
+              .where((e) => e.message.contains('id="'));
+
+          expect(warnings.map((w) => w.message), [contains('id="c"')]);
+        });
+      });
+
       test('stays silent for an id outside any fragment', () {
         expect('<div id="a"><span id="b"></span></div>', isValidTemplate());
       });
@@ -457,13 +540,12 @@ void main() {
     group('component fixtures', () {
       for (final name in ['components.html', 'application.html']) {
         test('validate clean: $name', () {
-          expect(File('test/fixtures/components/$name').readAsStringSync(), isValidTemplate());
+          expect(File('${packageRoot.path}/test/fixtures/components/$name').readAsStringSync(), isValidTemplate());
         });
       }
     });
 
     group('real example and theme templates', () {
-      // Run from packages/trellis (how `dart test` and Melos run it); the repo root is two levels up.
       // The paths are explicit because themes/<theme>/example/themes/<theme> links back to the theme.
       const templates = [
         'examples/todo_app/templates/app.html',
@@ -480,8 +562,8 @@ void main() {
 
       for (final template in templates) {
         test('raises no composition warning for $template', () {
-          final file = File('../../$template');
-          if (!file.existsSync()) fail('$template not found: run from the packages/trellis directory');
+          final file = File('${repoRoot.path}/$template');
+          if (!file.existsSync()) fail('$template not found under ${repoRoot.path}');
 
           final errors = TemplateValidator().validate(file.readAsStringSync());
 

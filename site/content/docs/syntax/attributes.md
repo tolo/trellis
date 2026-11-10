@@ -12,7 +12,7 @@ attribute, `tl:attr`, plus convenient shorthands for the most common cases.
 `tl:attr` sets one or more attributes from a comma-separated list of
 `name=${value}` pairs:
 
-```html
+```html static
 <div tl:attr="data-id=${item.id},title=${item.name}">content</div>
 ```
 
@@ -30,7 +30,7 @@ A `null` value removes the attribute. Boolean HTML attributes (`disabled`,
 These shorthands set a single named attribute directly, and read more naturally
 than the generic form:
 
-```html
+```html static
 <a tl:href="${url}">link</a>
 <img tl:src="${imageUrl}">
 <input tl:value="${val}">
@@ -49,7 +49,7 @@ than the generic form:
 Where `tl:class` replaces, these two append to an existing `class` or `style`
 attribute, leaving what is already there in place:
 
-```html
+```html static
 <div class="card" tl:classappend="${active} ? 'active' : ''">content</div>
 <div style="color:red" tl:styleappend="font-weight:bold">content</div>
 ```

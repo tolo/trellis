@@ -13,7 +13,7 @@ via `renderFragment()`, as a standalone partial response.
 `tl:fragment` names an element as a reusable fragment. Fragments can take
 parameters, listed in parentheses:
 
-```html
+```html static
 <div tl:fragment="card(title, body)">
   <h2 tl:text="${title}">Title</h2>
   <p tl:text="${body}">Body</p>
@@ -25,7 +25,7 @@ parameters, listed in parentheses:
 `tl:insert` renders a fragment *inside* the host element, which is preserved.
 Arguments are passed positionally to a parameterized fragment:
 
-```html
+```html static
 <div tl:insert="card('Hello', 'World')">replaced by fragment</div>
 ```
 
@@ -34,7 +34,7 @@ Arguments are passed positionally to a parameterized fragment:
 `tl:replace` renders the fragment *in place of* the host element, which is
 discarded:
 
-```html
+```html static
 <div tl:replace="userCard">replaced entirely</div>
 ```
 
@@ -43,7 +43,7 @@ discarded:
 Reference a fragment in another template file with the `~{file :: fragment}`
 syntax:
 
-```html
+```html static
 <div tl:insert="~{components :: header}">loads header from components.html</div>
 ```
 
@@ -52,7 +52,7 @@ syntax:
 Instead of a fragment name, target an element in another file by `#id` or
 `.class`:
 
-```html
+```html static
 <div tl:insert="~{components :: #main-nav}">loads by id</div>
 ```
 

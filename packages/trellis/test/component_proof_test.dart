@@ -7,9 +7,9 @@ import 'package:html/parser.dart' as html_parser;
 import 'package:test/test.dart';
 import 'package:trellis/testing.dart';
 
-const _fixtures = 'test/fixtures/components';
+import 'test_paths.dart';
 
-String _fixture(String name) => File('$_fixtures/$name').readAsStringSync();
+String _fixture(String name) => File('${packageRoot.path}/test/fixtures/components/$name').readAsStringSync();
 
 void main() {
   final components = _fixture('components.html');

@@ -143,6 +143,13 @@ configurable `$trellis-*` declared anywhere else is not configured. The reason i
 theme meant for SASS. Params the theme reads only in templates stay inert, as they were under `@import`. A manifest
 param the site sets but the manifest does not declare is dropped before the wrapper is written.
 
+Amended for 0.13: the scan is only a candidate prefilter (any `sass/` file, a `!default` anywhere in the declaration), and
+`compileThemeEntry` takes Sass's answer per entry, dropping each candidate Sass rejects. A `url(//…)` or `url(data:…;…)`
+default, or a variable declared in another forwarded partial, is therefore configured; a `!default` in a mixin, a string
+or a file the entry only `@use`s is not. `compileThemeEntry` returns the dropped names, and `trellis build` warns when the
+site overrides one (the theme meant it to be configurable, since a candidate always has a `!default`); `--verbose` lists
+them all.
+
 ### The forward-first rule
 
 Every theme entry's first module rule is `@forward 'variables'` (E2b, E2c, E2e): Sass configures a module on its first
@@ -241,7 +248,7 @@ Arbor, verdant and folio compile byte-identical to the 0.11 `@import` bridge at 
 - A breaking change to the theme contract and to what `theme_params:` colour keys mean on a dark site: the standard
   contract grows to 25 params, and a `skin: dark` site that set `primary_color` now sets `primary_color_dark`.
 - Theme authors must follow the first-load rule, and a configurable variable declared outside `_variables.scss` is
-  silently not configured (the gate catches it for bundled themes only).
+  not configured (`trellis build` warns when a site overrides it, and the gate fails bundled themes).
 - The intersection scan is a heuristic over SCSS text. Option C is the recorded fallback if it proves brittle.
 - Emission order changes (E9): `@use` emits a module once, at first load, so bloom's layout block, which `@import`
   emitted twice, now appears once, and a rule that won the cascade by appearing later can change. Each theme's compiled

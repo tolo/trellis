@@ -200,7 +200,8 @@ Future<BuildResult> _buildInertFixture(String outputDir, {String? stylesheet}) a
   File(p.join(tempDir.path, 'content', '_index.md')).writeAsStringSync('---\ntitle: Home\nlayout: index\n---\n');
   Directory(p.join(tempDir.path, 'layouts')).createSync();
   File(p.join(tempDir.path, 'layouts', 'index.html')).writeAsStringSync(
-    '<html><head>${stylesheet == null ? '' : '<link rel="stylesheet" href="$stylesheet">'}</head><body>site</body></html>',
+    '<html><head>${stylesheet == null ? '' : '<link rel="stylesheet" href="$stylesheet">'}</head>'
+    '<body>site</body></html>',
   );
 
   return TrellisSite(

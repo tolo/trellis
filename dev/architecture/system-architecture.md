@@ -6,8 +6,9 @@ Canonical reference for understanding the Trellis SDK architecture: how the pack
 Lattice `site_demo` home block, and the `examples/docs_site/` proof) + the 2026-09-04 HTMX 4 adapter
 compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme stylesheets compile through
 `@use … with()` instead of `@import`, with per-mode colour params + 0.13 bridge hardening: one shared
-`compileThemeEntry` that configures each entry with the params Sass accepts and reports the ones it drops, and
-build-time warnings for palette-default drift and for a site override Sass cannot apply (`trellis_site` now depends on `trellis_css`).
+`compileThemeEntry` that configures each entry with the params Sass accepts and reports the ones it drops,
+build-time warnings for palette-default drift and for a site override Sass cannot apply (`trellis_site` now
+depends on `trellis_css`), and the redrawn package graph.
 
 ---
 
@@ -17,24 +18,24 @@ Trellis is a Dart toolkit for building server-rendered web applications and stat
 
 ![SDK Package Dependency Graph](sdk-package-dag.svg)
 
-*Source diagram maintained in the project's internal design repository.*
+*Hand-written SVG; update it from the pubspecs when a package dependency changes.*
 
 ---
 
 ## Package Responsibilities
 
-### Current (v0.10.2, lockstep)
+### Current (0.13, lockstep)
 
 | Package | Responsibility | Dependencies | Status |
 |---|---|---|---|
-| **`trellis`** | HTML template engine: parsing, expression evaluation (incl. utility objects), processor pipeline, fragment rendering, caching, validation, template inheritance, contextual escaping. Also includes testing utilities via `testing.dart` (test engine factory, CSS-selector matchers, snapshot golden file testing, fragment helpers). | `package:html` | v0.11.0 (published) |
-| **`trellis_shelf`** | Shelf middleware: engine injection, HTMX helpers, security defaults (CSRF, CSP), response builders | `trellis`, `shelf`, `crypto` | v0.11.0 (published) |
-| **`trellis_dart_frog`** | Dart Frog integration: `trellisProvider()` DI middleware, response helpers (`renderPage`, `renderFragment`, `renderOobFragments`), HTMX detection, CSRF/security middleware bridged from `trellis_shelf` | `trellis`, `trellis_shelf`, `dart_frog` | v0.11.0 (published) |
-| **`trellis_relic`** | Serverpod Relic integration: response helpers with explicit engine passing, HTMX detection, `trellisSecurityHeaders()` middleware. No CSRF (Relic form parser gap). | `trellis`, `relic` | v0.11.0 (published) |
-| **`trellis_dev`** | Dev tools: SSE browser hot reload, script injection middleware | `trellis`, `shelf` | v0.11.0 (published) |
-| **`trellis_css`** | CSS processing: Dart-native SASS/SCSS compilation via `package:sass`, `tl:scope` fragment-scoped CSS via CSS `@scope` | `trellis`, `sass`, `html` | v0.11.0 (published) |
-| **`trellis_site`** | Static site generation: content discovery, front matter, Markdown, taxonomies, pagination, sitemap, shortcodes, data cascade, Atom/RSS feed generation, JSON search index | `trellis`, `trellis_css`, `markdown`, `yaml` | v0.11.0 (published) |
-| **`trellis_cli`** | CLI tool: `trellis create` (htmx + blog + dart_frog + relic templates), `trellis build` (SSG pipeline + SASS), `trellis serve` (local preview server), and `trellis theme` (`add`, `update`, `list`, `info`, `remove`) | `args`, `shelf`, `shelf_static`, `trellis_css`, `trellis_site` | v0.11.0 (published) |
+| **`trellis`** | HTML template engine: parsing, expression evaluation (incl. utility objects), processor pipeline, fragment rendering, caching, validation, template inheritance, contextual escaping. Also includes testing utilities via `testing.dart` (test engine factory, CSS-selector matchers, snapshot golden file testing, fragment helpers). | `html`, `args`, `path`, `matcher`, `string_scanner` | v0.13.0 |
+| **`trellis_shelf`** | Shelf middleware: engine injection, HTMX helpers, security defaults (CSRF, CSP), response builders | `trellis`, `shelf`, `crypto` | v0.13.0 |
+| **`trellis_dart_frog`** | Dart Frog integration: `trellisProvider()` DI middleware, response helpers (`renderPage`, `renderFragment`, `renderOobFragments`), HTMX detection, CSRF/security middleware bridged from `trellis_shelf` | `trellis`, `trellis_shelf`, `dart_frog` | v0.13.0 |
+| **`trellis_relic`** | Serverpod Relic integration: response helpers with explicit engine passing, HTMX detection, `trellisSecurityHeaders()` middleware. No CSRF (Relic form parser gap). | `trellis`, `relic` | v0.13.0 |
+| **`trellis_dev`** | Dev tools: SSE browser hot reload, script injection middleware | `trellis`, `shelf` | v0.13.0 |
+| **`trellis_css`** | CSS processing: Dart-native SASS/SCSS compilation via `package:sass`, `tl:scope` fragment-scoped CSS via CSS `@scope` | `trellis`, `sass`, `html` | v0.13.0 |
+| **`trellis_site`** | Static site generation: content discovery, front matter, Markdown, taxonomies, pagination, sitemap, shortcodes, data cascade, Atom/RSS feed generation, JSON search index | `trellis`, `trellis_css`, `markdown`, `yaml` | v0.13.0 |
+| **`trellis_cli`** | CLI tool: `trellis create` (htmx + blog + dart_frog + relic templates), `trellis build` (SSG pipeline + SASS), `trellis serve` (local preview server), and `trellis theme` (`add`, `update`, `list`, `info`, `remove`) | `args`, `shelf`, `shelf_static`, `trellis_css`, `trellis_site` | v0.13.0 |
 | ~~`trellis_test`~~ | *Merged into `trellis` core as `testing.dart` entry point (2026-03-18)* | — | — |
 
 ---
@@ -43,7 +44,7 @@ Trellis is a Dart toolkit for building server-rendered web applications and stat
 
 From [ADR-004](../adrs/ADR-004-sdk-package-architecture.md):
 
-1. **`trellis` (core) depends on no SDK package** — only `package:html`
+1. **`trellis` (core) depends on no SDK package**, only small third-party libraries (`html`, `args`, `path`, `matcher`, `string_scanner`)
 2. **Integration packages** (`trellis_shelf`, `trellis_dev`) may depend on `trellis`, never the reverse
 3. **Tooling packages** (`trellis_css`, `trellis_cli`) may depend on runtime packages only for orchestration
 4. **No cyclic package dependencies** — the dependency graph is a DAG
@@ -669,4 +670,4 @@ and Scoop jobs skip gracefully when `TAP_TOKEN` is absent.
 
 ### Diagrams
 
-Architecture diagrams are maintained as Excalidraw source files in the project's internal design repository; the dependency-graph export is embedded above.
+The dependency graph above (`sdk-package-dag.svg`) is a hand-written SVG, edited directly; it follows the system colour scheme.

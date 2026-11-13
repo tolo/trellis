@@ -969,10 +969,12 @@ params:
 ''');
         Directory(p.join(themeDir.path, 'layouts', '_default')).createSync(recursive: true);
         File(p.join(themeDir.path, 'layouts', '_default', 'list.html')).writeAsStringSync(r'''
-<!DOCTYPE html><html><head><title tl:text="${page.title}">t</title></head><body><h1 tl:text="${page.title}">t</h1></body></html>
+<!DOCTYPE html><html><head><title tl:text="${page.title}">t</title></head>
+<body><h1 tl:text="${page.title}">t</h1></body></html>
 ''');
         File(p.join(themeDir.path, 'layouts', 'home.html')).writeAsStringSync(r'''
-<!DOCTYPE html><html><head><title tl:text="${page.title}">t</title></head><body><h1 tl:text="${page.title}">t</h1></body></html>
+<!DOCTYPE html><html><head><title tl:text="${page.title}">t</title></head>
+<body><h1 tl:text="${page.title}">t</h1></body></html>
 ''');
         Directory(p.join(themeDir.path, 'sass')).createSync();
         File(p.join(themeDir.path, 'sass', 'main.scss')).writeAsStringSync('.no-skins { color: red; }\n');

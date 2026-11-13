@@ -30,10 +30,12 @@ String compileBridged(String themeDir, String skin, {Map<String, dynamic> sitePa
       siteDir: siteDir,
       themeDir: themeDir,
     );
-    final entry = File(p.join(themeDir, 'sass', 'main.scss')).resolveSymbolicLinksSync();
-    final wrapper = File(p.join(config.buildDir, 'bridge_main.scss'))
-      ..writeAsStringSync('${config.bridgeWrapperSource(entry)}${probe == null ? '' : '.probe { value: $probe; }\n'}');
-    return TrellisCss.compileSass(wrapper.path, loadPaths: config.sassLoadPaths, fatalImportDeprecation: true);
+    return compileThemeEntry(
+      config,
+      p.join(themeDir, 'sass', 'main.scss'),
+      outputStyle: OutputStyle.expanded,
+      wrapperSuffix: probe == null ? '' : '.probe { value: $probe; }\n',
+    ).css;
   } finally {
     Directory(siteDir).deleteSync(recursive: true);
   }

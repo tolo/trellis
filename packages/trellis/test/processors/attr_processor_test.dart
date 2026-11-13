@@ -1,4 +1,7 @@
+import 'package:html/parser.dart' as html;
 import 'package:test/test.dart';
+import 'package:trellis/src/processors/attr_processor.dart' show captureHostAttributes;
+import 'package:trellis/testing.dart';
 import 'package:trellis/trellis.dart';
 
 void main() {
@@ -320,6 +323,346 @@ void main() {
         final result = render('<div data-x="1" tl:attr="_">x</div>', {});
         expect(result, contains('data-x="1"'));
         expect(result, isNot(contains('tl:attr')));
+      });
+    });
+
+    group('tl:attrs', () {
+      const spreadInput = r'<input tl:attrs="${attrs}">';
+
+      test('spreads a map onto an element whose only directive is tl:attrs', () {
+        final result = render(spreadInput, {
+          'attrs': {'type': 'email', 'data-test': 'field', 'hx-post': '/save'},
+        });
+        expect(result, contains('type="email"'));
+        expect(result, contains('data-test="field"'));
+        expect(result, contains('hx-post="/save"'));
+        expect(result, isNot(contains('tl:attrs')));
+      });
+
+      test('explicit tl:attr, tl:class and shorthands win over spread entries', () {
+        final result = render(r'<input class="base" tl:attrs="${attrs}" tl:attr="type=${type}" tl:class="${cls}">', {
+          'attrs': {'type': 'text', 'class': 'spread', 'name': 'email'},
+          'type': 'password',
+          'cls': 'explicit',
+        });
+        expect(result, contains('type="password"'));
+        expect(result, contains('class="explicit"'));
+        expect(result, isNot(contains('spread')));
+        expect(result, contains('name="email"'));
+      });
+
+      test('overwrites literal attributes but appends class and style', () {
+        final result = render(r'<div id="a" class="card" style="color:red" tl:attrs="${attrs}">x</div>', {
+          'attrs': {'id': 'b', 'class': 'active', 'style': 'margin:0'},
+        });
+        expect(result, contains('id="b"'));
+        expect(result, contains('class="card active"'));
+        expect(result, contains('style="color:red; margin:0"'));
+      });
+
+      test('class and style set on an element that has none', () {
+        final result = render(r'<div tl:attrs="${attrs}">x</div>', {
+          'attrs': {'class': 'a', 'style': 'margin:0'},
+        });
+        expect(result, contains('class="a"'));
+        expect(result, contains('style="margin:0"'));
+      });
+
+      test('values follow tl:attr semantics and null class/style is a no-op append', () {
+        final result = render(r'<input class="base" style="color:red" value="x" checked tl:attrs="${attrs}">', {
+          'attrs': {'disabled': true, 'checked': false, 'value': null, 'class': null, 'style': null},
+        });
+        expect(result, contains('disabled'));
+        expect(result, isNot(contains('checked')));
+        expect(result, isNot(contains('value')));
+        expect(result, contains('class="base"'));
+        expect(result, contains('style="color:red"'));
+      });
+
+      test('escapes values like tl:attr', () {
+        final result = render(spreadInput, {
+          'attrs': {'title': 'a"b<c'},
+        });
+        expect(result, contains('title="a&quot;b<c"'));
+      });
+
+      test('tl:attrs="_" is a no-op', () {
+        final result = render('<a href="/home" tl:attrs="_">Home</a>', {});
+        expect(result, contains('<a href="/home">Home</a>'));
+      });
+
+      test('null map is a no-op on a non-strict engine', () {
+        final result = render(r'<a href="/home" tl:attrs="${attrs}">Home</a>', {'attrs': null});
+        expect(result, contains('<a href="/home">Home</a>'));
+      });
+
+      test('absent map throws the inherited undefined-variable error on a strict engine', () {
+        final strict = testEngine();
+        expect(
+          () => strict.render(r'<a href="/home" tl:attrs="${attrs}">Home</a>', {}),
+          throwsA(isA<ExpressionException>()),
+        );
+      });
+
+      test('non-Map value throws TemplateException naming tl:attrs and the type, never the value', () {
+        // The value is render-context data, such as a token, and exception messages reach logs and error pages.
+        expect(
+          () => render(r'<div tl:attrs="${attrs}">x</div>', {'attrs': 'class=highlight'}),
+          throwsA(
+            isA<TemplateException>().having(
+              (e) => e.message,
+              'message',
+              allOf(contains('tl:attrs'), contains('String'), isNot(contains('class=highlight'))),
+            ),
+          ),
+        );
+      });
+
+      test('illegal attribute name throws naming the key and writes nothing', () {
+        expect(
+          () => render(r'<div class="card" tl:attrs="${attrs}">x</div>', {
+            'attrs': {'data-ok': '1', 'bad name': 'x'},
+          }),
+          throwsA(isA<TemplateException>().having((e) => e.message, 'message', contains('bad name'))),
+        );
+      });
+
+      test('every illegal name shape throws, even when a valid key precedes it', () {
+        const bad = [
+          '',
+          'a b',
+          'a\tb',
+          'a\nb',
+          'a\u0000b',
+          'a\u007Fb',
+          'a\u0085b',
+          'x=y',
+          'a>b',
+          'a/b',
+          'a"b',
+          "a'b",
+          'a\uFDD0b',
+          'a\u{1FFFF}b',
+        ];
+        for (final key in bad) {
+          expect(
+            () => render(spreadInput, {
+              'attrs': {'data-ok': '1', key: 'x'},
+            }),
+            throwsA(isA<TemplateException>()),
+            reason: 'key ${key.codeUnits}',
+          );
+        }
+      });
+
+      test('names the HTML attribute-name grammar allows are accepted', () {
+        final result = render(spreadInput, {
+          'attrs': {'@click': 'x', ':class': 'y', '_': 'z', '1abc': '1', '-x': '2', 'x-on:click': '3', 'data-é': '4'},
+        });
+        for (final entry in [
+          '@click="x"',
+          ':class="y"',
+          '_="z"',
+          '1abc="1"',
+          '-x="2"',
+          'x-on:click="3"',
+          'data-é="4"',
+        ]) {
+          expect(result, contains(entry));
+        }
+      });
+
+      test('a rejected map leaves the element untouched', () {
+        // Falsifiable atomicity: a write-as-you-go implementation sets data-ok and class before reaching the bad key.
+        final host = html.parseFragment(r'<div class="card" tl:attrs="${attrs}">x</div>').children.single;
+        final before = Map<Object, String>.of(host.attributes);
+        expect(
+          () => captureHostAttributes(host, 'tl:', ExpressionEvaluator(), {
+            'attrs': {'data-ok': '1', 'class': 'extra', 'bad name': 'x'},
+          }),
+          throwsA(isA<TemplateException>()),
+        );
+        expect(host.attributes, before);
+      });
+
+      test('non-String key throws TemplateException', () {
+        expect(
+          () => render(spreadInput, {
+            'attrs': {1: 'x'},
+          }),
+          throwsA(isA<TemplateException>()),
+        );
+      });
+
+      test('keys naming an engine directive are rejected case-insensitively without leaking values', () {
+        final strict = testEngine();
+        const source = r'<div class="card" tl:attrs="${attrs}">x</div>';
+        final maps = [
+          {'tl:remove': 'all'},
+          {'tl:attr': r'data-x=${secret}'},
+          {'TL:Remove': 'all'},
+          {'tl:href': '/x'},
+        ];
+        for (final attrs in maps) {
+          try {
+            final out = strict.render(source, {'attrs': attrs, 'secret': 'API-KEY-123'});
+            fail('expected TemplateException, rendered: $out');
+          } on TemplateException catch (e) {
+            expect(e.message, contains(attrs.keys.single));
+            expect(e.toString(), isNot(contains('API-KEY-123')));
+          }
+        }
+      });
+
+      test('prefix rejection compares against the configured prefix', () {
+        final custom = testEngine(prefix: 'data-tl');
+        expect(
+          () => custom.render(r'<div data-tl-attrs="${attrs}">x</div>', {
+            'attrs': {'data-tl-remove': 'all'},
+          }),
+          throwsA(isA<TemplateException>().having((e) => e.message, 'message', contains('data-tl-remove'))),
+        );
+        final result = custom.render(r'<div data-tl-attrs="${attrs}">x</div>', {
+          'attrs': {'tl:remove': 'all'},
+        });
+        expect(result, contains('tl:remove="all"'));
+        expect(result, contains('>x</div>'));
+      });
+
+      test('...rest forwards Alpine and hyperscript host attributes through tl:attrs', () {
+        final result = render(
+          r'<i tl:fragment="btn(...attrs)" tl:attrs="${attrs}">x</i>'
+          r'<b tl:replace="btn" @click="x" :class="y" _="z"></b>',
+          {},
+        );
+        expect(result, contains('<i @click="x" :class="y" _="z">x</i>'));
+      });
+
+      test('a captured host attribute name that is not a legal key still throws', () {
+        const callee = r'<i tl:fragment="btn(...attrs)" tl:attrs="${attrs}">x</i>';
+        for (final host in ['<b tl:replace="btn" a"b="1"></b>']) {
+          expect(() => render('$callee$host', {}), throwsA(isA<TemplateException>()), reason: host);
+        }
+      });
+
+      test('blank literal class and style are treated as absent', () {
+        final result = render(r'<div class="" style=" " tl:attrs="${attrs}">x</div>', {
+          'attrs': {'class': 'a', 'style': 'margin:0'},
+        });
+        expect(result, contains('class="a"'));
+        expect(result, contains('style="margin:0"'));
+      });
+
+      test('tl:classappend and tl:styleappend treat blank literals as absent', () {
+        final result = render(r'<div class=" " style="" tl:classappend="${c}" tl:styleappend="${s}">x</div>', {
+          'c': 'a',
+          's': 'margin:0',
+        });
+        expect(result, contains('class="a"'));
+        expect(result, contains('style="margin:0"'));
+      });
+
+      test('an explicit directive overrides a case-variant spread key', () {
+        final result = render(r'<a tl:href="${safe}" tl:attrs="${m}" tl:attr="onclick=${h}">x</a>', {
+          'safe': '/ok',
+          'h': 'ok()',
+          'm': {'HREF': 'javascript:alert(1)', 'ONCLICK': 'evil()'},
+        });
+        expect(result, contains('<a href="/ok" onclick="ok()">x</a>'));
+        expect(result.toLowerCase(), isNot(contains('javascript')));
+      });
+
+      test('a case-variant key replaces the literal it names', () {
+        final result = render(r'<a href="/old" tl:attrs="${m}">x</a>', {
+          'm': {'HREF': '/new'},
+        });
+        expect(result, contains('<a HREF="/new">x</a>'));
+      });
+
+      test('null removes a case variant written earlier in the same pass', () {
+        final result = render(r'<a tl:attrs="${m}" tl:attr="id=${null}">x</a>', {
+          'm': {'ID': 'x'},
+        });
+        expect(result, contains('<a>x</a>'));
+      });
+
+      test('a namespaced foreign attribute is replaced by the same qualified name, ignoring case', () {
+        final result = render(
+          r'<svg><use xlink:href="#a" tl:attr="xlink:href=${u}"></use>'
+          r'<use xlink:href="#a" tl:attrs="${m}"></use></svg>',
+          {
+            'u': '#b',
+            'm': {'XLINK:HREF': '#c'},
+          },
+        );
+        expect(result, contains('<use xlink:href="#b"></use>'));
+        expect(result, contains('<use XLINK:HREF="#c"></use>'));
+        expect(RegExp('xlink:href', caseSensitive: false).allMatches(result), hasLength(2));
+      });
+
+      test('null removes a namespaced foreign attribute', () {
+        final result = render(r'<svg><use xlink:href="#a" tl:attr="xlink:href=${null}"></use></svg>', {});
+        expect(result, contains('<use></use>'));
+      });
+
+      test('boolean attributes are classified ignoring ASCII case', () {
+        final result = render(
+          r'<button disabled tl:attrs="${m}">x</button><button disabled tl:attr="DISABLED=${false}">y</button>'
+          r'<button tl:attrs="${on}">z</button>',
+          {
+            'm': {'DISABLED': false},
+            'on': {'Disabled': true},
+          },
+        );
+        expect(result, contains('<button>x</button>'));
+        expect(result, contains('<button>y</button>'));
+        expect(result, contains('<button Disabled="">z</button>'));
+      });
+
+      test('class append finds a case-variant class written earlier in the same pass', () {
+        final result = render(
+          r'''<div tl:attrs="${m}" tl:classappend="'b'">x</div>''',
+          {
+            'm': {'CLASS': 'a'},
+          },
+        );
+        expect(result, contains('class="a b"'));
+        expect(result, isNot(contains('CLASS')));
+      });
+
+      test('camelCase SVG attribute names survive', () {
+        final result = render(r'<svg tl:attrs="${m}"></svg>', {
+          'm': {'viewBox': '0 0 1 1'},
+        });
+        expect(result, contains('viewBox="0 0 1 1"'));
+      });
+
+      test('...rest capture drops a tl:* name written by tl:attr, matching a non-rest callee', () {
+        const host = '<b tl:insert="link" tl:attr="tl:text=\'x\'">h</b>';
+        final rest = render('<i tl:fragment="link(...a)">l</i>$host', {});
+        final plain = render('<i tl:fragment="link()">l</i>$host', {});
+        expect(rest, contains('<b>l</b>'));
+        expect(plain, contains('<b>l</b>'));
+      });
+
+      test('...rest capture keeps the host\'s own tl:* attributes', () {
+        final result = render(
+          r'''<i tl:fragment="link(...a)">l</i><b tl:insert="link" tl:attr="tl:text='x'" tl:class="${c}">h</b>''',
+          {'c': 'k'},
+        );
+        expect(result, contains('<b class="k">l</b>'));
+      });
+
+      test('browser prototype keeps literal attributes and renders the same with an empty map', () {
+        const source = r'<input class="trellis-field-input" type="text" tl:attrs="${attrs}">';
+        final raw = html.parseFragment(source).children.single;
+        expect(raw.attributes['class'], 'trellis-field-input');
+        expect(raw.attributes['type'], 'text');
+        expect(raw.text, isEmpty);
+        expect(raw.children, isEmpty);
+
+        final rendered = render(source, {'attrs': <String, dynamic>{}});
+        expect(rendered, contains('<input class="trellis-field-input" type="text">'));
       });
     });
   });

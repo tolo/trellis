@@ -75,8 +75,13 @@ Future<void> main() async {
         expect(twinViolations(themeDir), isEmpty);
       });
 
-      test('every param variable is one the bridge configures', () {
+      test('every param variable a file declares !default is one the entries can be configured with', () {
         expect(configurabilityViolations(themeDir), isEmpty);
+      });
+
+      // The check `trellis build` runs as a warning; here it must not throw, which the build would swallow.
+      test('the build-time palette check raises no warning', () {
+        expect(paletteDefaultMismatches(ThemeManifest.load(themeDir)), isEmpty);
       });
     });
   }
@@ -262,7 +267,8 @@ Future<void> main() async {
         _edit(
           light,
           (s) =>
-              '\$brand: ${hex.toUpperCase()};\n${s.replaceFirst(RegExp(r'primary-color:\s*#[0-9a-fA-F]+'), r'primary-color: $brand')}',
+              '\$brand: ${hex.toUpperCase()};\n'
+              "${s.replaceFirst(RegExp(r'primary-color:\s*#[0-9a-fA-F]+'), r'primary-color: $brand')}",
         );
 
         expect(twinViolations(theme), isEmpty);
@@ -369,7 +375,8 @@ Future<void> main() async {
           r'@layer base { [data-skin=dark] { --leak: #{$trellis-text-color}; } }': 'dark toggle rule carries it',
           r'@container side (min-width: 400px) { [data-theme=dark] { --leak: #{$trellis-text-color}; } }':
               'dark toggle rule carries it',
-          r'@supports (display: grid) { @media (prefers-color-scheme: dark) { :root { --leak: #{$trellis-text-color}; } } }':
+          r'@supports (display: grid) { @media (prefers-color-scheme: dark) '
+                  r'{ :root { --leak: #{$trellis-text-color}; } } }':
               'dark @media carries it',
         };
         for (final entry in wrappers.entries) {
@@ -415,33 +422,26 @@ Future<void> main() async {
       });
     });
 
-    test(
-      'a param variable declared !default in the entry instead of _variables.scss trips the configurability check',
-      () {
-        final theme = copy();
-        expect(configurabilityViolations(theme), isEmpty, reason: 'the untouched copy is clean');
-        const declaration = r'$trellis-max-width: 1200px !default;';
-        _edit(
-          p.join(theme, 'sass', '_variables.scss'),
-          (s) => s.replaceFirst(declaration, r'$trellis-max-width: 1200px;'),
-        );
-        _edit(p.join(theme, 'sass', 'main.scss'), (s) => '$s\n$declaration\n');
+    test('a param variable declared !default in the entry instead of _variables.scss is configured, so it passes', () {
+      final theme = copy();
+      const declaration = r'$trellis-max-width: 1200px !default;';
+      _edit(
+        p.join(theme, 'sass', '_variables.scss'),
+        (s) => s.replaceFirst(declaration, r'$trellis-max-width: 1200px;'),
+      );
+      _edit(p.join(theme, 'sass', 'main.scss'), (s) => '$s\n$declaration\n');
 
-        final violations = configurabilityViolations(theme);
-        expect(violations, hasLength(1));
-        expect(violations.single, allOf(contains('arbor'), contains(r'$trellis-max-width')));
-        expect(twinViolations(theme), isEmpty, reason: 'no other check moves');
-        // _variables.scss keeps a plain copy for the partials to read, so the theme still compiles and the oracle
-        // can answer.
-        expect(importViolations(p.dirname(theme)), isEmpty);
-        expect(standaloneViolations(theme), isEmpty);
-      },
-    );
+      expect(configurabilityViolations(theme), isEmpty);
+      final site = Directory(p.join(work.path, 'site'))..createSync();
+      final config = _generate(theme, SkinMode.light, site.path, siteParams: {'max_width': '777px'});
+      final compilation = compileThemeEntry(config, p.join(theme, 'sass', 'main.scss'));
+      expect(compilation.configured, contains('trellis-max-width'));
+    });
 
     test('a param variable declared !default in a partial the entry does not forward is caught, by file', () {
       // `with()` reaches the entry and what it forwards; a partial it only `@use`s loads unconfigured, so the
-      // override would silently never arrive. Sass answers "not configurable" for this exactly as for a variable that
-      // does not exist, so the file is found by reading the text.
+      // override would silently never arrive, and the build says nothing. Sass answers "not configurable" for this
+      // exactly as for a variable that does not exist, so the file is found by reading the text.
       final theme = copy();
       expect(configurabilityViolations(theme), isEmpty, reason: 'the untouched copy is clean');
       _edit(
@@ -460,11 +460,8 @@ Future<void> main() async {
       expect(standaloneViolations(theme), isEmpty, reason: 'the theme itself compiles');
     });
 
-    test('a protocol-relative url() default that hides the next declaration from the generator is caught', () {
-      // The generator's statement splitter reads `//` after `(` as a comment, so the declaration after this one
-      // is swallowed into it and never configured. Sass still accepts configuring it; only the oracle sees that.
+    test('a protocol-relative url() default does not hide the declaration after it from the bridge', () {
       final theme = copy();
-      expect(configurabilityViolations(theme), isEmpty, reason: 'the untouched copy is clean');
       _edit(
         p.join(theme, 'sass', '_variables.scss'),
         (s) => s.replaceFirst(
@@ -473,10 +470,12 @@ Future<void> main() async {
         ),
       );
 
-      final violations = configurabilityViolations(theme);
-      expect(violations, hasLength(1));
-      expect(violations.single, allOf(contains('arbor'), contains(r'$trellis-border-radius')));
-      expect(standaloneViolations(theme), isEmpty, reason: 'the theme itself compiles');
+      expect(configurabilityViolations(theme), isEmpty);
+      final site = Directory(p.join(work.path, 'site'))..createSync();
+      final entry = p.join(theme, 'sass', 'main.scss');
+      final config = _generate(theme, SkinMode.light, site.path, siteParams: {'border_radius': '9px'});
+      final compilation = compileThemeEntry(config, entry);
+      expect(compilation.configured, containsAll(['trellis-max-width', 'trellis-border-radius']));
     });
 
     test(r'a $trellis_ spelling is configured by the generator and by Sass alike, so the gate passes', () {
@@ -490,14 +489,17 @@ Future<void> main() async {
       final site = Directory(p.join(work.path, 'site'))..createSync();
       final config = _generate(theme, SkinMode.light, site.path, siteParams: {'max_width': '777px'});
       expect(config.configurableVars, contains('trellis-max-width'));
-      expect(compileBridged(config, p.join(theme, 'sass', 'main.scss')), contains('777px'));
+      expect(compileThemeEntry(config, p.join(theme, 'sass', 'main.scss')).css, contains('777px'));
     });
 
-    test('a multi-line declaration of a param variable elsewhere is still found', () {
+    test('a multi-line declaration of a param variable in an unforwarded partial is still found', () {
       final theme = copy();
+      File(
+        p.join(theme, 'sass', '_extra.scss'),
+      ).writeAsStringSync('\$trellis-nav-links:\n  (a, b)\n  !default;\n\$trellis-toc-title: "x;y" !default;\n');
       _edit(
         p.join(theme, 'sass', 'main.scss'),
-        (s) => '$s\n\$trellis-nav-links:\n  (a, b)\n  !default;\n\$trellis-toc-title: "x;y" !default;\n',
+        (s) => s.replaceFirst("@forward 'variables';", "@forward 'variables';\n@use 'extra';"),
       );
 
       final violations = configurabilityViolations(theme);
@@ -551,7 +553,7 @@ List<String> bridgedViolations(String themeDir, SkinMode skin) {
     for (final entry in themeEntries(themeDir)) {
       final name = p.relative(entry, from: p.join(themeDir, 'sass'));
       try {
-        compileBridged(config, entry);
+        compileThemeEntry(config, entry);
       } on SassCompilationException catch (e) {
         violations.add("theme '$theme', skin '${skin.name}', entry '$name' failed to compile: $e");
       }
@@ -590,44 +592,28 @@ List<String> twinViolations(String themeDir) {
   };
   if (colors.isEmpty) return [];
 
-  final palettes = <String, Map<String, String>>{};
   final violations = <String>[];
   for (final mode in ['light', 'dark']) {
-    final file = p.join(themeDir, 'sass', '_skins', '_$mode.scss');
-    if (!File(file).existsSync()) {
+    if (!File(p.join(themeDir, 'sass', '_skins', '_$mode.scss')).existsSync()) {
       violations.add("theme '$theme' has colour params but no sass/_skins/_$mode.scss");
-      continue;
     }
-    try {
-      palettes[mode] = readPalette(file);
-    } on SassCompilationException catch (e) {
-      violations.add("theme '$theme': palette of _$mode.scss does not compile: $e");
-    }
+  }
+  // The palettes and the default-against-entry comparison are the build's own (`trellis build` warns on them).
+  try {
+    violations.addAll([
+      for (final mismatch in paletteDefaultMismatches(ThemeManifest.load(themeDir))) mismatch.message,
+    ]);
+  } on SassCompilationException catch (e) {
+    violations.add("theme '$theme': a palette does not compile: $e");
   }
 
   bool isTwin(String name) => name.endsWith('_dark') && colors.containsKey(_baseOf(name));
-
-  void expectDefault(String param, String base, String mode) {
-    final palette = palettes[mode];
-    if (palette == null) return;
-    final key = base.replaceAll('_', '-');
-    final entry = palette[key];
-    if (entry == null) {
-      violations.add("theme '$theme', param '$param': no '$key' entry in the $mode palette");
-    } else if (colors[param]!.defaultValue.toString().toLowerCase() != entry.toLowerCase()) {
-      violations.add(
-        "theme '$theme', param '$param': default '${colors[param]!.defaultValue}' differs from the $mode palette "
-        "entry '$entry'",
-      );
-    }
-  }
 
   for (final name in colors.keys) {
     if (isTwin(name)) {
       if (isTwin(_baseOf(name))) {
         violations.add("theme '$theme', param '$name': a twin of a twin ('${_baseOf(name)}' is already a twin)");
       }
-      expectDefault(name, _baseOf(name), 'dark');
     } else {
       final twin = '${name}_dark';
       final declared = params[twin];
@@ -636,7 +622,6 @@ List<String> twinViolations(String themeDir) {
       } else if (declared.type != 'color') {
         violations.add("theme '$theme', param '$twin': must be type color, is '${declared.type}'");
       }
-      expectDefault(name, name, 'light');
     }
   }
   return violations;
@@ -644,55 +629,38 @@ List<String> twinViolations(String themeDir) {
 
 String _baseOf(String twin) => twin.substring(0, twin.length - '_dark'.length);
 
-/// The configurability rule: the variables the bridge configures are exactly the ones Sass accepts configuring.
+/// The configurability rule: a param variable a theme file declares `!default` must be one Sass lets the entry be
+/// configured with.
 ///
-/// The bridge reads only `sass/_variables.scss` for `!default` declarations, so a param variable declared anywhere
-/// else would never take a site override and nothing would say so. The oracle is Sass itself, not a second reading
-/// of the source: for each manifest param, `@use "<entry>" with ($trellis-<param>: ...)` either compiles, or fails
-/// with "not declared with !default". The generator's [ThemeBuildConfig.configurableVars] must agree with that.
-///
-/// One further violation, strictly additive: a param variable that a theme file declares `!default` while Sass says
-/// the entry cannot configure it (a partial the entry does not forward). Sass cannot name that declaration, so this
-/// part reads the text. It can add a violation, never remove one the oracle found.
+/// The build asks Sass per entry (`compileThemeEntry` drops each candidate Sass rejects), so what it configures is
+/// right by construction. A `!default` Sass cannot reach (a partial the entry only `@use`s, a mixin) is a theme
+/// defect: the override never arrives, and `trellis build` can only warn when a site overrides the param. This check
+/// reads the declarations as text, by file, and fails for each one the entry was not configured with.
 List<String> configurabilityViolations(String themeDir) {
   final theme = p.basename(themeDir);
   final manifest = ThemeManifest.load(themeDir);
   final declaredIn = _defaultDeclarationsByFile(themeDir);
+  final paramVariables = {for (final param in manifest.params.keys) 'trellis-${param.replaceAll('_', '-')}'};
   final site = Directory.systemTemp.createTempSync('trellis_use_gate_site_');
   try {
     final config = _generate(themeDir, SkinMode.light, site.path);
-    final configurable = config.configurableVars.toSet();
     final violations = <String>{};
     for (final entry in themeEntries(themeDir)) {
       final entryName = p.relative(entry, from: p.join(themeDir, 'sass'));
-      for (final param in manifest.params.keys) {
-        final variable = 'trellis-${param.replaceAll('_', '-')}';
-        final bool sassConfigures;
-        try {
-          sassConfigures = _sassConfigures(config, entry, variable);
-        } on SassCompilationException catch (e) {
-          violations.add("theme '$theme', entry '$entryName': configuring \$$variable failed unexpectedly: $e");
-          continue;
-        }
-        if (sassConfigures && !configurable.contains(variable)) {
+      final Set<String> configured;
+      try {
+        configured = compileThemeEntry(config, entry).configured.toSet();
+      } on SassCompilationException catch (e) {
+        violations.add("theme '$theme', entry '$entryName': the bridged compile failed unexpectedly: $e");
+        continue;
+      }
+      for (final MapEntry(key: file, value: variables) in declaredIn.entries) {
+        for (final variable in variables.where(paramVariables.contains)) {
+          if (configured.contains(variable)) continue;
           violations.add(
-            "theme '$theme': \$$variable is declared !default and Sass configures it on '$entryName', but the bridge "
-            'does not (only sass/_variables.scss is read)',
+            "theme '$theme': \$$variable is declared !default in '$file', but Sass cannot configure it on "
+            "'$entryName' (the entry does not forward that file)",
           );
-        } else if (!sassConfigures && configurable.contains(variable)) {
-          violations.add(
-            "theme '$theme': the bridge configures \$$variable, but Sass rejects it on '$entryName' (not declared "
-            '!default there)',
-          );
-        }
-        if (!sassConfigures) {
-          for (final file in declaredIn.entries) {
-            if (!file.value.contains(variable)) continue;
-            violations.add(
-              "theme '$theme': \$$variable is declared !default in '${file.key}', but Sass cannot configure it on "
-              "'$entryName' (the entry does not forward that file)",
-            );
-          }
         }
       }
     }
@@ -759,25 +727,13 @@ ThemeBuildConfig _generate(
   );
 }
 
-/// Compiles [entry] through the wrapper `trellis build` writes, compressed, `@import` fatal.
-String compileBridged(ThemeBuildConfig config, String entry) {
-  final wrapper = File(p.join(config.buildDir, 'bridge_${p.basenameWithoutExtension(entry)}.scss'))
-    ..writeAsStringSync(config.bridgeWrapperSource(entry));
-  return TrellisCss.compileSass(
-    wrapper.path,
-    outputStyle: OutputStyle.compressed,
-    loadPaths: config.sassLoadPaths,
-    fatalImportDeprecation: true,
-  );
-}
-
 /// Compiles every entry of [themeDir] through the build's wrapper at [skin] with [siteParams] as the site's
 /// params, and returns the stylesheets concatenated.
 String compileTheme(String themeDir, SkinMode skin, Map<String, dynamic> siteParams) {
   final site = Directory.systemTemp.createTempSync('trellis_use_gate_site_');
   try {
     final config = _generate(themeDir, skin, site.path, siteParams: siteParams);
-    return [for (final entry in themeEntries(themeDir)) compileBridged(config, entry)].join('\n');
+    return [for (final entry in themeEntries(themeDir)) compileThemeEntry(config, entry).css].join('\n');
   } finally {
     site.deleteSync(recursive: true);
   }
@@ -967,37 +923,6 @@ int _closingBrace(String css, int open) {
 
 String compileStandalone(String entry) =>
     TrellisCss.compileSass(entry, outputStyle: OutputStyle.compressed, fatalImportDeprecation: true);
-
-/// Whether Sass accepts configuring `$[variable]` on [entry], through the wrapper's own `@use ... with` form, with
-/// the generated params module as the value. A compile error other than the one Sass raises for a variable that is
-/// not declared `!default` is rethrown.
-bool _sassConfigures(ThemeBuildConfig config, String entry, String variable) {
-  final wrapper = File(p.join(config.buildDir, 'oracle_$variable.scss'))
-    ..writeAsStringSync(
-      '@use "theme_params" as tp;\n'
-      '@use "${p.toUri(entry).path}" as theme with (\$$variable: tp.\$$variable);\n',
-    );
-  try {
-    TrellisCss.compileSass(wrapper.path, loadPaths: config.sassLoadPaths, fatalImportDeprecation: true);
-    return true;
-  } on SassCompilationException catch (e) {
-    if (e.toString().contains('not declared with !default')) return false;
-    rethrow;
-  }
-}
-
-/// Reads a skin's `$palette` by compiling it, so an entry may be a literal or built from
-/// variables. Interpolating a colour keeps its authored hex. Keys are the map's keys.
-Map<String, String> readPalette(String skinFile) {
-  final css = TrellisCss.compileSassString(
-    '''
-@use "${p.basename(skinFile)}" as skin;
-:root { @each \$key, \$value in skin.\$palette { --#{\$key}: #{\$value}; } }
-''',
-    loadPaths: [p.dirname(skinFile)],
-  );
-  return {for (final m in RegExp(r'--([\w-]+):\s*([^;]+);').allMatches(css)) m.group(1)!: m.group(2)!.trim()};
-}
 
 // ---------------------------------------------------------------------------
 // Fixtures: mutated copies of a bundled theme.

@@ -1,6 +1,6 @@
 ---
 title: Attributes
-description: Set HTML attributes with tl:attr, the shorthands tl:href / tl:src / tl:value / tl:class / tl:id, and append with tl:classappend / tl:styleappend.
+description: Set HTML attributes with tl:attr, the shorthands tl:href / tl:src / tl:value / tl:class / tl:id, append with tl:classappend / tl:styleappend, and spread a map with tl:attrs.
 weight: 50
 ---
 
@@ -12,7 +12,7 @@ attribute, `tl:attr`, plus convenient shorthands for the most common cases.
 `tl:attr` sets one or more attributes from a comma-separated list of
 `name=${value}` pairs:
 
-```html
+```html static
 <div tl:attr="data-id=${item.id},title=${item.name}">content</div>
 ```
 
@@ -30,7 +30,7 @@ A `null` value removes the attribute. Boolean HTML attributes (`disabled`,
 These shorthands set a single named attribute directly, and read more naturally
 than the generic form:
 
-```html
+```html static
 <a tl:href="${url}">link</a>
 <img tl:src="${imageUrl}">
 <input tl:value="${val}">
@@ -49,9 +49,144 @@ than the generic form:
 Where `tl:class` replaces, these two append to an existing `class` or `style`
 attribute, leaving what is already there in place:
 
-```html
+```html static
 <div class="card" tl:classappend="${active} ? 'active' : ''">content</div>
 <div style="color:red" tl:styleappend="font-weight:bold">content</div>
 ```
 
 The first renders `class="card active"` when `active` is truthy.
+
+A blank existing `class` or `style` (empty or whitespace only) counts as absent, so
+`<div class="" tl:classappend="'a'">` renders `class="a"`, not `class=" a"`.
+
+## `tl:attrs` – spread a map of attributes
+
+`tl:attrs` takes a single expression that evaluates to a `Map` and writes each
+entry as an attribute. It is how a [component](/docs/syntax/composition/) places
+the attributes it receives through a `...rest` parameter.
+
+```html render=attrs-merge
+<a href="/a" class="btn" style="color:red" tl:attrs="${attrs}" tl:href="@{/z}">go</a>
+```
+
+```json context=attrs-merge
+{"attrs": {"href": "/m", "class": "wide", "style": "top:0", "data-n": 1}}
+```
+
+```html output=attrs-merge
+<a href="/z" class="btn wide" style="color:red; top:0" data-n="1">go</a>
+```
+
+The merge rules:
+
+- **Spread runs first** in the attribute group, so the element's own `tl:attr`,
+  shorthands, `tl:classappend` and `tl:styleappend` override spread entries. Above,
+  `tl:href` beat the map's `href`.
+- Against literal attributes an entry **overwrites**, except `class` and `style`,
+  which **append**. `tl:class` remains the explicit full replace.
+- Values behave as in `tl:attr`: `null` removes the attribute, `true` renders a
+  boolean attribute valueless and `false` removes it.
+- A `null` map is a no-op.
+
+```html render=attrs-values
+<input title="old" tl:attrs="${attrs}">
+```
+
+```json context=attrs-values
+{"attrs": {"title": null, "disabled": true, "required": false, "value": "v"}}
+```
+
+```html output=attrs-values
+<input disabled="" value="v">
+```
+
+Attribute **names** come from the map at runtime, which no other directive does,
+so they are validated. Any name HTML allows passes (`@click`, `:class`, `_`),
+but an empty name, or one with whitespace, a control character, `"`, `'`, `>`,
+`/`, `=` or a Unicode noncharacter throws. A non-`Map` value throws, and a key
+starting with the configured attribute prefix (`tl:` by default, compared
+case-insensitively) throws, so a spread map can carry data but
+never a directive:
+
+```html render=attrs-prefix
+<div tl:attrs="${attrs}"></div>
+```
+
+```json context=attrs-prefix
+{"attrs": {"tl:remove": "all"}}
+```
+
+```text throws=attrs-prefix
+starts with the directive prefix
+```
+
+```html render=attrs-not-a-map
+<div tl:attrs="${attrs}"></div>
+```
+
+```json context=attrs-not-a-map
+{"attrs": "class=x"}
+```
+
+```text throws=attrs-not-a-map
+tl:attrs expects a Map but got String
+```
+
+```html render=attrs-bad-name
+<div tl:attrs="${attrs}"></div>
+```
+
+```json context=attrs-bad-name
+{"attrs": {"bad name": "x"}}
+```
+
+```text throws=attrs-bad-name
+illegal attribute name "bad name"
+```
+
+A key that differs from an existing attribute only in case **replaces** it, so
+an element never carries two spellings of one name. Only the exact key `class`
+(or `style`) appends; write keys lowercase:
+
+```html render=attrs-case
+<p class="a" tl:attrs="${attrs}"></p>
+```
+
+```json context=attrs-case
+{"attrs": {"Class": "b"}}
+```
+
+```html output=attrs-case
+<p Class="b"></p>
+```
+
+An element carries at most one `tl:attrs` (the HTML5 parser drops duplicates, as
+with `tl:attr`).
+
+### Trust the map
+
+Entries are written as given: values are only HTML-escaped, never checked for
+meaning, and keys are only checked for syntax. Keep the map out of reach of
+untrusted input:
+
+- **Never let untrusted data choose keys.** A key picks which attribute is set,
+  so it decides what the element does.
+- **Validate values under `href`, `src`, `srcdoc`, `on*` and `style`** exactly as
+  you would for `tl:attr`. A `javascript:` URL, a `srcdoc` document or an event
+  handler passes through verbatim.
+- **A `null` value removes the attribute**, even a literal one on the element. A
+  map can drop `sandbox` from an iframe or `action` from a form.
+
+```html render=attrs-trust
+<iframe sandbox src="/ok" tl:attrs="${attrs}"></iframe>
+<a href="/safe" tl:attrs="${link}">go</a>
+```
+
+```json context=attrs-trust
+{"attrs": {"sandbox": null, "srcdoc": "<p>hi</p>"}, "link": {"href": "javascript:alert(1)"}}
+```
+
+```html output=attrs-trust
+<iframe src="/ok" srcdoc="<p>hi</p>"></iframe>
+<a href="javascript:alert(1)">go</a>
+```

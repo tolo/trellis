@@ -423,11 +423,8 @@ String _compileThroughBridge(
   return _compileWrapper(config, entry);
 }
 
-String _compileWrapper(ThemeBuildConfig config, String entry) {
-  final wrapper = File(p.join(config.buildDir, 'bridge_main.scss'))
-    ..writeAsStringSync(config.bridgeWrapperSource(entry));
-  return TrellisCss.compileSass(wrapper.path, loadPaths: config.sassLoadPaths, fatalImportDeprecation: true);
-}
+String _compileWrapper(ThemeBuildConfig config, String entry) =>
+    compileThemeEntry(config, entry, outputStyle: OutputStyle.expanded).css;
 
 ThemeBuildConfig _generate({
   required String siteDir,

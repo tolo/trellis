@@ -380,8 +380,6 @@ class _Harness {
 
   String compile(String skin, {Map<String, dynamic> siteParams = const {}}) {
     final config = generate(merge(skin, siteParams));
-    final wrapper = File(p.join(config.buildDir, 'bridge_main.scss'))
-      ..writeAsStringSync(config.bridgeWrapperSource(entry));
-    return TrellisCss.compileSass(wrapper.path, loadPaths: config.sassLoadPaths, fatalImportDeprecation: true);
+    return compileThemeEntry(config, entry, outputStyle: OutputStyle.expanded).css;
   }
 }

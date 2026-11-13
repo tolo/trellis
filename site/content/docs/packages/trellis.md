@@ -295,9 +295,9 @@ example of a dialect you can register to add the `tl:scope` processor.
 | `renderFile(name, context)` | `Future<String>` | Load and render template file |
 | `warmUp(names)` | `Future<WarmUpResult>` | Pre-load named templates into the DOM cache |
 | `warmUpAll()` | `Future<WarmUpResult>` | Discover and pre-load templates from `FileSystemLoader`/`MapLoader` |
-| `renderFragment(source, fragment:, context:)` | `String` | Render named fragment from string |
+| `renderFragment(source, fragment:, context:)` | `String` | Render named fragment from string; a parameterised fragment is addressed by bare name ([details](/docs/syntax/fragments/#rendering-a-parameterised-fragment-as-a-response)) |
 | `renderFileFragment(name, fragment:, context:)` | `Future<String>` | Load file and render named fragment |
-| `renderFragments(source, fragments:, context:)` | `String` | Render multiple fragments concatenated |
+| `renderFragments(source, fragments:, context:)` | `String` | Render multiple fragments concatenated, against one shared context ([details](/docs/syntax/fragments/#rendering-a-parameterised-fragment-as-a-response)) |
 | `renderFileFragments(name, fragments:, context:)` | `Future<String>` | Load file and render multiple fragments |
 | `clearCache()` | `void` | Clear DOM cache and reset statistics |
 | `cacheStats` | `CacheStats` | Hit/miss/size metrics for the DOM cache plus `expressionCacheSize` |

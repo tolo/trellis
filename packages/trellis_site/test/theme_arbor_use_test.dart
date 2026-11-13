@@ -60,10 +60,7 @@ void main() {
       siteDir: tempDir.path,
       themeDir: arborDir,
     );
-    final entry = File(p.join(arborDir, 'sass', 'main.scss')).resolveSymbolicLinksSync();
-    final wrapper = File(p.join(config.buildDir, 'bridge_main.scss'))
-      ..writeAsStringSync(config.bridgeWrapperSource(entry));
-    return TrellisCss.compileSass(wrapper.path, loadPaths: config.sassLoadPaths, fatalImportDeprecation: true);
+    return compileThemeEntry(config, p.join(arborDir, 'sass', 'main.scss'), outputStyle: OutputStyle.expanded).css;
   }
 
   group('skins survive the migration', () {

@@ -107,6 +107,9 @@ git history do not carry it, and it outlives the current initiative. -->``.
 ## Workflow Rules
 
 - **Squash merge to `main`** (`git merge --squash`). Stay on the current branch unless told otherwise.
+- **Commit each verified fix round on the `feat/*` branch**, your own paths only (`git commit -- <paths>`), with a
+  one-line message. The squash merge absorbs these commits, so they cost nothing, and an uncommitted pile mixes with
+  other sessions' edits.
 - **`main` carries only squash commits and `chore(release)` commits.** Everything a release needs is complete on the
   branch before the squash: a `## X.Y.Z` section in every `packages/*/CHANGELOG.md` (`tool/release.sh` refuses
   without it) and review findings fixed. Install snippets and `--ref vX.Y.Z` pins are rewritten by
@@ -170,6 +173,26 @@ Read the relevant guideline before starting work of its type:
 - Use the IDE/analyzer diagnostics (or `dart analyze`) on every file you create or modify, and fix
   all issues before considering the task complete. The **Dart MCP server** (when available) exposes
   `pub`, `run_tests`, `dart_format`, `dart_fix`, etc.
+
+### UI testing
+A change to rendered output (templates, themes, `site/`, example apps) is proven in a real browser, never from markup
+or CSS text alone:
+- **Tests:** layout claims get a geometry assertion through `test/browser_reflow_probe.dart`; theme appearance is
+  checked by `dart test test/visual_baseline_test.dart` (macOS only). See `dev/guidelines/TESTING-STRATEGY.md`.
+- **By eye:** serve, capture, and read every PNG as in `dev/guidelines/VISUAL-VALIDATION.md` (ports, routes,
+  breakpoints, traps). A 200 response does not prove the page rendered.
+- **Drivers:** `agent-browser` is the proven CLI. Always pass `--session <name>` and absolute screenshot paths, and
+  never `close --all` (it kills other agents' browsers). The chrome-devtools MCP covers console, network, emulation,
+  and Lighthouse.
+
+Accessibility, after the same kinds of change, audited on the served pages against WCAG 2.2 AA:
+- **`agent-browser --session <name> a11y <url> --tags wcag2a,wcag2aa,wcag21aa,wcag22aa --json`** — axe-core audit;
+  `--selector <css>` scopes it. Exits 0 even with violations, so read `data.counts.violations` and `data.violations`.
+- **chrome-devtools MCP** — `lighthouse_audit` lists failing a11y audits and their nodes (`mode: "snapshot"` audits
+  the current state, e.g. after an htmx swap). Use `emulate` with `forcedColors: "active"` for forced-colours checks:
+  `agent-browser set media forced-colors` reports success but does nothing (reduced-motion works).
+- Both run axe-core rules, so one does not second-check the other. Automation finds roughly half of real issues
+  (Deque claims 57%); alt-text quality, tab order, and focus after htmx swaps need a keyboard walk by hand.
 
 ### Documentation lookup
 - For library/framework/API docs, prefer **Context7 MCP**, then **Fetch MCP** for known doc URLs and

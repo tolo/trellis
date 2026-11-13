@@ -2,6 +2,15 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 import 'package:trellis/testing.dart';
+import 'package:trellis/trellis.dart' show FragmentNotFoundException, TemplateException;
+
+/// An argument rejection, which must not be mistaken for the not-found path (`FragmentNotFoundException` is a
+/// `TemplateException` too).
+Matcher rejectsArguments() => throwsA(
+  isA<TemplateException>()
+      .having((e) => e, 'type', isNot(isA<FragmentNotFoundException>()))
+      .having((e) => e.message, 'message', contains('bare name "toast"')),
+);
 
 void main() {
   late Directory tempDir;
@@ -188,6 +197,37 @@ void main() {
       File(path).writeAsStringSync('<p>Hi</p>\n');
       const source = '<div><p tl:fragment="greeting" tl:text="\${msg}">x</p><footer>ignore</footer></div>';
       expectSnapshotFromSource(engine, source, {'msg': 'Hi'}, goldenFile: path, fragment: 'greeting');
+    });
+  });
+
+  group('parameterised fragments by bare name', () {
+    const toast = r'<div tl:fragment="toast(type, title)" tl:classappend="${type}"><b tl:text="${title}">T</b></div>';
+    const ctx = {'type': 'error', 'title': 'Saved'};
+
+    test('expectSnapshot renders the fragment from the context', () async {
+      final engine = testEngine(templates: {'ui': toast});
+      final path = goldenPath('param_file.html');
+      File(path).writeAsStringSync('<div class="error"><b>Saved</b></div>\n');
+      await expectSnapshot(engine, 'ui', ctx, goldenFile: path, fragment: 'toast');
+    });
+
+    test('expectSnapshotFromSource renders the fragment from the context', () {
+      final path = goldenPath('param_source.html');
+      File(path).writeAsStringSync('<div class="error"><b>Saved</b></div>\n');
+      expectSnapshotFromSource(testEngine(), toast, ctx, goldenFile: path, fragment: 'toast');
+    });
+
+    test('a name with arguments throws TemplateException', () async {
+      final engine = testEngine(templates: {'ui': toast});
+      final path = goldenPath('param_args.html');
+      await expectLater(
+        expectSnapshot(engine, 'ui', ctx, goldenFile: path, fragment: 'toast(type, title)'),
+        rejectsArguments(),
+      );
+      expect(
+        () => expectSnapshotFromSource(engine, toast, ctx, goldenFile: path, fragment: 'toast(type, title)'),
+        rejectsArguments(),
+      );
     });
   });
 }

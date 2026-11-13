@@ -30,6 +30,7 @@ Thymeleaf-inspired HTML template engine for Dart: templates are valid HTML annot
 | `tl:text` | HTML-escaped | **Default** for all text, especially user input |
 | `tl:attr` + shorthands (`tl:href`, `tl:src`, `tl:value`, `tl:class`, `tl:id`) | attribute-escaped | All dynamic attribute values |
 | `tl:utext` | **raw, unescaped** | **Only** pre-rendered, trusted HTML |
+| `tl:attrs` (map spread) | names validated, values HTML-escaped only | Developer-built maps; never untrusted keys, and values under `href`/`src`/`srcdoc`/`on*`/`style` need the same validation as `tl:attr` |
 
 ```html
 <span tl:text="${title}">Title</span>            <!-- safe default -->
@@ -37,7 +38,9 @@ Thymeleaf-inspired HTML template engine for Dart: templates are valid HTML annot
 ```
 
 If a value *could* contain unsafe HTML, never pass it to `tl:utext`. There is no sanitizer in
-the engine — sanitize in Dart before marking something trusted.
+the engine — sanitize in Dart before marking something trusted. The inserted HTML is output only:
+`tl:*` attributes in it are emitted as-is, never evaluated, so build dynamic markup in the template
+or a fragment, not in the value.
 
 
 ## Keep templates dumb
@@ -91,6 +94,37 @@ Truthiness: non-null, non-false, non-zero, not `"false"`/`"off"`/`"no"`. **Empty
 empty lists are truthy** — guard with `null` (or an explicit length check), not `""`/`[]`.
 
 Prefer the dedicated shorthands for common attributes; use `tl:attr` for anything else.
+
+
+## Components
+
+A fragment is a component when it takes content slots, spread attributes or both
+(syntax: [composition guide](https://tolo.github.io/trellis/docs/syntax/composition/)):
+
+```html
+<!-- ui/field.html: define -->
+<label tl:fragment="field(label, name, ...attrs)" class="field">
+  <span tl:text="${label}">Label</span>
+  <input type="text" tl:attr="name=${name}" tl:attrs="${attrs}">
+  <small tl:slot="hint"></small>
+</label>
+
+<!-- use: host attributes go to ...attrs, direct children fill slots -->
+<div tl:replace="~{ui/field.html :: field('Email', 'email')}" type="email" required>
+  <span tl:slot="hint">We never share your email.</span>
+</div>
+```
+
+- **Invoke with `tl:replace`.** The host disappears, so `...attrs` is the only way its attributes survive.
+- **A marker must be a direct child of the host**; the marker element is discarded and its children move in.
+  Use `<tl:block tl:slot="x">` for several siblings, but not inside a `<table>`.
+- **Defaults live as literal attributes** (`type="text"`) that `tl:attrs` overwrites; do not probe the map
+  (`${attrs.type} ?: 'text'` throws in strict mode).
+- **A filled region drops its own `tl:text`/`tl:utext`/`tl:insert`/`tl:replace`**; unfilled, they are the default.
+- **`<tr tl:slot>` under a `<table>` host is lost** (implicit `<tbody>`); mark `<tbody tl:slot>` or host on a `<tbody>`.
+- **`renderFragment()` takes the bare name** even for `toast(type, title)`; parameters come from same-named
+  context keys and `...attrs` is an empty map. In-template `tl:replace="toast"` leaves parameters null.
+- **No literal `id` in a parameterised component**: it repeats per use. Set it with `tl:id`.
 
 
 ## Footguns (these fail silently — the engine warns, it does not fix)

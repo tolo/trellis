@@ -105,7 +105,8 @@ class Page {
 
   @override
   String toString() =>
-      'Page(sourcePath: $sourcePath, url: $url, section: $section, kind: $kind, isDraft: $isDraft, isBundle: $isBundle)';
+      'Page(sourcePath: $sourcePath, url: $url, section: $section, kind: $kind, '
+      'isDraft: $isDraft, isBundle: $isBundle)';
 }
 
 /// Converts a [Page] to a plain [Map] suitable for use as a Trellis context value.

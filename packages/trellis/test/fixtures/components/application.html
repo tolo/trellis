@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Application using the component fragments</title>
+</head>
+<body>
+
+<div tl:replace="~{ui/components.html :: field('Email', 'email')}"
+     type="email" required hx-post="/validate" hx-trigger="blur">
+  <span tl:slot="hint">We never share your email.</span>
+</div>
+
+<div tl:replace="~{ui/components.html :: dialog('confirm', 'Delete item?')}" data-testid="confirm">
+  <p>This action cannot be undone.</p>
+  <tl:block tl:slot="footer">
+    <button class="trellis-button-danger" tl:attr="hx-delete=@{/items(id=${item.id})}">Delete</button>
+    <button>Cancel</button>
+  </tl:block>
+</div>
+
+<div tl:replace="~{ui/components.html :: dropdown('actions', 'Actions')}" data-align="end">
+  <a role="menuitem" href="/edit" tl:href="@{/items/edit(id=${item.id})}">Edit</a>
+  <a role="menuitem" href="/archive" tl:href="@{/items/archive(id=${item.id})}">Archive</a>
+  <b tl:slot="footer"><small>2 actions</small></b>
+</div>
+
+<div tl:replace="~{ui/components.html :: combobox('Country', 'country')}" required hx-get="/cities">
+  <optgroup tl:slot="options">
+    <option value="">Pick a country</option>
+    <option tl:each="c : ${countries}" tl:value="${c.code}" tl:text="${c.name}" value="se">Sweden</option>
+  </optgroup>
+</div>
+
+<table id="table">
+  <thead><tr><th>Name</th></tr></thead>
+  <tbody tl:replace="~{ui/components.html :: table(${people})}" class="striped">
+    <tr tl:slot="row"><td tl:text="${row.name}">Name</td></tr>
+  </tbody>
+</table>
+
+<div tl:replace="~{ui/components.html :: toast('error', 'Saved')}" aria-live="polite">
+  Everything went fine.
+  <b tl:slot="actions"><button>Undo</button></b>
+</div>
+
+</body>
+</html>

@@ -21,8 +21,9 @@ Run from `packages/trellis_site/`.
   Theme layout and params: ADR-008, `docs/guides/theme-authoring.md`, `docs/reference/standard-params.md`.
 - **Theme SASS reaches the theme through a generated `@use … with()` wrapper** built by one function,
   `ThemeBuildConfig.bridgeWrapperSource`, which `trellis build` calls and tests compile. Do not duplicate its text.
-  Only `!default` `$trellis-*` variables in `sass/_variables.scss` are configurable, entries start with
-  `@forward 'variables'`, and every colour param has a `<name>_dark` twin (ADR-013).
+  `compileThemeEntry` configures an entry with the `!default` `$trellis-*` variables Sass accepts on it (Sass has the
+  final say, not a text scan), entries start with `@forward 'variables'`, and every colour param has a `<name>_dark`
+  twin (ADR-013).
 - **Sass load strings are URLs**: embed a path as `p.toUri(path).path`, not a native path or a `file:` URL (LEARNINGS,
   Themes & SSG).
 - **Syntax highlighting runs at build time only** (`code_highlighter.dart`, ADR-010). Nothing it emits needs a runtime

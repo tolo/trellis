@@ -739,11 +739,7 @@ void main() {
     final about = html_parser.parse(File(p.join(config.outputDir, 'about', 'index.html')).readAsStringSync());
     expect(about.querySelector('.desktop-nav a')!.attributes['href'], '/#features');
     final bridge = result.themeBuildConfig!;
-    final tempDir = Directory.systemTemp.createTempSync('meadow_bridge_');
-    addTearDown(() => tempDir.deleteSync(recursive: true));
-    final entry = File(p.join(themeDir, 'sass', 'main.scss')).resolveSymbolicLinksSync();
-    final wrapper = File(p.join(tempDir.path, 'main.scss'))..writeAsStringSync(bridge.bridgeWrapperSource(entry));
-    final css = TrellisCss.compileSass(wrapper.path, loadPaths: bridge.sassLoadPaths, fatalImportDeprecation: true);
+    final css = compileThemeEntry(bridge, p.join(themeDir, 'sass', 'main.scss'), outputStyle: OutputStyle.expanded).css;
     expect(css, isNot(contains('--meadow-body: "')));
     expect(css, isNot(contains('--meadow-width: "')));
 

@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.13.0
+
+### Breaking
+
+- Raw `tl:*` attributes in Markdown are no longer processed; they are output as-is. This follows from the `tl:utext` change in `trellis` 0.13.0. Move such markup into a template or shortcode.
+
+### Added
+
+- **`compileThemeEntry(config, entry)`** compiles a theme entry exactly as `trellis build` does (bridge wrapper,
+  `@import` fatal), so the CLI and theme tests share one recipe (TD-057). The five test helpers that re-derived it, and
+  the other theme suites' copies, now call it. It configures the entry with the variables Sass accepts:
+  `ThemeBuildConfig.configurableVars` are candidates, and each one Sass rejects is dropped and the compile retried
+  (TD-056). It returns a `ThemeEntryCompilation` (`css`, `configured`, `dropped`). Each `dropped` name has a `!default`
+  the entry's `with()` cannot reach (a mixin, a string, an `@if`, a partial the entry only `@use`s), so `trellis build`
+  warns when a site overrides one. `sassVariableName` is exported to map a param name to its variable.
+- **`paletteDefaultMismatches(manifest)`** returns the colour params whose `theme.yaml` default differs from their
+  palette entry, compared and read by compiling in Sass, so `#fff` and `white` agree (TD-055). `TrellisSite.build()`
+  adds each drift to `BuildResult.warnings` as a `BuildWarning` with the new `affectsOutput` flag (a configured or
+  default value does not reach the generated CSS); the compile-every-theme gate uses the same function. A colour param
+  with no `theme.yaml` default is not compared: the bridge configures `null`, which Sass ignores.
+
+### Changed
+
+- `trellis_site` depends on `trellis_css` (it was a dev dependency) because `compileThemeEntry` compiles Sass.
+- `ThemeBuildConfig.configurableVars` now lists candidates: the merged params whose `$trellis-*` variable any file
+  under `sass/` declares with a `!default` (it was the `!default` variables of `_variables.scss`, read as statements,
+  which misread `url(//…)` and `url(data:…;…)`). `bridgeWrapperSource` with that list can now fail to compile (a
+  `!default` in a partial the entry only `@use`s was not offered at 0.12); use `compileThemeEntry`. The barrel exports
+  only `SkinMode`, `ThemeBuildConfig`, `ThemeSassGenerator` and `sassVariableName` from the generator file.
+
 ## 0.12.0
 
 ### Breaking

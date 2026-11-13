@@ -26,14 +26,10 @@ bool _executeRemoveMode(Element element, String value, ProcessorContext context)
       return true; // element remains
 
     case 'tag':
-      final parent = element.parentNode;
-      if (parent != null) {
-        for (final child in List<Node>.from(element.nodes)) {
-          parent.insertBefore(child, element);
-        }
-        element.remove();
-      }
-      return false; // element removed
+      // Promoting the children here would skip them: the engine recurses only into an element that remains, and
+      // the parent's child loop already holds its list. The engine unwraps the element after its child recursion.
+      context.unwrapAfterChildren();
+      return true; // element remains until unwrapped
 
     case 'all-but-first':
       final children = element.children;

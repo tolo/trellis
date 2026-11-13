@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.13.0
+
+### Breaking
+
+- `renderFragment()` and `renderOobFragments()` throw `TemplateException` for a fragment name with arguments in parentheses (`toast('error')`); pass the bare name. This follows from `trellis` 0.13.0.
+
+### Added
+
+- `renderFragment()` and `renderOobFragments()` find a parameterised fragment (`toast(type, title)`) by its bare name, its parameters resolved from the context, following `trellis` 0.13.0.
+
+### Changed
+
+- Lockstep version bump to keep all Trellis SDK packages on a single shared version. No code changes in this package.
+
 ## 0.12.0
 
 ### Changed

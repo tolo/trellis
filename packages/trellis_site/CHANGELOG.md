@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.14.0
+
+### Fixed
+
+- **Lattice: a prose table wider than its column scrolls inside its own box** instead of splitting identifiers
+  mid-word (`maxContentLengt|h`). Tables were `table-layout: fixed` with `overflow-wrap: anywhere` cells, which split
+  code at every viewport because the docs column is under 500px even at 1280px. A cell now wraps only at spaces and
+  hyphens, and `lattice.js` makes a table a tab stop while it overflows so the keyboard can scroll it.
+
 ## 0.13.0
 
 ### Breaking

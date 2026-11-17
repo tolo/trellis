@@ -189,7 +189,7 @@ void main() {
       });
 
       test('does not have CSRF meta tag', () {
-        // Relic has no CSRF — no form body parser
+        // No CSRF in the Relic scaffold: trellis_relic has no CSRF middleware
         expect(content, isNot(contains('csrf-token')));
       });
 

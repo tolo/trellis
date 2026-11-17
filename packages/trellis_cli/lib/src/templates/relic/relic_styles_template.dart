@@ -1,7 +1,7 @@
 /// Generates the static/styles.css content for a Relic + Trellis project.
 ///
-/// Relic has no built-in static file handler, so the server serves this via
-/// a dedicated route at `/styles.css`.
+/// The server serves this one file via a dedicated route at `/styles.css`;
+/// Relic's `StaticHandler` is the tool for a directory of assets.
 String relicStylesTemplate() => '''
 /* Reset and base */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

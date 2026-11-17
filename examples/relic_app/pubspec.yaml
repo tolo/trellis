@@ -10,4 +10,4 @@ dependencies:
     path: ../../packages/trellis
   trellis_relic:
     path: ../../packages/trellis_relic
-  relic: ^1.2.0
+  relic: ^2.0.0

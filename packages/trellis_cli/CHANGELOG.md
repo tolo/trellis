@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.0
+
+### Changed
+
+- `trellis create --template relic` writes `relic: ^2.0.0` (was `^1.2.0`). The generated code needs no change for Relic 2.
+
 ## 0.13.0
 
 ### Added

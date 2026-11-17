@@ -36,7 +36,7 @@ String relicServerTemplate(String projectName) =>
     "    ..post('/counter/increment', (request) => incrementCounter(request, engine))\n"
     "    ..post('/counter/decrement', (request) => decrementCounter(request, engine))\n"
     "    ..post('/counter/reset', (request) => resetCounter(request, engine))\n"
-    '    // Static CSS — Relic has no built-in static file handler.\n'
+    "    // Static CSS — one file, so a plain route; Relic's StaticHandler suits a directory.\n"
     "    ..get('/styles.css', (_) async {\n"
     "      final css = await File('\$staticDir/styles.css').readAsString();\n"
     '      return Response.ok(body: Body.fromString(css, mimeType: MimeType.css));\n'

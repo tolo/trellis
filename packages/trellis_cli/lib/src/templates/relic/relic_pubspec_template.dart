@@ -13,7 +13,7 @@ environment:
   sdk: ^3.10.0
 
 dependencies:
-  relic: ^1.2.0
+  relic: ^2.0.0
   trellis: ^$cliVersion
   trellis_relic: ^$cliVersion
 

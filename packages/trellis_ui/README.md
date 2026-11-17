@@ -68,9 +68,14 @@ import 'package:trellis_ui/trellis_ui.dart';
 Response suiteHandler(Request request) {
   final asset = trellisUiRespond(request.url.path, ifNoneMatch: request.headers['if-none-match']?.join(','));
   if (asset == null) return Response.notFound();
+  final contentType = asset.headers['content-type'];
   return Response(asset.statusCode,
     headers: Headers.fromMap(asset.headers.map((k, v) => MapEntry(k, [v]))),
-    body: Body.fromData(Uint8List.fromList(asset.body)));
+    // Relic takes Content-Type from the body and drops it from the headers.
+    body: Body(
+      bytes: Uint8List.fromList(asset.body),
+      bodyType: contentType == null ? null : BodyType.fromContentType(ContentTypeHeader.parse(contentType)),
+    ));
 }
 ```
 

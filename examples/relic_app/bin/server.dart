@@ -34,8 +34,8 @@ Future<void> main() async {
     ..post('/counter/increment', (request) => incrementCounter(request, engine))
     ..post('/counter/decrement', (request) => decrementCounter(request, engine))
     ..post('/counter/reset', (request) => resetCounter(request, engine))
-    // Static CSS — Relic has no built-in static file handler like shelf_static.
-    // A dedicated route is the idiomatic approach for a small number of assets.
+    // Static CSS — one file, so a plain route; Relic's StaticHandler suits a
+    // directory of assets.
     ..get('/styles.css', (_) async {
       final css = await File('$staticDir/styles.css').readAsString();
       return Response.ok(body: Body.fromString(css, mimeType: MimeType.css));

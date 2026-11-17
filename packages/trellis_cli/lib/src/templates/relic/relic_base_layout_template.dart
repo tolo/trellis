@@ -3,7 +3,7 @@ import '../htmx_asset.dart';
 /// Generates the templates/base.html content for a Relic + Trellis project.
 ///
 /// Uses template inheritance (`tl:define`) and HTMX for client-side navigation.
-/// No CSRF meta tag — Relic lacks form body parsing, so CSRF is not included.
+/// No CSRF meta tag — trellis_relic has no CSRF middleware.
 String relicBaseLayoutTemplate(String projectName) =>
     '''
 <!DOCTYPE html>

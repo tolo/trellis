@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.14.0
+
+### Breaking
+
+- Requires `relic` 2 (`^2.0.0`, was `^1.2.0`). The `trellis_relic` API is unchanged, but an app moves to Relic 2 with
+  it. In the app's own code, Content-Type is set only through the `Body` (`mimeType:` or `bodyType:`): one set in
+  response headers is dropped on the wire. See Relic's 2.0.0 changelog for the rest.
+
 ## 0.13.0
 
 ### Breaking

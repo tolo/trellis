@@ -18,7 +18,10 @@ Run from `packages/trellis_relic/`.
 
 - **Depends on `trellis` and `relic` only, not on `shelf` or `trellis_shelf`.** There is no DI layer: the engine is
   passed to each helper explicitly (`dev/architecture/system-architecture.md`, Relic).
-- **No CSRF support**, because Relic has no form body parser. Relic middleware fires only for matched routes, unlike
-  Shelf.
+- **Targets Relic 2.** Content-Type comes from the `Body` (`mimeType:` or `bodyType:`); one set in response headers
+  is dropped on the wire, so a test of what a client receives goes through a real socket.
+- **No CSRF support.** It was left out because Relic 1 had no form body parser; Relic 2 has one
+  (`request.urlEncodedForm()`), but no CSRF middleware is built on it yet. Relic middleware fires only for matched
+  routes, unlike Shelf.
 - **`lib/src/htmx_helpers.dart` has near-identical copies in `trellis_shelf` and `trellis_dart_frog`** (ADR-011). Change
   header handling in all three.

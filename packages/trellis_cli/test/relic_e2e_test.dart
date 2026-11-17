@@ -38,18 +38,9 @@ void main() {
       await generator.generate();
       projectDir = appDir;
 
-      final workspaceRoot = (await findWorkspaceRoot()).path;
       final pubspecFile = File('${projectDir.path}/pubspec.yaml');
       final pubspecContent = await pubspecFile.readAsString();
-      final overrides =
-          '''
-dependency_overrides:
-  trellis:
-    path: $workspaceRoot/packages/trellis
-  trellis_relic:
-    path: $workspaceRoot/packages/trellis_relic
-''';
-      await pubspecFile.writeAsString(pubspecContent + overrides);
+      await pubspecFile.writeAsString(pubspecContent + workspaceDependencyOverrides(await findWorkspaceRoot()));
 
       final pubGet = await Process.run('dart', ['pub', 'get'], workingDirectory: projectDir.path);
       expect(pubGet.exitCode, 0, reason: 'dart pub get failed:\n${pubGet.stdout}\n${pubGet.stderr}');

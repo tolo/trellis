@@ -24,3 +24,27 @@ Future<Directory> findWorkspaceRoot() async {
     dir = parent;
   }
 }
+
+/// A `dependency_overrides:` block pointing every workspace package at its local path.
+///
+/// Listing every package, not just a scaffold's direct dependencies, keeps transitive ones local too: when
+/// `trellis_site` gained `trellis_css` in 0.13, a hand-written list missed it, and after the release bump the
+/// generated app asked pub.dev for an unpublished `trellis_css ^0.13.0` and the E2E run on `main` went red.
+/// Overrides for packages outside the app's graph are ignored by pub.
+String workspaceDependencyOverrides(Directory workspaceRoot) {
+  final packages =
+      Directory('${workspaceRoot.path}/packages')
+          .listSync()
+          .whereType<Directory>()
+          .where((dir) => File('${dir.path}/pubspec.yaml').existsSync())
+          .map((dir) => dir.uri.pathSegments.where((s) => s.isNotEmpty).last)
+          .toList()
+        ..sort();
+  final buffer = StringBuffer('\ndependency_overrides:\n');
+  for (final name in packages) {
+    buffer
+      ..writeln('  $name:')
+      ..writeln('    path: ${workspaceRoot.path}/packages/$name');
+  }
+  return buffer.toString();
+}

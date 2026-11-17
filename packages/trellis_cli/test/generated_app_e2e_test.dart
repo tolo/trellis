@@ -40,20 +40,9 @@ void main() {
       projectDir = appDir;
 
       // ── 2. Inject dependency_overrides for local workspace packages ────
-      final workspaceRoot = (await findWorkspaceRoot()).path;
       final pubspecFile = File('${projectDir.path}/pubspec.yaml');
       final pubspecContent = await pubspecFile.readAsString();
-      final overrides =
-          '''
-dependency_overrides:
-  trellis:
-    path: $workspaceRoot/packages/trellis
-  trellis_shelf:
-    path: $workspaceRoot/packages/trellis_shelf
-  trellis_dev:
-    path: $workspaceRoot/packages/trellis_dev
-''';
-      await pubspecFile.writeAsString(pubspecContent + overrides);
+      await pubspecFile.writeAsString(pubspecContent + workspaceDependencyOverrides(await findWorkspaceRoot()));
 
       // ── 3. dart pub get ────────────────────────────────────────────────
       final pubGet = await Process.run('dart', ['pub', 'get'], workingDirectory: projectDir.path);

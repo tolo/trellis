@@ -33,18 +33,21 @@ void main() {
 
   test('app CSS stays within 50 lines and no authored JS exists', () {
     final files = filesUnder('static');
-    final css = files.where((file) => file.path.toLowerCase().endsWith('.css')).toList();
-    expect(css, isNotEmpty);
     int sourceLines(File file) => file
         .readAsStringSync()
         .replaceAll(RegExp(r'/\*[\s\S]*?\*/'), '')
         .split('\n')
         .where((line) => line.trim().isNotEmpty)
         .length;
+    final cssLines = {
+      for (final file in files)
+        if (file.path.toLowerCase().endsWith('.css')) file.path: sourceLines(file),
+    };
+    expect(cssLines, isNotEmpty);
     expect(
-      css.fold<int>(0, (total, file) => total + sourceLines(file)),
+      cssLines.values.fold<int>(0, (total, lines) => total + lines),
       lessThanOrEqualTo(50),
-      reason: css.map((file) => '${file.path}: ${sourceLines(file)} lines').join(', '),
+      reason: cssLines.entries.map((entry) => '${entry.key}: ${entry.value} lines').join(', '),
     );
     expect(
       files

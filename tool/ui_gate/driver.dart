@@ -21,6 +21,14 @@ abstract interface class GateDriver {
   Future<void> close();
 }
 
+/// Prepares the native pointer target in the viewport, including nested scrollers.
+const pointerTargetScript = r'''function(selector) {
+  const target = document.querySelector(selector);
+  if (!target) throw Error('missing selector: ' + selector);
+  target.scrollIntoView({block:'nearest', inline:'nearest', behavior:'instant'});
+  return target;
+}''';
+
 /// Preload captures page behavior from the first script, including load CSP.
 const gatePreload = cspViolationPreload + ';' + gateInstrumentationPreload;
 
@@ -173,9 +181,8 @@ final class ChromeDriver implements GateDriver {
   @override
   Future<void> pointer(String selector, {bool click = false, bool down = false}) async {
     final box =
-        (await evaluate('''(() => { const el = document.querySelector(${jsonEncode(selector)});
-      if (!el) throw Error('missing selector: ' + ${jsonEncode(selector)});
-      el.scrollIntoView({block:'nearest'}); const r=el.getBoundingClientRect();
+        (await evaluate('''(() => {
+      const r=($pointerTargetScript)(${jsonEncode(selector)}).getBoundingClientRect();
       return [r.x+r.width/2, r.y+r.height/2]; })()''')
                 as List)
             .cast<num>();

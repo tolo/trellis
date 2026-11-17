@@ -251,16 +251,26 @@ List<String> baselinePages(Directory output) {
   return ['/', ...rest.take(pagesPerTheme - 1)];
 }
 
+/// A native modal makes rendered controls outside its top layer inert.
+const modalAllowsFocusScript = r'''function(element) {
+  const modal = document.activeElement?.closest('dialog:modal') ?? document.querySelector('dialog:modal');
+  return !modal || modal.contains(element);
+}''';
+
 /// Reestablishes and reports a requested focus state in the measurement task.
 ///
 /// A headless Firefox document can be backgrounded between protocol commands
 /// while activeElement remains unchanged. Keep this with the read; remove the
 /// restoration if the driver can hold document activation through measurement.
-const forceFocusScript = r'''async function(selector) {
+const forceFocusScript =
+    r'''async function(selector) {
   const element = document.querySelector(selector);
   if (!element) throw new Error('missing focus element ' + selector);
   const box = element.getBoundingClientRect();
-  const applicable = !!(!element.disabled && box.width && box.height &&
+  const allowed = (''' +
+    modalAllowsFocusScript +
+    r''')(element);
+  const applicable = !!(allowed && !element.disabled && box.width && box.height &&
     getComputedStyle(element).visibility !== 'hidden' &&
     (element.matches('button,input,select,textarea,a[href],summary,dialog,[tabindex]') || element.isContentEditable));
   if (!applicable) return {applicable:false};

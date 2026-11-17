@@ -101,7 +101,9 @@ Future<Map<String, Object?>> captureAppearance(GateSession session) async {
           );
           await driver.evaluate('''(() => {const el=document.querySelector(${jsonEncode(element.value)});
             if('disabled' in el)el.disabled=true; else el.setAttribute('aria-disabled','true');})()''');
-        } else {
+        } else if (pseudo != 'focus-visible' ||
+            await driver.evaluate('($modalAllowsFocusScript)(document.querySelector(${jsonEncode(element.value)}))') ==
+                true) {
           await driver.pseudo(element.value, pseudo == 'focus-visible' ? ['focus', 'focus-visible'] : [pseudo]);
         }
         await capture(

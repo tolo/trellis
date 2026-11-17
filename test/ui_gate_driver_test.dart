@@ -7,8 +7,39 @@ import 'package:test/test.dart';
 import '../tool/ui_gate/driver.dart';
 import '../tool/ui_gate/firefox.dart';
 import 'browser_reflow_probe.dart';
+import 'ui_gate_test_support.dart';
 
 void main() {
+  test('native pointer reaches a control inside a horizontally scrolled region', () async {
+    final server = await fixtureServer();
+    await forBrowsers((driver) async {
+      await driver.viewport(390, 844);
+      await driver.open(server.baseUrl.resolve('/pass.html'));
+      await driver.evaluate('''(() => {
+        const root = document.querySelector('#component');
+        root.insertAdjacentHTML('beforeend',
+          '<div id="scroller"><div id="track"><button id="far">Open actions</button></div></div>');
+        const scroller=document.getElementById('scroller'), far=document.getElementById('far');
+        Object.assign(scroller.style, {width:'200px',overflowX:'auto'});
+        document.getElementById('track').style.width='600px';
+        far.style.marginInlineStart='480px';
+        window.pointerClicks=0;
+        far.addEventListener('click', () => window.pointerClicks++);
+      })()''');
+      expect(await driver.evaluate("document.getElementById('far').getBoundingClientRect().left > innerWidth"), true);
+      await driver.pointer('#far');
+      expect(
+        await driver.evaluate(
+          "document.getElementById('scroller').scrollLeft > 0 && document.querySelector('#far:hover') !== null",
+        ),
+        true,
+        reason: driver.name,
+      );
+      await driver.pointer('#far', click: true);
+      expect(await driver.evaluate('window.pointerClicks'), 1, reason: driver.name);
+    });
+  }, timeout: Timeout(Duration(minutes: 2)));
+
   test('firefox forced active cleanup does not activate a link', () async {
     if (FirefoxDriver.locateFirefox() == null || FirefoxDriver.locateGeckodriver() == null) {
       markTestSkipped('Firefox or geckodriver not installed');

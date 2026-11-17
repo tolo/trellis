@@ -423,7 +423,8 @@ final class GateSession {
       final selectors =
           await driver.evaluate('''(() => {const root=document.querySelector(${jsonEncode(manifest.root)});
         return [root,...root.querySelectorAll('*')].filter(el=>el.matches('button,input,select,textarea,a[href],summary,[tabindex]')).filter(el=>{
-          const r=el.getBoundingClientRect();return r.width&&r.height&&!el.disabled;
+          const r=el.getBoundingClientRect();
+          return ($modalAllowsFocusScript)(el)&&r.width&&r.height&&!el.disabled;
         }).map((el,i)=>{el.setAttribute('data-ui-gate-focus',String(i));return '[data-ui-gate-focus="'+i+'"]';});})()''')
               as List;
       for (final selector in selectors.cast<String>()) {

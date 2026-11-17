@@ -518,7 +518,7 @@
   supported: false
   part_classes: ["trellis-table","trellis-table-body","trellis-table-caption","trellis-table-cell","trellis-table-container","trellis-table-footer","trellis-table-head","trellis-table-header","trellis-table-row"]
   fragments:
-    - {"name":"table","signature":"table(caption, columns, rows, ...attrs)","parameters":["caption","columns","rows","...attrs"],"slots":["row","footer"],"attribute_targets":[{"tag":"<table>","part":"table"}]}
+    - {"name":"table","signature":"table(caption, columns, rows, ...attrs)","parameters":["caption","columns","rows","...attrs"],"slots":["header","row","footer"],"attribute_targets":[{"tag":"<table>","part":"table"}]}
   items:
     - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}

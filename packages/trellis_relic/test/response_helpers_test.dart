@@ -23,6 +23,14 @@ const _pageTemplate = '''
 </html>
 ''';
 
+/// An argument rejection, which must not be mistaken for the not-found path (`FragmentNotFoundException` is a
+/// `TemplateException` too).
+Matcher rejectsArguments() => throwsA(
+  isA<TemplateException>()
+      .having((e) => e, 'type', isNot(isA<FragmentNotFoundException>()))
+      .having((e) => e.message, 'message', contains('bare name "toast"')),
+);
+
 void main() {
   late Trellis engine;
 
@@ -152,6 +160,43 @@ void main() {
       );
       final body = await response.readAsString();
       expect(body, isNot(contains('<html')));
+    });
+  });
+
+  group('parameterised fragments by bare name', () {
+    const toast = '<div class="error"><b>Saved</b></div>';
+    const ctx = {'type': 'error', 'title': 'Saved'};
+
+    setUp(() {
+      engine = Trellis(
+        loader: MapLoader({
+          'ui': '<div tl:fragment="toast(type, title)" tl:classappend="\${type}"><b tl:text="\${title}">T</b></div>',
+        }),
+      );
+    });
+
+    test('renderFragment resolves parameters from the context', () async {
+      final response = await renderFragment(makeRequest(), engine, 'ui', 'toast', ctx);
+      expect(await response.readAsString(), toast);
+    });
+
+    test('renderOobFragments resolves parameters from the context', () async {
+      final response = await renderOobFragments(makeRequest(), engine, 'ui', ['toast'], ctx);
+      expect(await response.readAsString(), toast);
+    });
+
+    test('renderPage with htmxFragment resolves parameters from the context', () async {
+      final req = makeRequest(
+        headers: {
+          'HX-Request': ['true'],
+        },
+      );
+      final response = await renderPage(req, engine, 'ui', ctx, htmxFragment: 'toast');
+      expect(await response.readAsString(), toast);
+    });
+
+    test('a name with arguments throws TemplateException', () {
+      expect(() => renderFragment(makeRequest(), engine, 'ui', 'toast(type, title)', ctx), rejectsArguments());
     });
   });
 }

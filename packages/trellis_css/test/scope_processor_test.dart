@@ -1,3 +1,4 @@
+import 'package:html/dom.dart';
 import 'package:test/test.dart';
 import 'package:trellis/trellis.dart';
 import 'package:trellis_css/trellis_css.dart';
@@ -23,6 +24,21 @@ void main() {
         expect(result, contains('@scope (.tl-scope-card)'));
         expect(result, contains('h2 { color: navy; }'));
         expect(result, isNot(contains('tl:scope')));
+      });
+
+      test('a parameterised fragment rendered top-level by bare name is scoped by its bare name', () {
+        final result = _engine().renderFragment(
+          '<div tl:fragment="card(title)">'
+          '<style tl:scope>h2 { color: navy; }</style>'
+          r'<h2 tl:text="${title}">T</h2>'
+          '</div>',
+          fragment: 'card',
+          context: <String, dynamic>{'title': 'Hi'},
+        );
+        expect(result, contains('class="tl-scope-card"'));
+        expect(result, contains('@scope (.tl-scope-card)'));
+        expect(result, contains('<h2>Hi</h2>'));
+        expect(result, isNot(contains('tl:')));
       });
 
       test('T02: existing class on fragment root is preserved — scope class appended', () {
@@ -90,6 +106,27 @@ void main() {
         );
         expect(result, contains('tl-scope-card'));
         expect(result, contains('Hello'));
+      });
+
+      // tl:inline evaluates only text parsed from the template, so the rewrite must keep that text node.
+      test('tl:inline="css" on a scoped style still evaluates its expressions', () {
+        const template =
+            '<div tl:fragment="card">'
+            '<style tl:scope tl:inline="css">.t { color: [[\${c}]]; }</style>'
+            '</div>';
+        final result = _engine().renderFragment(template, fragment: 'card', context: <String, dynamic>{'c': 'red'});
+        expect(result, contains('@scope (.tl-scope-card) {\n  .t { color: red; }\n}'));
+      });
+
+      test('tl:inline="css" leaves text a processor added to a scoped style literal', () {
+        final engine = Trellis(loader: MapLoader({}), cache: false, dialects: [_AppendDialect(), CssDialect()]);
+        final result = engine.renderFragment(
+          '<div tl:fragment="card" tl:append="v"><style tl:scope tl:inline="css">.t{}</style></div>',
+          fragment: 'card',
+          context: <String, dynamic>{'v': r'[(${secret})]', 'secret': 'SECRET'},
+        );
+        expect(result, contains(r'/* [(${secret})] */'));
+        expect(result, isNot(contains('SECRET')));
       });
     });
 
@@ -287,4 +324,30 @@ void main() {
       });
     });
   });
+}
+
+/// Registered before [CssDialect], so it runs on the fragment root before `tl:scope` and appends a context value as
+/// plain text to each `<style>` in it.
+class _AppendDialect extends Dialect {
+  @override
+  String get name => 'Append';
+
+  @override
+  List<Processor> get processors => [_AppendProcessor()];
+}
+
+class _AppendProcessor extends Processor {
+  @override
+  String get attribute => 'append';
+
+  @override
+  ProcessorPriority get priority => ProcessorPriority.highest;
+
+  @override
+  bool process(Element element, String value, ProcessorContext context) {
+    for (final style in element.querySelectorAll('style')) {
+      style.append(Text('/* ${context.variables[value]} */'));
+    }
+    return true;
+  }
 }

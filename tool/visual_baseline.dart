@@ -357,7 +357,8 @@ async function () {
       const rendered = cs.display !== 'none' && (rect.width > 0 || rect.height > 0);
       const boxy = cs.display !== 'inline' && cs.display !== 'contents';
       if (rendered && (boxy || before || after)) {
-        const entry = {k: path, b: [px(rect.x), px(rect.y), px(rect.width), px(rect.height)], s: paint(cs, parentStyle)};
+        const entry = {k: path, b: [px(rect.x), px(rect.y), px(rect.width), px(rect.height)],
+                       s: paint(cs, parentStyle)};
         const cls = (el.getAttribute('class') || '').split(/\s+/).filter(Boolean).sort().join(' ');
         if (cls) entry.c = cls;
         if (el.id) entry.i = el.id;
@@ -391,7 +392,8 @@ async function () {
     if (json === previousJson) return current;
     previousJson = json;
   }
-  throw new Error('page did not settle after 30 measurements; the last two differ, so any recorded value is a coin flip');
+  throw new Error('page did not settle after 30 measurements; ' +
+      'the last two differ, so any recorded value is a coin flip');
 }
 ''';
 

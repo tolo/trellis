@@ -27,7 +27,8 @@ a browser without rendering; `tl:text` replaces it at render time.
 
 ## `tl:utext` – unescaped HTML
 
-`tl:utext` inserts the value as raw, unescaped HTML into the element body. Use it
+`tl:utext` inserts the value as raw, unescaped HTML into the element body. The value
+is output, not template code: `tl:*` attributes inside it are emitted as-is. Use it
 only with content you trust, since it does **not** protect against XSS:
 
 ```html

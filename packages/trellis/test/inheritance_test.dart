@@ -2,7 +2,7 @@ import 'package:test/test.dart';
 import 'package:trellis/trellis.dart';
 
 void main() {
-  // ─── Basic single-level inheritance ──────────────────────────────
+  // ─── Basic single-level inheritance ──────
 
   group('single-level inheritance', () {
     test('child overrides a single block', () {
@@ -135,7 +135,7 @@ void main() {
     });
   });
 
-  // ─── Multi-level inheritance ─────────────────────────────────────
+  // ─── Multi-level inheritance ─────────────
 
   group('multi-level inheritance', () {
     test('3-level chain: child → layout → base', () {
@@ -238,7 +238,7 @@ void main() {
     });
   });
 
-  // ─── Block content with tl:* attributes ─────────────────────────
+  // ─── Block content with tl:* attributes ───
 
   group('block content with tl:* attributes', () {
     test('block with tl:text expression', () {
@@ -389,7 +389,7 @@ void main() {
     });
   });
 
-  // ─── Fragment rendering with inheritance ─────────────────────────
+  // ─── Fragment rendering with inheritance ───
 
   group('fragment rendering with inheritance', () {
     test('renderFragment() on child finds parent fragment', () {
@@ -508,7 +508,7 @@ void main() {
     });
   });
 
-  // ─── Error cases and edge cases ──────────────────────────────────
+  // ─── Error cases and edge cases ──────────
 
   group('error cases', () {
     test('non-existent parent throws TemplateNotFoundException', () {
@@ -751,7 +751,7 @@ void main() {
     });
   });
 
-  // ─── Validator ───────────────────────────────────────────────────
+  // ─── Validator ───────────────────────────
 
   group('validator', () {
     test('tl:extends is recognized (no unknown attribute warning)', () {
@@ -793,7 +793,7 @@ void main() {
     });
   });
 
-  // ─── Caching and configurable prefix ────────────────────────────
+  // ─── Caching and configurable prefix ─────
 
   group('caching', () {
     test('rendering child twice — parent cached', () {
@@ -875,7 +875,7 @@ void main() {
     });
   });
 
-  // ─── Additional integration tests ─────────────────────────────────────
+  // ─── Additional integration tests ────────
 
   group('integration', () {
     test('tl:insert inside inherited block', () {

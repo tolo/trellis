@@ -52,6 +52,79 @@ void main() {
         expect(result, contains('<span>elem</span>'));
         expect(result, isNot(contains('<p>')));
       });
+
+      test('processes the children it keeps', () {
+        final result = render(r'<main><div tl:remove="tag">a<p><b tl:text="${x}">raw</b></p></div></main>', {'x': 1});
+        expect(result, contains('<main>a<p><b>1</b></p></main>'));
+      });
+
+      test('processes children with a tl:with on the same element', () {
+        final result = render(r'<main><div tl:with="y=${x}" tl:remove="tag"><b tl:text="${y}">raw</b></div></main>', {
+          'x': 1,
+        });
+        expect(result, contains('<main><b>1</b></main>'));
+      });
+
+      test('processes children that expand with tl:each', () {
+        final result = render(r'<main><div tl:remove="tag"><i tl:each="v : ${vs}" tl:text="${v}">x</i></div></main>', {
+          'vs': ['a', 'b'],
+        });
+        expect(result, contains('<main><i>a</i><i>b</i></main>'));
+      });
+
+      test('processes children when an expression resolves to tag', () {
+        final result = render(
+          r'''<main><div tl:remove="${u} ? 'tag' : 'none'"><b tl:text="${x}">raw</b></div></main>''',
+          {'u': true, 'x': 1},
+        );
+        expect(result, contains('<main><b>1</b></main>'));
+      });
+
+      test('processes the children of each tl:each item it unwraps', () {
+        final result = render(r'<main><div tl:each="v : ${vs}" tl:remove="tag"><b tl:text="${v}">x</b></div></main>', {
+          'vs': ['a', 'b'],
+        });
+        expect(result, contains('<main><b>a</b><b>b</b></main>'));
+      });
+
+      test('leaves tl:utext output unprocessed', () {
+        final result = render(r'<main><div tl:utext="${html}" tl:remove="tag">x</div></main>', {
+          'html': r'<b tl:text="${secret}">safe</b>',
+          'secret': 'LEAKED',
+        });
+        expect(result, contains(r'<main><b tl:text="${secret}">safe</b></main>'));
+      });
+
+      test('processes tl:insert content once when it unwraps the host', () {
+        final result =
+            Trellis(
+              loader: MapLoader({'parts': r'<p tl:fragment="f"><span tl:utext="${html}">x</span></p>'}),
+              cache: false,
+            ).render('<main><div tl:insert="~{parts :: f}" tl:remove="tag"></div></main>', {
+              'html': r'<b tl:text="${secret}">safe</b>',
+              'secret': 'LEAKED',
+            });
+        expect(result, contains(r'<main><span><b tl:text="${secret}">safe</b></span></main>'));
+      });
+
+      group('on a fragment root', () {
+        const parts = r'<div tl:fragment="f" tl:remove="tag"><b tl:text="${x}">raw</b></div>';
+        late Trellis e;
+
+        setUp(() {
+          e = Trellis(loader: MapLoader({'parts': parts}), cache: false);
+        });
+
+        test('invoked with tl:insert', () {
+          final result = e.render('<main><section tl:insert="~{parts :: f}">old</section></main>', {'x': 1});
+          expect(result, contains('<main><section><b>1</b></section></main>'));
+        });
+
+        test('invoked with tl:replace', () {
+          final result = e.render('<main><section tl:replace="~{parts :: f}">old</section></main>', {'x': 1});
+          expect(result, contains('<main><b>1</b></main>'));
+        });
+      });
     });
 
     group('mode: all-but-first', () {

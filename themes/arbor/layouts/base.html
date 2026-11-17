@@ -88,8 +88,8 @@
       <div class="docs-shell">
 
         <!-- Fragment: sidebar. Collapsible on mobile (JS-free details), a
-             persistent column on desktop. Guard insertion at the call site with
-             tl:if (a fragment-root tl:if is not re-evaluated on insertion). -->
+             persistent column on desktop. Insertion is guarded at the call
+             site with tl:if. -->
         <details class="sidebar-disclosure" open tl:fragment="sidebar">
           <summary class="sidebar-toggle" tl:text="${theme.sidebar_title}">Documentation</summary>
 

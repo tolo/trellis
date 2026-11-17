@@ -382,7 +382,8 @@ including Safari (automation hung in the 2026-10 spikes; a working WebDriver set
 or a manual pass) and VoiceOver, neither of which has evidence yet. Known inputs from
 the spikes: vega's destructive button measures 4.02:1 contrast upstream, below AA;
 `renderFragment` cannot render a parameterised fragment by bare name, so an OOB
-fragment takes its values from the context until core addresses it.
+fragment takes its values from the context until core addresses it. (0.13 lifts this
+limitation: `renderFragment` renders a parameterised fragment by bare name, see ADR-014 §3.)
 
 ### Revisit triggers
 

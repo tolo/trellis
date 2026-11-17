@@ -28,7 +28,9 @@ String baseLayoutTemplate(String projectName) =>
         if (token) headers['X-CSRF-Token'] = token;
       }
       document.addEventListener('htmx:configRequest', function(evt) { setCsrfHeader(evt.detail.headers); });
-      document.addEventListener('htmx:config:request', function(evt) { setCsrfHeader(evt.detail.ctx.request.headers); });
+      document.addEventListener('htmx:config:request', function(evt) {
+        setCsrfHeader(evt.detail.ctx.request.headers);
+      });
     })();
   </script>
 </head>

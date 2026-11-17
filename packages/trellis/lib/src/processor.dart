@@ -29,8 +29,14 @@ final class DomProcessor implements FragmentHost {
   static const int maxFragmentDepth = 32;
   int _fragmentDepth = 0;
 
-  /// Document reference for CSS selector queries on same-file fragments.
+  /// Unprocessed copy of the document, for same-file CSS selector and tag-name fragment targets.
+  ///
+  /// A copy rather than the live document, because an element that precedes its host is already processed by the
+  /// time the host queries it: copying that output would process it again, `tl:utext` HTML included. Name lookups
+  /// clone their definitions at collection for the same reason. Built by [_buildDocument] on the first query, since
+  /// few templates use these targets and a copy per render costs every render.
   Document? _document;
+  Document Function()? _buildDocument;
 
   /// Inclusion stack for cycle detection — tracks fragment IDs being processed.
   final List<String> _inclusionStack = [];
@@ -38,7 +44,7 @@ final class DomProcessor implements FragmentHost {
   /// Pre-collected fragment definitions for same-file lookup.
   /// Each entry maps fragment name → (element, paramNames).
   final Map<String, (Element, List<String>)> _fragmentRegistry = {};
-  final List<Map<String, (Element, List<String>)>> _fragmentRegistryStack = [];
+  final List<({Map<String, (Element, List<String>)> registry, Document? document})> _fragmentRegistryStack = [];
 
   /// Sorted list of all processors (built-in + custom), in priority order.
   late final List<Processor> _processors;
@@ -164,12 +170,19 @@ final class DomProcessor implements FragmentHost {
   }
 
   /// Pre-scan a DOM tree to collect fragment definitions before processing.
-  void collectFragments(Node root) {
-    if (root is Document) _document = root;
+  ///
+  /// For a [Document] root, [templateDocument] returns that document unprocessed when a selector or tag-name target
+  /// first needs it. Without one, the root is copied now.
+  void collectFragments(Node root, {Document Function()? templateDocument}) {
+    if (root is Document) {
+      _document = templateDocument == null ? root.clone(true) : null;
+      _buildDocument = templateDocument;
+    }
     if (root is Element) {
       final fragValue = root.attributes['${attrPrefix}fragment'];
       if (fragValue != null) {
         final (name, paramNames) = parseFragmentDef(fragValue);
+        validateFragmentParams(name, paramNames);
         _fragmentRegistry[name] = (root.clone(true), paramNames);
       }
     }
@@ -178,23 +191,29 @@ final class DomProcessor implements FragmentHost {
     }
   }
 
-  /// Query the stored document by CSS selector (for same-file CSS selector fragment targeting).
+  /// Query by CSS selector, innermost cross-file document first, then the page's unprocessed copy.
   @override
-  Element? querySelectorFromDoc(String selector) => _document?.querySelector(selector);
+  Element? querySelectorFromDoc(String selector) {
+    for (final scope in _fragmentRegistryStack.reversed) {
+      final found = scope.document?.querySelector(selector);
+      if (found != null) return found;
+    }
+    return (_document ??= _buildDocument?.call())?.querySelector(selector);
+  }
 
-  /// Look up a same-file fragment by name from the pre-collected registry.
+  /// Look up a fragment by name, innermost pushed registry first, then the page's own.
   @override
   (Element, List<String>)? lookupFragment(String name) {
-    for (final registry in _fragmentRegistryStack.reversed) {
-      final found = registry[name];
+    for (final scope in _fragmentRegistryStack.reversed) {
+      final found = scope.registry[name];
       if (found != null) return found;
     }
     return _fragmentRegistry[name];
   }
 
   @override
-  void pushFragmentRegistry(Map<String, (Element, List<String>)> registry) {
-    _fragmentRegistryStack.add(registry);
+  void pushFragmentRegistry(Map<String, (Element, List<String>)> registry, {Document? document}) {
+    _fragmentRegistryStack.add((registry: registry, document: document));
   }
 
   @override
@@ -202,10 +221,30 @@ final class DomProcessor implements FragmentHost {
     _fragmentRegistryStack.removeLast();
   }
 
+  /// The temporary parent of the render root being processed by [processRenderRoot]. Its direct children, the root
+  /// and any `tl:each` copies of it, are exempt from definition removal.
+  Node? _renderHolder;
+
+  /// Process a looked-up fragment as a top-level render root.
+  ///
+  /// [root] must already have a parent (the caller's temporary holder), because the processors that act on an element
+  /// through its parent (`tl:replace`, `tl:each`, `tl:if`, `tl:remove`, `tl:block`) are no-ops on a detached one.
+  /// Unlike a definition met in a document, a parameterised render root is rendered, not removed. Its `tl:fragment`
+  /// attribute stays in place while processing so a processor registered on it (e.g. `tl:scope`'s) still fires.
+  void processRenderRoot(Element root, Map<String, dynamic> context) {
+    _renderHolder = root.parentNode;
+    try {
+      process(root, context);
+    } finally {
+      _renderHolder = null;
+    }
+  }
+
   /// Process an element and its children, applying all `tl:*` directives.
   void process(Element element, Map<String, dynamic> context) {
     var effectiveContext = context;
-    var lastAutoProcessChildren = true;
+    var autoProcessChildren = true;
+    var unwrap = element.localName == '${attrPrefix}block';
     var fragmentDefChecked = false;
 
     // Orphan tl:case detection — before running processors
@@ -255,7 +294,11 @@ final class DomProcessor implements FragmentHost {
 
       // Context-modifying processors update processorContext.variables
       effectiveContext = processorContext.variables;
-      lastAutoProcessChildren = processor.autoProcessChildren;
+      // Any processor that manages its own subtree opts the element out; a later processor (e.g. tl:attr after
+      // tl:utext) must not opt it back in.
+      autoProcessChildren =
+          autoProcessChildren && processor.autoProcessChildren && !processorContext.skipsChildRecursion;
+      unwrap = unwrap || processorContext.unwrapsAfterChildren;
 
       if (!keepElement) return;
     }
@@ -270,16 +313,14 @@ final class DomProcessor implements FragmentHost {
     }
 
     // Child recursion (respecting autoProcessChildren)
-    if (lastAutoProcessChildren) {
+    if (autoProcessChildren) {
       for (final child in List<Element>.from(element.children)) {
         process(child, effectiveContext);
       }
     }
 
-    // Block unwrap
-    if (element.localName == '${attrPrefix}block') {
-      _unwrapBlock(element);
-    }
+    // Unwrap (tl:block, tl:remove="tag"): runs after child recursion so the promoted children are already processed
+    if (unwrap) _unwrap(element);
   }
 
   /// Get the attribute value for a processor, handling special cases.
@@ -294,6 +335,7 @@ final class DomProcessor implements FragmentHost {
 
   /// Remove parameterized fragment definitions from output (step 3.5).
   bool _removeFragmentDefinition(Element element) {
+    if (_renderHolder != null && identical(element.parentNode, _renderHolder)) return false;
     final fragDef = element.attributes['${attrPrefix}fragment'];
     if (fragDef != null) {
       final (_, paramNames) = parseFragmentDef(fragDef);
@@ -305,7 +347,7 @@ final class DomProcessor implements FragmentHost {
     return false;
   }
 
-  void _unwrapBlock(Element element) {
+  void _unwrap(Element element) {
     final parent = element.parentNode;
     if (parent == null) return;
     for (final child in List<Node>.from(element.nodes)) {

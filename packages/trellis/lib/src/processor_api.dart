@@ -11,7 +11,7 @@ enum ProcessorPriority {
   afterConditionals, // tl:each
   afterIteration, // tl:insert, tl:replace
   afterInclusion, // tl:text, tl:utext, tl:inline
-  afterContent, // tl:attr + shorthands + classappend + styleappend
+  afterContent, // tl:attrs + tl:attr + shorthands + classappend + styleappend
   afterAttributes, // tl:remove
   lowest, // (custom slot)
 }
@@ -25,7 +25,9 @@ abstract class Processor {
   ProcessorPriority get priority;
 
   /// Whether children are auto-processed after process() returns true [D04].
-  /// Override to false for processors that manage their own subtree.
+  /// Override to false for processors that manage their own subtree. One
+  /// processor returning false on an element is enough: other processors
+  /// firing on the same element cannot opt its children back in.
   bool get autoProcessChildren => true;
 
   /// Process an element. Returns true if element remains in DOM,
@@ -49,17 +51,22 @@ abstract interface class FragmentHost {
   /// [fragmentId] identifies the invocation for cycle detection.
   void processFragmentContent(Element element, Map<String, dynamic> context, {String? fragmentId});
 
-  /// Queries the stored document by CSS selector, for same-file selector-based
-  /// fragment targeting.
+  /// Queries by CSS selector, for selector and tag-name fragment targets: the
+  /// innermost pushed document first, then the page's own, as
+  /// [lookupFragment] does for names.
   Element? querySelectorFromDoc(String selector);
 
-  /// Looks up a same-file fragment by name, innermost pushed registry first.
+  /// Looks up a fragment by name, innermost pushed registry first, then the
+  /// page's own.
   ///
   /// Returns the fragment element and its declared parameter names.
   (Element, List<String>)? lookupFragment(String name);
 
   /// Pushes a fragment registry, shadowing outer ones for nested resolution.
-  void pushFragmentRegistry(Map<String, (Element, List<String>)> registry);
+  ///
+  /// [document] is the unprocessed file that defines the registry, so selector
+  /// targets inside its fragments resolve in that file too.
+  void pushFragmentRegistry(Map<String, (Element, List<String>)> registry, {Document? document});
 
   /// Pops the most recently pushed fragment registry.
   void popFragmentRegistry();
@@ -112,5 +119,50 @@ class ProcessorContext {
   /// Process children of an element with the given context [D04].
   void processChildren(Element element, Map<String, dynamic> context) {
     _processChildren(element, context);
+  }
+
+  bool _unwrap = false;
+  bool _skipChildren = false;
+}
+
+/// Engine-internal [ProcessorContext] members. Not exported from `package:trellis`, so the public processor API is
+/// unchanged; widen it only when a custom processor needs to unwrap or to skip child recursion per invocation.
+extension ProcessorContextInternal on ProcessorContext {
+  /// Asks the engine to replace the element with its children once they are processed, as `tl:block` does.
+  void unwrapAfterChildren() => _unwrap = true;
+
+  /// Whether the processor called [unwrapAfterChildren].
+  bool get unwrapsAfterChildren => _unwrap;
+
+  /// Asks the engine not to recurse into the element's children, for this invocation only. Unlike
+  /// [Processor.autoProcessChildren], it leaves recursion on when the processor kept the content it found.
+  void skipChildRecursion() => _skipChildren = true;
+
+  /// Whether the processor called [skipChildRecursion].
+  bool get skipsChildRecursion => _skipChildren;
+}
+
+/// A text node parsed from template source, the only text `tl:inline` evaluates.
+///
+/// An allow-list rather than a mark on output: a text node any processor adds (`tl:text`, `tl:utext`, a custom one,
+/// inlining itself) is a plain [Text] and stays literal wherever it ends up, e.g. moved into a `tl:insert` host by the
+/// fragment that produced it, so a value can never be evaluated as an inline expression and read the render context.
+/// A processor that rewrites template text and wants it still inlined edits the node's `data` in place, as
+/// `trellis_css`'s `tl:scope` does. Not exported, like [ProcessorContextInternal].
+final class TemplateText extends Text {
+  TemplateText(super.data);
+
+  @override
+  TemplateText clone(bool deep) => TemplateText(data);
+}
+
+/// Marks every text node under [root] as [TemplateText]. Call on each DOM parsed from template source.
+void markTemplateText(Node root) {
+  for (final node in List<Node>.from(root.nodes)) {
+    if (node is Text) {
+      node.replaceWith(TemplateText(node.data));
+    } else {
+      markTemplateText(node);
+    }
   }
 }

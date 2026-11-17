@@ -38,7 +38,8 @@ String themeBaseLayoutTemplate(String themeName) =>
   </main>
 
   <!-- Footer -->
-  <footer tl:define="site-footer" style="max-width: var(--trellis-max-width, 800px); margin: 0 auto; padding: 1rem; text-align: center;">
+  <footer tl:define="site-footer"
+          style="max-width: var(--trellis-max-width, 800px); margin: 0 auto; padding: 1rem; text-align: center;">
     <p tl:if="${theme.footer_text}" tl:text="${theme.footer_text}">Footer text</p>
     <p tl:if="${theme.show_powered_by}">
       Powered by <a href="https://pub.dev/packages/trellis">Trellis</a>

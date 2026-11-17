@@ -1,7 +1,16 @@
+import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:test/test.dart';
 import 'package:trellis/src/processor.dart';
+import 'package:trellis/src/processor_api.dart' show markTemplateText;
 import 'package:trellis/trellis.dart';
+
+/// Parses as the engine does, so `tl:inline` sees template text.
+Document _parse(String source) {
+  final doc = html_parser.parse(source);
+  markTemplateText(doc);
+  return doc;
+}
 
 void main() {
   final messages = MapMessageSource(
@@ -123,7 +132,7 @@ void main() {
 
     test('tl:text="#{welcome}" renders resolved message', () {
       final dp = createProcessor(messageSource: messages, locale: 'en');
-      final doc = html_parser.parse('<p tl:text="#{welcome}">old</p>');
+      final doc = _parse('<p tl:text="#{welcome}">old</p>');
       dp.collectFragments(doc);
       dp.process(doc.body!.children.first, {});
       expect(doc.body!.querySelector('p')!.text, 'Welcome!');
@@ -131,7 +140,7 @@ void main() {
 
     test('tl:attr="title=#{welcome}" resolves in attribute context', () {
       final dp = createProcessor(messageSource: messages, locale: 'en');
-      final doc = html_parser.parse('<p tl:attr="title=#{welcome}">text</p>');
+      final doc = _parse('<p tl:attr="title=#{welcome}">text</p>');
       dp.collectFragments(doc);
       dp.process(doc.body!.children.first, {});
       expect(doc.body!.querySelector('p')!.attributes['title'], 'Welcome!');
@@ -139,7 +148,7 @@ void main() {
 
     test('tl:if="#{truthy.msg}" — truthiness check on resolved string', () {
       final dp = createProcessor(messageSource: messages, locale: 'en');
-      final doc = html_parser.parse('<div><p tl:if="#{truthy.msg}">visible</p></div>');
+      final doc = _parse('<div><p tl:if="#{truthy.msg}">visible</p></div>');
       dp.collectFragments(doc);
       dp.process(doc.body!.children.first, {});
       expect(doc.body!.querySelector('p'), isNotNull);
@@ -147,7 +156,7 @@ void main() {
 
     test('inline [[#{key}]] renders resolved message', () {
       final dp = createProcessor(messageSource: messages, locale: 'en');
-      final doc = html_parser.parse('<p tl:inline="text">Hello [[#{welcome}]]</p>');
+      final doc = _parse('<p tl:inline="text">Hello [[#{welcome}]]</p>');
       dp.collectFragments(doc);
       dp.process(doc.body!.children.first, {});
       expect(doc.body!.querySelector('p')!.text, 'Hello Welcome!');
@@ -155,7 +164,7 @@ void main() {
 
     test('_locale context key overrides default locale', () {
       final dp = createProcessor(messageSource: messages, locale: 'en');
-      final doc = html_parser.parse('<p tl:text="#{welcome}">old</p>');
+      final doc = _parse('<p tl:text="#{welcome}">old</p>');
       dp.collectFragments(doc);
       dp.process(doc.body!.children.first, {'_locale': 'fr'});
       expect(doc.body!.querySelector('p')!.text, 'Bienvenue!');
@@ -163,7 +172,7 @@ void main() {
 
     test(r'parameterized tl:text="#{greeting(${name})}"', () {
       final dp = createProcessor(messageSource: messages, locale: 'en');
-      final doc = html_parser.parse('<p tl:text="#{greeting(\${name})}">old</p>');
+      final doc = _parse('<p tl:text="#{greeting(\${name})}">old</p>');
       dp.collectFragments(doc);
       dp.process(doc.body!.children.first, {'name': 'Bob'});
       expect(doc.body!.querySelector('p')!.text, 'Hello, Bob!');

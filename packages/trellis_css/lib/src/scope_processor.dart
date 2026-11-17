@@ -72,8 +72,16 @@ class ScopeProcessor extends Processor {
       final originalCss = styleEl.text.trim();
       final indented = originalCss.isEmpty ? '' : '  ${originalCss.replaceAll('\n', '\n  ')}';
       final scopedCss = '@scope (.$scopeClass) {\n$indented\n}';
-      styleEl.nodes.clear();
-      styleEl.append(Text(scopedCss));
+      // Rewrite the parsed text node in place: `tl:inline` evaluates only text parsed from the template, so a new
+      // Text node would leave a `tl:inline="css"` on the style unevaluated. Only a sole child is reused: the merged
+      // CSS may hold text a processor added, which must not become template text, so it fails closed instead.
+      final textNode = styleEl.nodes.length == 1 ? styleEl.nodes.whereType<Text>().firstOrNull : null;
+      styleEl.nodes.removeWhere((node) => !identical(node, textNode));
+      if (textNode == null) {
+        styleEl.append(Text(scopedCss));
+      } else {
+        textNode.data = scopedCss;
+      }
       styleEl.attributes.remove(scopeAttr);
     }
 

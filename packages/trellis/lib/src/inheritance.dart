@@ -1,7 +1,6 @@
 import 'package:html/dom.dart';
 
 import 'exceptions.dart';
-import 'loaders/template_loader.dart';
 
 /// Resolves template inheritance (`tl:extends` / `tl:define`) as a pre-pass
 /// before fragment collection and DOM processing.
@@ -14,8 +13,8 @@ class InheritanceResolver {
   /// Combined prefix+separator (e.g. `'tl:'` or `'data-tl-'`).
   final String attrPrefix;
 
-  /// Loader for resolving parent templates by name.
-  final TemplateLoader loader;
+  /// Loads a parent template's source by name; `null` when it does not exist.
+  final String? Function(String name) load;
 
   /// Parse function — uses the engine's cached parse path.
   final Document Function(String source) parse;
@@ -23,7 +22,7 @@ class InheritanceResolver {
   /// Maximum inheritance chain depth.
   final int maxDepth;
 
-  InheritanceResolver({required this.attrPrefix, required this.loader, required this.parse, this.maxDepth = 16});
+  InheritanceResolver({required this.attrPrefix, required this.load, required this.parse, this.maxDepth = 16});
 
   /// Resolve inheritance on [doc].
   ///
@@ -83,7 +82,7 @@ class InheritanceResolver {
     }
 
     // Load parent template.
-    final parentSource = loader.loadSync(parentName);
+    final parentSource = load(parentName);
     if (parentSource == null) {
       throw TemplateNotFoundException(parentName);
     }

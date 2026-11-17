@@ -24,6 +24,8 @@ export 'src/theme_config.dart';
 export 'src/theme_layout_shadowing.dart';
 export 'src/theme_manifest.dart';
 export 'src/theme_param_merger.dart';
-export 'src/theme_sass_generator.dart';
+export 'src/theme_sass_compiler.dart'
+    show PaletteDefaultMismatch, ThemeEntryCompilation, compileThemeEntry, paletteDefaultMismatches;
+export 'src/theme_sass_generator.dart' show SkinMode, ThemeBuildConfig, ThemeSassGenerator, sassVariableName;
 export 'src/trellis_site_builder.dart';
 export 'src/version.dart';

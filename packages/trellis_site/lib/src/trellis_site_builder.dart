@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:trellis/trellis.dart' hide TemplateNotFoundException;
+import 'package:trellis_css/trellis_css.dart' show SassCompilationException;
 
 import 'code_highlighter.dart';
 import 'content_discovery.dart';
@@ -21,6 +22,7 @@ import 'theme_aware_loader.dart';
 import 'theme_layout_shadowing.dart';
 import 'theme_manifest.dart';
 import 'theme_param_merger.dart';
+import 'theme_sass_compiler.dart';
 import 'theme_sass_generator.dart';
 
 /// A non-fatal issue collected during a site build.
@@ -31,7 +33,12 @@ class BuildWarning {
   /// The URL or file path that caused the warning, if available.
   final String? context;
 
-  const BuildWarning(this.message, {this.context});
+  /// Whether a configured or default value does not reach the generated CSS: the build succeeded, but its output
+  /// differs from what the author's files say (a theme default that disagrees with its palette, a site override of a
+  /// param the theme's Sass cannot be configured with). `trellis build` prints such a warning without `--verbose`.
+  final bool affectsOutput;
+
+  const BuildWarning(this.message, {this.context, this.affectsOutput = false});
 
   @override
   String toString() {
@@ -149,6 +156,28 @@ class TrellisSite {
     }
   }
 
+  /// A colour param whose `theme.yaml` default differs from its palette entry: the bridge configures the default
+  /// (unless the site overrides the param), so a palette edit alone never reaches a site build (TD-055).
+  ///
+  /// A missing palette entry is not a drift here (a third-party theme may name its keys differently, and would be
+  /// warned about every colour param); the compile-every-theme gate holds bundled themes to it. A palette that does
+  /// not compile, or has no `$palette` map, is not reported either.
+  List<BuildWarning> _paletteWarnings(ThemeManifest manifest) {
+    try {
+      return [
+        for (final mismatch in paletteDefaultMismatches(manifest))
+          if (mismatch.entry != null)
+            BuildWarning(
+              '${mismatch.message}. The build configures the theme.yaml default unless the site overrides it, so a '
+              'palette edit does not reach site builds until the two agree.',
+              affectsOutput: true,
+            ),
+      ];
+    } on SassCompilationException {
+      return const [];
+    }
+  }
+
   Future<BuildResult> _runPipeline(Stopwatch stopwatch, List<BuildWarning> buildWarnings) async {
     // 1.5. Load theme manifest, merge params, and generate SASS bridge
     Map<String, dynamic>? mergedThemeParams;
@@ -173,6 +202,8 @@ class TrellisSite {
       for (final warning in mergeResult.warnings) {
         buildWarnings.add(BuildWarning(warning));
       }
+
+      buildWarnings.addAll(_paletteWarnings(manifest));
 
       // Generate SASS bridge files (_theme_params.scss, _theme_custom_props.css)
       final paramTypes = <String, String>{for (final entry in manifest.params.entries) entry.key: entry.value.type};

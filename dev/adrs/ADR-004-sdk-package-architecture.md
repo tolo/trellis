@@ -93,6 +93,10 @@ trellis_css ──► csslib (no dependency on trellis core)
 trellis_site ──► trellis, markdown, yaml
 ```
 
+The graph above is the decision as made; the current graph is in `dev/architecture/system-architecture.md`.
+Amended for 0.13: `trellis_site` depends on `trellis_css` (and so `sass`), because it owns the theme SASS bridge
+and `compileThemeEntry` compiles it for the CLI build and the theme tests. Core `trellis` is unaffected (rule 5).
+
 ## Consequences
 
 ### Positive

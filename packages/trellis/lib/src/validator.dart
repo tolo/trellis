@@ -7,7 +7,7 @@ import 'expression/parser.dart';
 import 'loaders/template_loader.dart';
 import 'processor_api.dart';
 import 'processors/attr_processor.dart';
-import 'processors/fragment_processor.dart' show parseFragmentDef;
+import 'processors/fragment_processor.dart' show parseFragmentDef, slotInHostContentMessage, validateFragmentParams;
 import 'utils/binding_parser.dart';
 import 'utils/html_normalizer.dart';
 
@@ -152,7 +152,7 @@ final class TemplateValidator {
   }
 
   Set<String> _buildKnownAttributes() {
-    final known = <String>{'fragment', 'case', 'extends', 'define'};
+    final known = <String>{'fragment', 'case', 'extends', 'define', 'slot'};
     for (final processor in _configuredProcessors()) {
       known.add(processor.attribute);
       if (processor is AttrProcessor) {
@@ -242,6 +242,9 @@ final class TemplateValidator {
         }
       case 'fragment':
         _validateFragmentDefinition(element, attribute, value, errors);
+        _warnOnLiteralIds(element, value, errors);
+      case 'slot':
+        _warnOnUnbindableSlot(element, attribute, errors);
       case 'insert':
       case 'replace':
         _validateFragmentReference(element, attribute, value, errors);
@@ -334,9 +337,156 @@ final class TemplateValidator {
       }
       if (params.any((param) => param.isEmpty)) {
         _addError(errors, element: element, attribute: attribute, message: 'Fragment parameters cannot be empty');
+      } else if (name.isNotEmpty) {
+        // Skipped once an error is reported, so one malformed list does not also report as a misplaced rest.
+        validateFragmentParams(name, params);
       }
+    } on TemplateException catch (error) {
+      _addError(errors, element: element, attribute: attribute, message: error.message);
     } on Exception catch (error) {
       _addError(errors, element: element, attribute: attribute, message: '$error');
+    }
+  }
+
+  /// Report a `tl:slot` marker that sits under a visible `tl:insert`/`tl:replace` host without being its direct child.
+  ///
+  /// The engine only reads a host's literal direct children. On a page a deeper marker is inert, so it is a warning.
+  /// Inside a definition (the host is, or sits inside, a `tl:fragment`) the engine throws for a marker in the host's
+  /// unmarked content, so it is an error with the engine's own message. A marker inside one of the host's
+  /// direct-child markers re-marks a region of the enclosing fragment (slot forwarding), so it is clean. A marker
+  /// with no host ancestor, or one reached through a `tl:fragment` element first, may be a definition-side region and
+  /// is never reported: the validator cannot see cross-file definitions.
+  void _warnOnUnbindableSlot(Element marker, String attribute, List<ValidationError> errors) {
+    Element child = marker;
+    for (var ancestor = marker.parent; ancestor != null; child = ancestor, ancestor = ancestor.parent) {
+      // Host first: a fragment root can itself be the invocation host.
+      final hostAttribute = ['insert', 'replace'].where((suffix) => _hasDirective(ancestor!, suffix)).firstOrNull;
+      if (hostAttribute == null) {
+        if (_hasDirective(ancestor, 'fragment')) return;
+        continue;
+      }
+      if (identical(ancestor, marker.parent)) return;
+      final definition = _enclosingFragment(ancestor);
+      if (definition == null) {
+        errors.add(
+          ValidationError(
+            message:
+                '$attribute marker is not a direct child of its ${_attrPrefix}insert/${_attrPrefix}replace host, '
+                'so it can never bind and is ignored. Move it to be a literal direct child of the host '
+                '(a <${_attrPrefix}block> wrapper is not looked through).',
+            element: marker.localName,
+            attribute: attribute,
+            severity: ValidationSeverity.warning,
+            line: _lineFor(marker),
+          ),
+        );
+      } else if (!_hasDirective(child, 'slot')) {
+        errors.add(
+          ValidationError(
+            message: slotInHostContentMessage(
+              attrPrefix: _attrPrefix,
+              slotName: marker.attributes[attribute]!.trim(),
+              hostAttribute: '$_attrPrefix$hostAttribute',
+              fragmentName: parseFragmentDef(definition.attributes['${_attrPrefix}fragment']!).$1,
+            ),
+            element: marker.localName,
+            attribute: attribute,
+            severity: ValidationSeverity.error,
+            line: _lineFor(marker),
+          ),
+        );
+      }
+      return;
+    }
+  }
+
+  /// Warn on each literal `id` on or inside a parameterized fragment definition.
+  ///
+  /// The fragment may render several times on one page, repeating the id. A parameterless fragment is the HTMX
+  /// swap-target idiom (one render, one stable id), so it never warns. A literal id that `tl:id` or a `tl:attr` `id`
+  /// binding overrides is only a prototype placeholder and is skipped, and the scan stops at a nested fragment, which
+  /// has its own parameter list. Markup the render discards is skipped too: a `tl:replace` element itself, anything
+  /// under `tl:remove="all"`, and the children of a `tl:text`/`tl:utext` element that replaces them (`_` is a no-op
+  /// that keeps them). A `tl:replace`/`tl:insert` host's own children are discarded except the content of its
+  /// direct-child `tl:slot` markers, which renders in the invoked fragment, so that content is scanned. Not scanned:
+  /// a host's unmarked children, which render only when the target declares an anonymous slot, a fact one file does
+  /// not show.
+  void _warnOnLiteralIds(Element fragment, String value, List<ValidationError> errors) {
+    final List<String> params;
+    try {
+      params = parseFragmentDef(value).$2;
+    } on Exception {
+      return;
+    }
+    if (params.isEmpty) {
+      return;
+    }
+
+    void scan(Element element) {
+      if (element.attributes['${_attrPrefix}remove']?.trim() == 'all') {
+        return;
+      }
+      final id = element.attributes['id'];
+      if (id != null && !_overridesId(element) && !_hasDirective(element, 'replace')) {
+        errors.add(
+          ValidationError(
+            message:
+                'Literal id="$id" inside a parameterized fragment repeats on every render of the fragment. '
+                'Set it per use with ${_attrPrefix}id or ${_attrPrefix}attrs.',
+            element: element.localName,
+            attribute: 'id',
+            severity: ValidationSeverity.warning,
+            line: _lineFor(element),
+          ),
+        );
+      }
+      for (final child in _renderedChildren(element)) {
+        // Stops at every nested fragment: a nested parameterless one is usually an htmx swap target rendered once.
+        if (!_hasDirective(child, 'fragment')) {
+          scan(child);
+        }
+      }
+    }
+
+    scan(fragment);
+  }
+
+  /// The children of [element] that survive the render and are not otherwise handled by the id scan.
+  Iterable<Element> _renderedChildren(Element element) {
+    if (_hasDirective(element, 'replace') || _hasDirective(element, 'insert')) {
+      // The invoked fragment renders instead; only the marker content is grafted into it (the marker itself is not).
+      return [
+        for (final marker in element.children)
+          if (_hasDirective(marker, 'slot')) ...marker.children,
+      ];
+    }
+    final text = element.attributes['${_attrPrefix}text'];
+    final utext = element.attributes['${_attrPrefix}utext'];
+    // `_` is a no-op that keeps the children, and tl:text wins over tl:utext (also as a no-op).
+    final replaced = text != null ? text != '_' : utext != null && utext != '_';
+    return replaced ? const [] : element.children;
+  }
+
+  bool _hasDirective(Element element, String suffix) => element.attributes.containsKey('$_attrPrefix$suffix');
+
+  /// The nearest `tl:fragment` element that is [element] or contains it, or null on a page.
+  Element? _enclosingFragment(Element element) {
+    for (Element? current = element; current != null; current = current.parent) {
+      if (_hasDirective(current, 'fragment')) return current;
+    }
+    return null;
+  }
+
+  /// Whether `tl:id` or a `tl:attr` `id` binding replaces [element]'s literal `id` at render time.
+  bool _overridesId(Element element) {
+    if (_hasDirective(element, 'id')) return true;
+    final bindings = element.attributes['${_attrPrefix}attr'];
+    if (bindings == null) return false;
+    try {
+      return parseBindings(bindings).any((binding) => binding.$1 == 'id');
+    } on TemplateException {
+      // Malformed bindings are already reported by _validateBindings.
+      return false;
     }
   }
 
@@ -393,8 +543,8 @@ const _surfacedParseErrors = <String, String>{
 
 const _expressionAttributes = {'text', 'utext', 'if', 'unless', 'switch', 'object'};
 const _bindingAttributes = {'with', 'attr'};
-const _singleExpressionAttributes = {'classappend', 'styleappend', 'href', 'src', 'value', 'class', 'id'};
-const _attrShorthands = {'href', 'src', 'value', 'class', 'id', 'classappend', 'styleappend'};
+const _singleExpressionAttributes = {'classappend', 'styleappend', 'href', 'src', 'value', 'class', 'id', 'attrs'};
+const _attrShorthands = {'href', 'src', 'value', 'class', 'id', 'classappend', 'styleappend', 'attrs'};
 const _inlineValues = {'text', 'javascript', 'css', 'none'};
 const _removeValues = {'all', 'body', 'tag', 'all-but-first', 'none'};
 

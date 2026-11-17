@@ -280,13 +280,7 @@ void main() {
     expect(result.pageCount, 5);
 
     final bridge = result.themeBuildConfig!;
-    final tempDir = Directory.systemTemp.createTempSync('lattice_sass_contract_');
-    addTearDown(() => tempDir.deleteSync(recursive: true));
-    final wrapper = File(p.join(tempDir.path, 'main.scss'))
-      ..writeAsStringSync(
-        bridge.bridgeWrapperSource(File(p.join(themeDir, 'sass', 'main.scss')).resolveSymbolicLinksSync()),
-      );
-    final css = TrellisCss.compileSass(wrapper.path, loadPaths: bridge.sassLoadPaths, fatalImportDeprecation: true);
+    final css = compileThemeEntry(bridge, p.join(themeDir, 'sass', 'main.scss'), outputStyle: OutputStyle.expanded).css;
     final cssFile = File(p.join(config.outputDir, 'css', 'main.css'))..parent.createSync(recursive: true);
     cssFile.writeAsStringSync(css);
     expect(css, contains('--body: Instrument Sans, -apple-system, sans-serif'));

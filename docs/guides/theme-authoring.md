@@ -305,15 +305,15 @@ $trellis-heading-font: $trellis-font-family;
 }
 ```
 
-**The `!default` convention is critical.** `!default` is what makes a variable configurable. The bridge configures a variable with the merged param value, and Sass rejects configuring a variable that is not declared `!default`. Values that are not params (the dark palette, derived values) carry no `!default`, so the bridge never touches them.
+**The `!default` convention is critical.** `!default` is what makes a variable configurable. The bridge configures a variable with the merged param value, and Sass rejects configuring a variable that is not declared `!default`. Values that are not params (the dark palette, derived values) carry no `!default`, so the bridge never configures them.
 
-**Params without a SASS variable are inert.** The bridge configures only the params whose `!default` variable `_variables.scss` declares: the intersection of the manifest's params and that file's declarations. `nav_links`, `social_links` and any theme-specific param you read only in templates (`${theme.<name>}`) need no variable and cost nothing. Configuring them anyway would be a build error (`This variable was not declared with !default in the @used module.`), which is why the bridge does not.
+**Params without a SASS variable are inert.** Configuring a variable the entry cannot take is a Sass error (`This variable was not declared with !default in the @used module.`), so the build asks Sass. For each compile entry it offers the manifest params whose `$trellis-<name>` some file under `sass/` declares `!default`, drops each one Sass rejects, and configures the rest. `nav_links`, `social_links` and any theme-specific param you read only in templates (`${theme.<name>}`) need no variable and cost nothing.
 
-The scan that finds the declarations is deliberately simple:
+What Sass accepts is the rule:
 
-- It reads whole `$trellis-*: … !default;` statements in `_variables.scss`, so line breaks and a formatter re-wrapping a long value do not matter. Comments are ignored.
-- A configurable `$trellis-*` variable declared anywhere else (a partial, a skin, a sub-module) is not configured, and a param bound to it silently has no effect. Declare every param-backed variable in `_variables.scss`.
-- Every non-partial `.scss` or `.sass` file in `sass/` is a compile entry and receives the same list, so each one must `@forward 'variables'` first (see main.scss below).
+- A `$trellis-*: … !default;` at the top level of the entry, or of a file the entry `@forward`s, is configured, wherever that file is. A value with line breaks, `url(//…)` or `url(data:…;…)` is fine.
+- A `!default` Sass cannot configure is left out, silently: one inside a string, a mixin or an `@if`, or in a file the entry only `@use`s (a skin, a sub-module). The param bound to it has no SASS effect: `trellis build` warns, naming the theme, entry and param, when a site overrides it (`--verbose` lists every such variable), and the compile-every-theme gate fails for it in bundled themes. Declare every param-backed variable in `_variables.scss`, which the entry forwards.
+- Every non-partial `.scss` or `.sass` file in `sass/` is a compile entry, asked on its own, so each one must `@forward 'variables'` first (see main.scss below).
 
 ### How the SASS Bridge Works
 
@@ -321,7 +321,7 @@ During `trellis build`, the CSS processing pipeline:
 
 1. Reads `theme.yaml` params merged with site `theme_params:`
 2. Generates `.trellis/build/_theme_params.scss`, a plain module of `$trellis-<name>: <value>;` for every merged param (no `!default`)
-3. Works out which of those params the theme can be configured with (the intersection above)
+3. Offers each entry the params whose variable some theme file declares `!default`, and keeps those Sass accepts (the rule above)
 4. Writes a wrapper per compile entry, `.trellis/build/bridge_<entry>.scss`, and compiles it:
 
 ```scss
@@ -366,7 +366,7 @@ $palette: (
 );
 ```
 
-Name the directory `_skins` and import it as `@use '_skins/light'`: `@use 'skins/light'` does not find it. Keep the file contents equal to the `theme.yaml` defaults (light entries to the plain params, dark entries to the `_dark` twins). In a site build the `theme.yaml` defaults are passed to the theme, so they win over the palette map entries: keep each color param's default equal to its palette entry (the compile-every-theme gate checks this for bundled themes).
+Name the directory `_skins` and import it as `@use '_skins/light'`: `@use 'skins/light'` does not find it. Keep the file contents equal to the `theme.yaml` defaults (light entries to the plain params, dark entries to the `_dark` twins). In a site build the `theme.yaml` defaults are passed to the theme, so they win over the palette map entries: keep each color param's default equal to its palette entry. The compile-every-theme gate checks this for bundled themes, and `trellis build` warns, naming the theme, the param and both values, when a default differs from its palette entry in any theme.
 
 ### main.scss — Entry Point
 
@@ -415,7 +415,7 @@ The `@if $trellis-skin == auto` guard is what makes `skin: light` and `skin: dar
 @forward 'tokens' with ($gap: 2rem !default);
 ```
 
-`!default` inside the `with()` keeps `$gap` configurable by whoever `@use`s the theme. This is a theme-authoring tool, not a bridge tool: the bridge's own configuration is the `@use … with()` wrapper above, and it configures only `$trellis-*` declarations it finds in `_variables.scss`.
+`!default` inside the `with()` keeps `$gap` configurable by whoever `@use`s the theme. This is a theme-authoring tool, not a bridge tool: the bridge's own configuration is the `@use … with()` wrapper above, and it configures only `$trellis-*` variables the entry declares `!default` or forwards.
 
 
 ## CSS Custom Properties

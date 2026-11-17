@@ -38,26 +38,29 @@ class ThemeBuildConfig {
   /// SASS load paths in priority order: `[.trellis/build/, site/sass/, theme/sass/]`.
   final List<String> sassLoadPaths;
 
-  /// SASS variable names (without `$`, e.g. `trellis-primary-color`) the bridge
-  /// configures on the theme entry: the manifest params that were merged and that
-  /// the theme's `_variables.scss` declares `!default`. Everything else in
-  /// `_theme_params.scss` stays inert, because Sass rejects configuring a
-  /// variable the module does not declare `!default`.
+  /// SASS variable names (without `$`, e.g. `trellis-primary-color`) the bridge offers the theme entry: the merged
+  /// manifest params whose variable some SASS file under `sass/` declares with a `!default` (a text read that can
+  /// only over-include, see [ThemeSassGenerator.generate]).
+  ///
+  /// These are candidates. Sass rejects configuring a variable the entry does not forward `!default` at the top level
+  /// of a file, and `compileThemeEntry` drops each one it rejects, so what the wrapper configures is what Sass
+  /// accepts. Everything else in `_theme_params.scss` stays inert.
   final List<String> configurableVars;
 
   const ThemeBuildConfig({required this.buildDir, required this.sassLoadPaths, this.configurableVars = const []});
 
   /// The compile entry for the theme stylesheet at [themeEntryPath]: a wrapper
   /// that `@use`s the generated params module and configures the theme entry with
-  /// the values of [configurableVars] (`@use "<entry>" with (...)`).
+  /// the values of [configurableVars] (`@use "<entry>" with (...)`). `compileThemeEntry` calls this with the candidates
+  /// Sass accepts.
   ///
   /// The theme entry must `@forward` its `_variables.scss` before any other rule
   /// that loads it; Sass only accepts `with()` on a module's first load. Without
   /// configurable variables the entry is `@use`d unconfigured. The entry gets the
   /// explicit namespace `theme`, because Sass rejects a default namespace that is
   /// not an identifier (an entry named `2col.scss`) or that collides with `tp`.
-  /// The CLI build writes exactly this text to `bridge_<entry>.scss`, so a test
-  /// that compiles it compiles what `trellis build` compiles.
+  /// Compile through `compileThemeEntry`, not with [configurableVars] as generated: the generated list holds
+  /// candidates, and Sass rejects the ones whose `!default` the entry cannot reach.
   ///
   /// The entry is embedded as the path of its `file:` URL (`/C:/a%20b/main.scss`
   /// on Windows): Sass parses a load string as a URL, so a native Windows path
@@ -88,7 +91,7 @@ class ThemeBuildConfig {
 /// - `_theme_custom_props.css` — CSS custom properties with `--trellis-` prefix (plain CSS)
 ///
 /// Also validates the `skin` param and works out which params
-/// the theme can be configured with ([ThemeBuildConfig.configurableVars]).
+/// the theme entry may be configured with ([ThemeBuildConfig.configurableVars]).
 class ThemeSassGenerator {
   const ThemeSassGenerator();
 
@@ -142,13 +145,12 @@ class ThemeSassGenerator {
     // path is consulted, so a site partial never shadows a theme-internal one.
     final sassLoadPaths = <String>[buildDir, p.join(siteDir, 'sass'), if (themeDir != null) p.join(themeDir, 'sass')];
 
-    // 5. Params the theme entry can be configured with.
-    final declared = themeDir == null
-        ? const <String>{}
-        : _declaredDefaultVars(p.join(themeDir, 'sass', '_variables.scss'));
+    // 5. Params the theme entry may be configured with: Sass decides per entry (compileThemeEntry), this only keeps
+    // the candidates it is asked about to variables some file declares `!default`.
+    final declared = themeDir == null ? const <String>{} : _defaultDeclaredVars(p.join(themeDir, 'sass'));
     final configurableVars = [
       for (final name in paramTypes.keys)
-        if (mergedParams.containsKey(name) && declared.contains(_toSassName(name))) _toSassName(name),
+        if (mergedParams.containsKey(name) && declared.contains(sassVariableName(name))) sassVariableName(name),
     ];
 
     return ThemeBuildConfig(buildDir: buildDir, sassLoadPaths: sassLoadPaths, configurableVars: configurableVars);
@@ -167,7 +169,7 @@ String _generateSassVariables(Map<String, dynamic> params, Map<String, String> p
   buffer.writeln();
 
   for (final entry in params.entries) {
-    final sassName = _toSassName(entry.key);
+    final sassName = sassVariableName(entry.key);
     final type = paramTypes[entry.key] ?? 'string';
     final value = _toSassValue(entry.value, type);
     buffer.writeln('\$$sassName: $value;');
@@ -179,7 +181,7 @@ String _generateSassVariables(Map<String, dynamic> params, Map<String, String> p
 /// Converts a param name to a SASS variable name (without `$` prefix).
 ///
 /// `primary_color` → `trellis-primary-color`
-String _toSassName(String paramName) => 'trellis-${paramName.replaceAll('_', '-')}';
+String sassVariableName(String paramName) => 'trellis-${paramName.replaceAll('_', '-')}';
 
 /// Matches a genuine CSS hex color literal (`#rgb`, `#rrggbb`, `#rrggbbaa`).
 ///
@@ -318,68 +320,28 @@ String _generateCssCustomProperties(Map<String, dynamic> params, Map<String, Str
 /// single cross-sink validation policy is tracked as TD-011.
 String _toCssValue(dynamic value) => value == null ? 'initial' : value.toString();
 
-/// Returns the `$trellis-*` variable names (no `$`, `_` normalised to `-` as Sass
-/// does) that the stylesheet at [path] declares `!default`, or an empty set when
-/// the file does not exist.
+/// Returns the `$trellis-*` variable names (no `$`, `_` normalised to `-` as Sass does) that a stylesheet under
+/// [sassDir] declares with a `!default` before the next such declaration (or the end of the file).
 ///
-/// Matches each declaration as a whole statement up to its terminating `;`, so a
-/// formatter re-wrapping a long value across lines cannot hide a declaration.
-/// Comments are stripped first so a commented-out declaration does not count.
-Set<String> _declaredDefaultVars(String path) {
-  final file = File(path);
-  if (!file.existsSync()) return const {};
-
+/// A prefilter for the candidates Sass is asked about, not a parser: it reads no comments, strings, mixins or `@if`s
+/// and so only ever over-includes (a rejected candidate costs one compile). It must never under-include, which is
+/// why a declaration runs to the next declaration rather than to a `;` (`url(data:…;…)` and `url(//…)` break a
+/// statement split). The directory may not exist.
+Set<String> _defaultDeclaredVars(String sassDir) {
   final names = <String>{};
-  final declaration = RegExp(r'^\s*\$(trellis[-_][A-Za-z0-9_-]+)\s*:(.*)$', dotAll: true);
-  final defaultFlag = RegExp(r'!default\b');
-  for (final statement in _statements(file.readAsStringSync())) {
-    final match = declaration.firstMatch(statement);
-    if (match == null || !defaultFlag.hasMatch(match.group(2)!)) continue;
-    names.add(match.group(1)!.replaceAll('_', '-'));
-  }
-  return names;
-}
-
-/// Splits SCSS [source] into statements at top-level `;`, `{` and `}`, dropping
-/// `/* */` and `//` comments. Quoted strings and `#{...}` interpolation are
-/// respected (their braces do not end a statement), and a `//` directly after
-/// `:` is part of a URL, not a comment.
-Iterable<String> _statements(String source) sync* {
-  final current = StringBuffer();
-  String? quote;
-  var interpolationDepth = 0;
-  for (var i = 0; i < source.length; i++) {
-    final c = source[i];
-    if (interpolationDepth > 0 && quote == null && (c == '{' || c == '}')) {
-      interpolationDepth += c == '{' ? 1 : -1;
-      current.write(c);
-    } else if (quote != null) {
-      current.write(c);
-      if (c == r'\' && i + 1 < source.length) {
-        current.write(source[++i]);
-      } else if (c == quote) {
-        quote = null;
+  final declaration = RegExp(r'\$(trellis[-_][A-Za-z0-9_-]+)\s*:');
+  final dir = Directory(sassDir);
+  if (!dir.existsSync()) return names;
+  for (final file in dir.listSync(recursive: true, followLinks: false).whereType<File>()) {
+    if (!const {'.scss', '.sass'}.contains(p.extension(file.path).toLowerCase())) continue;
+    final source = file.readAsStringSync();
+    final matches = declaration.allMatches(source).toList();
+    for (var i = 0; i < matches.length; i++) {
+      final end = i + 1 < matches.length ? matches[i + 1].start : source.length;
+      if (source.substring(matches[i].end, end).contains('!default')) {
+        names.add(matches[i].group(1)!.replaceAll('_', '-'));
       }
-    } else if (c == '"' || c == "'") {
-      quote = c;
-      current.write(c);
-    } else if (c == '/' && i + 1 < source.length && source[i + 1] == '*') {
-      final end = source.indexOf('*/', i + 2);
-      i = end == -1 ? source.length : end + 1;
-      current.write(' ');
-    } else if (c == '/' && i + 1 < source.length && source[i + 1] == '/' && (i == 0 || source[i - 1] != ':')) {
-      final end = source.indexOf('\n', i);
-      i = end == -1 ? source.length : end - 1;
-    } else if (c == '#' && i + 1 < source.length && source[i + 1] == '{') {
-      interpolationDepth = 1;
-      current.write('#{');
-      i++;
-    } else if (c == ';' || c == '{' || c == '}') {
-      yield current.toString();
-      current.clear();
-    } else {
-      current.write(c);
     }
   }
-  yield current.toString();
+  return names;
 }

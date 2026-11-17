@@ -10,12 +10,11 @@ void _processInlineImpl(Element element, String modeAttr, ExpressionEvaluator ev
   if (mode != 'text' && mode != 'javascript' && mode != 'css') {
     throw TemplateException('Invalid tl:inline mode: "$mode"');
   }
-
   for (final node in List<Node>.from(element.nodes)) {
-    if (node is! Text) continue;
+    if (node is! TemplateText) continue;
     final text = node.data;
     if (!text.contains('[[') && !text.contains('[(')) continue;
-    node.data = _processInlineText(text, mode, evaluator, context);
+    node.replaceWith(Text(_processInlineText(text, mode, evaluator, context)));
   }
 }
 

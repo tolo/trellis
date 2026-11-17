@@ -1069,7 +1069,8 @@ String _latticeLongNavigationExpression(int labelCount) =>
 
 const _focusVisibilityExpression = r'''(() => {
   const rgb = (value) => {
-    const match = value.match(/rgba?\((\d+(?:\.\d+)?)[, ]+(\d+(?:\.\d+)?)[, ]+(\d+(?:\.\d+)?)(?:[, /]+(\d+(?:\.\d+)?))?\)/);
+    const match = value.match(
+      /rgba?\((\d+(?:\.\d+)?)[, ]+(\d+(?:\.\d+)?)[, ]+(\d+(?:\.\d+)?)(?:[, /]+(\d+(?:\.\d+)?))?\)/);
     if (match !== null) return {
       r: Number(match[1]), g: Number(match[2]), b: Number(match[3]), a: match[4] === undefined ? 1 : Number(match[4]),
     };

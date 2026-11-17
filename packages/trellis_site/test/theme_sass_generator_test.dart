@@ -166,7 +166,8 @@ void main() {
     });
   });
 
-  group('ThemeBuildConfig.configurableVars — manifest params the theme declares !default', () {
+  group('ThemeBuildConfig.configurableVars — manifest params whose variable the theme SASS may declare !default', () {
+    // The text read here only has to over-include: compileThemeEntry asks Sass about each candidate.
     late Directory tempDir;
 
     setUp(() => tempDir = Directory.systemTemp.createTempSync('trellis_configurable_test_'));
@@ -177,6 +178,7 @@ void main() {
       Map<String, dynamic> params,
       Map<String, String> types, {
       String? variables,
+      Map<String, String> files = const {},
       bool withSassDir = true,
     }) {
       final themeDir = p.join(tempDir.path, 'themes', 'fixture');
@@ -184,6 +186,11 @@ void main() {
       if (withSassDir) {
         Directory(p.join(themeDir, 'sass')).createSync();
         if (variables != null) File(p.join(themeDir, 'sass', '_variables.scss')).writeAsStringSync(variables);
+        for (final MapEntry(key: name, value: text) in files.entries) {
+          File(p.join(themeDir, 'sass', name))
+            ..parent.createSync(recursive: true)
+            ..writeAsStringSync(text);
+        }
       }
       return const ThemeSassGenerator().generate(
         mergedParams: params,
@@ -270,7 +277,7 @@ $trellis-max-width: 1200px !default; /* wide */
       expect(config.configurableVars, ['trellis-font-family', 'trellis-logo', 'trellis-max-width']);
     });
 
-    test('ignores commented-out declarations', () {
+    test('also offers a commented-out declaration, which Sass then rejects', () {
       final config = generate(
         {'skin': 'auto', 'max_width': 'x', 'border_radius': 'y'},
         {'skin': 'enum', 'max_width': 'string', 'border_radius': 'string'},
@@ -280,7 +287,55 @@ $trellis-skin: auto !default;
 /* $trellis-border-radius: 6px !default; */
 ''',
       );
-      expect(config.configurableVars, ['trellis-skin']);
+      expect(config.configurableVars, ['trellis-skin', 'trellis-max-width', 'trellis-border-radius']);
+    });
+
+    test('offers a declaration in any file under sass/, not only _variables.scss', () {
+      final config = generate(
+        {'skin': 'auto', 'max_width': 'x', 'gap': 'y'},
+        {'skin': 'enum', 'max_width': 'string', 'gap': 'string'},
+        variables: r'$trellis-skin: auto !default;',
+        files: {
+          '_layout.scss': r'$trellis-max-width: 1000px !default;',
+          'components/_card.sass': r'$trellis-gap: 1rem !default',
+        },
+      );
+      expect(config.configurableVars, unorderedEquals(['trellis-skin', 'trellis-max-width', 'trellis-gap']));
+    });
+
+    test('offers url(//...) and url(data:...;...) defaults, which a statement scan misreads', () {
+      final config = generate(
+        {'a': 'x', 'b': 'y', 'c': 'z'},
+        {'a': 'string', 'b': 'string', 'c': 'string'},
+        variables: r'''
+$trellis-a: url(//cdn.example/x.png) !default;
+$trellis-b: url(data:image/png;base64,AAAA) !default;
+$trellis-c: 1px !default;
+''',
+      );
+      expect(config.configurableVars, ['trellis-a', 'trellis-b', 'trellis-c']);
+    });
+
+    test('offers a !default Sass will reject (in a string, a mixin, an @if): Sass has the final say', () {
+      final config = generate(
+        {'a': 'x', 'b': 'y', 'c': 'z'},
+        {'a': 'string', 'b': 'string', 'c': 'string'},
+        variables: r'''
+$trellis-a: "1px !default";
+@mixin m { $trellis-b: 1px !default; }
+@if true { $trellis-c: 1px !default; }
+''',
+      );
+      expect(config.configurableVars, ['trellis-a', 'trellis-b', 'trellis-c']);
+    });
+
+    test('omits a plain variable declared before a !default one (each declaration is read on its own)', () {
+      final config = generate(
+        {'a': 'x', 'b': 'y'},
+        {'a': 'string', 'b': 'string'},
+        variables: '\$trellis-a: 1px;\n\$trellis-b: 2px !default;\n',
+      );
+      expect(config.configurableVars, ['trellis-b']);
     });
 
     test('matches a variable whichever way it spells the underscore', () {

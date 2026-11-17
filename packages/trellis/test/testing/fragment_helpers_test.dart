@@ -2,6 +2,14 @@ import 'package:test/test.dart';
 import 'package:trellis/trellis.dart';
 import 'package:trellis/testing.dart';
 
+/// An argument rejection, which must not be mistaken for the not-found path (`FragmentNotFoundException` is a
+/// `TemplateException` too).
+Matcher rejectsArguments() => throwsA(
+  isA<TemplateException>()
+      .having((e) => e, 'type', isNot(isA<FragmentNotFoundException>()))
+      .having((e) => e.message, 'message', contains('bare name "toast"')),
+);
+
 void main() {
   group('testFragment', () {
     late Trellis engine;
@@ -11,7 +19,8 @@ void main() {
         templates: {
           'nav':
               '<nav>'
-              '<a tl:fragment="mainNav" tl:each="item : \${items}" tl:href="@{\${item.url}}" tl:text="\${item.label}">link</a>'
+              '<a tl:fragment="mainNav" tl:each="item : \${items}" tl:href="@{\${item.url}}" '
+              'tl:text="\${item.label}">link</a>'
               '</nav>',
           'simple': '<div tl:fragment="greeting"><p tl:text="\${msg}">x</p></div>',
         },
@@ -58,6 +67,29 @@ void main() {
         testFragmentFile(engine, 'partials/nav', 'nonexistent', {}),
         throwsA(isA<FragmentNotFoundException>()),
       );
+    });
+  });
+
+  group('parameterised fragments by bare name', () {
+    const toast = r'<div tl:fragment="toast(type, title)" tl:classappend="${type}"><b tl:text="${title}">T</b></div>';
+    const ctx = {'type': 'error', 'title': 'Saved'};
+    late Trellis engine;
+
+    setUp(() {
+      engine = testEngine(templates: {'ui': toast});
+    });
+
+    test('testFragment resolves parameters from the context', () {
+      expect(testFragment(engine, 'ui', 'toast', ctx), '<div class="error"><b>Saved</b></div>');
+    });
+
+    test('testFragmentFile resolves parameters from the context', () async {
+      expect(await testFragmentFile(engine, 'ui', 'toast', ctx), '<div class="error"><b>Saved</b></div>');
+    });
+
+    test('a name with arguments throws TemplateException', () async {
+      expect(() => testFragment(engine, 'ui', 'toast(type, title)', ctx), rejectsArguments());
+      await expectLater(testFragmentFile(engine, 'ui', 'toast(type, title)', ctx), rejectsArguments());
     });
   });
 }

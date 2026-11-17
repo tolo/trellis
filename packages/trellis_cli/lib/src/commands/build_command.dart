@@ -107,29 +107,34 @@ class BuildCommand extends Command<int> {
       return 1;
     }
 
+    // Warnings show under --verbose; one that affects the output (a theme palette that disagrees with its defaults, a
+    // site override Sass cannot apply) prints regardless, to stderr, once. All are in the summary count.
+    void report(BuildWarning w) {
+      final text = 'Warning: ${w.message}${w.context != null ? ' (${w.context})' : ''}';
+      if (w.affectsOutput) {
+        stderr.writeln(text);
+      } else if (verbose) {
+        stdout.writeln('  $text');
+      }
+    }
+
+    result.warnings.forEach(report);
+
     // Compile SASS after build (build() cleans outputDir as step 1)
-    final int sassCount;
+    final ({int count, List<BuildWarning> warnings}) sass;
     try {
-      sassCount = await _compileSass(config, verbose, themeBuildConfig: result.themeBuildConfig);
+      sass = await _compileSass(config, verbose, themeBuildConfig: result.themeBuildConfig);
     } on _SassBuildFailure catch (failure) {
       stderr.write(_describeSassFailure(failure, siteDir: config.siteDir));
       return 1;
     }
 
-    // Print summary
-    if (result.hasWarnings) {
-      if (verbose) {
-        for (final w in result.warnings) {
-          stdout.writeln('  Warning: ${w.message}${w.context != null ? ' (${w.context})' : ''}');
-        }
-      }
-    }
+    sass.warnings.forEach(report);
 
-    final totalStatic = result.staticFileCount + sassCount;
+    final totalStatic = result.staticFileCount + sass.count;
     final elapsed = result.elapsed.inMilliseconds;
-    final warningStr = result.hasWarnings
-        ? ' (${result.warnings.length} warning${result.warnings.length == 1 ? '' : 's'})'
-        : '';
+    final warningCount = result.warnings.length + sass.warnings.length;
+    final warningStr = warningCount > 0 ? ' ($warningCount warning${warningCount == 1 ? '' : 's'})' : '';
     stdout.writeln('Built ${result.pageCount} pages, $totalStatic static files in ${elapsed}ms$warningStr');
 
     return 0;
@@ -143,16 +148,24 @@ class BuildCommand extends Command<int> {
 /// When [themeBuildConfig] is provided, uses theme-aware SASS load paths and
 /// also compiles SASS files from the theme's `sass/` directory.
 ///
-/// Returns the number of SASS files compiled.
+/// Returns the number of SASS files compiled, and a warning per theme param the site overrides but Sass cannot
+/// configure on an entry (once per param, naming the first entry). `--verbose` also lists every such variable per
+/// entry, overridden or not.
 ///
 /// Throws [_SassBuildFailure] on compilation failure.
-Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? themeBuildConfig}) async {
+Future<({int count, List<BuildWarning> warnings})> _compileSass(
+  SiteConfig config,
+  bool verbose, {
+  ThemeBuildConfig? themeBuildConfig,
+}) async {
   final loadPaths = themeBuildConfig?.sassLoadPaths ?? [config.staticDir];
   var count = 0;
+  final warnings = <BuildWarning>[];
+  final warnedParams = <String>{};
 
   // Compile theme SASS files from theme's sass/ directory.
   // When a theme bridge is active, each entry is compiled through a generated
-  // wrapper (ThemeBuildConfig.bridgeWrapperSource) that `@use`s the entry with
+  // wrapper (compileThemeEntry) that `@use`s the entry with
   // the merged params (theme defaults + site theme_params:) configured onto it.
   if (themeBuildConfig != null && config.themeConfig != null) {
     // Normalize so a relative `theme:` value (e.g. `../../themes/arbor`) collapses
@@ -172,30 +185,31 @@ Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? the
         final outPath = p.join(config.outputDir, 'css', p.setExtension(relative, '.css'));
         Directory(p.dirname(outPath)).createSync(recursive: true);
 
-        // The wrapper lives in .trellis/build/ so its `@use "theme_params"`
-        // resolves to the adjacent _theme_params.scss. The theme's actual SCSS
-        // file is `@use`d via absolute path so its own relative `@use`s resolve
-        // from its original directory.
-        final wrapperBaseName = p.basenameWithoutExtension(file.path);
-        final wrapperPath = p.join(themeBuildConfig.buildDir, 'bridge_$wrapperBaseName.scss');
-        File(wrapperPath).writeAsStringSync(themeBuildConfig.bridgeWrapperSource(p.canonicalize(file.path)));
-
         // Fatal for themes only: an @import-era theme would compile with a
         // warning, but no skin file is injected any more, so `skin: dark` would
         // silently build light (ADR-013). A site's own stylesheets keep @import
         // until Dart Sass 3.0.
-        final String css;
+        final ThemeEntryCompilation compilation;
         try {
-          css = TrellisCss.compileSass(
-            wrapperPath,
-            outputStyle: OutputStyle.compressed,
-            loadPaths: loadPaths,
-            fatalImportDeprecation: true,
-          );
+          compilation = compileThemeEntry(themeBuildConfig, file.path);
         } on SassCompilationException catch (e) {
           throw _SassBuildFailure(e, themeName: config.themeConfig!.name);
         }
-        File(outPath).writeAsStringSync(css);
+        File(outPath).writeAsStringSync(compilation.css);
+
+        for (final variable in compilation.dropped) {
+          if (verbose) stdout.writeln('  $relative: Sass cannot configure \$$variable ($_unconfigurableReason)');
+          for (final param in config.themeConfig!.params.keys) {
+            if (sassVariableName(param) != variable || !warnedParams.add(param)) continue;
+            warnings.add(
+              BuildWarning(
+                "theme '${config.themeConfig!.name}', entry '$relative', param '$param': the site overrides it, but "
+                'its \$$variable !default $_unconfigurableReason, so the override has no effect on the theme\'s Sass',
+                affectsOutput: true,
+              ),
+            );
+          }
+        }
 
         if (verbose) stdout.writeln('  Compiled ${file.path} → $outPath');
         count++;
@@ -229,8 +243,11 @@ Future<int> _compileSass(SiteConfig config, bool verbose, {ThemeBuildConfig? the
     }
   }
 
-  return count;
+  return (count: count, warnings: warnings);
 }
+
+const _unconfigurableReason =
+    'sits where with() cannot reach it: in a mixin, a string, an @if, or a partial the entry does not forward';
 
 /// A SASS compilation failure, with the theme it came from when it happened in a
 /// theme entry (as opposed to the site's own stylesheets).

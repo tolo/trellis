@@ -5,6 +5,14 @@ import 'package:trellis_shelf/trellis_shelf.dart';
 
 import 'package:trellis_shelf/src/request_context.dart';
 
+/// An argument rejection, which must not be mistaken for the not-found path (`FragmentNotFoundException` is a
+/// `TemplateException` too).
+Matcher rejectsArguments() => throwsA(
+  isA<TemplateException>()
+      .having((e) => e, 'type', isNot(isA<FragmentNotFoundException>()))
+      .having((e) => e.message, 'message', contains('bare name "toast"')),
+);
+
 void main() {
   late Trellis engine;
 
@@ -116,6 +124,39 @@ void main() {
     test('throws StateError when engine not in context', () async {
       final request = Request('GET', Uri.parse('http://localhost/'));
       expect(() => renderPage(request, 'page', {}), throwsStateError);
+    });
+  });
+
+  group('parameterised fragments by bare name', () {
+    const toast = '<div class="error"><b>Saved</b></div>';
+    const ctx = {'type': 'error', 'title': 'Saved'};
+
+    setUp(() {
+      engine = Trellis(
+        loader: MapLoader({
+          'ui': '<div tl:fragment="toast(type, title)" tl:classappend="\${type}"><b tl:text="\${title}">T</b></div>',
+        }),
+      );
+    });
+
+    test('renderFragment resolves parameters from the context', () async {
+      final response = await renderFragment(makeRequest(), 'ui', 'toast', ctx);
+      expect(await response.readAsString(), toast);
+    });
+
+    test('renderOobFragments resolves parameters from the context', () async {
+      final response = await renderOobFragments(makeRequest(), 'ui', ['toast'], ctx);
+      expect(await response.readAsString(), toast);
+    });
+
+    test('renderPage with htmxFragment resolves parameters from the context', () async {
+      final request = makeRequest(headers: {'hx-request': 'true'});
+      final response = await renderPage(request, 'ui', ctx, htmxFragment: 'toast');
+      expect(await response.readAsString(), toast);
+    });
+
+    test('a name with arguments throws TemplateException', () {
+      expect(() => renderFragment(makeRequest(), 'ui', 'toast(type, title)', ctx), rejectsArguments());
     });
   });
 }

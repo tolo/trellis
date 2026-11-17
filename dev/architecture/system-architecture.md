@@ -9,7 +9,7 @@ compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme
 `compileThemeEntry` that configures each entry with the params Sass accepts and reports the ones it drops,
 build-time warnings for palette-default drift and for a site override Sass cannot apply (`trellis_site` now
 depends on `trellis_css`), and the redrawn package graph. The `trellis_ui` package map, pipeline and qualification sections
-are current through 0.14 (2026-11-17), including the CSS-only component catalogue and closed layout scales, and so is the Relic section (Relic 2); other sections retain the verification scope above.
+are current through 0.14 (2026-11-17), including the CSS-only catalogue and interactive widgets, and so is the Relic section (Relic 2); other sections retain the verification scope above.
 
 ---
 
@@ -91,6 +91,11 @@ and forced-colour paint without modifying the pinned token values. `TrellisUiLoa
 Frog. Assets live under `/trellis-ui/`, use compile-time SHA-256 ETags and answer conditional GETs with 304.
 `materializeTrellisUi` optionally writes the same bytes beside the binary and overwrites divergence.
 
+Interactive fragments upgrade to light-DOM custom elements from the deferred classic script. One base owns
+listener cleanup and popup sanitisation for HTMX swaps and history. Native dialogs provide modality; native
+popovers share CSSOM positioning that stays inside the viewport. Combobox option responses replace only the
+results region. Toast responses append to a pre-existing live region using an HTMX out-of-band swap.
+
 The package's development pipeline vendors pinned shadcn TSX/style/tokens and licences, extracts `cn-*` hooks and
 structural utilities, renames them to `trellis-*`, then compiles using a checksummed Tailwind standalone binary.
 `tool/port.dart check` regenerates and compares the four committed outputs. `tool/embed.dart` layers hand CSS, bundles
@@ -103,7 +108,8 @@ under strict CSP. The package graph SVG includes its single runtime dependency o
 keyboard/HTMX steps and invariants; one `GateDriver` surface shares the checks across the existing raw-CDP
 `BrowserProbe` and a raw WebDriver/BiDi Firefox adapter. Each run writes a deterministic per-component record,
 keeps human-entered release-prep items, and compares per-OS state/style baselines containing both browsers.
-The digest settles geometry and selected styles atomically without a CSP-blocked style element. Fixture proofs
+The digest settles geometry and selected styles atomically without a CSP-blocked style element. Firefox hover
+sampling replays the page state if another window takes focus before the snapshot. Fixture proofs
 run in the normal test tiers; tests over real component/app pages and visual recordings run locally at release.
 
 ---

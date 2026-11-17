@@ -3,7 +3,7 @@
 Embedded Trellis fragments and same-origin CSS/JS derived from shadcn's Base UI vega style. The package joins SDK
 lockstep releases. Its assets and templates are compiled into the application, including AOT binaries.
 
-The gallery covers native form controls, data views and closed-scale layouts. Automated qualification evidence lives
+The gallery covers native form controls, data views, layouts and interactive controls. Automated qualification evidence lives
 in `dev/ui-gate/` in the SDK checkout. Screen-reader and Safari qualification remain release-prep work.
 
 ## Install and render
@@ -52,13 +52,21 @@ slots take the contents of the caller marker; unmarked caller content fills the 
 | Template / fragment | Signature before `...attrs` | Slots | Closed values and defaults |
 |---|---|---|---|
 | `alert :: alert` | `variant` | anonymous description, `title` | `default`, `destructive`; fallback `default` |
+| `alert-dialog :: alertDialog` | `id, title, description, open` | anonymous body, `trigger`, `action` | forwards to the native dialog; starts on Cancel; `data-open` / `data-closed` |
 | `badge :: badge` | `variant` | anonymous | `default`, `secondary`, `destructive`, `outline`, `ghost`, `link`; fallback `default` |
 | `breadcrumb :: breadcrumb` | `items` | none | server list of `{label, href, current}` |
 | `button :: button` | `variant, size` | anonymous | variants: `default`, `outline`, `secondary`, `ghost`, `destructive`, `link`; sizes: `default`, `xs`, `sm`, `lg`, `icon`, `icon-xs`, `icon-sm`, `icon-lg` |
 | `card :: card` | none | anonymous content, `title`, `description`, `action`, `footer` | default size; title is an `h2` |
 | `checkbox :: checkbox` | none | none | native checkbox; `checked`, `disabled`, `aria-invalid` |
 | `cluster :: cluster` | `gap` | anonymous | gap scale below; fallback `md` |
+| `combobox :: combobox` | `id, name, placeholder, value, options, displayValue` | none | forwards to the visible input; `name` and `value` identify the hidden submission; `options` is a list of `{value, label}`; `data-open` / `data-closed`, `data-side`, `data-align`, `data-empty`, `data-highlighted` |
+| `combobox :: comboboxOptions` | `id, options` | none | forwards to the results container; same ID and option list shape as the combobox |
 | `container :: container` | `size` | anonymous | `sm` 40rem, `md` 56rem, `lg` 72rem, `xl` 80rem; fallback `lg` |
+| `dialog :: dialog` | `id, title, description, open` | anonymous body, `trigger`, `footer` | forwards to the native dialog; `data-open` / `data-closed` |
+| `dropdown-menu :: dropdownMenu` | `id` | anonymous menu items, `trigger` | forwards to the popup; `data-open` / `data-closed`, `data-side`, `data-align` |
+| `dropdown-menu :: menuItem` | `variant` | anonymous label | native item button; `default` or `destructive`; `data-highlighted`; native `disabled` |
+| `dropdown-menu :: menuCheckboxItem` | `checked` | anonymous label | native item button; `data-checked`, `data-highlighted`; native `disabled` |
+| `dropdown-menu :: menuSeparator` | none | none | forwards to the separator |
 | `field :: field` | `controlId, label, hint, error` | none | vertical labelled text input; caller attributes land on the input |
 | `grid :: grid` | `gap, minimum` | anonymous | gap scale; minimum `sm` 10rem, `md` 15rem, `lg` 20rem; fallback `md` |
 | `input :: input` | none | none | native text input; caller `type` overrides text |
@@ -69,7 +77,13 @@ slots take the contents of the caller marker; unmarked caller content fills the 
 | `stack :: stack` | `gap` | anonymous | gap scale; fallback `md` |
 | `switch :: switch` | `size` | none | `default`, `sm`; fallback `default`; native checkbox with switch role |
 | `table :: table` | `caption, columns, rows` | `row`, `footer` | server lists; row marker reads the `row` map in loop scope |
+| `tabs :: tabs` | `id, active, vertical` | anonymous list and panels | forwards to the layout; `active` is the initial tab value; horizontal by default, `data-orientation` |
+| `tabs :: tabList` | none | anonymous tab triggers | forwards to the tab list; supply an accessible name |
+| `tabs :: tabTrigger` | `value` | anonymous tab label | native tab button; `data-active`; native `disabled` |
+| `tabs :: tabPanel` | `value` | anonymous panel | forwards to the panel; `hidden` and `data-hidden` follow selection |
 | `textarea :: textarea` | none | anonymous text | native textarea |
+| `toast :: toast` | `type, title, description, duration, outOfBand` | none | forwards to the card; `data-type`: `info` (default), `success`, `warning`, `error`; duration in ms defaults to 5000, 0 persists |
+| `toast :: toastViewport` | `id` | anonymous toasts | forwards to the live region; default ID and out-of-band target `toaster` |
 
 Template names in the table have the `trellis-ui/` prefix. Gap values are `none` 0, `xs` .25rem, `sm` .5rem,
 `md` 1rem, `lg` 1.5rem and `xl` 2rem. Unrecognised layout values fall back and never create an inline style.
@@ -100,6 +114,30 @@ creates one valid body row group per data item:
 `columns` is a list of heading strings and `people` a list of row maps. The wrapper is a labelled, focusable region
 that scrolls horizontally. Keep table minimum widths in application CSS (the gallery uses 40rem). Use a natural
 `select` host for native-select option content and plain text inside a textarea host.
+
+### Interactive fragments
+
+Use a unique base `id` for each dialog, alert dialog, menu, tabs, combobox and toast viewport on a page. Menu and tab
+parts derive their IDs and relationships from the parent scope. Keep tab values unique within their list and
+choose an enabled tab's value for `active`. Arrow keys wrap, skip disabled items and tabs, and move focus; tabs
+activate on Enter, Space or click. Menu checkbox items stay open, and item clicks also dispatch a bubbling
+`tl-select` event with the item in its detail.
+
+A dialog trigger slot contains a native button. The regular dialog provides a close button and dismisses on
+backdrop click. Mark footer buttons that should close it with `data-dialog-close`. Alert dialogs provide Cancel
+and close when the action slot's button runs. A server-rendered `open` dialog opens modally on connection and
+honours native `autofocus`. To name a specific opener on a server response, pass its DOM ID in `data-return-focus`
+on the fragment host.
+
+Give the combobox input a separate label using its base ID. Send text through an app-chosen query parameter
+(`name="q"`, for example) and use `hx-target="#<id>-results"` with `hx-swap="outerHTML"` to replace suggestions.
+`comboboxOptions` can be returned with `renderFileFragment` using the same `id` and the new `options` list in the
+context. `displayValue` supplies initial visible text when the stored ID is different. Typing clears the stored ID,
+and Home and End remain text editing keys.
+
+Place `toastViewport` once in the layout before any HTMX response can add toasts. A `toast` rendered by bare name
+with `outOfBand: true` appends to `#toaster`. A normal in-page render supplies the toast directly to its parent.
+Timers pause under hover and keyboard focus, and error toasts carry `role="alert"`.
 
 ## Server wiring
 

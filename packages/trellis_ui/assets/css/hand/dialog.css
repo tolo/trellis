@@ -1,0 +1,31 @@
+:is(.trellis-dialog-content, .trellis-alert-dialog-content) {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  inline-size: calc(100% - 2rem);
+  max-block-size: calc(100% - 2rem);
+  overflow: auto;
+  translate: none;
+  /* A dialog is interactive immediately. Zoom and fade shrink targets and text contrast while it opens. */
+  animation: none;
+}
+:is(.trellis-dialog-content, .trellis-alert-dialog-content):not([open]) { display: none; }
+:is(.trellis-dialog-content, .trellis-alert-dialog-content)::backdrop {
+  background: rgb(0 0 0 / .1);
+  backdrop-filter: blur(4px);
+}
+.trellis-dialog-content { max-inline-size: 28rem; }
+.trellis-dialog-header { display: grid; padding-inline-end: 2rem; }
+.trellis-dialog-header :is(h2, p), .trellis-alert-dialog-header :is(h2, p) { margin: 0; }
+:is(.trellis-dialog-footer, .trellis-alert-dialog-footer) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  justify-content: flex-end;
+}
+.trellis-dialog-footer:empty { display: none; }
+.trellis-dialog-close svg { pointer-events: none; }
+
+@media (forced-colors: active) {
+  :is(.trellis-dialog-content, .trellis-alert-dialog-content) { border: 1px solid CanvasText; }
+}

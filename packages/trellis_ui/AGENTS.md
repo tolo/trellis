@@ -17,3 +17,8 @@ Embedded HTML fragments and CSS/JS. Runtime depends toward `trellis` only.
 - Fragments use `tl:replace`, `...attrs`, `tl:attrs` and slots. No literal ids, asset URLs, inline styles, inline
   scripts or event-handler attributes. The template name is `trellis-ui/<component>`.
 - `dart run tool/gallery.dart --port 0` serves the strict-policy gallery. Its first stdout line is `Serving <base-url>`.
+- Behaviour elements extend the light-DOM `TlElement` from `00-base.js`. Bind listeners with `listen` so they
+  are removed on disconnect. Use `place` and `trackPopup` for CSSOM positioning on popovers marked
+  `data-trellis-popup`. Use `onHistorySave` to clear transient state before HTMX serialises the page.
+- A popup lifecycle recipe opens and closes the popup before swapping the actual containing region. Exercise
+  that region through HTMX and use the history transient selector to catch stale UI.

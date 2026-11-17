@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>combobox</title></head><body>
+<tl-combobox tl:fragment="combobox(id, name, placeholder, value, options, displayValue, ...attrs)" data-slot="combobox">
+  <div role="group" data-slot="input-group" class="trellis-input-group group/input-group trellis-combobox-input">
+    <input type="text" data-slot="input-group-control" class="trellis-input trellis-input-group-input"
+      role="combobox" autocomplete="off" spellcheck="false" aria-autocomplete="list" aria-expanded="false"
+      tl:attr="id=${id}, placeholder=${placeholder}, value=${displayValue ?: value}, aria-controls=${id + '-listbox'}"
+      tl:attrs="${attrs}">
+    <div role="presentation" data-slot="input-group-addon" data-align="inline-end"
+      class="trellis-input-group-addon trellis-input-group-addon-align-inline-end">
+      <button type="button" tabindex="-1" aria-label="Show suggestions" data-slot="combobox-trigger"
+        class="trellis-button trellis-button-variant-ghost trellis-combobox-trigger"
+        tl:attr="aria-controls=${id + '-listbox'}">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="trellis-combobox-trigger-icon">
+          <path d="m6 9 6 6 6-6"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+  <input type="hidden" data-slot="combobox-value" tl:attr="name=${name}, value=${value}">
+  <div popover="manual" data-trellis-popup data-slot="combobox-content" data-closed data-side="bottom" data-align="start"
+    data-chips="false" class="trellis-combobox-content trellis-combobox-content-logical trellis-menu-target trellis-menu-translucent group/combobox-content"
+    tl:attr="id=${id + '-popup'}">
+    <div tl:replace="~{trellis-ui/combobox :: comboboxOptions(${id}, ${options})}"></div>
+  </div>
+  <div role="status" class="trellis-sr-only"></div>
+</tl-combobox>
+<div tl:fragment="comboboxOptions(id, options, ...attrs)"
+  tl:attr="id=${id + '-results'}" tl:attrs="${attrs}">
+  <div data-slot="combobox-empty" class="trellis-combobox-empty" tl:attr="hidden=${!#lists.isEmpty(options)}">No results</div>
+  <div role="listbox" aria-label="Suggestions" data-slot="combobox-list" class="trellis-combobox-list"
+    tl:attr="id=${id + '-listbox'}, hidden=${#lists.isEmpty(options)}">
+    <div tl:each="option, index : ${options}" role="option" aria-selected="false" data-slot="combobox-item"
+      class="trellis-combobox-item" tl:attr="id=${id + '-option-' + index.index}, data-value=${option.value}"
+      tl:text="${option.label}">Apple</div>
+  </div>
+</div>
+</body></html>

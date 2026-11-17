@@ -16,9 +16,10 @@ void main() {
     }
     final root = Directory.systemTemp.createTempSync('gate_active_link_');
     addTearDown(() => root.deleteSync(recursive: true));
-    File(
-      '${root.path}/index.html',
-    ).writeAsStringSync('<a id="target" href="?next">Next</a><button id="disabled" disabled>Disabled</button>');
+    File('${root.path}/index.html').writeAsStringSync(
+      '<a id="target" href="?next">Next</a><button id="disabled" disabled>Disabled</button>'
+      '<dialog><button id="dormant">Dormant</button></dialog>',
+    );
     final server = await StaticSiteServer.serve(root);
     addTearDown(server.close);
     final driver = await FirefoxDriver.launch();
@@ -27,6 +28,11 @@ void main() {
     await driver.evaluate(
       "(() => {window.clicks=0;document.querySelector('#target').addEventListener('click',()=>window.clicks++)})()",
     );
+    for (final state in ['hover', 'active', 'focus-visible']) {
+      await driver.pseudo('#dormant', [state]);
+      expect(await driver.evaluate("document.activeElement.id"), isNot('dormant'));
+    }
+    await expectLater(driver.pseudo('#missing', ['hover']), throwsA(isA<StateError>()));
     await driver.pseudo('#target', ['active']);
     expect(await driver.evaluate("document.querySelector('#target').matches(':active')"), true);
     await driver.pseudo('#target', []);

@@ -12,7 +12,7 @@ void main() {
     final source = pins['shadcn'] as Map<String, dynamic>;
     final vendor = 'vendor/shadcn/${source['tag']}';
     expect(File('$vendor/SOURCE.md').readAsStringSync(), contains(source['commit']));
-    for (final dir in [vendor, 'vendor/tailwind', 'vendor/tw-animate']) {
+    for (final dir in [vendor, 'vendor/tailwind', 'vendor/tw-animate', 'vendor/lucide']) {
       expect(
         Directory(dir).listSync().whereType<File>().any((f) => f.uri.pathSegments.last.startsWith('LICENSE')),
         isTrue,
@@ -23,8 +23,21 @@ void main() {
     for (final component in (pins['components'] as List).cast<String>()) {
       expect(File('$vendor/ui/$component.tsx').existsSync(), isTrue);
     }
+    final lucide = pins['lucide'] as Map<String, dynamic>;
+    expect(File('vendor/lucide/SOURCE.md').readAsStringSync(), contains(lucide['commit']));
+    for (final icon in (lucide['icons'] as List).cast<String>()) {
+      expect(File('vendor/lucide/$icon.svg').existsSync(), isTrue, reason: icon);
+    }
     final notice = File('THIRD_PARTY_NOTICES.md').readAsStringSync();
-    for (final name in ['shadcn/ui', 'Tailwind CSS', 'tw-animate-css']) {
+    for (final name in [
+      'shadcn/ui',
+      'Tailwind CSS',
+      'tw-animate-css',
+      'Lucide',
+      'Feather',
+      'ISC License',
+      'Cole Bemis',
+    ]) {
       expect(notice, contains(name));
     }
     final css = File('generated/trellis.min.css').readAsStringSync();
@@ -35,6 +48,20 @@ void main() {
       File('../trellis_cli/lib/src/templates/htmx_asset.dart').readAsStringSync(),
       contains("const htmxSriHash = '$sri'"),
     );
+  });
+
+  test('gallery htmx matches its recorded checksum and notice', () {
+    const directory = 'gallery/static';
+    expect(
+      File('$directory/htmx.min.js.sha256').readAsLinesSync(),
+      unorderedEquals([
+        for (final name in ['htmx.min.js', 'LICENSE.htmx.txt'])
+          '${sha256.convert(File('$directory/$name').readAsBytesSync())}  $name',
+      ]),
+    );
+    expect(File('gallery/static/LICENSE.htmx.txt').readAsStringSync(), contains('Zero-Clause'));
+    expect(File('THIRD_PARTY_NOTICES.md').readAsStringSync(), contains('htmx 2.0.10'));
+    expect(File('.pubignore').readAsLinesSync(), contains('gallery/'));
   });
 
   test('strict-CSP-clean sources and clean fragments', () {

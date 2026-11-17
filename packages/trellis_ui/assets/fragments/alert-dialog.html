@@ -1,0 +1,22 @@
+<tl-dialog tl:fragment="alertDialog(id, title, description, open, ...attrs)">
+  <span data-slot="dialog-trigger"><tl:block tl:slot="trigger"></tl:block></span>
+  <dialog data-slot="alert-dialog-content" class="trellis-alert-dialog-content group/alert-dialog-content"
+    role="alertdialog" aria-modal="true" data-size="default" data-closed
+    tl:attr="id=${id}, aria-labelledby=${id + '-title'}, aria-describedby=${id + '-description'}, open=${open ? '' : null}"
+    tl:attrs="${attrs}">
+    <div data-slot="alert-dialog-header" class="trellis-alert-dialog-header">
+      <h2 data-slot="alert-dialog-title" class="trellis-alert-dialog-title trellis-font-heading"
+        tl:attr="id=${id + '-title'}" tl:text="${title} ?: 'Confirm action'">Confirm action</h2>
+      <p data-slot="alert-dialog-description" class="trellis-alert-dialog-description"
+        tl:attr="id=${id + '-description'}" tl:text="${description}">Description</p>
+    </div>
+    <tl:block tl:slot=""></tl:block>
+    <div data-slot="alert-dialog-footer" class="trellis-alert-dialog-footer">
+      <button tl:replace="~{trellis-ui/button :: button('outline', 'default')}" data-slot="alert-dialog-cancel"
+        data-dialog-close autofocus>Cancel</button>
+      <span data-slot="alert-dialog-action" class="trellis-alert-dialog-action">
+        <tl:block tl:slot="action"><button tl:replace="~{trellis-ui/button :: button}">Continue</button></tl:block>
+      </span>
+    </div>
+  </dialog>
+</tl-dialog>

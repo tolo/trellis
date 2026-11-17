@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Tabs</title></head><body>
+<tl-tabs tl:fragment="tabs(id, active, vertical, ...attrs)">
+  <div data-slot="tabs" class="trellis-tabs group/tabs" tl:attrs="${attrs}"
+    tl:attr="id=${id}, data-orientation=${vertical ? 'vertical' : 'horizontal'}, data-horizontal=${vertical ? null : 'true'}, data-vertical=${vertical ? 'true' : null}">
+    <tl:block tl:slot=""></tl:block>
+  </div>
+</tl-tabs>
+
+<div tl:fragment="tabList(...attrs)" role="tablist" data-slot="tabs-list" data-variant="default"
+  class="trellis-tabs-list trellis-tabs-list-variant-default group/tabs-list" tl:attrs="${attrs}"
+  tl:attr="aria-orientation=${vertical ? 'vertical' : 'horizontal'}"><tl:block tl:slot=""></tl:block></div>
+
+<button type="button" tl:fragment="tabTrigger(value, ...attrs)" role="tab" data-slot="tabs-trigger"
+  class="trellis-tabs-trigger" tl:attrs="${attrs}"
+  tl:attr="id=${id + '-tab-' + value}, aria-controls=${id + '-panel-' + value},
+    aria-selected=${value == active ? 'true' : 'false'}, tabindex=${value == active ? '0' : '-1'},
+    data-active=${value == active ? 'true' : null}">
+  <tl:block tl:slot=""></tl:block>
+</button>
+
+<div tl:fragment="tabPanel(value, ...attrs)" role="tabpanel" data-slot="tabs-content" class="trellis-tabs-content"
+  tabindex="0" tl:attrs="${attrs}"
+  tl:attr="hidden=${value != active}, id=${id + '-panel-' + value}, aria-labelledby=${id + '-tab-' + value}, data-hidden=${value == active ? null : 'true'}">
+  <tl:block tl:slot=""></tl:block>
+</div>
+</body></html>

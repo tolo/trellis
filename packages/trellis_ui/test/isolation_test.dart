@@ -33,7 +33,8 @@ void main() {
         '<ul><li>List</li></ul><ol><li>List</li></ol><button>Plain</button><input value="Value">'
         '<select><option>Option</option></select><textarea>Value</textarea><table><tbody><tr><td>Cell</td></tr></tbody></table>'
         '<img alt="Blank" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">'
-        '<pre><code>Code</code></pre><hr><fieldset><legend>Legend</legend></fieldset>';
+        '<pre><code>Code</code></pre><hr><fieldset><legend>Legend</legend></fieldset>'
+        '<dialog open>Plain dialog</dialog><div popover>Plain popover</div><tl-unregistered>Plain element</tl-unregistered>';
     const expression = r'''[...document.querySelectorAll('html,body,body *:not([data-slot])')].map(e => {
       const s = getComputedStyle(e); return Object.fromEntries([...s].filter(p => !p.startsWith('--')).map(p => [p,s.getPropertyValue(p)]));
     })''';

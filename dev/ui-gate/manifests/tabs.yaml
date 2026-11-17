@@ -1,0 +1,92 @@
+name: tabs
+page: /components/tabs
+root: '#component'
+elements:
+  account-tab: '#horizontal-tab-account'
+states:
+  default: []
+  dark:
+    - eval: document.documentElement.classList.add('dark')
+    - wait: "document.getElementById('component').getAnimations({subtree:true}).every(animation => animation.playState !== 'running')"
+  billing:
+    - click: '#horizontal-tab-billing'
+    - wait: "document.getElementById('component').getAnimations({subtree:true}).every(animation => animation.playState !== 'running')"
+    - expect: {expression: "document.querySelector('#horizontal-tab-billing[data-active][aria-selected=true]') !== null", equals: true}
+  vertical-selection:
+    - click: '#vertical-tab-push'
+    - wait: "document.getElementById('component').getAnimations({subtree:true}).every(animation => animation.playState !== 'running')"
+    - expect: {expression: "document.querySelector('#vertical-tab-push[data-active][aria-selected=true]') !== null", equals: true}
+keyboard:
+  - click: '#horizontal-tab-account'
+  - focus: '#horizontal-tab-account'
+  - press: ArrowRight
+  - expect:
+      expression: "document.activeElement.id === 'horizontal-tab-billing' && document.activeElement.tabIndex === 0 && document.querySelector('#horizontal-tab-account').tabIndex === -1 && document.querySelector('#horizontal-tab-account[data-active]') !== null && document.querySelector('#horizontal-panel-billing').hidden"
+      equals: true
+  - press: ArrowRight
+  - expect: {expression: document.activeElement.id, equals: horizontal-tab-account}
+  - press: ArrowLeft
+  - expect: {expression: document.activeElement.id, equals: horizontal-tab-billing}
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: horizontal-panel-account}
+  - focus: '#before'
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: horizontal-tab-account}
+  - press: End
+  - expect: {expression: document.activeElement.id, equals: horizontal-tab-billing}
+  - press: Enter
+  - expect:
+      expression: "document.activeElement.getAttribute('aria-selected') === 'true' && document.activeElement.hasAttribute('data-active') && !document.querySelector('#horizontal-panel-billing').hidden && document.querySelector('#horizontal-panel-account').hidden"
+      equals: true
+  - press: Home
+  - expect: {expression: document.activeElement.id, equals: horizontal-tab-account}
+  - press: ' '
+  - expect: {expression: "document.querySelector('#horizontal-tab-account[data-active]') !== null && !document.querySelector('#horizontal-panel-account').hidden", equals: true}
+  - click: '#horizontal-tab-billing'
+  - expect: {expression: "document.querySelector('#horizontal-tab-billing[data-active]') !== null && !document.querySelector('#horizontal-panel-billing').hidden", equals: true}
+  - focus: '#vertical-tab-email'
+  - press: ArrowDown
+  - expect: {expression: "document.activeElement.id === 'vertical-tab-push' && document.querySelector('#vertical-panel-push').hidden", equals: true}
+  - press: ArrowDown
+  - expect: {expression: document.activeElement.id, equals: vertical-tab-email}
+  - press: ArrowUp
+  - expect: {expression: document.activeElement.id, equals: vertical-tab-push}
+  - press: ' '
+  - expect: {expression: "document.querySelector('#vertical-tab-push[data-active][aria-selected=true]') !== null && !document.querySelector('#vertical-panel-push').hidden", equals: true}
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: vertical-panel-push}
+semantics:
+  - expression: >-
+      [...document.querySelectorAll('tl-tabs')].every(root => {
+        const list = root.querySelector('[role=tablist]'), tabs = [...list.querySelectorAll('[role=tab]')];
+        return ['horizontal', 'vertical'].includes(list.getAttribute('aria-orientation')) &&
+          tabs.filter(tab => tab.tabIndex === 0).length === 1 &&
+          tabs.filter(tab => tab.getAttribute('aria-selected') === 'true').length === 1 &&
+          tabs.some(tab => tab.disabled) &&
+          tabs.every(tab => { const panel = document.getElementById(tab.getAttribute('aria-controls'));
+            return panel.getAttribute('role') === 'tabpanel' && panel.getAttribute('aria-labelledby') === tab.id &&
+              panel.hidden === (tab.getAttribute('aria-selected') === 'false'); });
+      })
+    equals: true
+htmx:
+  region: '#demo'
+  swap:
+    - click: '#swap'
+    - wait: "document.querySelector('#horizontal-tab-account[data-active]') !== null && document.querySelector('#vertical-tab-email[data-active]') !== null"
+  navigate:
+    - state: billing
+    - click: '#navigate'
+  transient: '#horizontal-tab-account[data-active]'
+  probe:
+    steps:
+      - focus: '#horizontal-tab-account'
+      - press: ArrowRight
+      - press: Enter
+      - eval: "window.swappedTabWasActivated = document.querySelector('#horizontal-tab-billing[data-active]') !== null && !document.querySelector('#horizontal-panel-billing').hidden"
+      - click: '#horizontal-tab-account'
+    expression: window.swappedTabWasActivated
+    equals: true
+instances: [tl-tabs]
+provenance:
+  - file: ../../../packages/trellis_ui/vendor/shadcn/shadcn@4.21.1/LICENSE.md
+    license: MIT

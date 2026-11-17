@@ -1,0 +1,85 @@
+name: dialog
+page: /components/dialog
+root: '#example-dialog'
+elements:
+  name-input: '#dialog-name'
+  save: '#dialog-save'
+states:
+  default: []
+  open:
+    - click: '#open-dialog'
+    - wait: "document.querySelector('#example-dialog:modal[data-open]') !== null"
+keyboard:
+  - focus: '#open-dialog'
+  - press: Enter
+  - wait: "document.querySelector('#example-dialog:modal[data-open]') !== null"
+  - expect: {expression: document.activeElement.id, equals: dialog-name}
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: dialog-email}
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: dialog-cancel}
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: dialog-save}
+  - press: Tab
+  - expect: {expression: "document.activeElement.getAttribute('data-slot')", equals: dialog-close}
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: dialog-name}
+  - press: Escape
+  - wait: "document.querySelector('#example-dialog[data-closed]:not([open])') !== null"
+  - expect: {expression: document.activeElement.id, equals: open-dialog}
+  - press: Enter
+  - wait: "document.querySelector('#example-dialog:modal[data-open]') !== null"
+  - focus: '#dialog-cancel'
+  - press: Enter
+  - wait: "document.querySelector('#example-dialog[data-closed]:not([open])') !== null"
+  - expect: {expression: document.activeElement.id, equals: open-dialog}
+semantics:
+  - selector: '#example-dialog'
+    attribute: aria-modal
+    equals: 'true'
+  - expression: >-
+      (() => {
+        const dialog = document.getElementById('example-dialog');
+        const ref = name => document.getElementById(dialog.getAttribute(name));
+        return dialog instanceof HTMLDialogElement &&
+          ref('aria-labelledby').textContent === 'Edit profile' &&
+          ref('aria-describedby').textContent === 'Update your public profile.' &&
+          dialog.matches(':modal') === dialog.matches('[data-open]') &&
+          dialog.matches(':modal') !== dialog.matches('[data-closed]');
+      })()
+    equals: true
+htmx:
+  region: '#demo'
+  swap:
+    - press: Escape
+    - wait: "document.querySelector('#example-dialog[data-closed]:not([open])') !== null"
+    - click: '#swap'
+  probe:
+    steps:
+      - eval: >-
+          (() => {
+            window.serverDialogSwaps = 0;
+            document.getElementById('dialog-response').addEventListener('htmx:afterSettle', () => window.serverDialogSwaps++);
+          })()
+      - click: '#load-dialog'
+      - wait: "window.serverDialogSwaps === 1 && document.querySelector('#server-dialog:modal[data-open]') !== null"
+      - eval: "(() => {window.previousServerDialog = document.getElementById('server-dialog');})()"
+      - click: '#replace-server-dialog'
+      - wait: "window.serverDialogSwaps === 2 && !window.previousServerDialog.isConnected && document.querySelector('#server-dialog:modal[data-open]') !== null"
+      - expect: {expression: "document.querySelectorAll('dialog:modal').length", equals: 1}
+      - click: '#remove-server-dialog'
+      - wait: "window.serverDialogSwaps === 3 && document.getElementById('server-dialog') === null"
+    expression: document.activeElement.id
+    equals: load-dialog
+  navigate:
+    - state: open
+    - eval: "document.getElementById('navigate').click()"
+  transient: 'dialog[open]'
+instances:
+  - tl-dialog
+  - '#example-dialog'
+provenance:
+  - file: ../../../packages/trellis_ui/vendor/shadcn/shadcn@4.21.1/LICENSE.md
+    license: MIT
+  - file: ../../../packages/trellis_ui/vendor/lucide/LICENSE
+    license: ISC

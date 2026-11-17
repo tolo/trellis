@@ -9,3 +9,10 @@
 @media (prefers-reduced-motion: reduce) {
   :where([data-slot][class*="trellis-"], [data-slot][class*="trellis-"] *) { transition: none; animation: none; }
 }
+
+.trellis-combobox-trigger, .trellis-dropdown-menu-item, .trellis-dropdown-menu-checkbox-item,
+.trellis-tabs-trigger, .trellis-tabs-content, .trellis-toast-close, .trellis-dialog-close { min-inline-size: 24px; min-block-size: 24px; }
+@media (pointer: coarse) {
+  .trellis-combobox-trigger, .trellis-dropdown-menu-item, .trellis-dropdown-menu-checkbox-item,
+  .trellis-tabs-trigger, .trellis-tabs-content, .trellis-toast-close, .trellis-dialog-close { min-inline-size: 44px; min-block-size: 44px; }
+}

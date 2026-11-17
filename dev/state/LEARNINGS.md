@@ -174,6 +174,7 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
 
 ## Release & Publishing
 
+- **A reusable workflow called from a matrix must be pinned by SHA**: `dart-lang/setup-dart/.github/workflows/publish.yml@v1` moved to v1.8.2, whose jobs share one fixed `package-archive` artifact name, so in our 8-package matrix every job published trellis_relic's archive (0.13.0). `publish.yml` pins v1.7.2 by SHA; a contract test rejects a moving tag there.
 - **Hotfixes still get reviewed**: fresh-context adversarial review of the fix diff BEFORE tag push, every release incl. hotfixes – the 0.9.1 SASS-quoting hotfix shipped unreviewed with 4 real issues.
 - **`dart test`/`dart analyze` at the workspace root do NOT cover the packages**: in a Dart workspace the root `dart test` runs only the root `test/` dir (34 tests) — not the ~1500 package tests. A CI job written that way is green while testing almost nothing. Drive per-package work through melos (`melos exec --dir-exists=test -- dart test`). Note `dart analyze` at root *does* span the workspace, so the two commands differ — don't generalize from one to the other.
 - **melos scripts that use `exec:` need melos on PATH**: they shell out to a `melos` binary, so without one they fail with `/bin/sh: melos: command not found`. CI must `dart pub global activate melos` and add `~/.pub-cache/bin` to PATH, even though melos is already a root dev_dependency.

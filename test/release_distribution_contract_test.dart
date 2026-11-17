@@ -383,6 +383,17 @@ trellis_x:
       expect(_jobBlock(workflow, 'publish'), contains('needs: ci-gate'));
     });
 
+    // The moving `@v1` tag picked up upstream's split into jobs that share one `package-archive` artifact; in our
+    // 8-package matrix every job then uploaded trellis_relic's archive and the 0.13.0 publish failed for the rest.
+    test('publish.yml pins the reusable setup-dart publish workflow to a commit SHA', () {
+      final workflow = readWorkspaceFile('.github/workflows/publish.yml');
+
+      expect(
+        _jobBlock(workflow, 'publish'),
+        matches(RegExp(r'uses: dart-lang/setup-dart/\.github/workflows/publish\.yml@[0-9a-f]{40}\b')),
+      );
+    });
+
     test('release-binaries.yml gates its first job on the release gate and verifies at the end', () {
       final workflow = readWorkspaceFile('.github/workflows/release-binaries.yml');
 

@@ -48,12 +48,16 @@ jobs:
           - trellis_dart_frog
     permissions:
       id-token: write # Mint the OIDC token pub.dev validates; no secret needed.
-    # Pinned to the major tag (currently == v1.7.2) on purpose: a moving `@v1`
-    # auto-receives upstream patches, including the eventual Node 20 -> 24 bump.
-    # The "Node.js 20 is deprecated" warning in the logs comes from the
-    # `dart-lang/setup-dart` action pinned *inside* this reusable workflow, not
-    # from anything here — it is upstream's to fix and is currently harmless
-    # (jobs are force-run on Node 24). Tracked in dev/state/TECH-DEBT-BACKLOG.md.
-    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    # Pinned by SHA to v1.7.2, the single-job workflow, not the moving `@v1`.
+    # From v1.8.2 (upstream 953e960) the workflow splits validate/package/
+    # publish into jobs that hand over one fixed-name `package-archive`
+    # artifact. Our matrix runs all packages in one workflow run, so the jobs
+    # overwrite each other's artifact: at 0.13.0 every job uploaded
+    # trellis_relic's archive and the other seven failed. Move the pin only to a
+    # version that names the artifact per caller, and re-check a matrix publish.
+    # v1.7.2's bundled Node pin can log "Node.js 20 is deprecated"; harmless,
+    # jobs are force-run on Node 24 (TD-005, closed). release-binaries.yml pins
+    # the same SHA.
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@65eb853c7ba17dde3be364c3d2858773e7144260 # v1.7.2
     with:
       working-directory: packages/${{ matrix.package }}

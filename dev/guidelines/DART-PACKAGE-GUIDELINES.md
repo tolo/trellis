@@ -293,7 +293,8 @@ jobs:
   publish:
     permissions:
       id-token: write  # Required for OIDC
-    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    # Pin by SHA: from v1.8.2 the moving @v1 shares one artifact name across a matrix (see this repo's publish.yml).
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@65eb853c7ba17dde3be364c3d2858773e7144260 # v1.7.2
 ```
 
 4. Tag and push to trigger: `git tag v1.2.3 && git push origin v1.2.3`

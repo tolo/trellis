@@ -90,7 +90,9 @@ the same result locally and in CI. See `dart run tool/link_check.dart --help` fo
 [`.github/workflows/deploy-docs-site.yml`](../.github/workflows/deploy-docs-site.yml)
 runs on every push to `main` (and via manual `workflow_dispatch`). It:
 
-1. sets up Dart, `dart pub get`, and activates the `trellis` CLI;
+1. sets up Dart, runs `dart pub get`, checks the generated themes gallery
+   (`dart run tool/generate_theme_gallery.dart --check`), and activates the
+   `trellis` CLI;
 2. builds the production (sub-path) site with `trellis build`;
 3. runs the link-integrity check against `site/output` with `--base-path /trellis/` as
    a **required gate** — a broken link fails the pipeline and blocks the deploy;

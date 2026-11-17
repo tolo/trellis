@@ -41,6 +41,20 @@ entry only and never reaches the night edition, whether it is forced with `skin:
 Docs parameters are `show_sidebar`, `show_toc`, `show_prev_next`, `show_search`, `toc_title`, and `sidebar_title`.
 `excerpt_length` controls generated summaries. Apparatus uses `plate_label`, `show_plate_numbers`, and `show_sidenotes`.
 
+| Param | Type | Default | Purpose |
+|---|---|---|---|
+| `logo` | string | `null` | Header logo path, replacing the built-in sprout mark |
+| `excerpt_length` | int | `160` | Generated excerpt length |
+| `show_sidebar` | boolean | `true` | Show hierarchical navigation |
+| `show_toc` | boolean | `true` | Show the page table of contents |
+| `show_prev_next` | boolean | `true` | Show neighboring pages |
+| `show_search` | boolean | `true` | Show client-side search |
+| `toc_title` | string | `"Field index"` | Table of contents heading |
+| `sidebar_title` | string | `"Contents"` | Sidebar heading |
+| `plate_label` | string | `"Plate"` | Label before numbered figure captions |
+| `show_plate_numbers` | boolean | `true` | Number semantic Folio figures |
+| `show_sidenotes` | boolean | `true` | Display semantic Folio sidenotes |
+
 ## Layouts
 
 - `layouts/base.html` – prefix-safe shell, header, footer, sidebar, TOC, search, and edition control.

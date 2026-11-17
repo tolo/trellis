@@ -8,15 +8,17 @@ All official Trellis themes **must** support the 25 core standard params defined
 on this page. The contract lets site builders switch themes and carry their
 `theme_params:` configuration without modification.
 
-> **Per-mode colors.** The 25 are the standard params of earlier releases plus
-> seven `<name>_dark` twins, one for each color param. A color is set per mode:
-> see [Skin and colors](#skin-and-colors-15-params).
+> **Per-mode colors.** Each of the seven color params has a `<name>_dark` twin
+> that sets the same entry in the dark palette. See
+> [Skin and colors](#skin-and-colors-15-params).
 
-> **Retired param.** A 19th param, `syntax_highlighting`, was removed by
-> [ADR-010](https://github.com/tolo/trellis/blob/main/dev/adrs/ADR-010-syntax-highlighting.md).
-> Syntax highlighting is now applied at build time by `trellis_site` and
-> configured site-side with the `highlight:` key in `trellis_site.yaml`, not per
-> theme. The old param is ignored.
+> **Syntax highlighting is not a theme param.** `trellis_site` highlights code
+> at build time, configured site-side with the `highlight:` key in
+> `trellis_site.yaml`
+> ([ADR-010](https://github.com/tolo/trellis/blob/main/dev/adrs/ADR-010-syntax-highlighting.md)).
+> A theme only styles the emitted `.hljs-*` spans. A `syntax_highlighting` key
+> in `theme_params:` has no effect; `trellis build --verbose` reports it as an
+> unknown theme param.
 
 For how to implement these params in a theme, see
 [Theme Authoring](/docs/themes/authoring/). For how to configure them in a site,

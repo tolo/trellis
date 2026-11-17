@@ -91,11 +91,21 @@ trellis build --drafts
 
 ## Shortcodes
 
-Reusable content snippets live under `layouts/shortcodes/`. The pre-Markdown
-form can emit Markdown before parsing:
+Reusable content snippets are Trellis templates at
+`layouts/shortcodes/{name}.html` in the site root. That path is fixed: a custom
+`layoutsDir` or a theme's layouts are not searched. The pre-Markdown form is
+replaced before the page's Markdown is parsed:
 
 ```markdown
 {{% callout kind="note" %}}
+```
+
+The paired form renders its body as Markdown first:
+
+```markdown
+{{% callout kind="note" %}}
+This is **Markdown** inside the shortcode.
+{{% /callout %}}
 ```
 
 The post-Markdown form transforms rendered HTML:
@@ -104,6 +114,8 @@ The post-Markdown form transforms rendered HTML:
 <!-- tl:figure src="diagram.svg" alt="Build flow" -->
 ```
 
-Shortcode arguments are exposed to the matching Trellis fragment template.
-Keep document structure in Markdown and use shortcodes for repeated,
-parameterized content.
+Each argument is a top-level variable in the shortcode template (`${kind}`,
+`${src}`), and the paired form's rendered body is `${content}`. A shortcode with
+no template stays in the page as written and produces a build warning. Keep
+document structure in Markdown and use shortcodes for repeated, parameterized
+content.

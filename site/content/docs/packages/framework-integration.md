@@ -225,10 +225,13 @@ final _engine = Trellis(
 Handler middleware(Handler handler) {
   return handler
       .use(trellisProvider(_engine))
-      .use(trellisSecurityHeaders())
-      .use(trellisCsrf(secret: 'your-secret-key'));
+      .use(trellisCsrf(secret: 'your-secret-key'))
+      .use(trellisSecurityHeaders()); // last `.use` is outermost
 }
 ```
+
+In Dart Frog the last `.use()` wraps everything before it. Keep `trellisSecurityHeaders()` last
+so its headers also reach the 403 responses `trellisCsrf` returns.
 
 ### Full-page route (`routes/index.dart`)
 
@@ -289,7 +292,22 @@ is different from `trellis_shelf` where handlers receive a `Request`.
 ### Hot reload in dev mode (Dart Frog)
 
 `trellis_dev` SSE works alongside `dart_frog dev`. The `devMode: true` flag on the engine enables
-file-system watching so templates reload automatically on change.
+file-system watching so templates reload automatically on change. `devMiddleware()` is Shelf
+middleware, so wrap it with `fromShelfMiddleware` and pass it the engine's own loader:
+
+```dart
+// routes/_middleware.dart
+import 'package:trellis_dev/trellis_dev.dart';
+
+final _loader = FileSystemLoader('templates', devMode: true);
+final _engine = Trellis(loader: _loader, devMode: true);
+
+Handler middleware(Handler handler) {
+  return handler
+      .use(trellisProvider(_engine))
+      .use(fromShelfMiddleware(devMiddleware(_loader)));
+}
+```
 
 ## Relic
 
@@ -371,7 +389,7 @@ Relic response helpers take `request` and `engine` as the first two arguments:
 > **Engine is always explicit** – unlike Shelf and Dart Frog, where the engine is retrieved from
 > the request context, Relic response helpers require the engine to be passed directly.
 
-> **CSRF not available for Relic** – see [Section 6.2](#62-csrf-protection) for details.
+> **CSRF not available for Relic** – see [CSRF protection](#csrf-protection) for details.
 
 > **Middleware scope** – Relic middleware only fires for matched routes. A `404` or `405`
 > response does **not** pass through `trellisSecurityHeaders()`. Shelf's `Pipeline`, by contrast,
@@ -478,13 +496,13 @@ return renderPage(request, engine, 'todos', ctx, htmxFragment: 'content');
 
 ### Complete template example
 
-This template works with all three frameworks – the rendering API is framework-specific but the
-template itself is not.
+The rendering API is framework-specific, but the template is not. The hidden
+CSRF field renders only when `csrfToken` is non-null:
 
 ```html
 <section>
   <form hx-post="/todos" hx-target="#todo-list" hx-swap="outerHTML">
-    <input type="hidden" name="_csrf" tl:value="${csrfToken}">
+    <input type="hidden" name="_csrf" tl:if="${csrfToken != null}" tl:value="${csrfToken}">
     <input name="title" placeholder="New todo">
     <button type="submit">Add</button>
   </form>
@@ -500,7 +518,10 @@ template itself is not.
 ```
 
 > `${csrfToken}` is automatically available in Shelf and Dart Frog when `trellisCsrf` middleware
-> is active. For Relic, CSRF is not available – see [Section 6.2](#62-csrf-protection).
+> is active. For Relic, CSRF is not available – see [CSRF protection](#csrf-protection).
+> Where no token is set (Relic, `excludedPaths` routes), a `strict: true` engine throws on the
+> undefined `csrfToken` even inside the `tl:if`, so pass `'csrfToken': null` in the context or
+> drop the hidden input; a lenient engine treats the missing variable as null.
 
 ### Running on HTMX 4
 
@@ -513,10 +534,16 @@ replacing the script tag. The packages need no change:
   and `HX-Source`; the helpers extract the id. `htmxTrigger()` is deprecated because HTMX 4 reserves
   `HX-Trigger` for responses.
 - The scaffolded CSRF listener registers for both `htmx:configRequest` (HTMX 2) and `htmx:config:request`
-  (HTMX 4). A project generated before this change must add the second listener next to the existing one in
-  its base layout, because HTMX 4 exposes the outgoing headers at a different path:
+  (HTMX 4). A project generated before trellis_cli 0.11.1 must add the second listener next to the existing
+  one in its base layout, because HTMX 4 exposes the outgoing headers at a different path, and must guard
+  `setCsrfHeader` against a missing headers object:
 
   ```js
+  function setCsrfHeader(headers) {
+    if (!headers) return;
+    var token = document.querySelector('meta[name="csrf-token"]').content;
+    if (token) headers['X-CSRF-Token'] = token;
+  }
   document.addEventListener('htmx:configRequest', function(evt) { setCsrfHeader(evt.detail.headers); });
   document.addEventListener('htmx:config:request', function(evt) { setCsrfHeader(evt.detail.ctx.request.headers); });
   ```
@@ -573,7 +600,6 @@ trellisSecurityHeaders(
   csp: CspBuilder(
     scriptSrc: "'self'",
     styleSrc: "'self' 'unsafe-inline'",
-    connectSrc: "'self' ws:", // required for trellis_dev SSE in development
   ),
 )
 ```
@@ -599,6 +625,9 @@ const Pipeline()
     ...
 ```
 
+`excludedPaths` entries match the request path exactly (no prefixes or globs), relative to the
+handler's mount point: `'/webhooks'` does not exclude `/webhooks/stripe`.
+
 **Dart Frog setup:**
 
 ```dart
@@ -619,26 +648,26 @@ helpers. Use `${csrfToken}` in a hidden form field:
 </form>
 ```
 
-**Relic – CSRF not available.** Relic does not expose a built-in form body parser, and the
-double-submit pattern requires reading form fields server-side to validate the submitted token.
-For Relic apps that need CSRF protection, options include:
+**Relic – CSRF not available.** `trellis_relic` ships no CSRF middleware. For Relic apps that
+need CSRF protection, options include:
 
-- Parse `request.body` manually and validate the token against the signed cookie.
-- Rely exclusively on HTMX's `hx-headers` to submit the token via `X-CSRF-Token` (avoids form
-  parsing, but requires HTMX for all state-changing requests).
-- Wait for Relic's own security middleware to mature in a future phase.
+- Read the body with `request.readAsString()`, parse it with `Uri.splitQueryString`, and
+  validate the submitted token against a signed cookie.
+- Submit the token only via HTMX's `hx-headers` as `X-CSRF-Token` (avoids form parsing, but
+  requires HTMX for all state-changing requests).
 
 ### CSP for HTMX and `trellis_dev`
 
-When using `trellis_dev` for browser-side live reload (via SSE), add `connect-src 'self' ws:` to
-allow the WebSocket connection. Use different CSP configurations for dev and production:
+`trellis_dev` live reload uses a same-origin `EventSource` (SSE), not a WebSocket. The default
+`CspBuilder` emits `default-src 'self'`, which already covers same-origin connections, so no
+extra directive is needed. Only if you narrow `default-src` (for example to `'none'`) add
+`connect-src 'self'` so the browser can reach the SSE endpoint:
 
 ```dart
-final isDev = bool.fromEnvironment('TRELLIS_DEV', defaultValue: false);
-
 trellisSecurityHeaders(
   csp: CspBuilder(
-    connectSrc: isDev ? "'self' ws:" : null, // null omits the directive
+    defaultSrc: "'none'",
+    connectSrc: "'self'", // reach trellis_dev's SSE endpoint (/_dev/reload)
   ),
 )
 ```
@@ -725,9 +754,12 @@ test('page renders heading and list', () {
 | `hasElement(selector, withText: 'x')` | Element contains the given text |
 | `hasElement(selector, count: n)` | Exactly `n` elements match |
 | `hasElement(selector, withAttribute: 'x')` | Element has the given attribute |
+| `hasElement(selector, withAttribute: 'x', attributeValue: 'y')` | Element has attribute `x` equal to `y` |
 | `hasNoElement(selector)` | No elements match the selector |
-| `hasAttribute(selector, attr, value)` | First matching element has attribute `attr` equal to `value` |
+| `hasAttribute(selector, attr, value)` | First matching element has attribute `attr` equal to `value` (or matching a `Matcher`) |
 | `elementCount(selector, n)` | Exactly `n` elements match (pure count assertion) |
+| `hasTextContent(text)` | The rendered HTML's text content contains `text` |
+| `isValidTemplate({validator})` | A template source string yields no `TemplateValidator` issues (warnings included) |
 
 ### Fragment testing
 
@@ -747,10 +779,13 @@ test('nav fragment renders links', () {
 });
 ```
 
-For file-based templates, use the async `testFragmentFile`:
+`testFragmentFile` is the async variant: it renders through the engine's own loader with
+`renderFileFragment`, so pair it with an engine whose loader holds the template, such as a
+`FileSystemLoader`:
 
 ```dart
 test('nav fragment from file', () async {
+  final engine = Trellis(loader: FileSystemLoader('templates'));
   final html = await testFragmentFile(engine, 'partials/nav', 'mainNav', {
     'links': [{'url': '/home', 'label': 'Home'}],
   });
@@ -919,8 +954,10 @@ Bundle the `templates/` directory alongside the compiled binary.
 dart_frog build
 ```
 
-`dart_frog build` produces an AOT binary in `build/`. Templates must be bundled alongside the
-binary (the build step does not embed them automatically). Check the
+`dart_frog build` produces a production server bundle (with a Dockerfile) in `build/`, not a
+binary; the Dockerfile, or a `dart compile exe` run on the bundle's server entrypoint, compiles
+it. Templates must be shipped alongside the compiled server (the build step does not embed them
+automatically). Check the
 [Dart Frog documentation](https://dartfrog.vgv.dev) for how to include assets in the build output.
 
 **Relic:**
@@ -938,7 +975,7 @@ For a single-binary deployment where no external files are needed:
 ```dart
 // lib/templates.dart — generated or maintained by hand
 const templates = {
-  'index': '''
+  'index': r'''
     <html>
       <body tl:text="${message}">hello</body>
     </html>

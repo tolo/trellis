@@ -17,9 +17,11 @@ Three public APIs are provided:
 ## Installation
 
 ```yaml
-dev_dependencies:
+dependencies:
   trellis_dev: ^0.13.0
 ```
+
+`devMiddleware()` is imported from server code (`bin/` or Dart Frog `routes/`), so list it under `dependencies`, as the examples do, and leave it out of the production pipeline.
 
 ## Usage
 
@@ -84,11 +86,12 @@ File watching is owned by `FileSystemLoader`. Call `loader.close()` to stop watc
 
 Returns a Shelf `Handler` that serves SSE events. Each connected client receives a `reload` event when any template file changes.
 
-### `devMiddleware(FileSystemLoader loader, {String ssePath, bool injectScript})`
+### `devMiddleware(FileSystemLoader loader, {String ssePath, bool injectScript, bool validate, TemplateValidator? validator, StringSink? validationSink})`
 
 Returns a Shelf `Middleware` that:
 - Routes `ssePath` (default `/_dev/reload`) to the SSE handler
 - When `injectScript` is `true` (default), injects the reload script before `</body>` in buffered HTML responses
+- When `validate` is `true` (default), validates every template at startup and again on each file change, writing issues to `validationSink` (default stderr) as `path:line: severity: message (attribute)`, the `dart run trellis:validate` format. An unchanged template is reported once. Pass `validate: false` to turn it off, or a configured `validator` to match a custom prefix or dialect set.
 
 ### `liveReloadScript({String ssePath})`
 

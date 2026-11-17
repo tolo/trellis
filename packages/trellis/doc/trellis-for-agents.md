@@ -17,7 +17,8 @@ Thymeleaf-inspired HTML template engine for Dart: templates are valid HTML annot
 
 ## Core principles
 
-- **Escape by default.** Untrusted/user-controlled values go through `tl:text` (or `tl:attr`).
+- **Escape by default.** Untrusted/user-controlled text goes through `tl:text`. Attribute directives
+  only HTML-escape: they do not make an untrusted URL, handler or style safe (see below).
 - **Keep templates dumb.** Compute view data in Dart; templates only place prepared values.
 - **Trust boundary lives in code.** The code building the context decides what is safe to emit
   as raw HTML — the template cannot.
@@ -28,9 +29,14 @@ Thymeleaf-inspired HTML template engine for Dart: templates are valid HTML annot
 | Directive | Output | Use for |
 |---|---|---|
 | `tl:text` | HTML-escaped | **Default** for all text, especially user input |
-| `tl:attr` + shorthands (`tl:href`, `tl:src`, `tl:value`, `tl:class`, `tl:id`) | attribute-escaped | All dynamic attribute values |
+| `tl:attr` + shorthands (`tl:href`, `tl:src`, `tl:value`, `tl:class`, `tl:id`) | HTML-escaped only; no URL or value checks | Dynamic attribute values (see the rule below for URLs) |
 | `tl:utext` | **raw, unescaped** | **Only** pre-rendered, trusted HTML |
-| `tl:attrs` (map spread) | names validated, values HTML-escaped only | Developer-built maps; never untrusted keys, and values under `href`/`src`/`srcdoc`/`on*`/`style` need the same validation as `tl:attr` |
+| `tl:attrs` (map spread) | names validated, values HTML-escaped only | Developer-built maps; never untrusted keys |
+
+**HTML-escaping is not URL validation.** `tl:href="${u}"` with `u = 'javascript:alert(1)'` renders a
+working `javascript:` link, through any attribute directive. Scheme-check every untrusted URL in Dart
+(allow `http`/`https` or a relative path) before it reaches the context, and never let an untrusted
+value reach an `on*` handler, `style` or `srcdoc`.
 
 ```html
 <span tl:text="${title}">Title</span>            <!-- safe default -->
@@ -127,7 +133,7 @@ A fragment is a component when it takes content slots, spread attributes or both
 - **No literal `id` in a parameterised component**: it repeats per use. Set it with `tl:id`.
 
 
-## Footguns (these fail silently — the engine warns, it does not fix)
+## Footguns (these fail silently at render time — `TemplateValidator` / `trellis:validate` warns)
 
 - **One `tl:attr` per element.** HTML forbids duplicate attribute names, so two `tl:attr` on the
   same element → the parser keeps the first and drops the rest *before Trellis runs*. Put every

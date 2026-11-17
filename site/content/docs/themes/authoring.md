@@ -37,7 +37,8 @@ their customizations across.
 trellis create --template theme my_theme
 cd my_theme
 
-# Edit the manifest, add layouts and SASS
+# Edit the manifest: add one archetype tag (docs, landing or blog)
+# to features:, then add layouts and SASS
 # Preview with the bundled example site
 cd example
 trellis build
@@ -54,6 +55,9 @@ on Windows, from the theme root: `mklink /J example\themes\my_theme .`. Do not
 run `trellis theme add ../` from `example/`: the source contains the site, and
 the command refuses it.
 
+The scaffold's `features:` carries no archetype tag, so add one (see
+[Name and archetype rules](#name-and-archetype-rules)).
+
 You now have a working theme skeleton. The rest of this guide explains each
 piece in depth.
 
@@ -61,47 +65,38 @@ piece in depth.
 
 ```
 my_theme/
-  theme.yaml                    # Manifest — name, version, params
+  theme.yaml          # manifest: name, version, params
+  README.md
+  .gitignore
   layouts/
-    base.html                   # Root HTML shell (tl:define blocks)
-    home.html                   # Home page layout
+    base.html         # HTML shell with tl:define blocks
+    home.html         # home page
     _default/
-      single.html               # Default single page/post layout
-      list.html                 # Default section listing layout
-    tags/                       # Taxonomy-specific layouts (optional)
-      term.html
-      list.html
+      single.html     # a single page or post
+      list.html       # a section listing
   sass/
-    _variables.scss             # Params as $trellis-* with !default; builds the dark palette
+    _variables.scss   # the param bridge ($trellis-*)
     _skins/
-      _light.scss               # Light palette map ($palette)
-      _dark.scss                # Dark palette map ($palette)
-    _base.scss                  # Reset and typography
-    _layout.scss                # Page structure and breakpoints
-    _components.scss            # UI components
-    _footer.scss                # Footer styles
-    _a11y.scss                  # Accessibility: skip-link, focus rings
-    _code.scss                  # Code block styles
-    main.scss                   # Entry point — @forward 'variables' first, then @use the partials
-  static/                       # Static assets copied as-is (fonts, images, vendored JS/CSS)
+      _light.scss     # light palette map
+      _dark.scss      # dark palette map
+    main.scss         # entry point, forwards variables
+  static/             # copied as-is (fonts, images, JS)
     .gitkeep
-  screenshots/
-    light.png                   # Preview screenshot (light skin)
-    dark.png                    # Preview screenshot (dark skin)
   example/
-    trellis_site.yaml           # Minimal preview site config
+    trellis_site.yaml # preview site (theme: my_theme)
     content/
       _index.md
-      posts/
-        _index.md
-        welcome.md
     themes/
-      <name> -> ../..           # Symlink to the theme root, made by `trellis create`
+      my_theme -> ../..  # symlink made by trellis create
 ```
 
-The official
+That is what `trellis create --template theme` writes. As the theme grows, add
+taxonomy layouts (`layouts/tags/term.html`, `layouts/tags/list.html`), SASS
+partials that each `@use 'variables' as *` (`_base.scss`, `_layout.scss`, …),
+and `screenshots/light.png` and `screenshots/dark.png` (uncomment
+`screenshots:` in `theme.yaml`). The official
 [Verdant theme](https://github.com/tolo/trellis/tree/main/themes/verdant)
-follows this structure, so read it alongside this guide. `static/` holds
+shows this structure grown out, so read it alongside this guide. `static/` holds
 everything copied verbatim into the build output; see
 [Third-Party and Vendored Assets](#third-party-and-vendored-assets) for what
 belongs there.
@@ -119,7 +114,7 @@ version: 1.0.0
 author: Trellis Team
 description: >-
   A minimal, accessible blog theme for Trellis. Content-first design with
-  three color skins, responsive layout, and full keyboard navigation.
+  light, dark, and auto skins, responsive layout, and full keyboard navigation.
 min_trellis_version: 0.12.0
 screenshots:
   - screenshots/light.png
@@ -156,17 +151,19 @@ params:
 |---|---|---|
 | `name` | Yes | Theme identifier. Must match `^[a-z0-9][a-z0-9_-]*$` and equal the name of the directory the manifest sits in |
 | `version` | Yes | Semantic version (e.g. `1.0.0`) |
-| `author` | No | Author name or organization. Recommended, but nothing reads it — neither `ThemeManifest.load` nor the gallery generator requires it |
+| `author` | No | Author name or organization. Optional: `trellis theme info` shows it, and neither `ThemeManifest.load` nor the gallery generator requires it |
 | `description` | Yes | One-sentence description for theme galleries. Plain prose — no backticks |
 | `min_trellis_version` | No | Minimum `trellis_site` version required. Advisory: `trellis theme add` and `trellis theme update` print a warning when the installed `trellis_site` is older, and nothing blocks the build |
 | `screenshots` | No | Relative paths to preview PNG files, resolving inside the theme directory |
-| `features` | Yes | Feature tags. Must contain exactly one **archetype** tag — `docs`, `landing`, or `blog` — plus any number of free-form tags |
+| `features` | Yes | Feature tags: exactly one **archetype** tag — `docs`, `landing`, or `blog` — plus any number of free-form tags. The archetype is required for the built-in themes listed in the gallery and recommended for your own; `trellis create` leaves it out |
 | `params` | Yes | Parameter definitions (see below). Required by the standard-params contract below, not by the loader: a theme with no `params:` loads and builds, and simply ignores every `theme_params:` a site sets |
 
 The loader (`ThemeManifest.load`) enforces only a non-empty `name` and a
 `version`. The other "Yes" rows are enforced elsewhere: `description` and
-`features` by the gallery generator below, which gates the bundled themes, and
-`params` by the standard-params contract.
+`features` by the gallery generator below, which gates only the built-in themes
+in this repository, and `params` by the standard-params contract. Nothing checks
+a third-party theme's archetype, so the build and `trellis theme add` accept a
+theme without one.
 
 #### Name and archetype rules
 
@@ -716,16 +713,19 @@ are what make cross-boundary customization work without forking.
 ## The example directory
 
 The `example/` directory holds a minimal preview site so you can test the theme
-locally without a real content site:
+locally without a real content site.
+
+`trellis create` writes a minimal config (`title`, `description`, `baseUrl`,
+and `theme: my_theme`). Grow it as the theme needs, for example:
 
 ```yaml
-# example/trellis_site.yaml
-title: My Blog
-description: A sample blog powered by Trellis and this theme.
-baseUrl: http://localhost:4000
+# example/trellis_site.yaml (extended from the scaffold)
+title: my theme Example
+description: Preview site for the my theme theme.
+baseUrl: http://localhost:8080
 
 # Resolve the bundled theme by name (see the symlink note below).
-theme: mytheme
+theme: my_theme
 
 theme_params:
   skin: auto
@@ -739,9 +739,9 @@ paginate: 5
 ```
 
 The build resolves a theme by joining `<siteDir>/themes/<value>`, so the example
-needs a `themes/mytheme` entry. Because the example lives inside the theme, that
+needs a `themes/my_theme` entry. Because the example lives inside the theme, that
 entry is a relative symlink pointing back at the theme root – `trellis create`
-makes it for you; to create it by hand, `ln -s ../.. example/themes/mytheme`.
+makes it for you; to create it by hand, `ln -s ../.. example/themes/my_theme`.
 Official themes ship this layout. A bare `theme: ..` does not work: it resolves
 to the example directory itself, not the theme.
 

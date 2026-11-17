@@ -245,6 +245,6 @@ SITE_CONFIG="${ROOT}/site/trellis_site.yaml"
 echo "Syncing docs-site hero version to ${VERSION}..."
 VERSION="${VERSION}" perl -pi -e \
   'BEGIN { $updated = 0 }
-   $updated += s/^([ \t]*text:[ \t]*)(["\x27]?)(trellis )[0-9][0-9A-Za-z.+-]*( — one dependency)\2[ \t]*$/$1$2$3$ENV{VERSION}$4$2/;
+   $updated += s/^([ \t]*text:[ \t]*)(["\x27]?)(trellis )[0-9][0-9A-Za-z.+-]*( — no Node, no build step)\2[ \t]*$/$1$2$3$ENV{VERSION}$4$2/;
    END { exit 1 unless $updated == 1 }' "${SITE_CONFIG}"
 git add "${SITE_CONFIG}" 2>/dev/null || true

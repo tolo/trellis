@@ -63,6 +63,17 @@ final css = TrellisCss.compileSass(
 );
 ```
 
+### `@import` deprecation
+
+An `@import` rule surfaces Dart Sass's import-deprecation warning (Dart Sass 3.0 removes `@import`; migrate to `@use`/`@forward`). The `silenceImportDeprecation` parameter was removed in 0.12.0. Pass `fatalImportDeprecation: true` to fail the compile with a `SassCompilationException` instead, proving a source tree is `@import`-free:
+
+```dart
+final css = TrellisCss.compileSass(
+  'styles/main.scss',
+  fatalImportDeprecation: true,
+);
+```
+
 ### Error handling
 
 ```dart
@@ -81,8 +92,14 @@ Register `CssDialect` with your Trellis engine to enable the `tl:scope` processo
 import 'package:trellis/trellis.dart';
 import 'package:trellis_css/trellis_css.dart';
 
-final engine = Trellis(dialects: [CssDialect()]);
+// Renders files from templates/; the directory must exist.
+final engine = Trellis(
+  loader: FileSystemLoader('templates'),
+  dialects: [CssDialect()],
+);
 ```
+
+A `tl:scope` outside a `tl:fragment`, or on an element other than `<style>`, is not scoped: the attribute is removed and a warning goes to `onWarning`, which defaults to dropping it. Pass `CssDialect(onWarning: (msg) => print('CSS: $msg'))` to see them.
 
 In your template:
 

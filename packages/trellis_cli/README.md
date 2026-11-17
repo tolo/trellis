@@ -211,12 +211,15 @@ Builds a static site from the current directory. Reads `trellis_site.yaml` for c
 
 Options:
 - `--output` (`-o`): Output directory (default: from config, or `output`)
+- `--base-url`: Override `baseUrl` from `trellis_site.yaml`
+- `--path-prefix`: Override `pathPrefix` from `trellis_site.yaml`; `''` builds a root-served variant
 - `--drafts`: Include draft content (default: `false`)
 - `--verbose` (`-v`): Show detailed build log
 
 ```bash
 trellis build
 trellis build --output dist --drafts --verbose
+trellis build --path-prefix '' --output output-root
 ```
 
 ### `trellis serve`
@@ -231,6 +234,8 @@ Options:
 trellis serve
 trellis serve --port 3000
 ```
+
+`serve` serves the output directory at `/` and ignores `pathPrefix`, so a prefixed build's links return 404 locally. Preview a root-served build instead: `trellis build --path-prefix '' --output output-root` then `trellis serve --output output-root`.
 
 ### `trellis --version`
 
@@ -271,24 +276,25 @@ trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.13.0
 trellis theme add ./path/to/my-theme
 ```
 
-After installing, set `theme: <name>` in `trellis_site.yaml`.
+Run it from the site directory (it needs `trellis_site.yaml`). It sets `theme: <name>` in `trellis_site.yaml`, plus `theme_ref: <ref>` when `--ref` is given.
 
 ### `trellis theme update [<name>]`
 
-Pulls the latest version of an installed theme (or all themes if no name given).
+Updates an installed theme, or the active `theme:` from `trellis_site.yaml` if no name is given.
 
 ```bash
 trellis theme update
 trellis theme update orchard
 ```
 
-`theme update` runs `git pull` in the installed theme, so it applies to themes
-installed from a single-theme repository. A theme installed with `--theme`
-carries no git metadata — remove and re-add it instead.
+`theme update` runs `git pull` in the installed theme, or `git fetch` and
+`git checkout <ref>` when `theme_ref` is set, so it applies to themes installed
+from a single-theme repository. A theme installed with `--theme` carries no git
+metadata — remove and re-add it instead.
 
 ### `trellis theme list`
 
-Lists all installed themes with their names, versions, and source URLs.
+Lists all installed themes with their names and versions, marking the active theme with `*`.
 
 ```bash
 trellis theme list

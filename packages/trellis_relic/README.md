@@ -19,7 +19,8 @@ import 'package:relic/relic.dart';
 import 'package:trellis/trellis.dart';
 import 'package:trellis_relic/trellis_relic.dart';
 
-final engine = Trellis();
+// Renders files from templates/ (e.g. templates/pages/index.html); the directory must exist.
+final engine = Trellis(loader: FileSystemLoader('templates'));
 
 void main() async {
   final app = RelicApp()
@@ -40,7 +41,7 @@ Unlike `trellis_shelf`, there is no DI mechanism in Relic. Pass the `Trellis` en
 
 ```dart
 final engine = Trellis(
-  loader: FileSystemLoader(templateDirectory: 'templates'),
+  loader: FileSystemLoader('templates'),
 );
 
 // Pass engine directly to helpers
@@ -147,9 +148,9 @@ Set any directive to `null` to omit it. Pass `enableCsp: false` to disable CSP e
 
 ## CSRF Protection
 
-CSRF middleware is **not included** in `trellis_relic`. Relic lacks a built-in form body parser, which is required to implement the double-submit cookie pattern. If you need CSRF protection:
+CSRF middleware is **not included** in `trellis_relic`. If you need CSRF protection:
 
-- Implement it manually once Relic adds form parsing support.
+- Read the body with `request.readAsString()`, parse it with `Uri.splitQueryString`, and validate the submitted token against a signed cookie.
 - Use a JavaScript fetch API with custom headers instead of form submissions (HTMX supports this via `hx-headers`).
 
 ---

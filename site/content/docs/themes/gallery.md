@@ -1,6 +1,6 @@
 ---
 title: Built-in Themes
-description: Browse every theme installed with Trellis and choose a starting point for your site.
+description: Browse every built-in theme shipped in the Trellis repository and choose a starting point for your site.
 layout: gallery
 weight: 20
 ---

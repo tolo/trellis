@@ -11,19 +11,26 @@ element.
 ## `tl:inline` – inline expressions
 
 Set `tl:inline` to the content mode. Inside the element, `[[${expr}]]` emits
-escaped output and `[(${expr})]` emits unescaped output:
+output escaped for that mode, and `[(${expr})]` skips the mode's escaping:
 
 ```html
-<p tl:inline="text">Hello, [[${name}]]! Today is [(${rawHtml})].</p>
+<p tl:inline="text">Hello, [[${name}]]!</p>
 ```
 
 The supported modes are `text`, `javascript`, `css`, and `none`.
 
+In `text` mode both forms are HTML-escaped, because the result is element text.
+`[(${rawHtml})]` with `<b>x</b>` renders `&lt;b&gt;x&lt;/b&gt;`. To insert
+raw HTML, use [`tl:utext`](/docs/syntax/text/).
+
 ### JavaScript blocks
+
+`javascript` mode escapes quotes, backslashes and newlines but adds no quotes of
+its own, so put the string delimiters in the template:
 
 ```html
 <script tl:inline="javascript">
-  var user = [[${user.name}]];
+  var user = '[[${user.name}]]';
 </script>
 ```
 

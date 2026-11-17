@@ -49,9 +49,11 @@ a child template overrides them by declaring `tl:define` with the same name:
 </html>
 ```
 
-Block names must be unique within a template – a duplicate `tl:define` name is
-reported as an error. A `tl:define` value cannot be empty.
+Block names must be unique within a template, and a `tl:define` value cannot be
+empty. `TemplateValidator` reports an empty value as an error and a duplicate
+name as a warning. At render time neither throws: with duplicate names the last
+block wins.
 
 > This is exactly how the Arbor documentation theme is built: a `base.html`
-> layout declares `content`, `site-header`, and `site-footer` blocks, and each
-> page layout extends it and overrides `content`.
+> layout declares `head-extra`, `site-header`, `content`, and `site-footer`
+> blocks, and each page layout extends it and overrides `content`.

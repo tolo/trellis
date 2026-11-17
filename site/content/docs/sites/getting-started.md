@@ -14,7 +14,6 @@ Install the CLI, then scaffold its static blog starter:
 dart pub global activate trellis_cli
 trellis create my_site --template blog
 cd my_site
-dart pub get
 ```
 
 The generated project is ready to build:
@@ -86,9 +85,10 @@ pathPrefix: /my-site/
 ```
 
 Build again and publish the contents of `output/` as the Pages artifact. The
-prefix is written into URLs while files keep their normal on-disk paths. Run a
-link check before publishing so a valid-looking but root-relative URL cannot
-become a production 404.
+prefix is written into URLs while files keep their normal on-disk paths, so
+`trellis serve` no longer previews this build: preview a root-served build as
+the deployment guide shows. Run a link check before publishing so a
+valid-looking but root-relative URL cannot become a production 404.
 
 The [deployment guide](/docs/sites/deploy/) includes a complete GitHub Actions
-workflow, the root-served variant, and both link-check commands.
+workflow, the root-served preview, and both link-check commands.

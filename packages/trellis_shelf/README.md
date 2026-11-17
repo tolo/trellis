@@ -21,7 +21,8 @@ import 'package:trellis/trellis.dart';
 import 'package:trellis_shelf/trellis_shelf.dart';
 
 void main() async {
-  final engine = Trellis();
+  // Renders files from templates/ (e.g. templates/index.html); the directory must exist.
+  final engine = Trellis(loader: FileSystemLoader('templates'));
 
   final handler = const Pipeline()
       .addMiddleware(trellisSecurityHeaders())
@@ -152,6 +153,9 @@ trellisCsrf(
   excludedPaths: ['/api/webhook'],  // paths that skip validation
 )
 ```
+
+`excludedPaths` entries match the request path exactly (no prefixes or globs), relative to the
+handler's mount point: `'/api'` does not exclude `/api/webhook`.
 
 ## Response Helpers
 

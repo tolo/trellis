@@ -137,9 +137,9 @@ void main() {
       expect((await Process.run('git', ['init', '--quiet'], workingDirectory: repo.path)).exitCode, 0);
 
       for (final scalar in <String>[
-        'trellis 0.10.2 — one dependency',
-        '"trellis 0.10.2 — one dependency"',
-        "'trellis 0.10.2 — one dependency'",
+        'trellis 0.10.2 — no Node, no build step',
+        '"trellis 0.10.2 — no Node, no build step"',
+        "'trellis 0.10.2 — no Node, no build step'",
       ]) {
         final fixture =
             '''
@@ -205,7 +205,9 @@ theme_params:
       expect((await Process.run('chmod', ['+x', fakeMelos.path])).exitCode, 0);
       expect((await Process.run('git', ['init', '--quiet'], workingDirectory: repo.path)).exitCode, 0);
       // The hero sync exits non-zero unless it rewrites exactly one line, so the fixture needs one.
-      File('${repo.path}/site/trellis_site.yaml').writeAsStringSync('      text: trellis 0.10.2 — one dependency\n');
+      File(
+        '${repo.path}/site/trellis_site.yaml',
+      ).writeAsStringSync('      text: trellis 0.10.2 — no Node, no build step\n');
 
       // Prose mentioning a constraint inline, a config key that is not a dependency, and a
       // non-trellis dependency must all survive untouched; only the indented pubspec lines move.
@@ -644,7 +646,9 @@ Directory _lockstepFixture(Directory workspaceRoot) {
     '${repo.path}/tool/version_lockstep.sh',
     File('${workspaceRoot.path}/tool/version_lockstep.sh').readAsStringSync(),
   );
-  File('${repo.path}/site/trellis_site.yaml').writeAsStringSync('      text: trellis 0.10.2 — one dependency\n');
+  File(
+    '${repo.path}/site/trellis_site.yaml',
+  ).writeAsStringSync('      text: trellis 0.10.2 — no Node, no build step\n');
   expect(Process.runSync('git', ['init', '--quiet'], workingDirectory: repo.path).exitCode, 0);
   return repo;
 }

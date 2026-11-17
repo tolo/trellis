@@ -36,7 +36,7 @@ templates and fragments throw the engine's existing exceptions. `TrellisUiLoader
 Link `/trellis-ui/trellis-ui.css`, `/trellis-ui/htmx-indicator.css` and the deferred classic script
 `/trellis-ui/trellis-ui.js`. Serve these paths before the app's fallback route. All assets are same-origin and need no
 inline script, inline style or eval. If using htmx, self-host it and set the `htmx-config` meta options `allowEval` and
-`includeIndicatorStyles` to `false`. The gallery shows a complete strict-CSP shell.
+`includeIndicatorStyles` (`includeIndicatorCSS` on HTMX 4) to `false`. The gallery shows a complete strict-CSP shell.
 
 Public Dart names: `TrellisUiLoader`, `TrellisUiResponse` (`statusCode`, `headers`, `body`), `trellisUiRespond`, and
 `materializeTrellisUi`. The asset responder returns null for unknown suite paths and paths outside `/trellis-ui/`,

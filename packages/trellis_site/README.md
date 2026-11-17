@@ -10,7 +10,7 @@ Part of the [Trellis SDK](https://github.com/tolo/trellis).
 - **Front matter** -- YAML metadata (`title`, `date`, `draft`, `tags`, custom fields)
 - **Markdown rendering** -- GitHub-flavored Markdown via `package:markdown` (tables, task lists, footnotes, alerts, emoji)
 - **Template lookup** -- priority-ordered layout resolution (front matter `layout` > type > section > `_default`)
-- **Build orchestration** -- `TrellisSite.build()` runs the full pipeline and returns a `BuildResult`
+- **Build orchestration** -- `TrellisSite.build()` runs the content pipeline and returns a `BuildResult` (SASS/SCSS compilation runs in `trellis build`, see [SASS and theme CSS](#sass-and-theme-css))
 - **Taxonomies** -- configurable taxonomy collection (`tags`, `categories`, etc.) with virtual listing and term pages
 - **Pagination** -- automatic page splitting for section, home, and taxonomy term pages
 - **Sitemap** -- `sitemap.xml` generation with `<lastmod>` from front matter or file mtime
@@ -89,6 +89,18 @@ trellis build
 trellis serve
 ```
 
+### SASS and theme CSS
+
+`TrellisSite.build()` renders pages and copies static files, but compiles no
+SASS: it skips `.scss`/`.sass` files in `static/` and does not compile a
+theme's `sass/` entries. `trellis build` (from
+[trellis_cli](https://pub.dev/packages/trellis_cli)) runs `TrellisSite.build()`
+and then compiles both, writing `static/<path>.scss` to `<path>.css` and a
+theme's `sass/<entry>.scss` to `css/<entry>.css` (partials starting with `_` are
+skipped). A programmatic build of a
+themed site therefore needs its own compile step, such as `compileThemeEntry`
+for theme entries and `TrellisCss.compileSass` (`trellis_css`) for site files.
+
 ## Configuration
 
 `trellis_site.yaml` supports a small set of top-level keys for common setup:
@@ -96,9 +108,10 @@ trellis serve
 - `title`, `baseUrl`, `description`
 - `pathPrefix` for serving the site under a sub-path (see [Path prefix](#path-prefix))
 - `contentDir`, `layoutsDir`, `staticDir`, `dataDir`, `outputDir`
+- `theme`, `theme_params`, and `theme_ref` (the git ref `trellis theme add --ref` pins) for an installed theme
 - `taxonomies`, `paginate`
 - `params` for arbitrary site-level values exposed as `${site.params.*}`
-- `feeds` and `search` for generated output artifacts
+- `feeds` and `search` for generated output artifacts, `highlight` for build-time code highlighting
 
 Paths may be relative to the site root or absolute.
 
@@ -211,7 +224,7 @@ my_site/
       youtube.html        # Shortcode template
   static/
     styles.css            # Copied to output as-is
-    main.scss             # Compiled to CSS by trellis_css
+    main.scss             # Compiled to main.css by `trellis build`
   data/
     authors.yaml          # Global data (available as ${data.authors})
   output/                 # Generated site
@@ -353,7 +366,8 @@ Additional context variables:
   - `${page.prev}` / `${page.next}` -- immediate in-section neighbors (`{url, title}`) for single doc pages; absent at section boundaries. See [In-Section Prev/Next](#in-section-prevnext).
 - `${pages}` -- child pages for list pages (section, home, taxonomy term)
 - `${site.menu}` -- nested navigation tree (`{title, url, children}` nodes) available on every page render; see [Navigation Menu](#navigation-menu)
-- `${pagination.*}` -- pagination metadata (`page`, `totalPages`, `hasNext`, `prevUrl`, `nextUrl`, `pages`)
+- `${pagination.*}` -- pagination metadata (`page`, `totalPages`, `totalItems`, `hasPrev`, `hasNext`, `prevUrl`, `nextUrl`, and `pages`, the URL of every page); set only when a list spans more than one page. The current page's slice is `${pages}`
+- `${page.termLinks.<taxonomy>}` -- a content page's own terms as `{name, slug, url, count}` links (when taxonomies are configured); see [Taxonomies](#taxonomies)
 - `${taxonomy.*}` -- taxonomy term lists (when taxonomies are configured)
 - `${feeds.*}` -- generated site-wide feed URLs (`atom`, `rss`) when feeds are enabled
 
@@ -378,10 +392,12 @@ taxonomies:
   - categories
 ```
 
-Pages with matching front matter fields (e.g. `tags: [dart, web]`) are automatically collected. Virtual pages are generated:
+Pages with matching front matter fields (e.g. `tags: [dart, web]`) are automatically collected. Terms are lowercased and slugified (`Dart Web` → `/tags/dart-web/`). Virtual pages are generated:
 
-- `/{taxonomy}/` -- listing page with all terms (uses `list.html` layout)
-- `/{taxonomy}/{slug}/` -- term page with matching pages (uses `single.html` layout)
+- `/{taxonomy}/` -- listing page with all terms in `${page.terms}`. Layout: `{taxonomy}/list.html` > `_default/taxonomy.html` > `_default/list.html`
+- `/{taxonomy}/{slug}/` -- term page with the matching pages in `${pages}` and the term in `${page.term}`. Layout: `{taxonomy}/term.html` > `{taxonomy}/single.html` > `_default/taxonomy.html` > `_default/single.html`
+
+Every page also receives `${taxonomy.<name>}`, the term list (`{name, slug, url, count, pages}` maps), and each content page receives `${page.termLinks.<name>}`, its own terms as links. Link terms through that `url` instead of building `/{taxonomy}/{term}/` by hand.
 
 ## Pagination
 
@@ -391,11 +407,11 @@ Enable pagination in `trellis_site.yaml`:
 paginate: 10
 ```
 
-List pages (section, home, taxonomy term) are split into chunks. Page 1 uses the base URL; subsequent pages use `/page/{n}/`. Templates access `${pagination.page}`, `${pagination.totalPages}`, `${pagination.hasNext}`, `${pagination.prevUrl}`, `${pagination.nextUrl}`.
+List pages (section, home, taxonomy term) are split into chunks. Page 1 uses the base URL; subsequent pages use `/page/{n}/`. `${pages}` holds the current chunk. Templates access `${pagination.page}`, `${pagination.totalPages}`, `${pagination.totalItems}`, `${pagination.hasPrev}`, `${pagination.hasNext}`, `${pagination.prevUrl}`, `${pagination.nextUrl}`, and `${pagination.pages}` (every page's URL). `${pagination}` is set only when a list spans more than one page, so guard it with `tl:if`. Without `paginate`, a theme's `posts_per_page` param sets the page size.
 
 ## Shortcodes
 
-Reusable content snippets rendered via Trellis fragment templates in `layouts/shortcodes/`.
+Reusable content snippets rendered from Trellis templates at `layouts/shortcodes/{name}.html` in the site root (a fixed path: a custom `layoutsDir` or theme layouts are not searched). Each argument is a top-level template variable (`${id}`), and a content shortcode's rendered body is `${content}`. A shortcode with no template stays in the page as written, with a build warning.
 
 Pre-Markdown syntax (processed before Markdown rendering):
 
@@ -440,6 +456,8 @@ Generated outputs:
 - `rss.xml` -- site-wide RSS 2.0 feed when `rss: true`
 - `/{section}/feed.xml` and `/{section}/rss.xml` -- per-section feeds when `sections` are configured
 
+Defaults: `atom: true`, `rss: false`, `limit: 20`, `fullContent: false` (summaries; `true` puts the rendered HTML in each item). Listing `sections` also narrows the site-wide `feed.xml`/`rss.xml` to pages from those sections.
+
 Templates can link to site-wide feeds via `${feeds.atom}` and `${feeds.rss}` when available. Pages with `feed: false` in front matter are excluded.
 
 ## Syntax Highlighting
@@ -479,8 +497,11 @@ search:
 ```
 
 This writes a JSON array to the output directory, suitable for tools such as
-Fuse.js or Lunr.js. Draft pages and pages with `search: false` in front matter
-are excluded.
+Fuse.js or Lunr.js. Only single pages are indexed; draft pages, pages in
+`excludeSections`, and pages with `search: false` in front matter are excluded.
+`fields` defaults to `[title, summary, content, tags]` and also accepts `date`
+and `section`. `stripHtml` defaults to `true`. Omit `maxContentLength` for no
+content truncation.
 
 ## API Documentation
 

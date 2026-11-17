@@ -3,7 +3,7 @@ version: 1.0.0
 author: Trellis Team
 description: >-
   A minimal, accessible blog theme for Trellis. Content-first design with
-  three color skins, responsive layout, and full keyboard navigation.
+  light, dark, and auto skins, responsive layout, and full keyboard navigation.
 min_trellis_version: 0.12.0
 screenshots:
   - screenshots/light.png

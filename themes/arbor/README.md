@@ -99,9 +99,8 @@ trellis build
 ```
 
 The `example/` site exercises a nested content tree (sidebar levels), code fences
-(highlighting), and headings (TOC). It builds with the current engine context
-surface even where `${site.menu}`/`${page.toc}` producers have not yet landed —
-the navigation regions simply render empty.
+(highlighting), and headings (TOC). The navigation regions are guarded, so a page
+without menu or TOC data renders them empty.
 
 ## Vendored assets
 

@@ -26,21 +26,27 @@ you already know the template language:
 dart pub add trellis
 ```
 
-The only runtime dependency is `package:html`, the Dart team's HTML5 parser.
+All runtime dependencies are pure Dart: `html` (the Dart team's HTML5 parser),
+`args`, `matcher`, `path`, and `string_scanner`.
 
 ## Rendering
 
 ```dart
 import 'package:trellis/trellis.dart';
 
-final engine = Trellis();
+final engine = Trellis(loader: MapLoader({}));
 
 final html = engine.render(
-  '<h1 tl:text="${title}">Default Title</h1>',
+  r'<h1 tl:text="${title}">Default Title</h1>',
   {'title': 'Hello, Trellis!'},
 );
-// <h1>Hello, Trellis!</h1>
+// <html><head></head><body><h1>Hello, Trellis!</h1></body></html>
 ```
+
+`render()` returns a full HTML document; `renderFragment()` returns just the
+named fragment. Write templates in Dart as raw strings (`r'...'`) so Dart does
+not interpolate `${...}`. Without a `loader:`, the engine reads from
+`FileSystemLoader('templates/')`, which throws if that directory does not exist.
 
 `render()` is synchronous. `renderFile()` is asynchronous only because it reads
 from disk. For the full template language – text, conditionals, iteration,
@@ -59,6 +65,7 @@ Trellis(
   maxCacheSize: 100,     // LRU eviction threshold (default: 256)
   prefix: 'tl',          // attribute prefix (default: 'tl')
   strict: false,         // throw on undefined variables/members (default: false)
+  filters: {...},        // custom filters; override dialect filters of the same name
   messageSource: ...,    // i18n MessageSource implementation
   locale: 'en',          // default locale for message lookup
   processors: [...],     // additional custom Processor instances
@@ -168,7 +175,7 @@ import 'package:trellis/testing.dart';
 
 void main() {
   test('template is valid', () {
-    expect('<p tl:text="${name}">x</p>', isValidTemplate());
+    expect(r'<p tl:text="${name}">x</p>', isValidTemplate());
   });
 }
 ```
@@ -215,7 +222,7 @@ import 'package:test/test.dart';
 
 void main() {
   final engine = testEngine(templates: {
-    'card': '<div tl:fragment="card"><h2 tl:text="${title}">Title</h2></div>',
+    'card': r'<div tl:fragment="card"><h2 tl:text="${title}">Title</h2></div>',
   });
 
   test('card fragment renders title', () {
@@ -224,8 +231,14 @@ void main() {
     expect(html, hasNoElement('.missing'));
   });
 
-  test('snapshot', () async {
-    await expectSnapshotFromSource(engine, '<p tl:text="${msg}">x</p>', {'msg': 'hi'});
+  test('snapshot', () {
+    // Creates the golden on the first local run (fails on CI when missing), then compares
+    expectSnapshotFromSource(
+      engine,
+      r'<p tl:text="${msg}">x</p>',
+      {'msg': 'hi'},
+      goldenFile: 'test/goldens/msg.html',
+    );
   });
 }
 ```
@@ -325,7 +338,8 @@ final result = evaluator.evaluate(r'${a} + ${b}', {'a': 1, 'b': 2}); // 3
 
 - `tl:text` always HTML-escapes output – safe for user-supplied data.
 - `tl:utext` renders **unescaped HTML** – only use it with trusted content to
-  avoid XSS.
+  avoid XSS. The inserted HTML is output, never template code: `tl:*`
+  attributes in it are emitted as-is, not evaluated.
 - `tl:inline` in `javascript`/`css` mode escapes output, including `</script>`
   and `</style>` closing tags.
 - `FileSystemLoader` rejects absolute paths, `..` traversal, and symlink escapes

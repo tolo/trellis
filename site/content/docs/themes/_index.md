@@ -15,8 +15,9 @@ entirely through YAML – no forking required.
 - [**Standard Params**](/docs/themes/standard-params/) – the 25-param contract
   every theme supports: types, reference defaults, SASS variables, and CSS
   custom properties.
-- [**Browse Built-in Themes**](/docs/themes/gallery/) – compare every installed
-  theme, its archetype, screenshots, and configuration hint.
+- [**Browse Built-in Themes**](/docs/themes/gallery/) – compare every built-in
+  theme (shipped in the Trellis repository), its archetype, screenshots, and
+  configuration hint.
 
 Applying an existing theme to your own site is covered in the
 [trellis_site](/docs/packages/trellis_site/) guide.

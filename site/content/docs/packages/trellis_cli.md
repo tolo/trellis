@@ -11,6 +11,32 @@ building, local preview, and theme management. It ties the SDK together – the
 
 ## Installation
 
+`trellis` ships as a self-contained binary (no Dart SDK required) and as a
+pub.dev package.
+
+Homebrew (macOS and Linux):
+
+```bash
+brew install tolo/trellis/trellis
+```
+
+Scoop (Windows):
+
+```powershell
+scoop bucket add trellis https://github.com/tolo/scoop-trellis
+scoop install trellis
+```
+
+Manual download: each
+[release](https://github.com/tolo/trellis/releases/latest) carries
+`trellis-v<version>-<platform>` archives for macOS (arm64, x64), Linux (x64,
+arm64), and Windows (x64), plus `SHA256SUMS.txt`. Verify the checksum, extract
+the `trellis` binary, and put it on your `PATH`. The
+[package README](https://github.com/tolo/trellis/blob/main/packages/trellis_cli/README.md)
+has the full download and verify commands.
+
+From pub.dev (requires the Dart SDK):
+
 ```bash
 dart pub global activate trellis_cli
 ```
@@ -19,6 +45,15 @@ Or run it directly without installing:
 
 ```bash
 dart pub global run trellis_cli:trellis create my_app
+```
+
+From source:
+
+```bash
+git clone https://github.com/tolo/trellis
+cd trellis
+dart pub get
+dart compile exe packages/trellis_cli/bin/trellis.dart -o trellis
 ```
 
 ## Quick start
@@ -39,7 +74,6 @@ Then open `http://localhost:8080`.
 ```bash
 trellis create my_blog --template blog
 cd my_blog
-dart pub get
 trellis build
 trellis serve
 ```
@@ -94,11 +128,15 @@ Available templates:
 | `relic` | Relic + HTMX counter app with explicit-engine wiring and security headers |
 | `theme` | Trellis theme scaffold with `theme.yaml`, layouts, SASS architecture, and example preview site |
 
-Each template generates a ready-to-run project: server or route wiring, base and
-page layouts, an HTMX navigation partial, a starter stylesheet, and the standard
-Dart project files (`pubspec.yaml`, `analysis_options.yaml`, `.gitignore`). The
-`blog` and `theme` templates instead scaffold a static site and a theme
-skeleton, respectively.
+The `htmx`, `dart_frog`, and `relic` templates each generate a ready-to-run
+server app: server or route wiring, base and page layouts with HTMX
+navigation, a starter stylesheet, and `pubspec.yaml`, `analysis_options.yaml`,
+and `.gitignore`. `htmx` and `dart_frog` put the navigation in a
+`templates/partials/nav.html` partial; `relic` keeps it in
+`templates/base.html`. The `blog` template scaffolds a static site
+(`trellis_site.yaml`, `content/`, `layouts/`, `static/styles.css`, and the Dart
+project files). The `theme` template scaffolds `theme.yaml`, `layouts/`,
+`sass/`, and an `example/` preview site, with no `pubspec.yaml`.
 
 ### `trellis build`
 
@@ -109,12 +147,16 @@ pipeline, and compiles any SASS/SCSS files in the static directory.
 Options:
 
 - `--output` (`-o`): output directory (default: from config, or `output`).
+- `--base-url`: override `baseUrl` from `trellis_site.yaml`.
+- `--path-prefix`: override `pathPrefix` from `trellis_site.yaml`; `''` builds
+  a root-served variant.
 - `--drafts`: include draft content (default: `false`).
 - `--verbose` (`-v`): show a detailed build log.
 
 ```bash
 trellis build
 trellis build --output dist --drafts --verbose
+trellis build --path-prefix '' --output output-root
 ```
 
 ### `trellis serve`
@@ -133,6 +175,10 @@ Options:
 trellis serve
 trellis serve --port 3000
 ```
+
+`serve` serves the output directory at `/` and ignores `pathPrefix`, so a
+prefixed build's links return 404 locally. Preview a root-served build instead;
+see [Sites: Deploy](/docs/sites/deploy/#preview-a-sub-path-site).
 
 ### `trellis --version` / `trellis --help`
 
@@ -171,25 +217,29 @@ trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.13.0
 trellis theme add ./path/to/my-theme
 ```
 
-After installing, set `theme: <name>` in `trellis_site.yaml`.
+Run it from the site directory (it needs `trellis_site.yaml`). It sets
+`theme: <name>` in `trellis_site.yaml`, plus `theme_ref: <ref>` when `--ref` is
+given.
 
 ### `trellis theme update [<name>]`
 
-Pulls the latest version of an installed theme (or all themes if no name is
-given).
+Updates an installed theme, or the active `theme:` from `trellis_site.yaml` if
+no name is given.
 
 ```bash
 trellis theme update
 trellis theme update orchard
 ```
 
-`theme update` runs `git pull` in the installed theme, so it applies to themes
-installed from a single-theme repository. A theme installed with `--theme`
-carries no git metadata – remove and re-add it instead.
+`theme update` runs `git pull` in the installed theme, or `git fetch` and
+`git checkout <ref>` when `theme_ref` is set, so it applies to themes installed
+from a single-theme repository. A theme installed with `--theme` carries no git
+metadata – remove and re-add it instead.
 
 ### `trellis theme list`
 
-Lists all installed themes with their names, versions, and source URLs.
+Lists all installed themes with their names and versions, marking the active
+theme with `*`.
 
 ### `trellis theme info <name>`
 

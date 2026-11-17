@@ -20,8 +20,8 @@ Add the engine to an existing Dart project:
 dart pub add trellis
 ```
 
-That single command installs the `trellis` package. Its only runtime dependency
-is `package:html`, the Dart team's HTML5 parser.
+That single command installs the `trellis` package. It parses templates with
+`package:html`, the Dart team's HTML5 parser, and needs no Node.js or build step.
 
 ## Your first template
 
@@ -31,7 +31,7 @@ The `tl:text` attribute replaces an element's body with an escaped value:
 ```dart
 import 'package:trellis/trellis.dart';
 
-final engine = Trellis();
+final engine = Trellis(loader: MapLoader({}));
 
 final html = engine.render(
   '<h1 tl:text="${title}">Default Title</h1>',
@@ -39,11 +39,18 @@ final html = engine.render(
 );
 ```
 
-The call above returns:
+The default loader reads template files from `templates/` and throws when that
+directory is missing, so an engine that only renders strings passes an empty
+`MapLoader`.
+
+The call above returns a full HTML document:
 
 ```html
-<h1>Hello, Trellis!</h1>
+<html><head></head><body><h1>Hello, Trellis!</h1></body></html>
 ```
+
+To get just the element, as an HTMX partial needs, mark it with `tl:fragment`
+and render it with [`renderFragment()`](/docs/syntax/fragments/#rendering-a-fragment-directly).
 
 Notice two things:
 
@@ -74,7 +81,7 @@ Rendered from Dart – synchronous, AOT-safe, no reflection:
 ```dart
 import 'package:trellis/trellis.dart';
 
-final engine = Trellis();
+final engine = Trellis(loader: MapLoader({}));
 
 final html = engine.render(pageTemplate, {
   'posts': [
@@ -107,7 +114,7 @@ If you need templates that pass strict HTML5 validation, configure a
 hyphenated prefix and use `data-tl-*` attributes instead of `tl:*`:
 
 ```dart
-final engine = Trellis(prefix: 'data-tl');
+final engine = Trellis(prefix: 'data-tl', loader: MapLoader({}));
 ```
 
 ```html

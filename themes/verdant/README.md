@@ -30,9 +30,10 @@ front matter rather than composing a page out of front-matter blocks.
 - **Three skins** — `light`, `dark`, and `auto` (follows
   `prefers-color-scheme`), both concrete skins passing WCAG 2.1 AA body-text
   contrast.
-- **No highlighter shipped** — code renders clean but uncolored rather than
-  pulling a highlighter from a CDN; build-time highlighting is configured
-  site-side (see [ADR-010](../../dev/adrs/ADR-010-syntax-highlighting.md)).
+- **Build-time syntax highlighting** — the SSG bakes `.hljs-*` spans into the
+  built HTML and `sass/_code.scss` colors them, so code is colored with
+  JavaScript off. No highlighter JS, no CDN; configure it site-side with
+  `highlight:` (see [ADR-010](../../dev/adrs/ADR-010-syntax-highlighting.md)).
 
 ## Using the theme
 

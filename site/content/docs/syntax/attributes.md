@@ -51,10 +51,12 @@ attribute, leaving what is already there in place:
 
 ```html static
 <div class="card" tl:classappend="${active} ? 'active' : ''">content</div>
-<div style="color:red" tl:styleappend="font-weight:bold">content</div>
+<div style="color:red" tl:styleappend="'font-weight:bold'">content</div>
 ```
 
-The first renders `class="card active"` when `active` is truthy.
+The first renders `class="card active"` when `active` is truthy, the second
+`style="color:red; font-weight:bold"`. Both values are expressions, so literal
+CSS goes in single quotes.
 
 A blank existing `class` or `style` (empty or whitespace only) counts as absent, so
 `<div class="" tl:classappend="'a'">` renders `class="a"`, not `class=" a"`.

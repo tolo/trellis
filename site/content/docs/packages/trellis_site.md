@@ -44,6 +44,17 @@ trellis build
 trellis serve
 ```
 
+### SASS and theme CSS
+
+`TrellisSite.build()` renders pages and copies static files, but compiles no
+SASS: it skips `.scss` and `.sass` files in `static/` and does not compile a
+theme's `sass/` entries. `trellis build` runs `TrellisSite.build()` and then
+compiles both, writing `static/<path>.scss` to `<path>.css` and a theme's
+`sass/<entry>.scss` to `css/<entry>.css` (partials starting with `_` are
+skipped). A programmatic build of a themed site therefore needs its own compile
+step, such as `compileThemeEntry` for theme entries and
+`TrellisCss.compileSass` from `trellis_css` for site files.
+
 ## Configuration keys
 
 `trellis_site.yaml` accepts:
@@ -52,7 +63,8 @@ trellis serve
 - `pathPrefix` for a site served below the domain root;
 - `contentDir`, `layoutsDir`, `staticDir`, `dataDir`, and `outputDir` for
   filesystem locations;
-- `theme` and `theme_params` for an installed theme;
+- `theme`, `theme_params`, and `theme_ref` (the git ref that
+  `trellis theme add --ref` pins) for an installed theme;
 - `taxonomies` and `paginate` for generated collections;
 - `params` for arbitrary values exposed as `${site.params.*}`;
 - `feeds`, `search`, and `highlight` for generated discovery artifacts and
@@ -139,8 +151,7 @@ weight: 10
 tags: [dart, web]
 menu_title: Hello
 menu_exclude: false
-sitemap:
-  exclude: false
+sitemap: true
 feed: true
 search: true
 ---
@@ -163,11 +174,14 @@ Layouts receive a cascade in this order, with later sources taking precedence:
 Additional values include:
 
 - `${page.*}` – metadata including `url`, `content`, `summary`, `toc`,
-  `section`, `sectionPath`, `ancestors`, `kind`, `prev`, and `next`;
-- `${pages}` – ordered children for list pages;
+  `section`, `sectionPath`, `ancestors`, `breadcrumbs`, `kind`, `prev`, and
+  `next`, plus `termLinks` when taxonomies are configured;
+- `${pages}` – ordered children for list pages; on a paginated list, the
+  current page's slice;
 - `${site.menu}` – the generated hierarchical navigation tree;
-- `${pagination.*}` – pagination state and the current page slice;
-- `${taxonomy.*}` – taxonomy data for generated collection pages; and
+- `${pagination.*}` – page number, totals, and page URLs, set only when a list
+  spans more than one page;
+- `${taxonomy.*}` – each configured taxonomy's term list; and
 - `${feeds.*}` – generated site-wide feed URLs.
 
 See [Sites: Layouts](/docs/sites/layouts/) for worked navigation, taxonomy, and
@@ -182,8 +196,9 @@ Single and list pages resolve the first available layout in this order:
 3. Section-specific `{section}/{single|list}.html`.
 4. `_default/{single|list}.html`.
 
-Home pages resolve `home.html`, then `index.html`, then
-`_default/list.html`. Site-owned layouts take precedence over theme layouts at
-the same path.
+Home pages resolve a front-matter `layout`, then `home.html`, then
+`index.html`, then `_default/list.html`. Taxonomy listing and term pages have
+their own chain, covered in [Sites: Layouts](/docs/sites/layouts/#taxonomies).
+Site-owned layouts take precedence over theme layouts at the same path.
 
 For the full authoring workflow, return to the [Sites guide](/docs/sites/).

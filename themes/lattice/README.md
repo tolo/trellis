@@ -52,13 +52,18 @@ Lattice-specific surface.
 | `code_font_family`    | Spline Sans Mono stack | Code font stack                             |
 | `max_width`           | `1056px`               | Maximum content width                       |
 | `border_radius`       | `8px`                  | Global corner radius                        |
-| `logo`                | unset                  | Optional prefix-relative header logo        |
-| `favicon`             | `favicon.svg`          | Prefix-relative browser icon                |
 | `nav_links`           | Home and Docs          | Header links                                |
 | `social_links`        | `[]`                   | Footer social links                         |
 | `footer_text`         | unset                  | Optional footer copy                        |
 | `show_powered_by`     | `true`                 | Trellis attribution                         |
 | `show_rss_link`       | `true`                 | Feed discovery link                         |
+
+### Branding params
+
+| Param     | Default       | Purpose                              |
+| --------- | ------------- | ------------------------------------ |
+| `logo`    | unset         | Optional prefix-relative header logo |
+| `favicon` | `favicon.svg` | Prefix-relative browser icon         |
 
 ### Docs params
 

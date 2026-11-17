@@ -41,14 +41,16 @@ dart pub add trellis
 ```dart
 import 'package:trellis/trellis.dart';
 
-final engine = Trellis();
+final engine = Trellis(loader: MapLoader({}));
 
 final html = engine.render(
-  '<h1 tl:text="${title}">Default Title</h1>',
+  r'<h1 tl:text="${title}">Default Title</h1>',
   {'title': 'Hello, Trellis!'},
 );
-// <h1>Hello, Trellis!</h1>
+// <html><head></head><body><h1>Hello, Trellis!</h1></body></html>
 ```
+
+`render()` returns a full document; `renderFragment()` returns just one fragment. Without a `loader:`, the engine reads from `FileSystemLoader('templates/')`, which needs that directory to exist.
 
 Full template syntax, expression language, fragments, loaders, and API reference live on the engine's page: **[`packages/trellis`](packages/trellis/README.md)**.
 
@@ -110,7 +112,7 @@ Every package is independently usable and publishable. Add only what you need.
 
 | Package | Role | Description |
 |---|---|---|
-| [`trellis`](packages/trellis) | Engine | Natural HTML template engine — `tl:*` attributes, fragments, expression language, inheritance, validation. Single dependency (`package:html`). |
+| [`trellis`](packages/trellis) | Engine | Natural HTML template engine — `tl:*` attributes, fragments, expression language, inheritance, validation. Pure-Dart dependencies only (`html`, `args`, `matcher`, `path`, `string_scanner`). |
 | [`trellis_shelf`](packages/trellis_shelf) | Server | Shelf middleware, response helpers, HTMX helpers, security headers, CSRF protection. |
 | [`trellis_dart_frog`](packages/trellis_dart_frog) | Server | Dart Frog integration — `trellisProvider()` middleware, response/HTMX helpers, CSRF. |
 | [`trellis_relic`](packages/trellis_relic) | Server | Serverpod Relic integration — response helpers, HTMX helpers, security headers. |
@@ -122,14 +124,14 @@ Every package is independently usable and publishable. Add only what you need.
 
 ## Examples & guides
 
-- **Examples** — runnable apps in [`examples/`](examples): `shelf_app`, `dart_frog_app`, `relic_app`, `todo_app`.
+- **Examples** — runnable apps in [`examples/`](examples): `shelf_app`, `dart_frog_app`, `relic_app`, `todo_app`, `docs_site`.
 - **[Framework Integration Guide](https://tolo.github.io/trellis/docs/packages/framework-integration/)** — Shelf, Dart Frog, and Relic; HTMX fragment and OOB patterns; security and testing.
 - **Theme authoring & usage** — [Theme Authoring](https://tolo.github.io/trellis/docs/themes/authoring/), [Themes](https://tolo.github.io/trellis/docs/sites/themes/), [Standard Params](https://tolo.github.io/trellis/docs/themes/standard-params/).
 - **API documentation** — https://pub.dev/documentation/trellis/latest/
 
 ## Project status
 
-Trellis is in active early development. The template engine is published on [pub.dev](https://pub.dev/packages/trellis); the surrounding SDK packages are maturing toward a coordinated release. APIs may still change between minor versions.
+Trellis is in active early development. All SDK packages are published on [pub.dev](https://pub.dev/packages/trellis) together, in lockstep on one shared version (ADR-009). APIs may still change between minor versions.
 
 ## Development
 
@@ -197,12 +199,13 @@ dart test -t e2e \
   test/generated_app_e2e_test.dart \
   test/dart_frog_e2e_test.dart \
   test/relic_e2e_test.dart \
+  test/blog_e2e_test.dart \
   test/examples_smoke_test.dart
 ```
 
-This covers starter generation plus the checked-in `examples/shelf_app`, `examples/dart_frog_app`, `examples/relic_app`, and `examples/todo_app`.
+This covers starter generation (including the `blog` starter) plus the checked-in `examples/shelf_app`, `examples/dart_frog_app`, `examples/relic_app`, and `examples/todo_app`.
 
-**Publishing order** — publish in dependency order: `trellis` first, then `trellis_shelf`, `trellis_dev`, and `trellis_css` (all depend on `trellis`), then `trellis_ui` and `trellis_relic` (depend on `trellis`) and `trellis_dart_frog` (depends on `trellis_shelf`), then `trellis_site` and `trellis_cli` last.
+**Publishing** — all packages publish in lockstep from one `vX.Y.Z` tag: `tool/release.sh X.Y.Z` cuts the release and pushing the tag runs `.github/workflows/publish.yml` for every package. Follow [`dev/guidelines/RELEASE-RUNBOOK.md`](dev/guidelines/RELEASE-RUNBOOK.md).
 
 ## Contributing
 

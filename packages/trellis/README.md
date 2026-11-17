@@ -17,7 +17,7 @@ A natural HTML template engine for Dart — templates are valid HTML that browse
 - **Template inheritance** -- `tl:extends` + `tl:define` for layout-based composition with named block overrides
 - **Fragment-first** -- `tl:fragment` + `renderFragment()` maps directly to HTMX partial responses
 - **Full expression language** -- variables, arithmetic, literal substitution, selection, URL, ternary, Elvis, comparisons, boolean
-- **Expression utility objects** -- `${#strings.*}`, `${#numbers.*}`, `${#dates.*}`, `${#lists.*}` for common string, number, date, and list operations (53 methods)
+- **Expression utility objects** -- `${#strings.*}`, `${#numbers.*}`, `${#dates.*}`, `${#lists.*}` for common string, number, date, and list operations (52 methods)
 - **i18n message expressions** -- `#{key}` with `MessageSource`, parameterized messages, and locale support
 - **Filter arguments** -- `| filterName:arg1:arg2` parameterized filter syntax
 - **Switch/case, block, remove, inline** -- multi-branch conditionals, virtual elements, output control, inline JS/CSS processing
@@ -47,14 +47,16 @@ dart pub add trellis
 ```dart
 import 'package:trellis/trellis.dart';
 
-final engine = Trellis();
+final engine = Trellis(loader: MapLoader({}));
 
 final html = engine.render(
-  '<h1 tl:text="${title}">Default Title</h1>',
+  r'<h1 tl:text="${title}">Default Title</h1>',
   {'title': 'Hello, Trellis!'},
 );
-// <h1>Hello, Trellis!</h1>
+// <html><head></head><body><h1>Hello, Trellis!</h1></body></html>
 ```
+
+`render()` returns a full HTML document; `renderFragment()` returns just the named fragment. Write templates in Dart as raw strings (`r'...'`) so Dart does not interpolate `${...}`. Without a `loader:`, the engine reads from `FileSystemLoader('templates/')`, which throws if that directory does not exist.
 
 ## Template Syntax Reference
 
@@ -199,7 +201,7 @@ Objects are accessed via `toMap()` or `toJson()` if present, otherwise as `Map<S
 
 <!-- Append to existing class/style -->
 <div class="card" tl:classappend="${active} ? 'active' : ''">content</div>
-<div style="color:red" tl:styleappend="font-weight:bold">content</div>
+<div style="color:red" tl:styleappend="'font-weight:bold'">content</div>
 
 <!-- Generic attribute setting -->
 <div tl:attr="data-id=${item.id},title=${item.name}">content</div>
@@ -209,6 +211,26 @@ Objects are accessed via `toMap()` or `toJson()` if present, otherwise as `Map<S
 Boolean HTML attributes (`disabled`, `checked`, etc.): `true` renders valueless, `false` removes.
 
 > **Set multiple attributes with one comma-separated `tl:attr`** (as above), not several `tl:attr` on the same element. HTML forbids duplicate attribute names, so the HTML5 parser silently keeps only the first `tl:attr` and drops the rest – before trellis runs. `TemplateValidator` warns when this happens.
+
+### Template Inheritance
+
+```html
+<!-- layouts/base.html: the parent declares named blocks -->
+<html>
+  <body>
+    <main tl:define="content"><p>Default content.</p></main>
+  </body>
+</html>
+
+<!-- page.html: tl:extends on the root element, tl:define overrides a block -->
+<html tl:extends="layouts/base.html">
+  <body>
+    <main tl:define="content"><h1>My page</h1></main>
+  </body>
+</html>
+```
+
+Block rules and nesting: [Inheritance guide](https://tolo.github.io/trellis/docs/syntax/inheritance/).
 
 ### Block (Virtual Element)
 
@@ -243,7 +265,7 @@ Boolean HTML attributes (`disabled`, `checked`, etc.): `true` renders valueless,
 
 <!-- Inline in script blocks -->
 <script tl:inline="javascript">
-  var user = [[${user.name}]];
+  var user = '[[${user.name}]]';
 </script>
 
 <!-- Inline in style blocks -->
@@ -252,7 +274,9 @@ Boolean HTML attributes (`disabled`, `checked`, etc.): `true` renders valueless,
 </style>
 ```
 
-`[[${expr}]]` — escaped output. `[(${expr})]` — unescaped output.
+`[[${expr}]]` — escaped output. `[(${expr})]` — unescaped output. Modes are `text`, `javascript`, `css`, and `none` (no inline processing).
+
+In `javascript`/`css` mode the escaping is for a value inside a quoted string, so always quote the expression as above: unquoted, the value is emitted as code.
 
 ### Filters
 
@@ -265,7 +289,7 @@ Filters transform expression values using pipe syntax:
 
 Built-in filters: `upper`, `lower`, `trim`, `length`.
 
-Filters accept arguments using colon-separated syntax. Argument types supported: string (single-quoted, with `\'` escape), int, double, bool, null, and bare identifiers.
+Filters accept arguments using colon-separated syntax. Argument types supported: string (single-quoted, with `\'` escape), int, double, bool, null, and bare identifiers (resolved as context variables).
 
 ```html
 <span tl:text="${price | currency:'USD':2}">price</span>
@@ -276,9 +300,15 @@ Custom filters via constructor:
 
 ```dart
 Trellis(filters: {
-  'currency': (v) => '\$${(v as num).toStringAsFixed(2)}',
-  // Filter with arguments: FilterFunction signature
-  'truncate': (v, [args]) {
+  // Without arguments: (value)
+  'shout': (v) => '${v.toString().toUpperCase()}!',
+  // With arguments: (value, [List<dynamic>? args]); type args, or the call fails
+  'currency': (v, [List<dynamic>? args]) {
+    final code = args?.firstOrNull ?? 'USD';
+    final digits = (args?.elementAtOrNull(1) as int?) ?? 2;
+    return '${(v as num).toStringAsFixed(digits)} $code';
+  },
+  'truncate': (v, [List<dynamic>? args]) {
     final limit = (args?.firstOrNull as int?) ?? 80;
     final s = v.toString();
     return s.length <= limit ? s : '${s.substring(0, limit)}…';
@@ -341,7 +371,6 @@ Positional placeholders `{0}`, `{1}`, ... are replaced by the arguments passed i
 
 ```dart
 import 'package:trellis/trellis.dart';
-// Also add shelf: dart pub add shelf shelf_io
 
 final engine = Trellis(loader: FileSystemLoader('templates/'));
 
@@ -373,6 +402,7 @@ Trellis(
   maxCacheSize: 100,     // LRU eviction threshold (default: 256)
   prefix: 'tl',          // Attribute prefix (default: 'tl')
   strict: false,         // Throw on undefined variables/members (default: false)
+  filters: {...},        // Custom filters; override dialect filters of the same name
   messageSource: ...,    // i18n MessageSource implementation
   locale: 'en',          // Default locale for message lookup
   processors: [...],     // Additional custom Processor instances
@@ -429,7 +459,7 @@ import 'package:trellis/testing.dart';
 
 void main() {
   test('template is valid', () {
-    expect('<p tl:text="${name}">x</p>', isValidTemplate());
+    expect(r'<p tl:text="${name}">x</p>', isValidTemplate());
   });
 }
 ```
@@ -563,7 +593,7 @@ import 'package:test/test.dart';
 
 void main() {
   final engine = testEngine(templates: {
-    'card': '<div tl:fragment="card"><h2 tl:text="${title}">Title</h2></div>',
+    'card': r'<div tl:fragment="card"><h2 tl:text="${title}">Title</h2></div>',
   });
 
   test('card fragment renders title', () {
@@ -572,8 +602,14 @@ void main() {
     expect(html, hasNoElement('.missing'));
   });
 
-  test('snapshot', () async {
-    await expectSnapshotFromSource(engine, '<p tl:text="${msg}">x</p>', {'msg': 'hi'});
+  test('snapshot', () {
+    // Creates the golden on the first local run (fails on CI when missing), then compares
+    expectSnapshotFromSource(
+      engine,
+      r'<p tl:text="${msg}">x</p>',
+      {'msg': 'hi'},
+      goldenFile: 'test/goldens/msg.html',
+    );
   });
 }
 ```

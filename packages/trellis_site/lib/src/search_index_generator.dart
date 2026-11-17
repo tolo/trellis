@@ -44,11 +44,11 @@ class SearchConfig {
   final bool stripHtml;
 
   /// Maximum character length for the `content` field after HTML stripping.
-  /// `null` means no truncation. Default: `5000`.
+  /// `null` means no truncation.
   ///
-  /// When the YAML key is absent, defaults to `5000` via the const constructor.
-  /// To disable truncation in a loaded config, omit the key — the factory
-  /// reads `null` from the map and stores `null` (no truncation).
+  /// Default: no truncation for a config loaded from YAML ([SearchConfig.fromYaml]
+  /// stores `null` when the `maxContentLength` key is absent), and `5000` for a
+  /// [SearchConfig] built with the const constructor.
   final int? maxContentLength;
 
   const SearchConfig({

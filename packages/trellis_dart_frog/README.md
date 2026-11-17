@@ -29,10 +29,12 @@ final _engine = Trellis(loader: FileSystemLoader('templates'));
 Handler middleware(Handler handler) {
   return handler
       .use(trellisProvider(_engine))
-      .use(trellisSecurityHeaders())
-      .use(trellisCsrf(secret: Platform.environment['CSRF_SECRET']!));
+      .use(trellisCsrf(secret: Platform.environment['CSRF_SECRET']!))
+      .use(trellisSecurityHeaders()); // last `.use` is outermost
 }
 ```
+
+In Dart Frog the last `.use()` wraps everything before it. Keep `trellisSecurityHeaders()` last so its headers also reach the 403 responses `trellisCsrf` returns.
 
 ### 2. Render pages in your route handler
 
@@ -139,7 +141,7 @@ Custom CSP:
 ```dart
 trellisSecurityHeaders(
   csp: CspBuilder(
-    scriptSrc: "'self' 'nonce-{nonce}'",
+    scriptSrc: "'self' https://cdn.jsdelivr.net",
     connectSrc: "'self' ws:",
   ),
 )
@@ -180,6 +182,21 @@ final token = csrfToken(context); // String? — null if middleware not applied
 ## Hot Reload
 
 For hot reload during development, use [`trellis_dev`](https://pub.dev/packages/trellis_dev) alongside `dart_frog dev`. The SSE-based browser refresh works independently of Dart Frog's hot restart.
+
+`devMiddleware()` is Shelf middleware: wrap it with `fromShelfMiddleware` and pass it the engine's own loader, created with `devMode: true`:
+
+```dart
+import 'package:trellis_dev/trellis_dev.dart';
+
+final _loader = FileSystemLoader('templates', devMode: true);
+final _engine = Trellis(loader: _loader, devMode: true);
+
+Handler middleware(Handler handler) {
+  return handler
+      .use(trellisProvider(_engine))
+      .use(fromShelfMiddleware(devMiddleware(_loader)));
+}
+```
 
 ## API Documentation
 

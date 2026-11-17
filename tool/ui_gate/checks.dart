@@ -193,13 +193,9 @@ final class GateSession {
         'policy ${fields.first}: expected ${fields.skip(1).join(' ')}, actual ${directives[fields.first] ?? 'missing'}',
       );
     }
-    if (directives.keys.any(
-      (key) => {'script-src-elem', 'script-src-attr', 'style-src-elem', 'style-src-attr'}.contains(key),
-    )) {
-      for (final key in ['script-src-elem', 'script-src-attr', 'style-src-elem', 'style-src-attr']) {
-        if (directives[key] != null)
-          require(directives[key] == "'self'" || directives[key] == "'none'", 'policy $key relaxes the strict policy');
-      }
+    for (final key in ['script-src-elem', 'script-src-attr', 'style-src-elem', 'style-src-attr']) {
+      if (directives[key] != null)
+        require(directives[key] == "'self'" || directives[key] == "'none'", 'policy $key relaxes the strict policy');
     }
     // The deliberate script control is labelled and collected separately from
     // page defects; it must be blocked before zero reports can mean a pass.

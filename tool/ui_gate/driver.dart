@@ -141,7 +141,7 @@ final class ChromeDriver implements GateDriver {
 
   @override
   Future<void> press(String key) async {
-    final codes = {
+    const codes = {
       'Tab': 9,
       'Enter': 13,
       'Escape': 27,

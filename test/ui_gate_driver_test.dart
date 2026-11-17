@@ -9,6 +9,39 @@ import '../tool/ui_gate/firefox.dart';
 import 'browser_reflow_probe.dart';
 
 void main() {
+  test('firefox forced active cleanup does not activate a link', () async {
+    if (FirefoxDriver.locateFirefox() == null || FirefoxDriver.locateGeckodriver() == null) {
+      markTestSkipped('Firefox or geckodriver not installed');
+      return;
+    }
+    final root = Directory.systemTemp.createTempSync('gate_active_link_');
+    addTearDown(() => root.deleteSync(recursive: true));
+    File(
+      '${root.path}/index.html',
+    ).writeAsStringSync('<a id="target" href="?next">Next</a><button id="disabled" disabled>Disabled</button>');
+    final server = await StaticSiteServer.serve(root);
+    addTearDown(server.close);
+    final driver = await FirefoxDriver.launch();
+    addTearDown(driver.close);
+    await driver.open(server.baseUrl);
+    await driver.evaluate(
+      "(() => {window.clicks=0;document.querySelector('#target').addEventListener('click',()=>window.clicks++)})()",
+    );
+    await driver.pseudo('#target', ['active']);
+    expect(await driver.evaluate("document.querySelector('#target').matches(':active')"), true);
+    await driver.pseudo('#target', []);
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+    expect(await driver.evaluate('location.search'), '');
+    expect(await driver.evaluate('window.clicks'), 0);
+    expect(await driver.evaluate("Object.hasOwn(window,'__gateCancelForcedClick')"), false);
+    await driver.pseudo('#disabled', ['active']);
+    await driver.pseudo('#disabled', []);
+    expect(await driver.evaluate("Object.hasOwn(window,'__gateCancelForcedClick')"), false);
+    await driver.pointer('#target', click: true);
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+    expect(await driver.evaluate('location.search'), '?next');
+  });
+
   test('firefox driver confirms focus during asynchronous backgrounding', () async {
     if (FirefoxDriver.locateFirefox() == null || FirefoxDriver.locateGeckodriver() == null) {
       markTestSkipped('Firefox or geckodriver not installed');

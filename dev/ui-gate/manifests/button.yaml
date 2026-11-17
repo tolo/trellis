@@ -1,0 +1,92 @@
+{
+  "name": "button",
+  "page": "/components/button",
+  "root": "#component",
+  "elements": {
+    "primary": ".trellis-button-variant-default",
+    "destructive": ".trellis-button-variant-destructive"
+  },
+  "states": {
+    "default": [],
+    "dark": [
+      {
+        "eval": "document.documentElement.classList.add('dark')"
+      },
+      {
+        "wait": 200
+      }
+    ],
+    "hover": [
+      {
+        "hover": ".trellis-button-variant-default"
+      },
+      {
+        "wait": 200
+      }
+    ],
+    "focus-visible": [
+      {
+        "focus": ".trellis-button-variant-default"
+      },
+      {
+        "wait": 200
+      }
+    ],
+    "disabled": [
+      {
+        "eval": "document.querySelector(\".trellis-button-variant-default\").disabled = true"
+      },
+      {
+        "wait": 200
+      }
+    ]
+  },
+  "keyboard": [
+    {
+      "focus": ".trellis-button-variant-default"
+    },
+    {
+      "expect": {
+        "expression": "document.activeElement === document.querySelector(\".trellis-button-variant-default\")",
+        "equals": true
+      }
+    },
+    {
+      "press": "Tab"
+    },
+    {
+      "expect": {
+        "expression": "document.activeElement !== document.querySelector(\".trellis-button-variant-default\")",
+        "equals": true
+      }
+    }
+  ],
+  "semantics": [
+    {
+      "expression": "document.querySelector('.trellis-button').tagName === 'BUTTON' && [...document.querySelectorAll('button')].every(e=>e.textContent.trim() || e.getAttribute('aria-label'))",
+      "equals": true
+    }
+  ],
+  "htmx": {
+    "region": "#demo",
+    "swap": [
+      {
+        "click": "#swap"
+      }
+    ],
+    "navigate": [
+      {
+        "click": "#navigate"
+      }
+    ]
+  },
+  "instances": [
+    "#component"
+  ],
+  "provenance": [
+    {
+      "file": "../../../packages/trellis_ui/vendor/shadcn/shadcn@4.21.1/LICENSE.md",
+      "license": "MIT"
+    }
+  ]
+}

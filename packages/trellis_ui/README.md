@@ -3,8 +3,8 @@
 Embedded Trellis fragments and same-origin CSS/JS derived from shadcn's Base UI vega style. The package joins SDK
 lockstep releases. Its assets and templates are compiled into the application, including AOT binaries.
 
-The button currently proves delivery and the porting pipeline. Component qualification, touch-target overrides and
-support claims follow the qualification gate before release.
+The gallery covers native form controls, data views and closed-scale layouts. Automated qualification evidence lives
+in `dev/ui-gate/` in the SDK checkout. Screen-reader and Safari qualification remain release-prep work.
 
 ## Install and render
 
@@ -42,6 +42,64 @@ Public Dart names: `TrellisUiLoader`, `TrellisUiResponse` (`statusCode`, `header
 `materializeTrellisUi`. The asset responder returns null for unknown suite paths and paths outside `/trellis-ui/`,
 letting the application's router decide. Strong ETags contain the embedded SHA-256 digest; matching
 `If-None-Match` returns 304 with an empty body. Use `request.uri.path` rather than a path stripped by a mounted router.
+
+## Fragment catalogue
+
+Every signature ends in `...attrs`, forwarded to the native control or component root. Base classes survive a caller
+`class`; boolean, `aria-*` and `hx-*` attributes pass through. Omitted arguments select the defaults below. Named
+slots take the contents of the caller marker; unmarked caller content fills the anonymous slot.
+
+| Template / fragment | Signature before `...attrs` | Slots | Closed values and defaults |
+|---|---|---|---|
+| `alert :: alert` | `variant` | anonymous description, `title` | `default`, `destructive`; fallback `default` |
+| `badge :: badge` | `variant` | anonymous | `default`, `secondary`, `destructive`, `outline`, `ghost`, `link`; fallback `default` |
+| `breadcrumb :: breadcrumb` | `items` | none | server list of `{label, href, current}` |
+| `button :: button` | `variant, size` | anonymous | variants: `default`, `outline`, `secondary`, `ghost`, `destructive`, `link`; sizes: `default`, `xs`, `sm`, `lg`, `icon`, `icon-xs`, `icon-sm`, `icon-lg` |
+| `card :: card` | none | anonymous content, `title`, `description`, `action`, `footer` | default size; title is an `h2` |
+| `checkbox :: checkbox` | none | none | native checkbox; `checked`, `disabled`, `aria-invalid` |
+| `cluster :: cluster` | `gap` | anonymous | gap scale below; fallback `md` |
+| `container :: container` | `size` | anonymous | `sm` 40rem, `md` 56rem, `lg` 72rem, `xl` 80rem; fallback `lg` |
+| `field :: field` | `controlId, label, hint, error` | none | vertical labelled text input; caller attributes land on the input |
+| `grid :: grid` | `gap, minimum` | anonymous | gap scale; minimum `sm` 10rem, `md` 15rem, `lg` 20rem; fallback `md` |
+| `input :: input` | none | none | native text input; caller `type` overrides text |
+| `native-select :: native-select` | `size` | anonymous native `option` / `optgroup` markup | `default`, `sm`; fallback `default` |
+| `pagination :: pagination` | `pages, previous, next` | none | pages `{label, href, current, ellipsis}`; nullable previous/next URLs |
+| `radio :: radio` | `legend` | none | one native radio in a fieldset; repeat with the same `name` to group choices |
+| `separator :: separator` | `orientation` | none | `vertical`, otherwise horizontal `hr` |
+| `stack :: stack` | `gap` | anonymous | gap scale; fallback `md` |
+| `switch :: switch` | `size` | none | `default`, `sm`; fallback `default`; native checkbox with switch role |
+| `table :: table` | `caption, columns, rows` | `row`, `footer` | server lists; row marker reads the `row` map in loop scope |
+| `textarea :: textarea` | none | anonymous text | native textarea |
+
+Template names in the table have the `trellis-ui/` prefix. Gap values are `none` 0, `xs` .25rem, `sm` .5rem,
+`md` 1rem, `lg` 1.5rem and `xl` 2rem. Unrecognised layout values fall back and never create an inline style.
+`trellis-ui/container :: sidebar(gap, ...attrs)` uses the same gap scale; its first child is the sidebar and its
+second child is the main content. It wraps when they no longer fit and keeps DOM order. Grid minimums cap at 100%
+on narrower containers. Container padding is 1rem on each inline side.
+
+Field also exports `label(controlId, ...attrs)` with an anonymous label slot, and `fieldset(legend, ...attrs)` with
+an anonymous content slot. Always supply a distinct control ID per field; hint/error IDs derive from it. Field errors
+have `role="alert"` and set `aria-invalid` / `aria-describedby` on the input. Give each standalone control an accessible name through a visible `label` plus `id`, or a caller `aria-label`.
+Alert has no implicit live role. Pass `role="alert"` or `role="status"` where announcement is appropriate; put a live
+region in the document before injecting its content.
+
+A table caller keeps HTML table parsing intact. A direct `tbody` marker supplies a row's contents, and the fragment
+creates one valid body row group per data item:
+
+```html
+<table tl:replace="~{trellis-ui/table :: table('People', columns, people)}">
+  <tbody tl:slot="row">
+    <tr class="trellis-table-row">
+      <td class="trellis-table-cell" tl:text="${row.name}">Name</td>
+      <td class="trellis-table-cell" tl:text="${row.email}">Email</td>
+    </tr>
+  </tbody>
+</table>
+```
+
+`columns` is a list of heading strings and `people` a list of row maps. The wrapper is a labelled, focusable region
+that scrolls horizontally. Keep table minimum widths in application CSS (the gallery uses 40rem). Use a natural
+`select` host for native-select option content and plain text inside a textarea host.
 
 ## Server wiring
 
@@ -140,6 +198,11 @@ Add `assets/fragments/<component>.html`, `assets/css/hand/<component>.css`, opti
 so `tl:attrs` preserves caller classes without reading an optional map member in strict mode. Keep fragments free of
 literal ids and asset URLs. Never add inline
 styles, scripts or `on*` attributes.
+
+Native controls keep their 24px hit boxes separate from the 16px painted checkbox/radio and 18.4×32px switch.
+The `zz-touch.css`, `zz-contrast.css` and `zz-forced-colors.css` files sort after component hand files. They enforce
+44px coarse targets, 16px coarse input text, default-token destructive contrast and system-colour focus/checked paint.
+Keep geometry out of `transition-property`; a pointer change must not animate through undersized hit boxes.
 
 The bundler orders files by name. It puts `00-base.css` in the earlier `base` layer and other hand CSS in
 `trellis-hand`, then wraps ordered JS files in one classic IIFE; module syntax is rejected. The gallery discovers

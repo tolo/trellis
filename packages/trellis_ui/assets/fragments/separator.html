@@ -1,0 +1,4 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>separator</title></head><body>
+<tl:block tl:fragment="separator(orientation, ...attrs)"><hr tl:unless="${orientation == 'vertical'}" data-slot="separator" class="trellis-separator" tl:attrs="${attrs}"><div tl:if="${orientation == 'vertical'}" data-slot="separator" class="trellis-separator trellis-separator-vertical" role="separator" aria-orientation="vertical" tl:attrs="${attrs}"></div></tl:block>
+</body></html>

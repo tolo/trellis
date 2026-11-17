@@ -1,0 +1,103 @@
+{
+  "name": "field",
+  "page": "/components/field",
+  "root": "#component",
+  "elements": {
+    "primary": "#primary",
+    "error": "#invalid-error"
+  },
+  "states": {
+    "default": [],
+    "dark": [
+      {
+        "eval": "document.documentElement.classList.add('dark')"
+      },
+      {
+        "wait": 200
+      }
+    ],
+    "hover": [
+      {
+        "hover": "#primary"
+      },
+      {
+        "wait": 200
+      }
+    ],
+    "focus-visible": [
+      {
+        "focus": "#primary"
+      },
+      {
+        "wait": 200
+      }
+    ],
+    "disabled": [
+      {
+        "eval": "document.querySelector(\"#primary\").disabled = true"
+      },
+      {
+        "wait": 200
+      }
+    ],
+    "invalid": [
+      {
+        "eval": "document.querySelector(\"#primary\").setAttribute(\"aria-invalid\",\"true\")"
+      },
+      {
+        "wait": 200
+      }
+    ]
+  },
+  "keyboard": [
+    {
+      "focus": "#primary"
+    },
+    {
+      "type": "hello"
+    },
+    {
+      "expect": {
+        "expression": "document.querySelector(\"#primary\").value",
+        "equals": "hello"
+      }
+    },
+    {
+      "press": "Tab"
+    },
+    {
+      "expect": {
+        "expression": "document.activeElement !== document.querySelector(\"#primary\")",
+        "equals": true
+      }
+    }
+  ],
+  "semantics": [
+    {
+      "expression": "document.querySelector('label[for=primary]')!==null && document.querySelector('#invalid').getAttribute('aria-describedby')==='invalid-hint invalid-error' && document.querySelector('#invalid-error').getAttribute('role')==='alert'",
+      "equals": true
+    }
+  ],
+  "htmx": {
+    "region": "#demo",
+    "swap": [
+      {
+        "click": "#swap"
+      }
+    ],
+    "navigate": [
+      {
+        "click": "#navigate"
+      }
+    ]
+  },
+  "instances": [
+    "#component"
+  ],
+  "provenance": [
+    {
+      "file": "../../../packages/trellis_ui/vendor/shadcn/shadcn@4.21.1/LICENSE.md",
+      "license": "MIT"
+    }
+  ]
+}

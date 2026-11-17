@@ -224,3 +224,10 @@ Accessibility, after the same kinds of change, audited on the served pages again
 See [dev/guidelines/KEY_DEVELOPMENT_COMMANDS.md](dev/guidelines/KEY_DEVELOPMENT_COMMANDS.md) for the
 full reference. Tests run in two tiers (`fast`, `full`) plus a run-one-test row, declared there. Melos scripts:
 `analyze`, `test`, `format:check`.
+
+### trellis_ui hand CSS
+
+Component hand files sort before `zz-touch.css`, `zz-contrast.css` and `zz-forced-colors.css`; keep cross-cutting
+hit-box, contrast and forced-colour rules there. Native checkbox/radio/switch inputs own the measured 24/44px box,
+while pseudo-elements paint the smaller control. Forced colours remove shadow rings, so retain outline and
+system-colour checked paint. Avoid geometry transitions: a pointer change must reach the minimum immediately.

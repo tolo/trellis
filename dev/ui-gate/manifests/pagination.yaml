@@ -1,0 +1,67 @@
+{
+  "name": "pagination",
+  "page": "/components/pagination",
+  "root": "#component",
+  "elements": {
+    "primary": ".trellis-pagination-link"
+  },
+  "states": {
+    "default": [],
+    "dark": [
+      {
+        "eval": "document.documentElement.classList.add('dark')"
+      },
+      {
+        "wait": 200
+      }
+    ]
+  },
+  "keyboard": [
+    {
+      "focus": ".trellis-pagination-link"
+    },
+    {
+      "expect": {
+        "expression": "document.activeElement === document.querySelector(\".trellis-pagination-link\")",
+        "equals": true
+      }
+    },
+    {
+      "press": "Tab"
+    },
+    {
+      "expect": {
+        "expression": "document.activeElement !== document.querySelector(\".trellis-pagination-link\")",
+        "equals": true
+      }
+    }
+  ],
+  "semantics": [
+    {
+      "expression": "document.querySelector('nav[aria-label=Pagination] ul')!==null && document.querySelectorAll('[aria-current=page]').length===1 && document.querySelector('span[aria-disabled=true]')!==null",
+      "equals": true
+    }
+  ],
+  "htmx": {
+    "region": "#demo",
+    "swap": [
+      {
+        "click": "#swap"
+      }
+    ],
+    "navigate": [
+      {
+        "click": "#navigate"
+      }
+    ]
+  },
+  "instances": [
+    "#component"
+  ],
+  "provenance": [
+    {
+      "file": "../../../packages/trellis_ui/vendor/shadcn/shadcn@4.21.1/LICENSE.md",
+      "license": "MIT"
+    }
+  ]
+}

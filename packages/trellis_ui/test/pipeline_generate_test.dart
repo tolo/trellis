@@ -53,6 +53,8 @@ void main() {
 
   test('structural classes without a hook are reported', () async {
     final pins = Pipeline(Directory.current).pins;
+    pins['components'] = ['button'];
+    File('${fixture.path}/tool/pins.json').writeAsStringSync(jsonEncode(pins));
     final tag = (pins['shadcn'] as Map)['tag'];
     final src = Directory('${fixture.path}/vendor/shadcn/$tag/ui')..createSync(recursive: true);
     for (final file in ['tailwind.css', 'style-vega.css', 'colors-neutral.json']) {

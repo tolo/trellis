@@ -1,0 +1,4 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>alert</title></head><body>
+<div tl:fragment="alert(variant, ...attrs)" data-slot="alert" class="trellis-alert group/alert" tl:with="variant=${variant == 'default' or variant == 'destructive' ? variant : 'default'}" tl:attrs="${attrs}" tl:classappend="${'trellis-alert-variant-' + variant}"><div data-slot="alert-title" class="trellis-alert-title"><tl:block tl:slot="title">Notice</tl:block></div><div data-slot="alert-description" class="trellis-alert-description"><tl:block tl:slot="">Information</tl:block></div></div>
+</body></html>

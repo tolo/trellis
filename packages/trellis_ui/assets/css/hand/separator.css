@@ -1,0 +1,2 @@
+.trellis-separator { flex-shrink: 0; margin: 0; border: 0; background: var(--border); block-size: 1px; inline-size: 100%; }
+.trellis-separator-vertical { inline-size: 1px; block-size: auto; min-block-size: 1rem; align-self: stretch; }

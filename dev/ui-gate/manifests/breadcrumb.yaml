@@ -1,0 +1,67 @@
+{
+  "name": "breadcrumb",
+  "page": "/components/breadcrumb",
+  "root": "#component",
+  "elements": {
+    "primary": ".trellis-breadcrumb-link"
+  },
+  "states": {
+    "default": [],
+    "dark": [
+      {
+        "eval": "document.documentElement.classList.add('dark')"
+      },
+      {
+        "wait": 200
+      }
+    ]
+  },
+  "keyboard": [
+    {
+      "focus": ".trellis-breadcrumb-link"
+    },
+    {
+      "expect": {
+        "expression": "document.activeElement === document.querySelector(\".trellis-breadcrumb-link\")",
+        "equals": true
+      }
+    },
+    {
+      "press": "Tab"
+    },
+    {
+      "expect": {
+        "expression": "document.activeElement !== document.querySelector(\".trellis-breadcrumb-link\")",
+        "equals": true
+      }
+    }
+  ],
+  "semantics": [
+    {
+      "expression": "document.querySelector('nav[aria-label=Breadcrumb] ol')!==null && document.querySelector('[aria-current=page]').tagName==='SPAN'",
+      "equals": true
+    }
+  ],
+  "htmx": {
+    "region": "#demo",
+    "swap": [
+      {
+        "click": "#swap"
+      }
+    ],
+    "navigate": [
+      {
+        "click": "#navigate"
+      }
+    ]
+  },
+  "instances": [
+    "#component"
+  ],
+  "provenance": [
+    {
+      "file": "../../../packages/trellis_ui/vendor/shadcn/shadcn@4.21.1/LICENSE.md",
+      "license": "MIT"
+    }
+  ]
+}

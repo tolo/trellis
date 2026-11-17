@@ -1,8 +1,28 @@
 {
   "tag": "shadcn@4.21.1",
-  "tsxFiles": 1,
-  "hooksPrimary": 15,
+  "tsxFiles": 16,
+  "hooksPrimary": 88,
   "hooks": [
+    "trellis-alert",
+    "trellis-alert-action",
+    "trellis-alert-description",
+    "trellis-alert-title",
+    "trellis-alert-variant-default",
+    "trellis-alert-variant-destructive",
+    "trellis-badge",
+    "trellis-badge-variant-default",
+    "trellis-badge-variant-destructive",
+    "trellis-badge-variant-ghost",
+    "trellis-badge-variant-link",
+    "trellis-badge-variant-outline",
+    "trellis-badge-variant-secondary",
+    "trellis-breadcrumb",
+    "trellis-breadcrumb-ellipsis",
+    "trellis-breadcrumb-item",
+    "trellis-breadcrumb-link",
+    "trellis-breadcrumb-list",
+    "trellis-breadcrumb-page",
+    "trellis-breadcrumb-separator",
     "trellis-button",
     "trellis-button-size-default",
     "trellis-button-size-icon",
@@ -17,25 +37,226 @@
     "trellis-button-variant-ghost",
     "trellis-button-variant-link",
     "trellis-button-variant-outline",
-    "trellis-button-variant-secondary"
+    "trellis-button-variant-secondary",
+    "trellis-card",
+    "trellis-card-action",
+    "trellis-card-content",
+    "trellis-card-description",
+    "trellis-card-footer",
+    "trellis-card-header",
+    "trellis-card-title",
+    "trellis-checkbox",
+    "trellis-checkbox-indicator",
+    "trellis-field",
+    "trellis-field-content",
+    "trellis-field-description",
+    "trellis-field-error",
+    "trellis-field-group",
+    "trellis-field-label",
+    "trellis-field-legend",
+    "trellis-field-orientation-horizontal",
+    "trellis-field-orientation-responsive",
+    "trellis-field-orientation-vertical",
+    "trellis-field-separator",
+    "trellis-field-separator-content",
+    "trellis-field-set",
+    "trellis-field-title",
+    "trellis-font-heading",
+    "trellis-input",
+    "trellis-label",
+    "trellis-native-select",
+    "trellis-native-select-icon",
+    "trellis-native-select-wrapper",
+    "trellis-pagination",
+    "trellis-pagination-content",
+    "trellis-pagination-ellipsis",
+    "trellis-pagination-link",
+    "trellis-pagination-next",
+    "trellis-pagination-next-text",
+    "trellis-pagination-previous",
+    "trellis-pagination-previous-text",
+    "trellis-radio-group",
+    "trellis-radio-group-indicator",
+    "trellis-radio-group-indicator-icon",
+    "trellis-radio-group-item",
+    "trellis-rtl-flip",
+    "trellis-switch",
+    "trellis-switch-thumb",
+    "trellis-table",
+    "trellis-table-body",
+    "trellis-table-caption",
+    "trellis-table-cell",
+    "trellis-table-container",
+    "trellis-table-footer",
+    "trellis-table-head",
+    "trellis-table-header",
+    "trellis-table-row",
+    "trellis-textarea"
   ],
-  "hooksSecondary": 0,
-  "hooksWithStructural": 1,
+  "hooksSecondary": 1,
+  "hooksWithStructural": 43,
   "styleRulesTotal": 422,
-  "styleRulesKept": 15,
-  "styleRulesWithoutTsxHook": 407,
+  "styleRulesKept": 78,
+  "styleRulesWithoutTsxHook": 344,
   "slots": [
-    "button"
+    "alert",
+    "alert-action",
+    "alert-description",
+    "alert-title",
+    "breadcrumb",
+    "breadcrumb-ellipsis",
+    "breadcrumb-item",
+    "breadcrumb-list",
+    "breadcrumb-page",
+    "breadcrumb-separator",
+    "button",
+    "card",
+    "card-action",
+    "card-content",
+    "card-description",
+    "card-footer",
+    "card-header",
+    "card-title",
+    "checkbox",
+    "checkbox-indicator",
+    "field",
+    "field-content",
+    "field-description",
+    "field-error",
+    "field-group",
+    "field-label",
+    "field-legend",
+    "field-separator",
+    "field-separator-content",
+    "field-set",
+    "input",
+    "label",
+    "native-select",
+    "native-select-icon",
+    "native-select-optgroup",
+    "native-select-option",
+    "native-select-wrapper",
+    "pagination",
+    "pagination-content",
+    "pagination-ellipsis",
+    "pagination-item",
+    "pagination-link",
+    "radio-group",
+    "radio-group-indicator",
+    "radio-group-item",
+    "separator",
+    "switch",
+    "switch-thumb",
+    "table",
+    "table-body",
+    "table-caption",
+    "table-cell",
+    "table-container",
+    "table-footer",
+    "table-head",
+    "table-header",
+    "table-row",
+    "textarea"
   ],
   "dataAttrs": [
-    "data-slot"
+    "data-active",
+    "data-content",
+    "data-icon",
+    "data-orientation",
+    "data-size",
+    "data-slot",
+    "data-variant"
   ],
   "markers": {
+    "trellis-alert": [
+      "group/alert"
+    ],
+    "trellis-badge": [
+      "group/badge"
+    ],
     "trellis-button": [
       "group/button"
+    ],
+    "trellis-card": [
+      "group/card"
+    ],
+    "trellis-card-header": [
+      "group/card-header"
+    ],
+    "trellis-checkbox": [
+      "peer"
+    ],
+    "trellis-field": [
+      "group/field"
+    ],
+    "trellis-field-content": [
+      "group/field-content"
+    ],
+    "trellis-field-group": [
+      "group/field-group"
+    ],
+    "trellis-field-label": [
+      "group/field-label",
+      "peer/field-label"
+    ],
+    "trellis-native-select-wrapper": [
+      "group/native-select"
+    ],
+    "trellis-radio-group-item": [
+      "group/radio-group-item",
+      "peer"
+    ],
+    "trellis-switch": [
+      "group/switch",
+      "peer"
     ]
   },
-  "hooksSeenInSeveralLiterals": {},
+  "hooksSeenInSeveralLiterals": {
+    "trellis-rtl-flip": 3
+  },
   "structuralSkipped": [],
-  "orphanLiterals": []
+  "orphanLiterals": [
+    {
+      "file": "breadcrumb.tsx",
+      "line": 124,
+      "slot": "breadcrumb-ellipsis",
+      "literal": "sr-only"
+    },
+    {
+      "file": "field.tsx",
+      "line": 149,
+      "slot": "field-separator",
+      "literal": "absolute inset-0 top-1/2"
+    },
+    {
+      "file": "field.tsx",
+      "line": 188,
+      "slot": "field-separator-content",
+      "literal": "ml-4 flex list-disc flex-col gap-1"
+    },
+    {
+      "file": "native-select.tsx",
+      "line": 51,
+      "slot": "native-select-option",
+      "literal": "bg-[Canvas] text-[CanvasText]"
+    },
+    {
+      "file": "native-select.tsx",
+      "line": 64,
+      "slot": "native-select-optgroup",
+      "literal": "bg-[Canvas] text-[CanvasText]"
+    },
+    {
+      "file": "pagination.tsx",
+      "line": 143,
+      "slot": "pagination-ellipsis",
+      "literal": "sr-only"
+    },
+    {
+      "file": "separator.tsx",
+      "line": 16,
+      "slot": "separator",
+      "literal": "shrink-0 bg-border data-horizontal:h-px data-horizontal:w-full data-vertical:w-px data-vertical:self-stretch"
+    }
+  ]
 }

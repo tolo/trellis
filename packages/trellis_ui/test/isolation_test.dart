@@ -37,9 +37,10 @@ void main() {
     const expression = r'''[...document.querySelectorAll('html,body,body *:not([data-slot])')].map(e => {
       const s = getComputedStyle(e); return Object.fromEntries([...s].filter(p => !p.startsWith('--')).map(p => [p,s.getPropertyValue(p)]));
     })''';
-    File(
-      '${fixture.path}/fixture.css',
-    ).writeAsStringSync('[data-slot=button] { position: absolute; top: 0; right: 0; }');
+    // A nonzero host margin makes an unscoped input reset observable; the UA default is already zero.
+    File('${fixture.path}/fixture.css').writeAsStringSync(
+      '@layer base { input { margin: 3px; } } [data-slot=button] { position: absolute; top: 0; right: 0; }',
+    );
     File('${fixture.path}/suite.css').writeAsStringSync(bundleCss(Directory.current));
     for (final mode in ['', 'dark']) {
       String html(bool styled) =>

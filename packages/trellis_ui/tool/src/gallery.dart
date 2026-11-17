@@ -53,7 +53,26 @@ Handler galleryHandler(Directory root, {Directory? pages}) {
     for (final file in pageFiles) {
       final name = file.uri.pathSegments.last.replaceFirst('.html', '');
       if (path == '/components/$name') {
-        final page = engine.render(file.readAsStringSync(), const {});
+        final page = engine.render(file.readAsStringSync(), const {
+          'columns': ['Name', 'Email address', 'Status'],
+          'rows': [
+            {'name': 'Ada Lovelace', 'email': 'ada@example.test', 'status': 'Paid'},
+            {'name': 'Grace Hopper', 'email': 'grace@example.test', 'status': 'Pending'},
+            {'name': 'Katherine Johnson', 'email': 'katherine@example.test', 'status': 'Paid'},
+          ],
+          'pages': [
+            {'label': '1', 'href': '/components/pagination?page=1', 'current': false, 'ellipsis': false},
+            {'label': '2', 'href': '/components/pagination?page=2', 'current': false, 'ellipsis': false},
+            {'label': '3', 'href': '/components/pagination?page=3', 'current': true, 'ellipsis': false},
+            {'label': '', 'href': '', 'current': false, 'ellipsis': true},
+            {'label': '8', 'href': '/components/pagination?page=8', 'current': false, 'ellipsis': false},
+          ],
+          'items': [
+            {'label': 'Home', 'href': '/', 'current': false},
+            {'label': 'Components', 'href': '/components/button', 'current': false},
+            {'label': 'Breadcrumb', 'href': '', 'current': true},
+          ],
+        });
         return policy(Response.ok(shell(page, name), headers: {'content-type': 'text/html; charset=utf-8'}));
       }
     }

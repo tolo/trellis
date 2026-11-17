@@ -287,15 +287,40 @@ final class FirefoxDriver implements GateDriver {
     });
   }
 
+  bool _forcedActive = false;
+
+  Future<void> _releasePseudoActions() async {
+    if (_forcedActive) {
+      // Releasing WebDriver's forced :active pointer would activate links and
+      // htmx controls. Suppress only that synthetic cleanup click, not real input.
+      // Remove when Firefox can force :active without held pointer input.
+      await evaluate('''(() => {
+        window.__gateCancelForcedClick=e=>{e.preventDefault();e.stopImmediatePropagation()};
+        document.addEventListener('click',window.__gateCancelForcedClick,true);
+      })()''');
+    }
+    await _wd('DELETE', '/actions');
+    if (_forcedActive) {
+      await evaluate('''(() => {
+        document.removeEventListener('click',window.__gateCancelForcedClick,true);
+        delete window.__gateCancelForcedClick;
+      })()''');
+      _forcedActive = false;
+    }
+  }
+
   @override
   Future<void> pseudo(String selector, List<String> states) async {
     await _activate();
-    await _wd('DELETE', '/actions');
+    await _releasePseudoActions();
     if (states.isEmpty) {
       await evaluate('document.activeElement?.blur()');
       return;
     }
-    if (states.contains('hover') || states.contains('active')) await pointer(selector, down: states.contains('active'));
+    if (states.contains('hover') || states.contains('active')) {
+      _forcedActive = states.contains('active');
+      await pointer(selector, down: _forcedActive);
+    }
     if (states.contains('focus') || states.contains('focus-visible')) {
       final focusable = await evaluate(
         '''(() => {const el=document.querySelector(${jsonEncode(selector)});

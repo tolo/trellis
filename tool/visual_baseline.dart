@@ -315,7 +315,7 @@ const forceFocusScript = r'''async function(selector) {
 /// package exists to end.
 const String digestScript =
     r'''
-async function (selectors = {}, focusSelector = null) {
+async function (selectors = {}, focusSelector = null, keepDocumentFocused = false) {
   const forceFocus = ''' +
     forceFocusScript +
     r''';
@@ -430,6 +430,14 @@ async function (selectors = {}, focusSelector = null) {
       try { animation.finish(); } catch (e) { /* infinite animations cannot finish; the freeze rule holds them */ }
     }
     await frame();
+    if (keepDocumentFocused && !document.hasFocus()) {
+      // A held Firefox pointer retains :active under backgrounding but loses
+      // native focus paint. Restore the window while keeping pointer modality.
+      // Remove this when the driver can retain document activation through readback.
+      window.focus();
+      previousJson = null;
+      continue;
+    }
     const current = await measure();
     const json = JSON.stringify(current);
     if (json === previousJson && (!current.focus?.applicable ||
@@ -437,6 +445,7 @@ async function (selectors = {}, focusSelector = null) {
     previousJson = json;
   }
   if (focusSelector) throw new Error('requested focus-visible state did not stay active through 30 measurements');
+  if (keepDocumentFocused) throw new Error('held-pointer appearance did not settle with document focus through 30 attempts');
   throw new Error('page did not settle after 30 measurements; ' +
       'the last two differ, so any recorded value is a coin flip');
 }

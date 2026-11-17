@@ -1,0 +1,4 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>grid</title></head><body>
+<div tl:fragment="grid(gap, minimum, ...attrs)" data-slot="grid" class="trellis-grid" tl:attrs="${attrs}" tl:with="minimum=${minimum == 'sm' or minimum == 'md' or minimum == 'lg' ? minimum : 'md'}, gap=${gap == 'none' or gap == 'xs' or gap == 'sm' or gap == 'md' or gap == 'lg' or gap == 'xl' ? gap : 'md'}" tl:classappend="${'trellis-grid-gap-' + gap + ' trellis-grid-minimum-' + minimum}"><tl:block tl:slot=""></tl:block></div>
+</body></html>

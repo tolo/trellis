@@ -750,11 +750,194 @@
 
 /* structural utilities scanned from TSX string literals that carry a cn- hook */
 @layer components {
+  .trellis-alert {
+    @apply relative w-full;
+  }
+  .trellis-alert-description {
+    @apply [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground;
+  }
+  .trellis-alert-title {
+    @apply [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground;
+  }
+  .trellis-badge {
+    @apply inline-flex w-fit shrink-0 items-center justify-center overflow-hidden whitespace-nowrap focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none;
+  }
+  .trellis-breadcrumb-ellipsis {
+    @apply flex items-center justify-center;
+  }
+  .trellis-breadcrumb-item {
+    @apply inline-flex items-center;
+  }
+  .trellis-breadcrumb-list {
+    @apply flex flex-wrap items-center wrap-break-word;
+  }
   .trellis-button {
     @apply inline-flex shrink-0 items-center justify-center whitespace-nowrap transition-all outline-none select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0;
   }
+  .trellis-card {
+    @apply flex flex-col;
+  }
+  .trellis-card-action {
+    @apply col-start-2 row-span-2 row-start-1 self-start justify-self-end;
+  }
+  .trellis-card-footer {
+    @apply flex items-center;
+  }
+  .trellis-card-header {
+    @apply @container/card-header grid auto-rows-min items-start has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto];
+  }
+  .trellis-checkbox {
+    @apply relative shrink-0 outline-none after:absolute after:-inset-x-3 after:-inset-y-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .trellis-checkbox-indicator {
+    @apply grid place-content-center text-current transition-none;
+  }
+  .trellis-field {
+    @apply flex w-full;
+  }
+  .trellis-field-content {
+    @apply flex flex-1 flex-col leading-snug;
+  }
+  .trellis-field-description {
+    @apply leading-normal font-normal group-has-data-horizontal/field:text-balance last:mt-0 nth-last-2:-mt-1 [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary;
+  }
+  .trellis-field-error {
+    @apply font-normal;
+  }
+  .trellis-field-group {
+    @apply @container/field-group flex w-full flex-col;
+  }
+  .trellis-field-label {
+    @apply flex w-fit has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col;
+  }
+  .trellis-field-orientation-horizontal {
+    @apply flex-row items-center has-[>[data-slot=field-content]]:items-start *:data-[slot=field-label]:flex-auto has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px;
+  }
+  .trellis-field-orientation-responsive {
+    @apply flex-col *:w-full @md/field-group:flex-row @md/field-group:items-center @md/field-group:*:w-auto @md/field-group:has-[>[data-slot=field-content]]:items-start @md/field-group:*:data-[slot=field-label]:flex-auto [&>.sr-only]:w-auto @md/field-group:has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px;
+  }
+  .trellis-field-orientation-vertical {
+    @apply flex-col *:w-full [&>.sr-only]:w-auto;
+  }
+  .trellis-field-separator {
+    @apply relative;
+  }
+  .trellis-field-separator-content {
+    @apply relative mx-auto block w-fit bg-background;
+  }
+  .trellis-field-set {
+    @apply flex flex-col;
+  }
+  .trellis-field-title {
+    @apply flex w-fit items-center;
+  }
+  .trellis-input {
+    @apply w-full min-w-0 outline-none file:inline-flex file:border-0 file:bg-transparent file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .trellis-label {
+    @apply flex items-center select-none group-data-[disabled=true]:pointer-events-none peer-disabled:cursor-not-allowed;
+  }
+  .trellis-native-select {
+    @apply outline-none disabled:pointer-events-none disabled:cursor-not-allowed;
+  }
+  .trellis-native-select-icon {
+    @apply pointer-events-none absolute select-none;
+  }
+  .trellis-native-select-wrapper {
+    @apply relative w-fit has-[select:disabled]:opacity-50;
+  }
+  .trellis-pagination {
+    @apply mx-auto flex w-full justify-center;
+  }
+  .trellis-pagination-content {
+    @apply flex items-center;
+  }
+  .trellis-pagination-ellipsis {
+    @apply flex items-center justify-center;
+  }
+  .trellis-pagination-next-text {
+    @apply hidden sm:block;
+  }
+  .trellis-pagination-previous-text {
+    @apply hidden sm:block;
+  }
+  .trellis-radio-group {
+    @apply w-full;
+  }
+  .trellis-radio-group-item {
+    @apply relative aspect-square shrink-0 border outline-none after:absolute after:-inset-x-3 after:-inset-y-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .trellis-switch {
+    @apply relative inline-flex items-center transition-all outline-none after:absolute after:-inset-x-3 after:-inset-y-2 data-disabled:cursor-not-allowed data-disabled:opacity-50;
+  }
+  .trellis-switch-thumb {
+    @apply pointer-events-none block ring-0 transition-transform;
+  }
+  .trellis-table-row {
+    @apply has-aria-expanded:bg-muted/50;
+  }
+  .trellis-textarea {
+    @apply flex field-sizing-content min-h-16 w-full outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50;
+  }
 
-  /* style-vega.css, unwrapped, 15 of 422 rules */
+  /* style-vega.css, unwrapped, 78 of 422 rules */
+  .trellis-alert {
+      @apply grid gap-0.5 rounded-lg border px-4 py-3 text-left text-sm has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2.5 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4;
+    }
+  .trellis-alert-variant-default {
+      @apply bg-card text-card-foreground;
+    }
+  .trellis-alert-variant-destructive {
+      @apply text-destructive bg-card *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current;
+    }
+  .trellis-alert-title {
+      @apply font-medium group-has-[>svg]/alert:col-start-2;
+    }
+  .trellis-alert-description {
+      @apply text-muted-foreground text-sm text-balance md:text-pretty [&_p:not(:last-child)]:mb-4;
+    }
+  .trellis-alert-action {
+      @apply absolute top-2.5 right-3;
+    }
+  .trellis-badge {
+      @apply h-5 gap-1 rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium transition-all has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&>svg]:size-3!;
+    }
+  .trellis-badge-variant-default {
+      @apply bg-primary text-primary-foreground [a]:hover:bg-primary/80;
+    }
+  .trellis-badge-variant-secondary {
+      @apply bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80;
+    }
+  .trellis-badge-variant-outline {
+      @apply border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground;
+    }
+  .trellis-badge-variant-destructive {
+      @apply bg-destructive/10 [a]:hover:bg-destructive/20 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 text-destructive dark:bg-destructive/20;
+    }
+  .trellis-badge-variant-ghost {
+      @apply hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50;
+    }
+  .trellis-badge-variant-link {
+      @apply text-primary underline-offset-4 hover:underline;
+    }
+  .trellis-breadcrumb-list {
+      @apply text-muted-foreground gap-1.5 text-sm sm:gap-2.5;
+    }
+  .trellis-breadcrumb-item {
+      @apply gap-1.5;
+    }
+  .trellis-breadcrumb-link {
+      @apply hover:text-foreground transition-colors;
+    }
+  .trellis-breadcrumb-page {
+      @apply text-foreground font-normal;
+    }
+  .trellis-breadcrumb-separator {
+      @apply [&>svg]:size-3.5;
+    }
+  .trellis-breadcrumb-ellipsis {
+      @apply size-5 [&>svg]:size-4;
+    }
   .trellis-button {
       @apply focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 rounded-md border border-transparent bg-clip-padding text-sm font-medium focus-visible:ring-3 aria-invalid:ring-3 active:not-aria-[haspopup]:translate-y-px [&_svg:not([class*='size-'])]:size-4;
     }
@@ -799,5 +982,137 @@
     }
   .trellis-button-size-icon-lg {
       @apply size-10;
+    }
+  .trellis-card {
+      @apply ring-foreground/10 bg-card text-card-foreground gap-(--card-spacing) overflow-hidden rounded-xl py-(--card-spacing) text-sm shadow-xs ring-1 [--card-spacing:--spacing(6)] has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(4)] *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl;
+    }
+  .trellis-card-header {
+      @apply gap-1 rounded-t-xl px-(--card-spacing) [.border-b]:pb-(--card-spacing);
+    }
+  .trellis-card-title {
+      @apply text-base leading-normal font-medium group-data-[size=sm]/card:text-sm;
+    }
+  .trellis-card-description {
+      @apply text-muted-foreground text-sm;
+    }
+  .trellis-card-content {
+      @apply px-(--card-spacing);
+    }
+  .trellis-card-content:has(> [data-slot=questionnaire-choices]) {
+      @apply flex flex-col gap-3;
+    }
+  .trellis-card-footer {
+      @apply rounded-b-xl px-(--card-spacing) [.border-t]:pt-(--card-spacing);
+    }
+  .trellis-checkbox {
+      @apply border-input dark:bg-input/30 data-checked:bg-primary data-checked:text-primary-foreground dark:data-checked:bg-primary data-checked:border-primary aria-invalid:aria-checked:border-primary aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 flex size-4 items-center justify-center rounded-[4px] border shadow-xs transition-shadow group-has-disabled/field:opacity-50 focus-visible:ring-3 aria-invalid:ring-3 group-has-[:focus-visible]/field-label:ring-0 group-has-[:focus-visible]/field-label:not-data-checked:border-input group-has-[:focus-visible]/field-label:data-checked:border-primary;
+    }
+  .trellis-checkbox-indicator {
+      @apply [&>svg]:size-3.5;
+    }
+  .trellis-field-set {
+      @apply gap-6 has-[>[data-slot=checkbox-group]]:gap-3 has-[>[data-slot=radio-group]]:gap-3;
+    }
+  .trellis-field-legend {
+      @apply mb-3 font-medium data-[variant=label]:text-sm data-[variant=legend]:text-base;
+    }
+  .trellis-field-group {
+      @apply gap-7 data-[slot=checkbox-group]:gap-3 *:data-[slot=field-group]:gap-4;
+    }
+  .trellis-field {
+      @apply data-[invalid=true]:text-destructive gap-3;
+    }
+  .trellis-field-content {
+      @apply gap-1;
+    }
+  .trellis-field-label {
+      @apply has-data-checked:bg-primary/5 has-data-checked:border-primary/30 dark:has-data-checked:border-primary/20 dark:has-data-checked:bg-primary/10 gap-2 leading-snug group-data-[disabled=true]/field:opacity-50 has-[>[data-slot=field]]:rounded-md has-[>[data-slot=field]]:border has-[>[data-slot=field]]:not-has-[:disabled,[data-disabled]]:hover:bg-muted/50 has-[>[data-slot=field]]:has-[:focus-visible]:border-ring has-[>[data-slot=field]]:has-[:focus-visible]:ring-ring/50 has-[>[data-slot=field]]:has-[:focus-visible]:ring-3 *:data-[slot=field]:p-3;
+    }
+  .trellis-field-title {
+      @apply gap-2 leading-snug text-sm font-medium group-data-[disabled=true]/field:opacity-50;
+    }
+  .trellis-field-description {
+      @apply text-muted-foreground text-left text-sm [[data-variant=legend]+&]:-mt-1.5;
+    }
+  .trellis-field-separator {
+      @apply -my-2 h-5 text-sm group-data-[variant=outline]/field-group:-mb-2;
+    }
+  .trellis-field-separator-content {
+      @apply text-muted-foreground px-2;
+    }
+  .trellis-field-error {
+      @apply text-destructive text-sm;
+    }
+  .trellis-input {
+      @apply dark:bg-input/30 border-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 h-9 rounded-md border bg-transparent px-2.5 py-1 text-base shadow-xs transition-[color,box-shadow] file:h-7 file:text-sm file:font-medium focus-visible:ring-3 aria-invalid:ring-3 md:text-sm;
+    }
+  .trellis-label {
+      @apply gap-2 text-sm leading-none font-medium group-data-[disabled=true]:opacity-50 peer-disabled:opacity-50;
+    }
+  .trellis-native-select {
+      @apply border-input placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 dark:hover:bg-input/50 focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 h-9 w-full min-w-0 appearance-none rounded-md border bg-transparent py-1 pr-8 pl-2.5 text-sm shadow-xs transition-[color,box-shadow] select-none focus-visible:ring-3 aria-invalid:ring-3 data-[size=sm]:h-8;
+    }
+  .trellis-native-select-icon {
+      @apply text-muted-foreground top-1/2 right-2.5 size-4 -translate-y-1/2;
+    }
+  .trellis-pagination-content {
+      @apply gap-1;
+    }
+  .trellis-pagination-ellipsis {
+      @apply size-9 items-center justify-center [&_svg:not([class*='size-'])]:size-4;
+    }
+  .trellis-pagination-previous {
+      @apply pl-2!;
+    }
+  .trellis-pagination-next {
+      @apply pr-2!;
+    }
+  .trellis-radio-group {
+      @apply grid gap-3;
+    }
+  .trellis-radio-group-item {
+      @apply border-input dark:bg-input/30 data-checked:bg-primary data-checked:text-primary-foreground dark:data-checked:bg-primary data-checked:border-primary aria-invalid:aria-checked:border-primary aria-invalid:border-destructive focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 dark:aria-invalid:border-destructive/50 flex size-4 rounded-full focus-visible:ring-3 aria-invalid:ring-3 group-has-[:focus-visible]/field-label:ring-0 group-has-[:focus-visible]/field-label:not-data-checked:border-input group-has-[:focus-visible]/field-label:data-checked:border-primary;
+    }
+  .trellis-radio-group-indicator {
+      @apply flex size-4 items-center justify-center;
+    }
+  .trellis-radio-group-indicator-icon {
+      @apply bg-primary-foreground absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full;
+    }
+  .trellis-switch {
+      @apply data-checked:bg-primary data-unchecked:bg-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 dark:data-unchecked:bg-input/80 shrink-0 rounded-full border border-transparent shadow-xs focus-visible:ring-3 aria-invalid:ring-3 group-has-[:focus-visible]/field-label:ring-0 group-has-[:focus-visible]/field-label:border-transparent data-[size=default]:h-[18.4px] data-[size=default]:w-[32px] data-[size=sm]:h-[14px] data-[size=sm]:w-[24px];
+    }
+  .trellis-switch-thumb {
+      @apply bg-background dark:data-unchecked:bg-foreground dark:data-checked:bg-primary-foreground rounded-full group-data-[size=default]/switch:size-4 group-data-[size=sm]/switch:size-3 group-data-[size=default]/switch:data-checked:translate-x-[calc(100%-2px)] group-data-[size=sm]/switch:data-checked:translate-x-[calc(100%-2px)] group-data-[size=default]/switch:data-unchecked:translate-x-0 group-data-[size=sm]/switch:data-unchecked:translate-x-0;
+    }
+  .trellis-table-container {
+      @apply relative w-full overflow-x-auto;
+    }
+  .trellis-table {
+      @apply w-full caption-bottom text-sm;
+    }
+  .trellis-table-header {
+      @apply [&_tr]:border-b;
+    }
+  .trellis-table-body {
+      @apply [&_tr:last-child]:border-0;
+    }
+  .trellis-table-footer {
+      @apply bg-muted/50 border-t font-medium [&>tr]:last:border-b-0;
+    }
+  .trellis-table-row {
+      @apply hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors;
+    }
+  .trellis-table-head {
+      @apply text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0;
+    }
+  .trellis-table-cell {
+      @apply p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0;
+    }
+  .trellis-table-caption {
+      @apply text-muted-foreground mt-4 text-sm;
+    }
+  .trellis-textarea {
+      @apply border-input dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 rounded-md border bg-transparent px-2.5 py-2 text-base shadow-xs transition-[color,box-shadow] focus-visible:ring-3 aria-invalid:ring-3 md:text-sm;
     }
 }

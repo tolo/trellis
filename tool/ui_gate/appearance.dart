@@ -2,15 +2,18 @@ import 'dart:convert';
 
 import '../visual_baseline.dart';
 import 'checks.dart';
+import 'firefox.dart';
 
 /// Deterministic state captures, reusable before and after an upstream sync.
 Future<Map<String, Object?>> captureAppearance(GateSession session) async {
   final states = <String, Object?>{}, tokens = <String, Object?>{}, invariants = <String>[];
   final driver = session.driver, manifest = session.manifest;
   await driver.viewport(1440, 900);
-  Future<void> capture(String key, {String? focusSelector}) async {
+  Future<void> capture(String key, {String? focusSelector, bool keepDocumentFocused = false}) async {
     final raw =
-        (await driver.evaluate('($digestScript)(${jsonEncode(manifest.elements)}, ${jsonEncode(focusSelector)})')
+        (await driver.evaluate(
+                  '($digestScript)(${jsonEncode(manifest.elements)}, ${jsonEncode(focusSelector)}, $keepDocumentFocused)',
+                )
                 as Map)
             .cast<String, Object?>();
     states[key] = {
@@ -60,7 +63,11 @@ Future<Map<String, Object?>> captureAppearance(GateSession session) async {
         } else {
           await driver.pseudo(element.value, pseudo == 'focus-visible' ? ['focus', 'focus-visible'] : [pseudo]);
         }
-        await capture('$state/$pseudo:${element.key}', focusSelector: pseudo == 'focus-visible' ? element.value : null);
+        await capture(
+          '$state/$pseudo:${element.key}',
+          focusSelector: pseudo == 'focus-visible' ? element.value : null,
+          keepDocumentFocused: pseudo == 'active' && driver is FirefoxDriver,
+        );
         if (pseudo == 'disabled') {
           await driver.evaluate(
             '''(() => {const el=document.querySelector(${jsonEncode(element.value)});

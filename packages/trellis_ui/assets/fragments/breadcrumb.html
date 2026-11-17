@@ -1,0 +1,4 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>breadcrumb</title></head><body>
+<nav tl:fragment="breadcrumb(items, ...attrs)" aria-label="Breadcrumb" data-slot="breadcrumb" class="trellis-breadcrumb" tl:attrs="${attrs}"><ol data-slot="breadcrumb-list" class="trellis-breadcrumb-list"><li tl:each="item, loop : ${items}" data-slot="breadcrumb-item" class="trellis-breadcrumb-item"><span tl:unless="${loop.first}" data-slot="breadcrumb-separator" class="trellis-breadcrumb-separator" aria-hidden="true">/</span><a tl:unless="${item.current}" class="trellis-breadcrumb-link" tl:href="${item.href}" tl:text="${item.label}">Ancestor</a><span tl:if="${item.current}" data-slot="breadcrumb-page" class="trellis-breadcrumb-page" aria-current="page" tl:text="${item.label}">Current</span></li></ol></nav>
+</body></html>

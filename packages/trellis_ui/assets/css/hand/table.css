@@ -1,0 +1,4 @@
+.trellis-table-container { max-inline-size: 100%; overflow-x: auto; }
+.trellis-table { border-collapse: collapse; }
+.trellis-table th { text-align: start; }
+.trellis-table-footer:has(td:empty) { display: none; }

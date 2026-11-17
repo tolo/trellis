@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.0
+
+### Fixed
+
+- An error thrown inside a custom filter's body is now reported as `ExpressionException("Filter 'name' failed: <error>")`, keeping the original stack trace (a `TemplateException` the filter throws propagates unchanged). Arity was detected by catching `NoSuchMethodError` around the call, so a `NoSuchMethodError` inside the body, such as calling `firstOrNull` on a `dynamic` args parameter, was reported as "Filter 'name' does not accept arguments" when the filter got arguments, and without arguments it ran the body a second time as `filter(value, [])`. The filter's parameters are now read from its function type before the call. "does not accept arguments" is thrown only when arguments reach a filter that takes the value alone, and a function that takes neither `(value)` nor `(value, args)` throws an `ExpressionException` naming the expected signatures instead of a raw `NoSuchMethodError`.
+
 ## 0.13.0
 
 ### Breaking

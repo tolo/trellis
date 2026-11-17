@@ -37,8 +37,8 @@ their customizations across.
 trellis create --template theme my_theme
 cd my_theme
 
-# Edit the manifest: add one archetype tag (docs, landing or blog)
-# to features:, then add layouts and SASS
+# Add layouts and SASS (and, only for a theme contributed to this
+# repository, one archetype tag in features:)
 # Preview with the bundled example site
 cd example
 trellis build
@@ -55,8 +55,9 @@ on Windows, from the theme root: `mklink /J example\themes\my_theme .`. Do not
 run `trellis theme add ../` from `example/`: the source contains the site, and
 the command refuses it.
 
-The scaffold's `features:` carries no archetype tag, so add one (see
-[Name and archetype rules](#name-and-archetype-rules)).
+The scaffold's `features:` carries no archetype tag. Add one only if you
+contribute the theme to this repository, where the built-in gallery reads it
+(see [Name and archetype rules](#name-and-archetype-rules)); nothing else does.
 
 You now have a working theme skeleton. The rest of this guide explains each
 piece in depth.
@@ -155,7 +156,7 @@ params:
 | `description` | Yes | One-sentence description for theme galleries. Plain prose — no backticks |
 | `min_trellis_version` | No | Minimum `trellis_site` version required. Advisory: `trellis theme add` and `trellis theme update` print a warning when the installed `trellis_site` is older, and nothing blocks the build |
 | `screenshots` | No | Relative paths to preview PNG files, resolving inside the theme directory |
-| `features` | Yes | Feature tags: exactly one **archetype** tag — `docs`, `landing`, or `blog` — plus any number of free-form tags. The archetype is required for the built-in themes listed in the gallery and recommended for your own; `trellis create` leaves it out |
+| `features` | Yes | Feature tags: exactly one **archetype** tag — `docs`, `landing`, or `blog` — plus any number of free-form tags. The archetype is required for the built-in themes listed in the gallery and optional for your own; only the built-in gallery reads it, and `trellis create` leaves it out |
 | `params` | Yes | Parameter definitions (see below). Required by the standard-params contract below, not by the loader: a theme with no `params:` loads and builds, and simply ignores every `theme_params:` a site sets |
 
 The loader (`ThemeManifest.load`) enforces only a non-empty `name` and a

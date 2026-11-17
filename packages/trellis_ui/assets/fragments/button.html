@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Button</title></head>
+<body>
+<button type="button" tl:fragment="button(variant, size, ...attrs)" tl:attrs="${attrs}"
+  tl:with="variant=${variant} ?: 'default', size=${size} ?: 'default'"
+  data-slot="button" class="trellis-button group/button"
+  tl:classappend="${'trellis-button-variant-' + variant + ' trellis-button-size-' + size}">
+  <tl:block tl:slot="">Button</tl:block>
+</button>
+</body>
+</html>

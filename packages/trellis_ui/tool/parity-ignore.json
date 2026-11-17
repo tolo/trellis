@@ -1,0 +1,14 @@
+[
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-button-variant-*",
+    "reason": "button(variant, size) generates variant modifier hooks from the variant parameter; button_test renders every upstream offered value."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-button-size-*",
+    "reason": "button(variant, size) generates size modifier hooks from the size parameter; button_test renders every upstream offered value."
+  }
+]

@@ -1,0 +1,8 @@
+.gallery { margin: 0; padding: clamp(1rem, 4vw, 3rem); background: var(--background); color: var(--foreground); font-family: system-ui, sans-serif; line-height: 1.5; }
+.gallery main { max-width: 72rem; margin: 2rem auto; }
+.gallery header { max-width: 72rem; margin: auto; }
+.gallery header a { color: inherit; text-decoration: none; font-weight: 600; }
+.gallery h1 { font-size: 2rem; letter-spacing: -0.04em; }
+.gallery section { margin-block: 2rem; }
+.gallery h2 { font-size: 1rem; font-weight: 600; }
+.gallery-row { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; }

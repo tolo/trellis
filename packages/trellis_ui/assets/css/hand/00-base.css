@@ -1,0 +1,14 @@
+/* Preflight is scoped to suite roots and descendants, preserving the host page. */
+:where([data-slot][class*="trellis-"], [data-slot][class*="trellis-"] *) {
+  box-sizing: border-box;
+  border: 0 solid var(--border);
+}
+:where(button, input, select, textarea)[class*="trellis-"] {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}

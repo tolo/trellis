@@ -1,0 +1,41 @@
+{
+  "tag": "shadcn@4.21.1",
+  "tsxFiles": 1,
+  "hooksPrimary": 15,
+  "hooks": [
+    "trellis-button",
+    "trellis-button-size-default",
+    "trellis-button-size-icon",
+    "trellis-button-size-icon-lg",
+    "trellis-button-size-icon-sm",
+    "trellis-button-size-icon-xs",
+    "trellis-button-size-lg",
+    "trellis-button-size-sm",
+    "trellis-button-size-xs",
+    "trellis-button-variant-default",
+    "trellis-button-variant-destructive",
+    "trellis-button-variant-ghost",
+    "trellis-button-variant-link",
+    "trellis-button-variant-outline",
+    "trellis-button-variant-secondary"
+  ],
+  "hooksSecondary": 0,
+  "hooksWithStructural": 1,
+  "styleRulesTotal": 422,
+  "styleRulesKept": 15,
+  "styleRulesWithoutTsxHook": 407,
+  "slots": [
+    "button"
+  ],
+  "dataAttrs": [
+    "data-slot"
+  ],
+  "markers": {
+    "trellis-button": [
+      "group/button"
+    ]
+  },
+  "hooksSeenInSeveralLiterals": {},
+  "structuralSkipped": [],
+  "orphanLiterals": []
+}

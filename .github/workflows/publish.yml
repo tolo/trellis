@@ -44,6 +44,7 @@ jobs:
           - trellis_site
           - trellis_dev
           - trellis_relic
+          - trellis_ui
           - trellis_cli
           - trellis_dart_frog
     permissions:

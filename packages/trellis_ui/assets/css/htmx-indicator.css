@@ -1,0 +1,5 @@
+/* htmx 2.0.10 default indicator rules, linked instead of injected for strict CSP. */
+@layer trellis-indicator {
+  .htmx-indicator { opacity: 0; }
+  .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; transition: opacity 200ms ease-in; }
+}

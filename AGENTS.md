@@ -23,6 +23,7 @@ This file covers working **on** the SDK. For template syntax, see the
 | `trellis_shelf` | Shelf server integration |
 | `trellis_dart_frog` | Dart Frog server integration |
 | `trellis_relic` | Relic server integration |
+| `trellis_ui` | Embedded UI fragments and assets |
 | `trellis_site` | Static site generation (SSG) |
 | `trellis_css` | CSS processing |
 | `trellis_dev` | Hot reload / dev tooling |

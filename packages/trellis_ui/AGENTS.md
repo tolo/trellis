@@ -1,0 +1,17 @@
+# trellis_ui
+
+Embedded HTML fragments and CSS/JS. Runtime depends toward `trellis` only.
+
+- Run `dart test`, `dart analyze --fatal-infos` and `dart format .` here.
+- `dart run tool/port.dart fetch` vendors the pinned sources and notices; `build` verifies the standalone compiler
+  checksum before writing `generated/`. `check` regenerates all four outputs and rejects any byte drift.
+- `dart run tool/port.dart parity` rejects unexplained slot, hook or marker drift. Every ignore needs a reason.
+- `dart run tool/embed.dart` bundles sources and embeds base64 plus digests. `--check` rejects drift.
+- Never edit `generated/` or `*.g.dart` by hand. Tests and runtime never start the compiler.
+- Add `assets/fragments/<component>.html`, `assets/css/hand/<component>.css`, optional `assets/js/<NN>-<name>.js`, and
+  `gallery/pages/<component>.html`. Hand CSS is layered by the bundler; `00-base.css` is in the earlier base layer.
+- Keep base classes literal and use `tl:classappend` for modifiers; `tl:attrs` preserves caller classes without a
+  missing-member read on strict engines.
+- Fragments use `tl:replace`, `...attrs`, `tl:attrs` and slots. No literal ids, asset URLs, inline styles, inline
+  scripts or event-handler attributes. The template name is `trellis-ui/<component>`.
+- `dart run tool/gallery.dart --port 0` serves the strict-policy gallery. Its first stdout line is `Serving <base-url>`.

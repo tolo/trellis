@@ -6,7 +6,7 @@
 > No Node.js, no JS build step, AOT-compatible (no reflection).
 
 The SDK is a Melos monorepo of independently published, lockstep-versioned packages: `trellis`
-(engine), `trellis_shelf` / `trellis_dart_frog` / `trellis_relic` (server integrations),
+(engine), `trellis_ui` (embedded UI fragments and assets), `trellis_shelf` / `trellis_dart_frog` / `trellis_relic` (server integrations),
 `trellis_site` (static site generation), `trellis_css` (CSS processing), `trellis_dev` (hot
 reload), and `trellis_cli` (scaffolding CLI).
 

@@ -18,6 +18,41 @@ void main() {
 
   String readWorkspaceFile(String path) => File('${workspaceRoot.path}/$path').readAsStringSync();
 
+  test('every publishable package is listed in each release registry', () {
+    final packages = Directory('${workspaceRoot.path}/packages')
+        .listSync()
+        .whereType<Directory>()
+        .where((d) => File('${d.path}/pubspec.yaml').existsSync())
+        .where((d) => !File('${d.path}/pubspec.yaml').readAsStringSync().contains('publish_to: none'))
+        .map((d) => d.uri.pathSegments.where((s) => s.isNotEmpty).last)
+        .toList();
+    expect(packages, contains('trellis_ui'));
+    for (final registry in [
+      'pubspec.yaml',
+      'tool/version_lockstep.sh',
+      'tool/release.sh',
+      'tool/verify_release.sh',
+      '.github/workflows/publish.yml',
+    ]) {
+      final source = readWorkspaceFile(registry);
+      for (final package in packages) {
+        expect(source, matches(RegExp('\\b${RegExp.escape(package)}\\b')), reason: '$registry lacks $package');
+      }
+    }
+    final core = readWorkspaceFile('packages/trellis/pubspec.yaml');
+    expect(core, isNot(contains('trellis_ui:')));
+  });
+
+  test('release refuses without a trellis_ui changelog section', () async {
+    final fixture = await _ReleaseFixture.create(workspaceRoot, omitChangelog: 'trellis_ui');
+    addTearDown(fixture.dispose);
+    final result = await fixture.release('9.8.7');
+    expect(result.exitCode, isNot(0));
+    expect(result.stderr, contains('trellis_ui'));
+    expect(result.stderr, contains("no '## 9.8.7' section"));
+    expect(await fixture.git(['status', '--porcelain']), isEmpty);
+  });
+
   group('binary release distribution contracts', () {
     test('publishing step requests semantic latest selection', () {
       final workflow = readWorkspaceFile('.github/workflows/release-binaries.yml');
@@ -627,7 +662,7 @@ Future<ProcessResult> _bash(Directory repo, List<String> args) => Process.run(
   environment: {...Platform.environment, 'PATH': '${repo.parent.path}/bin:${Platform.environment['PATH']}'},
 );
 
-/// A clone of a bare origin on `main` with all 8 package changelogs at `## 9.8.7`, the real
+/// A clone of a bare origin on `main` with all package changelogs at `## 9.8.7`, the real
 /// `tool/release.sh`, and stub `version_lockstep.sh` / `require_green_ci.sh` / dart / melos / gh,
 /// so release.sh can run end to end without a network or a real bump.
 class _ReleaseFixture {
@@ -642,6 +677,7 @@ class _ReleaseFixture {
     'trellis_site',
     'trellis_dart_frog',
     'trellis_relic',
+    'trellis_ui',
   ];
 
   final Directory root;

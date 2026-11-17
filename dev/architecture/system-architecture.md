@@ -8,7 +8,8 @@ compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme
 `@use … with()` instead of `@import`, with per-mode colour params + 0.13 bridge hardening: one shared
 `compileThemeEntry` that configures each entry with the params Sass accepts and reports the ones it drops,
 build-time warnings for palette-default drift and for a site override Sass cannot apply (`trellis_site` now
-depends on `trellis_css`), and the redrawn package graph.
+depends on `trellis_css`), and the redrawn package graph. The `trellis_ui` package map and pipeline section
+are current through 0.14; other sections retain the verification scope above.
 
 ---
 
@@ -32,6 +33,7 @@ Trellis is a Dart toolkit for building server-rendered web applications and stat
 | **`trellis_shelf`** | Shelf middleware: engine injection, HTMX helpers, security defaults (CSRF, CSP), response builders | `trellis`, `shelf`, `crypto` | v0.13.0 |
 | **`trellis_dart_frog`** | Dart Frog integration: `trellisProvider()` DI middleware, response helpers (`renderPage`, `renderFragment`, `renderOobFragments`), HTMX detection, CSRF/security middleware bridged from `trellis_shelf` | `trellis`, `trellis_shelf`, `dart_frog` | v0.13.0 |
 | **`trellis_relic`** | Serverpod Relic integration: response helpers with explicit engine passing, HTMX detection, `trellisSecurityHeaders()` middleware. No CSRF (Relic form parser gap). | `trellis`, `relic` | v0.13.0 |
+| **`trellis_ui`** | Embedded UI fragments, same-origin CSS/JS, neutral asset response and materialization. | `trellis` | v0.14.0 |
 | **`trellis_dev`** | Dev tools: SSE browser hot reload, script injection middleware | `trellis`, `shelf` | v0.13.0 |
 | **`trellis_css`** | CSS processing: Dart-native SASS/SCSS compilation via `package:sass`, `tl:scope` fragment-scoped CSS via CSS `@scope` | `trellis`, `sass`, `html` | v0.13.0 |
 | **`trellis_site`** | Static site generation: content discovery, front matter, Markdown, taxonomies, pagination, sitemap, shortcodes, data cascade, Atom/RSS feed generation, JSON search index | `trellis`, `trellis_css`, `markdown`, `yaml` | v0.13.0 |
@@ -68,6 +70,8 @@ trellis_shelf ──► trellis ──► package:html
 trellis_dart_frog ──► trellis_shelf ──► trellis
      │
      └──► dart_frog
+trellis_ui ──► trellis
+
 trellis_relic ──► trellis ──► package:html
      │
      └──► relic
@@ -75,6 +79,23 @@ trellis_dev ──► trellis
      │
      └──► shelf
 ```
+
+---
+
+## Embedded UI delivery (0.14)
+
+`trellis_ui` depends only on core at runtime. `TrellisUiLoader` feeds embedded fragments into the app's engine via
+`CompositeLoader`; `trellisUiRespond` exposes immutable status/headers/bytes for server glue on Shelf, Relic or Dart
+Frog. Assets live under `/trellis-ui/`, use compile-time SHA-256 ETags and answer conditional GETs with 304.
+`materializeTrellisUi` optionally writes the same bytes beside the binary and overwrites divergence.
+
+The package's development pipeline vendors pinned shadcn TSX/style/tokens and licences, extracts `cn-*` hooks and
+structural utilities, renames them to `trellis-*`, then compiles using a checksummed Tailwind standalone binary.
+`tool/port.dart check` regenerates and compares the four committed outputs. `tool/embed.dart` layers hand CSS, bundles
+one classic script, and embeds assets and fragments as base64 plus digests. Runtime and tests use these committed
+outputs without invoking Tailwind or Node. Scoped resets replace page-wide preflight; all suite declarations are in
+cascade layers so app overrides retain precedence. A discovered-page gallery renders the same embedded fragments
+under strict CSP. The package graph SVG is scheduled for the release-prep redraw.
 
 ---
 
@@ -576,6 +597,7 @@ trellis/                          # monorepo root
 │   ├── trellis_shelf/            # Shelf integration
 │   ├── trellis_dart_frog/        # Dart Frog integration
 │   ├── trellis_relic/            # Serverpod Relic integration
+│   ├── trellis_ui/               # embedded UI fragments and assets
 │   ├── trellis_dev/              # dev tools (hot reload)
 │   ├── trellis_css/              # CSS processing (SASS + tl:scope)
 │   ├── trellis_site/             # static site generation

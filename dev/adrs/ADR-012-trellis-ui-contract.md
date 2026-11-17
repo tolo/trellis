@@ -340,7 +340,18 @@ map-shaped registry forfeits per-component elimination.
   breakage, which is why the appearance check exists.
 - Licence notices in the suite: shadcn/ui (MIT), Lucide (ISC) plus the Feather MIT
   notice for Lucide's Feather-derived icons, tw-animate-css (MIT), and Tailwind CSS
-  (MIT, for the preflight and banner in the compiled CSS).
+  (MIT, for the compiler theme/utilities and banner in the compiled CSS).
+
+- In 0.14 the package pipeline imports Tailwind's theme and utilities layers without
+  preflight. `assets/css/hand/00-base.css` supplies resets only on suite roots and
+  descendants, inside the early `base` layer; other hand CSS uses `trellis-hand`.
+  Tokens and components stay layered so unlayered application theme blocks win in
+  either link order. The shadcn legacy page-wide `.shimmer` fallback is omitted;
+  its `@utility` retains reduced-motion behavior for components that apply it.
+- Tailwind standalone v4.3.3 has SHA-256 pins for macOS/Linux arm64/x64 in
+  `packages/trellis_ui/tool/pins.json`; a mismatch stops before generation. Inputs
+  remain pinned at `shadcn@4.21.1` until the first upstream sync. Regeneration and
+  embedding checks compare bytes; the ordinary test tier never starts the compiler.
 
 ### HTMX lifecycle
 

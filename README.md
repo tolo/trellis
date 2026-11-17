@@ -114,6 +114,7 @@ Every package is independently usable and publishable. Add only what you need.
 | [`trellis_shelf`](packages/trellis_shelf) | Server | Shelf middleware, response helpers, HTMX helpers, security headers, CSRF protection. |
 | [`trellis_dart_frog`](packages/trellis_dart_frog) | Server | Dart Frog integration — `trellisProvider()` middleware, response/HTMX helpers, CSRF. |
 | [`trellis_relic`](packages/trellis_relic) | Server | Serverpod Relic integration — response helpers, HTMX helpers, security headers. |
+| [`trellis_ui`](packages/trellis_ui) | UI | Embedded HTML fragments, CSS and JavaScript served same-origin. |
 | [`trellis_site`](packages/trellis_site) | SSG | Static site generator — Markdown, front matter, taxonomies, pagination, RSS/Atom feeds, JSON search index, themes. |
 | [`trellis_css`](packages/trellis_css) | CSS | SASS/SCSS compilation (Dart-native) and `tl:scope` fragment-scoped CSS via CSS `@scope`. |
 | [`trellis_dev`](packages/trellis_dev) | DX | Browser hot reload via SSE — auto-refresh on template changes. |
@@ -201,7 +202,7 @@ dart test -t e2e \
 
 This covers starter generation plus the checked-in `examples/shelf_app`, `examples/dart_frog_app`, `examples/relic_app`, and `examples/todo_app`.
 
-**Publishing order** — publish in dependency order: `trellis` first, then `trellis_shelf`, `trellis_dev`, and `trellis_css` (all depend on `trellis`), then `trellis_dart_frog` and `trellis_relic` (depend on `trellis_shelf`), then `trellis_site` and `trellis_cli` last.
+**Publishing order** — publish in dependency order: `trellis` first, then `trellis_shelf`, `trellis_dev`, and `trellis_css` (all depend on `trellis`), then `trellis_ui` and `trellis_relic` (depend on `trellis`) and `trellis_dart_frog` (depends on `trellis_shelf`), then `trellis_site` and `trellis_cli` last.
 
 ## Contributing
 

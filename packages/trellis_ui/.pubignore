@@ -1,0 +1,9 @@
+AGENTS.md
+CLAUDE.md
+vendor/
+tool/
+gallery/
+assets/
+generated/
+.tools/
+.agent_temp/

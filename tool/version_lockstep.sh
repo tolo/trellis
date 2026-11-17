@@ -145,6 +145,7 @@ PACKAGES=(
   trellis_site
   trellis_dart_frog
   trellis_relic
+  trellis_ui
 )
 
 # Dart source files holding a hardcoded version constant that must track the

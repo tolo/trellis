@@ -87,7 +87,7 @@ TAG="v${VERSION}"
 MSG="chore(release): trellis SDK ${VERSION}"
 RELEASE_BRANCH=main
 # Keep in sync with tool/version_lockstep.sh PACKAGES.
-PACKAGES=(trellis trellis_shelf trellis_dev trellis_cli trellis_css trellis_site trellis_dart_frog trellis_relic)
+PACKAGES=(trellis trellis_shelf trellis_dev trellis_cli trellis_css trellis_site trellis_dart_frog trellis_relic trellis_ui)
 
 print_push() {
   cat <<EOF

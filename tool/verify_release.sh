@@ -75,7 +75,7 @@ REPO="${GH_REPO:-$(gh repo view --json nameWithOwner --jq .nameWithOwner)}"
 export GH_REPO="${REPO}"
 TAG="v${VERSION}"
 # Keep in sync with tool/version_lockstep.sh PACKAGES and publish.yml's matrix.
-PACKAGES=(trellis trellis_shelf trellis_dev trellis_cli trellis_css trellis_site trellis_dart_frog trellis_relic)
+PACKAGES=(trellis trellis_shelf trellis_dev trellis_cli trellis_css trellis_site trellis_dart_frog trellis_relic trellis_ui)
 # Keep in sync with release-binaries.yml's build matrix + checksums job.
 ASSETS=(
   "trellis-${TAG}-macos-arm64.tar.gz" "trellis-${TAG}-macos-arm64.tar.gz.sha256"

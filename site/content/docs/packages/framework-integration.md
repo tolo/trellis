@@ -635,8 +635,9 @@ const Pipeline()
     ...
 ```
 
-`excludedPaths` entries match the request path exactly (no prefixes or globs), relative to the
-handler's mount point: `'/webhooks'` does not exclude `/webhooks/stripe`.
+`excludedPaths` entries match the request path exactly (no prefixes or globs): `'/webhooks'` does
+not exclude `/webhooks/stripe`. In Shelf the path is relative to the handler's mount point; in Dart
+Frog it is the full request path, even in a nested `_middleware.dart`.
 
 **Dart Frog setup:**
 

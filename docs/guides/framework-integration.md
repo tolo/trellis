@@ -113,7 +113,7 @@ for Shelf applications.
 
 ```yaml
 dependencies:
-  trellis_shelf: ^0.12.0
+  trellis_shelf: ^0.13.0
 ```
 
 **Import:**
@@ -211,7 +211,7 @@ and security middleware for Dart Frog applications.
 
 ```yaml
 dependencies:
-  trellis_dart_frog: ^0.12.0
+  trellis_dart_frog: ^0.13.0
 ```
 
 **Import:**
@@ -317,7 +317,7 @@ Relic applications.
 
 ```yaml
 dependencies:
-  trellis_relic: ^0.12.0
+  trellis_relic: ^0.13.0
 ```
 
 **Import:**

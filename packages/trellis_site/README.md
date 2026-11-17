@@ -29,7 +29,7 @@ Trellis sites can use pre-built themes for complete, customizable designs with z
 Install a theme with the CLI:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme verdant --ref v0.12.0
+trellis theme add https://github.com/tolo/trellis --theme verdant --ref v0.13.0
 ```
 
 Then configure in `trellis_site.yaml`:
@@ -56,7 +56,7 @@ On Windows, a site whose theme lives on a UNC network path (`\\server\share\…`
 
 ```yaml
 dependencies:
-  trellis_site: ^0.12.0
+  trellis_site: ^0.13.0
 ```
 
 ## Quick Start

@@ -13,7 +13,7 @@ Part of the [Trellis SDK](https://github.com/tolo/trellis).
 
 ```yaml
 dependencies:
-  trellis_css: ^0.12.0
+  trellis_css: ^0.13.0
 ```
 
 ## SASS Compilation

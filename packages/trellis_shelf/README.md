@@ -8,8 +8,8 @@ Part of the [Trellis SDK](https://github.com/tolo/trellis).
 
 ```yaml
 dependencies:
-  trellis: ^0.12.0
-  trellis_shelf: ^0.12.0
+  trellis: ^0.13.0
+  trellis_shelf: ^0.13.0
 ```
 
 ## Quick Start

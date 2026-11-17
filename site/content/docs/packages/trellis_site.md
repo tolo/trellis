@@ -12,7 +12,7 @@ with [Sites Getting Started](/docs/sites/getting-started/).
 
 ```yaml
 dependencies:
-  trellis_site: ^0.12.0
+  trellis_site: ^0.13.0
 ```
 
 ## Quick start

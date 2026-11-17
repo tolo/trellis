@@ -79,7 +79,7 @@ Middleware devMiddleware(
     validateLoadedTemplates(loader, effectiveValidator, cache, sink);
     // The watcher emits void events, so re-scan all templates on each change;
     // the cache short-circuits everything that has not actually changed.
-    loader.changes?.listen((_) => validateLoadedTemplates(loader, effectiveValidator, cache, sink));
+    changes.listen((_) => validateLoadedTemplates(loader, effectiveValidator, cache, sink));
   }
 
   return (Handler innerHandler) {

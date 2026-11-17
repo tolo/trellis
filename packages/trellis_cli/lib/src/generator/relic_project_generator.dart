@@ -1,7 +1,6 @@
-import 'file_writer.dart';
-import '../templates/htmx_asset.dart';
 import '../templates/analysis_options_template.dart';
 import '../templates/gitignore_template.dart';
+import '../templates/htmx_asset.dart';
 import '../templates/relic/relic_about_page_template.dart';
 import '../templates/relic/relic_base_layout_template.dart';
 import '../templates/relic/relic_handlers_template.dart';
@@ -9,6 +8,7 @@ import '../templates/relic/relic_index_page_template.dart';
 import '../templates/relic/relic_pubspec_template.dart';
 import '../templates/relic/relic_server_template.dart';
 import '../templates/relic/relic_styles_template.dart';
+import 'file_writer.dart';
 
 /// Generates a complete Relic + Trellis + HTMX project scaffold.
 ///
@@ -31,7 +31,6 @@ class RelicProjectGenerator {
   final bool htmxCdn;
 
   /// Generates all project files.
-  ///
   Future<void> generate() async {
     // Config files
     await writer.writeFile('pubspec.yaml', relicPubspecTemplate(projectName));
@@ -49,6 +48,8 @@ class RelicProjectGenerator {
 
     // Static assets
     await writer.writeFile('static/styles.css', relicStylesTemplate() + htmxIndicatorCss);
-    if (!htmxCdn) await writer.writeFile('static/js/htmx.min.js', htmxSource);
+    if (!htmxCdn) {
+      await writer.writeFile('static/js/htmx.min.js', htmxSource);
+    }
   }
 }

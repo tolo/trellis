@@ -160,7 +160,7 @@ final class ChromeDriver implements GateDriver {
         'type': type,
         'key': key,
         'windowsVirtualKeyCode': code,
-        if (type == 'keyDown' && key.length == 1) 'text': key,
+        if (type == 'keyDown' && (key.length == 1 || key == 'Enter')) 'text': key == 'Enter' ? '\r' : key,
       });
     }
   }

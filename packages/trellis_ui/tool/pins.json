@@ -4,7 +4,22 @@
   "style": "vega",
   "baseColor": "neutral",
   "components": [
-    "button"
+    "alert",
+    "badge",
+    "breadcrumb",
+    "button",
+    "card",
+    "checkbox",
+    "field",
+    "input",
+    "label",
+    "native-select",
+    "pagination",
+    "radio-group",
+    "separator",
+    "switch",
+    "table",
+    "textarea"
   ],
   "twAnimate": {
     "version": "1.4.0",

@@ -1,0 +1,4 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>stack</title></head><body>
+<div tl:fragment="stack(gap, ...attrs)" data-slot="stack" class="trellis-stack" tl:attrs="${attrs}" tl:with="gap=${gap == 'none' or gap == 'xs' or gap == 'sm' or gap == 'md' or gap == 'lg' or gap == 'xl' ? gap : 'md'}" tl:classappend="${'trellis-stack-gap-' + gap}"><tl:block tl:slot=""></tl:block></div>
+</body></html>

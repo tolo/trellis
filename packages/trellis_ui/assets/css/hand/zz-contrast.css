@@ -1,0 +1,4 @@
+/* Darken only destructive content; keep the application's shadcn token surface intact. */
+.trellis-button-variant-destructive, .trellis-badge-variant-destructive, .trellis-alert-variant-destructive, .trellis-field-error { color: color-mix(in oklch, var(--destructive) 78%, black); }
+.trellis-alert-variant-destructive .trellis-alert-description { color: inherit; }
+.dark .trellis-button-variant-destructive, .dark .trellis-badge-variant-destructive, .dark .trellis-alert-variant-destructive, .dark .trellis-field-error { color: color-mix(in oklch, var(--destructive) 65%, white); }

@@ -1,0 +1,10 @@
+.trellis-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--trellis-grid-minimum, 15rem)), 1fr)); }
+.trellis-grid-gap-none { gap: 0; }
+.trellis-grid-gap-xs { gap: .25rem; }
+.trellis-grid-gap-sm { gap: .5rem; }
+.trellis-grid-gap-md { gap: 1rem; }
+.trellis-grid-gap-lg { gap: 1.5rem; }
+.trellis-grid-gap-xl { gap: 2rem; }
+.trellis-grid-minimum-sm { --trellis-grid-minimum: 10rem; }
+.trellis-grid-minimum-md { --trellis-grid-minimum: 15rem; }
+.trellis-grid-minimum-lg { --trellis-grid-minimum: 20rem; }

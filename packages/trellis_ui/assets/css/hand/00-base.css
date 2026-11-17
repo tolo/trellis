@@ -12,3 +12,5 @@
   background: transparent;
   border-radius: 0;
 }
+
+:where(a)[class*="trellis-"] { color: inherit; text-decoration: inherit; }

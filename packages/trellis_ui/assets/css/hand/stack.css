@@ -1,0 +1,7 @@
+.trellis-stack { display: flex; flex-direction: column; }
+.trellis-stack-gap-none { gap: 0; }
+.trellis-stack-gap-xs { gap: .25rem; }
+.trellis-stack-gap-sm { gap: .5rem; }
+.trellis-stack-gap-md { gap: 1rem; }
+.trellis-stack-gap-lg { gap: 1.5rem; }
+.trellis-stack-gap-xl { gap: 2rem; }

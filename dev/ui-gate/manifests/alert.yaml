@@ -1,0 +1,62 @@
+{
+  "name": "alert",
+  "page": "/components/alert",
+  "root": "#component",
+  "elements": {
+    "primary": ".trellis-alert",
+    "destructive": ".trellis-alert-variant-destructive"
+  },
+  "states": {
+    "default": [],
+    "dark": [
+      {
+        "eval": "document.documentElement.classList.add('dark')"
+      },
+      {
+        "wait": 200
+      }
+    ]
+  },
+  "keyboard": [
+    {
+      "focus": "#before"
+    },
+    {
+      "press": "Tab"
+    },
+    {
+      "expect": {
+        "expression": "document.activeElement.id",
+        "equals": "after"
+      }
+    }
+  ],
+  "semantics": [
+    {
+      "expression": "!document.querySelector('.trellis-alert').hasAttribute('role') && document.querySelector('.trellis-alert[role=alert]')!==null && document.querySelector('.trellis-alert[role=status]')!==null",
+      "equals": true
+    }
+  ],
+  "htmx": {
+    "region": "#demo",
+    "swap": [
+      {
+        "click": "#swap"
+      }
+    ],
+    "navigate": [
+      {
+        "click": "#navigate"
+      }
+    ]
+  },
+  "instances": [
+    "#component"
+  ],
+  "provenance": [
+    {
+      "file": "../../../packages/trellis_ui/vendor/shadcn/shadcn@4.21.1/LICENSE.md",
+      "license": "MIT"
+    }
+  ]
+}

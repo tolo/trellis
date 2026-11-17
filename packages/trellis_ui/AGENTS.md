@@ -2,7 +2,9 @@
 
 Embedded HTML fragments and CSS/JS. Runtime depends toward `trellis` only.
 
-- Run `dart test`, `dart analyze --fatal-infos` and `dart format .` here.
+- Run `dart test --exclude-tags=ui-gate`, `dart analyze --fatal-infos` and `dart format .` here.
+- The local full-gallery gate is `dart test test/qualification_gate_test.dart`, with `GECKODRIVER` set. Its
+  `ui-gate`/`visual` tags are declared in this package; fast/full workspace tiers exclude it.
 - `dart run tool/port.dart fetch` vendors the pinned sources and notices; `build` verifies the standalone compiler
   checksum before writing `generated/`. `check` regenerates all four outputs and rejects any byte drift.
 - `dart run tool/port.dart parity` rejects unexplained slot, hook or marker drift. Every ignore needs a reason.

@@ -366,7 +366,23 @@ final class GateSession {
             const r=el.getBoundingClientRect(),cs=getComputedStyle(el);
             if(!r.width||!r.height||cs.visibility==='hidden') continue;
             const name=el.id?'#'+el.id:el.tagName.toLowerCase();
-            if(r.left < -1 || r.right > width+1) issues.push(name+' outside horizontal viewport');
+            // A table wider than its named keyboard-scrollable region is reachable,
+            // not document overflow. Hidden/clip containers still fail this check.
+            let left=r.left,right=r.right;
+            for(let ancestor=el.parentElement;ancestor;ancestor=ancestor.parentElement) {
+              const s=getComputedStyle(ancestor);
+              if(['auto','scroll'].includes(s.overflowX) && ancestor.scrollWidth>ancestor.clientWidth+1 && cs.position!=='fixed') {
+                const box=ancestor.getBoundingClientRect();
+                left=Math.max(left,box.left+ancestor.clientLeft);
+                right=Math.min(right,box.left+ancestor.clientLeft+ancestor.clientWidth);
+              }
+            }
+            if(['auto','scroll'].includes(cs.overflowX) && el.scrollWidth>el.clientWidth+1) {
+              const labelled=(el.getAttribute('aria-label')||'').trim() ||
+                (el.getAttribute('aria-labelledby')||'').split(/\\s+/).some(id=>document.getElementById(id)?.textContent.trim());
+              if(el.getAttribute('role')!=='region'||el.tabIndex<0||!labelled) issues.push(name+' scroll region needs a label, region role and keyboard focus');
+            }
+            if(left < -1 || right > width+1) issues.push(name+' outside horizontal viewport');
             if(el.matches('[role=menu],[role=listbox],[popover]:popover-open,dialog[open]') && (r.top < -1||r.bottom>height+1)) issues.push(name+' popup outside vertical viewport');
           }
           return issues;

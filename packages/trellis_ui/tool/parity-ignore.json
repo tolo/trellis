@@ -1,6 +1,84 @@
 [
   {
     "kind": "hook",
+    "direction": "extra",
+    "name": "trellis-cluster",
+    "reason": "Trellis-authored trellis-cluster is a public hook/slot without an upstream counterpart."
+  },
+  {
+    "kind": "hook",
+    "direction": "extra",
+    "name": "trellis-container",
+    "reason": "Trellis-authored trellis-container is a public hook/slot without an upstream counterpart."
+  },
+  {
+    "kind": "hook",
+    "direction": "extra",
+    "name": "trellis-grid",
+    "reason": "Trellis-authored trellis-grid is a public hook/slot without an upstream counterpart."
+  },
+  {
+    "kind": "hook",
+    "direction": "extra",
+    "name": "trellis-radio",
+    "reason": "Trellis-authored trellis-radio is a public hook/slot without an upstream counterpart."
+  },
+  {
+    "kind": "hook",
+    "direction": "extra",
+    "name": "trellis-separator",
+    "reason": "Trellis-authored trellis-separator is a public hook/slot without an upstream counterpart."
+  },
+  {
+    "kind": "hook",
+    "direction": "extra",
+    "name": "trellis-separator-vertical",
+    "reason": "Trellis-authored trellis-separator-vertical is a public hook/slot without an upstream counterpart."
+  },
+  {
+    "kind": "hook",
+    "direction": "extra",
+    "name": "trellis-sidebar",
+    "reason": "Trellis-authored trellis-sidebar is a public hook/slot without an upstream counterpart."
+  },
+  {
+    "kind": "hook",
+    "direction": "extra",
+    "name": "trellis-stack",
+    "reason": "Trellis-authored trellis-stack is a public hook/slot without an upstream counterpart."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-alert-action",
+    "reason": "The alert action slot is outside this slice; caller actions compose beside the alert."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-alert-variant-*",
+    "reason": "Closed variant parameter emits this hook; component render tests cover every offered value and fallback."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-badge-variant-*",
+    "reason": "Closed variant parameter emits this hook; component render tests cover every offered value and fallback."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-breadcrumb-ellipsis",
+    "reason": "Collapsing breadcrumb ancestors is outside this slice; callers supply a complete server-computed breadcrumb list."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-button-size-*",
+    "reason": "button(variant, size) generates size modifier hooks from the size parameter; button_test renders every upstream offered value."
+  },
+  {
+    "kind": "hook",
     "direction": "missing",
     "name": "trellis-button-variant-*",
     "reason": "button(variant, size) generates variant modifier hooks from the variant parameter; button_test renders every upstream offered value."
@@ -8,7 +86,145 @@
   {
     "kind": "hook",
     "direction": "missing",
-    "name": "trellis-button-size-*",
-    "reason": "button(variant, size) generates size modifier hooks from the size parameter; button_test renders every upstream offered value."
+    "name": "trellis-checkbox-indicator",
+    "reason": "Native input pseudo-elements paint this Base UI part from :checked; hand CSS preserves the native input hit box and forced-colour state."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-field-orientation-horizontal",
+    "reason": "The field fragment is vertical; horizontal and responsive composition use the separate closed-scale layout primitives."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-field-orientation-responsive",
+    "reason": "The field fragment is vertical; horizontal and responsive composition use the separate closed-scale layout primitives."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-field-separator",
+    "reason": "Field separator-with-text and error lists are outside this slice; one error string is rendered directly without an extra list or floating separator."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-field-separator-content",
+    "reason": "Field separator-with-text and error lists are outside this slice; one error string is rendered directly without an extra list or floating separator."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-field-title",
+    "reason": "The field owns a real label; the alternative non-label field title is not part of its input recipe."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-radio-group-indicator",
+    "reason": "Native input pseudo-elements paint this Base UI part from :checked; hand CSS preserves the native input hit box and forced-colour state."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-radio-group-indicator-icon",
+    "reason": "Native input pseudo-elements paint this Base UI part from :checked; hand CSS preserves the native input hit box and forced-colour state."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-rtl-flip",
+    "reason": "Text Previous/Next labels and aria-hidden slash breadcrumb separators replace directional icons; no icon needs flipping. The pagination ellipsis is direct aria-hidden text; its nested upstream sr-only label is redundant and dropped."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-switch-thumb",
+    "reason": "Native input pseudo-elements paint this Base UI part from :checked; hand CSS preserves the native input hit box and forced-colour state."
+  },
+  {
+    "kind": "slot",
+    "direction": "extra",
+    "name": "badge",
+    "reason": "Trellis-authored badge is a public hook/slot without an upstream counterpart."
+  },
+  {
+    "kind": "slot",
+    "direction": "extra",
+    "name": "cluster",
+    "reason": "Trellis-authored cluster is a public hook/slot without an upstream counterpart."
+  },
+  {
+    "kind": "slot",
+    "direction": "extra",
+    "name": "container",
+    "reason": "Trellis-authored container is a public hook/slot without an upstream counterpart."
+  },
+  {
+    "kind": "slot",
+    "direction": "extra",
+    "name": "grid",
+    "reason": "Trellis-authored grid is a public hook/slot without an upstream counterpart."
+  },
+  {
+    "kind": "slot",
+    "direction": "extra",
+    "name": "sidebar",
+    "reason": "Trellis-authored sidebar is a public hook/slot without an upstream counterpart."
+  },
+  {
+    "kind": "slot",
+    "direction": "extra",
+    "name": "stack",
+    "reason": "Trellis-authored stack is a public hook/slot without an upstream counterpart."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "alert-action",
+    "reason": "The alert action slot is outside this slice; caller actions compose beside the alert."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "breadcrumb-ellipsis",
+    "reason": "Collapsing breadcrumb ancestors is outside this slice; callers supply a complete server-computed breadcrumb list."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "checkbox-indicator",
+    "reason": "Native input pseudo-elements paint this Base UI part from :checked; hand CSS preserves the native input hit box and forced-colour state."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "field-separator",
+    "reason": "Field separator-with-text and error lists are outside this slice; one error string is rendered directly without an extra list or floating separator."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "field-separator-content",
+    "reason": "Field separator-with-text and error lists are outside this slice; one error string is rendered directly without an extra list or floating separator."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "native-select-optgroup",
+    "reason": "Caller option/optgroup markup is supplied through the select anonymous slot; hand CSS applies Canvas/CanvasText to both native tags."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "radio-group-indicator",
+    "reason": "Native input pseudo-elements paint this Base UI part from :checked; hand CSS preserves the native input hit box and forced-colour state."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "switch-thumb",
+    "reason": "Native input pseudo-elements paint this Base UI part from :checked; hand CSS preserves the native input hit box and forced-colour state."
   }
 ]

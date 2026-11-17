@@ -9,7 +9,7 @@ compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme
 `compileThemeEntry` that configures each entry with the params Sass accepts and reports the ones it drops,
 build-time warnings for palette-default drift and for a site override Sass cannot apply (`trellis_site` now
 depends on `trellis_css`), and the redrawn package graph. The `trellis_ui` package map, pipeline and qualification sections
-are current through 0.14, and so is the Relic section (Relic 2); other sections retain the verification scope above.
+are current through 0.14 (2026-11-17), including the CSS-only component catalogue and closed layout scales, and so is the Relic section (Relic 2); other sections retain the verification scope above.
 
 ---
 
@@ -84,7 +84,9 @@ trellis_dev ──► trellis
 
 ## Embedded UI delivery (0.14)
 
-`trellis_ui` depends only on core at runtime. `TrellisUiLoader` feeds embedded fragments into the app's engine via
+`trellis_ui` depends only on core at runtime. Its native controls, data views and four layout primitives are plain
+fragments. Closed layout scales select hand CSS classes; final `zz-` hand files set target sizes, destructive contrast
+and forced-colour paint without modifying the pinned token values. `TrellisUiLoader` feeds embedded fragments into the app's engine via
 `CompositeLoader`; `trellisUiRespond` exposes immutable status/headers/bytes for server glue on Shelf, Relic or Dart
 Frog. Assets live under `/trellis-ui/`, use compile-time SHA-256 ETags and answer conditional GETs with 304.
 `materializeTrellisUi` optionally writes the same bytes beside the binary and overwrites divergence.

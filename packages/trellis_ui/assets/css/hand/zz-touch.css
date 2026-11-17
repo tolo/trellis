@@ -1,0 +1,11 @@
+.trellis-button, .trellis-input, .trellis-textarea, .trellis-native-select, .trellis-checkbox, .trellis-radio-group-item, .trellis-switch, .trellis-pagination-link, .trellis-breadcrumb-link, .trellis-table-container { min-inline-size: 24px; min-block-size: 24px; }
+@media (pointer: coarse) {
+  .trellis-button, .trellis-input, .trellis-textarea, .trellis-native-select, .trellis-checkbox, .trellis-radio-group-item, .trellis-switch, .trellis-pagination-link, .trellis-breadcrumb-link, .trellis-table-container { min-inline-size: 44px; min-block-size: 44px; }
+  .trellis-input, .trellis-textarea, .trellis-native-select, .trellis-checkbox, .trellis-radio-group-item, .trellis-switch { font-size: 16px; }
+}
+
+/* Geometry changes from pointer emulation must not animate through undersized targets. */
+:is(.trellis-button, .trellis-input, .trellis-textarea, .trellis-native-select, .trellis-checkbox, .trellis-radio-group-item, .trellis-switch, .trellis-badge) { transition-property: color, background-color, border-color, box-shadow, opacity; }
+@media (prefers-reduced-motion: reduce) {
+  :where([data-slot][class*="trellis-"], [data-slot][class*="trellis-"] *) { transition: none; animation: none; }
+}

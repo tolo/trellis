@@ -1,0 +1,3 @@
+.trellis-breadcrumb-list { list-style: none; margin: 0; padding: 0; }
+.trellis-breadcrumb-separator { padding-inline: .5rem; }
+.trellis-breadcrumb-link { display: inline-flex; align-items: center; }

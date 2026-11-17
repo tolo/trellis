@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.0
+
+- Lockstep version alignment with SDK 0.14.0.
+
 ## 0.13.0
 
 ### Breaking

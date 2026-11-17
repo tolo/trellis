@@ -35,8 +35,32 @@ Future<void> expectStrictCspApp(Uri base, {required bool csrf}) async {
   final count = int.parse(await browser.evaluateHere("document.querySelector('.counter-value').textContent") as String);
   await browser.evaluateHere('''(() => { document.addEventListener('htmx:beforeRequest', function(e) {
     window.__csrfHeader = e.detail.requestConfig.headers['X-CSRF-Token'];
-  }); document.querySelector('[hx-post="/counter/increment"]').click(); })()''');
-  await waitForBrowser(browser, "document.querySelector('.counter-value')?.textContent.trim() === '${count + 1}'");
+  }); document.querySelector('[hx-post="/counter/increment"]').focus(); })()''');
+  for (final increment in [1, 2]) {
+    await browser.evaluateHere('''(() => {
+      window.__counterSettled = false;
+      document.addEventListener('htmx:afterSettle', () => { window.__counterSettled = true; }, {once: true});
+    })()''');
+    // Enter's text lets Chrome perform the native button action.
+    for (final type in ['keyDown', 'keyUp']) {
+      await browser.command('Input.dispatchKeyEvent', {
+        'type': type,
+        'key': 'Enter',
+        'code': 'Enter',
+        'windowsVirtualKeyCode': 13,
+        if (type == 'keyDown') 'text': '\r',
+      });
+    }
+    await waitForBrowser(
+      browser,
+      "window.__counterSettled && document.querySelector('.counter-value')?.textContent.trim() === '${count + increment}'",
+    );
+    expect(
+      await browser.evaluateHere('''document.activeElement.matches('[hx-post="/counter/increment"]')'''),
+      isTrue,
+      reason: 'Counter swap preserves the keyboard control for repeated activation',
+    );
+  }
   if (csrf) {
     expect(
       await browser.evaluateHere(
@@ -61,7 +85,9 @@ Future<void> waitForBrowser(BrowserProbe browser, String expression) async {
     if (await browser.evaluateHere(expression) == true) return;
     await Future<void>.delayed(const Duration(milliseconds: 50));
   }
-  fail('Browser did not reach: $expression');
+  fail(
+    'Browser did not reach: $expression; state=${await browser.evaluateHere("JSON.stringify({count: document.querySelector('.counter-value')?.textContent, settled: window.__counterSettled, focus: document.activeElement?.id || document.activeElement?.tagName, documentFocus: document.hasFocus()})")}',
+  );
 }
 
 Future<void> expectStaticReload(Uri base, Directory project, String staticRoot) async {

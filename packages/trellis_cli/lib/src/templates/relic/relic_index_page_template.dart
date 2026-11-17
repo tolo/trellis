@@ -17,16 +17,17 @@ String relicIndexPageTemplate() => r'''
           <span class="counter-value" tl:text="${count}">0</span>
         </div>
         <div class="counter-controls">
-          <button hx-post="/counter/decrement"
+          <!-- Stable IDs let htmx preserve focus when this fragment is replaced. -->
+          <button id="counter-decrement" hx-post="/counter/decrement"
                   hx-target="#counter"
                   hx-swap="outerHTML"
                   tl:classappend="${isZero} ? 'disabled' : ''"
                   >-</button>
-          <button hx-post="/counter/reset"
+          <button id="counter-reset" hx-post="/counter/reset"
                   hx-target="#counter"
                   hx-swap="outerHTML"
                   >Reset</button>
-          <button hx-post="/counter/increment"
+          <button id="counter-increment" hx-post="/counter/increment"
                   hx-target="#counter"
                   hx-swap="outerHTML"
                   >+</button>

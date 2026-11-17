@@ -4,6 +4,8 @@
 
 ### Changed
 
+- Counter fragment swaps preserve keyboard focus through stable control IDs, allowing repeated Enter activation.
+
 - App scaffolds use strict CSP, self-host pinned HTMX and external CSRF scripts, and disable injected indicator styles. `create --htmx-cdn` opts into the pinned CDN origin. Shelf and Dart Frog watch static CSS/JS in dev mode.
 
 

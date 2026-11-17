@@ -21,14 +21,12 @@ dart run ../packages/trellis_cli/bin/trellis.dart serve --output ../.agent_temp/
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8765/    # 200 when ready
 ```
 
-- Ready when `serve` prints `Serving http://localhost:8765 ...` and curl returns 200. The build reports
-  `Built 34 pages, 42 static files` in well under a second after the first compile.
+- Ready when `serve` prints `Serving http://localhost:8765 ...` and curl returns 200. The build summary
+  prints the page and asset counts.
 - `--path-prefix ''` is required: `site/trellis_site.yaml` mounts the site under `/trellis/` for GitHub Pages, so
   without the override every asset URL 404s on a root-served preview.
-- `tool/serve_docs.sh [port]` does the same into `site/output-root` (git-ignored), but first runs
-  `dart run tool/generate_theme_gallery.dart`. That changes tracked gallery files only when they are stale against
-  `themes/` (`--check` reports it), and then the regenerated files belong in the same commit. Use it when a theme
-  manifest or screenshot changed; otherwise the commands above are enough.
+- `tool/serve_docs.sh [port]` does the same into `site/output-root` (git-ignored), first regenerating theme gallery
+  and UI reference data. The regenerated files belong in the same commit as their sources.
 - Rebuild after any change to `site/content`, `site/layouts`, or `themes/`. `serve` does not watch.
 
 ### Theme examples (`themes/<name>/example/`)
@@ -121,6 +119,10 @@ Docs site (`http://localhost:8765`), every built page is listed by
 | `/docs/` | Section index, sidebar tree |
 | `/docs/syntax/attributes/` | Long page: sidebar, breadcrumb, code block, "On this page" column |
 | `/docs/themes/gallery/` | 13 images, theme cards, install snippet |
+| `/docs/ui/components/button/` | Preview, fragment API, tokens and gate results |
+| `/docs/ui/components/dialog/` | Open the native modal and close it back to its trigger |
+| `/docs/ui/components/table/` | Scroll the example inside its labelled region on narrow viewports |
+| `/docs/ui/components/combobox/` | Open the popup, select a fruit, and check light and dark skins |
 | `/docs/packages/trellis/` | Package page (built, not captured in this session) |
 
 Non-default states, all proven:

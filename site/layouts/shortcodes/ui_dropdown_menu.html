@@ -1,0 +1,9 @@
+<div class="ui-reference-preview">
+  <div tl:replace="~{trellis-ui/dropdown-menu :: dropdownMenu('reference-menu')}">
+    <span tl:slot="trigger">Account actions</span>
+    <button tl:replace="~{trellis-ui/dropdown-menu :: menuItem}">Edit profile</button>
+    <button tl:replace="~{trellis-ui/dropdown-menu :: menuItem}" disabled>Manage team</button>
+    <div tl:replace="~{trellis-ui/dropdown-menu :: menuSeparator}"></div>
+    <button tl:replace="~{trellis-ui/dropdown-menu :: menuCheckboxItem(false)}">Show status</button>
+  </div>
+</div>

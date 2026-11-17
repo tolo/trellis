@@ -1,0 +1,12 @@
+<div class="ui-reference-preview">
+  <div tl:replace="~{trellis-ui/dialog :: dialog('reference-dialog', 'Edit profile', 'Choose the display name shown on your profile.', false)}">
+    <tl:block tl:slot="trigger">
+      <button tl:replace="~{trellis-ui/button :: button}">Edit profile</button>
+    </tl:block>
+    <div tl:replace="~{trellis-ui/field :: field('reference-profile-name', 'Display name')}"
+      autocomplete="nickname" autofocus></div>
+    <tl:block tl:slot="footer">
+      <button tl:replace="~{trellis-ui/button :: button('outline')}" data-dialog-close>Done</button>
+    </tl:block>
+  </div>
+</div>

@@ -156,14 +156,23 @@ params:
 | `min_trellis_version` | No | Minimum `trellis_site` version required. Advisory: `trellis theme add` and `trellis theme update` print a warning when the installed `trellis_site` is older, and nothing blocks the build |
 | `screenshots` | No | Relative paths to preview PNG files, resolving inside the theme directory |
 | `features` | Yes | Feature tags: exactly one **archetype** tag — `docs`, `landing`, or `blog` — plus any number of free-form tags. The archetype is required for the built-in themes listed in the gallery and recommended for your own; `trellis create` leaves it out |
+| `uses` | No | Registered build sources the theme uses. List names matching `[a-z][a-z0-9_]*` |
 | `params` | Yes | Parameter definitions (see below). Required by the standard-params contract below, not by the loader: a theme with no `params:` loads and builds, and simply ignores every `theme_params:` a site sets |
 
-The loader (`ThemeManifest.load`) enforces only a non-empty `name` and a
-`version`. The other "Yes" rows are enforced elsewhere: `description` and
+The loader (`ThemeManifest.load`) requires a non-empty `name` and a
+`version` and validates the shape of an optional `uses` list. The other
+"Yes" rows are enforced elsewhere: `description` and
 `features` by the gallery generator below, which gates only the built-in themes
 in this repository, and `params` by the standard-params contract. Nothing checks
 a third-party theme's archetype, so the build and `trellis theme add` accept a
 theme without one.
+
+A theme can declare `uses: [trellis_ui]` to make the CLI's embedded suite
+available to its layouts. A direct Dart build must register the names it uses
+as `SiteSource` factories. The build combines the site and theme lists and
+loads each named source once. Theme templates and static files take
+precedence over source files. See [Build sources](/docs/packages/trellis_site/#build-sources)
+for the priority and asset rules.
 
 #### Name and archetype rules
 

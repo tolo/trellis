@@ -17,6 +17,7 @@ export 'src/paginator.dart';
 export 'src/shortcode_processor.dart';
 export 'src/search_index_generator.dart';
 export 'src/site_config.dart';
+export 'src/site_source.dart';
 export 'src/sitemap_generator.dart';
 export 'src/taxonomy.dart';
 export 'src/theme_aware_loader.dart';

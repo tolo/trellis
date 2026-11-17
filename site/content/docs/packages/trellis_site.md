@@ -69,6 +69,7 @@ step, such as `compileThemeEntry` for theme entries and
 - `params` for arbitrary values exposed as `${site.params.*}`;
 - `feeds`, `search`, and `highlight` for generated discovery artifacts and
   build-time code highlighting.
+- `uses` for named template and static asset sources.
 
 Paths can be relative to the site root or absolute.
 
@@ -110,6 +111,32 @@ Sitemaps, Atom/RSS feeds, section feeds, and search indexes are covered in
 
 Theme installation and customization are covered in
 [Sites: Themes](/docs/sites/themes/).
+
+## Build sources
+
+A site or its theme can add templates and assets by listing registered names
+in `uses`. The CLI registers `trellis_ui`:
+
+```yaml
+uses: [trellis_ui]
+```
+
+You can call the suite's fragments in layouts and shortcodes. The build
+copies the assets under `trellis-ui/` in the output. Link the CSS and script
+from the layouts that need them.
+
+A Dart build registers other names with `TrellisSite(config, sourceFactories: ...)`.
+Each factory returns a `SiteSource` with a synchronous-capable template
+loader and a map from output-relative POSIX paths to bytes. Names match
+`[a-z][a-z0-9_]*`. Put the same name in the site and theme to reuse one
+factory result. Site and theme templates win over source templates. Source
+assets are copied first, followed by theme and site static files. Conflicting
+source file paths fail the build.
+
+When sources are enabled, a post-Markdown shortcode can pass lists and maps
+from page front matter to fragments. Its explicit parameters take precedence
+over those values. The [component reference](/docs/ui/components/) uses this
+for static data examples.
 
 ## Path prefix
 

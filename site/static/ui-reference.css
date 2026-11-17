@@ -1,0 +1,84 @@
+.ui-reference-preview {
+  /* Lattice's unlayered root token otherwise wins over the suite theme layer. */
+  --radius: .625rem;
+  --radius-md: calc(var(--radius) * .8);
+  /* The suite's muted text depends on its background for contrast. */
+  background-color: var(--background);
+  margin-block: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--lattice);
+  border-radius: var(--radius);
+}
+
+.ui-reference-preview:not(.dark) {
+  --card: oklch(100% 0 0);
+}
+
+/* Discard Lattice's unlayered link and Markdown table rules inside the preview. */
+.ui-reference-preview a {
+  color: revert-layer;
+  text-underline-offset: revert-layer;
+}
+
+/* Lattice also paints focus on native controls inside shortcode output. */
+.ui-reference-preview :focus-visible {
+  border-radius: revert-layer;
+  outline: revert-layer;
+  outline-offset: revert-layer;
+}
+
+.prose .ui-reference-preview .trellis-table {
+  max-width: revert-layer;
+  table-layout: revert-layer;
+}
+
+.prose .ui-reference-preview :is(.trellis-table-head, .trellis-table-cell) {
+  overflow-wrap: revert-layer;
+}
+
+.ui-reference-fragment dl {
+  display: grid;
+  grid-template-columns: minmax(0, 10rem) minmax(0, 1fr);
+  gap: .25rem .75rem;
+}
+
+.ui-reference-fragment dt {
+  font-weight: 600;
+}
+
+.ui-reference-fragment dd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem .5rem;
+  margin: 0;
+}
+
+.ui-reference-parts,
+.ui-reference-tokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-reference-gate > li {
+  margin-block: .5rem;
+}
+
+.ui-reference-gate strong {
+  margin-inline-start: .5rem;
+}
+
+.ui-reference-gate ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 450px) {
+  .ui-reference-fragment dl { grid-template-columns: minmax(0, 1fr); }
+  .ui-reference-fragment dd { margin-block-end: .5rem; }
+}

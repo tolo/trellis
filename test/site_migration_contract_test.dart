@@ -158,6 +158,17 @@ void main() {
       expect(docs, allOf(contains('docs-sidebar'), contains('docs-toc'), contains('data-lattice-search')));
       expect(docs, contains('page-nav'));
       expect(docs, contains('hljs-'));
+      final contentDoc = html_parser.parse(
+        File(p.join(outputDir, 'docs', 'sites', 'content', 'index.html')).readAsStringSync(),
+      );
+      expect(
+        contentDoc.querySelectorAll('pre code').map((code) => code.text.trim()),
+        containsAll([
+          '{{% callout kind="note" %}}',
+          '{{% callout kind="note" %}}\n'
+              'This is **Markdown** inside the shortcode.\n{{% /callout %}}',
+        ]),
+      );
       final css = File(p.join(outputDir, 'css', 'main.css')).readAsStringSync();
       expect(css, allOf(contains('.prose :not(pre)>code'), contains('overflow-wrap:anywhere')));
       expect(css, allOf(contains('.prose table'), contains('table-layout:fixed')));

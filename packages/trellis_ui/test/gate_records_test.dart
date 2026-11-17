@@ -5,6 +5,7 @@ import 'package:test/test.dart';
 
 import '../../../tool/ui_gate/checks.dart';
 import '../../../tool/ui_gate/manifest.dart';
+import '../../../tool/ui_gate/record.dart';
 
 const behaviourComponents = ['alert-dialog', 'combobox', 'dialog', 'dropdown-menu', 'tabs', 'toast'];
 
@@ -62,13 +63,7 @@ List<String> qualificationIssues(Directory pages, Directory manifests, Directory
     }
     // The CLI preserves maintainer-entered manual outcomes across automated reruns.
     for (final item in manualItems) {
-      if (items[item] case {
-        'status': 'pass' || 'fail' || 'not-run' || 'release-prep',
-        'evidence': final List<Object?> evidence,
-      } when evidence.every((entry) => entry is String)) {
-        continue;
-      }
-      issues.add('$name: $item invalid manual result');
+      if (!validManualResult(items[item])) issues.add('$name: $item invalid manual result');
     }
   }
   return issues;

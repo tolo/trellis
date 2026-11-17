@@ -324,6 +324,8 @@ Assets are embedded as base64 constants, not string literals (1.33× against 2.0
 payload). `dart compile exe` tree-shakes unreferenced embedded assets to +0 B, so a
 map-shaped registry forfeits per-component elimination.
 
+The CLI uses the same embedded package to supply fragments and assets to opted-in site builds in 0.14.
+
 ### Porting pipeline
 
 - Inputs pinned by shadcn tag and vendored with the MIT notice: the component TSX of

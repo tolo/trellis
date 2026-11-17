@@ -96,17 +96,14 @@ Reusable content snippets are Trellis templates at
 `layoutsDir` or a theme's layouts are not searched. The pre-Markdown form is
 replaced before the page's Markdown is parsed:
 
-```markdown
-{{% callout kind="note" %}}
-```
+<!-- Escape the first brace in literal snippets until the pre-Markdown pass can distinguish code samples. -->
+<pre><code class="language-markdown">&#123;{% callout kind="note" %}}</code></pre>
 
 The paired form renders its body as Markdown first:
 
-```markdown
-{{% callout kind="note" %}}
+<pre><code class="language-markdown">&#123;{% callout kind="note" %}}
 This is **Markdown** inside the shortcode.
-{{% /callout %}}
-```
+&#123;{% /callout %}}</code></pre>
 
 The post-Markdown form transforms rendered HTML:
 

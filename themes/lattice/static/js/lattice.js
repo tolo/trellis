@@ -29,8 +29,14 @@
     return explicitTheme || (darkScheme.matches ? 'dark' : 'light');
   }
 
+  function syncPreviewSkin(theme) {
+    var previews = document.querySelectorAll('.ui-reference-preview');
+    for (var i = 0; i < previews.length; i++) previews[i].classList.toggle('dark', theme === 'dark');
+  }
+
   function setTheme(theme, persist) {
     root.dataset.theme = theme;
+    syncPreviewSkin(theme);
     if (themeToggle)
       themeToggle.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
     var screenshots = document.querySelectorAll('.theme-card img[data-light][data-dark]');
@@ -54,7 +60,7 @@
       darkScheme.addEventListener('change', function () {
         if (!explicitTheme) setTheme(effectiveTheme(), false);
       });
-  }
+  } else syncPreviewSkin(root.dataset.skin);
 
   var docsSidebar = document.querySelector('[data-docs-sidebar]');
   if (docsSidebar) {

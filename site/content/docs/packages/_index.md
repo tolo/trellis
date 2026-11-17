@@ -49,3 +49,6 @@ and AOT deployment across all of them.
 
 Authoring a theme for `trellis_site`? See the
 [Theme Authoring](/docs/themes/authoring/) guide.
+
+- [**trellis_ui**](/docs/ui/guide/) provides embedded fragments and same-origin assets.
+  See the [component reference](/docs/ui/components/) for live examples and APIs.

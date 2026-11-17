@@ -1,0 +1,10 @@
+<div class="ui-reference-preview">
+  <section tl:replace="~{trellis-ui/card :: card}">
+    <span tl:slot="title">Garden project</span>
+    <span tl:slot="description">Updated this morning</span>
+    <p>Three tasks are ready to review.</p>
+    <tl:block tl:slot="footer">
+      <button tl:replace="~{trellis-ui/button :: button('outline')}">Review tasks</button>
+    </tl:block>
+  </section>
+</div>

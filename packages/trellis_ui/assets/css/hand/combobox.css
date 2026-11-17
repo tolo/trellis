@@ -1,0 +1,11 @@
+.trellis-combobox-input { display: flex; width: 100%; }
+.trellis-combobox-input .trellis-input-group-input { min-inline-size: 0; }
+.trellis-combobox-content[popover] {
+  position: fixed;
+  min-inline-size: min(var(--anchor-width, 0px), calc(100vw - 8px));
+  max-inline-size: calc(100vw - 8px);
+  max-block-size: var(--available-height, calc(100vh - 8px));
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.trellis-combobox-content [hidden] { display: none; }

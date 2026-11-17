@@ -226,5 +226,317 @@
     "direction": "missing",
     "name": "switch-thumb",
     "reason": "Native input pseudo-elements paint this Base UI part from :checked; hand CSS preserves the native input hit box and forced-colour state."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "alert-dialog",
+    "reason": "The custom-element root shares the native dialog controller."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "alert-dialog-media",
+    "reason": "The alert dialog layout exposes a body slot for application content."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "alert-dialog-overlay",
+    "reason": "The native dialog paints its overlay with ::backdrop."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "alert-dialog-portal",
+    "reason": "The native dialog enters the top layer without an overlay portal."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "alert-dialog-trigger",
+    "reason": "The two dialog variants share one dialog-trigger slot and controller."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "combobox-chip*",
+    "reason": "This fragment submits one selected value; chips and their controls require a multi-value widget."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "combobox-clear*",
+    "reason": "Clearing the visible text clears the hidden value; there is no separate clear control."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "combobox-collection",
+    "reason": "HTMX replaces the results region with separate server-rendered option nodes."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "combobox-group",
+    "reason": "Options are rendered as one flat list."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "combobox-label",
+    "reason": "A native label outside the widget names the input, and the listbox has its own name."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "combobox-separator",
+    "reason": "The single option list has no grouped sections to separate."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "dialog",
+    "reason": "The custom-element root holds its trigger and the native dialog."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "dialog-overlay",
+    "reason": "The native dialog paints its overlay with ::backdrop."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "dialog-portal",
+    "reason": "The native dialog enters the top layer without an overlay portal."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "dropdown-menu-group",
+    "reason": "The current menu uses one group of items, with a separator for visual divisions."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "dropdown-menu-label",
+    "reason": "The native trigger names the menu; there are no labelled item groups."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "dropdown-menu-portal",
+    "reason": "Native auto popovers enter the top layer without a portal."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "dropdown-menu-radio-*",
+    "reason": "The menu supports commands and independent checkbox items; radio groups are outside its scope."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "dropdown-menu-shortcut",
+    "reason": "The menu renders only its APG interaction keys and caller labels."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "dropdown-menu-sub*",
+    "reason": "The menu has a single level of commands."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "input-group-button*",
+    "reason": "The combobox composes a single native trigger; the upstream addon button size scale is unused."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "toast-action",
+    "reason": "The toast offers one native dismiss button."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "toast-content",
+    "reason": "The toast card directly contains its icon, text body and dismiss button."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "toast-icon",
+    "reason": "The inline SVG is decorative; its layout is styled by the Trellis icon hook."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "toast-portal",
+    "reason": "A caller places the toast viewport in the page layout before any announcement."
+  },
+  {
+    "kind": "slot",
+    "direction": "extra",
+    "name": "combobox",
+    "reason": "Identifies the widget root around the input, its popup and the status region."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-alert-dialog-cancel",
+    "reason": "Cancel uses the suite outline button tokens and its own autofocus attribute."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-alert-dialog-media",
+    "reason": "The alert dialog layout exposes a body slot for application content."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-alert-dialog-overlay",
+    "reason": "The native dialog paints its overlay with ::backdrop."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-combobox-chip*",
+    "reason": "This fragment submits one selected value; chips and their controls require a multi-value widget."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-combobox-clear*",
+    "reason": "Clearing the visible text clears the hidden value; there is no separate clear control."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-combobox-group",
+    "reason": "Options are rendered as one flat list."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-combobox-item-indicator*",
+    "reason": "The highlighted option uses aria-selected, data-highlighted and the Vega row background."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-combobox-label",
+    "reason": "A native label outside the widget names the input, and the listbox has its own name."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-combobox-separator",
+    "reason": "The single option list has no grouped sections to separate."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-dialog-overlay",
+    "reason": "The native dialog paints its overlay with ::backdrop."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-dropdown-menu-label",
+    "reason": "The native trigger names the menu; there are no labelled item groups."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-dropdown-menu-radio-*",
+    "reason": "The menu supports commands and independent checkbox items; radio groups are outside its scope."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-dropdown-menu-shortcut",
+    "reason": "The menu renders only its APG interaction keys and caller labels."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-dropdown-menu-sub*",
+    "reason": "The menu has a single level of commands."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-input-group-addon-align-block-*",
+    "reason": "The combobox puts its suggestions trigger at the inline end."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-input-group-addon-align-inline-start",
+    "reason": "The combobox puts its suggestions trigger at the inline end."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-input-group-button*",
+    "reason": "The combobox composes a single native trigger; the upstream addon button size scale is unused."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-input-group-text",
+    "reason": "The group contains an input and suggestions button."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-input-group-textarea",
+    "reason": "The combobox uses a single-line native text input."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-tabs-list-variant-line",
+    "reason": "The tabs fragment uses the Vega default list."
+  },
+  {
+    "kind": "hook",
+    "direction": "extra",
+    "name": "trellis-sr-only",
+    "reason": "Keeps the combobox status text in the accessibility tree without adding visible layout."
+  },
+  {
+    "kind": "hook",
+    "direction": "extra",
+    "name": "trellis-toast-body",
+    "reason": "Keeps the stacked title and description in a text column beside the icon and dismiss button."
+  },
+  {
+    "kind": "hook",
+    "direction": "extra",
+    "name": "trellis-toast-description",
+    "reason": "Styles optional supporting text inside the Trellis toast card."
+  },
+  {
+    "kind": "hook",
+    "direction": "extra",
+    "name": "trellis-toast-icon",
+    "reason": "Aligns decorative Lucide status icons beside the toast text."
+  },
+  {
+    "kind": "hook",
+    "direction": "extra",
+    "name": "trellis-toast-title",
+    "reason": "Applies the toast title weight inside the text column."
+  },
+  {
+    "kind": "hook",
+    "direction": "extra",
+    "name": "trellis-toaster",
+    "reason": "Stacks the HTMX live-region entries with a CSS gap."
   }
 ]

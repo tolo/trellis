@@ -1,0 +1,25 @@
+<h1>Dialog</h1>
+<section id="demo">
+  <section id="component" aria-label="Dialog examples">
+    <div class="gallery-row">
+      <div tl:replace="~{trellis-ui/dialog :: dialog('example-dialog', 'Edit profile', 'Update your public profile.', dialogOpen)}">
+        <tl:block tl:slot="trigger">
+          <button id="open-dialog" tl:replace="~{trellis-ui/button :: button}">Edit profile</button>
+        </tl:block>
+        <div tl:replace="~{trellis-ui/field :: field('dialog-name', 'Name')}" autocomplete="name" autofocus></div>
+        <div tl:replace="~{trellis-ui/field :: field('dialog-email', 'Email')}" type="email" autocomplete="email"></div>
+        <tl:block tl:slot="footer">
+          <button id="dialog-cancel" tl:replace="~{trellis-ui/button :: button('outline', 'default')}"
+            data-dialog-close>Cancel</button>
+          <button id="dialog-save" tl:replace="~{trellis-ui/button :: button}" data-dialog-close>Save</button>
+        </tl:block>
+      </div>
+      <button id="load-dialog" tl:replace="~{trellis-ui/button :: button('outline', 'default')}"
+        hx-get="/demo/dialog" hx-target="#dialog-response">Open server dialog</button>
+    </div>
+    <div id="dialog-response"></div>
+  </section>
+  <button id="swap" type="button" class="gallery-action" hx-get="/components/dialog" hx-select="#demo"
+    hx-target="#demo" hx-swap="outerHTML">Refresh example</button>
+  <a id="navigate" class="gallery-action" hx-boost="true" href="/components/button">Next example</a>
+</section>

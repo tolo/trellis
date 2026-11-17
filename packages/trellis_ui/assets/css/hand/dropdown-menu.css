@@ -1,0 +1,35 @@
+.trellis-dropdown-menu-content {
+  min-inline-size: min(calc(100vw - 8px), max(12rem, var(--anchor-width, 0px)));
+}
+
+.trellis-button[data-slot="dropdown-menu-trigger"] svg { width: 1rem; height: 1rem; }
+
+:is(.trellis-dropdown-menu-item, .trellis-dropdown-menu-checkbox-item) {
+  inline-size: 100%;
+  text-align: start;
+}
+
+:is(.trellis-dropdown-menu-item, .trellis-dropdown-menu-checkbox-item)[data-highlighted] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+:is(.trellis-dropdown-menu-item, .trellis-dropdown-menu-checkbox-item):disabled { opacity: .5; }
+
+.trellis-dropdown-menu-checkbox-item:not([data-checked]) .trellis-dropdown-menu-item-indicator { visibility: hidden; }
+
+.trellis-dropdown-menu-item[data-variant="destructive"] {
+  color: color-mix(in oklch, var(--destructive) 78%, black);
+}
+
+.dark .trellis-dropdown-menu-item[data-variant="destructive"] {
+  color: color-mix(in oklch, var(--destructive) 65%, white);
+}
+
+.trellis-dropdown-menu-item[data-variant="destructive"][data-highlighted] {
+  background: color-mix(in oklch, var(--destructive) 10%, var(--popover));
+}
+
+@media (forced-colors: active) {
+  :is(.trellis-dropdown-menu-item, .trellis-dropdown-menu-checkbox-item):focus-visible { outline: 2px solid Highlight; outline-offset: -2px; }
+}

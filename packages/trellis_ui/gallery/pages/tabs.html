@@ -1,0 +1,36 @@
+<h1>Tabs</h1>
+<section id="demo">
+  <a id="before" href="#after">Before example</a>
+  <section id="component" aria-label="Tabs examples">
+    <section>
+      <h2>Horizontal</h2>
+      <div tl:replace="~{trellis-ui/tabs :: tabs('horizontal', 'account', false)}">
+        <div tl:replace="~{trellis-ui/tabs :: tabList}" aria-label="Account details">
+          <button type="button" tl:replace="~{trellis-ui/tabs :: tabTrigger('account')}">Account</button>
+          <button type="button" tl:replace="~{trellis-ui/tabs :: tabTrigger('security')}" disabled>Security</button>
+          <button type="button" tl:replace="~{trellis-ui/tabs :: tabTrigger('billing')}">Billing</button>
+        </div>
+        <div tl:replace="~{trellis-ui/tabs :: tabPanel('account')}">Manage your account details.</div>
+        <div tl:replace="~{trellis-ui/tabs :: tabPanel('security')}">Manage your account security.</div>
+        <div tl:replace="~{trellis-ui/tabs :: tabPanel('billing')}">Review invoices and payment details.</div>
+      </div>
+    </section>
+    <section>
+      <h2>Vertical</h2>
+      <div tl:replace="~{trellis-ui/tabs :: tabs('vertical', 'email', true)}">
+        <div tl:replace="~{trellis-ui/tabs :: tabList}" aria-label="Notification channels">
+          <button type="button" tl:replace="~{trellis-ui/tabs :: tabTrigger('email')}">Email</button>
+          <button type="button" tl:replace="~{trellis-ui/tabs :: tabTrigger('sms')}" disabled>SMS</button>
+          <button type="button" tl:replace="~{trellis-ui/tabs :: tabTrigger('push')}">Push</button>
+        </div>
+        <div tl:replace="~{trellis-ui/tabs :: tabPanel('email')}">Choose which emails you receive.</div>
+        <div tl:replace="~{trellis-ui/tabs :: tabPanel('sms')}">Choose which text messages you receive.</div>
+        <div tl:replace="~{trellis-ui/tabs :: tabPanel('push')}">Choose which device notifications you receive.</div>
+      </div>
+    </section>
+  </section>
+  <a id="after" href="#before">After example</a>
+  <button id="swap" type="button" class="gallery-action" hx-get="/components/tabs"
+    hx-select="#demo" hx-target="#demo" hx-swap="outerHTML">Refresh example</button>
+  <a id="navigate" class="gallery-action" hx-boost="true" href="/components/button">Next example</a>
+</section>

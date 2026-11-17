@@ -9,13 +9,24 @@ Future<Map<String, Object?>> captureAppearance(GateSession session) async {
   final states = <String, Object?>{}, tokens = <String, Object?>{}, invariants = <String>[];
   final driver = session.driver, manifest = session.manifest;
   await driver.viewport(1440, 900);
-  Future<void> capture(String key, {String? focusSelector, bool keepDocumentFocused = false}) async {
-    final raw =
-        (await driver.evaluate(
-                  '($digestScript)(${jsonEncode(manifest.elements)}, ${jsonEncode(focusSelector)}, $keepDocumentFocused)',
-                )
-                as Map)
-            .cast<String, Object?>();
+  Future<bool> capture(
+    String key, {
+    String? focusSelector,
+    bool keepDocumentFocused = false,
+    bool watchHoverBlur = false,
+  }) async {
+    final snapshot =
+        '($digestScript)(${jsonEncode(manifest.elements)}, ${jsonEncode(focusSelector)}, $keepDocumentFocused)';
+    final rendered = await driver.evaluate(
+      watchHoverBlur
+          ? '''(async () => {
+            const sample = await $snapshot;
+            return window.__uiGateHoverFocus.lost || !document.hasFocus() ? null : sample;
+          })()'''
+          : snapshot,
+    );
+    if (rendered == null) return false;
+    final raw = (rendered as Map).cast<String, Object?>();
     states[key] = {
       'doc': raw['doc'],
       'nodes': raw['nodes'],
@@ -44,6 +55,32 @@ Future<Map<String, Object?>> captureAppearance(GateSession session) async {
       }return issues;})()''')
             as List;
     invariants.addAll(overlap.map((issue) => '$key $issue'));
+    return true;
+  }
+
+  Future<void> captureFirefoxHover(String state, MapEntry<String, String> element) async {
+    final key = '$state/hover:${element.key}';
+    // Native focusout can dismiss a real popup when another window takes focus.
+    // Replay the complete recipe instead of trying to reopen the changed DOM.
+    for (var attempt = 0; attempt < 3; attempt++) {
+      await session.load(state);
+      await driver.evaluate('''(() => {
+        const guard = {lost: !document.hasFocus(), onBlur: () => guard.lost = true};
+        window.__uiGateHoverFocus = guard;
+        window.addEventListener('blur', guard.onBlur);
+      })()''');
+      try {
+        await driver.pseudo(element.value, ['hover']);
+        if (await capture(key, watchHoverBlur: true)) return;
+      } finally {
+        await driver.evaluate('''(() => {
+          window.removeEventListener('blur', window.__uiGateHoverFocus.onBlur);
+          delete window.__uiGateHoverFocus;
+        })()''');
+        await driver.pseudo(element.value, []);
+      }
+    }
+    throw StateError('$key: Firefox lost document focus during three hover captures');
   }
 
   for (final state in manifest.states.keys) {
@@ -51,6 +88,10 @@ Future<Map<String, Object?>> captureAppearance(GateSession session) async {
     await capture(state);
     for (final element in manifest.elements.entries) {
       for (final pseudo in ['hover', 'focus-visible', 'active', 'disabled']) {
+        if (pseudo == 'hover' && driver is FirefoxDriver) {
+          await captureFirefoxHover(state, element);
+          continue;
+        }
         await session.load(state);
         Object? originalDisabled;
         if (pseudo == 'disabled') {

@@ -1,9 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
+import 'package:trellis_ui/trellis_ui.dart';
 
+import '../tool/src/bundle.dart';
 import '../tool/src/gallery.dart';
 
 void main() {
@@ -66,11 +69,23 @@ void main() {
       expect(line, matches(r'^Serving http://127\.0\.0\.1:\d+$'), reason: '$errors');
       final client = HttpClient();
       try {
-        final response = await (await client.getUrl(
-          Uri.parse(line.substring('Serving '.length)).resolve('/components/button'),
-        )).close();
+        final base = Uri.parse(line.substring('Serving '.length));
+        final response = await (await client.getUrl(base.resolve('/components/button'))).close();
         expect(response.statusCode, 200);
         expect(await utf8.decodeStream(response), contains('trellis-button-variant-default'));
+        for (final asset in bundleAssets(Directory.current).entries) {
+          final path = '/trellis-ui/${asset.key}';
+          final response = await (await client.getUrl(base.resolve(path))).close();
+          final bytes = await response.expand((chunk) => chunk).toList();
+          final digest = sha256.convert(bytes);
+          final content = trellisUiRespond(path)!;
+          expect(response.statusCode, 200, reason: path);
+          expect(bytes, orderedEquals(asset.value), reason: path);
+          expect(bytes, orderedEquals(content.body), reason: path);
+          expect(response.headers.value('etag'), '"$digest"', reason: path);
+          expect(response.headers.value('etag'), content.headers['etag'], reason: path);
+          print('${asset.key}: ${bytes.length} bytes, ETag "$digest"');
+        }
       } finally {
         client.close();
       }

@@ -317,6 +317,15 @@ final class FirefoxDriver implements GateDriver {
       await evaluate('document.activeElement?.blur()');
       return;
     }
+    // BiDi's native actions need a rendered target. Appearance also captures
+    // dormant controls, whose pointer and focus states are inapplicable.
+    final visible = await evaluate('''(() => {
+      const el=document.querySelector(${jsonEncode(selector)});
+      if(!el) throw Error('missing appearance element ' + ${jsonEncode(selector)});
+      const rect=el.getBoundingClientRect();
+      return Boolean(rect.width && rect.height && getComputedStyle(el).visibility === 'visible');
+    })()''');
+    if (visible != true) return;
     if (states.contains('hover') || states.contains('active')) {
       _forcedActive = states.contains('active');
       await pointer(selector, down: _forcedActive);

@@ -6,6 +6,8 @@ import 'package:test/test.dart';
 import '../../../tool/ui_gate/checks.dart';
 import '../../../tool/ui_gate/manifest.dart';
 
+const behaviourComponents = ['alert-dialog', 'combobox', 'dialog', 'dropdown-menu', 'tabs', 'toast'];
+
 const cssOnlyComponents = [
   'alert',
   'badge',
@@ -81,7 +83,7 @@ void main() {
   test('every gallery page has a loadable manifest', () {
     expect(
       pages.listSync().whereType<File>().map((f) => f.uri.pathSegments.last.replaceFirst('.html', '')),
-      containsAll(cssOnlyComponents),
+      containsAll([...cssOnlyComponents, ...behaviourComponents]),
     );
     for (final page in pages.listSync().whereType<File>().where((f) => f.path.endsWith('.html'))) {
       final name = page.uri.pathSegments.last.replaceFirst('.html', '');
@@ -98,6 +100,21 @@ void main() {
 
   test('every record passes every automated item in each browser it ran and leaves manual items for release prep', () {
     expect(qualificationIssues(pages, manifests, records), isEmpty);
+  });
+
+  test('every behaviour component has a complete passing record', () {
+    for (final name in behaviourComponents) {
+      final record = jsonDecode(File('${records.path}/$name.json').readAsStringSync()) as Map<String, dynamic>;
+      final items = record['items'] as Map<String, dynamic>;
+      expect(items.keys, unorderedEquals([...automatedItems, ...manualItems]), reason: name);
+      for (final item in automatedItems) {
+        final browsers = (items[item] as Map)['browsers'] as Map;
+        expect(browsers.keys, unorderedEquals(['chrome', 'firefox']), reason: '$name $item');
+        for (final browser in browsers.keys) {
+          expect((browsers[browser] as Map)['status'], 'pass', reason: '$name $item $browser');
+        }
+      }
+    }
   });
 
   test('a page without a manifest or a failing record fails', () {

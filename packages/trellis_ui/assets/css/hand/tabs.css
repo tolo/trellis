@@ -1,0 +1,15 @@
+/* Minimum heights come from the touch layer, so zoomed labels can grow the list. */
+.trellis-tabs-list { height: auto; max-inline-size: 100%; }
+.trellis-tabs-trigger { height: auto; transition-property: color, background-color, border-color, box-shadow; }
+.trellis-tabs-content { min-inline-size: 0; padding: .5rem; }
+.trellis-tabs-content[hidden] { display: none; }
+.trellis-tabs-content:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .trellis-tabs-trigger { transition: none; }
+}
+
+@media (forced-colors: active) {
+  :is(.trellis-tabs-trigger, .trellis-tabs-content):focus-visible { outline: 2px solid Highlight; outline-offset: -2px; }
+  .trellis-tabs-trigger[data-active] { border-color: ButtonText; }
+}

@@ -83,11 +83,18 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
 
 ## HTMX Integration
 
+- **Chrome lazily materializes CSSOM style writes.** Calling `removeAttribute('style')` before any attribute read can leave an empty attribute, which HTMX copies with `setAttribute` under strict CSP.
+  `TlElement` reads `hasAttribute('style')` first. Read-only diagnostics can hide the bug by doing that read.
+
 - **HTMX 4 moves the request-configuration headers**: `htmx:configRequest` (HTMX 2) exposes `evt.detail.headers`; `htmx:config:request` (HTMX 4) passes `{ctx}` and the outgoing headers live at `evt.detail.ctx.request.headers`. A listener registered under the old name never fires on HTMX 4, so the CSRF header silently disappears and `trellisCsrf` rejects every state-changing request. Scaffolds register both names.
 - **HTMX 4 identifies elements as `tag#id`, not bare ids**, in `HX-Target` and `HX-Source` (`encodeURI(id)`, `#id` omitted when the element has none), and it always sends `HX-Source`. The adapter helpers use that header's presence as the version discriminator; under HTMX 4 a value without `#` means "no id", not an id called `form`.
 - **DELETE parameters travel in the query string on both HTMX 2 and 4** (`methodsThatUseUrlParams: ['get', 'delete']` / `/GET|DELETE/`), never in the body. A handler that reads `hx-vals` of an `hx-delete` from the request body sees nothing.
 
 ## Testing
+
+- **Nested HTMX settles can end a parent-region probe early.** An options response inside a combobox satisfies
+  a containing selector's settle event. Wait for those options to settle before starting the surrounding gallery
+  swap, then confirm the original surrounding node disconnected. See the combobox qualification recipe.
 
 - **`FileSystemLoader` validates directory existence at construction**: Tests using `Trellis()` no-arg constructor need a `MapLoader({})` instead, or the test directory must exist.
 - **`IOOverrides` CAN capture stderr**: `IOOverrides.runZoned(stderr: ...)` with a small `noSuchMethod`-based `Stdout` fake (`_BufferStdout`) captures writes reliably, even across async gaps.

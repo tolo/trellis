@@ -161,13 +161,6 @@ with Ctrl-C and rerun the command after changes. See the
 [docs-site README](site/README.md#preview-locally) for the production sub-path
 and link-checking workflow.
 
-**CI-safe alternatives** (no global Melos required):
-
-```bash
-dart run melos exec --dir-exists lib -- dart analyze --fatal-infos
-dart run melos exec --dir-exists test --fail-fast --order-dependents -- dart test
-```
-
 ### Pre-publication validation
 
 Before publishing packages, validate the generated starter app works with the local packages:

@@ -165,7 +165,10 @@ done
 # can still override the negatable ones — package:args takes the last occurrence.
 RELEASE_FLAGS=(--no-changelog --no-git-commit-version --yes)
 
-CMD=(dart run melos version "${RELEASE_FLAGS[@]}" "${ARGS[@]}" "$@")
+# The global `melos`, not `dart run melos`: from Dart 3.14 `dart run` snapshots live under
+# .dart_tool/dartdev/, which melos 7.x's cli_launcher does not recognise, so it crashes with
+# "Could not find global installation". release.sh already requires melos on PATH.
+CMD=(melos version "${RELEASE_FLAGS[@]}" "${ARGS[@]}" "$@")
 echo "Releasing Trellis SDK ${VERSION} (lockstep) across ${#PACKAGES[@]} packages..."
 # Echoed because --yes removes melos's confirmation prompt: this is the operator's
 # last look at what actually runs.

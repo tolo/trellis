@@ -97,8 +97,8 @@ void main() {
       Directory('${repo.path}/site').createSync();
       final bin = Directory('${repo.path}/bin')..createSync();
       File('${repo.path}/tool/version_lockstep.sh').writeAsStringSync(readWorkspaceFile('tool/version_lockstep.sh'));
-      final fakeDart = File('${bin.path}/dart')..writeAsStringSync('#!/usr/bin/env bash\nexit 0\n');
-      expect((await Process.run('chmod', ['+x', fakeDart.path])).exitCode, 0);
+      final fakeMelos = File('${bin.path}/melos')..writeAsStringSync('#!/usr/bin/env bash\nexit 0\n');
+      expect((await Process.run('chmod', ['+x', fakeMelos.path])).exitCode, 0);
       expect((await Process.run('git', ['init', '--quiet'], workingDirectory: repo.path)).exitCode, 0);
 
       for (final scalar in <String>[
@@ -166,8 +166,8 @@ theme_params:
       }
       final bin = Directory('${repo.path}/bin')..createSync();
       File('${repo.path}/tool/version_lockstep.sh').writeAsStringSync(bumpScript);
-      final fakeDart = File('${bin.path}/dart')..writeAsStringSync('#!/usr/bin/env bash\nexit 0\n');
-      expect((await Process.run('chmod', ['+x', fakeDart.path])).exitCode, 0);
+      final fakeMelos = File('${bin.path}/melos')..writeAsStringSync('#!/usr/bin/env bash\nexit 0\n');
+      expect((await Process.run('chmod', ['+x', fakeMelos.path])).exitCode, 0);
       expect((await Process.run('git', ['init', '--quiet'], workingDirectory: repo.path)).exitCode, 0);
       // The hero sync exits non-zero unless it rewrites exactly one line, so the fixture needs one.
       File('${repo.path}/site/trellis_site.yaml').writeAsStringSync('      text: trellis 0.10.2 — one dependency\n');
@@ -584,14 +584,14 @@ trellis_x:
 }
 
 /// A throwaway git repo holding the real `tool/version_lockstep.sh`, a hero line it requires and a
-/// fake `dart` first on PATH (melos is not run). Its parent directory holds the repo and `bin/`.
+/// fake `melos` first on PATH (no real bump runs). Its parent directory holds the repo and `bin/`.
 Directory _lockstepFixture(Directory workspaceRoot) {
   final root = Directory.systemTemp.createTempSync('version_lockstep_refs_');
   final repo = Directory('${root.path}/repo')..createSync();
   for (final dir in ['tool', 'site']) {
     Directory('${repo.path}/$dir').createSync();
   }
-  _writeExecutable('${root.path}/bin/dart', '#!/usr/bin/env bash\nexit 0\n');
+  _writeExecutable('${root.path}/bin/melos', '#!/usr/bin/env bash\nexit 0\n');
   _writeExecutable(
     '${repo.path}/tool/version_lockstep.sh',
     File('${workspaceRoot.path}/tool/version_lockstep.sh').readAsStringSync(),

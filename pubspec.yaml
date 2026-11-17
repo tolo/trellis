@@ -31,9 +31,8 @@ dev_dependencies:
 
 # Melos scripts require global activation to use `melos run <script>`:
 #   dart pub global activate melos
-# Alternative without global install (uses dart run melos exec directly):
-#   dart run melos exec --dir-exists lib -- dart analyze --fatal-infos
-#   dart run melos exec --dir-exists test --fail-fast --order-dependents -- dart test
+# `dart run melos` crashes from Dart 3.14 (cli_launcher cannot find the dartdev snapshot path),
+# so there is no install-free alternative.
 melos:
   repository: https://github.com/tolo/trellis
   command:

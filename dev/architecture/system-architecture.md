@@ -36,8 +36,8 @@ Trellis is a Dart toolkit for building server-rendered web applications and stat
 | **`trellis_ui`** | Embedded UI fragments, same-origin CSS/JS, neutral asset response and materialization. | `trellis` | v0.14.0 |
 | **`trellis_dev`** | Dev tools: SSE browser hot reload, script injection middleware | `trellis`, `shelf` | v0.13.0 |
 | **`trellis_css`** | CSS processing: Dart-native SASS/SCSS compilation via `package:sass`, `tl:scope` fragment-scoped CSS via CSS `@scope` | `trellis`, `sass`, `html` | v0.13.0 |
-| **`trellis_site`** | Static site generation: content discovery, front matter, Markdown, taxonomies, pagination, sitemap, shortcodes, data cascade, Atom/RSS feed generation, JSON search index | `trellis`, `trellis_css`, `markdown`, `yaml` | v0.13.0 |
-| **`trellis_cli`** | CLI tool: `trellis create` (htmx + blog + dart_frog + relic templates), `trellis build` (SSG pipeline + SASS), `trellis serve` (local preview server), and `trellis theme` (`add`, `update`, `list`, `info`, `remove`) | `args`, `shelf`, `shelf_static`, `trellis_css`, `trellis_site` | v0.13.0 |
+| **`trellis_site`** | Static site generation: content discovery, front matter, Markdown, taxonomies, pagination, sitemap, shortcodes, data cascade, Atom/RSS feeds, JSON search index, named build sources | `trellis`, `trellis_css`, `highlight`, `html`, `markdown`, `path`, `yaml` | v0.13.0 |
+| **`trellis_cli`** | CLI tool: `trellis create` (htmx + blog + dart_frog + relic templates), `trellis build` (SSG, SASS and the embedded UI source), `trellis serve` (local preview server), and `trellis theme` (`add`, `update`, `list`, `info`, `remove`) | `args`, `path`, `shelf`, `shelf_static`, `trellis_css`, `trellis_site`, `trellis_ui` | v0.13.0 |
 | ~~`trellis_test`~~ | *Merged into `trellis` core as `testing.dart` entry point (2026-03-18)* | — | — |
 
 ---
@@ -62,6 +62,7 @@ trellis_cli ──► trellis_site ──► trellis ──► package:html
      │         │
      │         ├──► sass
      │         └──► html
+     ├──► trellis_ui ──► trellis
      ├──► shelf
      └──► shelf_static
 trellis_shelf ──► trellis ──► package:html
@@ -352,19 +353,27 @@ static/**         ──►  PageGenerator       (layout resolution, data cascad
 
 ### Pipeline Stages
 
-1. **Clean** output directory
+1. **Clean** output directory. Load the theme manifest and resolve the combined site and theme `uses` list against the
+   build's factory registry. Validate source asset paths and ownership before creating output.
 2. **Discover** pages — recursive `.md` scan, Hugo-style URL derivation (with optional `pathPrefix` applied at the single `deriveUrl` seam), page bundle detection
 3. **Parse** front matter — YAML extraction, draft flagging
 4. **Shortcodes (pre-MD)** — `{{% name %}}` and `{{% name %}} content {{% /name %}}` processed before Markdown
 5. **Render** Markdown — GitHub-flavored via `package:markdown`, summary + TOC extraction
 6. **Highlight** code (ADR-010) — build-time syntax highlighting woven into the Markdown render and both shortcode passes: when `highlight.enabled` (default), `CodeHighlighter` (`package:highlight`) rewrites each fenced `<pre><code class="language-x">` block into `.hljs-*` token spans; disabled or unknown-language blocks stay plain `<pre><code>`. No client-side highlighter JS ships — runs before path-prefix link rewriting in step 9
-7. **Shortcodes (post-MD)** — `<!-- tl:name -->` processed after Markdown
+7. **Shortcodes (post-MD)** — `<!-- tl:name -->` processed after Markdown. When the build uses sources, page front matter
+   supplies additional variables and explicit shortcode parameters win.
 8. **Taxonomies** — collect terms from front matter, generate virtual listing and term pages
 9. **Generate** HTML — priority-ordered layout resolution, 5-level data cascade, Trellis `renderFile()`, final path-prefix link rewriting
-10. **Static assets** — copy (skip `.scss`/`.sass`), copy bundle assets
+10. **Static assets** — write source bytes, copy theme then site static files (skip `.scss`/`.sass`), copy bundle assets
 11. **Sitemap** — `sitemap.xml` with `<lastmod>` from date or mtime
 12. **Feeds** — Atom `feed.xml` (+ optional `rss.xml`) when `feeds:` config present; per-section feeds supported
 13. **Search index** — JSON array at configured path when `search.enabled: true`
+
+In 0.14 the source registry connects the same fallback loaders to the page and shortcode engines.
+Site templates resolve first and theme templates second. Source factories provide the remaining
+templates and output-relative asset bytes. `trellis_cli` registers `trellis_ui` for site and theme
+opt-in. The docs site uses it for the reference previews, with facts generated from suite source
+files and qualification records.
 
 ### Layout Resolution Order
 
@@ -414,7 +423,7 @@ The content model is additive-nested: `Page.section` stays the top-level folder,
 
 ### URL Path-Prefix
 
-`pathPrefix` (config) serves a site under a sub-path (e.g. GitHub project pages at `/my-site/`). It is applied at the **single `deriveUrl` seam** during discovery, so `page.url` itself carries the prefix and every downstream consumer inherits it with no per-consumer change: `${page.url}` links, the section/menu tree, prev/next, and the search-index `url` fields. Sitemap/feed generators compose `baseUrl` + the (now-prefixed) `page.url`, so the prefix appears exactly once (`baseUrl` — the canonical origin — and `pathPrefix` — the sub-path — are orthogonal and compose). `SiteConfig.normalizeBaseUrl` removes a configured trailing slash before the value reaches `${site.baseUrl}`, preventing themes that join it to root-absolute `${page.url}` from emitting a doubled slash. Only internal root-absolute paths (leading `/`, not `//` protocol-relative, not scheme-bearing) are rewritten; absolute/external URLs pass through verbatim. `SiteConfig` normalizes the prefix (`x`, `/x`, `x/`, `/x/` → `/x/`; `''` and `/` → no prefix) and rejects an un-normalizable value (scheme-bearing/protocol-relative or non-string) with a `SiteConfigException` before any output is written. The empty (default) prefix is a literal no-op — output is byte-for-byte unchanged. Hand-written literal asset references the engine cannot see are opted in by theme authors via `${site.pathPrefix}` (e.g. `tl:href="${site.pathPrefix} + 'css/main.css'"`). The prefix lives in emitted URLs only, **not** in the on-disk output layout: page files are written at their *unprefixed* paths (via `stripPathPrefix` in the output-write + bundle-asset steps), so the whole `output/` tree is published as the site root and the host mounts it under the prefix (GitHub Project Pages serves the artifact root at `/<repo>/`). Nesting output under the prefix would double-apply it. **Hand-written links get the prefix too:** a final `applyPathPrefixToLinks` pass over each emitted page rewrites root-absolute internal `href`/`src` (Markdown content links, theme literals, vendored-asset refs) that are not already prefixed — expected SSG behavior — while relative links, anchors, external URLs, and escaped code examples are left untouched. Theme resolution (`themeDir`) is `p.normalize`d at all three computation sites (engine manifest/loader + CLI SASS compile) so a relative `theme:` value that escapes the site dir resolves; the CLI's `build` also carries `pathPrefix` through and accepts a `--path-prefix` override.
+`pathPrefix` (config) serves a site under a sub-path (e.g. GitHub project pages at `/my-site/`). It is applied at the **single `deriveUrl` seam** during discovery, so `page.url` itself carries the prefix and every downstream consumer inherits it with no per-consumer change: `${page.url}` links, the section/menu tree, prev/next, and the search-index `url` fields. Sitemap/feed generators compose `baseUrl` + the (now-prefixed) `page.url`, so the prefix appears exactly once (`baseUrl` — the canonical origin — and `pathPrefix` — the sub-path — are orthogonal and compose). `SiteConfig.normalizeBaseUrl` removes a configured trailing slash before the value reaches `${site.baseUrl}`, preventing themes that join it to root-absolute `${page.url}` from emitting a doubled slash. Only internal root-absolute paths (leading `/`, not `//` protocol-relative, not scheme-bearing) are rewritten; absolute/external URLs pass through verbatim. `SiteConfig` normalizes the prefix (`x`, `/x`, `x/`, `/x/` → `/x/`; `''` and `/` → no prefix) and rejects an un-normalizable value (scheme-bearing/protocol-relative or non-string) with a `SiteConfigException` before any output is written. The empty (default) prefix is a literal no-op — output is byte-for-byte unchanged. Hand-written literal asset references the engine cannot see are opted in by theme authors via `${site.pathPrefix}` (e.g. `tl:href="${site.pathPrefix} + 'css/main.css'"`). The prefix lives in emitted URLs only, **not** in the on-disk output layout: page files are written at their *unprefixed* paths (via `stripPathPrefix` in the output-write + bundle-asset steps), so the whole `output/` tree is published as the site root and the host mounts it under the prefix (GitHub Project Pages serves the artifact root at `/<repo>/`). Nesting output under the prefix would double-apply it. **Hand-written links get the prefix too:** a final `applyPathPrefixToLinks` pass over each emitted page rewrites root-absolute internal `href`/`src` (Markdown content links, theme literals, vendored-asset refs) that are not already prefixed — expected SSG behavior — while relative links, anchors, external URLs, and escaped code examples are left untouched. The builder and the CLI's SASS step normalize `themeDir` so a relative `theme:` can resolve outside the site directory. The CLI also accepts a `--path-prefix` override.
 
 ---
 

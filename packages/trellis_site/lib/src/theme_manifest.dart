@@ -107,6 +107,9 @@ class ThemeManifest {
   /// Configurable parameters with defaults, types, and descriptions.
   final Map<String, ThemeParam> params;
 
+  /// Names of extra template and static asset sources required by this theme.
+  final List<String> uses;
+
   /// The directory containing this theme (set by [load]).
   final String themeDir;
 
@@ -119,6 +122,7 @@ class ThemeManifest {
     this.screenshots = const [],
     this.features = const [],
     this.params = const {},
+    required this.uses,
     required this.themeDir,
   });
 
@@ -204,6 +208,7 @@ class ThemeManifest {
       screenshots: screenshots,
       features: features,
       params: params,
+      uses: parseSourceNames(yaml, (message) => ThemeManifestException(message, themeDir: canonicalDir)),
       themeDir: canonicalDir,
     );
   }

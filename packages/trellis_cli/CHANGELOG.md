@@ -2,6 +2,11 @@
 
 ## 0.14.0
 
+### Added
+
+- `trellis build` registers the embedded `trellis_ui` source. Sites and themes can specify
+  `uses: [trellis_ui]` to render its fragments and publish its same-origin CSS and JavaScript.
+
 ### Changed
 
 - Counter fragment swaps preserve keyboard focus through stable control IDs, allowing repeated Enter activation.

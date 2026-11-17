@@ -1,0 +1,10 @@
+<div class="ui-reference-preview">
+  <div tl:replace="~{trellis-ui/tabs :: tabs('reference-tabs', 'account', false)}">
+    <div tl:replace="~{trellis-ui/tabs :: tabList}" aria-label="Account details">
+      <button tl:replace="~{trellis-ui/tabs :: tabTrigger('account')}">Account</button>
+      <button tl:replace="~{trellis-ui/tabs :: tabTrigger('billing')}">Billing</button>
+    </div>
+    <div tl:replace="~{trellis-ui/tabs :: tabPanel('account')}">Update your account settings.</div>
+    <div tl:replace="~{trellis-ui/tabs :: tabPanel('billing')}">Review your invoices.</div>
+  </div>
+</div>

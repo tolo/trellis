@@ -38,8 +38,9 @@ Link `/trellis-ui/trellis-ui.css`, `/trellis-ui/htmx-indicator.css` and the defe
 inline script, inline style or eval. If using htmx, self-host it and set the `htmx-config` meta options `allowEval` and
 `includeIndicatorStyles` (`includeIndicatorCSS` on HTMX 4) to `false`. The gallery shows a complete strict-CSP shell.
 
-Public Dart names: `TrellisUiLoader`, `TrellisUiResponse` (`statusCode`, `headers`, `body`), `trellisUiRespond`, and
-`materializeTrellisUi`. The asset responder returns null for unknown suite paths and paths outside `/trellis-ui/`,
+Public Dart names include `TrellisUiLoader`, `TrellisUiResponse` (`statusCode`, `headers`, `body`), `trellisUiRespond`,
+`materializeTrellisUi` and the read-only `trellisUiAssetPaths` list of root-absolute asset URLs.
+The asset responder returns null for unknown suite paths and paths outside `/trellis-ui/`,
 letting the application's router decide. Strong ETags contain the embedded SHA-256 digest; matching
 `If-None-Match` returns 304 with an empty body. Use `request.uri.path` rather than a path stripped by a mounted router.
 

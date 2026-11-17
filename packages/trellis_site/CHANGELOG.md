@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.14.0
+
+### Added
+
+- Site and theme manifests can opt into named `SiteSource` factories with `uses`. Source fragments
+  resolve behind site and theme templates in pages and shortcodes. Source assets are copied before
+  theme and site static files, and conflicting source paths fail the build. Post-Markdown shortcodes
+  in builds with sources can pass structured page front matter to templates.
+
 ## 0.13.0
 
 ### Breaking

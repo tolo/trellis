@@ -109,6 +109,7 @@ for theme entries and `TrellisCss.compileSass` (`trellis_css`) for site files.
 - `pathPrefix` for serving the site under a sub-path (see [Path prefix](#path-prefix))
 - `contentDir`, `layoutsDir`, `staticDir`, `dataDir`, `outputDir`
 - `theme`, `theme_params`, and `theme_ref` (the git ref `trellis theme add --ref` pins) for an installed theme
+- `uses` for named template and static asset sources
 - `taxonomies`, `paginate`
 - `params` for arbitrary site-level values exposed as `${site.params.*}`
 - `feeds` and `search` for generated output artifacts, `highlight` for build-time code highlighting
@@ -142,6 +143,34 @@ search:
 highlight:
   enabled: true
 ```
+
+### Build sources
+
+A site in `trellis_site.yaml` or a theme in `theme.yaml` can name sources in a
+`uses` list. Names match `[a-z][a-z0-9_]*`. A Dart builder registers factories
+with `TrellisSite`. For example, with `uses: [acme]`:
+
+```dart
+final site = TrellisSite(config, sourceFactories: {
+  'acme': () => SiteSource(
+    loader: MapLoader({'acme/badge': '<span tl:fragment="badge">New</span>'}),
+    assets: {'acme/badge.css': badgeCssBytes},
+  ),
+});
+```
+
+`MapLoader` comes from `package:trellis/trellis.dart`. Supply the stylesheet as
+a `List<int>` named `badgeCssBytes`. A source loader needs synchronous lookup for
+cross-file fragments. The same site-before-theme-before-source lookup applies
+in pages and shortcodes when sources are enabled. Source templates fall back
+in the order named by the site and then the theme. Each named factory runs
+once per build. In these builds post-Markdown shortcodes can also read page
+front matter, with explicit shortcode parameters taking precedence.
+
+Asset keys are output-relative POSIX paths such as `acme/badge.css`. They are
+copied before theme and site static files. Unregistered names, invalid paths,
+and claims that use the same path or an asset file as a directory fail the
+build. Files stay at their output-relative paths when `pathPrefix` changes.
 
 ### Path prefix
 

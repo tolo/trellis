@@ -1,0 +1,98 @@
+<!doctype html>
+<html tl:extends="theme:layouts/base.html" lang="en">
+  <head>
+    <title>Component reference</title>
+    <tl:block tl:define="head-extra">
+      <tl:block tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
+        <link rel="stylesheet" href="/trellis-ui/trellis-ui.css" tl:href="${assetBase} + 'trellis-ui/trellis-ui.css'">
+        <link rel="stylesheet" href="/ui-reference.css" tl:href="${assetBase} + 'ui-reference.css'">
+        <script src="/trellis-ui/trellis-ui.js" tl:src="${assetBase} + 'trellis-ui/trellis-ui.js'" defer></script>
+      </tl:block>
+    </tl:block>
+  </head>
+  <body>
+    <main id="main-content" tl:define="content">
+      <div class="wrap docs-shell">
+        <div tl:if="${theme.show_sidebar} and ${site.menu}" tl:replace="~{theme:layouts/base.html :: sidebar}"></div>
+        <article class="doc" tl:with="reference=${data.ui_components[component]}">
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <ul>
+              <li><a href="/">Home</a></li>
+              <li tl:each="crumb : ${page.breadcrumbs}">
+                <a tl:if="${crumb.url != ''}" tl:href="${crumb.url}" tl:text="${crumb.title}">Section</a>
+                <span tl:unless="${crumb.url != ''}" aria-current="page" tl:text="${crumb.title}">Component</span>
+              </li>
+            </ul>
+          </nav>
+          <h1 class="doc-title" tl:text="${page.title}">Component</h1>
+          <div class="toc-inline" tl:if="${theme.show_toc} and ${#lists.size(page.toc)} > 0">
+            <div tl:replace="~{theme:layouts/base.html :: toc}"></div>
+          </div>
+          <div class="doc-content prose" tl:utext="${page.content}">Example and interaction notes</div>
+
+          <section class="doc-content prose ui-reference-facts" aria-labelledby="fragment-api">
+            <h2 id="fragment-api">Fragment API</h2>
+            <div class="ui-reference-fragment" tl:each="fragment : ${reference.fragments}">
+              <h3><code tl:text="'trellis-ui/' + ${component} + ' :: ' + ${fragment.signature}">Signature</code></h3>
+              <dl>
+                <dt>Parameters</dt>
+                <dd class="ui-reference-parameters">
+                  <span tl:if="${#lists.isEmpty(fragment.parameters)}">None</span>
+                  <code tl:each="parameter : ${fragment.parameters}" tl:text="${parameter}">Parameter</code>
+                </dd>
+                <dt>Slots</dt>
+                <dd class="ui-reference-slots">
+                  <span tl:if="${#lists.isEmpty(fragment.slots)}">None</span>
+                  <code tl:each="slot : ${fragment.slots}" tl:text="${slot}">Slot</code>
+                </dd>
+                <dt>Pass-through attributes</dt>
+                <dd class="ui-reference-targets">
+                  <span tl:each="target : ${fragment.attribute_targets}">
+                    <code tl:text="${target.tag}">Tag</code>
+                    <span tl:if="${target.part}">(<code tl:text="${target.part}">Part</code>)</span>
+                  </span>
+                </dd>
+              </dl>
+            </div>
+            <h3>Part classes</h3>
+            <ul class="ui-reference-parts">
+              <li tl:each="part : ${reference.part_classes}"><code tl:text="${part}">Class</code></li>
+            </ul>
+            <h3>Tokens</h3>
+            <ul class="ui-reference-tokens">
+              <li tl:each="token : ${tokens}"><code tl:text="${token}">Token</code></li>
+            </ul>
+          </section>
+
+          <section class="doc-content prose ui-reference-qualification" aria-labelledby="gate-results">
+            <h2 id="gate-results">Gate results</h2>
+            <p tl:if="${reference.supported}">Supported. Every automated and manual gate item passed.</p>
+            <p tl:unless="${reference.supported}">Automated checks passed. Manual results are listed below.</p>
+            <ul class="ui-reference-gate">
+              <li tl:each="item : ${reference.items}">
+                <code tl:text="${item.name}">Check</code>
+                <strong tl:text="${item.status}">Status</strong>
+                <ul tl:unless="${#lists.isEmpty(item.browsers)}">
+                  <li tl:each="browser : ${item.browsers}"
+                    tl:text="${browser.name} + ' ' + ${browser.status} + (${browser.unsupported} ? ' (unsupported)' : '')">
+                    Browser status
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <nav class="page-nav" tl:if="${theme.show_prev_next} and (${page.prev} or ${page.next})"
+              aria-label="Page navigation">
+            <a tl:if="${page.prev}" tl:href="${page.prev.url}">
+              <small>Previous</small><span tl:text="${page.prev.title}">Previous</span>
+            </a>
+            <a tl:if="${page.next}" tl:href="${page.next.url}">
+              <small>Next</small><span tl:text="${page.next.title}">Next</span>
+            </a>
+          </nav>
+        </article>
+        <div tl:if="${theme.show_toc} and ${#lists.size(page.toc)} > 0" tl:replace="~{theme:layouts/base.html :: toc}"></div>
+      </div>
+    </main>
+  </body>
+</html>

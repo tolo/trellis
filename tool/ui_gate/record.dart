@@ -2,6 +2,13 @@ import 'dart:convert';
 
 import 'checks.dart';
 
+/// Manual results can carry any recorded outcome, including unrun checks.
+bool validManualResult(Object? result) => switch (result) {
+  {'status': 'pass' || 'fail' || 'not-run' || 'release-prep', 'evidence': final List<Object?> evidence} =>
+    evidence.every((entry) => entry is String),
+  _ => false,
+};
+
 /// Folds browser results without changing any human-entered manual item.
 Map<String, Object?> gateRecord(
   String name,

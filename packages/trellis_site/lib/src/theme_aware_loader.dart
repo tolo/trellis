@@ -5,7 +5,7 @@ import 'package:trellis/trellis.dart';
 /// Intercepts the `theme:` prefix in template names to load directly
 /// from the theme directory, bypassing the site-first resolution.
 /// For unprefixed names, delegates to an inner loader that resolves
-/// site templates first, then falls back to theme templates.
+/// site templates first, then theme templates, then any source templates.
 ///
 /// Example:
 /// ```dart
@@ -45,10 +45,14 @@ class ThemeAwareLoader implements TemplateLoader {
   /// resolution.
   ///
   /// Both [siteDir] and [themeDir] must exist when this factory is called.
-  factory ThemeAwareLoader.forTheme({required String siteDir, required String themeDir}) {
+  factory ThemeAwareLoader.forTheme({
+    required String siteDir,
+    required String themeDir,
+    List<TemplateLoader> fallbacks = const [],
+  }) {
     final siteLoader = FileSystemLoader(siteDir);
     final themeLoader = FileSystemLoader(themeDir);
-    final composite = CompositeLoader([siteLoader, themeLoader]);
+    final composite = CompositeLoader([siteLoader, themeLoader, ...fallbacks]);
     return ThemeAwareLoader(inner: composite, themeLoader: themeLoader);
   }
 
@@ -56,9 +60,9 @@ class ThemeAwareLoader implements TemplateLoader {
   ///
   /// All template names are resolved via a [FileSystemLoader] rooted at [siteDir].
   /// The `theme:` prefix is not available and will throw [TemplateException].
-  factory ThemeAwareLoader.noTheme({required String siteDir}) {
+  factory ThemeAwareLoader.noTheme({required String siteDir, List<TemplateLoader> fallbacks = const []}) {
     final siteLoader = FileSystemLoader(siteDir);
-    return ThemeAwareLoader(inner: siteLoader);
+    return ThemeAwareLoader(inner: fallbacks.isEmpty ? siteLoader : CompositeLoader([siteLoader, ...fallbacks]));
   }
 
   @override

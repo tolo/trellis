@@ -165,6 +165,11 @@ Builds a static site from the current directory. Reads `trellis_site.yaml` for
 configuration, runs the full [trellis_site](/docs/packages/trellis_site/)
 pipeline, and compiles any SASS/SCSS files in the static directory.
 
+The CLI embeds the [Trellis UI suite](/docs/ui/) for builds that specify
+`uses: [trellis_ui]` in the site config or theme manifest. Those builds can
+render the embedded fragments and publish their same-origin assets under
+`trellis-ui/`. Layouts link the assets wherever they use the components.
+
 Options:
 
 - `--output` (`-o`): output directory (default: from config, or `output`).

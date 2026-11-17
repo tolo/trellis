@@ -91,6 +91,9 @@ class SiteConfig {
   /// Theme configuration. `null` when no `theme:` is set in config.
   final ThemeConfig? themeConfig;
 
+  /// Names of extra template and static asset sources to use in a build.
+  final List<String> uses;
+
   const SiteConfig._({
     required this.siteDir,
     required this.title,
@@ -109,6 +112,7 @@ class SiteConfig {
     this.searchConfig = const SearchConfig(),
     this.highlightConfig = const HighlightConfig(),
     this.themeConfig,
+    required this.uses,
   });
 
   /// Creates a [SiteConfig] with the given values.
@@ -132,6 +136,7 @@ class SiteConfig {
     SearchConfig searchConfig = const SearchConfig(),
     HighlightConfig highlightConfig = const HighlightConfig(),
     ThemeConfig? themeConfig,
+    List<String> uses = const [],
   }) {
     String resolve(String? rel, String defaultName) {
       if (rel == null) return p.join(siteDir, defaultName);
@@ -156,6 +161,7 @@ class SiteConfig {
       searchConfig: searchConfig,
       highlightConfig: highlightConfig,
       themeConfig: themeConfig,
+      uses: List.unmodifiable(uses),
     );
   }
 
@@ -249,6 +255,7 @@ class SiteConfig {
       searchConfig: searchConfig,
       highlightConfig: highlightConfig,
       themeConfig: themeConfig,
+      uses: parseSourceNames(map, (message) => SiteConfigException(message, configPath: resolvedPath)),
     );
   }
 

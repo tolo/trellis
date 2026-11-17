@@ -1,8 +1,10 @@
+import 'htmx_asset.dart';
+
 /// Generates the bin/server.dart content for a new Shelf + Trellis project.
 ///
 /// Demonstrates the full middleware stack, HTMX counter endpoints, CSRF, and
 /// dev-mode hot reload.
-String serverTemplate(String projectName) =>
+String serverTemplate(String projectName, {bool htmxCdn = false}) =>
     '''
 import 'dart:io';
 
@@ -34,10 +36,7 @@ void main(List<String> args) async {
   // CSRF secret: use an environment variable in production.
   // WARNING: Change this default before deploying to production!
   final csrfSecret = Platform.environment['CSRF_SECRET'] ?? '$projectName-dev-secret';
-  const csp = CspBuilder(
-    scriptSrc: "'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-    connectSrc: "'self' ws:",
-  );
+  const csp = CspBuilder.strict(${htmxCdn ? '\n    scriptSrc: "\'self\' $htmxCdnOrigin",\n  ' : ''});
 
   final router = Router()
     ..get('/', (Request req) => indexPage(req))
@@ -71,7 +70,7 @@ void main(List<String> args) async {
       .addMiddleware(trellisCsrf(secret: csrfSecret));
 
   if (devMode) {
-    pipeline = pipeline.addMiddleware(devMiddleware(loader));
+    pipeline = pipeline.addMiddleware(devMiddleware(loader, staticDirectory: staticDir));
   }
 
   final handler = pipeline.addHandler(cascade.handler);

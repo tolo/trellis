@@ -18,6 +18,7 @@ dependencies:
   trellis_site: ^0.13.0
 
 dev_dependencies:
+  crypto: ^3.0.7
   lints: ^6.0.0
   pub_semver: ^2.2.0
   test: ^1.25.0

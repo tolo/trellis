@@ -28,13 +28,20 @@ Handler liveReloadHandler(FileSystemLoader loader) {
       'create the loader with devMode: true to enable live reload.',
     );
   }
+  return liveReloadChangesHandler(changes);
+}
+
+/// Internal handler shared by template-only and combined reload streams.
+Handler liveReloadChangesHandler(Stream<void> changes) {
   return (Request request) {
     final controller = StreamController<List<int>>();
+    // Flush HTTP headers before the first edit so EventSource can become open.
+    controller.add(utf8.encode(': connected\n\n'));
     final subscription = changes.listen((_) {
       if (!controller.isClosed) {
         controller.add(utf8.encode('event: reload\ndata: reload\n\n'));
       }
-    });
+    }, onDone: controller.close);
     controller.onCancel = subscription.cancel;
     return Response.ok(
       controller.stream,
@@ -47,6 +54,10 @@ Handler liveReloadHandler(FileSystemLoader loader) {
 /// Returns a self-contained `<script>` block that connects to the SSE
 /// endpoint at [ssePath] and reloads the page on `reload` events.
 ///
+/// This inline helper requires an inline-script CSP allowance. Prefer
+/// `devMiddleware` for strict policies, which serves [liveReloadClientScript]
+/// from a same-origin URL.
+///
 /// The script uses an IIFE to avoid polluting the global scope. It listens
 /// for the named `reload` event (matching the `event: reload` SSE frame)
 /// and calls `location.reload()`.
@@ -55,9 +66,12 @@ Handler liveReloadHandler(FileSystemLoader loader) {
 /// ```dart
 /// final script = liveReloadScript(); // defaults to '/_dev/reload'
 /// ```
-String liveReloadScript({String ssePath = '/_dev/reload'}) {
+String liveReloadScript({String ssePath = '/_dev/reload'}) =>
+    '<script>\n${liveReloadClientScript(ssePath: ssePath)}\n</script>';
+
+/// Returns bare JavaScript for a same-origin live reload client.
+String liveReloadClientScript({String ssePath = '/_dev/reload'}) {
   return '''
-<script>
 (function() {
   var source = new EventSource('$ssePath');
   source.addEventListener('reload', function(e) {
@@ -67,6 +81,5 @@ String liveReloadScript({String ssePath = '/_dev/reload'}) {
   source.onerror = function(e) {
     console.warn('[trellis_dev] SSE connection error:', e);
   };
-})();
-</script>''';
+})();''';
 }

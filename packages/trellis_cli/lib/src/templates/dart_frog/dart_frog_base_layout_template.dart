@@ -4,7 +4,7 @@ import '../htmx_asset.dart';
 ///
 /// Uses raw string concatenation to avoid conflicts with Trellis `${}`
 /// expressions while injecting [projectName] as a Dart string interpolation.
-String dartFrogBaseLayoutTemplate(String projectName) =>
+String dartFrogBaseLayoutTemplate(String projectName, {bool htmxCdn = false}) =>
     r'''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,21 +16,9 @@ String dartFrogBaseLayoutTemplate(String projectName) =>
   <meta name="csrf-token" tl:attr="content=${csrfToken}" content="">
   <link rel="stylesheet" href="/styles.css">
   ''' +
-    htmxScriptTag(trailingNewline: true) +
-    r'''  <!-- Set CSRF header on all HTMX requests (htmx 2 and htmx 4 event shapes) -->
-  <script>
-    (function () {
-      function setCsrfHeader(headers) {
-        if (!headers) return;
-        var token = document.querySelector('meta[name="csrf-token"]').content;
-        if (token) headers['X-CSRF-Token'] = token;
-      }
-      document.addEventListener('htmx:configRequest', function(evt) { setCsrfHeader(evt.detail.headers); });
-      document.addEventListener('htmx:config:request', function(evt) {
-        setCsrfHeader(evt.detail.ctx.request.headers);
-      });
-    })();
-  </script>
+    '$htmxConfigMeta\n  ${scaffoldHtmxScriptTag(htmxCdn: htmxCdn)}\n' +
+    r'''
+  <script src="/js/csrf.js"></script>
 </head>
 <body>
   <header>

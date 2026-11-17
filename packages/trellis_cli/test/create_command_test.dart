@@ -4,8 +4,34 @@ import 'dart:isolate';
 import 'package:args/command_runner.dart';
 import 'package:test/test.dart';
 import 'package:trellis_cli/trellis_cli.dart';
+import 'package:trellis_cli/src/templates/htmx_asset.dart';
 
 void main() {
+  group('htmx-cdn', () {
+    late Directory dir;
+    setUp(() => dir = Directory.systemTemp.createTempSync('trellis_cdn_'));
+    tearDown(() => dir.deleteSync(recursive: true));
+    for (final template in ['htmx', 'relic', 'dart_frog']) {
+      test('reaches $template generator', () async {
+        final cli = TrellisCli(workingDirectory: dir.path);
+        expect(await cli.run(['create', 'demo', '--template', template, '--htmx-cdn']), 0);
+        final root = '${dir.path}/demo';
+        final layout = template == 'relic' ? 'templates/base.html' : 'templates/layouts/base.html';
+        expect(File('$root/$layout').readAsStringSync(), contains(htmxScriptTag()));
+        expect(File('$root/${template == "dart_frog" ? "public" : "static"}/js/htmx.min.js').existsSync(), isFalse);
+      });
+    }
+    for (final template in ['blog', 'theme']) {
+      test('rejects $template without writing a directory', () async {
+        final cli = TrellisCli(workingDirectory: dir.path);
+        await expectLater(
+          cli.run(['create', 'demo', '--template', template, '--htmx-cdn']),
+          throwsA(isA<UsageException>().having((e) => e.message, 'message', contains('htmx, relic and dart_frog'))),
+        );
+        expect(Directory('${dir.path}/demo').existsSync(), isFalse);
+      });
+    }
+  });
   group('CreateCommand', () {
     late Directory tempDir;
 
@@ -299,13 +325,13 @@ void main() {
       expect(() => cli.run(['create', '--template', 'relic', 'existing_relic']), throwsA(isA<UsageException>()));
     });
 
-    test('generated server configures CSP for HTMX CDN script', () async {
+    test('generated server configures strict CSP for same-origin scripts', () async {
       final cli = TrellisCli(workingDirectory: tempDir.path);
       await cli.run(['create', '--template', 'relic', 'relic_csp_test']);
 
       final server = File('${tempDir.path}/relic_csp_test/bin/server.dart').readAsStringSync();
       expect(server, contains('CspBuilder'));
-      expect(server, contains('https://cdn.jsdelivr.net'));
+      expect(server, isNot(contains('cdn.jsdelivr.net')));
       expect(server, contains('trellisSecurityHeaders(csp: csp)'));
     });
   });

@@ -1,8 +1,10 @@
+import '../htmx_asset.dart';
+
 /// Generates the bin/server.dart content for a Relic + Trellis project.
 ///
 /// Uses regular string concatenation with \$ escaping for Dart interpolation
 /// in generated code.
-String relicServerTemplate(String projectName) =>
+String relicServerTemplate(String projectName, {bool htmxCdn = false}) =>
     "import 'dart:io';\n"
     '\n'
     "import 'package:relic/relic.dart';\n"
@@ -22,9 +24,9 @@ String relicServerTemplate(String projectName) =>
     '    loader: FileSystemLoader(templatesDir, devMode: true),\n'
     '    devMode: true,\n'
     '  );\n'
-    '  const csp = CspBuilder(\n'
-    "    scriptSrc: \"'self' https://cdn.jsdelivr.net\",\n"
-    '  );\n'
+    '  const csp = CspBuilder.strict('
+    '${htmxCdn ? '\n    scriptSrc: "\'self\' $htmxCdnOrigin",\n  ' : ''}'
+    ');\n'
     '\n'
     '  final app = RelicApp()\n'
     '    // Security headers — applies to all matched routes.\n'
@@ -40,7 +42,9 @@ String relicServerTemplate(String projectName) =>
     "    ..get('/styles.css', (_) async {\n"
     "      final css = await File('\$staticDir/styles.css').readAsString();\n"
     '      return Response.ok(body: Body.fromString(css, mimeType: MimeType.css));\n'
-    '    });\n'
+    '    })'
+    '${htmxCdn ? '' : "\n    ..get('/js/htmx.min.js', (_) async {\n      final js = await File('\$staticDir/js/htmx.min.js').readAsString();\n      return Response.ok(body: Body.fromString(js, mimeType: MimeType.javascript));\n    })"}'
+    ';\n'
     '\n'
     '  await app.serve(address: InternetAddress.anyIPv4, port: 8080);\n'
     "  print('$projectName running at http://localhost:8080');\n"

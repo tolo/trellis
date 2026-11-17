@@ -6,7 +6,7 @@ Part of the [Trellis SDK](https://github.com/tolo/trellis).
 
 ## Overview
 
-`trellis_dev` provides live reload for Trellis template development. When a template file changes on disk, all connected browser tabs automatically refresh via Server-Sent Events (SSE).
+`trellis_dev` provides live reload for Trellis template development. When a template file or a watched CSS/JS asset changes on disk, all connected browser tabs automatically refresh via Server-Sent Events (SSE).
 
 Three public APIs are provided:
 
@@ -40,7 +40,7 @@ void main() async {
   final engine = Trellis(loader: loader);
 
   final handler = const Pipeline()
-      .addMiddleware(devMiddleware(loader))
+      .addMiddleware(devMiddleware(loader, staticDirectory: 'static'))
       .addHandler(myAppHandler);
 
   await io.serve(handler, 'localhost', 8080);
@@ -100,3 +100,20 @@ Returns a `<script>` block containing a self-contained IIFE that connects to the
 ## API Documentation
 
 - https://pub.dev/documentation/trellis_dev/latest/
+
+### Strict CSP and static assets
+
+`devMiddleware(loader, staticDirectory: 'static')` watches `.css` and `.js` recursively, including
+new subdirectories. Use `'public'` for Dart Frog. Missing static directories are ignored; template
+reload still works. Static watchers close when the template loader closes. Other file types do not
+trigger reload.
+
+The middleware serves `/_dev/reload.js` with a JavaScript content type and injects
+`<script src="/_dev/reload.js"></script>`. This works with `script-src 'self'; style-src 'self'`.
+Set `scriptPath` and `ssePath` together for custom URLs. `default-src 'self'` already permits the
+same-origin SSE connection; if you narrow it, allow `connect-src 'self'` explicitly. The SSE stream
+starts with a comment to flush response headers before any edit.
+
+`liveReloadClientScript({ssePath})` returns the bare JavaScript for a manually served same-origin
+script. `liveReloadScript({ssePath})` retains its inline `<script>` output for existing manual
+setups and requires an inline-script CSP allowance. Prefer the middleware under strict CSP.

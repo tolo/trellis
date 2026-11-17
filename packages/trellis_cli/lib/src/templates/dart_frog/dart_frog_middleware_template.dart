@@ -1,7 +1,9 @@
+import '../htmx_asset.dart';
+
 /// Generates the routes/_middleware.dart content for a Dart Frog + Trellis project.
 ///
 /// Uses regular string with \$ escaping for Dart interpolation in generated code.
-String dartFrogMiddlewareTemplate(String projectName) =>
+String dartFrogMiddlewareTemplate(String projectName, {bool htmxCdn = false}) =>
     "import 'dart:io';\n"
     '\n'
     "import 'package:dart_frog/dart_frog.dart';\n"
@@ -15,8 +17,8 @@ String dartFrogMiddlewareTemplate(String projectName) =>
     '\n'
     "final _loader = FileSystemLoader('templates/', devMode: _devMode);\n"
     'final _engine = Trellis(loader: _loader, devMode: _devMode);\n'
-    'const _csp = CspBuilder(\n'
-    "  scriptSrc: \"'self' 'unsafe-inline' https://cdn.jsdelivr.net\",\n"
+    'const _csp = CspBuilder.strict('
+    '${htmxCdn ? '\n  scriptSrc: "\'self\' $htmxCdnOrigin",\n' : ''}'
     ');\n'
     '\n'
     '// CSRF secret: use an environment variable in production.\n'
@@ -30,5 +32,5 @@ String dartFrogMiddlewareTemplate(String projectName) =>
     '      .use(trellisCsrf(secret: _csrfSecret))\n'
     '      .use(requestLogger())\n'
     // devMiddleware from trellis_dev is a Shelf middleware; adapt via fromShelfMiddleware
-    '      .use(_devMode ? fromShelfMiddleware(devMiddleware(_loader)) : (h) => h);\n'
+    '      .use(_devMode ? fromShelfMiddleware(devMiddleware(_loader, staticDirectory: \'public\')) : (h) => h);\n'
     '}\n';

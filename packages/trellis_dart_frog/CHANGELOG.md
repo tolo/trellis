@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.0
+
+### Added
+
+- Strict CSP preset through the Shelf re-export; generated Dart Frog apps self-host HTMX and CSRF scripts.
+
 ## 0.13.0
 
 ### Breaking

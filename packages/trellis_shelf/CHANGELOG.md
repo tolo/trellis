@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.0
+
+### Added
+
+- `CspBuilder.strict()` provides same-origin script/style defaults without changing `CspBuilder()`.
+
 ## 0.13.0
 
 ### Breaking

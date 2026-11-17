@@ -128,6 +128,16 @@ Available templates:
 | `relic` | Relic + HTMX counter app with explicit-engine wiring and security headers |
 | `theme` | Trellis theme scaffold with `theme.yaml`, layouts, SASS architecture, and example preview site |
 
+App templates (`htmx`, `relic`, `dart_frog`) self-host the pinned HTMX build under `/js/htmx.min.js`
+and use `CspBuilder.strict()`. Shelf and Dart Frog also write `/js/csrf.js`. The layout disables
+HTMX's injected indicator styles; the rules ship in `styles.css`. Generated markup has no inline
+scripts or styles. Shelf and Dart Frog dev mode also reloads on CSS/JS edits in `static/` or `public/`.
+
+Use `trellis create my_app --template htmx --htmx-cdn` to opt into the SRI-pinned CDN build.
+The generated `script-src` allows only `'self'` plus the pinned CDN origin; no local htmx file is
+written. `--htmx-cdn` is also accepted by `relic` and `dart_frog`, and rejected by `blog` and `theme`.
+
+
 The `htmx`, `dart_frog`, and `relic` templates each generate a ready-to-run
 server app: server or route wiring, base and page layouts with HTMX
 navigation, a starter stylesheet, and `pubspec.yaml`, `analysis_options.yaml`,

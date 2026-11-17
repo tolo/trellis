@@ -1,7 +1,23 @@
 import 'package:test/test.dart';
 import 'package:trellis_cli/trellis_cli.dart';
 
+import '_strict_scaffold.dart';
+
 void main() {
+  for (final cdn in [false, true]) {
+    test('strict CSP scaffold ${cdn ? "CDN opt-in" : "self-hosted default"}', () async {
+      final files = InMemoryFileWriter();
+      await RelicProjectGenerator(projectName: 'demo', writer: files, htmxCdn: cdn).generate();
+      expectStrictScaffold(
+        files.files,
+        cdn: cdn,
+        staticRoot: 'static',
+        layout: 'templates/base.html',
+        server: 'bin/server.dart',
+        csrf: false,
+      );
+    });
+  }
   group('RelicProjectGenerator', () {
     late InMemoryFileWriter writer;
     late RelicProjectGenerator generator;
@@ -30,8 +46,8 @@ void main() {
       }
     });
 
-    test('generates exactly 9 files', () {
-      expect(writer.files.length, 9);
+    test('generates exactly 10 files', () {
+      expect(writer.files.length, 10);
     });
 
     test('all files have non-empty content', () {
@@ -99,9 +115,9 @@ void main() {
         expect(content, contains('trellisSecurityHeaders'));
       });
 
-      test('configures CSP for HTMX CDN script', () {
+      test('configures strict CSP for same-origin scripts', () {
         expect(content, contains('CspBuilder'));
-        expect(content, contains('https://cdn.jsdelivr.net'));
+        expect(content, isNot(contains('cdn.jsdelivr.net')));
         expect(content, contains('trellisSecurityHeaders(csp: csp)'));
       });
 
@@ -178,8 +194,8 @@ void main() {
         expect(content, contains('tl:define="content"'));
       });
 
-      test('has HTMX CDN script', () {
-        expect(content, contains('htmx.org'));
+      test('has same-origin HTMX script', () {
+        expect(content, contains('src="/js/htmx.min.js"'));
       });
 
       test('has HTMX navigation links', () {

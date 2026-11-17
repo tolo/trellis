@@ -2,7 +2,7 @@
 
 Canonical reference for understanding the Trellis SDK architecture: how the packages compose, what each package is responsible for, the dependency graph, and how a request flows through the system.
 
-**Current through**: v0.11.0 SDK + the 2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
+**Current through**: dev reload/scaffold CSP updated for 0.14 on 2026-11-17; otherwise v0.11.0 SDK + the 2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
 Lattice `site_demo` home block, and the `examples/docs_site/` proof) + the 2026-09-04 HTMX 4 adapter
 compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme stylesheets compile through
 `@use … with()` instead of `@import`, with per-mode colour params + 0.13 bridge hardening: one shared
@@ -177,16 +177,22 @@ explicit trigger. See [ADR-011](../adrs/ADR-011-htmx-version-policy.md).
 
 ### Dev-Mode Hot Reload (trellis_dev)
 
-In development, a parallel SSE connection keeps the browser updated:
+Current for 0.14 (2026-11-17): app scaffolds self-host the pinned HTMX build by default;
+`--htmx-cdn` opts into the pinned CDN origin. All use `CspBuilder.strict()`, external CSRF
+scripts where needed, and local indicator CSS. Plain `CspBuilder()` defaults remain unchanged.
+
+In development, a same-origin reload script and parallel SSE connection keep the browser updated.
+Shelf watches `static/` and Dart Frog watches `public/`; Relic has no browser reload integration:
 
 ```
 Browser                          Server
    │                                │
+   ├── GET /_dev/reload.js ────────►│  Same-origin JavaScript
    ├── EventSource(/_dev/reload) ──►│  SSE connection
    │                                │
-   │   [developer edits template]   │
+   │   [template or CSS/JS edit]   │
    │                                ├── FileSystemLoader.changes fires
-   │                                ├── Engine cache cleared
+   │                                ├── Template cache cleared (templates only)
    │◄── SSE: event: reload ─────────│  Broadcast to all clients
    │                                │
    ├── location.reload() ──────────►│  Browser refreshes

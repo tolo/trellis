@@ -45,7 +45,7 @@ void main() async {
   final engine = Trellis(loader: loader);
 
   final handler = const Pipeline()
-      .addMiddleware(devMiddleware(loader))
+      .addMiddleware(devMiddleware(loader, staticDirectory: 'static'))
       .addHandler(myAppHandler);
 
   await io.serve(handler, 'localhost', 8080);
@@ -118,6 +118,23 @@ SSE endpoint and reloads the page on `reload` events.
 [trellis_shelf](/docs/packages/trellis_shelf/) apps. It also pairs with
 [trellis_dart_frog](/docs/packages/trellis_dart_frog/): the SSE-based browser
 refresh works independently of Dart Frog's own hot restart. Wrap the Shelf
-middleware with `fromShelfMiddleware(devMiddleware(loader))`, passing the
+middleware with `fromShelfMiddleware(devMiddleware(loader, staticDirectory: 'static'))`, passing the
 engine's own loader; see the [trellis_dart_frog hot reload
 section](/docs/packages/trellis_dart_frog/#hot-reload).
+
+### Strict CSP and static assets
+
+`devMiddleware(loader, staticDirectory: 'static')` watches `.css` and `.js` recursively, including
+new subdirectories. Use `'public'` for Dart Frog. Missing static directories are ignored; template
+reload still works. Static watchers close when the template loader closes. Other file types do not
+trigger reload.
+
+The middleware serves `/_dev/reload.js` with a JavaScript content type and injects
+`<script src="/_dev/reload.js"></script>`. This works with `script-src 'self'; style-src 'self'`.
+Set `scriptPath` and `ssePath` together for custom URLs. `default-src 'self'` already permits the
+same-origin SSE connection; if you narrow it, allow `connect-src 'self'` explicitly. The SSE stream
+starts with a comment to flush response headers before any edit.
+
+`liveReloadClientScript({ssePath})` returns the bare JavaScript for a manually served same-origin
+script. `liveReloadScript({ssePath})` retains its inline `<script>` output for existing manual
+setups and requires an inline-script CSP allowance. Prefer the middleware under strict CSP.

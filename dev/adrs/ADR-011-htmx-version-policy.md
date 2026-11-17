@@ -245,3 +245,8 @@ scaffolds with ADR-010's vendored-over-CDN preference order.
 Unchanged: the version pin and its revisit trigger (decision 1) and the adapter
 boundary. Not covered: `'unsafe-inline'` in the Shelf and Dart Frog scaffolds'
 `script-src`, which their layouts' inline `<script>` still needs.
+
+
+2026-11-17: in 0.14 all three app scaffolds also meet the strict script/style policy: CSRF and reload
+scripts are same-origin files, and HTMX indicator rules ship in CSS with injection disabled. This
+closes the amendment's “Not covered” inline-script limitation without changing `CspBuilder()` defaults.

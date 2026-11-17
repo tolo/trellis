@@ -1,4 +1,5 @@
 import 'file_writer.dart';
+import '../templates/htmx_asset.dart';
 import '../templates/analysis_options_template.dart';
 import '../templates/gitignore_template.dart';
 import '../templates/relic/relic_about_page_template.dart';
@@ -18,7 +19,7 @@ import '../templates/relic/relic_styles_template.dart';
 class RelicProjectGenerator {
   /// Creates a generator for a Relic project with [projectName], writing
   /// files via [writer].
-  RelicProjectGenerator({required this.projectName, required this.writer});
+  RelicProjectGenerator({required this.projectName, required this.writer, this.htmxCdn = false});
 
   /// The Dart-valid project name.
   final String projectName;
@@ -26,11 +27,11 @@ class RelicProjectGenerator {
   /// The file writer used to create project files.
   final FileWriter writer;
 
+  /// Load the SRI-pinned CDN build instead of writing the embedded HTMX file.
+  final bool htmxCdn;
+
   /// Generates all project files.
   ///
-  /// Creates 9 files: pubspec.yaml, bin/server.dart, lib/handlers.dart,
-  /// 3 HTML templates (base.html, index.html, about.html),
-  /// static/styles.css, .gitignore, and analysis_options.yaml.
   Future<void> generate() async {
     // Config files
     await writer.writeFile('pubspec.yaml', relicPubspecTemplate(projectName));
@@ -38,15 +39,16 @@ class RelicProjectGenerator {
     await writer.writeFile('analysis_options.yaml', analysisOptionsTemplate());
 
     // Dart source
-    await writer.writeFile('bin/server.dart', relicServerTemplate(projectName));
+    await writer.writeFile('bin/server.dart', relicServerTemplate(projectName, htmxCdn: htmxCdn));
     await writer.writeFile('lib/handlers.dart', relicHandlersTemplate(projectName));
 
     // Templates
-    await writer.writeFile('templates/base.html', relicBaseLayoutTemplate(projectName));
+    await writer.writeFile('templates/base.html', relicBaseLayoutTemplate(projectName, htmxCdn: htmxCdn));
     await writer.writeFile('templates/index.html', relicIndexPageTemplate());
     await writer.writeFile('templates/about.html', relicAboutPageTemplate());
 
     // Static assets
-    await writer.writeFile('static/styles.css', relicStylesTemplate());
+    await writer.writeFile('static/styles.css', relicStylesTemplate() + htmxIndicatorCss);
+    if (!htmxCdn) await writer.writeFile('static/js/htmx.min.js', htmxSource);
   }
 }

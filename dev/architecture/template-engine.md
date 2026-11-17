@@ -410,9 +410,12 @@ lib/
 
 - [ADR-001: Expression Evaluator Strategy](../adrs/ADR-001-expression-evaluator-strategy.md) — Hand-rolled recursive descent parser
 - [ADR-003: Pre-compiled Template Strategy](../adrs/ADR-003-precompiled-template-strategy.md) — Deferred
-- SDK Vision — how the engine fits into the broader SDK (internal)
-- SDK Phase 1 — template inheritance (`tl:extends`/`tl:define`) adds a pre-pass before step 4 (internal spec)
+- [Product](../PRODUCT.md) — how the engine fits into the broader SDK
+- SDK Phase 1 (0.7 PRD, maintainers' Linear) — template inheritance (`tl:extends`/`tl:define`) adds a pre-pass before step 4
 
 ### Diagrams
 
-Architecture diagrams are maintained as Excalidraw source files in the project's internal design repository.
+Architecture diagrams are hand-written SVG files in `dev/architecture/` (currently `sdk-package-dag.svg`). The `.svg`
+is the source of truth: edit it as text, with no drawing tool, Excalidraw source or export step. New and redrawn
+figures follow DartClaw's diagram conventions (visual language, interaction, self-contained theme-aware SVG, render
+check before committing): https://github.com/DartClaw/dartclaw/blob/main/dev/architecture/diagrams/README.md

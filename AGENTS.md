@@ -127,7 +127,8 @@ git history do not carry it, and it outlives the current initiative. -->``.
   CI green → `tool/release.sh X.Y.Z` on `main` → push the tag (the one manual, irreversible step). Nothing else.
 - **Keep architecture docs current.** When a change adds/modifies/removes a subsystem, protocol, or
   pipeline stage, update the affected doc in `dev/architecture/` in the same change and bump its
-  "Current through" marker. Don't defer.
+  "Current through" marker, redraw any affected SVG diagram, and write or amend the ADR when a recorded decision
+  changes. Don't defer.
 - **Files here stand alone.** ADRs, `dev/state/`, and architecture docs must be usable without the private
   planning repo. **Never write a clickable link into it** (`../../../trellis-private/...`) – it 404s for every
   reader who has only this repo. An **unlinked, labelled** provenance mention is fine where the private document
@@ -163,6 +164,14 @@ Read the relevant guideline before starting work of its type:
   change that crosses package boundaries.
 - `dev/architecture/template-engine.md`: render pipeline, processor model, expression evaluator, caching, fragment
   system. Read before changing the core engine.
+
+External references, for the documentation lookup below:
+- **Core:** [Dart](https://dart.dev/guides), [Thymeleaf](https://www.thymeleaf.org/documentation.html) (the model for
+  `tl:*` semantics), [package:html](https://pub.dev/packages/html) (the core's HTML5 parser),
+  [HTMX](https://htmx.org/docs/).
+- **SDK:** [Shelf](https://pub.dev/packages/shelf), [Melos](https://melos.invertase.dev/),
+  [Dart Sass](https://pub.dev/packages/sass), [csslib](https://pub.dev/packages/csslib),
+  [package:markdown](https://pub.dev/packages/markdown), [Alpine.js](https://alpinejs.dev/) (client state beside HTMX).
 
 
 ---

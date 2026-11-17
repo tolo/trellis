@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 
 import 'package:test/test.dart';
 import 'package:trellis_cli/src/templates/base_layout_template.dart';
@@ -12,11 +15,17 @@ import '_workspace_root.dart';
 final _htmxPin = RegExp(r'htmx\.org@([\d.]+(?:-[\w.]+)?)/dist/htmx\.min\.js');
 
 void main() {
+  test('embedded htmx matches the pinned SHA-384 and shared CSRF events', () {
+    expect('sha384-${base64.encode(sha384.convert(utf8.encode(htmxSource)).bytes)}', htmxSriHash);
+    expect(csrfScript, contains("'htmx:configRequest'"));
+    expect(csrfScript, contains("'htmx:config:request'"));
+    expect(csrfScript, contains("headers['X-CSRF-Token'] = token"));
+  });
   group('scaffolded layouts', () {
     final layouts = {
-      'shelf': baseLayoutTemplate('demo'),
-      'relic': relicBaseLayoutTemplate('demo'),
-      'dart_frog': dartFrogBaseLayoutTemplate('demo'),
+      'shelf': baseLayoutTemplate('demo', htmxCdn: true),
+      'relic': relicBaseLayoutTemplate('demo', htmxCdn: true),
+      'dart_frog': dartFrogBaseLayoutTemplate('demo', htmxCdn: true),
     };
 
     // The pin used to be copy-pasted into each layout, so a bump silently

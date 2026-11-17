@@ -1,7 +1,23 @@
 import 'package:test/test.dart';
 import 'package:trellis_cli/trellis_cli.dart';
 
+import '_strict_scaffold.dart';
+
 void main() {
+  for (final cdn in [false, true]) {
+    test('strict CSP scaffold ${cdn ? "CDN opt-in" : "self-hosted default"}', () async {
+      final files = InMemoryFileWriter();
+      await ProjectGenerator(projectName: 'demo', writer: files, htmxCdn: cdn).generate();
+      expectStrictScaffold(
+        files.files,
+        cdn: cdn,
+        staticRoot: 'static',
+        layout: 'templates/layouts/base.html',
+        server: 'bin/server.dart',
+        csrf: true,
+      );
+    });
+  }
   group('ProjectGenerator', () {
     late InMemoryFileWriter writer;
 
@@ -9,11 +25,11 @@ void main() {
       writer = InMemoryFileWriter();
     });
 
-    test('generates all 10 expected files', () async {
+    test('generates all expected files', () async {
       final generator = ProjectGenerator(projectName: 'test_app', writer: writer);
       await generator.generate();
 
-      expect(writer.files, hasLength(10));
+      expect(writer.files, hasLength(12));
       expect(
         writer.files.keys,
         containsAll([
@@ -60,7 +76,7 @@ void main() {
       expect(server, contains("..get('/about'"));
       expect(server, contains("..post('/counter/increment'"));
       expect(server, contains('CspBuilder'));
-      expect(server, contains('https://cdn.jsdelivr.net'));
+      expect(server, isNot(contains('cdn.jsdelivr.net')));
     });
 
     test('handlers.dart uses trellis_shelf helpers and counter routes', () async {
@@ -98,7 +114,7 @@ void main() {
       expect(index, contains(r'tl:attr="value=${csrfToken}"'));
     });
 
-    test('base layout uses tl:insert, SPA navigation shell, SRI, and CSRF header', () async {
+    test('base layout uses tl:insert, SPA navigation shell and same-origin scripts', () async {
       final generator = ProjectGenerator(projectName: 'my_app', writer: writer);
       await generator.generate();
 
@@ -106,12 +122,11 @@ void main() {
       expect(base, contains('tl:define="content"'));
       expect(base, contains('id="content"'));
       expect(base, contains('tl:insert="~{partials/nav.html :: nav}"'));
-      expect(base, contains('integrity="sha384-'));
-      expect(base, contains('crossorigin="anonymous"'));
+      expect(base, contains('<script src="/js/htmx.min.js"></script>'));
       expect(base, contains('csrf-token'));
-      expect(base, contains('X-CSRF-Token'));
-      expect(base, contains('htmx:configRequest'));
-      expect(base, contains('htmx:config:request'));
+      expect(writer.files['static/js/csrf.js'], contains('X-CSRF-Token'));
+      expect(writer.files['static/js/csrf.js'], contains('htmx:configRequest'));
+      expect(writer.files['static/js/csrf.js'], contains('htmx:config:request'));
     });
 
     test('nav partial defines a tl:fragment with Home and About links', () async {

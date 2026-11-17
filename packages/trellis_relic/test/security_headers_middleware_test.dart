@@ -15,6 +15,27 @@ Handler okHandler(String body) =>
     (request) async => Response(200, body: Body.fromString(body));
 
 void main() {
+  group('CspBuilder.strict', () {
+    const strict =
+        "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
+        "object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+    test('strict defaults and unchanged permissive defaults', () {
+      expect(const CspBuilder.strict().build(), strict);
+      expect(const CspBuilder().build(), strict.replaceFirst("style-src 'self'", "style-src 'self' 'unsafe-inline'"));
+    });
+    test('caller sources and custom directives', () {
+      expect(
+        const CspBuilder.strict(
+          scriptSrc: "'self' https://cdn.jsdelivr.net",
+          connectSrc: "'self' https://api.example.com",
+          fontSrc: "'self'",
+          custom: {'report-uri': '/csp-report'},
+        ).build(),
+        "${strict.replaceFirst("script-src 'self'", "script-src 'self' https://cdn.jsdelivr.net")}; connect-src 'self' https://api.example.com; font-src 'self'; report-uri /csp-report",
+      );
+    });
+  });
+
   group('CspBuilder', () {
     test('default output contains all standard directives', () {
       final csp = CspBuilder().build();

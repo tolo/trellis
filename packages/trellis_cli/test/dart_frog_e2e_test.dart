@@ -17,8 +17,10 @@ import 'package:trellis_cli/trellis_cli.dart';
 
 import '_e2e_server.dart';
 import '_workspace_root.dart';
+import '_csp_browser.dart';
 
 void main() {
+  if (BrowserProbe.locateChrome() == null) requireChromeInCi('CSP browser proofs');
   group('Dart Frog starter E2E', () {
     late Directory projectDir;
     late int port;
@@ -61,13 +63,12 @@ void main() {
         label: 'dart_frog dev',
         start: (port) async {
           final vmServicePort = await allocateFreePort();
-          return Process.start(dartFrogExecutable, [
-            'dev',
-            '--port',
-            '$port',
-            '--dart-vm-service-port',
-            '$vmServicePort',
-          ], workingDirectory: projectDir.path);
+          return Process.start(
+            dartFrogExecutable,
+            ['dev', '--port', '$port', '--dart-vm-service-port', '$vmServicePort'],
+            workingDirectory: projectDir.path,
+            environment: {'DEV': 'true'},
+          );
         },
         isReady: (port) =>
             _waitForHttpOk('http://localhost:$port/', timeout: const Duration(seconds: 45), bodyContains: 'Dart Frog'),
@@ -95,6 +96,14 @@ void main() {
     test('generated shared state lives under lib/', () {
       expect(File('${projectDir.path}/lib/counter_state.dart').existsSync(), isTrue);
       expect(File('${projectDir.path}/routes/counter/_state.dart').existsSync(), isFalse);
+    });
+
+    test('strict CSP pages and htmx interactions', () async {
+      await expectStrictCspApp(Uri.parse('http://localhost:$port/'), csrf: true);
+    }, skip: BrowserProbe.locateChrome() == null ? 'Chrome not installed' : false);
+
+    test('dev reload CSS and JavaScript within 1 s', () async {
+      await expectStaticReload(Uri.parse('http://localhost:$port/'), projectDir, 'public');
     });
 
     test('GET / returns 200', () async {

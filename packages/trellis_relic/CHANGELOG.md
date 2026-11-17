@@ -2,6 +2,11 @@
 
 ## 0.14.0
 
+### Added
+
+- `CspBuilder.strict()` provides same-origin script/style defaults without changing `CspBuilder()`.
+
+
 ### Breaking
 
 - Requires `relic` 2 (`^2.0.0`, was `^1.2.0`). The `trellis_relic` API is unchanged, but an app moves to Relic 2 with

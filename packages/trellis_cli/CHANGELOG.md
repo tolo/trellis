@@ -4,6 +4,13 @@
 
 ### Changed
 
+- Counter fragment swaps preserve keyboard focus through stable control IDs, allowing repeated Enter activation.
+
+- App scaffolds use strict CSP, self-host pinned HTMX and external CSRF scripts, and disable injected indicator styles. `create --htmx-cdn` opts into the pinned CDN origin. Shelf and Dart Frog watch static CSS/JS in dev mode.
+
+
+### Changed
+
 - `trellis create --template relic` writes `relic: ^2.0.0` (was `^1.2.0`). The generated code needs no change for Relic 2.
 
 ## 0.13.0

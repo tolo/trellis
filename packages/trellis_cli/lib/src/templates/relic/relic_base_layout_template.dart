@@ -4,7 +4,7 @@ import '../htmx_asset.dart';
 ///
 /// Uses template inheritance (`tl:define`) and HTMX for client-side navigation.
 /// No CSRF meta tag — trellis_relic has no CSRF middleware.
-String relicBaseLayoutTemplate(String projectName) =>
+String relicBaseLayoutTemplate(String projectName, {bool htmxCdn = false}) =>
     '''
 <!DOCTYPE html>
 <html lang="en">
@@ -12,7 +12,8 @@ String relicBaseLayoutTemplate(String projectName) =>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title tl:text="\${pageTitle}">$projectName</title>
-  ${htmxScriptTag()}
+  $htmxConfigMeta
+  ${scaffoldHtmxScriptTag(htmxCdn: htmxCdn)}
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>

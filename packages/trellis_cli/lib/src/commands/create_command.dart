@@ -25,6 +25,7 @@ class CreateCommand extends Command<int> {
   final String? workingDirectory;
 
   CreateCommand({this.workingDirectory}) {
+    argParser.addFlag('htmx-cdn', negatable: false, help: 'Load HTMX from its pinned CDN instead of self-hosting.');
     argParser.addOption(
       'template',
       abbr: 't',
@@ -71,9 +72,12 @@ class CreateCommand extends Command<int> {
       usageException('Directory "$projectName" already exists.');
     }
 
-    await dir.create();
-
     final template = argResults!['template'] as String;
+    final htmxCdn = argResults!['htmx-cdn'] as bool;
+    if (htmxCdn && !['htmx', 'relic', 'dart_frog'].contains(template)) {
+      usageException('--htmx-cdn is supported only by the htmx, relic and dart_frog templates.');
+    }
+    await dir.create();
     final writer = DiskFileWriter(dir.path);
 
     if (template == 'blog') {
@@ -87,7 +91,7 @@ class CreateCommand extends Command<int> {
       stdout.writeln('  trellis build');
       stdout.writeln('  trellis serve');
     } else if (template == 'dart_frog') {
-      final generator = DartFrogProjectGenerator(projectName: projectName, writer: writer);
+      final generator = DartFrogProjectGenerator(projectName: projectName, writer: writer, htmxCdn: htmxCdn);
       await generator.generate();
 
       stdout.writeln('Created Dart Frog project "$projectName".');
@@ -97,7 +101,7 @@ class CreateCommand extends Command<int> {
       stdout.writeln('  dart pub get');
       stdout.writeln('  dart_frog dev');
     } else if (template == 'relic') {
-      final generator = RelicProjectGenerator(projectName: projectName, writer: writer);
+      final generator = RelicProjectGenerator(projectName: projectName, writer: writer, htmxCdn: htmxCdn);
       await generator.generate();
 
       stdout.writeln('Created Relic project "$projectName".');
@@ -119,7 +123,7 @@ class CreateCommand extends Command<int> {
       stdout.writeln('  Edit theme.yaml and customize params');
       stdout.writeln('  Preview: cd example && trellis build && trellis serve');
     } else {
-      final generator = ProjectGenerator(projectName: projectName, writer: writer);
+      final generator = ProjectGenerator(projectName: projectName, writer: writer, htmxCdn: htmxCdn);
       await generator.generate();
 
       stdout.writeln('Created project "$projectName".');

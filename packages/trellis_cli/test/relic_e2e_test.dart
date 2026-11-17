@@ -17,11 +17,13 @@ import 'package:trellis_cli/trellis_cli.dart';
 
 import '_e2e_server.dart';
 import '_workspace_root.dart';
+import '_csp_browser.dart';
 
 /// Numeric loopback host every client connects to; the Relic template binds `anyIPv4`, which covers it.
 final String _host = e2eLoopback.address;
 
 void main() {
+  if (BrowserProbe.locateChrome() == null) requireChromeInCi('CSP browser proofs');
   group('Relic starter E2E', () {
     late Directory projectDir;
     late int port;
@@ -75,6 +77,10 @@ void main() {
       expect(pubspec, contains('relic:'));
       expect(pubspec, contains('trellis_relic:'));
     });
+
+    test('strict CSP pages and htmx interactions', () async {
+      await expectStrictCspApp(Uri.parse('http://$_host:$port/'), csrf: false);
+    }, skip: BrowserProbe.locateChrome() == null ? 'Chrome not installed' : false);
 
     test('GET / returns 200', () async {
       final res = await _get('http://$_host:$port/');

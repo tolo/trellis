@@ -183,8 +183,8 @@ void main() {
       expect(gallery.querySelector('link[href="${assetPrefix}gallery.css"]'), isNotNull);
       final previous = gallery.querySelector('.page-nav a');
       expect(previous, isNotNull);
-      expect(previous!.text, allOf(contains('Previous'), contains('Theme Authoring')));
-      expect(previous.attributes['href'], '${assetPrefix}docs/themes/authoring/');
+      expect(previous!.text, allOf(contains('Previous'), contains('Standard Params')));
+      expect(previous.attributes['href'], '${assetPrefix}docs/themes/standard-params/');
     }
   }, timeout: const Timeout(Duration(minutes: 2)));
 }

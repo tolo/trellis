@@ -415,7 +415,7 @@ When `devMode` is `false` (the default), no file watcher is created and there is
 ### Template Loaders
 
 - **`FileSystemLoader(basePath)`** -- loads from filesystem with security boundaries
-- **`AssetLoader(packageUri)`** -- loads from Dart package assets (JIT only, see [AOT limitations](https://github.com/tolo/trellis/blob/main/docs/guides/framework-integration.md#9-aot-deployment-notes))
+- **`AssetLoader(packageUri)`** -- loads from Dart package assets (JIT only, see [AOT limitations](https://tolo.github.io/trellis/docs/packages/framework-integration/#aot-deployment-notes))
 - **`CompositeLoader(delegates)`** -- tries multiple loaders in order with fallback
 - **`MapLoader(templates)`** -- in-memory templates, useful for testing
 
@@ -549,7 +549,7 @@ final html = engine.renderFragment(
 );
 ```
 
-Full guide with Shelf middleware, Dart Frog handlers, Relic handlers, HTMX OOB swaps, template testing, and error handling: **[Framework Integration Guide](https://github.com/tolo/trellis/blob/main/docs/guides/framework-integration.md)**.
+Full guide with Shelf middleware, Dart Frog handlers, Relic handlers, HTMX OOB swaps, template testing, and error handling: **[Framework Integration Guide](https://tolo.github.io/trellis/docs/packages/framework-integration/)**.
 
 Trellis is the engine at the heart of the **[Trellis SDK](https://github.com/tolo/trellis)**, which adds server integrations (`trellis_shelf`, `trellis_dart_frog`, `trellis_relic`), static site generation (`trellis_site`), CSS processing (`trellis_css`), hot reload (`trellis_dev`), and a scaffolding CLI (`trellis_cli`). See the [project README](https://github.com/tolo/trellis#readme) for the full package map and the `trellis` CLI.
 

@@ -225,10 +225,10 @@ while IFS= read -r -d '' entry; do
       ;;
   esac
   case "${changed}" in
-    # Bash `case` globs match across `/`, so docs/*.md covers every docs page. The
+    # Bash `case` globs match across `/`, so site/content/*.md covers every docs page. The
     # README/docs entries are the install-snippet constraint lines version_lockstep.sh
     # rewrites (plus the two manual-download examples); keep the three file sets identical.
-    packages/*/pubspec.yaml | packages/*/lib/src/version.dart | README.md | packages/*/README.md | docs/*.md | site/content/*.md | site/trellis_site.yaml) EXPECTED_CHANGED+=("${changed}") ;;
+    packages/*/pubspec.yaml | packages/*/lib/src/version.dart | README.md | packages/*/README.md | site/content/*.md | site/trellis_site.yaml) EXPECTED_CHANGED+=("${changed}") ;;
     # --ref pins live wherever a theme is documented (themes/*/README.md ...), so the lockstep
     # script supplies the file set instead of a glob that would drift from its scan.
     *)

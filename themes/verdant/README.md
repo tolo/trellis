@@ -97,7 +97,7 @@ to be edited to change colors, fonts, navigation, or which metadata appears.
 | `excerpt_length` | int | `160` | Character cap for auto-generated summaries |
 | `posts_per_page` | int | `null` | Listing page size, used when the site sets no `paginate:` |
 
-Plus all 25 [standard params](../../docs/reference/standard-params.md).
+Plus all 25 [standard params](https://tolo.github.io/trellis/docs/themes/standard-params/).
 
 ## Preview
 

@@ -63,7 +63,7 @@ Colours are set per mode: `primary_color` sets the light palette's entry and
 ## Params
 
 Arbor implements all 25 standard theme params (see
-`docs/reference/standard-params.md`) plus documentation-specific params:
+[https://tolo.github.io/trellis/docs/themes/standard-params/](https://tolo.github.io/trellis/docs/themes/standard-params/)) plus documentation-specific params:
 
 | Param | Type | Default | Purpose |
 |---|---|---|---|

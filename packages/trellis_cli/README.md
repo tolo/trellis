@@ -146,7 +146,7 @@ cd my_theme
 cd example && trellis build && trellis serve
 ```
 
-See the [Theme Authoring Guide](../../docs/guides/theme-authoring.md) for a complete walkthrough.
+See the [Theme Authoring Guide](https://tolo.github.io/trellis/docs/themes/authoring/) for a complete walkthrough.
 
 ## Commands
 
@@ -244,7 +244,7 @@ Prints usage information.
 
 The `trellis theme` subcommands manage themes for static sites built with `trellis_site`.
 
-See the [Theme Usage Guide](../../docs/guides/theme-usage.md) for full documentation, and the [Theme Authoring Guide](../../docs/guides/theme-authoring.md) for creating themes.
+See the [Themes guide](https://tolo.github.io/trellis/docs/sites/themes/) for full documentation, and the [Theme Authoring Guide](https://tolo.github.io/trellis/docs/themes/authoring/) for creating themes.
 
 ### `trellis theme add <url>`
 

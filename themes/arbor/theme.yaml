@@ -20,7 +20,7 @@ features:
 
 params:
   # === Standard Params (25) ===
-  # Contract: docs/reference/standard-params.md. Every standard param is present
+  # Contract: site/content/docs/themes/standard-params.md. Every standard param is present
   # with the contract type. Non-null defaults required except optional strings
   # (heading_font_family, footer_text).
 

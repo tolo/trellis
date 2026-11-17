@@ -67,7 +67,7 @@ git history do not carry it, and it outlives the current initiative. -->``.
 | Guidelines           | `dev/guidelines/`                       | Dart, packaging, and key dev commands                |
 | Learnings            | `dev/state/LEARNINGS.md`                | Traps, gotchas, and non-obvious patterns             |
 | Tech Debt            | `dev/state/TECH-DEBT-BACKLOG.md`        | Known technical debt (TD-IDs)                        |
-| User docs            | `docs/guides/`, `docs/reference/`       | User-facing guides and reference                     |
+| User docs            | `site/content/docs/`                    | User-facing guides and reference (the docs site)     |
 | Template syntax & API| `packages/trellis/README.md`            | Using the engine                                     |
 | Template agent guide | `packages/trellis/doc/trellis-for-agents.md` | Writing Trellis templates                       |
 | Changelog            | `packages/trellis/CHANGELOG.md`         | Release history                                      |
@@ -98,7 +98,7 @@ git history do not carry it, and it outlives the current initiative. -->``.
 - **Asset sourcing (repo-wide)** — prefer self-contained, build-time output; then vendored, same-origin
   assets; runtime CDN dependencies only as a last resort (a deliberate, documented exception, not a ban).
   Covers shipped themes, `site/`, and `trellis_site` client assets (e.g. `search.js`). See the theme guide's
-  [Third-Party and Vendored Assets](docs/guides/theme-authoring.md#third-party-and-vendored-assets) section
+  [Third-Party and Vendored Assets](site/content/docs/themes/authoring.md#third-party-and-vendored-assets) section
   and [ADR-010](dev/adrs/ADR-010-syntax-highlighting.md).
 
 

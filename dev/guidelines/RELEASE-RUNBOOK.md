@@ -111,7 +111,7 @@ gate (step 0's five repeated local commands; gallery freshness is supplied by th
 
 Check the commit: `git show --stat HEAD` — 13 fixed files (8 `pubspec.yaml`, 2 `lib/src/version.dart`, `README.md`,
 `packages/trellis_cli/README.md`, `site/trellis_site.yaml`) plus every README/docs page holding an install snippet
-(13 at 0.11.1: 6 package READMEs, 6 `site/content/docs/packages/` pages, `docs/guides/framework-integration.md`) plus
+(13 at 0.11.1: 6 package READMEs, 6 `site/content/docs/packages/` pages, the framework-integration page) plus
 every file holding a `--ref` pin (`tool/version_lockstep.sh --list-ref-files`; `themes/*/README.md` among them). The
 committed root `pubspec.lock` is not rewritten by the bump; release-binary jobs consume it with
 `dart pub get --enforce-lockfile`.

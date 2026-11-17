@@ -179,6 +179,6 @@ plain run still exits `0`.
 ## Full reference
 
 - Engine README & syntax: <https://github.com/tolo/trellis/blob/main/packages/trellis/README.md>
-- Framework integration (Shelf, Dart Frog, Relic, HTMX): <https://github.com/tolo/trellis/blob/main/docs/guides/framework-integration.md>
+- Framework integration (Shelf, Dart Frog, Relic, HTMX): <https://tolo.github.io/trellis/docs/packages/framework-integration/>
 - API docs: <https://pub.dev/documentation/trellis/latest/>
 - Doc index for agents (`llms.txt`): <https://github.com/tolo/trellis/blob/main/llms.txt>

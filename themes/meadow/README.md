@@ -28,7 +28,7 @@ unbreakable 72-character token in every text container.
 
 ## Params
 
-Meadow implements all 25 [standard params](../../docs/reference/standard-params.md) plus the landing params below.
+Meadow implements all 25 [standard params](https://tolo.github.io/trellis/docs/themes/standard-params/) plus the landing params below.
 Each colour param has a dark-mode twin (`<name>_dark`). A plain colour param sets the light entry only and never reaches
 the dark edition, whether forced with `skin: dark` or reached through `auto`'s `prefers-color-scheme` block and toggle;
 set the `_dark` twin for that. The primary button's colours are theme-authored (lime on dark ink in light, dark ink on

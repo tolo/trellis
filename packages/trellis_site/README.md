@@ -48,7 +48,7 @@ theme_params:
 
 All 25 standard params (colors with a dark-mode twin each, fonts, layout, nav, social links, feature toggles) are configurable without forking or editing the theme. A plain color param (`primary_color`) sets the light palette only; its `_dark` twin sets the dark one. Sites can also override individual layouts or `tl:define` blocks for deeper customization.
 
-See the [Theme Usage Guide](../../docs/guides/theme-usage.md) and [Standard Params Contract](../../docs/reference/standard-params.md) for full documentation.
+See the [Themes guide](https://tolo.github.io/trellis/docs/sites/themes/) and [Standard Params](https://tolo.github.io/trellis/docs/themes/standard-params/) for full documentation.
 
 On Windows, a site whose theme lives on a UNC network path (`\\server\share\…`) is untested and may fail to resolve the theme entry; use a mapped drive letter.
 

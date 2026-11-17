@@ -18,7 +18,7 @@ Run from `packages/trellis_site/`.
 
 - **Themes live in the repo-root `themes/`, not in this package**, but tests here discover and compile all of them
   (`test/theme_sass_use_gate_test.dart`). A theme change is verified with `dart test` here as well as in the root.
-  Theme layout and params: ADR-008, `docs/guides/theme-authoring.md`, `docs/reference/standard-params.md`.
+  Theme layout and params: ADR-008, `site/content/docs/themes/authoring.md`, `site/content/docs/themes/standard-params.md`.
 - **Theme SASS reaches the theme through a generated `@use … with()` wrapper** built by one function,
   `ThemeBuildConfig.bridgeWrapperSource`, which `trellis build` calls and tests compile. Do not duplicate its text.
   `compileThemeEntry` configures an entry with the `!default` `$trellis-*` variables Sass accepts on it (Sass has the

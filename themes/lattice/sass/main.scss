@@ -1145,9 +1145,12 @@ code {
 .hljs-type {
   color: var(--syntax-function);
 }
+/* .hljs-function wraps a JS function head; its keyword and params carry their own classes,
+   so the only text it colours itself is the bare parentheses. */
 .hljs-punctuation,
 .hljs-operator,
 .hljs-subst,
+.hljs-function,
 .hljs-params,
 .hljs-meta,
 .hljs-tag,

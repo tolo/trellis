@@ -62,7 +62,7 @@ ROOT="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 
 # `trellis theme add https://github.com/tolo/trellis --theme x --ref v<semver>` pins in docs and
 # READMEs name the release that ships the theme, so they move with every bump. They live
-# wherever a theme is documented (docs/, site/content/, packages/*/README.md, themes/*/README.md),
+# wherever a theme is documented (site/content/, packages/*/README.md, themes/*/README.md),
 # so the scan is repo-wide over tracked and untracked-but-not-ignored files, minus history and
 # narrative: CHANGELOGs, dev/state/LEARNINGS.md and the gitignored .agent_temp/. Only the exact
 # repo URL counts - third-party themes (`yourname/trellis-theme-orchard --ref v1.0.0`) keep
@@ -218,9 +218,7 @@ snippet_files() {
   for path in "${ROOT}/README.md" "${ROOT}"/packages/*/README.md; do
     [[ -f "${path}" ]] && echo "${path}"
   done
-  for path in "${ROOT}/docs" "${ROOT}/site/content"; do
-    [[ -d "${path}" ]] && find "${path}" -name '*.md'
-  done
+  [[ -d "${ROOT}/site/content" ]] && find "${ROOT}/site/content" -name '*.md'
 }
 echo "Syncing install-snippet pubspec constraints to ${VERSION}..."
 while IFS= read -r file; do

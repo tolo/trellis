@@ -1,24 +1,14 @@
-# Framework Integration Guide
+---
+title: Framework Integration
+description: Wire Trellis into Shelf, Dart Frog, or Relic – engine setup, HTMX fragment and OOB patterns, security headers and CSRF, template testing, error handling, and AOT deployment.
+weight: 45
+---
 
 Trellis is framework-agnostic: render HTML with `render()`/`renderFile()` and return it as an HTTP
 response. The SDK provides three integration packages that add framework-specific middleware,
 response helpers, HTMX utilities, and security patterns.
 
-This guide covers:
-
-- [1. Engine Setup](#1-engine-setup) — shared across all frameworks
-- [2. Shelf Integration](#2-shelf-integration) — using `trellis_shelf`
-- [3. Dart Frog Integration](#3-dart-frog-integration) — using `trellis_dart_frog`
-- [4. Relic Integration](#4-relic-integration) — using `trellis_relic`
-- [5. HTMX Patterns](#5-htmx-patterns) — fragment rendering with all three frameworks
-- [6. Security](#6-security) — headers, CSRF, and CSP
-- [7. Template Testing](#7-template-testing) — using `trellis/testing.dart`
-- [8. Error Handling](#8-error-handling) — exception types and safe rendering
-- [9. AOT Deployment Notes](#9-aot-deployment-notes) — loader choices and compilation
-
----
-
-## 1. Engine Setup
+## Engine setup
 
 This section applies to all three frameworks. Create the engine once (typically as a top-level
 singleton or injected via middleware) and reuse it for the lifetime of the application.
@@ -97,14 +87,11 @@ Template markup using the configured features:
 ```
 
 > For a deep dive into custom processors, dialects, and filters, see the
-> [Custom Processors](https://github.com/tolo/trellis/blob/main/README.md#custom-processors)
-> and
-> [Dialects](https://github.com/tolo/trellis/blob/main/README.md#dialects)
-> sections in the Trellis README.
+> [Custom processors](/docs/packages/trellis/#custom-processors)
+> and [Dialects](/docs/packages/trellis/#dialects)
+> in the trellis package guide.
 
----
-
-## 2. Shelf Integration
+## Shelf
 
 The `trellis_shelf` package provides middleware, response helpers, HTMX utilities, and security
 for Shelf applications.
@@ -122,7 +109,7 @@ dependencies:
 import 'package:trellis_shelf/trellis_shelf.dart';
 ```
 
-### Middleware and Engine Access
+### Middleware and engine access
 
 `trellisEngine(engine)` injects the engine into the Shelf request context. Handlers retrieve it
 via `getEngine(request)`.
@@ -182,7 +169,7 @@ void main() async {
 }
 ```
 
-### Response Helpers
+### Response helpers
 
 | Function | Description |
 |---|---|
@@ -194,15 +181,13 @@ void main() async {
 Response helpers automatically merge request-context values (including the CSRF token) into the
 template context.
 
-### Hot Reload in Dev Mode
+### Hot reload in dev mode
 
 Pair `devMode: true` (enables file watching in `FileSystemLoader`) with `trellis_dev` for
-browser-side live reload over SSE. See the [`trellis_dev` README](../../packages/trellis_dev/README.md)
+browser-side live reload over SSE. See the [`trellis_dev` guide](/docs/packages/trellis_dev/)
 for setup instructions.
 
----
-
-## 3. Dart Frog Integration
+## Dart Frog
 
 The `trellis_dart_frog` package provides a provider middleware, response helpers, HTMX utilities,
 and security middleware for Dart Frog applications.
@@ -245,7 +230,7 @@ Handler middleware(Handler handler) {
 }
 ```
 
-### Full Page Route (`routes/index.dart`)
+### Full-page route (`routes/index.dart`)
 
 ```dart
 // routes/index.dart
@@ -260,7 +245,7 @@ Future<Response> onRequest(RequestContext context) async {
 }
 ```
 
-### HTMX Partial Route (`routes/todos.dart`)
+### HTMX partial route (`routes/todos.dart`)
 
 ```dart
 // routes/todos.dart
@@ -290,7 +275,7 @@ Future<Response> onRequest(RequestContext context) async {
 }
 ```
 
-### Response Helpers (Dart Frog)
+### Response helpers (Dart Frog)
 
 Dart Frog response helpers accept `RequestContext` (not `Request`) as the first argument. This
 is different from `trellis_shelf` where handlers receive a `Request`.
@@ -301,14 +286,12 @@ is different from `trellis_shelf` where handlers receive a `Request`.
 | `renderFragment(context, template, fragment, templateContext)` | Single named fragment |
 | `renderOobFragments(context, template, fragments, templateContext)` | Multiple fragments (OOB) |
 
-### Hot Reload in Dev Mode
+### Hot reload in dev mode (Dart Frog)
 
 `trellis_dev` SSE works alongside `dart_frog dev`. The `devMode: true` flag on the engine enables
 file-system watching so templates reload automatically on change.
 
----
-
-## 4. Relic Integration
+## Relic
 
 The `trellis_relic` package provides response helpers, HTMX utilities, and security headers for
 Relic applications.
@@ -326,7 +309,7 @@ dependencies:
 import 'package:trellis_relic/trellis_relic.dart';
 ```
 
-### Complete Application
+### Complete application
 
 Relic has no dependency-injection mechanism, so the engine is passed **explicitly** to every
 response helper as the second argument.
@@ -374,7 +357,7 @@ void main() async {
 }
 ```
 
-### Response Helpers (Relic)
+### Response helpers (Relic)
 
 Relic response helpers take `request` and `engine` as the first two arguments:
 
@@ -385,23 +368,21 @@ Relic response helpers take `request` and `engine` as the first two arguments:
 | `renderOobFragments(request, engine, template, fragments, context)` | Multiple fragments (OOB) |
 | `htmlResponse(html)` | Wraps an HTML string in a `text/html` response |
 
-> **Engine is always explicit** — unlike Shelf and Dart Frog, where the engine is retrieved from
+> **Engine is always explicit** – unlike Shelf and Dart Frog, where the engine is retrieved from
 > the request context, Relic response helpers require the engine to be passed directly.
 
-> **CSRF not available for Relic** — see [Section 6.2](#62-csrf-protection) for details.
+> **CSRF not available for Relic** – see [Section 6.2](#62-csrf-protection) for details.
 
-> **Middleware scope** — Relic middleware only fires for matched routes. A `404` or `405`
+> **Middleware scope** – Relic middleware only fires for matched routes. A `404` or `405`
 > response does **not** pass through `trellisSecurityHeaders()`. Shelf's `Pipeline`, by contrast,
 > always runs middleware regardless of routing outcome.
 
----
-
-## 5. HTMX Patterns
+## HTMX patterns
 
 These patterns apply to all three frameworks. Each subsection shows the shared template markup
 and per-framework snippets for the handler side.
 
-### 5.1 Fragment-per-endpoint
+### Fragment per endpoint
 
 Return a single fragment for a dedicated endpoint (e.g. `/todos/list`). HTMX targets the
 fragment's root element in the DOM.
@@ -427,7 +408,7 @@ return renderFragment(context, 'todos', 'todoList', {'todos': todos});
 return renderFragment(request, engine, 'todos', 'todoList', {'todos': todos});
 ```
 
-### 5.2 OOB Multi-target Updates
+### OOB multi-target updates
 
 Return multiple fragments concatenated in a single response. HTMX swaps each fragment into the
 matching element via `hx-swap-oob`.
@@ -457,7 +438,7 @@ return renderOobFragments(context, 'todos', ['todoList', 'todoCount'], ctx);
 return renderOobFragments(request, engine, 'todos', ['todoList', 'todoCount'], ctx);
 ```
 
-### 5.3 Full Page vs. Partial Content Negotiation
+### Full page vs. partial content negotiation
 
 Detect the `HX-Request` header to return a fragment for HTMX navigation and a full page for
 normal browser navigation to the same URL.
@@ -495,9 +476,9 @@ return renderPage(context, 'todos', ctx, htmxFragment: 'content');
 return renderPage(request, engine, 'todos', ctx, htmxFragment: 'content');
 ```
 
-### 5.4 Complete Template Example
+### Complete template example
 
-This template works with all three frameworks — the rendering API is framework-specific but the
+This template works with all three frameworks – the rendering API is framework-specific but the
 template itself is not.
 
 ```html
@@ -519,9 +500,9 @@ template itself is not.
 ```
 
 > `${csrfToken}` is automatically available in Shelf and Dart Frog when `trellisCsrf` middleware
-> is active. For Relic, CSRF is not available — see [Section 6.2](#62-csrf-protection).
+> is active. For Relic, CSRF is not available – see [Section 6.2](#62-csrf-protection).
 
-### 5.5 Running on HTMX 4
+### Running on HTMX 4
 
 Scaffolds and examples pin HTMX 2.0.10, the npm `latest` release (ADR-011). A project can move to HTMX 4 by
 replacing the script tag. The packages need no change:
@@ -549,11 +530,9 @@ like; every `htmx:*` event follows the `htmx:phase:action` naming (`htmx:afterRe
 `htmx:after:request`); the config key `includeIndicatorStyles` is now `includeIndicatorCSS`. Run
 `npx htmx.org@4.0.0 upgrade-check <template-dir>` for the full list.
 
----
+## Security
 
-## 6. Security
-
-### 6.1 Security Headers
+### Security headers
 
 `trellisSecurityHeaders()` adds the following headers to responses:
 
@@ -599,12 +578,11 @@ trellisSecurityHeaders(
 )
 ```
 
-### 6.2 CSRF Protection
+### CSRF protection
 
 `trellisCsrf` uses a double-submit cookie pattern with HMAC-SHA256 signing.
 
-**Available for:** Shelf, Dart Frog
-**Not available for:** Relic — see the note below.
+**Available for:** Shelf and Dart Frog. Not available for Relic; see the note below.
 
 **Shelf setup:**
 
@@ -631,7 +609,7 @@ Handler middleware(Handler handler) {
 }
 ```
 
-**Template usage** — the token is automatically merged into the template context by the response
+**Template usage** – the token is automatically merged into the template context by the response
 helpers. Use `${csrfToken}` in a hidden form field:
 
 ```html
@@ -641,7 +619,7 @@ helpers. Use `${csrfToken}` in a hidden form field:
 </form>
 ```
 
-**Relic — CSRF not available.** Relic does not expose a built-in form body parser, and the
+**Relic – CSRF not available.** Relic does not expose a built-in form body parser, and the
 double-submit pattern requires reading form fields server-side to validate the submitted token.
 For Relic apps that need CSRF protection, options include:
 
@@ -650,7 +628,7 @@ For Relic apps that need CSRF protection, options include:
   parsing, but requires HTMX for all state-changing requests).
 - Wait for Relic's own security middleware to mature in a future phase.
 
-### 6.3 CSP for HTMX + `trellis_dev`
+### CSP for HTMX and `trellis_dev`
 
 When using `trellis_dev` for browser-side live reload (via SSE), add `connect-src 'self' ws:` to
 allow the WebSocket connection. Use different CSP configurations for dev and production:
@@ -665,7 +643,7 @@ trellisSecurityHeaders(
 )
 ```
 
-### Per-Framework Security Matrix
+### Per-framework security matrix
 
 | Feature | Shelf | Dart Frog | Relic |
 |---|---|---|---|
@@ -675,11 +653,9 @@ trellisSecurityHeaders(
 | CSRF Token in Templates | `${csrfToken}` auto-merged | `${csrfToken}` auto-merged | N/A |
 | Middleware Scope | All requests | All requests | Matched routes only |
 
----
+## Template testing
 
-## 7. Template Testing
-
-The core `trellis` package includes testing utilities via `testing.dart` — snapshot testing,
+The core `trellis` package includes testing utilities via `testing.dart` – snapshot testing,
 CSS-selector-based HTML matchers, and fragment isolation helpers.
 
 **Import:**
@@ -688,10 +664,10 @@ CSS-selector-based HTML matchers, and fragment isolation helpers.
 import 'package:trellis/testing.dart';
 ```
 
-### 7.1 Test Engine Setup
+### Test engine setup
 
-`testEngine()` creates a strict-mode engine backed by `MapLoader`. Templates are defined inline
-— no filesystem access needed in tests.
+`testEngine()` creates a strict-mode engine backed by `MapLoader`. Templates are defined inline,
+so tests need no filesystem access.
 
 ```dart
 import 'package:test/test.dart';
@@ -725,7 +701,7 @@ void main() {
 > Use raw strings (`r'...'`) for templates containing `${...}` expressions to prevent Dart from
 > interpreting them as string interpolations.
 
-### 7.2 CSS-Selector Assertions
+### CSS-selector assertions
 
 Assert on rendered HTML using CSS selector matchers:
 
@@ -753,7 +729,7 @@ test('page renders heading and list', () {
 | `hasAttribute(selector, attr, value)` | First matching element has attribute `attr` equal to `value` |
 | `elementCount(selector, n)` | Exactly `n` elements match (pure count assertion) |
 
-### 7.3 Fragment Testing
+### Fragment testing
 
 Test a single fragment in isolation using `testFragment`:
 
@@ -782,7 +758,7 @@ test('nav fragment from file', () async {
 });
 ```
 
-### 7.4 Snapshot Testing
+### Snapshot testing
 
 `expectSnapshot` renders a template and compares the output against a golden file:
 
@@ -821,11 +797,9 @@ test('inline snapshot', () {
 });
 ```
 
----
+## Error handling
 
-## 8. Error Handling
-
-### 8.1 Exception Types
+### Exception types
 
 | Exception | When thrown |
 |---|---|
@@ -835,7 +809,7 @@ test('inline snapshot', () {
 | `ExpressionException` | Expression cannot be parsed or evaluated |
 | `TemplateSecurityException` | Path traversal or security boundary violation |
 
-### 8.2 Safe Rendering Pattern
+### Safe rendering pattern
 
 Wrap `renderPage` / `renderFile` in a try/catch and return appropriate HTTP responses:
 
@@ -888,7 +862,7 @@ Future<Response> safeRender(
 }
 ```
 
-### 8.3 Custom Error Pages
+### Custom error pages
 
 Render a Trellis template for error pages, with a plain-text fallback:
 
@@ -907,11 +881,9 @@ Future<Response> errorPage(Request request, int status, String message) async {
 }
 ```
 
----
+## AOT deployment notes
 
-## 9. AOT Deployment Notes
-
-### Loader Comparison
+### Loader comparison
 
 | Loader | AOT Compatible | Description |
 |---|---|---|
@@ -931,7 +903,7 @@ final engine = Trellis(
 );
 ```
 
-### Per-Framework Compilation
+### Per-framework compilation
 
 **Shelf:**
 
@@ -959,7 +931,7 @@ dart compile exe bin/server.dart -o build/server
 
 Same considerations as Shelf: bundle `templates/` alongside the binary.
 
-### Template Embedding with `MapLoader`
+### Template embedding with `MapLoader`
 
 For a single-binary deployment where no external files are needed:
 

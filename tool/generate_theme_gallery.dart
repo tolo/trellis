@@ -7,7 +7,7 @@ import 'package:yaml/yaml.dart';
 
 const _recognizedArchetypes = <String>{'docs', 'landing', 'blog'};
 const _regenerationCommand = 'dart run tool/generate_theme_gallery.dart';
-const _manifestRulesDoc = 'see docs/guides/theme-authoring.md, "Name and archetype rules"';
+const _manifestRulesDoc = 'see site/content/docs/themes/authoring.md, "Name and archetype rules"';
 
 /// Header written into `site/data/themes.yaml`, so a contributor who edits the
 /// file by hand reads why CI rejected it before they read the CI log.

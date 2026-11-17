@@ -263,8 +263,8 @@ Arbor, verdant and folio compile byte-identical to the 0.11 `@import` bridge at 
 - [ADR-008](ADR-008-ssg-theme-system.md): the theme system whose SASS bridge this supersedes
 - [ADR-006](ADR-006-css-strategy.md): SASS stays a Dart-native library call
 - [ADR-009](ADR-009-package-versioning-strategy.md): the break ships in the lockstep minor
-- [Theme Authoring Guide](../../docs/guides/theme-authoring.md) and
-  [Standard Params Contract](../../docs/reference/standard-params.md): the contract as theme authors and site builders
+- [Theme Authoring Guide](../../site/content/docs/themes/authoring.md) and
+  [Standard Params Contract](../../site/content/docs/themes/standard-params.md): the contract as theme authors and site builders
   read it
 - Sass module system: <https://sass-lang.com/documentation/at-rules/use/> (`with`, `!default` configuration) and
   <https://sass-lang.com/documentation/at-rules/forward/> (`@forward … with`)

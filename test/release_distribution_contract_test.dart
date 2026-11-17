@@ -192,11 +192,11 @@ theme_params:
       final bumpScript = readWorkspaceFile('tool/version_lockstep.sh');
       final releaseScript = readWorkspaceFile('tool/release.sh');
       expect(bumpScript, contains(r's/^([ \t]+trellis\w*: \^)[0-9][0-9A-Za-z.+-]*$/$1$ENV{VERSION}/'));
-      expect(releaseScript, contains('README.md | packages/*/README.md | docs/*.md | site/content/*.md |'));
+      expect(releaseScript, contains('README.md | packages/*/README.md | site/content/*.md |'));
 
       final repo = Directory.systemTemp.createTempSync('version_lockstep_snippets_');
       addTearDown(() => repo.deleteSync(recursive: true));
-      for (final dir in ['tool', 'site', 'docs/guides', 'packages/trellis_x']) {
+      for (final dir in ['tool', 'site', 'site/content/docs', 'packages/trellis_x']) {
         Directory('${repo.path}/$dir').createSync(recursive: true);
       }
       final bin = Directory('${repo.path}/bin')..createSync();
@@ -227,7 +227,7 @@ trellis_x:
       final fixtures = [
         File('${repo.path}/README.md'),
         File('${repo.path}/packages/trellis_x/README.md'),
-        File('${repo.path}/docs/guides/install.md'),
+        File('${repo.path}/site/content/docs/install.md'),
       ];
       for (final fixture in fixtures) {
         fixture.writeAsStringSync(snippet);
@@ -263,28 +263,30 @@ trellis_x:
       const preRelease = '$stale-dev.1';
       final pinned = {
         'README.md': 'Install:\n\n```bash\n$install --theme x --ref $stale\n```\n',
-        'docs/guides/theme-usage.md': '$install --theme a --ref $stale\n\nprose\n\n$install --theme b --ref $stale\n',
+        'site/content/docs/theme-usage.md':
+            '$install --theme a --ref $stale\n\nprose\n\n$install --theme b --ref $stale\n',
         'themes/orchard/README.md': '$install --theme orchard --ref $stale\n',
         // A pin ending a sentence keeps its full stop.
-        'docs/guides/prose.md': 'Then run $install --theme c --ref $stale.\n',
+        'site/content/docs/prose.md': 'Then run $install --theme c --ref $stale.\n',
         // The whole pre-release tag is replaced, not just its X.Y.Z prefix.
-        'docs/guides/pre-release.md': '$install --theme d --ref $preRelease\n',
-        'docs/guides/two-pins.md': '$install --theme e --ref $stale && $install --theme f --ref $stale\n',
+        'site/content/docs/pre-release.md': '$install --theme d --ref $preRelease\n',
+        'site/content/docs/two-pins.md': '$install --theme e --ref $stale && $install --theme f --ref $stale\n',
         // Only a third-party source stops the scan: tolo's own links and a bare `git@` in prose do not.
-        'docs/guides/tolo-link.md': '$install --theme g # docs at github.com/tolo/trellis/wiki --ref $stale\n',
-        'docs/guides/git-at-prose.md': '$install --theme h (or clone via git@ if you prefer) --ref $stale\n',
+        'site/content/docs/tolo-link.md': '$install --theme g # docs at github.com/tolo/trellis/wiki --ref $stale\n',
+        'site/content/docs/git-at-prose.md': '$install --theme h (or clone via git@ if you prefer) --ref $stale\n',
       };
       final untouched = {
         // The pin scan stops at the next URL or git source, so a third-party pin after a tolo/trellis link keeps
         // its version.
-        'docs/guides/mixed.md': 'Built-ins live at https://github.com/tolo/trellis; $thirdParty\n',
-        'docs/guides/mixed-scp.md': 'Built-ins live at https://github.com/tolo/trellis; $scpThirdParty\n',
-        'docs/guides/mixed-schemeless.md': 'Built-ins live at https://github.com/tolo/trellis; $schemelessThirdParty\n',
+        'site/content/docs/mixed.md': 'Built-ins live at https://github.com/tolo/trellis; $thirdParty\n',
+        'site/content/docs/mixed-scp.md': 'Built-ins live at https://github.com/tolo/trellis; $scpThirdParty\n',
+        'site/content/docs/mixed-schemeless.md':
+            'Built-ins live at https://github.com/tolo/trellis; $schemelessThirdParty\n',
         'packages/trellis_x/CHANGELOG.md': '$history\n',
         'dev/state/LEARNINGS.md': 'pinned `--ref $stale` once\n$history\n',
         '.agent_temp/notes.md': '$history\n',
-        'docs/guides/third-party.md': '$thirdParty\n$lookAlike\n',
-        'docs/guides/no-url.md': 'Pass `--ref $stale` to pick a tag.\n',
+        'site/content/docs/third-party.md': '$thirdParty\n$lookAlike\n',
+        'site/content/docs/no-url.md': 'Pass `--ref $stale` to pick a tag.\n',
       };
       for (final entry in {...pinned, ...untouched}.entries) {
         final file = File('${repo.path}/${entry.key}')..createSync(recursive: true);
@@ -335,7 +337,7 @@ trellis_x:
 
       expect(result.exitCode, 0, reason: '${result.stderr}');
       final files = (result.stdout as String).trim().split('\n');
-      expect(files, contains('docs/guides/theme-usage.md'));
+      expect(files, contains('site/content/docs/sites/themes.md'));
       expect(files, contains('themes/lattice/README.md'));
       expect(files.where((f) => f.contains('CHANGELOG') || f.contains('LEARNINGS')), isEmpty);
       expect(files, isNot(contains('LICENSE')), reason: 'a file without a pin must not be listed');
@@ -757,7 +759,7 @@ String _pubspecVersion(String pubspec) {
 }
 
 /// The README and docs pages whose install snippets version_lockstep.sh keeps on the
-/// lockstep version: `README.md`, `packages/*/README.md`, every `.md` under `docs/` and
+/// lockstep version: `README.md`, `packages/*/README.md`, every `.md` under
 /// `site/content/`. Mirrors the script's `snippet_files()` and release.sh's allow-list.
 Iterable<String> _installSnippetFiles(Directory root) sync* {
   final rootReadme = File('${root.path}/README.md');
@@ -766,10 +768,9 @@ Iterable<String> _installSnippetFiles(Directory root) sync* {
     final readme = File('${package.path}/README.md');
     if (readme.existsSync()) yield readme.path;
   }
-  for (final dir in ['docs', 'site/content']) {
-    final directory = Directory('${root.path}/$dir');
-    if (!directory.existsSync()) continue;
-    yield* directory.listSync(recursive: true).whereType<File>().map((f) => f.path).where((p) => p.endsWith('.md'));
+  final content = Directory('${root.path}/site/content');
+  if (content.existsSync()) {
+    yield* content.listSync(recursive: true).whereType<File>().map((f) => f.path).where((p) => p.endsWith('.md'));
   }
 }
 

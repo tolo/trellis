@@ -21,12 +21,12 @@ rules and the silent-failure footguns that matter most.
 
 - [trellis engine README](https://github.com/tolo/trellis/blob/main/packages/trellis/README.md): Full `tl:*` directive and expression syntax, configuration, loaders, validation, custom processors/dialects.
 - [Project README](https://github.com/tolo/trellis/blob/main/README.md): SDK overview, package map, and the `trellis` CLI.
-- [Framework integration guide](https://github.com/tolo/trellis/blob/main/docs/guides/framework-integration.md): Shelf middleware, Dart Frog and Relic handlers, HTMX fragments and OOB swaps, template testing, error handling, AOT deployment notes.
+- [Framework integration guide](https://github.com/tolo/trellis/blob/main/site/content/docs/packages/framework-integration.md): Shelf middleware, Dart Frog and Relic handlers, HTMX fragments and OOB swaps, template testing, error handling, AOT deployment notes.
 - [API reference](https://pub.dev/documentation/trellis/latest/): Generated Dart API docs for the `trellis` package.
 
 ## Optional
 
-- [Theme usage guide](https://github.com/tolo/trellis/blob/main/docs/guides/theme-usage.md): Using themes in a Trellis site.
-- [Theme authoring guide](https://github.com/tolo/trellis/blob/main/docs/guides/theme-authoring.md): Building a reusable theme.
-- [Standard params reference](https://github.com/tolo/trellis/blob/main/docs/reference/standard-params.md): Standard template/context parameters.
+- [Theme usage guide](https://github.com/tolo/trellis/blob/main/site/content/docs/sites/themes.md): Using themes in a Trellis site.
+- [Theme authoring guide](https://github.com/tolo/trellis/blob/main/site/content/docs/themes/authoring.md): Building a reusable theme.
+- [Standard params reference](https://github.com/tolo/trellis/blob/main/site/content/docs/themes/standard-params.md): The 25 params every standard theme accepts.
 - [pub.dev package](https://pub.dev/packages/trellis): Install, changelog, scores.

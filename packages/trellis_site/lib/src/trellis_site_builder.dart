@@ -269,7 +269,7 @@ class TrellisSite {
     final siteContext = _buildSiteContext(pages);
     var siteParams = <String, dynamic>{'site': siteContext, 'theme': ?mergedThemeParams};
     if (config.taxonomies.isNotEmpty) {
-      final collector = const TaxonomyCollector();
+      final collector = TaxonomyCollector(pathPrefix: config.pathPrefix);
       final nonDraftPages = pages.where((pg) => !pg.isDraft).toList();
       final taxIndex = collector.collect(config.taxonomies, nonDraftPages);
 
@@ -363,6 +363,7 @@ class TrellisSite {
         siteDescription: config.description,
         contentDir: config.contentDir,
         siteAuthor: config.params['author'] as String?,
+        pathPrefix: config.pathPrefix,
       );
 
       // Validate configured sections against known sections
@@ -429,12 +430,7 @@ class TrellisSite {
       'menu': const NavigationBuilder().build(pages),
     };
 
-    if (config.feeds != null) {
-      final feedUrls = <String, dynamic>{};
-      if (config.feeds!.atom) feedUrls['atom'] = '/feed.xml';
-      if (config.feeds!.rss) feedUrls['rss'] = '/rss.xml';
-      context['feeds'] = feedUrls;
-    }
+    if (config.feeds != null) context['feeds'] = config.feeds!.siteFeedUrls(config.pathPrefix);
 
     return context;
   }

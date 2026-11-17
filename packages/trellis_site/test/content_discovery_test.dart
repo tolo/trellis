@@ -46,6 +46,8 @@ void main() {
     test('one level deep → top-level section', () => expect(deriveSection('posts/hello.md'), 'posts'));
     test('deeply nested → top-level section', () => expect(deriveSection('docs/advanced/config.md'), 'docs'));
     test('section index → section name', () => expect(deriveSection('posts/_index.md'), 'posts'));
+    test('bundle → its parent directory section', () => expect(deriveSection('posts/my-trip/index.md'), 'posts'));
+    test('root-level bundle → root section, like about.md', () => expect(deriveSection('about/index.md'), ''));
   });
 
   group('deriveSectionPath (nested lineage)', () {
@@ -62,6 +64,12 @@ void main() {
       () => expect(deriveSectionPath('docs/guides/_index.md'), 'docs/guides'),
     );
     test('section index one level → section name', () => expect(deriveSectionPath('posts/_index.md'), 'posts'));
+    test(
+      'bundle → its parent directory lineage, not its own folder',
+      () => expect(deriveSectionPath('posts/my-trip/index.md'), 'posts'),
+    );
+    test('nested bundle → parent lineage', () => expect(deriveSectionPath('docs/guides/tour/index.md'), 'docs/guides'));
+    test('root-level bundle → root lineage, like about.md', () => expect(deriveSectionPath('about/index.md'), ''));
   });
 
   group('ContentDiscovery', () {
@@ -147,6 +155,24 @@ void main() {
       expect(bundle.url, '/posts/my-trip/');
       expect(bundle.kind, PageKind.single);
       expect(bundle.bundleAssets, contains('posts/my-trip/photo.jpg'));
+      expect(bundle.section, 'posts');
+      expect(bundle.sectionPath, 'posts');
+    });
+
+    test('a bundle is listed, menu-filed and prev/next-linked as a page of its parent section', () async {
+      final pages = await ContentDiscovery(simpleSiteDir).discover();
+
+      // `${pages}` on /posts/ and prev/next both read this own-level sequence.
+      final postsUrls = orderedSectionPages('posts', pages).map((pg) => pg.url);
+      expect(postsUrls, containsAll(['/posts/hello-world/', '/posts/my-trip/']));
+
+      // The menu files the bundle under the posts node instead of synthesizing a
+      // `posts/my-trip` child section with an empty url.
+      final menu = const NavigationBuilder().build(pages);
+      final posts = menu.firstWhere((n) => n['url'] == '/posts/');
+      final children = (posts['children'] as List).cast<Map<String, dynamic>>();
+      expect(children.map((n) => n['url']), containsAll(['/posts/hello-world/', '/posts/my-trip/']));
+      expect(children.every((n) => (n['children'] as List).isEmpty), isTrue);
     });
 
     test('non-bundle pages have empty bundleAssets', () async {

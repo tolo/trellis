@@ -1,3 +1,4 @@
+import 'content_discovery.dart';
 import 'page.dart';
 
 /// A normalized taxonomy term with its associated pages.
@@ -12,7 +13,8 @@ class TaxonomyTerm {
   /// URL-safe slug derived from [name]. E.g. `"hello-world"`.
   final String slug;
 
-  /// Canonical URL for this term's listing page. E.g. `"/tags/dart/"`.
+  /// Canonical URL for this term's listing page, under the site's path prefix.
+  /// E.g. `"/tags/dart/"`, or `"/my-site/tags/dart/"` with `pathPrefix: /my-site/`.
   final String url;
 
   /// Number of pages tagged with this term.
@@ -71,7 +73,12 @@ class TaxonomyIndex {
 /// pages.addAll(virtualPages);
 /// ```
 class TaxonomyCollector {
-  const TaxonomyCollector();
+  /// The normalized site path prefix (see `SiteConfig.normalizePathPrefix`)
+  /// applied to every taxonomy URL, so listing and term pages resolve under it
+  /// the same way discovered content pages do. Empty means served at root.
+  final String pathPrefix;
+
+  const TaxonomyCollector({this.pathPrefix = ''});
 
   /// Builds [TaxonomyIndex] objects for all declared taxonomy names.
   ///
@@ -105,7 +112,7 @@ class TaxonomyCollector {
         return TaxonomyTerm(
           name: name,
           slug: slug,
-          url: '/$taxName/$slug/',
+          url: applyPathPrefix('/$taxName/$slug/', pathPrefix),
           count: entry.value.length,
           pages: entry.value,
         );
@@ -136,7 +143,7 @@ class TaxonomyCollector {
       virtual.add(
         Page(
           sourcePath: '_taxonomy/$taxName/_index.md',
-          url: '/$taxName/',
+          url: applyPathPrefix('/$taxName/', pathPrefix),
           section: taxName,
           kind: PageKind.section,
           isDraft: false,

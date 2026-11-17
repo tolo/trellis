@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.14.0
+
+### Fixed
+
+- **Feeds honour `pathPrefix`.** A feed's self link, site link and `<id>` (site-wide and per-section, Atom and RSS)
+  and `${site.feeds.*}` now resolve under the prefix, so `pathPrefix: /my-site/` emits
+  `https://example.com/my-site/feed.xml` instead of `https://example.com/feed.xml`. `FeedGenerator` takes a
+  `pathPrefix`, and `FeedConfig.siteFeedUrls` is the one source of the site-wide feed URLs.
+- **Taxonomy URLs honour `pathPrefix`.** Taxonomy listing and term pages (`/tags/`, `/tags/dart/`) carry the prefix in
+  `${page.url}`, `${taxonomy.*}` and `${page.termLinks.*}`, the sitemap and the search index. `TaxonomyCollector`
+  takes a `pathPrefix`.
+- **A page bundle belongs to its parent section.** `posts/my-trip/index.md` now has `section` and `sectionPath`
+  `posts`, as `posts/my-trip.md` would, so it appears in the `/posts/` `${pages}` listing, the `${site.menu}` tree and
+  prev/next links instead of under a synthesized `posts/my-trip` menu node with an empty URL. A root-level bundle
+  (`about/index.md`) is in the root section (`section` `''`), like `about.md`, so it no longer looks up an
+  `about/single.html` layout first.
+
 ## 0.13.0
 
 ### Breaking

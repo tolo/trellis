@@ -148,9 +148,11 @@ highlight:
 `pathPrefix` serves a site under a sub-path (e.g. GitHub project pages at
 `https://user.github.io/my-site/`) instead of a domain root. When set, every
 engine-derived internal URL resolves under the prefix -- page links
-(`${page.url}`), the section/menu tree, prev/next links, and the search-index
-`url` fields -- and `sitemap.xml`/feeds compose `baseUrl` with the prefixed URL
-so the prefix appears exactly once (`https://example.com/my-site/posts/intro/`).
+(`${page.url}`), the section/menu tree, prev/next links, taxonomy listing and
+term URLs, `${site.feeds.*}`, and the search-index `url` fields -- and
+`sitemap.xml`/feeds compose `baseUrl` with the prefixed URL so the prefix
+appears exactly once (`https://example.com/my-site/posts/intro/`, and a feed
+self link of `https://example.com/my-site/feed.xml`).
 
 The value is normalized: `my-site`, `/my-site`, `my-site/`, and `/my-site/` all
 canonicalize to `/my-site/` (leading slash, single trailing slash). `''` and
@@ -458,7 +460,7 @@ Generated outputs:
 
 Defaults: `atom: true`, `rss: false`, `limit: 20`, `fullContent: false` (summaries; `true` puts the rendered HTML in each item). Listing `sections` also narrows the site-wide `feed.xml`/`rss.xml` to pages from those sections.
 
-Templates can link to site-wide feeds via `${feeds.atom}` and `${feeds.rss}` when available. Pages with `feed: false` in front matter are excluded.
+Templates can link to site-wide feeds via `${site.feeds.atom}` and `${site.feeds.rss}` when available; both include the `pathPrefix`. Pages with `feed: false` in front matter are excluded.
 
 ## Syntax Highlighting
 

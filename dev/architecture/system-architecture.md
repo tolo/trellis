@@ -8,7 +8,7 @@ compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme
 `@use … with()` instead of `@import`, with per-mode colour params + 0.13 bridge hardening: one shared
 `compileThemeEntry` that configures each entry with the params Sass accepts and reports the ones it drops,
 build-time warnings for palette-default drift and for a site override Sass cannot apply (`trellis_site` now
-depends on `trellis_css`), and the redrawn package graph. The `trellis_ui` package map and pipeline section
+depends on `trellis_css`), and the redrawn package graph. The `trellis_ui` package map, pipeline and qualification sections
 are current through 0.14; other sections retain the verification scope above.
 
 ---
@@ -96,6 +96,13 @@ one classic script, and embeds assets and fragments as base64 plus digests. Runt
 outputs without invoking Tailwind or Node. Scoped resets replace page-wide preflight; all suite declarations are in
 cascade layers so app overrides retain precedence. A discovered-page gallery renders the same embedded fragments
 under strict CSP. The package graph SVG is scheduled for the release-prep redraw.
+
+`tool/ui_gate.dart` is a separate, package-independent development tool. YAML recipes select pages, states,
+keyboard/HTMX steps and invariants; one `GateDriver` surface shares the checks across the existing raw-CDP
+`BrowserProbe` and a raw WebDriver/BiDi Firefox adapter. Each run writes a deterministic per-component record,
+keeps human-entered release-prep items, and compares per-OS state/style baselines containing both browsers.
+The digest settles geometry and selected styles atomically without a CSP-blocked style element. Fixture proofs
+run in the normal test tiers; tests over real component/app pages and visual recordings run locally at release.
 
 ---
 

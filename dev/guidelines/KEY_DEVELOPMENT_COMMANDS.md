@@ -22,13 +22,16 @@ dart analyze
 ## Testing
 
 Run these tiers from the repository root. The fast tier matches CI's checks; full also runs package E2E tests.
-Both exclude the machine-specific root visual goldens, as CI does. Run `dart test test/visual_baseline_test.dart`
-separately on the baseline-authoring host when comparing those captures.
+Both exclude `visual` and `ui-gate`, the local release gates. `release-gate` includes those on the maintainer's
+baseline-authoring host. Harness fixture tests remain untagged and run in fast/full. For Firefox checks, put
+geckodriver 0.37.1 on `PATH` or set `GECKODRIVER` to the binary's absolute path; `FIREFOX_PATH` overrides Firefox
+discovery. See [UI qualification gate](TESTING-STRATEGY.md#ui-qualification-gate) for browser setup.
 
 | Tier | Command |
 |---|---|
-| fast | `dart run tool/generate_theme_gallery.dart --check && melos run --no-select analyze && melos run --no-select format:check && melos exec --dir-exists=test -- dart test --exclude-tags=e2e && dart test --exclude-tags=visual && dart format --output=none --set-exit-if-changed tool test` |
-| full | `dart run tool/generate_theme_gallery.dart --check && melos run --no-select analyze && melos run --no-select format:check && melos exec --dir-exists=test -- dart test && dart test --exclude-tags=visual && dart format --output=none --set-exit-if-changed tool test` |
+| fast | `dart run tool/generate_theme_gallery.dart --check && melos run --no-select analyze && melos run --no-select format:check && melos exec --dir-exists=test -- dart test --exclude-tags=e2e --exclude-tags=ui-gate && dart test --exclude-tags=visual --exclude-tags=ui-gate && dart format --output=none --set-exit-if-changed tool test` |
+| full | `dart run tool/generate_theme_gallery.dart --check && melos run --no-select analyze && melos run --no-select format:check && melos exec --dir-exists=test -- dart test --exclude-tags=ui-gate && dart test --exclude-tags=visual --exclude-tags=ui-gate && dart format --output=none --set-exit-if-changed tool test` |
+| release-gate | `melos exec --dir-exists=test -- dart test --exclude-tags=e2e && dart test` |
 | run one test | `dart test "{file}" --plain-name "{test}"` |
 
 ```bash
@@ -45,8 +48,8 @@ cd packages/trellis && dart test test/engine_test.dart
 # CI's `check` tier — run all five before pushing
 melos run --no-select analyze
 melos run --no-select format:check
-melos exec --dir-exists=test -- dart test --exclude-tags=e2e
-dart test                                                    # root suite (release/distribution contracts, tool/)
+melos exec --dir-exists=test -- dart test --exclude-tags=e2e --exclude-tags=ui-gate
+dart test --exclude-tags=visual --exclude-tags=ui-gate          # root suite without local release gates
 dart format --output=none --set-exit-if-changed tool test
 ```
 

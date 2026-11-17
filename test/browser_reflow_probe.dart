@@ -35,6 +35,17 @@ void requireChromeInCi(String what) {
   }
 }
 
+/// Shared load-time CSP capture, also usable as a Firefox BiDi preload.
+/// Deliberate policy controls are kept separate from page violations.
+const cspViolationPreload = r'''(() => {
+  window.__trellisCsp = {violations:[], controls:[]};
+  document.addEventListener('securitypolicyviolation', e => {
+    const reports = e.target?.id === 'ui-gate-policy-control' ? window.__trellisCsp.controls : window.__trellisCsp.violations;
+    reports.push({directive:e.effectiveDirective, source:e.sourceFile.replace(location.origin,''),
+      blocked:e.blockedURI.replace(location.origin,''), line:e.lineNumber});
+  });
+})()''';
+
 /// A headless Chrome process driven over the DevTools protocol.
 ///
 /// One instance per suite: process startup dominates the cost of a measurement,
@@ -60,6 +71,37 @@ class BrowserProbe {
   var _nextId = 0;
   String? _sessionId;
   String? _targetId;
+
+  /// Events from the attached page, for request and console observation.
+  Stream<Map<String, dynamic>> get events => _events.stream.where((event) => event['sessionId'] == _sessionId);
+
+  /// Sends a page-scoped command through the shared DevTools connection.
+  ///
+  /// Gate input and instrumentation reuse this lifecycle instead of launching
+  /// a second browser client with different profile and shutdown behavior.
+  Future<Map<String, dynamic>> command(String method, [Map<String, Object?> params = const {}]) =>
+      _send(method, params, session: true);
+
+  /// Arms instrumentation before any script in the next document executes.
+  Future<void> preloadScript(String script) async {
+    await command('Page.addScriptToEvaluateOnNewDocument', {'source': script});
+  }
+
+  /// Captures violations from the first page script, before the next navigation.
+  Future<void> captureSecurityPolicyViolations() => preloadScript(cspViolationPreload);
+
+  /// Structured CSP violations from the current document, excluding controls.
+  Future<List<Map<String, Object?>>> securityPolicyViolations() async =>
+      (await evaluateHere('window.__trellisCsp?.violations || []') as List)
+          .map((item) => (item as Map).cast<String, Object?>())
+          .toList();
+
+  /// Native listeners on an object, including ones installed by page scripts.
+  Future<int> listenerCount([String expression = 'document']) async {
+    final object = await command('Runtime.evaluate', {'expression': expression});
+    final result = await command('DOMDebugger.getEventListeners', {'objectId': (object['result'] as Map)['objectId']});
+    return (result['listeners'] as List).length;
+  }
 
   /// Absolute path of a Chrome/Chromium binary, or null when none is installed.
   ///
@@ -329,14 +371,15 @@ class BrowserProbe {
 /// only be laid out correctly over HTTP. Binds an ephemeral loopback port so
 /// concurrent suites never collide.
 class StaticSiteServer {
-  StaticSiteServer._(this._server, this._root);
+  StaticSiteServer._(this._server, this._root, this._headers);
 
   final HttpServer _server;
   final Directory _root;
+  final Map<String, String> _headers;
 
-  static Future<StaticSiteServer> serve(Directory root) async {
+  static Future<StaticSiteServer> serve(Directory root, {Map<String, String> headers = const {}}) async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    final instance = StaticSiteServer._(server, root);
+    final instance = StaticSiteServer._(server, root, Map.unmodifiable(headers));
     unawaited(instance._listen());
     return instance;
   }
@@ -348,6 +391,7 @@ class StaticSiteServer {
 
   Future<void> _listen() async {
     await for (final request in _server) {
+      _headers.forEach(request.response.headers.set);
       final relative = Uri.decodeComponent(request.uri.path).replaceFirst(RegExp('^/'), '');
       var file = File('${_root.path}/$relative');
       if (relative.isEmpty || file.statSync().type == FileSystemEntityType.directory) {

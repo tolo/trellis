@@ -1,10 +1,11 @@
 import 'htmx_asset.dart';
+import 'ui_scaffold_template.dart';
 
 /// Generates the bin/server.dart content for a new Shelf + Trellis project.
 ///
 /// Demonstrates the full middleware stack, HTMX counter endpoints, CSRF, and
 /// dev-mode hot reload.
-String serverTemplate(String projectName, {bool htmxCdn = false}) =>
+String serverTemplate(String projectName, {bool htmxCdn = false, bool ui = false}) =>
     '''
 import 'dart:io';
 
@@ -15,7 +16,7 @@ import 'package:shelf_static/shelf_static.dart';
 import 'package:trellis/trellis.dart';
 import 'package:trellis_dev/trellis_dev.dart';
 import 'package:trellis_shelf/trellis_shelf.dart';
-
+${ui ? uiImport : ''}
 import 'package:$projectName/handlers.dart';
 
 void main(List<String> args) async {
@@ -28,10 +29,10 @@ void main(List<String> args) async {
   final templatesDir = '\$scriptDir/templates';
   final staticDir = '\$scriptDir/static';
 
-  // FileSystemLoader resolves template names relative to templatesDir.
+${ui ? "  if (devMode) materializeTrellisUi(Directory('\$scriptDir/$staticUiPreview'));\n\n" : ''}  // FileSystemLoader resolves template names relative to templatesDir.
   // devMode: true enables file watching — templates are re-read on change.
   final loader = FileSystemLoader(templatesDir, devMode: devMode);
-  final engine = Trellis(loader: loader, devMode: devMode);
+  final engine = Trellis(loader: ${ui ? 'CompositeLoader([loader, TrellisUiLoader()])' : 'loader'}, devMode: devMode);
 
   // CSRF secret: use an environment variable in production.
   // WARNING: Change this default before deploying to production!
@@ -41,7 +42,7 @@ void main(List<String> args) async {
   final router = Router()
     ..get('/', (Request req) => indexPage(req))
     ..get('/about', (Request req) => aboutPage(req))
-    ..post('/counter/increment', (Request req) => incrementCounter(req))
+${ui ? "    ..get('/ui', uiPage)\n" : ''}    ..post('/counter/increment', (Request req) => incrementCounter(req))
     ..post('/counter/decrement', (Request req) => decrementCounter(req))
     ..post('/counter/reset', (Request req) => resetCounter(req));
 
@@ -73,7 +74,7 @@ void main(List<String> args) async {
     pipeline = pipeline.addMiddleware(devMiddleware(loader, staticDirectory: staticDir));
   }
 
-  final handler = pipeline.addHandler(cascade.handler);
+  final handler = pipeline.addHandler(${ui ? '_withUiAssets(cascade.handler)' : 'cascade.handler'});
 
   final server = await shelf_io.serve(handler, 'localhost', 8080);
   print('$projectName running at http://localhost:\${server.port}');
@@ -83,8 +84,20 @@ void main(List<String> args) async {
 
   // Graceful shutdown: close file watcher and HTTP server on Ctrl+C.
   ProcessSignal.sigint.watch().listen((_) async {
-    await engine.close();
+${ui ? '    await loader.close();\n' : ''}    await engine.close();
     await server.close();
   });
 }
+${ui ? _uiAssetsMiddleware : ''}''';
+
+const _uiAssetsMiddleware = '''
+
+Handler _withUiAssets(Handler app) => (request) {
+  final path = request.requestedUri.path;
+  if (!path.startsWith('/trellis-ui/')) return app(request);
+  if (request.method != 'GET' && request.method != 'HEAD') return Response.notFound('Not found');
+  final asset = trellisUiRespond(path, ifNoneMatch: request.headers['if-none-match']);
+  if (asset == null) return Response.notFound('Not found');
+  return Response(asset.statusCode, headers: asset.headers, body: asset.body);
+};
 ''';

@@ -1,10 +1,11 @@
 import '../htmx_asset.dart';
+import '../ui_scaffold_template.dart';
 
 /// Generates the templates/base.html content for a Relic + Trellis project.
 ///
 /// Uses template inheritance (`tl:define`) and HTMX for client-side navigation.
 /// No CSRF meta tag — trellis_relic has no CSRF middleware.
-String relicBaseLayoutTemplate(String projectName, {bool htmxCdn = false}) =>
+String relicBaseLayoutTemplate(String projectName, {bool htmxCdn = false, bool ui = false}) =>
     '''
 <!DOCTYPE html>
 <html lang="en">
@@ -15,7 +16,7 @@ String relicBaseLayoutTemplate(String projectName, {bool htmxCdn = false}) =>
   $htmxConfigMeta
   ${scaffoldHtmxScriptTag(htmxCdn: htmxCdn)}
   <link rel="stylesheet" href="/styles.css">
-</head>
+${ui ? uiAssetTags('../$staticUiPreview') : ''}</head>
 <body>
   <header>
     <nav>
@@ -23,7 +24,7 @@ String relicBaseLayoutTemplate(String projectName, {bool htmxCdn = false}) =>
       <div class="nav-links">
         <a href="/" hx-get="/" hx-target="#content" hx-push-url="true">Home</a>
         <a href="/about" hx-get="/about" hx-target="#content" hx-push-url="true">About</a>
-      </div>
+${ui ? '        $uiNavLink\n' : ''}      </div>
     </nav>
   </header>
 

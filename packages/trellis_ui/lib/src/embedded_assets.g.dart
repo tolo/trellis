@@ -2333,17 +2333,17 @@ const fragmentBase64 = <String, String>{
       'IiB0YWJpbmRleD0iMCIgdGw6YXR0cj0iYXJpYS1sYWJlbD0ke2NhcHRpb259ID86ICdEYXRhIHRhYmxlJyI+Cjx0YWJsZSBkYXRh'
       'LXNsb3Q9InRhYmxlIiBjbGFzcz0idHJlbGxpcy10YWJsZSIgdGw6YXR0cnM9IiR7YXR0cnN9Ij48Y2FwdGlvbiBkYXRhLXNsb3Q9'
       'InRhYmxlLWNhcHRpb24iIGNsYXNzPSJ0cmVsbGlzLXRhYmxlLWNhcHRpb24iIHRsOnRleHQ9IiR7Y2FwdGlvbn0gPzogJ0RhdGEg'
-      'dGFibGUnIj5EYXRhIHRhYmxlPC9jYXB0aW9uPjx0aGVhZCBkYXRhLXNsb3Q9InRhYmxlLWhlYWRlciIgY2xhc3M9InRyZWxsaXMt'
-      'dGFibGUtaGVhZGVyIj48dHIgZGF0YS1zbG90PSJ0YWJsZS1yb3ciIGNsYXNzPSJ0cmVsbGlzLXRhYmxlLXJvdyI+PHRoIHRsOmlm'
-      'PSIke2NvbHVtbnMgPT0gbnVsbH0iIHNjb3BlPSJjb2wiIGRhdGEtc2xvdD0idGFibGUtaGVhZCIgY2xhc3M9InRyZWxsaXMtdGFi'
-      'bGUtaGVhZCI+TmFtZTwvdGg+PHRoIHRsOmVhY2g9ImNvbHVtbiA6ICR7Y29sdW1uc30iIHNjb3BlPSJjb2wiIGRhdGEtc2xvdD0i'
-      'dGFibGUtaGVhZCIgY2xhc3M9InRyZWxsaXMtdGFibGUtaGVhZCIgdGw6dGV4dD0iJHtjb2x1bW59Ij5Db2x1bW48L3RoPjwvdHI+'
-      'PC90aGVhZD48dGJvZHkgdGw6ZWFjaD0icm93IDogJHtyb3dzfSIgdGw6c2xvdD0icm93IiBkYXRhLXNsb3Q9InRhYmxlLWJvZHki'
-      'IGNsYXNzPSJ0cmVsbGlzLXRhYmxlLWJvZHkiPjx0ciBkYXRhLXNsb3Q9InRhYmxlLXJvdyIgY2xhc3M9InRyZWxsaXMtdGFibGUt'
-      'cm93Ij48dGQgZGF0YS1zbG90PSJ0YWJsZS1jZWxsIiBjbGFzcz0idHJlbGxpcy10YWJsZS1jZWxsIiB0bDp0ZXh0PSIke3Jvd30i'
-      'PlZhbHVlPC90ZD48L3RyPjwvdGJvZHk+PHRmb290IGRhdGEtc2xvdD0idGFibGUtZm9vdGVyIiBjbGFzcz0idHJlbGxpcy10YWJs'
-      'ZS1mb290ZXIiPjx0cj48dGQgdGw6c2xvdD0iZm9vdGVyIiBkYXRhLXNsb3Q9InRhYmxlLWNlbGwiIGNsYXNzPSJ0cmVsbGlzLXRh'
-      'YmxlLWNlbGwiPjwvdGQ+PC90cj48L3Rmb290PjwvdGFibGU+PC9kaXY+CjwvYm9keT48L2h0bWw+Cg==',
+      'dGFibGUnIj5EYXRhIHRhYmxlPC9jYXB0aW9uPjx0aGVhZCB0bDpzbG90PSJoZWFkZXIiIGRhdGEtc2xvdD0idGFibGUtaGVhZGVy'
+      'IiBjbGFzcz0idHJlbGxpcy10YWJsZS1oZWFkZXIiPjx0ciBkYXRhLXNsb3Q9InRhYmxlLXJvdyIgY2xhc3M9InRyZWxsaXMtdGFi'
+      'bGUtcm93Ij48dGggdGw6aWY9IiR7Y29sdW1ucyA9PSBudWxsfSIgc2NvcGU9ImNvbCIgZGF0YS1zbG90PSJ0YWJsZS1oZWFkIiBj'
+      'bGFzcz0idHJlbGxpcy10YWJsZS1oZWFkIj5OYW1lPC90aD48dGggdGw6ZWFjaD0iY29sdW1uIDogJHtjb2x1bW5zfSIgc2NvcGU9'
+      'ImNvbCIgZGF0YS1zbG90PSJ0YWJsZS1oZWFkIiBjbGFzcz0idHJlbGxpcy10YWJsZS1oZWFkIiB0bDp0ZXh0PSIke2NvbHVtbn0i'
+      'PkNvbHVtbjwvdGg+PC90cj48L3RoZWFkPjx0Ym9keSB0bDplYWNoPSJyb3cgOiAke3Jvd3N9IiB0bDpzbG90PSJyb3ciIGRhdGEt'
+      'c2xvdD0idGFibGUtYm9keSIgY2xhc3M9InRyZWxsaXMtdGFibGUtYm9keSI+PHRyIGRhdGEtc2xvdD0idGFibGUtcm93IiBjbGFz'
+      'cz0idHJlbGxpcy10YWJsZS1yb3ciPjx0ZCBkYXRhLXNsb3Q9InRhYmxlLWNlbGwiIGNsYXNzPSJ0cmVsbGlzLXRhYmxlLWNlbGwi'
+      'IHRsOnRleHQ9IiR7cm93fSI+VmFsdWU8L3RkPjwvdHI+PC90Ym9keT48dGZvb3QgZGF0YS1zbG90PSJ0YWJsZS1mb290ZXIiIGNs'
+      'YXNzPSJ0cmVsbGlzLXRhYmxlLWZvb3RlciI+PHRyPjx0ZCB0bDpzbG90PSJmb290ZXIiIGRhdGEtc2xvdD0idGFibGUtY2VsbCIg'
+      'Y2xhc3M9InRyZWxsaXMtdGFibGUtY2VsbCI+PC90ZD48L3RyPjwvdGZvb3Q+PC90YWJsZT48L2Rpdj4KPC9ib2R5PjwvaHRtbD4K',
   'trellis-ui/tabs':
       'PCFkb2N0eXBlIGh0bWw+CjxodG1sIGxhbmc9ImVuIj48aGVhZD48bWV0YSBjaGFyc2V0PSJ1dGYtOCI+PHRpdGxlPlRhYnM8L3Rp'
       'dGxlPjwvaGVhZD48Ym9keT4KPHRsLXRhYnMgdGw6ZnJhZ21lbnQ9InRhYnMoaWQsIGFjdGl2ZSwgdmVydGljYWwsIC4uLmF0dHJz'
@@ -2439,7 +2439,7 @@ const fragmentDigests = <String, String>{
   'trellis-ui/separator': '53508f13bd7efef3c24fc455ce873ee503259890743ddb2fd382e08608b5b478',
   'trellis-ui/stack': 'da00a41b9eef87f7e9d8bd19b3336db3ce34ee5a25f16a435e7d81375cb15633',
   'trellis-ui/switch': '7b59d7aac3dd80e5da954c9ed7f37773f3c4fdbd3e8ad6e9b2550d9d40baba26',
-  'trellis-ui/table': '0b3c6985b5ae661935da8dd54854bce3aad84bc80e183aca8b58f345a6bf5b4f',
+  'trellis-ui/table': 'de52eb7ce78bea4844b739d6365b2f25225298198ec22947942a56d29819d815',
   'trellis-ui/tabs': '77169bfa00f00bdf287d11d79b51b87edadcee8a7e1f6bbf9dcb7ef3e0ca3ff5',
   'trellis-ui/textarea': '26f38ed06911d3e4a7ebd9cd075698c9686ad427b4a623edc779ac7ebb7160cb',
   'trellis-ui/toast': '55e4df57b88b0c064ca5724874ae6cc47c1089cf13405e56dd3bd12f53971b65',

@@ -18,12 +18,14 @@ import 'package:trellis_cli/trellis_cli.dart';
 import '_e2e_server.dart';
 import '_workspace_root.dart';
 import '_csp_browser.dart';
+import '_ui_scaffold_e2e.dart';
 
 /// Numeric loopback host – bound by the patched server and connected to by every client.
 final String _host = e2eLoopback.address;
 
 void main() {
   if (BrowserProbe.locateChrome() == null) requireChromeInCi('CSP browser proofs');
+  testUiScaffold(UiScaffold.shelf);
   group('Generated app E2E', () {
     late Directory projectDir;
     late int port;

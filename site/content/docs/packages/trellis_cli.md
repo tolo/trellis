@@ -117,6 +117,7 @@ Generates a new Trellis project from a starter template.
 Options:
 
 - `--template` (`-t`): the project template to use.
+- `--ui`: add Trellis UI and a Components page to an app scaffold.
 
 Available templates:
 
@@ -137,6 +138,16 @@ Use `trellis create my_app --template htmx --htmx-cdn` to opt into the SRI-pinne
 The generated `script-src` allows only `'self'` plus the pinned CDN origin; no local htmx file is
 written. `--htmx-cdn` is also accepted by `relic` and `dart_frog`, and rejected by `blog` and `theme`.
 
+Run `trellis create my_app --ui` to generate a Components page at `/ui`. The
+option works with the `htmx`, `relic`, and `dart_frog` templates and combines
+with `--htmx-cdn`. Follow the printed `dart pub get` and run commands, then open
+Components in the app's navigation.
+
+For previews from disk, run `dart run trellis_ui:materialize` from the project
+root. Shelf and Relic use `static/trellis-ui`. In a Dart Frog project, run
+`dart run trellis_ui:materialize public/trellis-ui`. Shelf started with `--dev` and
+Dart Frog started with `DEV=true` refresh these gitignored files at startup.
+Relic writes previews on demand.
 
 The `htmx`, `dart_frog`, and `relic` templates each generate a ready-to-run
 server app: server or route wiring, base and page layouts with HTMX

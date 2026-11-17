@@ -13,6 +13,10 @@ void main() {
     'ProjectGenerator': (w) => ProjectGenerator(projectName: 'my_app', writer: w).generate(),
     'DartFrogProjectGenerator': (w) => DartFrogProjectGenerator(projectName: 'my_app', writer: w).generate(),
     'RelicProjectGenerator': (w) => RelicProjectGenerator(projectName: 'my_app', writer: w).generate(),
+    'ProjectGenerator --ui': (w) => ProjectGenerator(projectName: 'my_app', writer: w, ui: true).generate(),
+    'DartFrogProjectGenerator --ui': (w) =>
+        DartFrogProjectGenerator(projectName: 'my_app', writer: w, ui: true).generate(),
+    'RelicProjectGenerator --ui': (w) => RelicProjectGenerator(projectName: 'my_app', writer: w, ui: true).generate(),
     'BlogProjectGenerator': (w) => BlogProjectGenerator(projectName: 'my_blog', writer: w).generate(),
   };
 

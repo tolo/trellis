@@ -1,11 +1,12 @@
 import 'htmx_asset.dart';
+import 'ui_scaffold_template.dart';
 
 /// Generates the templates/layouts/base.html content.
 ///
 /// Uses raw string concatenation to avoid conflicts with Trellis `${}`
 /// expressions. Includes same-origin HTMX and CSRF scripts, CSRF meta tag, and SPA-style
 /// navigation anchors.
-String baseLayoutTemplate(String projectName, {bool htmxCdn = false}) =>
+String baseLayoutTemplate(String projectName, {bool htmxCdn = false, bool ui = false}) =>
     r'''
 <!DOCTYPE html>
 <html lang="en">
@@ -21,7 +22,9 @@ String baseLayoutTemplate(String projectName, {bool htmxCdn = false}) =>
     '$htmxConfigMeta\n  ${scaffoldHtmxScriptTag(htmxCdn: htmxCdn)}\n' +
     r'''
   <script src="/js/csrf.js"></script>
-</head>
+''' +
+    (ui ? uiAssetTags('../../$staticUiPreview') : '') +
+    r'''</head>
 <body>
   <header>
     <nav tl:insert="~{partials/nav.html :: nav}">

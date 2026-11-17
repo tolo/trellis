@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contacts · Trellis Admin</title>
+  <meta name="htmx-config" content='{"allowEval":false,"includeIndicatorStyles":false,"historyRestoreAsHxRequest":false}'>
+  <link rel="stylesheet" href="/trellis-ui/trellis-ui.css">
+  <link rel="stylesheet" href="/trellis-ui/htmx-indicator.css">
+  <link rel="stylesheet" href="/app.css">
+  <script src="/js/htmx.min.js" defer></script>
+  <script src="/trellis-ui/trellis-ui.js" defer></script>
+</head>
+<body tl:attr="hx-headers=${'{&quot;X-CSRF-Token&quot;:&quot;' + csrfToken + '&quot;}'}">
+  <main>
+    <div tl:replace="~{trellis-ui/container :: container('lg')}" class="admin-page">
+      <div tl:replace="~{trellis-ui/stack :: stack('lg')}">
+        <header>
+          <h1>Contacts</h1>
+        </header>
+        <div tl:define="content"></div>
+      </div>
+    </div>
+  </main>
+  <div id="dialog-host"></div>
+  <div tl:replace="~{trellis-ui/toast :: toastViewport('toaster')}"></div>
+</body>
+</html>

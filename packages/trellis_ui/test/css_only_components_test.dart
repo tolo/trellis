@@ -137,6 +137,32 @@ void main() {
     );
   });
 
+  test('a natural table header slot can render a sortable column control', () {
+    final table = render(
+      '''
+<table tl:replace="~{trellis-ui/table :: table('Users', columns, rows)}">
+  <thead tl:slot="header">
+    <tr class="trellis-table-row">
+      <th scope="col" class="trellis-table-head" aria-sort="ascending">
+        <button tl:replace="~{trellis-ui/button :: button('ghost', 'sm')}" hx-get="/users?dir=desc">Name</button>
+      </th>
+    </tr>
+  </thead>
+  <tbody tl:slot="row"><tr><td>Row content</td></tr></tbody>
+</table>
+''',
+      {
+        'columns': ['Fallback'],
+        'rows': ['Row'],
+      },
+    );
+    expect(table.querySelectorAll('thead'), hasLength(1));
+    final header = table.querySelector('thead.trellis-table-header th[scope=col][aria-sort=ascending]')!;
+    expect(header.querySelector('button[hx-get="/users?dir=desc"]')!.text.trim(), 'Name');
+    expect(table.querySelector('tbody td')!.text, 'Row content');
+    expect(table.text, isNot(contains('Fallback')));
+  });
+
   test('table, pagination and breadcrumb render their structure from app data', () {
     final table = render(
       r'''<table tl:replace="~{trellis-ui/table :: table('Users', columns, rows)}"><tbody tl:slot="row"><tr><td class="trellis-table-cell" tl:text="${row.name}">Name</td></tr></tbody></table>''',

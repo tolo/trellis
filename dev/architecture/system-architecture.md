@@ -2,7 +2,7 @@
 
 Canonical reference for understanding the Trellis SDK architecture: how the packages compose, what each package is responsible for, the dependency graph, and how a request flows through the system.
 
-**Current through**: dev reload/scaffold CSP updated for 0.14 on 2026-11-17; otherwise v0.11.0 SDK + the 2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
+**Current through**: dev reload, scaffold CSP and UI previews updated for 0.14 on 2026-11-17; otherwise v0.11.0 SDK + the 2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
 Lattice `site_demo` home block, and the `examples/docs_site/` proof) + the 2026-09-04 HTMX 4 adapter
 compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme stylesheets compile through
 `@use … with()` instead of `@import`, with per-mode colour params + 0.13 bridge hardening: one shared
@@ -90,6 +90,7 @@ and forced-colour paint without modifying the pinned token values. `TrellisUiLoa
 `CompositeLoader`; `trellisUiRespond` exposes immutable status/headers/bytes for server glue on Shelf, Relic or Dart
 Frog. Assets live under `/trellis-ui/`, use compile-time SHA-256 ETags and answer conditional GETs with 304.
 `materializeTrellisUi` optionally writes the same bytes beside the binary and overwrites divergence.
+An app with the suite dependency can invoke the same function through `dart run trellis_ui:materialize [dir]`.
 
 Interactive fragments upgrade to light-DOM custom elements from the deferred classic script. One base owns
 listener cleanup and popup sanitisation for HTMX swaps and history. Native dialogs provide modality; native
@@ -206,6 +207,29 @@ Browser                          Server
    ├── location.reload() ──────────►│  Browser refreshes
    │                                │
 ```
+
+---
+
+### UI app scaffolds and local previews (0.14)
+
+`trellis create --ui` adds the embedded suite loader, same-origin asset responses and a shared Components page to
+the Shelf, Relic and Dart Frog scaffolds. The page and layout pair relative preview asset paths with served paths.
+Template inheritance replaces the child page's head with the layout's head when rendered. Opening the child page
+from disk uses its own head and the classic suite script.
+
+Shelf and Dart Frog write the preview assets before starting their reload watchers. Relic uses the same preview
+command on demand. The app's asset route serves embedded bytes before static-file lookup, so an edited preview
+file cannot change the running app. The CLI emits this wiring as source text. The generated app owns the runtime
+dependency and runs the materialization command from that dependency.
+
+Dart Frog's generated cascade checks `public/` before its router. Its UI scaffold uses the custom entrypoint
+to serve the suite prefix ahead of that cascade and apply strict headers to both paths. The entrypoint's
+dev init hook materializes assets before the route middleware starts watching files.
+
+The [admin example](../../examples/admin_app/) uses the Shelf integration. It shares the contacts query and list
+fragment across full page loads and HTMX swaps, and a mutation returns the list plus out-of-band summary, dialog
+host and toast updates. The AOT executable embeds the suite and reads the example's own templates and static
+files alongside it.
 
 ---
 

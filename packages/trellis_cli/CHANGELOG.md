@@ -7,6 +7,8 @@
 - Counter fragment swaps preserve keyboard focus through stable control IDs, allowing repeated Enter activation.
 
 - App scaffolds use strict CSP, self-host pinned HTMX and external CSRF scripts, and disable injected indicator styles. `create --htmx-cdn` opts into the pinned CDN origin. Shelf and Dart Frog watch static CSS/JS in dev mode.
+- `trellis create --ui` adds Trellis UI and a Components page to Shelf, Relic and Dart Frog projects.
+  Shelf and Dart Frog dev mode materialize gitignored local-preview assets at startup.
 
 
 ### Changed

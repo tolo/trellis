@@ -1,10 +1,11 @@
 import '../htmx_asset.dart';
+import '../ui_scaffold_template.dart';
 
 /// Generates the templates/layouts/base.html content for a Dart Frog + Trellis project.
 ///
 /// Uses raw string concatenation to avoid conflicts with Trellis `${}`
 /// expressions while injecting [projectName] as a Dart string interpolation.
-String dartFrogBaseLayoutTemplate(String projectName, {bool htmxCdn = false}) =>
+String dartFrogBaseLayoutTemplate(String projectName, {bool htmxCdn = false, bool ui = false}) =>
     r'''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,7 +20,9 @@ String dartFrogBaseLayoutTemplate(String projectName, {bool htmxCdn = false}) =>
     '$htmxConfigMeta\n  ${scaffoldHtmxScriptTag(htmxCdn: htmxCdn)}\n' +
     r'''
   <script src="/js/csrf.js"></script>
-</head>
+''' +
+    (ui ? uiAssetTags('../../$publicUiPreview') : '') +
+    r'''</head>
 <body>
   <header>
     <nav tl:insert="~{partials/nav.html :: nav}">

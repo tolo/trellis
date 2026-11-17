@@ -83,6 +83,10 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
 
 ## HTMX Integration
 
+- **Dart Frog checks public files before routes.** A dynamic asset route can lose to a file under `public/`
+  before route middleware adds security headers. The UI scaffold uses the custom entrypoint to serve
+  embedded suite paths first and puts preview materialization in its dev init hook.
+
 - **Chrome lazily materializes CSSOM style writes.** Calling `removeAttribute('style')` before any attribute read can leave an empty attribute, which HTMX copies with `setAttribute` under strict CSP.
   `TlElement` reads `hasAttribute('style')` first. Read-only diagnostics can hide the bug by doing that read.
 

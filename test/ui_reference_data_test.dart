@@ -96,6 +96,31 @@ void main() {
     expect(generator.check(), isEmpty);
   });
 
+  test('a manual gate failure removes the published component inventory and page', () {
+    copyComponents(['button', 'badge']);
+    write('$_suite/generated/trellis.min.css', '.trellis-button {} .trellis-badge {}');
+    generator.write();
+    expect(generator.check(), isEmpty);
+
+    editRecord('button', (record) {
+      (record['items'] as Map)['safari'] = {
+        'status': 'fail',
+        'evidence': ['Focus was lost after closing.'],
+      };
+    });
+    expect(generator.check(), [
+      contains('Regenerate with: dart run tool/generate_ui_reference.dart'),
+      'Unexpected reference page: button',
+    ]);
+    generator.write();
+    expect(generated().keys, [
+      'badge',
+    ], reason: 'The publication drops the failing subject and keeps its gate evidence.');
+    expect(generator.check(), ['Unexpected reference page: button']);
+    file('$_pages/button.md').deleteSync();
+    expect(generator.check(), isEmpty);
+  });
+
   test('part classes go to the longest matching component name', () {
     copyComponents(['alert', 'alert-dialog']);
     write('$_suite/generated/trellis.min.css', '''
@@ -133,7 +158,13 @@ void main() {
           };
         }
       });
+      final recordBefore = file('$_records/button.json').readAsBytesSync();
       generator.write();
+      expect(file('$_records/button.json').readAsBytesSync(), recordBefore);
+      if (status == 'fail') {
+        expect(generated(), isEmpty);
+        continue;
+      }
       final data = generated()['button'] as YamlMap;
       expect(data['qualified'], isTrue);
       expect(data['supported'], status == 'pass');

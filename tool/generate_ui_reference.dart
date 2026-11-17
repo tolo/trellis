@@ -88,6 +88,8 @@ final class UiReferenceGenerator {
     for (final (index, file) in files.indexed) {
       final name = names[index];
       final (passes, items) = _gate(name, file);
+      // Keep a release-prep failure in its gate record without publishing the component.
+      if (items.skip(automatedItems.length).any((item) => item['status'] == 'fail')) continue;
       final (fragments, aliases) = _fragments(name);
       if (passes) qualified.add(name);
       final supported = passes && items.every((item) => item['status'] == 'pass');
@@ -112,6 +114,7 @@ final class UiReferenceGenerator {
         buffer.writeln('    - ${jsonEncode(item)}');
       }
     }
+    if (buffer.length == _header.length) buffer.writeln('{}');
     return (yaml: buffer.toString(), qualified: qualified);
   }
 

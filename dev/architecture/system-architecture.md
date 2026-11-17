@@ -2,7 +2,9 @@
 
 Canonical reference for understanding the Trellis SDK architecture: how the packages compose, what each package is responsible for, the dependency graph, and how a request flows through the system.
 
-**Current through**: dev reload, scaffold CSP and UI previews updated for 0.14 on 2026-11-17; otherwise v0.11.0 SDK + the 2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
+**Current through**: dev reload, scaffold CSP and UI previews updated for 0.14 on 2026-11-17. The named site source
+pipeline and CLI registry were verified for 0.14 on 2026-11-18. The wider scope is the v0.11.0 SDK + the
+2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
 Lattice `site_demo` home block, and the `examples/docs_site/` proof) + the 2026-09-04 HTMX 4 adapter
 compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme stylesheets compile through
 `@use … with()` instead of `@import`, with per-mode colour params + 0.13 bridge hardening: one shared

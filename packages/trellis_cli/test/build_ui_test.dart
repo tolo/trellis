@@ -39,15 +39,17 @@ void main() {
   test('build with uses: trellis_ui renders suite fragments and ships its assets', () async {
     final result = await build();
     expect(result.exitCode, 0, reason: '${result.stderr}\n${result.stdout}');
-    expect(realPage(), contains('data-slot="button"'));
-    expect(realPage(), contains('trellis-button-variant-destructive'));
-    expect(realPage(), contains('href="/trellis-ui/trellis-ui.css"'));
+    final page = realPage();
+    expect(page, contains('data-slot="button"'));
+    expect(page, contains('trellis-button-variant-destructive'));
+    expect(page, contains('href="/trellis-ui/trellis-ui.css"'));
     final outputAssets = Directory(p.join(site.path, 'output', assetRoot));
+    final files = outputAssets.listSync().whereType<File>().toList();
     expect(
-      outputAssets.listSync().whereType<File>().map((file) => p.basename(file.path)),
+      files.map((file) => p.basename(file.path)),
       unorderedEquals(['trellis-ui.css', 'trellis-ui.js', 'htmx-indicator.css']),
     );
-    for (final file in outputAssets.listSync().whereType<File>()) {
+    for (final file in files) {
       final uriPath = '/$assetRoot/${p.basename(file.path)}';
       expect(file.readAsBytesSync(), trellisUiRespond(uriPath)!.body, reason: uriPath);
     }

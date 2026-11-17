@@ -1,5 +1,3 @@
-import 'file_writer.dart';
-import '../templates/htmx_asset.dart';
 import '../templates/analysis_options_template.dart';
 import '../templates/dart_frog/dart_frog_about_page_template.dart';
 import '../templates/dart_frog/dart_frog_about_route_template.dart';
@@ -13,6 +11,8 @@ import '../templates/dart_frog/dart_frog_middleware_template.dart';
 import '../templates/dart_frog/dart_frog_nav_partial_template.dart';
 import '../templates/dart_frog/dart_frog_pubspec_template.dart';
 import '../templates/dart_frog/dart_frog_styles_template.dart';
+import '../templates/htmx_asset.dart';
+import 'file_writer.dart';
 
 /// Generates a complete Dart Frog + Trellis + HTMX project scaffold.
 ///
@@ -34,7 +34,6 @@ class DartFrogProjectGenerator {
   final bool htmxCdn;
 
   /// Generates all project files.
-  ///
   Future<void> generate() async {
     // Config files
     await writer.writeFile('pubspec.yaml', dartFrogPubspecTemplate(projectName));
@@ -59,7 +58,9 @@ class DartFrogProjectGenerator {
 
     // Static assets (Dart Frog serves from public/ by default)
     await writer.writeFile('public/styles.css', dartFrogStylesTemplate() + htmxIndicatorCss);
-    if (!htmxCdn) await writer.writeFile('public/js/htmx.min.js', htmxSource);
+    if (!htmxCdn) {
+      await writer.writeFile('public/js/htmx.min.js', htmxSource);
+    }
     await writer.writeFile('public/js/csrf.js', csrfScript);
   }
 }

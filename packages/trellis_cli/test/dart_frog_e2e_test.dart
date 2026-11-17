@@ -18,9 +18,11 @@ import 'package:trellis_cli/trellis_cli.dart';
 import '_e2e_server.dart';
 import '_workspace_root.dart';
 import '_csp_browser.dart';
+import '_ui_scaffold_e2e.dart';
 
 void main() {
   if (BrowserProbe.locateChrome() == null) requireChromeInCi('CSP browser proofs');
+  testUiScaffold(UiScaffold.dartFrog);
   group('Dart Frog starter E2E', () {
     late Directory projectDir;
     late int port;
@@ -47,17 +49,7 @@ void main() {
       final analyze = await Process.run('dart', ['analyze', '--fatal-infos'], workingDirectory: projectDir.path);
       expect(analyze.exitCode, 0, reason: 'dart analyze failed:\n${analyze.stdout}\n${analyze.stderr}');
 
-      final home = Platform.environment['HOME'];
-      final dartFrogExecutable = home != null ? '$home/.pub-cache/bin/dart_frog' : 'dart_frog';
-
-      if (!File(dartFrogExecutable).existsSync()) {
-        final activate = await Process.run('dart', ['pub', 'global', 'activate', 'dart_frog_cli', '1.2.6']);
-        expect(
-          activate.exitCode,
-          0,
-          reason: 'dart_frog CLI activation failed:\n${activate.stdout}\n${activate.stderr}',
-        );
-      }
+      final dartFrogExecutable = await prepareDartFrogExecutable();
 
       final booted = await bootServer(
         label: 'dart_frog dev',
@@ -83,7 +75,7 @@ void main() {
       // reap whatever still holds our port. Safe only because the port is
       // allocated per run — this used to target a fixed port and would kill
       // an unrelated process (or a concurrent run's server).
-      await _killListenersOnPort(port);
+      await killListenersOnPort(port);
       await projectDir.parent.delete(recursive: true);
     });
 
@@ -208,17 +200,4 @@ String? _extractCsrfCookieValue(String? setCookieHeader) {
     }
   }
   return null;
-}
-
-Future<void> _killListenersOnPort(int port) async {
-  final result = await Process.run('lsof', ['-t', '-iTCP:$port', '-sTCP:LISTEN']);
-  if (result.exitCode != 0) {
-    return;
-  }
-
-  final pids = '${result.stdout}'.split('\n').map((line) => line.trim()).where((line) => line.isNotEmpty).toSet();
-
-  for (final pid in pids) {
-    await Process.run('kill', [pid]);
-  }
 }

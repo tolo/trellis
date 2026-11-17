@@ -76,7 +76,7 @@ slots take the contents of the caller marker; unmarked caller content fills the 
 | `separator :: separator` | `orientation` | none | `vertical`, otherwise horizontal `hr` |
 | `stack :: stack` | `gap` | anonymous | gap scale; fallback `md` |
 | `switch :: switch` | `size` | none | `default`, `sm`; fallback `default`; native checkbox with switch role |
-| `table :: table` | `caption, columns, rows` | `row`, `footer` | server lists; row marker reads the `row` map in loop scope |
+| `table :: table` | `caption, columns, rows` | `header`, `row`, `footer` | server lists; row marker reads the `row` map in loop scope |
 | `tabs :: tabs` | `id, active, vertical` | anonymous list and panels | forwards to the layout; `active` is the initial tab value; horizontal by default, `data-orientation` |
 | `tabs :: tabList` | none | anonymous tab triggers | forwards to the tab list; supply an accessible name |
 | `tabs :: tabTrigger` | `value` | anonymous tab label | native tab button; `data-active`; native `disabled` |
@@ -111,7 +111,11 @@ creates one valid body row group per data item:
 </table>
 ```
 
-`columns` is a list of heading strings and `people` a list of row maps. The wrapper is a labelled, focusable region
+`columns` is a list of heading strings and `people` a list of row maps. To add sort controls, supply a direct
+`<thead tl:slot="header">` with a `<tr>` and `<th scope="col">` cells. The slot replaces the generated heading
+row, so the caller sets `aria-sort` on the sorted heading.
+
+The wrapper is a labelled, focusable region
 that scrolls horizontally. Keep table minimum widths in application CSS (the gallery uses 40rem). Use a natural
 `select` host for native-select option content and plain text inside a textarea host.
 
@@ -209,6 +213,15 @@ materializeTrellisUi(Directory('static/trellis-ui'));
 Call at startup when static files are preferable. Missing directories are created; divergent assets are replaced;
 equal files retain their mtimes. Filesystem errors propagate with the target path. Keep application overrides in a
 separate file; materialized files are managed output.
+
+From an app that depends on `trellis_ui`, run:
+
+```sh
+dart run trellis_ui:materialize [dir]
+```
+
+The default directory is `static/trellis-ui`. For a Dart Frog scaffold, pass `public/trellis-ui`.
+The command replaces edited preview assets and exits non-zero with the target path if a write fails.
 
 ## Maintaining components
 

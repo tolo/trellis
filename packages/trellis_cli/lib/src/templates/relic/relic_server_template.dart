@@ -1,15 +1,17 @@
 import '../htmx_asset.dart';
+import '../ui_scaffold_template.dart';
 
 /// Generates the bin/server.dart content for a Relic + Trellis project.
 ///
 /// Uses regular string concatenation with \$ escaping for Dart interpolation
 /// in generated code.
-String relicServerTemplate(String projectName, {bool htmxCdn = false}) =>
+String relicServerTemplate(String projectName, {bool htmxCdn = false, bool ui = false}) =>
     "import 'dart:io';\n"
     '\n'
     "import 'package:relic/relic.dart';\n"
     "import 'package:trellis/trellis.dart';\n"
     "import 'package:trellis_relic/trellis_relic.dart';\n"
+    '${ui ? uiImport : ''}'
     '\n'
     "import 'package:$projectName/handlers.dart';\n"
     '\n'
@@ -21,7 +23,7 @@ String relicServerTemplate(String projectName, {bool htmxCdn = false}) =>
     '  // Engine is an application-level singleton — Relic has no DI/context\n'
     '  // mechanism. Route handlers capture it via closure.\n'
     '  final engine = Trellis(\n'
-    '    loader: FileSystemLoader(templatesDir, devMode: true),\n'
+    '    loader: ${ui ? 'CompositeLoader([FileSystemLoader(templatesDir, devMode: true), TrellisUiLoader()])' : 'FileSystemLoader(templatesDir, devMode: true)'},\n'
     '    devMode: true,\n'
     '  );\n'
     '  const csp = CspBuilder.strict('
@@ -34,6 +36,7 @@ String relicServerTemplate(String projectName, {bool htmxCdn = false}) =>
     '    // Page routes\n'
     "    ..get('/', (request) => homePage(request, engine))\n"
     "    ..get('/about', (request) => aboutPage(request, engine))\n"
+    '${ui ? "    ..get('/ui', (request) => uiPage(request, engine))\n    ..get('/trellis-ui/:asset', uiAsset)\n" : ''}'
     '    // Counter HTMX endpoints\n'
     "    ..post('/counter/increment', (request) => incrementCounter(request, engine))\n"
     "    ..post('/counter/decrement', (request) => decrementCounter(request, engine))\n"

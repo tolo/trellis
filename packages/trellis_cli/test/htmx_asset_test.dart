@@ -1,8 +1,7 @@
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-
 import 'package:test/test.dart';
 import 'package:trellis_cli/src/templates/base_layout_template.dart';
 import 'package:trellis_cli/src/templates/dart_frog/dart_frog_base_layout_template.dart';
@@ -20,6 +19,11 @@ void main() {
     expect(csrfScript, contains("'htmx:configRequest'"));
     expect(csrfScript, contains("'htmx:config:request'"));
     expect(csrfScript, contains("headers['X-CSRF-Token'] = token"));
+  });
+  test('admin example htmx matches the pin', () async {
+    final root = await findWorkspaceRoot();
+    final bytes = File('${root.path}/examples/admin_app/static/js/htmx.min.js').readAsBytesSync();
+    expect('sha384-${base64.encode(sha384.convert(bytes).bytes)}', htmxSriHash);
   });
   group('scaffolded layouts', () {
     final layouts = {

@@ -18,8 +18,9 @@ void main() {
   late Map<String, String> original;
 
   setUp(() {
-    root = Directory('../../.agent_temp').absolute.createTempSync('sync-command-test-');
-    addTearDown(() => root.deleteSync(recursive: true));
+    final repo = Directory('../../.agent_temp').absolute.createTempSync('sync-command-test-');
+    addTearDown(() => repo.deleteSync(recursive: true));
+    root = Directory('${repo.path}/packages/trellis_ui')..createSync(recursive: true);
     compiler = _write(root, 'fixture-compiler', r'''#!/bin/sh
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -54,7 +55,7 @@ cp "$input" "$output"
     for (final file in ['entry.css', 'trellis.css', 'trellis.min.css']) {
       _write(root, 'generated/$file', ':root { --primary: red; }\n.dark { --primary: blue; }\n.trellis-button {}');
     }
-    _git(root, ['init', '-q']);
+    _git(repo, ['init', '-q']);
     _git(root, ['add', '.']);
     _git(root, ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.test', 'commit', '-qm', 'Previous pin']);
     original = _syncFiles(root);

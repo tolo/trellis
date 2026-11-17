@@ -24,7 +24,8 @@ Future<File> syncPin(Pipeline pipeline, String tag, {String? compilerPath, Strin
       final previous = Directory('${scratch.path}/previous')..createSync();
       final candidate = Directory('${scratch.path}/candidate')..createSync();
       final archive = '${scratch.path}/committed.tar';
-      await _git(root, [
+      // Git applies the working-directory prefix even to a named subtree.
+      await _git(Directory(repoRoot), [
         'archive',
         '--format=tar',
         '--output=$archive',

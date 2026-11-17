@@ -60,15 +60,17 @@ void main() {
       '''<div tl:replace="~{trellis-ui/field :: field('email', 'Email', 'Work address', null)}"></div>''',
     );
     expect(normal.querySelector('label')!.attributes['for'], 'email');
-    expect(normal.querySelector('input')!.attributes['id'], 'email');
-    expect(normal.querySelector('input')!.attributes['aria-describedby'], 'email-hint');
+    final normalInput = normal.querySelector('input')!;
+    expect(normalInput.attributes['id'], 'email');
+    expect(normalInput.attributes['aria-describedby'], 'email-hint');
     expect(normal.querySelector('[role=alert]'), isNull);
-    expect(normal.querySelector('input')!.attributes.containsKey('aria-invalid'), isFalse);
+    expect(normalInput.attributes.containsKey('aria-invalid'), isFalse);
     final error = render(
       '''<div tl:replace="~{trellis-ui/field :: field('email', 'Email', 'Work address', 'Invalid email')}"></div><div tl:replace="~{trellis-ui/field :: field('other', 'Other', 'Hint', 'Error')}"></div>''',
     );
-    expect(error.querySelector('input')!.attributes['aria-describedby'], 'email-hint email-error');
-    expect(error.querySelector('input')!.attributes['aria-invalid'], 'true');
+    final errorInput = error.querySelector('input')!;
+    expect(errorInput.attributes['aria-describedby'], 'email-hint email-error');
+    expect(errorInput.attributes['aria-invalid'], 'true');
     expect(error.querySelector('[role=alert]')!.text, 'Invalid email');
     final ids = error.querySelectorAll('[id]').map((e) => e.id).toList();
     expect(ids.toSet(), hasLength(ids.length));
@@ -137,7 +139,7 @@ void main() {
 
   test('table, pagination and breadcrumb render their structure from app data', () {
     final table = render(
-      '''<table tl:replace="~{trellis-ui/table :: table('Users', columns, rows)}"><tbody tl:slot="row"><tr><td class="trellis-table-cell" tl:text="${r'${row.name}'}">Name</td></tr></tbody></table>''',
+      r'''<table tl:replace="~{trellis-ui/table :: table('Users', columns, rows)}"><tbody tl:slot="row"><tr><td class="trellis-table-cell" tl:text="${row.name}">Name</td></tr></tbody></table>''',
       {
         'columns': ['Name'],
         'rows': [
@@ -162,8 +164,9 @@ void main() {
         ],
       },
     );
-    expect(pagination.querySelectorAll('[aria-current=page]'), hasLength(1));
-    expect(pagination.querySelector('[aria-current=page]')!.text, '3');
+    final currentLinks = pagination.querySelectorAll('[aria-current=page]');
+    expect(currentLinks, hasLength(1));
+    expect(currentLinks.single.text, '3');
     expect(pagination.querySelector('span[aria-disabled=true]')!.text, 'Previous');
     expect(pagination.querySelector('[data-slot=pagination-ellipsis]')!.attributes['aria-hidden'], 'true');
     final crumb = render('<nav tl:replace="~{trellis-ui/breadcrumb :: breadcrumb(items)}"></nav>', {

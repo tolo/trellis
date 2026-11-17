@@ -45,8 +45,9 @@ List<String> qualificationIssues(Directory pages, Directory manifests, Directory
     }
     final record = jsonDecode(file.readAsStringSync()) as Map;
     if (record['component'] != name || record['automated'] != 'pass') issues.add('$name: automated verdict');
+    final items = record['items'] as Map;
     for (final item in automatedItems) {
-      final value = (record['items'] as Map)[item] as Map?;
+      final value = items[item] as Map?;
       if (value?['status'] != 'pass') issues.add('$name: $item');
       final browsers = value?['browsers'] as Map? ?? const {};
       for (final browser in ['chrome', 'firefox']) {
@@ -57,10 +58,15 @@ List<String> qualificationIssues(Directory pages, Directory manifests, Directory
         }
       }
     }
+    // The CLI preserves maintainer-entered manual outcomes across automated reruns.
     for (final item in manualItems) {
-      if (((record['items'] as Map)[item] as Map?)?['status'] != 'release-prep') {
-        issues.add('$name: $item release-prep');
+      if (items[item] case {
+        'status': 'pass' || 'fail' || 'not-run' || 'release-prep',
+        'evidence': final List<Object?> evidence,
+      } when evidence.every((entry) => entry is String)) {
+        continue;
       }
+      issues.add('$name: $item invalid manual result');
     }
   }
   return issues;
@@ -109,7 +115,39 @@ void main() {
     File('${records.path}/button.json').copySync(copied.path);
     expect(qualificationIssues(fakePages, fakeManifests, fakeRecords), isEmpty);
     final data = jsonDecode(copied.readAsStringSync()) as Map;
-    ((data['items'] as Map)['keyboard'] as Map)['status'] = 'fail';
+    final items = data['items'] as Map;
+    final originalManual = {for (final item in manualItems) item: items[item]};
+    items['safari'] = {
+      'status': 'pass',
+      'evidence': ['Maintainer checked Safari'],
+    };
+    items['screen-reader-voiceover-safari'] = {
+      'status': 'fail',
+      'evidence': ['Focus order failed'],
+    };
+    items['screen-reader-nvda-firefox'] = {
+      'status': 'not-run',
+      'evidence': ['NVDA unavailable'],
+    };
+    copied.writeAsStringSync(jsonEncode(data));
+    expect(
+      qualificationIssues(fakePages, fakeManifests, fakeRecords),
+      isEmpty,
+      reason: 'Human-entered manual outcomes do not change the automated verdict',
+    );
+    items['safari'] = {'status': 'unknown', 'evidence': <String>[]};
+    items['screen-reader-voiceover-safari'] = {
+      'status': 'pass',
+      'evidence': [1],
+    };
+    items.remove('screen-reader-nvda-firefox');
+    copied.writeAsStringSync(jsonEncode(data));
+    expect(
+      qualificationIssues(fakePages, fakeManifests, fakeRecords),
+      unorderedEquals([for (final item in manualItems) 'button: $item invalid manual result']),
+    );
+    items.addAll(originalManual);
+    (items['keyboard'] as Map)['status'] = 'fail';
     copied.writeAsStringSync(jsonEncode(data));
     expect(qualificationIssues(fakePages, fakeManifests, fakeRecords), contains('button: keyboard'));
     copied.deleteSync();

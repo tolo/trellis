@@ -29,7 +29,7 @@ This file covers working **on** the SDK. For template syntax, see the
 | `trellis_dev` | Hot reload / dev tooling |
 | `trellis_cli` | Scaffolding CLI (`trellis` command) |
 
-`examples/` holds runnable apps; `dev/` holds contributor docs; `docs/` holds user-facing docs.
+`examples/` holds runnable apps; `dev/` holds contributor docs; `site/content/docs/` holds user-facing docs.
 
 
 ---

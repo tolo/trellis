@@ -95,7 +95,7 @@ structural utilities, renames them to `trellis-*`, then compiles using a checksu
 one classic script, and embeds assets and fragments as base64 plus digests. Runtime and tests use these committed
 outputs without invoking Tailwind or Node. Scoped resets replace page-wide preflight; all suite declarations are in
 cascade layers so app overrides retain precedence. A discovered-page gallery renders the same embedded fragments
-under strict CSP. The package graph SVG is scheduled for the release-prep redraw.
+under strict CSP. The package graph SVG includes its single runtime dependency on the core engine.
 
 `tool/ui_gate.dart` is a separate, package-independent development tool. YAML recipes select pages, states,
 keyboard/HTMX steps and invariants; one `GateDriver` surface shares the checks across the existing raw-CDP

@@ -37,10 +37,9 @@ class ScanResult {
 }
 
 class _Lit {
-  _Lit(this.value, this.line, this.viaBraces, this.srcOffset);
+  _Lit(this.value, this.line, this.srcOffset);
   final String value;
   final int line;
-  final bool viaBraces;
   final int srcOffset;
 }
 
@@ -109,7 +108,7 @@ ScanResult scanTsx(String source, String file, [ScanResult? into]) {
         }
         viaBraces = true;
       }
-      final lit = _Lit(value, line, viaBraces, start);
+      final lit = _Lit(value, line, start);
       if (target != null && !(target.callee == 'cva' && viaBraces)) {
         target.lits.add(lit);
       } else {
@@ -170,6 +169,5 @@ ScanResult scanTsx(String source, String file, [ScanResult? into]) {
       }
     }
   }
-  slotAt.clear();
   return result;
 }

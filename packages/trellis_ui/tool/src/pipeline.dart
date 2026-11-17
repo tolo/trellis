@@ -140,8 +140,7 @@ class Pipeline {
     final output = Directory('${scratch.path}/generated');
     try {
       // Generated imports need a sibling vendor directory in the scratch build.
-      final link = Link('${scratch.path}/vendor');
-      if (!link.existsSync()) link.createSync('${root.absolute.path}/vendor');
+      Link('${scratch.path}/vendor').createSync('${root.absolute.path}/vendor');
       await _compile(compiler, output);
       for (final name in ['entry.css', 'trellis.css', 'trellis.min.css', 'report.json']) {
         final expected = File('${root.path}/generated/$name').readAsBytesSync();

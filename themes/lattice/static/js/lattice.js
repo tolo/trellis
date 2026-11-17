@@ -166,6 +166,23 @@
     }
   }
 
+  // A prose table wider than its column scrolls inside its own box (main.scss), and a scroll
+  // container with nothing focusable in it is out of a keyboard user's reach (axe
+  // scrollable-region-focusable, WCAG 2.1.1). Only a table that overflows becomes a tab stop, and
+  // the observer re-checks as the column changes width.
+  if (typeof window.ResizeObserver === 'function') {
+    var tableObserver = new window.ResizeObserver(function (entries) {
+      for (var entryIndex = 0; entryIndex < entries.length; entryIndex++) {
+        var table = entries[entryIndex].target;
+        if (table.scrollWidth > table.clientWidth) table.tabIndex = 0;
+        else table.removeAttribute('tabindex');
+      }
+    });
+    var proseTables = document.querySelectorAll('.prose table');
+    for (var tableIndex = 0; tableIndex < proseTables.length; tableIndex++)
+      tableObserver.observe(proseTables[tableIndex]);
+  }
+
   // The Clipboard API is absent outside a secure context (plain-http staging or LAN), so the
   // buttons are server-rendered hidden and only revealed once the capability is confirmed —
   // an inert button that silently does nothing is worse than no button.

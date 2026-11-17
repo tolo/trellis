@@ -248,6 +248,55 @@ void main() {
           expect(desktopProbes, 40, reason: 'Lattice desktop navigation must be exercised at every width above 700px');
           expect(offenders, isEmpty, reason: 'Lattice long navigation must scroll internally, never the page');
         });
+
+        test('a prose table wider than its column scrolls in its own box and never splits a code word', () async {
+          // The docs column is under 500px even at a 1280px viewport (sidebar and contents
+          // columns beside it), so this is measured at a desktop width too, not only on a phone.
+          final browser = probe;
+          if (browser == null) {
+            requireChromeInCi('lattice prose table reflow');
+            markTestSkipped('no Chrome/Chromium found – Lattice prose tables not measured');
+            return;
+          }
+          final output = await _build(
+            theme,
+            cli: cli,
+            workspace: workspace,
+            label: 'wide-table',
+            rewriteMarkdown: (source) => '$source\n\n$_wideCodeTable\n',
+          );
+          final page = builtPages(output).firstWhere(
+            (page) =>
+                html_parser.parse(File(p.join(output, page)).readAsStringSync()).querySelector('.prose table') != null,
+          );
+          final server = await StaticSiteServer.serve(Directory(output));
+          addTearDown(server.close);
+          for (final (width, height) in const [(400, 844), (1280, 800)]) {
+            final measured =
+                await browser.evaluate(
+                      pageUrl(server.baseUrl, page),
+                      _proseTableExpression,
+                      width: width,
+                      height: height,
+                    )
+                    as Map;
+            final where = 'lattice $page at ${width}px: $measured';
+            expect(measured['midWord'], isEmpty, reason: '$where – a code word in a table cell broke mid-word');
+            expect(measured['documentOverflow'], 0, reason: '$where – the table widened the page');
+            // The fixture's longest identifier is wider than the column at both widths, so the
+            // table must overflow, and the overflow must be reachable by scrolling, not clipped.
+            expect(
+              measured['tableOverflow'] as int,
+              greaterThan(0),
+              reason: '$where – fixture did not exercise scrolling',
+            );
+            expect(measured['overflowX'], 'auto', reason: where);
+            // A scroll container with nothing focusable in it cannot be scrolled from the
+            // keyboard (axe scrollable-region-focusable); lattice.js makes it a tab stop. The
+            // expression waits two frames because the ResizeObserver reports after layout.
+            expect(measured['tabIndex'], 0, reason: '$where – overflowing table is not keyboard-reachable');
+          }
+        });
       }
 
       // ── Class 3 ────────────────────────────────────────────────────────────
@@ -1040,6 +1089,46 @@ const _mastheadFitExpression = r'''(() => {
     overhanging: [...overhanging.values()].sort((a, b) => b.overhang - a.overhang).slice(0, 3),
   };
 })()''';
+
+/// The shape of the docs site's config-reference tables, plus one identifier longer than the
+/// docs column is wide at 400px and at 1280px, so the table has to scroll at both.
+const _wideCodeTable = '''
+| Key | Default | Meaning |
+|---|---|---|
+| `maxContentLength` | `[title, summary, content, tags]` | Truncate `content` to this many characters. |
+| `excludeSections` | `search-index.json` | Top-level sections to leave out. |
+| `excludeSectionsFromEveryGeneratedFeedAndIndex` | `[]` | Longer than the column. |''';
+
+/// Line breaks inside table-cell code that fall between two word characters, marked with `|`.
+/// A break after a space or a hyphen is ordinary wrapping; `maxContentLengt|h` is the defect.
+const _proseTableExpression = r'''new Promise((settle) => requestAnimationFrame(() => requestAnimationFrame(settle)))
+  .then(() => {
+  const table = document.querySelector('.prose table');
+  const root = document.documentElement;
+  const range = document.createRange();
+  const midWord = [];
+  for (const code of table.querySelectorAll('th code, td code')) {
+    const text = code.firstChild;
+    let lastTop = null;
+    for (let i = 0; i < text.length; i++) {
+      range.setStart(text, i);
+      range.setEnd(text, i + 1);
+      const box = range.getClientRects()[0];
+      if (box === undefined) continue;
+      if (lastTop !== null && box.top > lastTop + 1 && /\w/.test(text.data[i - 1]) && /\w/.test(text.data[i])) {
+        midWord.push(text.data.slice(0, i) + '|' + text.data.slice(i));
+      }
+      lastTop = box.top;
+    }
+  }
+  return {
+    midWord,
+    documentOverflow: root.scrollWidth - root.clientWidth,
+    tableOverflow: table.scrollWidth - table.clientWidth,
+    overflowX: getComputedStyle(table).overflowX,
+    tabIndex: table.tabIndex,
+  };
+})''';
 
 String _latticeLongNavigationExpression(int labelCount) =>
     '''(() => {

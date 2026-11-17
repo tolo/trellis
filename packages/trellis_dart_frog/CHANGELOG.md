@@ -6,6 +6,15 @@
 
 - Strict CSP preset through the Shelf re-export; generated Dart Frog apps self-host HTMX and CSRF scripts.
 
+### Fixed
+
+- `trellisCsrf()` consumed the request body on every request, so a handler that called `context.request.body()`,
+  `formData()` or `json()` after the check got a 500 ("The 'read' method can only be called once"). It hit a form
+  that submits the token as the `_csrf` field, and any body read after an `X-CSRF-Token` header check. The check now
+  runs on Dart Frog's own request, and the handler reads the body as submitted.
+- `trellisCsrf()` replaced a `Set-Cookie` header set by the handler when it issued a new CSRF cookie. Both cookies are
+  now sent.
+
 ## 0.13.0
 
 ### Breaking

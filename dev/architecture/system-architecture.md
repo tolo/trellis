@@ -12,6 +12,7 @@ compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme
 build-time warnings for palette-default drift and for a site override Sass cannot apply (`trellis_site` now
 depends on `trellis_css`), and the redrawn package graph. The `trellis_ui` package map, pipeline and qualification sections
 are current through the 0.14 upstream sync and composed app gates (2026-11-18), and so is the Relic section (Relic 2, CSRF 2026-11-18); other sections retain the verification scope above.
+The Dart Frog CSRF bridge note is current through 0.14 (it runs on Dart Frog's own request, so a handler can read the body after a form-field token).
 
 ---
 
@@ -479,7 +480,7 @@ route handler
   isHtmxRequest(context)  htmxTarget(context)  htmxSource(context)  ← HTMX detection
 ```
 
-The CSRF bridge reads the Dart Frog request body via `request.bytes()` then creates a `shelf.Request` to hand off to `trellis_shelf.trellisCsrf`. Dart Frog test files use `concurrency: 1` (`dart_test.yaml`) because `serve()` starts real HTTP servers that cannot run in parallel within a single Dart isolate.
+The CSRF bridge runs `trellis_shelf.trellisCsrf` through `fromShelfMiddleware` on Dart Frog's own underlying `shelf.Request`, so the body that `trellis_shelf` re-wraps after reading a form-field token reaches the handler, and the CSRF cookie is added to the handler's real response. It matches `excludedPaths` itself against the full request path, because under a Dart Frog mount `trellis_shelf` would see only the part below the mount point. Dart Frog test files use `concurrency: 1` (`dart_test.yaml`) because `serve()` starts real HTTP servers that cannot run in parallel within a single Dart isolate.
 
 ### Relic (`trellis_relic`)
 

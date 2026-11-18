@@ -67,7 +67,7 @@ Future<Map<String, Object?>> captureAppearance(GateSession session) async {
       try {
         await session.configure(state, dark: dark);
         return;
-      } on GateRecipeError {
+      } on GateConditionError {
         if (driver is! FirefoxDriver ||
             attempt == 3 ||
             await driver.evaluate('window.__uiGate.lostVisibleFocus && !document.hasFocus()') != true) {

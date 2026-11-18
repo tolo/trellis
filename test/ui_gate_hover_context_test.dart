@@ -105,6 +105,7 @@ states:
     ('once', 'replays visible recipe blur and retains diagnostics'),
     ('dismiss', 'keeps an in-page recipe failure'),
     ('synthetic', 'ignores a synthetic blur'),
+    ('script-error', 'keeps an evaluated script error after visible blur'),
     ('always', 'fails after three visible interruptions'),
   ]) {
     test('Firefox appearance $description', () async {
@@ -135,13 +136,13 @@ document.querySelector('main').addEventListener('keydown', event => {
     last.blur();
     return;
   }
-  if (mode === 'once' && sessionStorage.recipeDisplaced) return;
+  if (mode !== 'always' && sessionStorage.recipeDisplaced) return;
   sessionStorage.recipeDisplaced = 'true';
   const csp = new Promise(resolve => {
     window.addEventListener('securitypolicyviolation', () => resolve(true), {once:true});
     document.body.append(Object.assign(new Image(), {src:'data:image/gif;base64,R0lGODlhAQABAIAAAAUEBA=='}));
   });
-  queueMicrotask(() => { throw Error('interrupted recipe diagnostic'); });
+  if (mode !== 'script-error') queueMicrotask(() => { throw Error('interrupted recipe diagnostic'); });
   const blur = new Promise(resolve => {
     window.addEventListener('blur', () => {
       if (!document.hidden) fetch('/visible-blur');
@@ -149,7 +150,9 @@ document.querySelector('main').addEventListener('keydown', event => {
     }, {once:true});
     window.open('/contender.html','_blank','popup,width=260,height=180');
   });
-  window.afterEnd = Promise.all([csp, blur]);
+  window.afterEnd = Promise.all([csp, blur]).then(() => {
+    if (mode === 'script-error') throw Error('interrupted recipe script error');
+  });
 });
 </script>
 ''');
@@ -177,13 +180,21 @@ states:
       final result = captureAppearance(session);
       Iterable<String> interruptions() => driver.requests.where((url) => Uri.parse(url).path == '/visible-blur');
       if (mode != 'once') {
+        final errorText = mode == 'script-error'
+            ? 'interrupted recipe script error'
+            : 'state destructive step 4 expect:';
         await expectLater(
           result,
-          throwsA(
-            isA<StateError>().having((error) => error.message, 'message', contains('state destructive step 4 expect:')),
-          ),
+          throwsA(isA<StateError>().having((error) => error.message, 'message', contains(errorText))),
         );
-        expect(interruptions(), hasLength(mode == 'always' ? 3 : 0));
+        expect(
+          interruptions(),
+          hasLength(switch (mode) {
+            'always' => 3,
+            'script-error' => 1,
+            _ => 0,
+          }),
+        );
         if (mode == 'synthetic') {
           expect(await driver.evaluate('window.__uiGate.lostVisibleFocus'), false);
           expect(await driver.evaluate('document.hasFocus()'), true);

@@ -45,9 +45,9 @@ final class UnsupportedCondition implements Exception {
   String toString() => reason;
 }
 
-/// An input or assertion failed during execution of a declared recipe.
-final class GateRecipeError extends StateError {
-  GateRecipeError(super.message);
+/// A browser state condition evaluated successfully but was not met.
+final class GateConditionError extends StateError {
+  GateConditionError(super.message);
 }
 
 /// Executes data recipes against one browser, with fresh loads per state.
@@ -135,7 +135,7 @@ final class GateSession {
             final assertion = value! as Map;
             final actual = await driver.evaluate(assertion['expression'] as String);
             if (jsonEncode(actual) != jsonEncode(assertion['equals']))
-              throw StateError('expected ${jsonEncode(assertion['equals'])}, actual ${jsonEncode(actual)}');
+              throw GateConditionError('expected ${jsonEncode(assertion['equals'])}, actual ${jsonEncode(actual)}');
           case 'state':
             if (!manifest.states.containsKey(value)) throw StateError('unknown state: $value');
             await this.steps(manifest.steps(manifest.states[value]), label: 'state $value');
@@ -144,7 +144,9 @@ final class GateSession {
             if (issues.isNotEmpty) throw StateError(issues.join('; '));
         }
       } on Object catch (error) {
-        throw GateRecipeError('$label step ${index + 1} ${entry.key}: ${normalize('$error')}');
+        final message = '$label step ${index + 1} ${entry.key}: ${normalize('$error')}';
+        if (error is GateConditionError) throw GateConditionError(message);
+        throw StateError(message);
       }
     }
   }
@@ -154,7 +156,7 @@ final class GateSession {
       if (await driver.evaluate(expression) == true) return;
       await Future<void>.delayed(const Duration(milliseconds: 20));
     }
-    throw StateError('wait timed out: $expression');
+    throw GateConditionError('wait timed out: $expression');
   }
 
   Future<GateResult> measured(Future<void> Function() check) async {

@@ -9,7 +9,7 @@ import 'package:trellis_ui/trellis_ui.dart';
 
 import '../../../tool/ui_gate/checks.dart';
 import '../../../tool/ui_gate/manifest.dart';
-import '../../../tool/ui_gate/record.dart';
+import '../../../tool/ui_gate/release_policy.dart';
 import '_workspace_root.dart';
 
 const _routes = {
@@ -86,6 +86,7 @@ void main() {
 
   test('every surface passes every automated item in both browsers', () async {
     final root = await findWorkspaceRoot();
+    final policy = ComponentReleasePolicy.read(root);
     final subject = Directory.fromUri(root.uri.resolve('dev/ui-gate/apps/'));
     final scratchRoot = Directory.fromUri(root.uri.resolve('.agent_temp/'))..createSync(recursive: true);
     final records = scratchRoot.createTempSync('app-gate-records-');
@@ -108,8 +109,16 @@ void main() {
         final manifest = GateManifest.load(File.fromUri(manifests.uri.resolve('${route.key}.yaml')));
         expect(manifest.page, route.value, reason: route.key);
         final record = File.fromUri(subject.uri.resolve('records/${route.key}.json'));
-        expected[route.key] = record.readAsBytesSync();
-        await record.copy('${records.path}/${route.key}.json');
+        final bytes = record.readAsBytesSync();
+        expected[route.key] = bytes;
+        final previous = jsonDecode(utf8.decode(bytes)) as Map;
+        final items = previous['items'] as Map;
+        // A run that exits before writing must leave a different record.
+        File.fromUri(records.uri.resolve('${route.key}.json')).writeAsStringSync(
+          jsonEncode({
+            'items': {for (final item in manualItems) item: items[item]},
+          }),
+        );
       }
       final result = await Process.run(Platform.resolvedExecutable, [
         'run',
@@ -128,26 +137,8 @@ void main() {
       expect(result.exitCode, 0, reason: surface);
       for (final name in entry.value.keys) {
         final bytes = File.fromUri(records.uri.resolve('$name.json')).readAsBytesSync();
-        final record = (jsonDecode(utf8.decode(bytes)) as Map).cast<String, Object?>();
-        expect(record['component'], name);
-        expect(record['automated'], 'pass', reason: name);
-        final items = (record['items']! as Map).cast<String, Object?>();
-        expect(items.keys, unorderedEquals([...automatedItems, ...manualItems]), reason: name);
-        for (final item in automatedItems) {
-          final data = items[item]! as Map;
-          expect(data['status'], 'pass', reason: '$name $item');
-          final browsers = data['browsers'] as Map;
-          expect(browsers.keys, unorderedEquals(['chrome', 'firefox']), reason: '$name $item');
-          for (final browser in ['chrome', 'firefox']) {
-            final result = browsers[browser] as Map;
-            expect(result['status'], 'pass', reason: '$name $item $browser');
-            expect(result['evidence'], isNotEmpty, reason: '$name $item $browser');
-          }
-        }
+        expect(policy.recordIssues(name, jsonDecode(utf8.decode(bytes)), app: true), isEmpty, reason: name);
         expect(bytes, expected[name], reason: '$name automated rerun preserves checked-in evidence and manual results');
-        for (final item in manualItems) {
-          expect(validManualResult(items[item]), isTrue, reason: '$name $item');
-        }
       }
     }
 
@@ -155,8 +146,6 @@ void main() {
     for (var i = 0; i < apps.length; i += 2) {
       await Future.wait(apps.skip(i).take(2).map(verify), eagerError: false);
     }
-    print(
-      '${names.length} surfaces × ${automatedItems.length} automated items × 2 browsers pass with 0 CSP violations',
-    );
+    print('${names.length} surfaces pass ${automatedItems.length} automated items with Chrome and Firefox evidence');
   }, timeout: const Timeout(Duration(minutes: 25)));
 }

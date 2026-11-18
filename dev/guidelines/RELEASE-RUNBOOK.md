@@ -94,11 +94,15 @@ failed items under [Optional component release dispositions](../adrs/ADR-012-tre
 for example `badge | unsupported | safari` or `badge | removed | visual, safari`.
 
 - `unsupported` keeps the fragment, gallery and manifest. The browser gate reruns the component and matches the
-  fresh result to the committed record.
+  fresh result to the committed record. If a component-specific test measures the same failure, keep the
+  measurement and assert the recorded result for that component, item and browser. Keep the normal assertions
+  for other results. For example, a coarse-pointer failure on Checkbox leaves its fine-pointer check and the
+  other controls' 44 px checks in force. Restore the original expectation when the disposition is removed.
 - `removed` keeps the failing record. Remove the fragment, gallery page and manifest, and migrate their callers,
   examples and component-specific tests. Re-embed the package after removing a fragment.
 
-For either disposition, remove the reference page from `site/content/docs/ui/components/` and its package
+For either disposition, migrate any use of the fragment in the admin example to a qualified component.
+Remove the reference page from `site/content/docs/ui/components/` and its package
 README catalogue rows. Regenerate `site/data/ui_components.yaml` with `dart run tool/generate_ui_reference.dart`.
 The generator omits removed components and recorded manual failures. An automated failure for an unsupported
 component with its fragment still present keeps an internal `qualified: false` entry. Run the generator with
@@ -139,18 +143,17 @@ tool/release.sh X.Y.Z --dry-run   # rehearsal: same checks + bump + gate + a tem
 tool/release.sh X.Y.Z
 ```
 It refuses unless: on `main`, tree clean, `HEAD == origin/main`, every changelog has `## X.Y.Z`, CI green for HEAD.
-Then: `tool/version_lockstep.sh X.Y.Z` (one `melos version` pass: 8 pubspecs + inter-package constraints, 2
+Then: `tool/version_lockstep.sh X.Y.Z` (one `melos version` pass over all publishable pubspecs and their inter-package constraints, 2
 `version.dart` constants, 2 README download examples, every `trellis*: ^x.y.z` install-snippet line in `README.md`,
 `packages/*/README.md`, `docs/`, `site/content/`, every `tolo/trellis` `--ref v<semver>` pin repo-wide, and the
 docs-site hero version) → `--check-refs X.Y.Z` (no stale pin left) → asserts **only** those files changed → local
 gate (step 0's five repeated local commands; gallery freshness is supplied by the required green CI run) → commit
-`chore(release): trellis SDK X.Y.Z` → `dart pub publish --dry-run` ×8 (commit is undone if one fails) →
+`chore(release): trellis SDK X.Y.Z` → `dart pub publish --dry-run` for each publishable package (commit is undone if one fails) →
 `git tag vX.Y.Z` → prints the push command. **Nothing is pushed.**
 
-Check the commit: `git show --stat HEAD` — 13 fixed files (8 `pubspec.yaml`, 2 `lib/src/version.dart`, `README.md`,
-`packages/trellis_cli/README.md`, `site/trellis_site.yaml`) plus every README/docs page holding an install snippet
-(14 at 0.14.0: 7 package READMEs, 6 `site/content/docs/packages/` pages, the framework-integration page) plus
-every file holding a `--ref` pin (`tool/version_lockstep.sh --list-ref-files`; `themes/*/README.md` among them). The
+Inspect `git show --stat HEAD` for the publishable package manifests, both `lib/src/version.dart` constants,
+the root and CLI README download examples, and `site/trellis_site.yaml`. Also expect changes to pages with
+install snippets and files listed by `tool/version_lockstep.sh --list-ref-files`. The
 committed root `pubspec.lock` is not rewritten by the bump; release-binary jobs consume it with
 `dart pub get --enforce-lockfile`.
 
@@ -185,7 +188,8 @@ Guards after the push:
 ```bash
 tool/verify_release.sh X.Y.Z --wait 20
 ```
-pub.dev ×8, GitHub Release published with 11 assets (5 binaries + 5 `.sha256` + `SHA256SUMS.txt`), Homebrew formula,
+The script checks every publishable package on pub.dev, the GitHub Release with 11 assets
+(5 binaries, 5 `.sha256` files and `SHA256SUMS.txt`), the Homebrew formula and the
 Scoop manifest. The same script runs as the last job (`verify`) of `release-binaries.yml`, so a half-published release
 is red in the run.
 

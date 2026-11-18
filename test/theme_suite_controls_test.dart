@@ -211,6 +211,48 @@ void main() {
     });
   }, timeout: const Timeout(Duration(minutes: 2)));
 
+  test('overlapping copy actions keep the latest feedback for each button and announcement', () async {
+    final driver = await chrome();
+    if (driver == null) return;
+    final server = await serveThemeOutput(await outputFor('arbor'));
+    await _open(driver, server.baseUrl.resolve(_docs['arbor']!), width: 390);
+    final states = await driver.evaluate(r'''
+(async () => {
+  const writes = [];
+  Object.defineProperty(navigator, 'clipboard', {value: {
+    writeText: () => new Promise((resolve, reject) => writes.push({resolve, reject}))
+  }});
+  const [first, second] = document.querySelectorAll('.code-bar button');
+  const status = document.querySelector('[data-code-copy-status]');
+  const state = () => [first.textContent.trim(), second.textContent.trim(), status.textContent];
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+  first.click();
+  first.click();
+  writes[1].resolve();
+  await Promise.resolve();
+  writes[0].reject();
+  await Promise.resolve();
+  const afterStaleWrite = state();
+
+  await delay(900);
+  first.click();
+  second.click();
+  writes[3].resolve();
+  await Promise.resolve();
+  writes[2].reject();
+  await Promise.resolve();
+  const afterOtherButton = state();
+  await delay(900);
+  return [afterStaleWrite, afterOtherButton, state()];
+})()
+''');
+    expect(states, [
+      ['Copied', 'Copy', 'Code copied to clipboard.'],
+      ['Error', 'Copied', 'Code copied to clipboard.'],
+      ['Error', 'Copied', 'Code copied to clipboard.'],
+    ]);
+  });
+
   test('44px touch targets fit their controls at 390', () async {
     final driver = await chrome();
     if (driver == null) return;

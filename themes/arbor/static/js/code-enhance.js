@@ -33,17 +33,29 @@
     return LABELS[lang] || lang.toUpperCase();
   }
 
-  function copyText(text, button, status) {
-    function report(copied) {
-      button.textContent = copied ? 'Copied' : 'Error';
-      if (status) status.textContent = copied ? 'Code copied to clipboard.' : 'Could not copy code to clipboard.';
-      window.setTimeout(function () { button.textContent = 'Copy'; }, 1600);
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(function () { report(true); }, function () { report(false); });
-    } else {
-      report(false);
-    }
+  var latestCopy = 0;
+
+  function enableCopy(code, button, status) {
+    var buttonCopy, resetTimer;
+    button.addEventListener('click', function () {
+      var copy = ++latestCopy;
+      buttonCopy = copy;
+      function report(copied) {
+        if (copy !== buttonCopy) return;
+        button.textContent = copied ? 'Copied' : 'Error';
+        // Every code block shares one live region, even though its button has its own feedback.
+        if (status && copy === latestCopy) {
+          status.textContent = copied ? 'Code copied to clipboard.' : 'Could not copy code to clipboard.';
+        }
+        window.clearTimeout(resetTimer);
+        resetTimer = window.setTimeout(function () { button.textContent = 'Copy'; }, 1600);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code.textContent).then(function () { report(true); }, function () { report(false); });
+      } else {
+        report(false);
+      }
+    });
   }
 
   function enhance(code, template, status) {
@@ -66,9 +78,7 @@
     lang.textContent = label || '';
 
     var button = template.content.firstElementChild.cloneNode(true);
-    button.addEventListener('click', function () {
-      copyText(code.textContent, button, status);
-    });
+    enableCopy(code, button, status);
 
     bar.appendChild(lang);
     bar.appendChild(button);

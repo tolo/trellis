@@ -91,11 +91,12 @@ class ServeCommand extends Command<int> {
       return 1;
     }
 
+    // A supervisor can send SIGTERM as soon as it reads the readiness line.
+    final stopped = stopSignal ?? processStopSignal();
     stdout.writeln('Serving http://localhost:$port from "$outputOption/"');
     stdout.writeln('Press Ctrl-C to stop.');
 
-    // Wait for stop signal (Ctrl-C or SIGTERM in production, injected future in tests)
-    await (stopSignal ?? processStopSignal());
+    await stopped;
     await server.close();
 
     return 0;

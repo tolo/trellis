@@ -3,7 +3,7 @@
 Canonical reference for understanding the Trellis SDK architecture: how the packages compose, what each package is responsible for, the dependency graph, and how a request flows through the system.
 
 **Current through**: dev reload, scaffold CSP and UI previews updated for 0.14 on 2026-11-17; `trellis dev` site
-preview, config-driven watch updates and `liveReloadMiddleware` added for 0.14 on 2026-11-18. The named site source
+preview, including theme watch recovery and output exclusions, is current through 0.14 on 2026-11-18. The named site source
 pipeline and CLI registry were verified for 0.14 on 2026-11-18. The wider scope is the v0.11.0 SDK + the
 2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
 Lattice `site_demo` home block, and the `examples/docs_site/` proof) + the 2026-09-04 HTMX 4 adapter
@@ -12,10 +12,10 @@ compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme
 `compileThemeEntry` that configures each entry with the params Sass accepts and reports the ones it drops,
 build-time warnings for palette-default drift and for a site override Sass cannot apply (`trellis_site` now
 depends on `trellis_css`), and the redrawn package graph. The `trellis_ui` package map, pipeline and qualification sections
-are current through the 0.14 sync inventory and optional-component release checks (2026-11-18), and so is the
+are current through the 0.14 sync inventory and shared browser qualification decision (2026-11-18), and so is the
 Relic section (Relic 2, CSRF 2026-11-18). The content model's bundle rule and the `pathPrefix` coverage of feed
 and taxonomy URLs are current through 0.14.
-other sections retain the verification scope above.
+Other sections retain the verification scope above.
 The Dart Frog CSRF bridge note is current through 0.14 (it runs on Dart Frog's own request, so a handler can read the body after a form-field token).
 
 ---
@@ -127,10 +127,12 @@ The digest settles geometry and selected styles atomically without a CSP-blocked
 sampling replays the page state if another window takes focus before the snapshot. A failed visual setup can
 also replay after a trusted visible blur in that attempt. Fixture proofs
 run in the normal test tiers. The local release gate uses the same CLI for the gallery and for the admin and
-scaffold launcher. App recipes, records and baselines live under `dev/ui-gate/apps/`. Release checks match documented
-optional component dispositions in ADR-012 to the exact failed items in the records. They replay active manifests
-and preserve evidence for removed subjects. During a native modal state
-the gate measures focus paint on controls inside the modal and still captures the visible background.
+scaffold launcher. App recipes, records and baselines live under `dev/ui-gate/apps/`. The CLI, release and reference
+generator share the item verdict. Release and publication require both browser results. One passing measurement
+can cover an explicitly unsupported emulation in the other browser, and the record preserves both outcomes.
+Release checks match the optional component dispositions in ADR-012 to the exact failed items in the records.
+They replay active manifests and preserve evidence for removed subjects. During a native modal state the gate
+measures focus paint on controls inside the modal and still captures the visible background.
 
 ---
 
@@ -235,9 +237,11 @@ client and script injection. Anything that can say "the page is stale" can drive
 `trellis dev` reuses `trellis build`'s config loading and build (`loadSiteBuildConfig`, `buildSite`) with three
 overrides: `pathPrefix` cleared, `baseUrl` set to `http://localhost:<port>`, and output to `build-<n>` under a temp
 directory. `package:watcher` watches the site directory and, when its real path lies outside the site, the theme
-directory (a relative `theme: ../..` or a theme project's symlinked example). Events under the configured output
-directory or a `.`-prefixed segment are ignored. Each valid config edit updates the theme watch and output
-exclusion before rebuilding. Events debounce for 150 ms; one build runs at a time and edits
+directory (a relative `theme: ../..` or a theme project's symlinked example). While that directory is missing,
+preview checks its path every 250 ms and reinstalls the recursive watch when it returns. Output exclusions
+resolve existing symlinked ancestors even before the output exists. Events under the output directory or a
+`.`-prefixed segment are ignored. Each valid config edit updates the theme watch and output exclusion before
+rebuilding. Events debounce for 150 ms. One build runs at a time and edits
 during it queue exactly one more. A successful build swaps the static handler to the new directory, deletes the
 old one and emits on the stream behind `liveReloadMiddleware`; a failed build is deleted and the last good build
 stays served. Ctrl-C or SIGTERM (SIGINT only on Windows) force-closes the server (open SSE connections never finish), waits for an in-flight build and

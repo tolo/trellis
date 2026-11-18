@@ -3,9 +3,21 @@ import 'dart:io';
 import 'package:html/parser.dart';
 import 'package:test/test.dart';
 
+import '../../../tool/ui_gate/release_policy.dart';
+
 Iterable<File> filesUnder(String path) => Directory(path).listSync(recursive: true).whereType<File>();
 
 void main() {
+  test('the example uses no withdrawn suite fragments', () {
+    final policy = ComponentReleasePolicy.read(Directory.current.parent.parent);
+    // The templates compose most fragments. The HTTP handlers also render some by name.
+    final reference = RegExp(r'''(?:~\{\s*|['"])trellis-ui/([\w-]+)(?=\s*::|['"])''');
+    for (final file in [...filesUnder('templates'), ...filesUnder('lib')]) {
+      final components = reference.allMatches(file.readAsStringSync()).map((match) => match[1]!);
+      expect(components.where(policy.isWithdrawn), isEmpty, reason: file.path);
+    }
+  });
+
   test('templates are provider-free and strict-clean', () {
     final templates = filesUnder('templates').where((file) => file.path.endsWith('.html'));
     expect(templates, isNotEmpty);

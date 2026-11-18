@@ -81,10 +81,10 @@
   - **When** it runs
   - **Then** every non-suite element has identical standard computed properties with and without the stylesheet, and the pasted `--primary` wins in both orders and modes.
 
-- **S11 [OC04] [runtime] Every component passes every automated gate item in both browsers**
+- **S11 [OC04] [runtime] Every component qualifies with results from both browsers**
   - **Given** the gallery served with the strict policy and a manifest for each of the 19 pages, with default, hover, focus-visible, active, disabled, invalid (where the component has it), checked (where it has it) and dark states
   - **When** the gate runs in headless Chrome and headless Firefox
-  - **Then** each record shows `provenance`, `self-hosting`, `strict-csp`, `semantic-markup`, `htmx-lifecycle`, `keyboard`, `wcag-axe`, `forced-colors`, `responsive`, `zoom`, `reduced-motion`, `touch-target` and `visual` as `pass` for both browsers, 0 violations, the two screen-reader pairs and Safari as `release-prep`, the automated verdict `pass`, and a rerun rewrites every record byte for byte.
+  - **Then** each record shows `provenance`, `self-hosting`, `strict-csp`, `semantic-markup`, `htmx-lifecycle`, `keyboard`, `wcag-axe`, `forced-colors`, `responsive`, `zoom`, `reduced-motion`, `touch-target` and `visual` passing under ADR-012’s browser fallback, with both raw results, 0 violations, the two screen-reader pairs and Safari as `release-prep`, the automated verdict `pass`, and a rerun rewrites every record byte for byte.
 
 - **S12 [OC04] A page without a manifest, or a manifest without a passing record, fails the records test**
   - **Given** the committed manifests and records, then one gallery page added with neither, then one record edited to `fail` on one item
@@ -249,6 +249,8 @@ Paths are relative to the trellis-public root, where the story executes. The 19 
   proof text as historical, and use this mapping rather than claiming the old worktree still exists.
   **Traced from:** parent integration of commit4cf9e407. **Date:** 2026-11-17.
 
+- **Browser emulation fallback (owner re-attestation).** **Description:** The owner confirmed [ADR-012’s browser emulation fallback](../../adrs/ADR-012-trellis-ui-contract.md#browser-emulation-fallback) for every component and app route. **Rationale:** Earlier wording treated every per-browser `not-run` as an item failure. **Interpretation:** TI12’s per-browser pass means the aggregate passes with both raw results retained. **Traced from:** S05/TI11–TI12. **Date:** 2026-11-18.
+
 ## Implementation Observations
 
 - Text entry shares its max-width rule in `assets/css/hand/input.css`; no empty `textarea.css` or `alert.css` is added when generated CSS already supplies the component rules. The field exports label/fieldset parts in its one template. Native select owns its inner select slot, and textarea uses a non-rendering fragment wrapper because text-only textarea content cannot contain an inner slot element and fragment roots cannot themselves be slot regions.
@@ -317,3 +319,7 @@ Reviewed: fresh independent code/gap review fixed one MEDIUM two-ID aria-labelle
 ### Post-integration simplification
 
 S05 merged as e528b3a, then parent exact integrated fast exited0:3450 package passes plus1 known Linux-only skip,248 root passes plus2 known no-control skips,13 clean analyses,45 formatted files unchanged. A fresh simplify-code implementer changed only css_only_components_test.dart and gate_records_test.dart: reuse DOM selections/decoded items and a raw table fixture, plus a failing-first edited-helper tidy accepting S02's four valid manual statuses with string-list evidence. The copied human pass/fail/not-run fixture failed first on three release-prep errors; missing/malformed manual and automated failure cases still fail. All57 canonical manual entries remain release-prep. Final exact fast repeats the same3450/248 counts andknownskips; parent independently reran10 focused cases/0skip and analyzed both files with0issues. Commit afe91c39ebdf653ee1a40325aa6ff88026ad184f (Plan trailer only) carries the two test-file changes. Runtime assets/manifests/references and the complete component qualification inputs are unchanged; the full UI sweep was not redundantly repeated for test-only edits. Reports: public .agent_temp/s05-simplify/report.md, fast-verified.log; parent integration log .agent_temp/0.14-plan-run/fast-after-s05-merge.log.
+
+#### DRIFT
+
+- spec-stale: Owner re-attested the browser fallback in ADR-012. Proofs use the shared item verdict in `packages/trellis_ui/test/qualification_gate_test.dart#automated qualification remains green in Chrome and Firefox` and `packages/trellis_ui/test/gate_records_test.dart` | Stale targets: S05/TI12 per-browser pass wording | –

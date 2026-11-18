@@ -75,10 +75,10 @@
   - **When** the gate measures interactive elements, including those in popups opened by the manifest's states
   - **Then** the 20 px control fails the fine-pointer minimum (24 px), the 30 px control fails the coarse-pointer minimum (44 px), the passing page passes both, and `(pointer: coarse)` is confirmed true before measuring
 
-- **S10 [OC01] [runtime] A condition that did not take effect never produces a pass**
-  - **Given** Firefox or geckodriver missing, or a browser that does not report an emulated condition back through `matchMedia`
+- **S10 [OC01] [runtime] Unsupported emulation uses another browser’s measured result**
+  - **Given** a browser unavailable at startup, or one or both browsers failing to read back an emulated condition through `matchMedia`
   - **When** the gate is asked to run it
-  - **Then** the affected item is `not-run` with the reason (never `pass`), and the command exits non-zero
+  - **Then** a browser that cannot finish reports `not-run` with its reason, or retains a failure already measured. The aggregate item passes only when a requested browser passes and every other requested browser passes or explicitly reports unsupported emulation. Unavailable browsers, two unsupported results and actual failures prevent qualification
 
 - **S11 [OC02] Record shape, manual items and determinism**
   - **Given** a component run, with and without an existing record that holds human-entered results
@@ -222,6 +222,10 @@ Paths in Work Areas, Verify lines and Constraints are relative to the trellis-pu
 - The fast tier from `KEY_DEVELOPMENT_COMMANDS.md` is green with the new root tests included, `git diff --quiet -- test/visual_baselines` exits 0, and the run output shows the Firefox tests executed, not skipped, on this machine.
 - Each automated item has a failing fixture twin that differs from its passing twin only in the defect (the mutation check of `TESTING-STRATEGY.md`, item 5).
 
+## Discovered Requirements
+
+- **Browser emulation fallback (owner re-attestation).** **Description:** The owner confirmed [ADR-012’s browser emulation fallback](../../adrs/ADR-012-trellis-ui-contract.md#browser-emulation-fallback) for every component and app route. **Rationale:** Earlier wording treated every per-browser `not-run` as an item failure. **Interpretation:** TI11’s “any `fail` or `not-run`” refers to the aggregate item result. **Traced from:** S02/TI08 and TI11. **Date:** 2026-11-18.
+
 ## Implementation Observations
 
 - S02 execution verified on 2026-11-17. The implementation stays in root `tool/ui_gate/`; Chrome extends the existing `BrowserProbe`, and Firefox uses raw WebDriver/BiDi. No Node invocation, dependency or package reference was added. The first recording is one `<component>.<os>.json` baseline holding both browser captures; optional captures remain per browser. Recipes, records and baselines default to `dev/ui-gate/{manifests,records,baselines}/`.
@@ -247,3 +251,7 @@ Chain Attestation:
 - OC03: S14–S15 are implemented by TI09–TI10; the final proofs verify forced states and resolved tokens under strict policy, atomic settling, all three historical regressions and an empty unchanged control.
 
 - **Post-integration shutdown resolution.** The earlier crashpad shutdown observation was repaired in public commit `4be75f5`. `BrowserProbe` owns and cancels its output readers, requests graceful `Browser.close`, falls back after5 seconds, and cleans partial launch resources. Three real-Chrome regressions failed first (inherited output writers blocked VM exit; failed launch leaked a browser; stopped-browser close exceeded10 seconds), then passed. Removing reader cancellation reproduced the exit failure. The standalone56-capture controller then exited0 autonomously without manual process cleanup. Parent compatibility checks passed60 plus the same2 existing skips, Chrome driver passed1, analysis reported0 issues. Evidence is public `.agent_temp/chrome-shutdown/` and `.agent_temp/s02/crashpad-observation.md`. This closes the historical NOTICED BUT NOT TOUCHING item above. Date2026-11-18; original repair evidence2026-11-17.
+
+#### DRIFT
+
+- spec-stale: Owner re-attested the browser fallback in ADR-012. `test/ui_gate_record_test.dart#record and cli` uses the aggregate verdict. `#unsupported dark emulation preserves an already observed appearance failure` confirms that a later limitation retains a measured overlap failure | Stale targets: S02/TI11 raw `not-run` wording | –

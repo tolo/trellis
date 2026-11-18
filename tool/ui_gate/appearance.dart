@@ -76,6 +76,11 @@ Future<Map<String, Object?>> captureAppearance(GateSession session) async {
       try {
         await session.configure(state, dark: dark);
         return;
+      } on UnsupportedCondition catch (error) {
+        if (invariants.isEmpty) rethrow;
+        // A later emulation limit cannot waive a defect already measured in this browser.
+        final failures = invariants.toSet().toList()..sort();
+        throw GateConditionError([...failures, error.reason].join('\n'));
       } on GateConditionError {
         if (driver is! FirefoxDriver ||
             attempt == 3 ||

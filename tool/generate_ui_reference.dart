@@ -5,8 +5,7 @@ import 'package:html/parser.dart' as html;
 import 'package:path/path.dart' as p;
 
 import '../packages/trellis_ui/tool/src/bundle.dart';
-import 'ui_gate/checks.dart' show automatedItems, manualItems;
-import 'ui_gate/record.dart' show validManualResult;
+import 'ui_gate/record.dart';
 import 'ui_gate/release_policy.dart';
 
 const _regenerate = 'dart run tool/generate_ui_reference.dart';
@@ -22,7 +21,6 @@ final _componentName = RegExp(r'^[a-z][a-z0-9-]*$');
 final _signature = RegExp(r'^([A-Za-z][\w-]*)(?:\(([^()]*)\))?$');
 final _partClass = RegExp(r'\.(trellis-[\w-]+)');
 final _comments = RegExp(r'/\*.*?\*/', dotAll: true);
-const _statuses = {'pass', 'fail', 'not-run'};
 
 final class UiReferenceException implements Exception {
   const UiReferenceException(this.message);
@@ -93,18 +91,19 @@ final class UiReferenceGenerator {
     final qualified = <String>{};
     for (final (index, file) in files.indexed) {
       final name = names[index];
-      final Object? record = jsonDecode(file.readAsStringSync());
-      if (policy.isWithdrawn(name)) {
-        final problems = policy.recordIssues(name, record);
-        if (problems.isNotEmpty) throw UiReferenceException(problems.join('\n'));
-        if (policy.isRemoved(name)) continue;
+      if (!_componentName.hasMatch(name)) throw UiReferenceException('$name: invalid component name');
+      final record = GateRecordAssessment.inspect(name, jsonDecode(file.readAsStringSync()));
+      final problems = policy.withdrawalIssues(record);
+      if (problems.isNotEmpty) throw UiReferenceException(problems.join('\n'));
+      if (policy.isRemoved(name)) continue;
+      if (record.invalid.isNotEmpty) throw UiReferenceException(record.invalid.join('\n'));
+      if (record.declaredVerdict == 'pass' && !record.qualified) {
+        throw UiReferenceException('$name: inconsistent automated verdict');
       }
-      final (passes, items) = _gate(name, record);
-      // Keep a release-prep failure in its gate record without publishing the component.
-      if (items.skip(automatedItems.length).any((item) => item['status'] == 'fail')) continue;
+      // Manual failures stay in the gate record. Automated failures can appear as internal diagnostics.
+      if (record.manual.containsValue('fail')) continue;
       final (fragments, aliases) = _fragments(name);
-      if (passes) qualified.add(name);
-      final supported = passes && items.every((item) => item['status'] == 'pass');
+      if (record.qualified) qualified.add(name);
       final partClasses = {
         ...parts[name]!,
         for (final alias in aliases)
@@ -114,73 +113,31 @@ final class UiReferenceGenerator {
       buffer
         ..writeln('${jsonEncode(name)}:')
         ..writeln('  name: ${jsonEncode(name)}')
-        ..writeln('  qualified: $passes')
-        ..writeln('  supported: $supported')
+        ..writeln('  qualified: ${record.qualified}')
+        ..writeln('  supported: ${record.supported}')
         ..writeln('  part_classes: ${jsonEncode(partClasses)}')
         ..writeln('  fragments:');
       for (final fragment in fragments) {
         buffer.writeln('    - ${jsonEncode(fragment)}');
       }
       buffer.writeln('  items:');
-      for (final item in items) {
-        buffer.writeln('    - ${jsonEncode(item)}');
+      for (final item in record.automated.entries) {
+        buffer.writeln(
+          '    - ${jsonEncode({
+            'name': item.key,
+            'status': item.value.status,
+            'browsers': [
+              for (final browser in item.value.browsers.entries) {'name': browser.key, 'status': browser.value.status, if (browser.value.unsupported) 'unsupported': true},
+            ],
+          })}',
+        );
+      }
+      for (final item in record.manual.entries) {
+        buffer.writeln('    - ${jsonEncode({'name': item.key, 'status': item.value, 'browsers': []})}');
       }
     }
     if (buffer.length == _header.length) buffer.writeln('{}');
     return (yaml: buffer.toString(), qualified: qualified);
-  }
-
-  (bool, List<Map<String, Object>>) _gate(String name, Object? root) {
-    if (!_componentName.hasMatch(name) ||
-        root is! Map<String, Object?> ||
-        root['component'] != name ||
-        !{'pass', 'fail'}.contains(root['automated']) ||
-        root['items'] is! Map<String, Object?>) {
-      throw UiReferenceException('$name: invalid gate record');
-    }
-    final entries = root['items'] as Map<String, Object?>;
-    final items = <Map<String, Object>>[];
-    for (final nameOfItem in [...automatedItems, ...manualItems]) {
-      final raw = entries[nameOfItem];
-      if (raw is! Map<String, Object?>) throw UiReferenceException('$name: missing gate item $nameOfItem');
-      final status = raw['status'];
-      final browsers = <Map<String, Object>>[];
-      if (manualItems.contains(nameOfItem)) {
-        if (!validManualResult(raw)) throw UiReferenceException('$name: invalid manual gate item $nameOfItem');
-      } else {
-        final results = raw['browsers'];
-        if (!_statuses.contains(status) || results is! Map<String, Object?>) {
-          throw UiReferenceException('$name: invalid automated gate item $nameOfItem');
-        }
-        for (final browser in ['chrome', 'firefox']) {
-          final result = results[browser];
-          if (result is! Map<String, Object?> || !_statuses.contains(result['status'])) {
-            throw UiReferenceException('$name: invalid $browser result for $nameOfItem');
-          }
-          browsers.add({
-            'name': browser,
-            'status': result['status']! as String,
-            if (result['unsupported'] == true) 'unsupported': true,
-          });
-        }
-        if (status == 'pass' &&
-            (!browsers.any((browser) => browser['status'] == 'pass') ||
-                browsers.any(
-                  (browser) =>
-                      browser['status'] != 'pass' &&
-                      !(browser['status'] == 'not-run' && browser['unsupported'] == true),
-                ))) {
-          throw UiReferenceException('$name: $nameOfItem is pass but its browser results do not pass');
-        }
-      }
-      items.add({'name': nameOfItem, 'status': status! as String, 'browsers': browsers});
-    }
-    if (items.length != entries.length) throw UiReferenceException('$name: unexpected gate item');
-    final passes = root['automated'] == 'pass';
-    if (passes && items.take(automatedItems.length).any((item) => item['status'] != 'pass')) {
-      throw UiReferenceException('$name: automated verdict is pass but an automated item did not pass');
-    }
-    return (passes, items);
   }
 
   (List<Map<String, Object>>, Set<String>) _fragments(String component) {

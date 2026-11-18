@@ -17,7 +17,7 @@ Usage:
   tool/verify_release.sh --help
 
 Checks:
-  * pub.dev lists <version> for every publishable package (8)
+  * pub.dev lists <version> for every publishable package
   * the GitHub Release v<version> is published (not draft) and carries the five
     binaries, their .sha256 sidecars, and SHA256SUMS.txt
   * the Homebrew formula and the Scoop manifest are at <version>

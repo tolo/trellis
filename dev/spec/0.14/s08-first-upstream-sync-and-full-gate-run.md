@@ -58,15 +58,15 @@
   - **When** the limit tests run
   - **Then** the suite's embedded CSS, JS and indicator stylesheet gzip (level 9) to at most 25,000 bytes in total with the measured size in the output; owned behaviour JS is at most 400 lines (story S04's rule); the admin example's own CSS is at most 50 lines with 0 authored JS (story S06's rule); with a 30 KB incompressible comment added to one hand CSS file the payload test goes red naming the size
 
-- **S06 [OC03] [runtime] Every component gate subject passes in both browsers and the records are final**
+- **S06 [OC03] [runtime] Every component gate subject qualifies with results from both browsers**
   - **Given** the gallery served under the strict policy and the 25 committed manifests of stories S04 and S05
   - **When** the gate runs in headless Chrome and headless Firefox, twice
-  - **Then** every automated item of every record is `pass` per browser with 0 violations, the screen-reader pairs and Safari are `release-prep`, the command exits 0, and the second run changes no byte under `dev/ui-gate/`
+  - **Then** every automated item of every record passes under ADR-012’s browser fallback, with both raw results and 0 violations, the screen-reader pairs and Safari are `release-prep`, the command exits 0, and the second run changes no byte under `dev/ui-gate/`
 
 - **S07 [OC03] [runtime] The admin example and the three UI scaffolds pass the same gate**
   - **Given** the admin example served with its real middleware and a `--ui` project of each of the Shelf, Relic and Dart Frog scaffolds generated, installed and booted, each reached through the harness's `--serve` contract
   - **When** the gate runs against each surface's manifest in both browsers: the admin list, empty filter result, open row menu, edit dialog with validation errors, alert dialog, Summary tab and a toast; per scaffold `/` after an htmx counter swap and `/ui` with its dialog open
-  - **Then** every automated item passes with 0 `securitypolicyviolation` events and no third-party request, each surface has a record under `dev/ui-gate/apps/`, and the launcher leaves no server process running
+  - **Then** every automated item passes under ADR-012’s browser fallback with 0 `securitypolicyviolation` events and no third-party request, each surface regenerates the bytes of its checked-in `dev/ui-gate/apps/` record, and the launcher leaves no server process running
 
 - **S08 [OC04] Release prep inherits only manual items, and the runbook says what to do with them**
   - **Given** the final component and surface records and `RELEASE-RUNBOOK.md`
@@ -261,6 +261,8 @@ Paths are relative to the trellis-public root, where the story executes; `P` is 
 
 - **Causal Firefox visual recipe replay.** **Description:** a visible window blur after native End can retain the dropdown's active element while removing its highlight, invalidating a visual state recipe before hover capture. **Rationale:** the landed hover guard arms after recipe setup. **Interpretation:** replay the fresh visual recipe at most three times after a trusted visible blur in the failed attempt with the document still unfocused. Preserve in-page failures, synthetic events, native keyboard/lifecycle behaviour and CSP/JS diagnostics. The original run recorded no blur, so its cause is inferred from the controlled real-gallery transition. **Traced from:** S08/TI07. **Date:** 2026-11-18.
 
+- **Browser emulation fallback (owner re-attestation).** **Description:** The owner confirmed [ADR-012’s browser emulation fallback](../../adrs/ADR-012-trellis-ui-contract.md#browser-emulation-fallback) for every component and app route. **Rationale:** Earlier wording treated every per-browser `not-run` as an item failure. **Interpretation:** Both browsers remain required for the sweeps. Aggregate pass is required for each app route, using fresh records seeded only with manual evidence. **Traced from:** S08/TI07–TI08. **Date:** 2026-11-18.
+
 ## Implementation Observations
 
 - Scope and provenance. Public worktree admitted at `4be3c735` on `feat/0.14-s08`. The tooling commit `2f2896b` and the nested-checkout archive repair `8dfa879` precede the real sync so the old inputs were read from a committed 4.21.1 tree. The first real invocation threw `PathNotFoundException: Cannot open file .../candidate/tool/pins.json` before live writes. The fixture moved below the Git root, reproduced the error, then passed after running the named-subtree archive from that root.
@@ -273,6 +275,7 @@ Paths are relative to the trellis-public root, where the story executes; `P` is 
 
 #### DRIFT
 
+- spec-stale: Owner re-attested the browser fallback in ADR-012. Proofs use the shared item verdict in `packages/trellis_cli/test/ui_surfaces_gate_test.dart#every surface passes every automated item in both browsers` and `packages/trellis_ui/test/qualification_gate_test.dart#automated qualification remains green in Chrome and Firefox` | Stale targets: S08/TI07–TI08 per-browser pass wording | –
 - spec-stale: TI05's literal restore-one-changed-token instruction assumes a nonempty diff. The live sync has zero changed tokens. The alternate value is isolated to a real-gallery scratch seed and the restored actual value is checked by the visual item | Stale targets: S08 TI05 mutation phrase | Both the token and a computed property appeared in the red detector output.
 - spec-stale: The landed record-unit suite is root `test/ui_gate_record_test.dart` with package `test/gate_records_test.dart` for component qualification | Stale targets: S08 TI07 package `test/gate_record_test.dart` path | Keep the original record and qualification checks.
 - spec-stale: The dispatched `--no-full-tier` story runs the exact fast tier while the parent owns final combined full and release-gate | Stale targets: Full-tier checklist ownership | All story-specific browser, AOT, mutation and static proofs remain local to S08.

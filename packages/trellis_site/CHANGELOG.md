@@ -31,7 +31,8 @@
   code at every viewport because the docs column is under 500px even at 1280px. A cell now wraps only at spaces and
   hyphens, and `lattice.js` makes a plain table a tab stop while it overflows so the keyboard can scroll it. Suite
   tables in prose scroll on their own named, keyboard-focusable wrapper.
-- **Arbor: copy buttons announce clipboard success or failure** through a live status region.
+- **Arbor: copy buttons announce clipboard success or failure** through a live status region. Each button displays
+  its latest result for 1.6 seconds, and only the latest copy action updates the shared announcement.
 
 ## 0.13.0
 

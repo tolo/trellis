@@ -37,7 +37,6 @@ const releaseComponents = {
 const releasePolicyPath = 'dev/adrs/ADR-012-trellis-ui-contract.md';
 
 const _items = {...automatedItems, ...manualItems};
-const _browsers = {'chrome', 'firefox'};
 
 /// Optional-component dispositions for the release checks and reference generator.
 final class ComponentReleasePolicy {
@@ -113,74 +112,25 @@ final class ComponentReleasePolicy {
     return issues;
   }
 
-  /// Checks that each observed failure has an explicit, current release disposition.
-  ///
-  /// Composed app records must pass in both browsers. Pending manual work remains visible at release prep.
-  List<String> recordIssues(String name, Object? record, {bool app = false}) {
-    if (record case {
-      'component': final component,
-      'automated': final verdict,
-      'items': Map<String, Object?> items,
-    } when component == name && items.length == _items.length && items.keys.toSet().containsAll(_items)) {
-      final issues = <String>[];
-      final observedFailures = <String>{};
-      final strict = app || name == 'alert-dialog' || requiredReleaseComponents.contains(name);
-      for (final item in manualItems) {
-        final value = items[item];
-        if (!validManualResult(value)) {
-          issues.add('$name: $item invalid manual result');
-        } else if (value case {'status': 'fail', 'evidence': List<Object?> evidence}) {
-          observedFailures.add(item);
-          if (!_hasEvidence(evidence)) issues.add('$name: $item missing failure evidence');
-        }
-      }
+  /// Checks completeness and matches observed failures to current release dispositions.
+  List<String> recordIssues(String name, Object? record, {bool app = false}) =>
+      _recordIssues(GateRecordAssessment.inspect(name, record), app: app);
 
-      var automatedPass = true;
-      for (final item in automatedItems) {
-        if (items[item] case {
-          'status': final status,
-          'browsers': Map<String, Object?> browsers,
-        } when browsers.length == _browsers.length && browsers.keys.toSet().containsAll(_browsers)) {
-          final results = <GateResult>[];
-          for (final browser in _browsers) {
-            final raw = browsers[browser];
-            if (raw case {
-              'status': final String result,
-              'evidence': final List<Object?> evidence,
-            } when {'pass', 'fail', 'not-run'}.contains(result) && evidence.every((entry) => entry is String)) {
-              final unsupported = (raw as Map)['unsupported'] == true;
-              results.add(GateResult(result, evidence.cast<String>(), unsupported: unsupported));
-              if (!_hasEvidence(evidence)) issues.add('$name: $item/$browser missing evidence');
-              if (unsupported && result != 'not-run') issues.add('$name: $item/$browser invalid unsupported marker');
-              if (result == 'not-run' && (strict || !unsupported)) issues.add('$name: $item/$browser did not run');
-            } else {
-              issues.add('$name: $item/$browser invalid browser result');
-            }
-          }
-          final aggregate = gateItemStatus(results);
-          if (results.length != _browsers.length || status != aggregate) {
-            issues.add('$name: $item inconsistent browser results');
-          }
-          if (aggregate == 'fail') observedFailures.add(item);
-          if (aggregate == 'not-run') issues.add('$name: $item did not run');
-          if (aggregate != 'pass') automatedPass = false;
-        } else {
-          issues.add('$name: $item invalid automated result');
-        }
-      }
+  /// Checks an already assessed component before applying a publication withdrawal.
+  List<String> withdrawalIssues(GateRecordAssessment record) =>
+      isWithdrawn(record.name) ? _recordIssues(record) : const [];
 
-      if (verdict != (automatedPass ? 'pass' : 'fail')) issues.add('$name: inconsistent automated verdict');
-      final accepted = app ? null : _dispositions[name]?.failedItems;
-      for (final item in observedFailures.difference(accepted ?? const {})) {
-        issues.add('$name: $item failed without a release disposition');
-      }
-      for (final item in (accepted ?? const <String>{}).difference(observedFailures)) {
-        issues.add('$name: $item release disposition has no matching failure');
-      }
-      return issues;
-    }
-    return ['$name: invalid gate record'];
+  List<String> _recordIssues(GateRecordAssessment record, {bool app = false}) {
+    if (record.declaredVerdict == null) return record.invalid;
+    final name = record.name;
+    final accepted = app ? const <String>{} : _dispositions[name]?.failedItems ?? const <String>{};
+    final failures = record.failedItems;
+    return [
+      ...record.invalid,
+      ...record.unavailable,
+      if (!record.hasConsistentVerdict) '$name: inconsistent automated verdict',
+      for (final item in failures.difference(accepted)) '$name: $item failed without a release disposition',
+      for (final item in accepted.difference(failures)) '$name: $item release disposition has no matching failure',
+    ];
   }
 }
-
-bool _hasEvidence(Iterable<Object?> entries) => entries.any((entry) => entry is String && entry.trim().isNotEmpty);

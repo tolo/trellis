@@ -133,13 +133,16 @@ The YAML recipe is the component boundary:
 The automated items are provenance, self-hosting, strict CSP (including a labelled enforcement control), semantic
 markup, HTMX lifecycle, keyboard, WCAG 2.0/2.1/2.2 A/AA axe, forced colours, responsive widths 390/768/1440, zoom
 widths 640/320, reduced motion, fine/coarse targets (24/44 px, 16 px input text under coarse), and appearance.
-Every emulated condition is read back. Unsupported emulation is recorded per browser and can pass the item only
-when another requested browser actually runs it; an unavailable browser or no capable browser prevents a pass.
+Every emulated condition is read back. An item passes when at least one requested browser passes and every
+other requested browser passes or records unsupported emulation with a reason. An unavailable browser, missing
+recipe or capture, two unsupported results, or an actual failure blocks qualification. Single-browser CLI runs
+are diagnostic. The release and publication checks require records for both browsers.
 
 Each `<component>.json` record has `component`, `automated` (`pass`/`fail`) and ordered `items`. Automated items
 carry `status`, per-browser `status`/`evidence`, and an `unsupported` marker where applicable. Manual VoiceOver +
 Safari, NVDA + Firefox, and Safari items begin as `release-prep`; existing human-entered values are preserved.
-Records have no timestamps, ports or host paths and repeated runs are byte-identical.
+The reference generator requires all three manual passes for a support claim. Records have no timestamps,
+ports or host paths and repeated runs are byte-identical.
 
 Appearance uses `<component>.<os>.json` with both browser captures. `--record` is refused under `CI=true` and
 still fails clipping, overflow or overlap; the first recording is a reference, not a waiver. The computed-style
@@ -157,6 +160,8 @@ policy checks optional failures against their [ADR-012 dispositions](../adrs/ADR
 `packages/trellis_cli/test/ui_surfaces_gate_test.dart` launches the actual admin entry point and three generated
 `--ui` scaffolds. The same CLI checks the admin list, filter, menu, validation, alert dialog, Summary and toast,
 and each scaffold's counter swap and UI dialog, using the seven recipes and records in `dev/ui-gate/apps/`.
+The sweep seeds only manual results, checks each fresh record against the same release policy, then compares
+its bytes to the committed record.
 
 Release limits are 25,000 bytes for the sum of the three embedded responses gzipped separately at level 9,
 400 authored JavaScript lines in the suite, and 50 authored CSS lines with zero authored JavaScript in the admin

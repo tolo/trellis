@@ -237,5 +237,60 @@ void main() {
       writeHome('Recovered');
       await until(() async => (await get(port, '/')).body.contains('<h1>Recovered</h1>'), 'recovery\n$out$err');
     });
+
+    test('recovers when the active external theme directory is replaced', () async {
+      void writeTheme(String title) {
+        writeFile('external/theme.yaml', 'name: external\nversion: 1.0.0\n');
+        writeFile('external/layouts/home.html', '<h1>$title</h1>');
+      }
+
+      writeTheme('Original');
+      writeFile('site/trellis_site.yaml', 'theme: ../../external\noutputDir: ../external\n');
+      writeFile('site/content/_index.md', '---\ntitle: Home\n---\n');
+      final (:port, :err, stop: _, out: _, run: _) = await startDev(p.join(siteDir.path, 'site'));
+      expect((await get(port, '/')).body, contains('<h1>Original</h1>'));
+
+      Directory(p.join(siteDir.path, 'external')).renameSync(p.join(siteDir.path, 'old-theme'));
+      await until(() => err.toString().contains('Still serving the last successful build.'), 'the missing theme');
+      expect((await get(port, '/')).body, contains('<h1>Original</h1>'));
+      writeTheme('Replacement');
+      await until(() async => (await get(port, '/')).body.contains('<h1>Replacement</h1>'), 'the replacement theme');
+      writeTheme('Edited');
+      await until(() async => (await get(port, '/')).body.contains('<h1>Edited</h1>'), 'edits to the replacement');
+    });
+
+    for (final linkedOutput in [false, true]) {
+      test('ignores output reached through a symlink to the external theme (linked output: $linkedOutput)', () async {
+        writeFile('external/theme.yaml', 'name: external\nversion: 1.0.0\n');
+        writeFile('external/layouts/home.html', '<h1>Original</h1>');
+        writeFile('site/trellis_site.yaml', 'theme: linked\noutputDir: themes/linked/publish\n');
+        writeFile('site/content/_index.md', '---\ntitle: Home\n---\n');
+        Link(p.join(siteDir.path, 'site/themes/linked')).createSync(p.join(siteDir.path, 'external'), recursive: true);
+        if (linkedOutput) Link(p.join(siteDir.path, 'external/publish')).createSync('deploy');
+        final (:port, :out, stop: _, err: _, run: _) = await startDev(p.join(siteDir.path, 'site'));
+        expect((await get(port, '/')).body, contains('<h1>Original</h1>'));
+        final before = 'Change detected'.allMatches(out.toString()).length;
+        final target = linkedOutput ? 'deploy' : 'publish';
+        writeFile('external/$target/stray.html', '<p>Published</p>');
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+        expect('Change detected'.allMatches(out.toString()).length, before);
+
+        writeFile('external/layouts/home.html', '<h1>Edited</h1>');
+        await until(() async => (await get(port, '/')).body.contains('<h1>Edited</h1>'), 'a real theme edit');
+      });
+    }
+
+    test('resolves a relative theme from the same symlinked site path as the builder', () async {
+      writeFile('physical/site/trellis_site.yaml', 'theme: ../../theme\n');
+      writeFile('physical/site/content/_index.md', '---\ntitle: Home\n---\n');
+      writeFile('alias/theme/theme.yaml', 'name: theme\nversion: 1.0.0\n');
+      writeFile('alias/theme/layouts/home.html', '<h1>Original</h1>');
+      final link = Link(p.join(siteDir.path, 'alias/site-link'));
+      link.createSync(p.join(siteDir.path, 'physical/site'));
+      final (:port, stop: _, out: _, err: _, run: _) = await startDev(link.path);
+      expect((await get(port, '/')).body, contains('<h1>Original</h1>'));
+      writeFile('alias/theme/layouts/home.html', '<h1>Edited</h1>');
+      await until(() async => (await get(port, '/')).body.contains('<h1>Edited</h1>'), 'the configured theme edit');
+    });
   });
 }

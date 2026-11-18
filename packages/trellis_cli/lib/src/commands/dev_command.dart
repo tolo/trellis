@@ -115,7 +115,7 @@ class DevCommand extends Command<int> {
     }
 
     final subscriptions = <String, StreamSubscription<WatchEvent>>{};
-    final previewRoot = p.canonicalize(buildRoot.path);
+    final previewRoot = buildRoot.resolveSymbolicLinksSync();
     String? outputRoot;
 
     // One rebuild at a time; changes during a build queue exactly one more.
@@ -123,10 +123,31 @@ class DevCommand extends Command<int> {
     var pending = false;
     var stopping = false;
     Timer? debounceTimer;
+    Timer? missingThemeTimer;
 
-    Future<void> updateWatches(SiteConfig config, void Function(WatchEvent) onEvent) async {
-      final roots = _watchRoots(config);
-      final configuredOutput = p.canonicalize(config.outputDir);
+    Future<void> updateWatches(SiteConfig config, void Function() queueRebuild) async {
+      final site = Directory(config.siteDir).resolveSymbolicLinksSync();
+      final roots = {site};
+      final theme = config.themeConfig;
+      missingThemeTimer?.cancel();
+      if (theme != null) {
+        // Resolve the configured name the same way as the builder before following site or theme symlinks.
+        final directory = Directory(p.normalize(p.join(config.siteDir, 'themes', theme.name)));
+        if (directory.existsSync()) {
+          final target = directory.resolveSymbolicLinksSync();
+          if (!p.isWithin(site, target)) roots.add(target);
+        } else {
+          // A recursive watcher closes when its root disappears. Probe only the missing theme
+          // until it returns, without subscribing to unrelated directories above the site.
+          missingThemeTimer = Timer.periodic(const Duration(milliseconds: 250), (timer) {
+            if (directory.existsSync()) {
+              timer.cancel();
+              queueRebuild();
+            }
+          });
+        }
+      }
+      final configuredOutput = _resolvedOutputPath(Directory(config.outputDir));
       // An output path that covers a watch root would also hide the edits needed to correct it.
       final coversSource = roots.any((root) => root == configuredOutput || p.isWithin(configuredOutput, root));
       outputRoot = coversSource ? null : configuredOutput;
@@ -137,17 +158,22 @@ class DevCommand extends Command<int> {
         if (subscriptions.containsKey(root)) continue;
         final watcher = DirectoryWatcher(root);
         subscriptions[root] = watcher.events.listen(
-          onEvent,
+          (event) {
+            if (!_isIgnored(event.path, subscriptions.keys, [previewRoot, ?outputRoot])) queueRebuild();
+          },
           onError: (Object error, StackTrace stackTrace) => reportFailure('Could not watch $root', error, stackTrace),
-          onDone: () => subscriptions.remove(root),
+          onDone: () {
+            subscriptions.remove(root);
+            if (root != site) queueRebuild();
+          },
         );
         // Watch the new sources before building so an edit during that build is queued.
         await watcher.ready;
       }
     }
 
-    void onEvent(WatchEvent event) {
-      if (stopping || _isIgnored(event.path, subscriptions.keys, [previewRoot, ?outputRoot])) return;
+    void queueRebuild() {
+      if (stopping) return;
       debounceTimer?.cancel();
       debounceTimer = Timer(debounce, () {
         pending = true;
@@ -161,7 +187,7 @@ class DevCommand extends Command<int> {
                 if (served != null) stderr.writeln('Still serving the last successful build.');
                 continue;
               }
-              await updateWatches(config, onEvent);
+              await updateWatches(config, queueRebuild);
               await rebuild(config);
             }
           } finally {
@@ -174,7 +200,7 @@ class DevCommand extends Command<int> {
     stdout.writeln('Building site...');
     await rebuild(initialConfig);
 
-    await updateWatches(initialConfig, onEvent);
+    await updateWatches(initialConfig, queueRebuild);
 
     final handler = const Pipeline().addMiddleware(liveReloadMiddleware(rebuilt.stream)).addHandler((request) {
       final current = served;
@@ -198,19 +224,23 @@ class DevCommand extends Command<int> {
       stopping = true;
       debounceTimer?.cancel();
       await building;
+      missingThemeTimer?.cancel();
       await _shutdown(subscriptions.values.toList(), rebuilt, buildRoot);
       return 1;
     }
 
+    // A supervisor can send SIGTERM as soon as it reads the readiness line.
+    final stopped = stopSignal ?? processStopSignal();
     stdout.writeln('Serving http://localhost:$port, watching ${subscriptions.keys.join(', ')}');
     stdout.writeln('Press Ctrl-C to stop.');
 
-    await (stopSignal ?? processStopSignal());
+    await stopped;
     stopping = true;
     // Open SSE connections never finish on their own, so close them rather than wait.
     await server.close(force: true);
     debounceTimer?.cancel();
     await building; // Let an in-flight build finish before its directory is deleted.
+    missingThemeTimer?.cancel();
     await _shutdown(subscriptions.values.toList(), rebuilt, buildRoot);
     return 0;
   }
@@ -228,23 +258,20 @@ Future<void> _shutdown(
   if (buildRoot.existsSync()) buildRoot.deleteSync(recursive: true);
 }
 
-/// The site directory, plus the theme directory when it sits outside the site: a relative `theme: ../../themes/x`,
-/// or a theme project's example, whose `example/themes/<name>` is a symlink back to the theme.
-List<String> _watchRoots(SiteConfig config) {
-  final siteDir = p.canonicalize(config.siteDir);
-  final roots = [siteDir];
-  final theme = config.themeConfig;
-  if (theme != null) {
-    // Same resolution as the site builder: themes resolve under `<site>/themes/`, `..` segments collapsed.
-    final themeDir = Directory(p.normalize(p.join(config.siteDir, 'themes', theme.name)));
-    if (themeDir.existsSync()) {
-      // Compare real paths: p.canonicalize is lexical, and the watcher does not follow a symlinked directory.
-      final realTheme = themeDir.resolveSymbolicLinksSync();
-      final realSite = Directory(siteDir).resolveSymbolicLinksSync();
-      if (!p.isWithin(realSite, realTheme)) roots.add(realTheme);
-    }
+/// Watchers report physical paths even when the configured output sits below a symlink
+/// and the build has not created the output directory yet.
+String _resolvedOutputPath(Directory directory, [Set<String>? followedLinks]) {
+  if (directory.existsSync()) return directory.resolveSymbolicLinksSync();
+  final parent = directory.parent;
+  if (parent.path == directory.path) return directory.path;
+  final link = Link(directory.path);
+  if (link.existsSync()) {
+    final links = followedLinks ?? <String>{};
+    if (!links.add(link.path)) return directory.path;
+    final target = p.normalize(p.join(parent.path, link.targetSync()));
+    return _resolvedOutputPath(Directory(target), links);
   }
-  return roots;
+  return p.join(_resolvedOutputPath(parent, followedLinks), p.basename(directory.path));
 }
 
 /// Whether a change at [path] cannot affect the build: build output, or anything under a dot directory (`.git`,

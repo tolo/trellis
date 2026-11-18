@@ -234,6 +234,89 @@ void main() {
     );
   });
 
+  test('qualification follows browser measurements and records emulation limitations', () {
+    fixtureComponents(['dialog']);
+    write('$_suite/generated/trellis.min.css', '.trellis-dialog {}');
+    const unsupported = {
+      'status': 'not-run',
+      'evidence': ['Forced colors unavailable'],
+      'unsupported': true,
+    };
+    void measured(String aggregate, Map<String, Object> chrome, Map<String, Object> firefox) {
+      editRecord('dialog', (record) {
+        record['automated'] = aggregate == 'pass' ? 'pass' : 'fail';
+        final items = record['items'] as Map;
+        items['forced-colors'] = {
+          'status': aggregate,
+          'browsers': {'chrome': chrome, 'firefox': firefox},
+        };
+        for (final item in manualItems) {
+          items[item] = {
+            'status': 'pass',
+            'evidence': ['Observed a passing manual check'],
+          };
+        }
+      });
+    }
+
+    const pass = {
+      'status': 'pass',
+      'evidence': ['Verified the focus indicator'],
+    };
+    measured('pass', pass, unsupported);
+    generator.write();
+    final data = generated()['dialog'] as YamlMap;
+    final item = (data['items'] as YamlList).cast<YamlMap>().singleWhere((item) => item['name'] == 'forced-colors');
+    expect(data['qualified'], isTrue);
+    expect(data['supported'], isTrue);
+    expect((item['browsers'] as YamlList).last, {'name': 'firefox', 'status': 'not-run', 'unsupported': true});
+    expect(generator.check(), isEmpty);
+
+    editRecord('dialog', (record) => (record['items'] as Map)['safari'] = {'status': 'release-prep', 'evidence': []});
+    generator.write();
+    expect((generated()['dialog'] as YamlMap)['supported'], isFalse);
+
+    for (final (aggregate, chrome) in [
+      ('not-run', unsupported),
+      (
+        'not-run',
+        {
+          'status': 'not-run',
+          'evidence': ['Chrome could not start'],
+        },
+      ),
+      (
+        'fail',
+        {
+          'status': 'fail',
+          'evidence': ['Focus indicator disappeared'],
+        },
+      ),
+    ]) {
+      measured(aggregate, chrome, unsupported);
+      generator.write();
+      final data = generated()['dialog'] as YamlMap;
+      expect(data['qualified'], isFalse);
+      expect(data['supported'], isFalse);
+      expect(generator.check(), ['Unexpected reference page: dialog']);
+    }
+
+    measured('pass', pass, {...unsupported, 'evidence': <String>[]});
+    expect(
+      generator.write,
+      throwsA(isA<UiReferenceException>().having((e) => e.message, 'message', contains('evidence'))),
+    );
+
+    editRecord('dialog', (record) {
+      final item = (record['items'] as Map)['forced-colors'] as Map;
+      (item['browsers'] as Map).remove('firefox');
+    });
+    expect(
+      generator.write,
+      throwsA(isA<UiReferenceException>().having((e) => e.message, 'message', contains('forced-colors'))),
+    );
+  });
+
   test('a passing automated item cannot hide a failing browser result', () {
     fixtureComponents(['button']);
     write('$_suite/generated/trellis.min.css', '.trellis-button {}');

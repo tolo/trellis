@@ -60,6 +60,34 @@ void main() {
     expect(results['visual']!.evidence, ['no baseline for fixture/chrome on ${Platform.operatingSystem}']);
   });
 
+  test('unsupported dark emulation preserves an already observed appearance failure', () async {
+    if (BrowserProbe.locateChrome() == null) {
+      requireChromeInCi('UI gate appearance before an unsupported condition');
+      markTestSkipped('Chrome not installed');
+      return;
+    }
+    final server = await fixtureServer();
+    final scratch = Directory('.agent_temp')..createSync(recursive: true);
+    final baselineDir = scratch.createTempSync('gate-emulation-after-overlap-');
+    addTearDown(() => baselineDir.deleteSync(recursive: true));
+
+    Future<GateResult> visual(String page) async {
+      final result = await runGate(fixtureManifest(page: page), server.baseUrl, 'chrome', baselines: baselineDir);
+      return result['visual']!;
+    }
+
+    final failed = await visual('/pass.html?unsupported-dark&defect=overlap');
+    expect(failed.status, 'fail', reason: '${failed.evidence}');
+    expect(failed.unsupported, isFalse);
+    expect(failed.evidence.join('\n'), contains('default #toast-one overlaps #toast-two'));
+    expect(failed.evidence.join('\n'), contains('dark=true'));
+
+    final unsupported = await visual('/pass.html?unsupported-dark');
+    expect(unsupported.status, 'not-run');
+    expect(unsupported.unsupported, isTrue);
+    expect(unsupported.evidence.single, contains('dark=true'));
+  });
+
   test('a visual capture artifact that cannot be written is unavailable', () async {
     if (BrowserProbe.locateChrome() == null) {
       requireChromeInCi('UI gate capture artifact availability');

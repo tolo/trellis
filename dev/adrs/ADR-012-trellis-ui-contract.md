@@ -4,7 +4,7 @@
 
 Accepted (2026-10-04). Proposed 2026-08-14, amended 2026-08-15 after a verification
 round, amended and accepted 2026-10-04 after the delivery, CSP, behaviour-layer and
-seed spikes – see [Amendments](#amendments).
+seed spikes, and amended 2026-11-18 for browser emulation fallback. See [Amendments](#amendments).
 
 ## Context
 
@@ -217,6 +217,17 @@ token-level visual fit, and upstream maintenance health. Accessibility conforman
 leans on the upstream programme where a credible one exists (currently Vaadin- or
 USWDS-tier); otherwise the recipe is documented as unaudited. Trellis tests the
 integration seam, not the third-party component.
+
+### Browser emulation fallback
+
+Attempt each automated item in Chrome and Firefox for every component and composed app route. An item passes
+when at least one browser passes and every other browser either passes or records `not-run` with an explicit
+unsupported-emulation reason. Both raw results and their evidence stay in the gate record. An actual `fail`
+fails the item. An omitted or unavailable browser, missing recipe or capture, or two unsupported results
+leave the item unqualified. A deliberately single-browser CLI run decides only that diagnostic run's outcome.
+CLI, release and publication use the same item decision for the browser set they require. A published
+support claim also requires all three manual passes. Optional component release dispositions apply only to
+observed failures as specified below.
 
 ## Consequences
 
@@ -485,3 +496,5 @@ component qualifies again. An unavailable check cannot justify a disposition.
   (research/14); no-Node rule extended to the Trellis toolchain, with pinned non-Node
   tool binaries allowed for the porting pipeline; Shadow DOM context corrected; Tom
   Select dropped from Tier 2; acceptance decoupled from the first slice.
+- **2026-11-18** – the maintainer confirmed the unsupported-emulation fallback for every component and
+  composed app route across the CLI, release checks and publication.

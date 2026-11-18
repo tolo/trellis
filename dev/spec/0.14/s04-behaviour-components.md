@@ -102,15 +102,15 @@
   - **When** it renders
   - **Then** no `id` repeats, and every `aria-labelledby`, `aria-describedby`, `aria-controls`, `for` and `popovertarget` value resolves to an element on the page
 
-- **S15 [OC02,OC04] [runtime] Every component passes every automated gate item in both browsers**
+- **S15 [OC02,OC04] [runtime] Every component qualifies with results from both browsers**
   - **Given** the gallery serving the six component pages under the strict policy and each component's manifest
   - **When** the gate runs against each in Chrome and in Firefox
-  - **Then** every automated item reports `pass` per browser, including `htmx-lifecycle` (20 swaps and a boosted back/forward with unchanged listener and instance counts), `strict-csp` (0 violations) and `touch-target`, and the command exits 0
+  - **Then** every automated item passes under ADR-012’s browser fallback, including `htmx-lifecycle` (20 swaps and a boosted back/forward with unchanged listener and instance counts), `strict-csp` (0 violations) and `touch-target`, and the command exits 0
 
 - **S16 [OC04] Each component has a committed, current gate record**
   - **Given** the six committed records
   - **When** the gate rewrites them
-  - **Then** each lists every FR5 item, the automated items `pass` in both browsers, the two screen-reader pairs and Safari `release-prep`, and the rewrite is byte-identical to the committed file
+  - **Then** each lists every FR5 item, the observed results and evidence from both browsers, the aggregate automated items `pass` under ADR-012’s browser fallback, the two screen-reader pairs and Safari `release-prep`, and the rewrite is byte-identical to the committed file
 
 - **S17 [OC04] [runtime] The suite still leaves non-suite markup untouched**
   - **Given** story S01's isolation fixture with a non-suite `dialog`, a non-suite `[popover]` element and a `tl-` prefixed unknown element added
@@ -341,6 +341,8 @@ The six components are pinned in `pins.json` together with the hooks their marku
   plan/FIS are in evidence/S04/private-receipt/. Preserve historical proof text and use this map rather than
   claiming the removed source root exists. **Traced from:** parent merge816de71 of feature254c639. **Date:** 2026-11-17.
 
+- **Browser emulation fallback (owner re-attestation).** **Description:** The owner confirmed [ADR-012’s browser emulation fallback](../../adrs/ADR-012-trellis-ui-contract.md#browser-emulation-fallback) for every component and app route. **Rationale:** Earlier wording treated every per-browser `not-run` as an item failure. **Interpretation:** TI08’s per-browser pass means the aggregate passes with both raw results retained. **Traced from:** S04/TI08. **Date:** 2026-11-18.
+
 ## Implementation Observations
 
 ASSUMPTION: The owner's parallelism request authorizes concurrent implementation of disjoint component files.
@@ -350,6 +352,7 @@ required if a task changed the same source or depended on another task's output.
 
 #### DRIFT
 
+- spec-stale: Owner re-attested the browser fallback in ADR-012. Proofs use the shared item verdict in `packages/trellis_ui/test/qualification_gate_test.dart#automated qualification remains green in Chrome and Firefox` and `packages/trellis_ui/test/gate_records_test.dart` | Stale targets: S04/TI08 per-browser pass wording | –
 - spec-stale: TI03–TI08 name `gate_run_test.dart`; `test/qualification_gate_test.dart` discovers every manifest,
   runs disjoint dual-browser chunks and compares record bytes in those same runs | Stale targets: TI03–TI08 Verify | –
 - spec-stale: dialog and menu/tabs/toast focused tests use per-component suites rather than the shared proposed

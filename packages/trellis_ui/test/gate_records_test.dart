@@ -74,10 +74,46 @@ void main() {
       'evidence': ['Forced colors unavailable'],
       'unsupported': true,
     };
-    expect(disposition(safariFailure).recordIssues('alert-dialog', alert), [
-      'alert-dialog: forced-colors/firefox did not run',
-    ]);
+    expect(disposition(safariFailure).recordIssues('alert-dialog', alert), isEmpty);
   });
+
+  for (final (name, app) in [('dialog', false), ('alert-dialog', false), ('badge', false), ('shelf-ui', true)]) {
+    test('$name release record uses the unsupported emulation fallback', () {
+      final release = disposition('');
+      final data = record(name);
+      final item = (data['items'] as Map)['forced-colors'] as Map;
+      final browsers = item['browsers'] as Map;
+      const unsupported = {
+        'status': 'not-run',
+        'evidence': ['Forced colors unavailable'],
+        'unsupported': true,
+      };
+      browsers['firefox'] = unsupported;
+      expect(release.recordIssues(name, data, app: app), isEmpty, reason: name);
+
+      data['automated'] = 'fail';
+      item['status'] = 'not-run';
+      browsers['chrome'] = unsupported;
+      expect(release.recordIssues(name, data, app: app), contains('$name: forced-colors did not run'));
+      browsers['chrome'] = {
+        'status': 'not-run',
+        'evidence': ['Chrome could not start'],
+      };
+      expect(release.recordIssues(name, data, app: app), contains('$name: forced-colors/chrome did not run'));
+      browsers.remove('chrome');
+      expect(release.recordIssues(name, data, app: app), isNotEmpty);
+
+      item['status'] = 'fail';
+      browsers['chrome'] = {
+        'status': 'fail',
+        'evidence': ['Focus indicator disappeared'],
+      };
+      expect(
+        release.recordIssues(name, data, app: app),
+        contains('$name: forced-colors failed without a release disposition'),
+      );
+    });
+  }
 
   test('optional manual and automated failures require the same named items and their evidence', () {
     final badge = record('badge');

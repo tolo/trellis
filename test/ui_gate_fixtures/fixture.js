@@ -1,5 +1,10 @@
 (() => {
-const defect = new URL(location.href).searchParams.get('defect');
+const query = new URL(location.href).searchParams;
+const defect = query.get('defect');
+if (query.has('unsupported-dark')) {
+  const match = window.matchMedia.bind(window);
+  window.matchMedia = media => match(media === '(prefers-color-scheme: dark)' ? 'not all' : media);
+}
 window.fixtureFires=0;
 class Demo extends HTMLElement {
   connectedCallback() {

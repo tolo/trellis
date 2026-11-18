@@ -44,7 +44,7 @@ Future<int> uiGate(List<String> arguments) async {
     if (manifests.map((m) => m.name).toSet().length != manifests.length)
       throw const FormatException('manifests: duplicate component name');
     final browsers = (args['browsers'] as String).split(',');
-    if (browsers.isEmpty || browsers.any((b) => !{'chrome', 'firefox'}.contains(b)))
+    if (browsers.any((browser) => !gateBrowsers.contains(browser)))
       throw const FormatException('browsers: expected chrome,firefox');
     Uri base;
     if (args['serve'] != null) {
@@ -123,7 +123,7 @@ Map<String, Object?> _arguments(List<String> values) {
     'manifests': 'dev/ui-gate/manifests',
     'records': 'dev/ui-gate/records',
     'baselines': 'dev/ui-gate/baselines',
-    'browsers': 'chrome,firefox',
+    'browsers': gateBrowsers.join(','),
     'record': false,
     'help': false,
   };

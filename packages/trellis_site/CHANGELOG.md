@@ -26,10 +26,12 @@
   prev/next links instead of under a synthesized `posts/my-trip` menu node with an empty URL. A root-level bundle
   (`about/index.md`) is in the root section (`section` `''`), like `about.md`, so it no longer looks up an
   `about/single.html` layout first.
-- **Lattice: a prose table wider than its column scrolls inside its own box** instead of splitting identifiers
+- **Lattice: a plain prose table wider than its column scrolls inside its own box** instead of splitting identifiers
   mid-word (`maxContentLengt|h`). Tables were `table-layout: fixed` with `overflow-wrap: anywhere` cells, which split
   code at every viewport because the docs column is under 500px even at 1280px. A cell now wraps only at spaces and
-  hyphens, and `lattice.js` makes a table a tab stop while it overflows so the keyboard can scroll it.
+  hyphens, and `lattice.js` makes a plain table a tab stop while it overflows so the keyboard can scroll it. Suite
+  tables in prose scroll on their own named, keyboard-focusable wrapper.
+- **Arbor: copy buttons announce clipboard success or failure** through a live status region.
 
 ## 0.13.0
 

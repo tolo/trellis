@@ -62,8 +62,22 @@ class DevCommand extends Command<int> {
     final verbose = argResults!['verbose'] as bool;
     final baseDir = workingDirectory ?? Directory.current.path;
 
+    void reportFailure(String phase, Object error, StackTrace stackTrace) {
+      stderr.writeln('$phase: $error');
+      if (verbose) stderr.writeln(stackTrace);
+    }
+
+    SiteConfig? readConfig() {
+      try {
+        return loadSiteBuildConfig(baseDir);
+      } catch (error, stackTrace) {
+        reportFailure('Could not load preview config', error, stackTrace);
+        return null;
+      }
+    }
+
     // Fail fast on a missing or invalid config: there is nothing to watch yet.
-    final initialConfig = loadSiteBuildConfig(baseDir);
+    final initialConfig = readConfig();
     if (initialConfig == null) return 1;
 
     final buildRoot = Directory.systemTemp.createTempSync('trellis_dev_');
@@ -72,22 +86,20 @@ class DevCommand extends Command<int> {
     Directory? servedDir;
     Handler? served;
 
-    Future<void> rebuild() async {
+    Future<void> rebuild(SiteConfig loaded) async {
       final outDir = Directory(p.join(buildRoot.path, 'build-${generation++}'));
-      final config = loadSiteBuildConfig(
-        baseDir,
-        outputDir: outDir.path,
-        baseUrl: 'http://localhost:$port',
-        pathPrefix: '',
-      );
       var code = 1;
-      if (config != null) {
-        // Keep the loop alive on any build failure: the next save gets another try.
-        try {
-          code = await buildSite(config, includeDrafts: includeDrafts, verbose: verbose);
-        } on Exception catch (e) {
-          stderr.writeln('Build failed: $e');
-        }
+      try {
+        final config = overrideSiteBuildConfig(
+          loaded,
+          outputDir: outDir.path,
+          baseUrl: 'http://localhost:$port',
+          pathPrefix: '',
+        );
+        code = await buildSite(config, includeDrafts: includeDrafts, verbose: verbose);
+      } catch (error, stackTrace) {
+        // Preview is the recovery boundary: invalid inputs can also fail with Dart Errors.
+        reportFailure('Build failed', error, stackTrace);
       }
       if (code != 0) {
         if (outDir.existsSync()) outDir.deleteSync(recursive: true);
@@ -101,42 +113,67 @@ class DevCommand extends Command<int> {
       if (!rebuilt.isClosed) rebuilt.add(null);
     }
 
-    stdout.writeln('Building site...');
-    await rebuild();
-
-    final watchRoots = _watchRoots(initialConfig);
-    final ignored = [p.canonicalize(initialConfig.outputDir), p.canonicalize(buildRoot.path)];
-    final watchers = [for (final root in watchRoots) DirectoryWatcher(root)];
+    final subscriptions = <String, StreamSubscription<WatchEvent>>{};
+    final previewRoot = p.canonicalize(buildRoot.path);
+    String? outputRoot;
 
     // One rebuild at a time; changes during a build queue exactly one more.
     Future<void>? building;
     var pending = false;
+    var stopping = false;
     Timer? debounceTimer;
 
-    Future<void> drain() async {
-      do {
-        pending = false;
-        stdout.writeln('Change detected, rebuilding...');
-        await rebuild();
-      } while (pending);
-      building = null;
+    Future<void> updateWatches(SiteConfig config, void Function(WatchEvent) onEvent) async {
+      final roots = _watchRoots(config);
+      final configuredOutput = p.canonicalize(config.outputDir);
+      // An output path that covers a watch root would also hide the edits needed to correct it.
+      final coversSource = roots.any((root) => root == configuredOutput || p.isWithin(configuredOutput, root));
+      outputRoot = coversSource ? null : configuredOutput;
+      for (final root in subscriptions.keys.toList()) {
+        if (!roots.contains(root)) await subscriptions.remove(root)!.cancel();
+      }
+      for (final root in roots) {
+        if (subscriptions.containsKey(root)) continue;
+        final watcher = DirectoryWatcher(root);
+        subscriptions[root] = watcher.events.listen(
+          onEvent,
+          onError: (Object error, StackTrace stackTrace) => reportFailure('Could not watch $root', error, stackTrace),
+          onDone: () => subscriptions.remove(root),
+        );
+        // Watch the new sources before building so an edit during that build is queued.
+        await watcher.ready;
+      }
     }
 
     void onEvent(WatchEvent event) {
-      if (_isIgnored(event.path, watchRoots, ignored)) return;
+      if (stopping || _isIgnored(event.path, subscriptions.keys, [previewRoot, ?outputRoot])) return;
       debounceTimer?.cancel();
       debounceTimer = Timer(debounce, () {
-        if (building != null) {
-          pending = true;
-        } else {
-          building = drain();
-        }
+        pending = true;
+        building ??= Future<void>(() async {
+          try {
+            while (pending && !stopping) {
+              pending = false;
+              stdout.writeln('Change detected, rebuilding...');
+              final config = readConfig();
+              if (config == null) {
+                if (served != null) stderr.writeln('Still serving the last successful build.');
+                continue;
+              }
+              await updateWatches(config, onEvent);
+              await rebuild(config);
+            }
+          } finally {
+            building = null;
+          }
+        });
       });
     }
 
-    final subscriptions = [for (final watcher in watchers) watcher.events.listen(onEvent)];
-    // Wait for the initial scans so an edit made right after startup is not missed.
-    await Future.wait([for (final watcher in watchers) watcher.ready]);
+    stdout.writeln('Building site...');
+    await rebuild(initialConfig);
+
+    await updateWatches(initialConfig, onEvent);
 
     final handler = const Pipeline().addMiddleware(liveReloadMiddleware(rebuilt.stream)).addHandler((request) {
       final current = served;
@@ -157,30 +194,32 @@ class DevCommand extends Command<int> {
     } on SocketException catch (e) {
       stderr.writeln('Error: Could not bind to port $port. ${e.message}');
       stderr.writeln('Try --port <another-port>.');
-      await _shutdown(subscriptions, debounceTimer, rebuilt, buildRoot);
+      stopping = true;
+      debounceTimer?.cancel();
+      await building;
+      await _shutdown(subscriptions.values.toList(), rebuilt, buildRoot);
       return 1;
     }
 
-    stdout.writeln('Serving http://localhost:$port, watching ${watchRoots.join(', ')}');
+    stdout.writeln('Serving http://localhost:$port, watching ${subscriptions.keys.join(', ')}');
     stdout.writeln('Press Ctrl-C to stop.');
 
     await (stopSignal ?? ProcessSignal.sigint.watch().first);
+    stopping = true;
     // Open SSE connections never finish on their own, so close them rather than wait.
     await server.close(force: true);
     debounceTimer?.cancel();
     await building; // Let an in-flight build finish before its directory is deleted.
-    await _shutdown(subscriptions, debounceTimer, rebuilt, buildRoot);
+    await _shutdown(subscriptions.values.toList(), rebuilt, buildRoot);
     return 0;
   }
 }
 
 Future<void> _shutdown(
-  List<StreamSubscription<WatchEvent>> subscriptions,
-  Timer? debounceTimer,
+  Iterable<StreamSubscription<WatchEvent>> subscriptions,
   StreamController<void> rebuilt,
   Directory buildRoot,
 ) async {
-  debounceTimer?.cancel();
   for (final subscription in subscriptions) {
     await subscription.cancel();
   }
@@ -209,7 +248,7 @@ List<String> _watchRoots(SiteConfig config) {
 
 /// Whether a change at [path] cannot affect the build: build output, or anything under a dot directory (`.git`,
 /// `.dart_tool`) or a dotfile, relative to its watch root.
-bool _isIgnored(String path, List<String> roots, List<String> ignored) {
+bool _isIgnored(String path, Iterable<String> roots, List<String> ignored) {
   final canonical = p.canonicalize(path);
   for (final dir in ignored) {
     if (canonical == dir || p.isWithin(dir, canonical)) return true;

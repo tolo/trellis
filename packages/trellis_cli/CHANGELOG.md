@@ -24,6 +24,12 @@
 - `trellis create --template relic` adds CSRF protection like the Shelf and Dart Frog scaffolds: `trellisCsrf()` with a
   `CSRF_SECRET` override, the `csrf-token` meta tag, `static/js/csrf.js`, and the counter's hidden `_csrf` field.
 
+### Fixed
+
+- `trellis dev` picks up changes to the external theme and output directory in `trellis_site.yaml`. A build that
+  throws a Dart error leaves the last successful preview available and can be retried by saving another edit.
+- Relic starters generate a CSRF signing key at startup when `CSRF_SECRET` is unset.
+
 ## 0.13.0
 
 ### Added

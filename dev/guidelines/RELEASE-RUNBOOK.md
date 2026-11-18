@@ -1,6 +1,6 @@
 # Release Runbook — Trellis SDK
 
-One release = one lockstep version for all 8 packages (ADR-009), one `chore(release)` commit on `main`, one `vX.Y.Z`
+One release = one lockstep version for all publishable packages (ADR-009), one `chore(release)` commit on `main`, one `vX.Y.Z`
 tag. **Pushing the tag is the publish** (pub.dev via OIDC, GitHub Release + binaries, Homebrew/Scoop) and pub.dev
 cannot unpublish — so everything before the push is automated and rails-guarded, and the push is the one deliberate
 human action. Steps are in execution order; each names the guard that enforces it and what to do if it fails.
@@ -23,11 +23,13 @@ human action. Steps are in execution order; each names the guard that enforces i
 - **Do not bump versions on the branch.** Pubspecs stay at the previous version until step 4; `melos version` is
   restricted to `main` (root `pubspec.yaml` → `melos.command.version.branch`) and `tool/version_lockstep.sh` throws
   `RestrictedBranchException` and changes nothing anywhere else.
-- **Local gate = CI's `check` tier**, from the workspace root. Two prerequisites the Dart toolchain does not pull in:
+- **Local gate**, from the workspace root. It runs CI's checks plus the macOS release-gate tests.
+  The Dart toolchain does not install these test prerequisites:
   - **Node 22** — three JS-driven checks. `ci.yml` installs it.
   - **Chrome** — the theme reflow sweep and the visual baseline comparator drive it headless over the DevTools
     protocol. `ci.yml` only *asserts* it (`google-chrome --version`) because the ubuntu image ships it, so on your
     own machine you have to supply it.
+  - **Firefox and geckodriver** — the Trellis UI qualification tests run both browsers. See the setup below.
 
   Both tiers skip silently when their binary is absent; `_requireNodeInCi` / `requireChromeInCi` turn that skip into a
   failure only when `CI=true`, so **locally a missing Node or Chrome means those checks quietly do not run**.
@@ -40,9 +42,8 @@ human action. Steps are in execution order; each names the guard that enforces i
   dart format --output=none --set-exit-if-changed tool test
   ```
   Root `dart test` alone covers only the root suite; `melos exec` alone skips the root — run both.
-  **The root run here is deliberately wider than CI's.** CI runs `dart test --exclude-tags=visual`; the bare `dart test`
-  above also runs `test/visual_baseline_test.dart`, the golden-file layout tier — and **this is the only place that
-  tier runs.** It is what catches "the page moved", which no stylesheet assertion can see. Its baselines encode font
+  CI excludes `ui-gate` in both test commands and `visual` from the root suite. The local commands include the UI
+  qualification tests and the root golden-file layout check, `test/visual_baseline_test.dart`. Its baselines encode font
   metrics, so a recording is only valid on the Chrome build and font set that made it; CI runners drift in both
   (recordings from an `ubuntu:24.04` container on Chrome 152 failed the runner's Chrome 151 for the three themes whose
   stacks end in a system fallback), so chasing them there is permanent maintenance for a check that matters most right

@@ -96,11 +96,12 @@ watching and clean up resources; the SSE connections then close automatically.
 Returns a Shelf `Handler` that serves SSE events. Each connected client receives
 a `reload` event when any template file changes.
 
-### `devMiddleware(FileSystemLoader loader, {String ssePath, bool injectScript, bool validate, TemplateValidator? validator, StringSink? validationSink})`
+### `devMiddleware(FileSystemLoader loader, {String ssePath, String scriptPath, bool injectScript, bool validate, TemplateValidator? validator, StringSink? validationSink, String? staticDirectory})`
 
 Returns a Shelf `Middleware` that:
 
-- Routes `ssePath` (default `/_dev/reload`) to the SSE handler.
+- Routes `ssePath` (default `/_dev/reload`) to the SSE handler and serves the client at
+  `scriptPath` (default `/_dev/reload.js`).
 - When `injectScript` is `true` (default), injects the reload script before
   `</body>` in buffered HTML responses.
 - When `validate` is `true` (default), validates every template at startup and
@@ -138,7 +139,7 @@ SSE endpoint and reloads the page on `reload` events.
 [trellis_shelf](/docs/packages/trellis_shelf/) apps. It also pairs with
 [trellis_dart_frog](/docs/packages/trellis_dart_frog/): the SSE-based browser
 refresh works independently of Dart Frog's own hot restart. Wrap the Shelf
-middleware with `fromShelfMiddleware(devMiddleware(loader, staticDirectory: 'static'))`, passing the
+middleware with `fromShelfMiddleware(devMiddleware(loader, staticDirectory: 'public'))`, passing the
 engine's own loader; see the [trellis_dart_frog hot reload
 section](/docs/packages/trellis_dart_frog/#hot-reload).
 

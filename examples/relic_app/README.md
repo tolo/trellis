@@ -72,7 +72,9 @@ Templates use Trellis's `tl:extends` and `tl:define`:
 POST/PUT/DELETE/PATCH with 403 unless it carries the matching token. The render helpers pass
 the token to templates as `csrfToken`: `base.html` puts it in a `csrf-token` meta tag that
 `static/js/csrf.js` copies into the `X-CSRF-Token` header of HTMX requests, and the counter
-also submits it as a hidden `_csrf` field. Set `CSRF_SECRET` in production.
+also submits it as a hidden `_csrf` field. The app generates a signing key at startup
+unless you set `CSRF_SECRET`. Set it in production so tokens survive restarts
+and work across replicas.
 
 ## Project Structure
 

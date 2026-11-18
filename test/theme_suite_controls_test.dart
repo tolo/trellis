@@ -144,6 +144,7 @@ void main() {
     await driver.probe.preloadScript(_clipboardStub);
     final server = await serveThemeOutput(await outputFor('arbor'));
     final url = server.baseUrl.resolve(_docs['arbor']!);
+    final statusByClipboardMode = <String, Object?>{};
     for (final mode in ['resolve', 'reject', 'absent']) {
       await _open(driver, url.replace(queryParameters: {'clipboard': mode}), width: 390);
       expect(
@@ -172,9 +173,17 @@ void main() {
       await driver.evaluate(r'''
 (() => {
   const button = document.querySelector('.code-bar button');
+  const emptyStatuses = [...document.querySelectorAll('[role="status"]')]
+    .filter(status => status.textContent.trim() === '');
   window.copyHistory = [];
-  new MutationObserver(() => window.copyHistory.push([button.textContent.trim(), performance.now()]))
-    .observe(button, {childList: true});
+  window.copyStatus = [];
+  new MutationObserver(() => {
+    window.copyHistory.push([button.textContent.trim(), performance.now()]);
+    if (window.copyHistory.length === 1) {
+      window.copyStatus = emptyStatuses.filter(status => status.isConnected)
+        .map(status => status.textContent.trim()).filter(Boolean);
+    }
+  }).observe(button, {childList: true});
 })()
 ''');
       await driver.pointer('.code-bar button', click: true);
@@ -188,7 +197,18 @@ void main() {
       expect(history.map((step) => step.first), [feedback, 'Copy'], reason: mode);
       expect((history[1][1] as num) - (history[0][1] as num), closeTo(1600, 150), reason: mode);
       expect(await driver.evaluate('window.clipboardCalls'), mode == 'absent' ? [] : [code], reason: mode);
+      expect(
+        await driver.evaluate("document.querySelector('.code-bar button').getAttribute('aria-label')"),
+        'Copy code to clipboard',
+        reason: mode,
+      );
+      statusByClipboardMode[mode] = await driver.evaluate('window.copyStatus');
     }
+    expect(statusByClipboardMode, {
+      'resolve': ['Code copied to clipboard.'],
+      'reject': ['Could not copy code to clipboard.'],
+      'absent': ['Could not copy code to clipboard.'],
+    });
   }, timeout: const Timeout(Duration(minutes: 2)));
 
   test('44px touch targets fit their controls at 390', () async {

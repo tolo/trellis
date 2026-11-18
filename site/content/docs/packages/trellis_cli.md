@@ -125,11 +125,11 @@ Available templates:
 | `htmx` (default) | Shelf + HTMX counter app with Home/About pages, CSRF, security headers, and hot reload |
 | `blog` | Static blog site built with trellis_site (Markdown content, layouts, taxonomies) |
 | `dart_frog` | Dart Frog + HTMX counter app with file-based routing, CSRF, security headers, and hot reload |
-| `relic` | Relic + HTMX counter app with explicit-engine wiring and security headers |
+| `relic` | Relic + HTMX counter app with explicit-engine wiring, CSRF, and security headers |
 | `theme` | Trellis theme scaffold with `theme.yaml`, layouts, SASS architecture, and example preview site |
 
 App templates (`htmx`, `relic`, `dart_frog`) self-host the pinned HTMX build under `/js/htmx.min.js`
-and use `CspBuilder.strict()`. Shelf and Dart Frog also write `/js/csrf.js`. The layout disables
+and use `CspBuilder.strict()`. All three also write `/js/csrf.js`. The layout disables
 HTMX's injected indicator styles; the rules ship in `styles.css`. Generated markup has no inline
 scripts or styles. Shelf and Dart Frog dev mode also reloads on CSS/JS edits in `static/` or `public/`.
 

@@ -31,7 +31,7 @@ class TlCombobox extends TlElement {
       if (this.searching) this.setOpen(true);
       else this.syncResults();
     };
-    for (const type of ['htmx:responseError', 'htmx:sendError']) {
+    for (const type of ['htmx:responseError', 'htmx:sendError', 'htmx:timeout']) {
       this.listen(this.input, type, () => {
         this.listbox.replaceChildren();
         applyResults();

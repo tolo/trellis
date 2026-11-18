@@ -10,16 +10,17 @@ import '../tool/src/gallery.dart';
 void main() {
   late HttpServer server;
   late ChromeDriver driver;
-  Future<void> Function()? holdUnmatchedOptions;
+  Future<void> Function()? holdOptions;
 
   setUp(() async {
-    holdUnmatchedOptions = null;
+    holdOptions = null;
     final gallery = galleryHandler(Directory.current);
     server = await shelf_io.serve(
       (request) async {
         final uri = request.requestedUri;
-        if (uri.path == '/demo/options' && uri.queryParameters['q'] == 'zz') {
-          await holdUnmatchedOptions?.call();
+        if (uri.path == '/demo/options' &&
+            (uri.queryParameters['q'] == 'zz' || uri.queryParameters['mode'] == 'timeout')) {
+          await holdOptions?.call();
         }
         return gallery(request);
       },
@@ -82,7 +83,7 @@ void main() {
     addTearDown(() {
       if (!release.isCompleted) release.complete();
     });
-    holdUnmatchedOptions = () {
+    holdOptions = () {
       pending.complete();
       return release.future;
     };
@@ -103,10 +104,14 @@ void main() {
   });
 
   test('combobox with no options or a failed request announces no results and keeps the typed text', () async {
+    final timeoutResponse = Completer<void>();
+    holdOptions = () => timeoutResponse.future;
+    addTearDown(timeoutResponse.complete);
     for (final (mode, event) in [
       ('empty', 'htmx:afterSettle'),
       ('error', 'htmx:responseError'),
       ('abort', 'htmx:sendError'),
+      ('timeout', 'htmx:timeout'),
     ]) {
       await open('combobox');
       await driver.evaluate('''(() => {
@@ -114,13 +119,17 @@ void main() {
         window.received = false;
         window.addEventListener('error', event => window.errors.push(event.message));
         const input = document.querySelector('#fruit');
-        input.addEventListener('htmx:configRequest', event => event.detail.parameters.mode = '$mode');
+        input.addEventListener('htmx:configRequest', event => {
+          event.detail.parameters.mode = '$mode';
+          if ('$mode' === 'timeout') event.detail.timeout = 250;
+        });
         document.body.addEventListener('$event', () => window.received = true, {once: true});
       })()''');
       expect(await driver.evaluate("document.querySelectorAll('#fruit-results [role=option]').length"), 3);
       await click('#fruit');
       await driver.type('ap');
-      await waitFor("window.received && $announcement === 'No results'");
+      await waitFor('window.received === true');
+      expect(await driver.evaluate(announcement), 'No results', reason: mode);
       expect(await driver.evaluate(typed), 'ap', reason: mode);
       expect(await driver.evaluate(comboboxOpen), isTrue, reason: mode);
       expect(

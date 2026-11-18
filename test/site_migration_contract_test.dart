@@ -171,7 +171,12 @@ void main() {
       );
       final css = File(p.join(outputDir, 'css', 'main.css')).readAsStringSync();
       expect(css, allOf(contains('.prose :not(pre)>code'), contains('overflow-wrap:anywhere')));
-      expect(css, contains('.prose table{display:block;width:max-content;max-width:100%;overflow-x:auto}'));
+      expect(
+        css,
+        contains(
+          '.prose table:not(:where(.trellis-table)){display:block;width:max-content;max-width:100%;overflow-x:auto}',
+        ),
+      );
       expect(css, allOf(contains('.prose pre'), contains('white-space:pre-wrap')));
 
       final gallery = html_parser.parse(

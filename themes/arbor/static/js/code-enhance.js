@@ -33,19 +33,20 @@
     return LABELS[lang] || lang.toUpperCase();
   }
 
-  function copyText(text, button) {
-    function report(label) {
-      button.textContent = label;
+  function copyText(text, button, status) {
+    function report(copied) {
+      button.textContent = copied ? 'Copied' : 'Error';
+      if (status) status.textContent = copied ? 'Code copied to clipboard.' : 'Could not copy code to clipboard.';
       window.setTimeout(function () { button.textContent = 'Copy'; }, 1600);
     }
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(function () { report('Copied'); }, function () { report('Error'); });
+      navigator.clipboard.writeText(text).then(function () { report(true); }, function () { report(false); });
     } else {
-      report('Error');
+      report(false);
     }
   }
 
-  function enhance(code, template) {
+  function enhance(code, template, status) {
     var pre = code.parentElement;
     if (!pre || pre.tagName !== 'PRE') return;
     // Idempotent: skip if already wrapped (e.g. re-invoked).
@@ -66,7 +67,7 @@
 
     var button = template.content.firstElementChild.cloneNode(true);
     button.addEventListener('click', function () {
-      copyText(code.textContent, button);
+      copyText(code.textContent, button, status);
     });
 
     bar.appendChild(lang);
@@ -78,8 +79,9 @@
   function run() {
     var template = document.querySelector('template[data-code-copy]');
     if (!template) return;
+    var status = document.querySelector('[data-code-copy-status]');
     var blocks = document.querySelectorAll('pre > code[class*="language-"]');
-    Array.prototype.forEach.call(blocks, function (code) { enhance(code, template); });
+    Array.prototype.forEach.call(blocks, function (code) { enhance(code, template, status); });
   }
 
   if (document.readyState === 'loading') {

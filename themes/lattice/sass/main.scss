@@ -1021,13 +1021,14 @@ code {
 .prose :not(pre) > code {
   overflow-wrap: anywhere;
 }
-/* A table wider than the column scrolls inside its own box, so it never widens the page and
+/* A plain table wider than the column scrolls inside its own box, so it never widens the page and
    never splits a word. `table-layout: fixed` with `overflow-wrap: anywhere` cells also kept the
    page from widening, but cut identifiers mid-token (`maxContentLengt|h`) at every viewport:
    the docs column is under 500px even at 1280px. `display: block` makes the table the scroll
    container (its rows lay out in an anonymous table box inside it); `max-content` keeps a
-   narrow table at its natural width rather than stretching an empty block to the column. */
-.prose table {
+   narrow table at its natural width rather than stretching an empty block to the column.
+   Suite tables already have a named scroll region and own their cell styles. */
+.prose table:not(:where(.trellis-table)) {
   display: block;
   width: max-content;
   max-width: 100%;
@@ -1038,17 +1039,17 @@ code {
    scrolling. With `normal`, a cell wraps only at spaces and hyphens and an identifier is its
    min-content. Inline code is deliberately not `nowrap`: that held `[title, summary, content,
    tags]` on one line, made a 400px table 580px wide and pushed its prose column off-screen. */
-.prose :is(th, td),
-.prose :is(th, td) *,
-.prose :is(th, td) code {
+.prose :is(th, td):not(:where(.trellis-table *)),
+.prose :is(th, td) :not(:where(.trellis-table *)),
+.prose :is(th, td) code:not(:where(.trellis-table *)) {
   overflow-wrap: normal;
 }
 /* Fixed layout spread spare width across columns; auto layout packs them to content, so
    adjacent cells need their own gap. */
-.prose :is(th, td) {
+.prose :is(th, td):not(:where(.trellis-table *)) {
   padding: 6px 1em 6px 0;
 }
-.prose :is(th, td):last-child {
+.prose :is(th, td):not(:where(.trellis-table *)):last-child {
   padding-right: 0;
 }
 .prose pre {

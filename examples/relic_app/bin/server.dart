@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:relic/relic.dart';
 import 'package:trellis/trellis.dart';
@@ -19,9 +20,9 @@ Future<void> main() async {
     loader: FileSystemLoader(templatesDir, devMode: true),
     devMode: true,
   );
-  // CSRF secret: use an environment variable in production.
+  // Set CSRF_SECRET to keep tokens valid across restarts and replicas.
   final csrfSecret =
-      Platform.environment['CSRF_SECRET'] ?? 'trellis_relic_example-dev-secret';
+      Platform.environment['CSRF_SECRET'] ?? _generateCsrfSecret();
   const csp = CspBuilder(scriptSrc: "'self' https://cdn.jsdelivr.net");
 
   final app = RelicApp()
@@ -55,4 +56,10 @@ Future<void> main() async {
 
   await app.serve(address: InternetAddress.anyIPv4, port: port);
   print('Relic + Trellis example running at http://localhost:$port');
+}
+
+String _generateCsrfSecret() {
+  final random = Random.secure();
+  final bytes = List<int>.generate(32, (_) => random.nextInt(256));
+  return bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
 }

@@ -7,6 +7,7 @@ import '../ui_scaffold_template.dart';
 /// in generated code.
 String relicServerTemplate(String projectName, {bool htmxCdn = false, bool ui = false}) =>
     "import 'dart:io';\n"
+    "import 'dart:math';\n"
     '\n'
     "import 'package:relic/relic.dart';\n"
     "import 'package:trellis/trellis.dart';\n"
@@ -26,9 +27,8 @@ String relicServerTemplate(String projectName, {bool htmxCdn = false, bool ui = 
     '    loader: ${ui ? 'CompositeLoader([FileSystemLoader(templatesDir, devMode: true), TrellisUiLoader()])' : 'FileSystemLoader(templatesDir, devMode: true)'},\n'
     '    devMode: true,\n'
     '  );\n'
-    '  // CSRF secret: use an environment variable in production.\n'
-    '  // WARNING: Change this default before deploying to production!\n'
-    "  final csrfSecret = Platform.environment['CSRF_SECRET'] ?? '$projectName-dev-secret';\n"
+    '  // Set CSRF_SECRET to keep tokens valid across restarts and replicas.\n'
+    "  final csrfSecret = Platform.environment['CSRF_SECRET'] ?? _generateCsrfSecret();\n"
     '  const csp = ${scaffoldStrictCsp(htmxCdn: htmxCdn, ui: ui, indent: '  ')};\n'
     '\n'
     '  final app = RelicApp()\n'
@@ -59,4 +59,10 @@ String relicServerTemplate(String projectName, {bool htmxCdn = false, bool ui = 
     '\n'
     '  await app.serve(address: InternetAddress.anyIPv4, port: 8080);\n'
     "  print('$projectName running at http://localhost:8080');\n"
+    '}\n'
+    '\n'
+    'String _generateCsrfSecret() {\n'
+    '  final random = Random.secure();\n'
+    '  final bytes = List<int>.generate(32, (_) => random.nextInt(256));\n'
+    "  return bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();\n"
     '}\n';

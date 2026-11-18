@@ -297,6 +297,39 @@ void main() {
             expect(measured['tabIndex'], 0, reason: '$where – overflowing table is not keyboard-reachable');
           }
         });
+
+        test('a suite table in prose keeps scrolling and keyboard focus on its named region', () async {
+          final browser = probe;
+          if (browser == null) {
+            requireChromeInCi('lattice suite table reflow');
+            markTestSkipped('no Chrome/Chromium found – Lattice suite tables not measured');
+            return;
+          }
+          final output = await _build(
+            theme,
+            cli: cli,
+            workspace: workspace,
+            label: 'suite-table',
+            rewriteMarkdown: (source) => '$source\n\n<!-- tl:suite_table -->\n',
+            shortcodes: {'suite_table': _suiteTableShortcode},
+          );
+          final server = await StaticSiteServer.serve(Directory(output));
+          addTearDown(server.close);
+          final measured =
+              await browser.evaluate(
+                    pageUrl(server.baseUrl, 'docs/getting-started/index.html'),
+                    _suiteTableExpression,
+                    width: 390,
+                    height: 844,
+                  )
+                  as Map;
+          expect(measured['documentOverflow'], 0, reason: '$measured');
+          expect(measured['regionName'], 'Recent invoices', reason: '$measured');
+          expect(measured['regionScroll'], greaterThan(0), reason: '$measured');
+          expect(measured['tableScroll'], 0, reason: '$measured');
+          expect(measured['regionTabIndex'], 0, reason: '$measured');
+          expect(measured['tableTabIndex'], '-1', reason: '$measured');
+        });
       }
 
       // ── Class 3 ────────────────────────────────────────────────────────────
@@ -703,6 +736,7 @@ Future<String> _build(
   String? fixture,
   bool rootAllAssetPaths = false,
   String Function(String body)? rewriteMarkdown,
+  Map<String, String> shortcodes = const {},
 }) async {
   final site = Directory(p.join(workspace.path, '${theme.name}-$label'))..createSync(recursive: true);
   final example = p.join(theme.dir, 'example');
@@ -716,6 +750,11 @@ Future<String> _build(
   for (final extra in ['static', 'data', 'layouts']) {
     final source = Directory(p.join(example, extra));
     if (source.existsSync()) _copy(source, Directory(p.join(site.path, extra)));
+  }
+  for (final entry in shortcodes.entries) {
+    File(p.join(site.path, 'layouts', 'shortcodes', '${entry.key}.html'))
+      ..createSync(recursive: true)
+      ..writeAsStringSync(entry.value);
   }
   // Theme-level data is a whole-file default a site replaces; copying it into
   // the site's own data/ is how a site overrides it, and the only way this
@@ -1129,6 +1168,39 @@ const _proseTableExpression = r'''new Promise((settle) => requestAnimationFrame(
     tabIndex: table.tabIndex,
   };
 })''';
+
+// A caller may focus the table programmatically without adding it to the tab order.
+const _suiteTableShortcode = r'''
+<div tl:with="columns=${#strings.split('Account reference|Invoice number|Billing email address|Payment status', '|')},
+              rows=${#strings.split('Northfield Studio', '|')}">
+  <table tabindex="-1" tl:replace="~{trellis-ui/table :: table('Recent invoices', columns, rows)}">
+    <tbody tl:slot="row">
+      <tr class="trellis-table-row">
+        <td class="trellis-table-cell">Northfield Studio</td>
+        <td class="trellis-table-cell">INV-10231</td>
+        <td class="trellis-table-cell">billing@northfield.example</td>
+        <td class="trellis-table-cell">Paid</td>
+      </tr>
+    </tbody>
+  </table>
+</div>''';
+
+const _suiteTableExpression = r'''new Promise((settle) => requestAnimationFrame(() => requestAnimationFrame(settle)))
+  .then(() => {
+    const region = document.querySelector('.doc-content.prose [data-slot="table-container"]');
+    const table = region.querySelector('table');
+    region.scrollLeft = region.scrollWidth;
+    table.scrollLeft = table.scrollWidth;
+    const root = document.documentElement;
+    return {
+      documentOverflow: root.scrollWidth - root.clientWidth,
+      regionName: region.getAttribute('aria-label'),
+      regionScroll: region.scrollLeft,
+      tableScroll: table.scrollLeft,
+      regionTabIndex: region.tabIndex,
+      tableTabIndex: table.getAttribute('tabindex'),
+    };
+  })''';
 
 String _latticeLongNavigationExpression(int labelCount) =>
     '''(() => {

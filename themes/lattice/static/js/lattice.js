@@ -172,10 +172,8 @@
     }
   }
 
-  // A prose table wider than its column scrolls inside its own box (main.scss), and a scroll
-  // container with nothing focusable in it is out of a keyboard user's reach (axe
-  // scrollable-region-focusable, WCAG 2.1.1). Only a table that overflows becomes a tab stop, and
-  // the observer re-checks as the column changes width.
+  // An overflowing plain prose table needs a tab stop so keyboard users can scroll it.
+  // The observer re-checks as the column changes width. Suite tables use a focusable region.
   if (typeof window.ResizeObserver === 'function') {
     var tableObserver = new window.ResizeObserver(function (entries) {
       for (var entryIndex = 0; entryIndex < entries.length; entryIndex++) {
@@ -184,7 +182,7 @@
         else table.removeAttribute('tabindex');
       }
     });
-    var proseTables = document.querySelectorAll('.prose table');
+    var proseTables = document.querySelectorAll('.prose table:not(.trellis-table)');
     for (var tableIndex = 0; tableIndex < proseTables.length; tableIndex++)
       tableObserver.observe(proseTables[tableIndex]);
   }

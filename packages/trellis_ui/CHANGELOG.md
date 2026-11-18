@@ -6,6 +6,7 @@
   layout scales, touch-target overrides, destructive contrast and forced-colour focus/checked paint.
 - Add dialog, alert dialog, dropdown menu, tabs, toast and HTMX-populated combobox fragments.
   One deferred classic script handles keyboard interaction and cleans up state across swaps and history restores.
+  The combobox shows and announces “No results” after a request timeout and keeps the typed text.
 - Add `dart run trellis_ui:materialize [dir]` to write or refresh the three embedded preview assets.
 - Add a table header slot for column controls and `aria-sort`.
 - Pin the vega port to `shadcn@4.23.0` and add a checked upstream sync report.

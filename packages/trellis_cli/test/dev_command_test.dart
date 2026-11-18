@@ -186,5 +186,56 @@ void main() {
       writeFile('layouts/home.html', layout.replaceFirst('v1', 'v2'));
       await until(() async => (await get(port, '/')).body.contains('<h1>Theme v2</h1>'), 'the theme rebuild\n$out$err');
     });
+
+    for (final (stage, badConfig) in [
+      ('reading the config', 'search:\n  output: 42\n'),
+      ('building the site', 'feeds:\n  atom: true\nparams:\n  author: 42\n'),
+    ]) {
+      test('keeps serving and recovers after a type error $stage', () async {
+        minimalSite();
+        final (:port, :err, :out, stop: _, run: _) = await startDev(siteDir.path);
+
+        writeFile('trellis_site.yaml', badConfig);
+        await until(() => err.toString().contains('Still serving the last successful build.'), 'the failed rebuild');
+        expect((await get(port, '/')).body, contains('<h1>Home</h1>'));
+
+        minimalSite();
+        writeHome('Recovered');
+        await until(() async => (await get(port, '/')).body.contains('<h1>Recovered</h1>'), 'recovery\n$out$err');
+      });
+    }
+
+    test('watches the new external theme and ignores the new output directory after a config edit', () async {
+      minimalSite();
+      for (final name in ['first', 'second']) {
+        writeFile('$name/theme.yaml', 'name: $name\nversion: 1.0.0\n');
+        writeFile('$name/layouts/home.html', '<html><body><h1>$name</h1></body></html>');
+      }
+      writeFile('example/content/_index.md', '---\ntitle: Home\n---\n');
+      writeFile('example/trellis_site.yaml', 'theme: ../../first\n');
+      final (:port, :out, :err, stop: _, run: _) = await startDev(p.join(siteDir.path, 'example'));
+      expect((await get(port, '/')).body, contains('<h1>first</h1>'));
+
+      writeFile('example/trellis_site.yaml', 'theme: ../../second\noutputDir: publish\n');
+      await until(() async => (await get(port, '/')).body.contains('<h1>second</h1>'), 'the newly configured theme');
+      writeFile('second/layouts/home.html', '<html><body><h1>Changed</h1></body></html>');
+      await until(() async => (await get(port, '/')).body.contains('<h1>Changed</h1>'), 'the new theme edit\n$out$err');
+
+      final rebuildsBefore = 'Change detected'.allMatches(out.toString()).length;
+      writeFile('example/publish/stray.html', '<p>stray</p>');
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      expect('Change detected'.allMatches(out.toString()).length, rebuildsBefore);
+    });
+
+    test('keeps watching sources when a config edit makes output overlap the site', () async {
+      minimalSite();
+      final (:port, :out, :err, stop: _, run: _) = await startDev(siteDir.path);
+
+      writeFile('trellis_site.yaml', 'outputDir: .\n');
+      await until(() => 'Built '.allMatches(out.toString()).length == 2, 'the config rebuild\n$out$err');
+      minimalSite();
+      writeHome('Recovered');
+      await until(() async => (await get(port, '/')).body.contains('<h1>Recovered</h1>'), 'recovery\n$out$err');
+    });
   });
 }

@@ -122,6 +122,13 @@ void main() {
         expect(content, contains("..get('/js/csrf.js'"));
       });
 
+      test('uses a process-generated signing key when no CSRF secret is configured', () {
+        expect(content, contains("import 'dart:math';"));
+        expect(content, contains('Random.secure()'));
+        expect(content, contains("Platform.environment['CSRF_SECRET'] ?? _generateCsrfSecret()"));
+        expect(content, isNot(contains('-dev-secret')));
+      });
+
       test('configures strict CSP for same-origin scripts', () {
         expect(content, contains('CspBuilder'));
         expect(content, isNot(contains('cdn.jsdelivr.net')));

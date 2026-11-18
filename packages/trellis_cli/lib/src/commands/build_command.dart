@@ -72,32 +72,38 @@ SiteConfig? loadSiteBuildConfig(String baseDir, {String? outputDir, String? base
   }
 
   try {
-    final rawConfig = SiteConfig.load(configPath);
-    return SiteConfig(
-      siteDir: rawConfig.siteDir,
-      title: rawConfig.title,
-      baseUrl: baseUrl ?? rawConfig.baseUrl,
-      description: rawConfig.description,
-      contentDir: rawConfig.contentDir,
-      layoutsDir: rawConfig.layoutsDir,
-      staticDir: rawConfig.staticDir,
-      outputDir: outputDir ?? rawConfig.outputDir,
-      dataDir: rawConfig.dataDir,
-      taxonomies: rawConfig.taxonomies,
-      paginate: rawConfig.paginate,
-      params: rawConfig.params,
-      feeds: rawConfig.feeds,
-      searchConfig: rawConfig.searchConfig,
-      highlightConfig: rawConfig.highlightConfig,
-      themeConfig: rawConfig.themeConfig,
-      uses: rawConfig.uses,
-      // The constructor re-normalizes, so passing the already-normalized config value is safe.
-      pathPrefix: pathPrefix ?? rawConfig.pathPrefix,
-    );
+    final config = SiteConfig.load(configPath);
+    if (outputDir == null && baseUrl == null && pathPrefix == null) return config;
+    return overrideSiteBuildConfig(config, outputDir: outputDir, baseUrl: baseUrl, pathPrefix: pathPrefix);
   } on SiteConfigException catch (e) {
     stderr.writeln('Error: $e');
     return null;
   }
+}
+
+/// Applies CLI overrides, keeping the loaded value for each omitted option.
+SiteConfig overrideSiteBuildConfig(SiteConfig rawConfig, {String? outputDir, String? baseUrl, String? pathPrefix}) {
+  return SiteConfig(
+    siteDir: rawConfig.siteDir,
+    title: rawConfig.title,
+    baseUrl: baseUrl ?? rawConfig.baseUrl,
+    description: rawConfig.description,
+    contentDir: rawConfig.contentDir,
+    layoutsDir: rawConfig.layoutsDir,
+    staticDir: rawConfig.staticDir,
+    outputDir: outputDir ?? rawConfig.outputDir,
+    dataDir: rawConfig.dataDir,
+    taxonomies: rawConfig.taxonomies,
+    paginate: rawConfig.paginate,
+    params: rawConfig.params,
+    feeds: rawConfig.feeds,
+    searchConfig: rawConfig.searchConfig,
+    highlightConfig: rawConfig.highlightConfig,
+    themeConfig: rawConfig.themeConfig,
+    uses: rawConfig.uses,
+    // The constructor re-normalizes, so passing the already-normalized config value is safe.
+    pathPrefix: pathPrefix ?? rawConfig.pathPrefix,
+  );
 }
 
 /// Runs the SSG pipeline for [config], compiles its SASS, and prints warnings and the build summary.

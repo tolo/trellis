@@ -1,7 +1,7 @@
 # trellis_relic
 
 Serverpod Relic integration for the [Trellis](https://pub.dev/packages/trellis) template engine: response helpers, HTMX
-detection, and security headers.
+detection, security headers, and CSRF protection.
 
 Part of the [Trellis SDK](https://github.com/tolo/trellis).
 
@@ -43,12 +43,14 @@ void main() async {
 - `isHtmxRequest`, `htmxTarget`, `htmxSource` and `isHtmxBoosted` read HTMX 2 and HTMX 4 request headers alike.
 - `trellisSecurityHeaders()` sets `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `X-XSS-Protection`
   and a `Content-Security-Policy` built with `CspBuilder`, on matched routes only (not 404/405).
-- No CSRF middleware; the guide describes the alternatives.
+- `trellisCsrf()` is a double-submit cookie with HMAC-SHA256 signing, accepted from the `X-CSRF-Token` header or a
+  form field; the handler can still read the form.
+- `CspBuilder.strict()` gives `script-src 'self'; style-src 'self'` for apps without inline scripts or styles.
 
 ## Documentation
 
 - **[Full guide: trellis_relic](https://tolo.github.io/trellis/docs/packages/trellis_relic/)** covers the engine
-  pattern, response helpers, middleware scoping, and CSRF options.
+  pattern, response helpers, middleware scoping, and CSRF configuration.
 - [Framework integration](https://tolo.github.io/trellis/docs/packages/framework-integration/) compares Shelf, Dart
   Frog, and Relic.
 - [API reference](https://pub.dev/documentation/trellis_relic/latest/)

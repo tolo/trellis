@@ -762,6 +762,111 @@ void main() {
           ),
         );
       });
+
+      test('typed value-only filter called with args throws "does not accept arguments"', () {
+        final e = ExpressionEvaluator(filters: {'shout': (String v) => '$v!'});
+        expect(
+          () => e.evaluate(r"${'ab' | shout:1}", {}),
+          throwsA(
+            isA<ExpressionException>().having((e) => e.message, 'message', contains('does not accept arguments')),
+          ),
+        );
+      });
+
+      test('optional-args filter works with and without args', () {
+        final e = ExpressionEvaluator(
+          filters: {'fmt': (dynamic v, [List<dynamic>? args]) => args == null || args.isEmpty ? '$v' : '$v-${args[0]}'},
+        );
+        expect(e.evaluate(r'${val | fmt}', {'val': 'x'}), 'x');
+        expect(e.evaluate(r'${val | fmt:1}', {'val': 'x'}), 'x-1');
+      });
+
+      test('filters with typed parameters keep working', () {
+        final e = ExpressionEvaluator(
+          filters: {'shout': (String v) => '$v!', 'times': (num v, List<dynamic> args) => v * (args[0] as num)},
+        );
+        expect(e.evaluate(r"${'ab' | shout}", {}), 'ab!');
+        expect(e.evaluate(r'${n | times:3}', {'n': 2}), 6);
+      });
+
+      // NoSuchMethodError, the error arity detection once caught, raised inside the filter body: a dynamic receiver
+      // has no extension members, so `firstOrNull` is not found at runtime.
+      Matcher bodyError(String filterName) => throwsA(
+        isA<ExpressionException>()
+            .having((e) => e.message, 'message', contains("Filter '$filterName' failed"))
+            .having((e) => e.message, 'message', contains('firstOrNull'))
+            .having((e) => e.message, 'message', isNot(contains('does not accept arguments'))),
+      );
+
+      test('NoSuchMethodError inside a filter called with args is reported, not "does not accept arguments"', () {
+        var calls = 0;
+        final e = ExpressionEvaluator(
+          filters: {
+            'pick': (dynamic v, dynamic args) {
+              calls++;
+              return args.firstOrNull;
+            },
+          },
+        );
+        expect(() => e.evaluate(r'${val | pick:1}', {'val': 'x'}), bodyError('pick'));
+        expect(calls, 1);
+      });
+
+      test('NoSuchMethodError inside a value-only filter called without args is reported', () {
+        var calls = 0;
+        final e = ExpressionEvaluator(
+          filters: {
+            'first': (dynamic v) {
+              calls++;
+              return v.firstOrNull;
+            },
+          },
+        );
+        expect(
+          () => e.evaluate(r'${items | first}', {
+            'items': [1],
+          }),
+          bodyError('first'),
+        );
+        expect(calls, 1);
+      });
+
+      test('NoSuchMethodError inside an optional-args filter called without args runs the body once', () {
+        var calls = 0;
+        final e = ExpressionEvaluator(
+          filters: {
+            'first': (dynamic v, [dynamic args]) {
+              calls++;
+              return v.firstOrNull;
+            },
+          },
+        );
+        expect(
+          () => e.evaluate(r'${items | first}', {
+            'items': [1],
+          }),
+          bodyError('first'),
+        );
+        expect(calls, 1);
+      });
+
+      test('ExpressionException thrown by a filter propagates unchanged', () {
+        final e = ExpressionEvaluator(
+          filters: {'fail': (dynamic v) => throw ExpressionException('custom failure', expression: 'inner')},
+        );
+        expect(
+          () => e.evaluate(r'${val | fail}', {'val': 'x'}),
+          throwsA(isA<ExpressionException>().having((e) => e.message, 'message', 'custom failure')),
+        );
+      });
+
+      test('filter taking neither (value) nor (value, args) throws a signature error', () {
+        final e = ExpressionEvaluator(filters: {'none': () => 1});
+        expect(
+          () => e.evaluate(r'${val | none}', {'val': 'x'}),
+          throwsA(isA<ExpressionException>().having((e) => e.message, 'message', contains("Filter 'none' must take"))),
+        );
+      });
     });
 
     group('object auto-conversion', () {

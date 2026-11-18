@@ -8,6 +8,65 @@ import 'package:trellis/trellis.dart';
 import 'package:trellis_dev/trellis_dev.dart';
 
 void main() {
+  group('static reload', () {
+    late Directory root;
+    late FileSystemLoader loader;
+    late Handler handler;
+    late StreamIterator<String> frames;
+    setUp(() async {
+      root = Directory.systemTemp.createTempSync('trellis_static_reload_');
+      final templates = Directory('${root.path}/templates')..createSync();
+      Directory('${root.path}/static').createSync();
+      loader = FileSystemLoader(templates.path, devMode: true);
+      handler = devMiddleware(loader, staticDirectory: '${root.path}/static', validate: false)(
+        (_) => Response.ok('app'),
+      );
+      final response = await handler(Request('GET', Uri.parse('http://localhost/_dev/reload')));
+      frames = StreamIterator(
+        response.read().transform(utf8.decoder).where((frame) => frame.contains('event: reload')),
+      );
+      addTearDown(() async {
+        await frames.cancel();
+        await loader.close();
+        root.deleteSync(recursive: true);
+      });
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+    });
+    for (final extension in ['css', 'js']) {
+      test('$extension write sends an SSE reload within 1 s', () async {
+        final next = frames.moveNext();
+        final watch = Stopwatch()..start();
+        File('${root.path}/static/styles.$extension').writeAsStringSync('changed');
+        expect(await next.timeout(const Duration(seconds: 1)), isTrue);
+        expect(watch.elapsed, lessThan(const Duration(seconds: 1)));
+      });
+    }
+    test('unrelated files send no reload', () async {
+      final next = frames.moveNext();
+      File('${root.path}/static/readme.txt').writeAsStringSync('changed');
+      expect(await next.timeout(const Duration(milliseconds: 500), onTimeout: () => false), isFalse);
+    });
+    test('nested and late-created directories reload', () async {
+      final next = frames.moveNext();
+      final nested = Directory('${root.path}/static/late/nested')..createSync(recursive: true);
+      File('${nested.path}/app.js').writeAsStringSync('changed');
+      expect(await next.timeout(const Duration(seconds: 1)), isTrue);
+    });
+    test('missing static directory still reloads templates', () async {
+      final missing = devMiddleware(loader, staticDirectory: '${root.path}/absent', validate: false);
+      final response = await missing((_) => Response.ok('app'))(
+        Request('GET', Uri.parse('http://localhost/_dev/reload')),
+      );
+      final missingFrames = StreamIterator(
+        response.read().transform(utf8.decoder).where((frame) => frame.contains('event: reload')),
+      );
+      addTearDown(missingFrames.cancel);
+      final next = missingFrames.moveNext();
+      File('${root.path}/templates/index.html').writeAsStringSync('<p>changed</p>');
+      expect(await next.timeout(const Duration(seconds: 1)), isTrue);
+      expect(missingFrames.current, contains('event: reload'));
+    });
+  });
   group('devMiddleware', () {
     test('throws StateError when loader.changes is null', () {
       final dir = Directory.systemTemp.createTempSync('trellis_dev_test_');
@@ -51,7 +110,7 @@ void main() {
       expect(body, equals('hello'));
     });
 
-    test('injects script into HTML response when injectScript is true', () async {
+    test('reload client injects same-origin script into HTML response', () async {
       final dir = Directory.systemTemp.createTempSync('trellis_dev_test_');
       final loader = FileSystemLoader(dir.path, devMode: true);
       addTearDown(() async {
@@ -66,8 +125,8 @@ void main() {
       final response = await handler(request);
 
       final body = await response.readAsString();
-      expect(body, contains('<script>'));
-      expect(body, contains('EventSource'));
+      expect(body, contains('<script src="/_dev/reload.js"></script>'));
+      expect(body, isNot(contains('<script>')));
       expect(body, contains('</body>'));
     });
 
@@ -169,7 +228,7 @@ void main() {
       expect(body, equals('app'));
     });
 
-    test('injected script uses custom ssePath', () async {
+    test('reload client honours custom ssePath and scriptPath', () async {
       final dir = Directory.systemTemp.createTempSync('trellis_dev_test_');
       final loader = FileSystemLoader(dir.path, devMode: true);
       addTearDown(() async {
@@ -178,13 +237,20 @@ void main() {
       });
 
       const html = '<html><body><h1>Hello</h1></body></html>';
-      final middleware = devMiddleware(loader, ssePath: '/my/reload');
+      final middleware = devMiddleware(loader, ssePath: '/my/reload', scriptPath: '/my/reload.js');
       final handler = middleware((_) => Response.ok(html, headers: {'content-type': 'text/html'}));
       final request = Request('GET', Uri.parse('http://localhost/page'));
       final response = await handler(request);
 
       final body = await response.readAsString();
-      expect(body, contains("EventSource('/my/reload')"));
+      expect(body, contains('<script src="/my/reload.js"></script>'));
+      final script = await handler(Request('GET', Uri.parse('http://localhost/my/reload.js')));
+      expect(script.statusCode, 200);
+      expect(script.headers['content-type'], contains('javascript'));
+      final source = await script.readAsString();
+      expect(source, liveReloadClientScript(ssePath: '/my/reload'));
+      expect(source, contains("EventSource('/my/reload')"));
+      expect(source, isNot(contains('<script')));
     });
   });
 }

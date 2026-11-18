@@ -43,7 +43,7 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
 ## Filter System
 
 - **`Map<String, Function>` not `Map<String, dynamic Function(dynamic)>`**: The narrower type can't accept new-style `Function(dynamic, List<dynamic>)` filters. `Function` (untyped) enables runtime arity detection without ugly casts.
-- **Arity detection via `NoSuchMethodError`**: `(filter as dynamic)(value, args)` — old-style (1-arg) filters throw `NoSuchMethodError`, caught and retried without args. Consistent with `_autoConvert()` pattern.
+- **Filter arity comes from the function type, never from catching `NoSuchMethodError`**: up to 0.13 `_evalPipe` caught it around the call, so a `NoSuchMethodError` inside the filter body (an extension getter such as `firstOrNull` on a `dynamic` parameter) became "does not accept arguments", or reran the body as `filter(value, [])`. Test `filter is Object? Function(Never)` / `Function(Never, Never)`: `Never` parameters match any declared parameter type, so typed filters (`(String v)`) still qualify.
 
 ## Strict Mode
 
@@ -83,11 +83,22 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
 
 ## HTMX Integration
 
+- **Dart Frog checks public files before routes.** A dynamic asset route can lose to a file under `public/`
+  before route middleware adds security headers. The UI scaffold uses the custom entrypoint to serve
+  embedded suite paths first and puts preview materialization in its dev init hook.
+
+- **Chrome lazily materializes CSSOM style writes.** Calling `removeAttribute('style')` before any attribute read can leave an empty attribute, which HTMX copies with `setAttribute` under strict CSP.
+  `TlElement` reads `hasAttribute('style')` first. Read-only diagnostics can hide the bug by doing that read.
+
 - **HTMX 4 moves the request-configuration headers**: `htmx:configRequest` (HTMX 2) exposes `evt.detail.headers`; `htmx:config:request` (HTMX 4) passes `{ctx}` and the outgoing headers live at `evt.detail.ctx.request.headers`. A listener registered under the old name never fires on HTMX 4, so the CSRF header silently disappears and `trellisCsrf` rejects every state-changing request. Scaffolds register both names.
 - **HTMX 4 identifies elements as `tag#id`, not bare ids**, in `HX-Target` and `HX-Source` (`encodeURI(id)`, `#id` omitted when the element has none), and it always sends `HX-Source`. The adapter helpers use that header's presence as the version discriminator; under HTMX 4 a value without `#` means "no id", not an id called `form`.
 - **DELETE parameters travel in the query string on both HTMX 2 and 4** (`methodsThatUseUrlParams: ['get', 'delete']` / `/GET|DELETE/`), never in the body. A handler that reads `hx-vals` of an `hx-delete` from the request body sees nothing.
 
 ## Testing
+
+- **Nested HTMX settles can end a parent-region probe early.** An options response inside a combobox satisfies
+  a containing selector's settle event. Wait for those options to settle before starting the surrounding gallery
+  swap, then confirm the original surrounding node disconnected. See the combobox qualification recipe.
 
 - **`FileSystemLoader` validates directory existence at construction**: Tests using `Trellis()` no-arg constructor need a `MapLoader({})` instead, or the test directory must exist.
 - **`IOOverrides` CAN capture stderr**: `IOOverrides.runZoned(stderr: ...)` with a small `noSuchMethod`-based `Stdout` fake (`_BufferStdout`) captures writes reliably, even across async gaps.
@@ -108,6 +119,14 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
 - **A surface outside every rendered check has no gate, however green the suite**: the reflow sweep and the visual comparator targeted `themes/*` only, so a WCAG 1.4.10 reflow failure on `site/`'s gallery page reached the 0.11 release candidate (TD-039). `test/site_reflow_test.dart` now sweeps the built site in both deploy shapes. A new published surface needs a rendered check of its own; a clean build of it proves nothing about layout.
 
 ## Themes & SSG (docs-site)
+
+- **Source fragments in shortcodes** – `PageGenerator` and `ShortcodeProcessor` have separate engines. A missing
+  shortcode loader leaves the literal tag in the built page and reports only a warning. A source proof needs both
+  a page-layout invocation and a post-Markdown invocation.
+- **Lattice preview isolation** – Lattice's unlayered `--card` and `--radius` override layered suite tokens and
+  their derived values. Its Markdown table selectors also reach shortcode output. Compare previews to a suite-only
+  page before adjusting the scoped rules in `site/static/ui-reference.css`. Scope adopting themes' token bridges
+  to their controls too. Unlayered theme focus rules win over the suite's layer even when idle paint matches.
 
 - **A skin file's value can be dead in the render it names**: lattice's dark skin set `$trellis-border-color: #27392c`, but every dark view renders `--lattice: #1a2620` from the `lattice-dark` mixin's literal, because `[data-skin=dark]` on `<html>` overrides the base `:root` the skin file reached. Seeding the `border_color_dark` twin from the skin file would have shipped a default no mode renders; seed it from what the dark view renders, and expect the forced-dark base `:root` (not the rendered CSS) to change in the baseline diff.
 - **A fragment inserted twice (responsive dual-render) must not carry a literal `id`**: a TOC/nav fragment rendered once for mobile and once for desktop (one CSS-hidden per breakpoint) puts two copies in the DOM. Any hard-coded `id`/`aria-labelledby` inside it becomes a duplicate id (invalid HTML, ambiguous ARIA). Name the region with `aria-label` on a `<nav>` instead of `aria-labelledby`+`id`.

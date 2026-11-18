@@ -1,0 +1,6 @@
+<h1>Textarea</h1>
+<section id="demo"><a id="before" href="#after">Before example</a><section id="component" aria-label="textarea examples"><div class="gallery-sample"><label for="primary">Primary</label><textarea tl:replace="~{trellis-ui/textarea :: textarea}" id="primary" name="textarea-primary" aria-label="Primary"></textarea></div>
+<div class="gallery-sample"><label for="disabled">Disabled</label><textarea tl:replace="~{trellis-ui/textarea :: textarea}" id="disabled" name="textarea-disabled" aria-label="Disabled" disabled></textarea></div>
+<div class="gallery-sample"><label for="invalid">Invalid</label><textarea tl:replace="~{trellis-ui/textarea :: textarea}" id="invalid" name="textarea-invalid" aria-label="Invalid" aria-invalid="true"></textarea></div>
+</section><a id="after" href="#before">After example</a>
+<button id="swap" type="button" class="gallery-action" hx-get="/components/textarea" hx-select="#demo" hx-target="#demo" hx-swap="outerHTML">Refresh example</button> <a id="navigate" class="gallery-action" hx-boost="true" href="/components/button">Next example</a></section>

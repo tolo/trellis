@@ -96,8 +96,8 @@ class ShortcodeProcessor {
   late final String _shortcodesDir;
 
   /// Creates a [ShortcodeProcessor] for the site at [siteDir].
-  ShortcodeProcessor({required this.siteDir, this.highlighter}) {
-    _engine = Trellis(loader: FileSystemLoader(siteDir));
+  ShortcodeProcessor({required this.siteDir, this.highlighter, TemplateLoader? loader}) {
+    _engine = Trellis(loader: loader ?? FileSystemLoader(siteDir));
     _shortcodesDir = p.join(siteDir, 'layouts', 'shortcodes');
   }
 
@@ -140,15 +140,17 @@ class ShortcodeProcessor {
 
   /// Processes `<!-- tl:name ... -->` shortcodes in [page.content].
   ///
+  /// Explicit shortcode parameters override values in [context].
+  ///
   /// Must be called AFTER [MarkdownRenderer.render].
-  void processPostMarkdown(Page page) {
+  void processPostMarkdown(Page page, {Map<String, dynamic> context = const {}}) {
     if (page.content.isEmpty) return;
     if (!Directory(_shortcodesDir).existsSync()) return;
 
     page.content = page.content.replaceAllMapped(_htmlCommentPattern, (match) {
       final name = match.group(1)!;
       final paramsStr = match.group(2) ?? '';
-      final params = _parseParams(paramsStr);
+      final params = {...context, ..._parseParams(paramsStr)};
       return _renderShortcode(name, params) ?? match.group(0)!;
     });
   }

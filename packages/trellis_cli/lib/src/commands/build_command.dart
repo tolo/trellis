@@ -4,6 +4,7 @@ import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
 import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
+import 'package:trellis_ui/trellis_ui.dart';
 
 import '../version.dart';
 
@@ -80,6 +81,7 @@ class BuildCommand extends Command<int> {
         searchConfig: rawConfig.searchConfig,
         highlightConfig: rawConfig.highlightConfig,
         themeConfig: rawConfig.themeConfig,
+        uses: rawConfig.uses,
         // pathPrefix from config (or --path-prefix override); the constructor
         // re-normalizes, so passing the already-normalized config value is safe.
         pathPrefix: pathPrefixOverride ?? rawConfig.pathPrefix,
@@ -94,7 +96,16 @@ class BuildCommand extends Command<int> {
     // Run build pipeline
     final BuildResult result;
     try {
-      final site = TrellisSite(config, includeDrafts: includeDrafts);
+      final site = TrellisSite(
+        config,
+        includeDrafts: includeDrafts,
+        sourceFactories: {
+          'trellis_ui': () => SiteSource(
+            loader: TrellisUiLoader(),
+            assets: {for (final path in trellisUiAssetPaths) path.substring(1): trellisUiRespond(path)!.body},
+          ),
+        },
+      );
       result = await site.build();
     } on SiteConfigException catch (e) {
       stderr.writeln('Build failed: $e');

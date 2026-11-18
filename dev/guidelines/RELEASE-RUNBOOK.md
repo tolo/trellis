@@ -67,6 +67,33 @@ human action. Steps are in execution order; each names the guard that enforces i
   beside it.
 - `dart pub publish --dry-run` in every package whose public API changed (0 warnings).
 
+### Trellis UI release prep
+
+On the macOS baseline host, install Dart Frog CLI 1.2.6 and set `GECKODRIVER` as described in
+[the UI qualification guide](TESTING-STRATEGY.md#ui-qualification-gate).
+From the repository root run `dart run packages/trellis_ui/tool/port.dart parity`,
+`dart run packages/trellis_ui/tool/port.dart check` and `dart run packages/trellis_ui/tool/embed.dart --check`, then
+run the report through `dart run packages/trellis_ui/tool/port.dart sync --check-report "$report"` with `report` set
+to the selected file in `packages/trellis_ui/sync-reports/`. Run these browser gates with Chrome and Firefox.
+
+- From `packages/trellis_ui/`, run `dart test test/qualification_gate_test.dart` for all 25 component subjects.
+- From `packages/trellis_cli/`, run `dart test test/ui_surfaces_gate_test.dart` for the admin example and both pages
+  of each of the three UI scaffolds. The app records live in `dev/ui-gate/apps/records/`.
+- Verify the payload and authored code limits listed in [Testing Strategy](TESTING-STRATEGY.md#ui-qualification-gate).
+
+For each component and app record, run VoiceOver with Safari, NVDA with Firefox (Windows VM), and the Safari
+browser pass. Replace the corresponding `release-prep` values with the observed result and evidence. Rerun those
+manual checks after a change to the affected markup or behaviour. The owner reviews each sync disposition and
+records `Owner review: pass` in the sync report.
+
+A failure in Dialog, Dropdown Menu, Combobox, Tabs or Toast blocks release. Land a standalone fix and rerun that
+component's automated and manual checks. For any other failing component, remove it or ship it unsupported.
+Keep the failing gate evidence and add the component and item to [ADR-012's revisit triggers](../adrs/ADR-012-trellis-ui-contract.md#revisit-triggers).
+Remove its reference page from `site/content/docs/ui/components/`. Run `dart run tool/generate_ui_reference.dart`
+to remove the inventory entry for a recorded manual failure. Automated failures retain an internal
+`qualified: false` entry for diagnosis. Run the generator with `--check` to verify the data and page set.
+Claim support only for components with every automated and manual item passing.
+
 ## 1. Fresh-context adversarial review — not optional
 
 Review `git diff main...<branch>` in a fresh context (`andthen:review`, adversarial/critic mode; route review agents to

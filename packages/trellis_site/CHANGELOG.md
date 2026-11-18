@@ -2,8 +2,30 @@
 
 ## 0.14.0
 
+### Added
+
+- Site and theme manifests can opt into named `SiteSource` factories with `uses`. Source fragments
+  resolve behind site and theme templates in pages and shortcodes. Source assets are copied before
+  theme and site static files, and conflicting source paths fail the build. Post-Markdown shortcodes
+  in builds with sources can pass structured page front matter to templates.
+
+- Search-enabled builds write `trellis-search.js` beside the index when pages qualify. Arbor, Folio,
+  and Lattice use it with the suite combobox for same-origin, all-term search.
+
 ### Fixed
 
+- **Feeds honour `pathPrefix`.** A feed's self link, site link and `<id>` (site-wide and per-section, Atom and RSS)
+  and `${site.feeds.*}` now resolve under the prefix, so `pathPrefix: /my-site/` emits
+  `https://example.com/my-site/feed.xml` instead of `https://example.com/feed.xml`. `FeedGenerator` takes a
+  `pathPrefix`, and `FeedConfig.siteFeedUrls` is the one source of the site-wide feed URLs.
+- **Taxonomy URLs honour `pathPrefix`.** Taxonomy listing and term pages (`/tags/`, `/tags/dart/`) carry the prefix in
+  `${page.url}`, `${taxonomy.*}` and `${page.termLinks.*}`, the sitemap and the search index. `TaxonomyCollector`
+  takes a `pathPrefix`.
+- **A page bundle belongs to its parent section.** `posts/my-trip/index.md` now has `section` and `sectionPath`
+  `posts`, as `posts/my-trip.md` would, so it appears in the `/posts/` `${pages}` listing, the `${site.menu}` tree and
+  prev/next links instead of under a synthesized `posts/my-trip` menu node with an empty URL. A root-level bundle
+  (`about/index.md`) is in the root section (`section` `''`), like `about.md`, so it no longer looks up an
+  `about/single.html` layout first.
 - **Lattice: a prose table wider than its column scrolls inside its own box** instead of splitting identifiers
   mid-word (`maxContentLengt|h`). Tables were `table-layout: fixed` with `overflow-wrap: anywhere` cells, which split
   code at every viewport because the docs column is under 500px even at 1280px. A cell now wraps only at spaces and

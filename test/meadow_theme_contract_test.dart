@@ -60,7 +60,7 @@ void main() {
     };
 
     expect(manifest.name, 'meadow');
-    expect(manifest.minTrellisVersion, '0.12.0');
+    expect(manifest.minTrellisVersion, '0.14.0');
     expect(manifest.features.where({'docs', 'landing', 'blog'}.contains), ['landing']);
     expect(manifest.params.keys.toSet(), standard.union(meadow));
     const expectedTypes = {
@@ -699,7 +699,7 @@ void main() {
 
   test('bridged default is complete and clean', () async {
     final config = exampleSiteCopy(themeDir);
-    final result = await TrellisSite(config).build();
+    final result = await TrellisSite(config, sourceFactories: themeSourceFactories).build();
     expect(result.warnings, isEmpty);
     expect(result.pageCount, 4);
 
@@ -903,7 +903,7 @@ void main() {
     final source = File(p.join(themeDir, 'example', 'trellis_site.subpath.yaml')).readAsStringSync();
     File(p.join(tempDir.path, 'trellis_site.yaml')).writeAsStringSync(source);
     final config = SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
-    final result = await TrellisSite(config).build();
+    final result = await TrellisSite(config, sourceFactories: themeSourceFactories).build();
     expect(result.warnings, isEmpty);
     final home = File(p.join(config.outputDir, 'index.html')).readAsStringSync();
     expect(home, contains('href="/trellis/css/main.css"'));
@@ -1063,7 +1063,7 @@ theme_params:
   excerpt_length: 160
 ${params.entries.map((e) => '  ${e.key}: ${e.value}\n').join()}''');
   final config = SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
-  final result = await TrellisSite(config).build();
+  final result = await TrellisSite(config, sourceFactories: themeSourceFactories).build();
   expect(result.warnings, isEmpty, reason: fixture);
   final source = File(p.join(config.outputDir, 'index.html')).readAsStringSync();
   tempDir.deleteSync(recursive: true);

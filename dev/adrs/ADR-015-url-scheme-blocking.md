@@ -56,7 +56,7 @@ are percent-encoded, so it cannot carry a data-chosen scheme. The other attribut
 - Out of scope and still the caller's job: dynamic `srcdoc`, `on*`, `style`, `hx-on*` and `hx-vals="js:..."`, SVG
   `<set to>`, and attributes a custom processor writes to `element.attributes` directly, which bypass the check.
 - `trellis_site` builds its engine from YAML context with no filters, so a site author cannot pass a `TrustedUrl`.
-  Adding a way later is additive (TD-058). The out-of-scope values above are tracked as TD-059.
+  Adding a way later is additive (TD-059). The out-of-scope values above are tracked as TD-060.
 - Second opinion (oracle, 2026-11-18): agreed with the default and the denylist, and found that `TrustedUrl` was
   flattened to a string in the rest map and then re-blocked in the callee. Decision 5 is the fix it proposed.
 

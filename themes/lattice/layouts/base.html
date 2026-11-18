@@ -9,6 +9,8 @@
     <meta name="description" tl:attr="content=${page.description} ?: ${page.summary} ?: ${site.description}" />
     <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/main.css'" href="/css/main.css" />
     <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/theme-props.css'" href="/css/theme-props.css" />
+    <link rel="stylesheet" tl:href="${assetBase} + 'trellis-ui/trellis-ui.css'" href="/trellis-ui/trellis-ui.css">
+    <script tl:src="${assetBase} + 'trellis-ui/trellis-ui.js'" defer></script>
     <!-- assetBase already ends in a slash, so a root-relative value sheds its own
          leading slash first: plain concatenation emits //favicon.svg, which a browser
          reads as an authority and fetches from a host named favicon.svg. Same rule at
@@ -37,7 +39,7 @@
           saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
       })();
     </script>
-    <script tl:if="${theme.show_search}" tl:attr="src=${assetBase} + 'js/search.js'" defer></script>
+    <script tl:if="${theme.show_search}" tl:attr="src=${assetBase} + 'trellis-search.js'" defer></script>
     <script tl:attr="src=${assetBase} + 'js/lattice.js'" defer></script>
     <meta tl:define="head-extra" />
   </head>
@@ -97,6 +99,7 @@
                anything, and the PRD's no-JS contract is "no skin toggle" — the media query applies. -->
           <button
             tl:if="${theme.skin} == 'auto'"
+            tl:replace="~{trellis-ui/button :: button('default', 'icon')}"
             class="mode-toggle"
             type="button"
             data-lattice-theme-toggle
@@ -132,26 +135,15 @@
       <details class="sidebar-disclosure" open data-docs-sidebar tl:fragment="sidebar">
         <summary class="sidebar-toggle" tl:text="${theme.sidebar_title}">Documentation</summary>
         <div class="docs-sidebar">
-          <!-- Ships hidden alongside the disabled input: search.js reveals the shell only once the
-               index has loaded, so with JavaScript off no dead control renders at all. -->
-          <div
-            class="search-shell"
-            hidden
-            tl:if="${theme.show_search}"
-            tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}"
-            tl:attr="data-search-index=${assetBase} + 'search-index.json'"
-          >
-            <label class="sr-only" for="lattice-docs-search">Search documentation</label>
-            <input
-              id="lattice-docs-search"
-              class="search-input"
-              type="search"
-              placeholder="Search…"
-              autocomplete="off"
-              data-lattice-search
-              disabled
-            />
-            <ul class="search-results" data-lattice-search-results aria-live="polite" hidden></ul>
+          <!-- The shell stays hidden until the shared search client loads its index. -->
+          <div class="search-shell" data-trellis-search hidden tl:if="${theme.show_search}"
+               tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}"
+               tl:attr="data-search-index=${assetBase} + 'search-index.json'">
+            <div tl:replace="~{trellis-ui/combobox :: combobox('lattice-docs-search', 'page', 'Search…', '', null)}"
+                 aria-label="Search documentation" disabled></div>
+            <template data-trellis-search-results>
+              <div tl:replace="~{trellis-ui/combobox :: comboboxOptions('lattice-docs-search', ${data['trellis-search']})}"></div>
+            </template>
           </div>
           <nav class="sidebar-nav" tl:attr="aria-label=${theme.sidebar_title}">
             <p class="sidebar-title" tl:text="${theme.sidebar_title}">Documentation</p>

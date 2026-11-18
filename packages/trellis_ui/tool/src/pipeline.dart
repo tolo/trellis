@@ -29,7 +29,7 @@ class Pipeline {
     }
   }
 
-  Future<void> fetch() async {
+  Future<void> fetchShadcn() async {
     final p = pins;
     final source = p['shadcn'] as Map<String, dynamic>;
     final tag = source['tag'] as String;
@@ -42,21 +42,20 @@ class Pipeline {
       for (final c in (p['components'] as List).cast<String>())
         'ui/$c.tsx': 'apps/v4/registry/bases/${p['base']}/ui/$c.tsx',
     };
-    // Resolve required inputs before writing so a 404 cannot mix source revisions.
-    final content = <String, List<int>>{};
-    for (final entry in files.entries) {
-      content[entry.key] = await download(Uri.parse('$base/${entry.value}'));
-    }
     final vendor = '${root.path}/vendor/shadcn/$tag';
-    for (final entry in content.entries) {
-      await _write('$vendor/${entry.key}', entry.value);
-    }
+    await _fetchFiles(vendor, base, files);
     await _write(
       '$vendor/SOURCE.md',
       utf8.encode(
         '# shadcn/ui $tag\n\nCommit `${source['commit']}`. Base `${p['base']}`, style `${p['style']}`.\nUnmodified MIT inputs from $base/. See LICENSE.md.\n\n${[for (final e in files.entries) '- `${e.key}`: `${e.value}`'].join('\n')}\n',
       ),
     );
+    stdout.writeln('Fetched ${files.length} shadcn inputs at $tag');
+  }
+
+  Future<void> fetch() async {
+    await fetchShadcn();
+    final p = pins;
     final animate = p['twAnimate'] as Map<String, dynamic>;
     for (final entry in {'tw-animate.css': 'dist/tw-animate.css', 'LICENSE': 'LICENSE'}.entries) {
       await _write(
@@ -79,7 +78,29 @@ class Pipeline {
       '${root.path}/vendor/tailwind/SOURCE.md',
       utf8.encode('Tailwind CSS v${compiler['version']} (MIT). Compiler digests: tool/pins.json.\n'),
     );
-    stdout.writeln('Fetched ${files.length} shadcn inputs at $tag and dependency licences');
+    final lucide = p['lucide'] as Map<String, dynamic>;
+    final icons = (lucide['icons'] as List?)?.cast<String>() ?? const [];
+    if (icons.isNotEmpty) {
+      final base = 'https://raw.githubusercontent.com/lucide-icons/lucide/${lucide['commit']}';
+      final vendor = '${root.path}/vendor/lucide';
+      final files = {'LICENSE': 'LICENSE', for (final icon in icons) '$icon.svg': 'icons/$icon.svg'};
+      await _fetchFiles(vendor, base, files);
+      await _write(
+        '$vendor/SOURCE.md',
+        utf8.encode('Lucide ${lucide['tag']} at commit ${lucide['commit']}. ISC and Feather MIT notices in LICENSE.\n'),
+      );
+    }
+    stdout.writeln('Fetched dependency licences');
+  }
+
+  Future<void> _fetchFiles(String destination, String base, Map<String, String> files) async {
+    // Resolve required inputs before writing so a 404 cannot mix source revisions.
+    final content = <String, List<int>>{
+      for (final entry in files.entries) entry.key: await download(Uri.parse('$base/${entry.value}')),
+    };
+    for (final entry in content.entries) {
+      await _write('$destination/${entry.key}', entry.value);
+    }
   }
 
   static String currentPlatform() {

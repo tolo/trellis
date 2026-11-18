@@ -1,0 +1,126 @@
+name: dropdown-menu
+page: /components/dropdown-menu
+root: '#component'
+elements:
+  trigger: '#menu-trigger'
+states:
+  default: []
+  dark:
+    - eval: document.documentElement.classList.add('dark')
+    - state: open
+  open:
+    - press: Escape
+    - focus: '#menu-trigger'
+    - press: ArrowDown
+    - wait: document.activeElement.id === 'menu-profile'
+    - wait: "document.getElementById('menu').getAnimations().every(animation => animation.playState !== 'running')"
+  destructive:
+    - state: open
+    - press: End
+    - expect: {expression: "document.activeElement.id === 'menu-alert' && document.activeElement.hasAttribute('data-highlighted')", equals: true}
+  checked:
+    - state: open
+    - focus: '#menu-status'
+    - eval: "document.activeElement.getAttribute('aria-checked') === 'false' && document.activeElement.click()"
+    - expect: {expression: "document.querySelector('#menu-status[data-checked]').getAttribute('aria-checked')", equals: "true"}
+keyboard:
+  - focus: '#menu-trigger'
+  - press: Enter
+  - wait: document.activeElement.id === 'menu-profile'
+  - expect: {expression: "document.querySelector('#menu-trigger').getAttribute('aria-expanded')", equals: "true"}
+  - press: ArrowDown
+  - expect: {expression: document.activeElement.id, equals: menu-billing}
+  - press: ArrowDown
+  - expect: {expression: document.activeElement.id, equals: menu-status}
+  - press: ArrowDown
+  - expect: {expression: document.activeElement.id, equals: menu-alert}
+  - press: ArrowDown
+  - expect: {expression: document.activeElement.id, equals: menu-profile}
+  - press: ArrowUp
+  - expect: {expression: document.activeElement.id, equals: menu-alert}
+  - press: Home
+  - expect: {expression: document.activeElement.id, equals: menu-profile}
+  - press: End
+  - expect: {expression: document.activeElement.id, equals: menu-alert}
+  - press: b
+  - expect: {expression: document.activeElement.id, equals: menu-billing}
+  - press: Escape
+  - expect:
+      expression: "document.activeElement.id === 'menu-trigger' && document.querySelector('#menu-trigger').getAttribute('aria-expanded') === 'false' && document.querySelector('#menu:popover-open') === null"
+      equals: true
+  - press: ' '
+  - wait: document.activeElement.id === 'menu-profile'
+  - press: Tab
+  - expect: {expression: "document.querySelector('#menu:popover-open') === null", equals: true}
+  - focus: '#menu-trigger'
+  - press: ArrowUp
+  - wait: document.activeElement.id === 'menu-alert'
+  - press: Escape
+  - state: open
+  - press: End
+  - press: ArrowUp
+  - expect: {expression: document.activeElement.id, equals: menu-status}
+  - press: ' '
+  - expect:
+      expression: "document.activeElement.getAttribute('aria-checked') === 'true' && document.activeElement.hasAttribute('data-checked') && document.querySelector('#menu:popover-open') !== null"
+      equals: true
+  - press: ' '
+  - expect: {expression: "document.activeElement.getAttribute('aria-checked') === 'false' && !document.activeElement.hasAttribute('data-checked')", equals: true}
+  - press: Escape
+  - &arm-profile
+    eval: >-
+      (() => {
+        const container = document.getElementById('component');
+        window.menuSelections = 0;
+        window.menuRequests = 0;
+        window.menuResult = document.getElementById('menu-result');
+        container.addEventListener('tl-select', () => window.menuSelections++);
+        container.addEventListener('htmx:beforeRequest', e => { if (e.target.id === 'menu-profile') window.menuRequests++; });
+      })()
+  - &open-for-selection
+    state: open
+  - &select-profile
+    press: Enter
+  - &profile-swapped
+    wait: "!window.menuResult.isConnected"
+  - &profile-closed
+    expect:
+      expression: "document.querySelector('#menu:popover-open') === null && document.activeElement.id === 'menu-trigger' && window.menuSelections === 1 && window.menuRequests === 1"
+      equals: true
+semantics:
+  - expression: >-
+      (() => { const trigger = document.getElementById('menu-trigger'), menu = document.getElementById('menu');
+      return trigger.tagName === 'BUTTON' && trigger.getAttribute('aria-haspopup') === 'menu' &&
+      trigger.getAttribute('aria-controls') === menu.id && trigger.getAttribute('popovertarget') === menu.id &&
+      trigger.getAttribute('aria-expanded') === String(menu.matches(':popover-open')) &&
+      menu.getAttribute('aria-labelledby') === trigger.id && menu.getAttribute('role') === 'menu' &&
+      menu.querySelector('button#menu-disabled[role=menuitem]').disabled &&
+      menu.querySelector('[role=separator]') !== null &&
+      menu.querySelector('[role=menuitemcheckbox]').hasAttribute('aria-checked'); })()
+    equals: true
+htmx:
+  region: '#demo'
+  swap:
+    - press: Escape
+    - expect: {expression: "document.querySelector('#menu:popover-open') === null && document.getElementById('menu').hasAttribute('style')", equals: true}
+    - click: '#swap'
+  navigate:
+    - state: open
+    # A pointer click outside the popup could light-dismiss it before the snapshot.
+    - eval: document.getElementById('navigate').click()
+  transient: '#menu[data-open], #menu[style]'
+  probe:
+    steps:
+      - *arm-profile
+      - *open-for-selection
+      - *select-profile
+      - *profile-swapped
+      - *profile-closed
+    expression: "[window.menuSelections, window.menuRequests]"
+    equals: [1, 1]
+instances: [tl-dropdown-menu]
+provenance:
+  - file: ../../../packages/trellis_ui/vendor/shadcn/shadcn@4.23.0/LICENSE.md
+    license: MIT
+  - file: ../../../packages/trellis_ui/vendor/lucide/LICENSE
+    license: ISC

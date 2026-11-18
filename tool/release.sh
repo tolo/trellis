@@ -264,7 +264,7 @@ step "Local gate: unit tests (packages)"
 melos exec --dir-exists=test -- dart test --exclude-tags=e2e || gate_failed
 step "Local gate: root tests + root format"
 # Bare `dart test` — deliberately WIDER than ci.yml, which runs
-# `--exclude-tags=visual`. This is the only place the visual baseline tier runs, and
+# `--exclude-tags=visual --exclude-tags=ui-gate`. This runs both local gates, and
 # that is the point: it is a golden-file layout check whose baselines encode font
 # metrics, so it is only meaningful on the machine that recorded them. CI runners
 # drift in Chrome version and font set and cannot hold it stable. The tier is what

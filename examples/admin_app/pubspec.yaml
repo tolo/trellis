@@ -1,0 +1,24 @@
+name: trellis_admin_example
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  shelf: ^1.4.0
+  shelf_router: ^1.1.0
+  shelf_static: ^1.1.0
+  trellis:
+    path: ../../packages/trellis
+  trellis_shelf:
+    path: ../../packages/trellis_shelf
+  trellis_ui:
+    path: ../../packages/trellis_ui
+
+dev_dependencies:
+  crypto: ^3.0.0
+  html: ^0.15.6
+  http: ^1.2.0
+  lints: ^6.0.0
+  test: ^1.25.0

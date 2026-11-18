@@ -37,7 +37,7 @@ Layouts also receive:
   list; on a paginated list, only the current page's slice.
 - `${site.menu}` – the generated navigation tree available on every page.
 - `${pagination.*}` – page number, totals, and page links on paginated lists.
-- `${taxonomy.*}` and `${feeds.*}` – taxonomy or feed data when configured.
+- `${taxonomy.*}` and `${site.feeds.*}` – taxonomy or feed data when configured.
 
 ## Breadcrumbs
 

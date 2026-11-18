@@ -389,8 +389,6 @@ Relic response helpers take `request` and `engine` as the first two arguments:
 > **Engine is always explicit** – unlike Shelf and Dart Frog, where the engine is retrieved from
 > the request context, Relic response helpers require the engine to be passed directly.
 
-> **CSRF not available for Relic** – see [CSRF protection](#csrf-protection) for details.
-
 > **Middleware scope** – Relic middleware only fires for matched routes. A `404` or `405`
 > response does **not** pass through `trellisSecurityHeaders()`. Shelf's `Pipeline`, by contrast,
 > always runs middleware regardless of routing outcome.
@@ -517,9 +515,9 @@ CSRF field renders only when `csrfToken` is non-null:
 </section>
 ```
 
-> `${csrfToken}` is automatically available in Shelf and Dart Frog when `trellisCsrf` middleware
-> is active. For Relic, CSRF is not available – see [CSRF protection](#csrf-protection).
-> Where no token is set (Relic, `excludedPaths` routes), a `strict: true` engine throws on the
+> `${csrfToken}` is automatically available in Shelf, Dart Frog and Relic when `trellisCsrf`
+> middleware is active.
+> Where no token is set (no `trellisCsrf`, `excludedPaths` routes), a `strict: true` engine throws on the
 > undefined `csrfToken` even inside the `tl:if`, so pass `'csrfToken': null` in the context or
 > drop the hidden input; a lenient engine treats the missing variable as null.
 
@@ -535,7 +533,7 @@ replacing the script tag. The packages need no change:
   `HX-Trigger` for responses.
 - The scaffolded CSRF listener registers for both `htmx:configRequest` (HTMX 2) and `htmx:config:request`
   (HTMX 4). A project generated before trellis_cli 0.11.1 must add the second listener next to the existing
-  one in its base layout, because HTMX 4 exposes the outgoing headers at a different path, and must guard
+  one in its external `/js/csrf.js` file (or base layout on older scaffolds), because HTMX 4 exposes the outgoing headers at a different path, and must guard
   `setCsrfHeader` against a missing headers object:
 
   ```js
@@ -547,8 +545,10 @@ replacing the script tag. The packages need no change:
   document.addEventListener('htmx:configRequest', function(evt) { setCsrfHeader(evt.detail.headers); });
   document.addEventListener('htmx:config:request', function(evt) { setCsrfHeader(evt.detail.ctx.request.headers); });
   ```
-- Replace the script tag's version and `integrity` hash. The jsdelivr URL pattern is unchanged, so the
-  scaffolded CSP allow-list still applies.
+- Replace the self-hosted `/js/htmx.min.js` bytes with the chosen release. Change the layout's
+  `htmx-config` key to `includeIndicatorCSS: false` for HTMX 4. For a project created with
+  `--htmx-cdn`, update the CDN version and SRI hash together; allow only that CDN origin in
+  the strict preset's `scriptSrc`.
 
 HTMX 4 changes that affect templates rather than Trellis code: out-of-band elements swap after the main
 content instead of before; `hx-delete` no longer includes the enclosing form's fields (add
@@ -593,13 +593,23 @@ final app = RelicApp()
   ...
 ```
 
-**Customising CSP with `CspBuilder`:**
+**Customising CSP with `CspBuilder.strict`:**
+
+`CspBuilder.strict()` sets `script-src 'self'; style-src 'self'` while preserving the other
+security defaults. Use it with `trellisSecurityHeaders(csp: const CspBuilder.strict())`.
+The plain `CspBuilder()` retains its existing inline-style allowance for compatibility.
+Under the strict preset, inline `<script>` bodies, `<style>` elements, `style="…"` attributes
+and `on*` handlers are blocked. Move them to same-origin JS/CSS files; CSSOM property writes
+(such as `element.style.top`) remain allowed by browsers. HTMX's injected indicator style
+must be disabled with the `htmx-config` meta option `includeIndicatorStyles: false`, with
+indicator rules in your stylesheet. CLI app scaffolds do this automatically.
+
+
 
 ```dart
 trellisSecurityHeaders(
-  csp: CspBuilder(
+  csp: CspBuilder.strict(
     scriptSrc: "'self'",
-    styleSrc: "'self' 'unsafe-inline'",
   ),
 )
 ```
@@ -608,7 +618,7 @@ trellisSecurityHeaders(
 
 `trellisCsrf` uses a double-submit cookie pattern with HMAC-SHA256 signing.
 
-**Available for:** Shelf and Dart Frog. Not available for Relic; see the note below.
+**Available for:** Shelf, Dart Frog and Relic.
 
 **Shelf setup:**
 
@@ -625,8 +635,9 @@ const Pipeline()
     ...
 ```
 
-`excludedPaths` entries match the request path exactly (no prefixes or globs), relative to the
-handler's mount point: `'/webhooks'` does not exclude `/webhooks/stripe`.
+`excludedPaths` entries match the request path exactly (no prefixes or globs): `'/webhooks'` does
+not exclude `/webhooks/stripe`. In Shelf the path is relative to the handler's mount point; in Dart
+Frog it is the full request path, even in a nested `_middleware.dart`.
 
 **Dart Frog setup:**
 
@@ -648,15 +659,31 @@ helpers. Use `${csrfToken}` in a hidden form field:
 </form>
 ```
 
-**Relic – CSRF not available.** `trellis_relic` ships no CSRF middleware. For Relic apps that
-need CSRF protection, options include:
+**Relic setup** – attach it at `'/'`, since Relic middleware fires only for matched routes:
 
-- Read the body with `request.readAsString()`, parse it with `Uri.splitQueryString`, and
-  validate the submitted token against a signed cookie.
-- Submit the token only via HTMX's `hx-headers` as `X-CSRF-Token` (avoids form parsing, but
-  requires HTMX for all state-changing requests).
+```dart
+final app = RelicApp()
+  ..use('/', trellisCsrf(secret: 'your-secret-key'))
+  ..post('/todos', addTodo);
+```
+
+The Relic middleware buffers a urlencoded form body to read `_csrf`, so the handler can still call
+`request.urlEncodedForm()`. Its `excludedPaths` match the full request path.
+
+### Strict scaffolds and CDN opt-in
+
+`trellis create my_app` self-hosts HTMX, the CSRF listener, and indicator CSS.
+All three app scaffolds use the strict preset. `trellis create my_app --htmx-cdn` keeps the pinned
+CDN script and allows exactly that origin in `script-src`; it also works with `--template relic`
+and `--template dart_frog`. The flag is rejected for `blog` and `theme`.
 
 ### CSP for HTMX and `trellis_dev`
+
+`devMiddleware` injects a same-origin `/_dev/reload.js` script instead of an inline script.
+Pass `staticDirectory: 'static'` (Shelf) or `'public'` (Dart Frog) to reload on CSS/JS edits,
+including nested and newly created directories. A missing directory is ignored. Manual
+`liveReloadClientScript()` supplies bare JS; the older inline `liveReloadScript()` needs an
+inline-script allowance. Relic has no browser reload integration yet.
 
 `trellis_dev` live reload uses a same-origin `EventSource` (SSE), not a WebSocket. The default
 `CspBuilder` emits `default-src 'self'`, which already covers same-origin connections, so no

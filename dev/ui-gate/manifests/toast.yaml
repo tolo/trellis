@@ -1,0 +1,76 @@
+name: toast
+page: /components/toast
+root: '#component'
+elements:
+  add: '#toast-add'
+states:
+  default: []
+  stacked:
+    - click: '#toast-add'
+    - &one-toast
+      wait: >-
+        document.querySelectorAll('#toaster > tl-toast').length === 1 &&
+        !document.querySelector('#toast-add:is(.htmx-request, .htmx-settling)')
+    - click: '#toast-add'
+    - wait: >-
+        document.querySelectorAll('#toaster > tl-toast').length === 2 &&
+        !document.querySelector('#toast-add:is(.htmx-request, .htmx-settling)')
+  dark:
+    - eval: document.documentElement.classList.add('dark')
+    - eval: "!document.querySelector('#toaster > tl-toast') && document.getElementById('toast-add').click()"
+    - wait: "document.querySelector('#toaster > tl-toast') !== null"
+    - wait: "document.getElementById('component').getAnimations({subtree:true}).every(animation => animation.playState !== 'running')"
+keyboard:
+  - focus: '#toast-add'
+  - press: Enter
+  - *one-toast
+  - expect:
+      expression: "document.activeElement.id === 'toast-add' && document.querySelector('#toaster [data-slot=toast-title]').textContent === 'Changes saved'"
+      equals: true
+  - focus: '#toaster [data-slot=toast-close]'
+  - press: ' '
+  - expect: {expression: "document.querySelector('#toaster > tl-toast') === null", equals: true}
+  - focus: '#toast-add'
+  - press: ' '
+  - *one-toast
+  - focus: '#toaster [data-slot=toast-close]'
+  - press: Enter
+  - expect: {expression: "document.querySelector('#toaster > tl-toast') === null", equals: true}
+semantics:
+  - expression: >-
+      (() => { const viewport = document.getElementById('toaster');
+      return viewport.getAttribute('role') === 'region' && viewport.getAttribute('aria-live') === 'polite' &&
+      viewport.getAttribute('aria-label') === 'Notifications' && !viewport.closest('#demo') &&
+      document.querySelectorAll('#toaster').length === 1 &&
+      [...viewport.children].every(toast => toast.matches('tl-toast[data-duration="0"]') &&
+        toast.querySelector('[data-slot=toast][data-type=success]:not([role=alert])') !== null &&
+        toast.querySelector('button[aria-label="Dismiss notification"]') !== null); })()
+    equals: true
+htmx:
+  region: '#demo'
+  swap:
+    - eval: "document.querySelectorAll('#toaster [data-slot=toast-close]').forEach(button => button.click())"
+    - expect: {expression: "document.querySelector('#toaster > tl-toast') === null", equals: true}
+    - eval: window.oldToastDemo = document.getElementById('demo')
+    - click: '#swap'
+    - wait: "!window.oldToastDemo.isConnected && !document.querySelector('#demo.htmx-settling')"
+  navigate:
+    - state: stacked
+    - click: '#navigate'
+  transient: tl-toast
+  probe:
+    steps:
+      - click: '#toast-add'
+      - *one-toast
+      - eval: "window.swappedToastCount = document.querySelectorAll('#toaster > tl-toast').length"
+      - click: '#toaster [data-slot=toast-close]'
+    expression: window.swappedToastCount
+    equals: 1
+instances: ['#toaster']
+distinct:
+  - ['#toaster tl-toast:first-child .trellis-toast', '#toaster tl-toast:nth-child(2) .trellis-toast']
+provenance:
+  - file: ../../../packages/trellis_ui/vendor/shadcn/shadcn@4.23.0/LICENSE.md
+    license: MIT
+  - file: ../../../packages/trellis_ui/vendor/lucide/LICENSE
+    license: ISC

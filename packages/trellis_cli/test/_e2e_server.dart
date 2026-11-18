@@ -32,6 +32,19 @@ Future<int> allocateFreePort() async {
   }
 }
 
+/// Resolves the Dart Frog CLI, installing the test pin if it is missing.
+Future<String> prepareDartFrogExecutable() async {
+  final home = Platform.environment['HOME'];
+  final executable = home != null ? '$home/.pub-cache/bin/dart_frog' : 'dart_frog';
+  if (!File(executable).existsSync()) {
+    final activate = await Process.run('dart', ['pub', 'global', 'activate', 'dart_frog_cli', '1.2.6']);
+    if (activate.exitCode != 0) {
+      throw StateError('dart_frog CLI activation failed:\n${activate.stdout}\n${activate.stderr}');
+    }
+  }
+  return executable;
+}
+
 /// A running server process, the port it listens on, and everything it has
 /// written to stdout/stderr.
 typedef BootedServer = ({Process process, int port, StringBuffer output});
@@ -75,4 +88,15 @@ Future<void> stopServer(Process? process) async {
   if (process == null) return;
   process.kill();
   await process.exitCode.timeout(const Duration(seconds: 5), onTimeout: () => -1);
+}
+
+/// Dart Frog supervises a child VM that can outlive its parent. Reap the
+/// listener on the test's allocated port after stopping the supervisor.
+Future<void> killListenersOnPort(int port) async {
+  final result = await Process.run('lsof', ['-t', '-iTCP:$port', '-sTCP:LISTEN']);
+  if (result.exitCode != 0) return;
+  final pids = '${result.stdout}'.split('\n').map((line) => line.trim()).where((line) => line.isNotEmpty).toSet();
+  for (final pid in pids) {
+    await Process.run('kill', [pid]);
+  }
 }

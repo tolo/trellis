@@ -124,7 +124,7 @@ Every package is independently usable and publishable. Add only what you need.
 
 ## Examples & guides
 
-- **Examples** — runnable apps in [`examples/`](examples): `shelf_app`, `dart_frog_app`, `relic_app`, `todo_app`, `docs_site`.
+- **Examples** — runnable apps in [`examples/`](examples): `shelf_app`, `dart_frog_app`, `relic_app`, `todo_app`, `admin_app`, `docs_site`.
 - **[Framework Integration Guide](https://tolo.github.io/trellis/docs/packages/framework-integration/)** — Shelf, Dart Frog, and Relic; HTMX fragment and OOB patterns; security and testing.
 - **Theme authoring & usage** — [Theme Authoring](https://tolo.github.io/trellis/docs/themes/authoring/), [Themes](https://tolo.github.io/trellis/docs/sites/themes/), [Standard Params](https://tolo.github.io/trellis/docs/themes/standard-params/).
 - **API documentation** — https://pub.dev/documentation/trellis/latest/

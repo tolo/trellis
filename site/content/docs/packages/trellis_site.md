@@ -101,6 +101,7 @@ my_site/
 - `params` for arbitrary values exposed as `${site.params.*}`;
 - `feeds`, `search`, and `highlight` for generated discovery artifacts and
   build-time code highlighting.
+- `uses` for named template and static asset sources.
 
 Paths can be relative to the site root or absolute.
 
@@ -148,6 +149,49 @@ theme entry; use a mapped drive letter.
 Fenced code blocks are highlighted at build time; see
 [Syntax highlighting](#syntax-highlighting).
 
+## Build sources
+
+A site or its theme can add templates and assets by listing registered names
+in `uses`. The CLI registers `trellis_ui`:
+
+```yaml
+uses: [trellis_ui]
+```
+
+You can call the suite's fragments in layouts and shortcodes. The build
+copies the assets under `trellis-ui/` in the output. Link the CSS and script
+from the layouts that need them.
+
+A Dart build registers other names with `TrellisSite(config, sourceFactories: ...)`.
+Each factory returns a `SiteSource` with a synchronous-capable template
+loader and a map from output-relative POSIX paths to bytes. Names match
+`[a-z][a-z0-9_]*`. Put the same name in the site and theme to reuse one
+factory result. Site and theme templates win over source templates. Source
+assets are copied first, followed by theme and site static files. Conflicting
+source file paths fail the build. For example, with `uses: [acme]`:
+
+```dart
+final site = TrellisSite(config, sourceFactories: {
+  'acme': () => SiteSource(
+    loader: MapLoader({'acme/badge': '<span tl:fragment="badge">New</span>'}),
+    assets: {'acme/badge.css': badgeCssBytes},
+  ),
+});
+```
+
+`MapLoader` comes from `package:trellis/trellis.dart`, and `badgeCssBytes` is the
+stylesheet as a `List<int>`. The loader needs synchronous lookup for cross-file
+fragments. Source templates fall back in the order the site names them, then
+the theme. Each named factory runs once per build. An unregistered name, an
+invalid asset path, two claims on one path, or an asset file used as a
+directory fails the build. Asset files keep their output-relative paths when
+`pathPrefix` changes.
+
+When sources are enabled, a post-Markdown shortcode can pass lists and maps
+from page front matter to fragments. Its explicit parameters take precedence
+over those values. The [component reference](/docs/ui/components/) uses this
+for static data examples.
+
 ## Path prefix
 
 `pathPrefix` mounts the generated site below the domain root, such as GitHub
@@ -187,7 +231,12 @@ to layouts for references that need an explicit join:
 With `pathPrefix: /my-site/` these emit `/my-site/css/main.css` and
 `/my-site/js/app.js`; with no prefix they stay `css/main.css` and `js/app.js`.
 `${site.pathPrefix}` is the empty string when no prefix is set. Engine-derived
-URLs such as `${page.url}` already carry the prefix and need no concatenation.
+URLs already carry the prefix and need no concatenation: `${page.url}`, the
+`${site.menu}` tree, prev/next links, taxonomy listing and term URLs,
+`${site.feeds.*}`, and the search-index `url` fields. `sitemap.xml` and the
+feeds compose `baseUrl` with the prefixed URL, so the prefix appears once
+(`https://example.com/my-site/posts/intro/`, and a feed self link of
+`https://example.com/my-site/feed.xml`).
 
 For host configuration and link-integrity checks, see
 [Sites: Deploy](/docs/sites/deploy/).
@@ -261,7 +310,7 @@ Additional values include:
 - `${pagination.*}` – page number, totals, and page URLs, set only when a list
   spans more than one page;
 - `${taxonomy.*}` – each configured taxonomy's term list; and
-- `${feeds.*}` – generated site-wide feed URLs.
+- `${site.feeds.*}` – generated site-wide feed URLs, with the `pathPrefix`.
 
 Three `${page.*}` values describe where a page sits:
 

@@ -1,0 +1,6 @@
+<h1>Input</h1>
+<section id="demo"><a id="before" href="#after">Before example</a><section id="component" aria-label="input examples"><div class="gallery-sample"><label for="primary">Primary</label><input tl:replace="~{trellis-ui/input :: input}" id="primary" name="input-primary" aria-label="Primary"></input></div>
+<div class="gallery-sample"><label for="disabled">Disabled</label><input tl:replace="~{trellis-ui/input :: input}" id="disabled" name="input-disabled" aria-label="Disabled" disabled></input></div>
+<div class="gallery-sample"><label for="invalid">Invalid</label><input tl:replace="~{trellis-ui/input :: input}" id="invalid" name="input-invalid" aria-label="Invalid" aria-invalid="true"></input></div>
+</section><a id="after" href="#before">After example</a>
+<button id="swap" type="button" class="gallery-action" hx-get="/components/input" hx-select="#demo" hx-target="#demo" hx-swap="outerHTML">Refresh example</button> <a id="navigate" class="gallery-action" hx-boost="true" href="/components/button">Next example</a></section>

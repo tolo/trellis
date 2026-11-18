@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>field</title></head><body>
+<div tl:fragment="field(controlId, label, hint, error, ...attrs)" data-slot="field" class="trellis-field trellis-field-orientation-vertical group/field" tl:with="controlId=${controlId} ?: 'field-control', label=${label} ?: 'Label'">
+<label data-slot="field-label" class="trellis-field-label trellis-label group/field-label peer/field-label" tl:attr="for=${controlId}" tl:text="${label}">Label</label>
+<div data-slot="field-content" class="trellis-field-content group/field-content">
+<input type="text" data-slot="input" class="trellis-input" tl:attrs="${attrs}" tl:attr="id=${controlId}, aria-describedby=${(hint ? controlId + '-hint' : '') + (error ? ' ' + controlId + '-error' : '')}, aria-invalid=${error ? 'true' : null}">
+<p tl:if="${hint}" data-slot="field-description" class="trellis-field-description" tl:attr="id=${controlId + '-hint'}" tl:text="${hint}">Hint</p>
+<p tl:if="${error}" role="alert" data-slot="field-error" class="trellis-field-error" tl:attr="id=${controlId + '-error'}" tl:text="${error}">Error</p></div></div>
+<label tl:fragment="label(controlId, ...attrs)" data-slot="label" class="trellis-label" tl:attr="for=${controlId}" tl:attrs="${attrs}"><tl:block tl:slot="">Label</tl:block></label>
+<fieldset tl:fragment="fieldset(legend, ...attrs)" data-slot="field-set" class="trellis-field-set" tl:attrs="${attrs}"><legend data-slot="field-legend" class="trellis-field-legend" data-variant="legend" tl:text="${legend} ?: 'Group'">Group</legend><div data-slot="field-group" class="trellis-field-group group/field-group"><tl:block tl:slot=""></tl:block></div></fieldset>
+</body></html>

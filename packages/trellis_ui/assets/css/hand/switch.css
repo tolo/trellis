@@ -1,0 +1,13 @@
+.trellis-switch { appearance: none; position: relative; border: none; box-shadow: none; background: transparent; vertical-align: middle; cursor: pointer; }
+.trellis-switch::before { content: ''; position: absolute; inline-size: 2rem; block-size: 1.15rem; inset: 50% auto auto 50%; transform: translate(-50%,-50%); border: 1px solid transparent; border-radius: 1rem; background: var(--input); }
+.trellis-switch::after { content: ''; position: absolute; inline-size: .875rem; block-size: .875rem; inset-block-start: 50%; inset-inline-start: calc(50% - .875rem); transform: translateY(-50%); border-radius: 50%; background: var(--background); box-shadow: 0 1px 2px #0000001a; }
+.trellis-switch:checked::before { background: var(--primary); }
+.trellis-switch:checked::after { inset-inline-start: 50%; background: var(--primary-foreground); }
+.trellis-switch[data-size=sm]::before { inline-size: 1.5rem; block-size: .9rem; }
+.trellis-switch[data-size=sm]::after { inline-size: .65rem; block-size: .65rem; inset-inline-start: calc(50% - .65rem); }
+.trellis-switch[data-size=sm]:checked::after { inset-inline-start: 50%; }
+.trellis-switch:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.trellis-switch[aria-invalid=true]::before { border-color: var(--destructive); }
+.trellis-switch:disabled { cursor: not-allowed; opacity: .5; }
+
+.trellis-switch::before, .trellis-switch::after { box-sizing: border-box; }

@@ -1,0 +1,6 @@
+<h1>Native Select</h1>
+<section id="demo"><a id="before" href="#after">Before example</a><section id="component" aria-label="native-select examples"><div class="gallery-sample"><label for="primary">Primary</label><select tl:replace="~{trellis-ui/native-select :: native-select}" id="primary" name="native-select-primary" aria-label="Primary"><option value="one">One</option><option value="two">Two</option></select></div>
+<div class="gallery-sample"><label for="disabled">Disabled</label><select tl:replace="~{trellis-ui/native-select :: native-select}" id="disabled" name="native-select-disabled" aria-label="Disabled" disabled><option value="one">One</option><option value="two">Two</option></select></div>
+<div class="gallery-sample"><label for="invalid">Invalid</label><select tl:replace="~{trellis-ui/native-select :: native-select}" id="invalid" name="native-select-invalid" aria-label="Invalid" aria-invalid="true"><option value="one">One</option><option value="two">Two</option></select></div>
+</section><a id="after" href="#before">After example</a>
+<button id="swap" type="button" class="gallery-action" hx-get="/components/native-select" hx-select="#demo" hx-target="#demo" hx-swap="outerHTML">Refresh example</button> <a id="navigate" class="gallery-action" hx-boost="true" href="/components/button">Next example</a></section>

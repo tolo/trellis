@@ -120,8 +120,8 @@ The helpers read the HTMX 2 headers (`HX-Target`, `HX-Trigger`, bare ids) and th
 
 // Customize CSP
 .addMiddleware(trellisSecurityHeaders(
-  csp: CspBuilder(
-    scriptSrc: "'self' 'unsafe-inline'",
+  csp: CspBuilder.strict(
+    scriptSrc: "'self'",
     connectSrc: "'self' ws:",
   ),
 ))
@@ -135,6 +135,15 @@ The helpers read the HTMX 2 headers (`HX-Target`, `HX-Trigger`, bare ids) and th
 `trellisCsrf(secret: ...)` uses a double-submit cookie pattern with HMAC-SHA256
 signing. It generates a token on safe methods (GET/HEAD/OPTIONS) and validates
 on state-changing methods (POST/PUT/DELETE/PATCH):
+
+`CspBuilder.strict()` sets `script-src 'self'; style-src 'self'` while preserving the other
+security defaults. Use it with `trellisSecurityHeaders(csp: const CspBuilder.strict())`.
+The plain `CspBuilder()` retains its existing inline-style allowance for compatibility.
+Under the strict preset, inline `<script>` bodies, `<style>` elements, `style="…"` attributes
+and `on*` handlers are blocked. Move them to same-origin JS/CSS files; CSSOM property writes
+(such as `element.style.top`) remain allowed by browsers. HTMX's injected indicator style
+must be disabled with the `htmx-config` meta option `includeIndicatorStyles: false`, with
+indicator rules in your stylesheet. CLI app scaffolds do this automatically.
 
 ```dart
 .addMiddleware(trellisCsrf(secret: 'your-secret-key'))

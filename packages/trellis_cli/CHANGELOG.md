@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.14.0
+
+### Added
+
+- `trellis build` registers the embedded `trellis_ui` source. Sites and themes can specify
+  `uses: [trellis_ui]` to render its fragments and publish its same-origin CSS and JavaScript.
+
+### Changed
+
+- Counter fragment swaps preserve keyboard focus through stable control IDs, allowing repeated Enter activation.
+
+- App scaffolds use strict CSP, self-host pinned HTMX and external CSRF scripts, and disable injected indicator styles. `create --htmx-cdn` opts into the pinned CDN origin. Shelf and Dart Frog watch static CSS/JS in dev mode.
+- `trellis create --ui` adds Trellis UI and a Components page to Shelf, Relic and Dart Frog projects.
+  Shelf and Dart Frog dev mode materialize gitignored local-preview assets at startup.
+- `trellis create --template relic` writes `relic: ^2.0.0` (was `^1.2.0`). The generated code needs no change for Relic 2.
+- `trellis create --template relic` adds CSRF protection like the Shelf and Dart Frog scaffolds: `trellisCsrf()` with a
+  `CSRF_SECRET` override, the `csrf-token` meta tag, `static/js/csrf.js`, and the counter's hidden `_csrf` field.
+
 ## 0.13.0
 
 ### Added

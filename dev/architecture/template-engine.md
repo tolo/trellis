@@ -2,7 +2,7 @@
 
 Canonical reference for the internal architecture of the core `trellis` template engine package. Covers the render pipeline, processor model, expression evaluation, caching, fragment system, and extension points.
 
-**Current through**: 0.14 (URL-scheme check in attribute writes, ADR-015; 0.13: composition primitives: `tl:slot` content slots, `tl:attrs` spreading, `...rest` fragment parameter, top-level rendering of parameterised fragments; the processor table below is pinned to `ProcessorPriority` by `test/processor_table_test.dart`)
+**Current through**: 0.14 (URL-scheme check in attribute writes, ADR-015; filter arity from the function type; earlier: 0.13 composition primitives: `tl:slot` content slots, `tl:attrs` spreading, `...rest` fragment parameter, top-level rendering of parameterised fragments; the processor table below is pinned to `ProcessorPriority` by `test/processor_table_test.dart`)
 
 ---
 
@@ -325,8 +325,8 @@ class UiDialect extends Dialect {
 
 Registered at engine level or via dialect:
 - Old-style: `Function(dynamic)` — value only
-- New-style: `Function(dynamic, List<dynamic>)` — value + arguments
-- Arity auto-detected at registration; mismatch throws `ExpressionException`
+- New-style: `Function(dynamic, List<dynamic>)` — value + arguments (an optional `[List<dynamic>? args]` serves both)
+- Arity is read from the function type at each call (`is Object? Function(Never, Never)`), never from a `NoSuchMethodError`, which a filter body can raise too. Arguments passed to a value-only filter throw `ExpressionException` ("does not accept arguments"); a throw inside the filter body is wrapped as `ExpressionException("Filter 'x' failed: …")` with the original stack trace, except a `TemplateException`, which propagates unchanged
 
 ---
 

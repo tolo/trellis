@@ -29,7 +29,7 @@ void main() async {
   final engine = Trellis(loader: loader);
 
   final handler = const Pipeline()
-      .addMiddleware(devMiddleware(loader))
+      .addMiddleware(devMiddleware(loader, staticDirectory: 'static'))
       .addHandler(myAppHandler);
 
   await io.serve(handler, 'localhost', 8080);
@@ -40,6 +40,8 @@ void main() async {
 ## Features
 
 - `devMiddleware()`: Shelf middleware serving the SSE endpoint and injecting the reload script before `</body>`.
+- Reloads on template edits and, with `staticDirectory`, on `.css`/`.js` edits under it.
+- Serves the client as `/_dev/reload.js`, so it works under `script-src 'self'; style-src 'self'`.
 - `liveReloadHandler()`: the SSE endpoint alone, for manual setups.
 - `liveReloadScript()`: the vanilla JS `EventSource` snippet.
 - Template validation at startup and on each change, in the `dart run trellis:validate` format.

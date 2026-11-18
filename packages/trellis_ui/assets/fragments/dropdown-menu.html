@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Dropdown menu</title></head><body>
+<tl-dropdown-menu tl:fragment="dropdownMenu(id, ...attrs)" data-slot="dropdown-menu">
+  <button type="button" data-slot="dropdown-menu-trigger" data-size="default" data-variant="outline"
+    class="trellis-button trellis-button-variant-outline trellis-button-size-default group/button" aria-haspopup="menu"
+    aria-expanded="false" tl:attr="id=${id + '-trigger'}, aria-controls=${id}, popovertarget=${id}">
+    <tl:block tl:slot="trigger">Open menu</tl:block>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+  </button>
+  <div popover="auto" role="menu" data-slot="dropdown-menu-content" data-trellis-popup data-closed data-side="bottom"
+    data-align="start" class="trellis-dropdown-menu-content trellis-dropdown-menu-content-logical"
+    tl:attr="id=${id}, aria-labelledby=${id + '-trigger'}" tl:attrs="${attrs}"><tl:block tl:slot=""></tl:block></div>
+</tl-dropdown-menu>
+
+<button type="button" tl:fragment="menuItem(variant, ...attrs)" role="menuitem" tabindex="-1"
+  data-slot="dropdown-menu-item" class="trellis-dropdown-menu-item group/dropdown-menu-item"
+  tl:attr="data-variant=${variant == 'destructive' ? 'destructive' : 'default'}"
+  tl:attrs="${attrs}"><tl:block tl:slot=""></tl:block></button>
+
+<button type="button" tl:fragment="menuCheckboxItem(checked, ...attrs)" role="menuitemcheckbox"
+  tabindex="-1" data-slot="dropdown-menu-checkbox-item" class="trellis-dropdown-menu-checkbox-item"
+  tl:attr="aria-checked=${checked ? 'true' : 'false'}, data-checked=${checked ? 'true' : null}"
+  tl:attrs="${attrs}">
+  <tl:block tl:slot=""></tl:block>
+  <span data-slot="dropdown-menu-checkbox-item-indicator" class="trellis-dropdown-menu-item-indicator" aria-hidden="true">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+  </span>
+</button>
+
+<div tl:fragment="menuSeparator(...attrs)" role="separator" data-slot="dropdown-menu-separator"
+  class="trellis-dropdown-menu-separator" tl:attrs="${attrs}"></div>
+</body></html>

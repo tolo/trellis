@@ -3,6 +3,7 @@
 @forward 'variables';
 @use 'sass:map';
 @use 'variables' as *;
+@use 'suite';
 
 @mixin lattice-dark {
   --paper: #{map.get($trellis-palette-dark, bg-color)};
@@ -198,7 +199,8 @@ a {
 a:hover {
   color: var(--leaf-hover);
 }
-:focus-visible {
+// The suite paints focus inside the search group and on the reader toggle.
+:focus-visible:where(:not(.search-shell *, .mode-toggle)) {
   outline: 2px solid currentColor;
   outline-offset: -2px;
   border-radius: 2px;
@@ -298,18 +300,7 @@ a:hover {
 .mobile-nav {
   display: none;
 }
-.mode-toggle {
-  display: inline-flex;
-  width: 34px;
-  height: 34px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--lattice-strong);
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--ink-soft);
-  cursor: pointer;
-}
+.mode-toggle { inline-size: 34px; block-size: 34px; }
 .mode-toggle .sun {
   display: none;
 }
@@ -1003,60 +994,6 @@ code {
 }
 .toc-level-3 a {
   padding-left: 18px;
-}
-.search-input {
-  width: 100%;
-  margin-bottom: 18px;
-  padding: 8px 10px;
-  border: 1px solid var(--lattice-strong);
-  border-radius: 999px;
-  background: var(--paper);
-  color: var(--ink);
-}
-/* Search results, built by static/js/search.js. MAX_RESULTS is 20, so the list carries its own
-   scroll rather than pushing the section tree off the bottom of the sidebar. */
-.search-results {
-  max-height: 320px;
-  margin: 0 0 18px;
-  padding: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  list-style: none;
-}
-.search-result {
-  margin: 0 0 4px;
-}
-/* Title and snippet are <span>s: without an explicit block they run together on one line and
-   the link inherits the prose underline. */
-.search-result-link {
-  display: block;
-  padding: 6px 8px;
-  border-radius: var(--radius);
-  text-decoration: none;
-}
-.search-result-link:hover,
-.search-result-link:focus-visible {
-  background: var(--tint);
-}
-.search-result-title {
-  display: block;
-  color: var(--leaf);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.3;
-}
-.search-result-snippet {
-  display: block;
-  margin-top: 3px;
-  color: var(--ink-soft);
-  font-size: 12px;
-  line-height: 1.45;
-}
-.search-empty {
-  padding: 6px 8px;
-  color: var(--ink-soft);
-  font-size: 13px;
-  font-style: italic;
 }
 .doc {
   min-width: 0;

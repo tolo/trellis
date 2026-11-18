@@ -1,0 +1,12 @@
+<div class="ui-reference-preview">
+  <table tl:replace="~{trellis-ui/table :: table('Recent invoices', columns, invoices)}">
+    <tbody tl:slot="row">
+      <tr class="trellis-table-row">
+        <td class="trellis-table-cell" tl:text="${row.account}">Account</td>
+        <td class="trellis-table-cell" tl:text="${row.invoice}">Invoice</td>
+        <td class="trellis-table-cell" tl:text="${row.email}">Email</td>
+        <td class="trellis-table-cell" tl:text="${row.status}">Status</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

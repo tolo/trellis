@@ -54,6 +54,7 @@ Future<Response> onRequest(RequestContext context) async {
 - `trellisCsrf()` is a double-submit cookie with HMAC-SHA256 signing.
 - `trellisSecurityHeaders()` sets `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `X-XSS-Protection`
   and a `Content-Security-Policy` built with `CspBuilder`.
+- `CspBuilder.strict()` gives `script-src 'self'; style-src 'self'` for apps without inline scripts or styles.
 
 ## Documentation
 

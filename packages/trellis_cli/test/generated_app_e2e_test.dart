@@ -17,11 +17,15 @@ import 'package:trellis_cli/trellis_cli.dart';
 
 import '_e2e_server.dart';
 import '_workspace_root.dart';
+import '_csp_browser.dart';
+import '_ui_scaffold_e2e.dart';
 
 /// Numeric loopback host – bound by the patched server and connected to by every client.
 final String _host = e2eLoopback.address;
 
 void main() {
+  if (BrowserProbe.locateChrome() == null) requireChromeInCi('CSP browser proofs');
+  testUiScaffold(UiScaffold.shelf);
   group('Generated app E2E', () {
     late Directory projectDir;
     late int port;
@@ -71,7 +75,7 @@ void main() {
           // boot timeout when the template's bind line changes (TD-015 plans exactly that).
           expect(patched, isNot(originalServerSource), reason: 'bind-patch pattern no longer matches the template');
           await serverFile.writeAsString(patched);
-          return Process.start('dart', ['run', 'bin/server.dart'], workingDirectory: projectDir.path);
+          return Process.start('dart', ['run', 'bin/server.dart', '--dev'], workingDirectory: projectDir.path);
         },
         isReady: (port) => _waitForServer(_host, port),
       );
@@ -83,6 +87,18 @@ void main() {
       await stopServer(serverProcess);
       await projectDir.parent.delete(recursive: true);
     });
+
+    test('strict CSP pages and htmx interactions', () async {
+      await expectStrictCspApp(Uri.parse('http://$_host:$port/'), csrf: true);
+    }, skip: BrowserProbe.locateChrome() == null ? 'Chrome not installed' : false);
+
+    test('dev reload CSS and JavaScript within 1 s', () async {
+      await expectStaticReload(Uri.parse('http://$_host:$port/'), projectDir, 'static');
+    });
+
+    test('dev reload really navigates with zero CSP violations', () async {
+      await expectBrowserReload(Uri.parse('http://$_host:$port/'), projectDir);
+    }, skip: BrowserProbe.locateChrome() == null ? 'Chrome not installed' : false);
 
     test('GET / returns 200', () async {
       final res = await _get('http://$_host:$port/');
@@ -143,7 +159,10 @@ void main() {
       try {
         final request = await client.getUrl(uri);
         final response = await request.close();
-        expect(response.headers.value('content-security-policy'), contains('https://cdn.jsdelivr.net'));
+        final csp = response.headers.value('content-security-policy');
+        expect(csp, contains("script-src 'self'; style-src 'self';"));
+        expect(csp, isNot(contains('cdn.jsdelivr.net')));
+        expect(csp, isNot(contains("'unsafe-inline'")));
       } finally {
         client.close();
       }

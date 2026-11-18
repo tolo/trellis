@@ -16,18 +16,19 @@ String dartFrogIndexPageTemplate() => r'''<html tl:extends="layouts/base.html">
           <span class="counter-value" tl:text="${count}">0</span>
         </div>
         <div class="counter-controls">
-          <button type="button"
+          <!-- Stable IDs let htmx preserve focus when this fragment is replaced. -->
+          <button type="button" id="counter-decrement"
                   hx-post="/counter/decrement"
                   hx-target="#counter"
                   hx-swap="outerHTML"
                   hx-include="[name='_csrf']"
                   tl:classappend="${isZero} ? 'disabled' : ''">-</button>
-          <button type="button"
+          <button type="button" id="counter-reset"
                   hx-post="/counter/reset"
                   hx-target="#counter"
                   hx-swap="outerHTML"
                   hx-include="[name='_csrf']">Reset</button>
-          <button type="button"
+          <button type="button" id="counter-increment"
                   hx-post="/counter/increment"
                   hx-target="#counter"
                   hx-swap="outerHTML"

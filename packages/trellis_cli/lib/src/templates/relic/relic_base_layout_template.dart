@@ -1,10 +1,12 @@
 import '../htmx_asset.dart';
+import '../ui_scaffold_template.dart';
 
 /// Generates the templates/base.html content for a Relic + Trellis project.
 ///
 /// Uses template inheritance (`tl:define`) and HTMX for client-side navigation.
-/// No CSRF meta tag — Relic lacks form body parsing, so CSRF is not included.
-String relicBaseLayoutTemplate(String projectName) =>
+/// Carries the CSRF meta tag that `/js/csrf.js` copies into the `X-CSRF-Token`
+/// header of HTMX requests.
+String relicBaseLayoutTemplate(String projectName, {bool htmxCdn = false, bool ui = false}) =>
     '''
 <!DOCTYPE html>
 <html lang="en">
@@ -12,9 +14,12 @@ String relicBaseLayoutTemplate(String projectName) =>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title tl:text="\${pageTitle}">$projectName</title>
-  ${htmxScriptTag()}
+  <meta name="csrf-token" tl:attr="content=\${csrfToken}" content="">
+  $htmxConfigMeta
+  ${scaffoldHtmxScriptTag(htmxCdn: htmxCdn)}
+  <script src="/js/csrf.js"></script>
   <link rel="stylesheet" href="/styles.css">
-</head>
+${ui ? uiAssetTags('../$staticUiPreview') : ''}</head>
 <body>
   <header>
     <nav>
@@ -22,7 +27,7 @@ String relicBaseLayoutTemplate(String projectName) =>
       <div class="nav-links">
         <a href="/" hx-get="/" hx-target="#content" hx-push-url="true">Home</a>
         <a href="/about" hx-get="/about" hx-target="#content" hx-push-url="true">About</a>
-      </div>
+${ui ? '        $uiNavLink\n' : ''}      </div>
     </nav>
   </header>
 

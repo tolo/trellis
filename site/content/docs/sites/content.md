@@ -14,6 +14,7 @@ Trellis discovers Markdown under `content/` and derives pages from its directory
 | `content/about.md` | `/about/` | single | `` | `` |
 | `content/posts/_index.md` | `/posts/` | section | `posts` | `posts` |
 | `content/posts/hello.md` | `/posts/hello/` | single | `posts` | `posts` |
+| `content/posts/trip/index.md` | `/posts/trip/` | single (bundle) | `posts` | `posts` |
 | `content/docs/guides/_index.md` | `/docs/guides/` | section | `docs` | `docs/guides` |
 
 An `_index.md` file defines the home page or a section listing. Other Markdown
@@ -78,7 +79,9 @@ content/posts/my-trip/
 ```
 
 The page renders at `/posts/my-trip/`; co-located assets are copied beside the
-generated page. Use bundles when content and its images belong together.
+generated page. A bundle belongs to its parent directory's section, exactly like
+`posts/my-trip.md`, so it appears in the `/posts/` listing, menu, and
+previous/next links. Use bundles when content and its images belong together.
 
 ## Drafts
 
@@ -96,17 +99,14 @@ Reusable content snippets are Trellis templates at
 `layoutsDir` or a theme's layouts are not searched. The pre-Markdown form is
 replaced before the page's Markdown is parsed:
 
-```markdown
-{{% callout kind="note" %}}
-```
+<!-- Escape the first brace in literal snippets until the pre-Markdown pass can distinguish code samples. -->
+<pre><code class="language-markdown">&#123;{% callout kind="note" %}}</code></pre>
 
 The paired form renders its body as Markdown first:
 
-```markdown
-{{% callout kind="note" %}}
+<pre><code class="language-markdown">&#123;{% callout kind="note" %}}
 This is **Markdown** inside the shortcode.
-{{% /callout %}}
-```
+&#123;{% /callout %}}</code></pre>
 
 The post-Markdown form transforms rendered HTML:
 

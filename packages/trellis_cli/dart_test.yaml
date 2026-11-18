@@ -1,2 +1,4 @@
 tags:
   e2e:
+  ui-gate: {}
+  visual: {}

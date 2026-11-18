@@ -1,0 +1,10 @@
+/* The native input owns the hit box; its pseudo-elements paint the upstream 16px control. */
+.trellis-checkbox { appearance: none; position: relative; border: none; box-shadow: none; background: transparent; vertical-align: middle; cursor: pointer; }
+.trellis-checkbox::before { content: ''; position: absolute; inline-size: 1rem; block-size: 1rem; inset: 50% auto auto 50%; transform: translate(-50%,-50%); border: 1px solid var(--input); border-radius: calc(var(--radius) * .6); background: var(--background); box-shadow: 0 1px 2px #0000000d; }
+.trellis-checkbox:checked::before { background: var(--primary); border-color: var(--primary); }
+.trellis-checkbox:checked::after { content: ''; position: absolute; inline-size: .3rem; block-size: .55rem; border: solid var(--primary-foreground); border-width: 0 2px 2px 0; inset: 43% auto auto 50%; transform: translate(-50%,-50%) rotate(45deg); }
+.trellis-checkbox:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.trellis-checkbox[aria-invalid=true]::before { border-color: var(--destructive); }
+.trellis-checkbox:disabled { cursor: not-allowed; opacity: .5; }
+
+.trellis-checkbox::before, .trellis-checkbox::after { box-sizing: border-box; }

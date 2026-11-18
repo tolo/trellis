@@ -1,0 +1,18 @@
+<h1>Alert dialog</h1>
+<section id="demo">
+  <section id="component" aria-label="Alert dialog example">
+    <div tl:replace="~{trellis-ui/alert-dialog :: alertDialog('example-alert', 'Delete profile?', 'Your public profile and its settings will be permanently removed.', false)}">
+      <tl:block tl:slot="trigger">
+        <button id="open-alert" tl:replace="~{trellis-ui/button :: button('destructive', 'default')}">Delete profile</button>
+      </tl:block>
+      <tl:block tl:slot="action">
+        <button id="confirm-alert" tl:replace="~{trellis-ui/button :: button('destructive', 'default')}"
+          hx-get="/demo/dialog?close=1" hx-target="#alert-result">Delete profile</button>
+      </tl:block>
+    </div>
+    <output id="alert-result">Profile exists</output>
+  </section>
+  <button id="swap" type="button" class="gallery-action" hx-get="/components/alert-dialog" hx-select="#demo"
+    hx-target="#demo" hx-swap="outerHTML">Refresh example</button>
+  <a id="navigate" class="gallery-action" hx-boost="true" href="/components/button">Next example</a>
+</section>

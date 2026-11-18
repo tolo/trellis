@@ -1,0 +1,23 @@
+<h1>Dropdown menu</h1>
+<section id="demo">
+  <a id="before" href="#after">Before example</a>
+  <section id="component" aria-label="Account actions">
+    <div tl:replace="~{trellis-ui/dropdown-menu :: dropdownMenu('menu')}">
+      <span tl:slot="trigger">Account</span>
+      <button type="button" tl:replace="~{trellis-ui/dropdown-menu :: menuItem}" id="menu-profile"
+        hx-get="/components/dropdown-menu" hx-select="#menu-result" hx-target="#menu-result" hx-swap="outerHTML">Profile</button>
+      <button type="button" tl:replace="~{trellis-ui/dropdown-menu :: menuItem}" id="menu-disabled" disabled>Settings</button>
+      <button type="button" tl:replace="~{trellis-ui/dropdown-menu :: menuItem}" id="menu-billing">Billing</button>
+      <div tl:replace="~{trellis-ui/dropdown-menu :: menuSeparator}"></div>
+      <button type="button" tl:replace="~{trellis-ui/dropdown-menu :: menuCheckboxItem(false)}" id="menu-status">Show status</button>
+      <button type="button" tl:replace="~{trellis-ui/dropdown-menu :: menuItem('destructive')}" id="menu-alert"
+        hx-get="/demo/alert-dialog" hx-target="#menu-dialog">Delete project…</button>
+    </div>
+    <p id="menu-result" role="status">Account profile</p>
+    <div id="menu-dialog"></div>
+  </section>
+  <a id="after" href="#before">After example</a>
+  <button id="swap" type="button" class="gallery-action" hx-get="/components/dropdown-menu"
+    hx-select="#demo" hx-target="#demo" hx-swap="outerHTML">Refresh example</button>
+  <a id="navigate" class="gallery-action" hx-boost="true" href="/components/button">Next example</a>
+</section>

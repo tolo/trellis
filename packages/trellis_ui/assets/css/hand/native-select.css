@@ -1,0 +1,4 @@
+.trellis-native-select-wrapper { max-inline-size: 100%; }
+.trellis-native-select { appearance: none; padding-inline-end: 2rem; }
+.trellis-native-select-icon { inline-size: 1rem; block-size: 1rem; inset-inline-end: .75rem; inset-block-start: 50%; transform: translateY(-50%); }
+.trellis-native-select option, .trellis-native-select optgroup { background: Canvas; color: CanvasText; }

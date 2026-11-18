@@ -19,6 +19,9 @@ Future<void> main() async {
     loader: FileSystemLoader(templatesDir, devMode: true),
     devMode: true,
   );
+  // CSRF secret: use an environment variable in production.
+  final csrfSecret =
+      Platform.environment['CSRF_SECRET'] ?? 'trellis_relic_example-dev-secret';
   const csp = CspBuilder(scriptSrc: "'self' https://cdn.jsdelivr.net");
 
   final app = RelicApp()
@@ -27,6 +30,9 @@ Future<void> main() async {
     // responses do NOT get security headers. This is a behavioral
     // difference from Shelf.
     ..use('/', trellisSecurityHeaders(csp: csp))
+    // Double-submit cookie CSRF check on POST/PUT/DELETE/PATCH; templates get
+    // the token as csrfToken, and /js/csrf.js sends it on HTMX requests.
+    ..use('/', trellisCsrf(secret: csrfSecret))
     // Page routes
     ..get('/', (request) => homePage(request, engine))
     ..get('/about', (request) => aboutPage(request, engine))
@@ -34,11 +40,17 @@ Future<void> main() async {
     ..post('/counter/increment', (request) => incrementCounter(request, engine))
     ..post('/counter/decrement', (request) => decrementCounter(request, engine))
     ..post('/counter/reset', (request) => resetCounter(request, engine))
-    // Static CSS — Relic has no built-in static file handler like shelf_static.
-    // A dedicated route is the idiomatic approach for a small number of assets.
+    // Static files — two, so plain routes; Relic's StaticHandler suits a
+    // directory of assets.
     ..get('/styles.css', (_) async {
       final css = await File('$staticDir/styles.css').readAsString();
       return Response.ok(body: Body.fromString(css, mimeType: MimeType.css));
+    })
+    ..get('/js/csrf.js', (_) async {
+      final js = await File('$staticDir/js/csrf.js').readAsString();
+      return Response.ok(
+        body: Body.fromString(js, mimeType: MimeType.javascript),
+      );
     });
 
   await app.serve(address: InternetAddress.anyIPv4, port: port);

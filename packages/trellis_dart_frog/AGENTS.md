@@ -21,7 +21,8 @@ Run from `packages/trellis_dart_frog/`.
 - **Start test servers with `withServer` in `test/test_utils.dart`.** It binds `InternetAddress.loopbackIPv4` on port 0
   and connects by that numeric address. Never bind or connect to `'localhost'` (LEARNINGS, Testing).
 - **CSRF and security headers are implemented in `trellis_shelf`** and bridged here with `fromShelfMiddleware`. The CSRF
-  bridge reads the body with `request.bytes()` and rebuilds a `shelf.Request`. Change behaviour in `trellis_shelf`, not
-  here (`dev/architecture/system-architecture.md`, Dart Frog).
+  bridge runs on Dart Frog's own underlying `shelf.Request`, so never read the body or rebuild a request there: the
+  handler would get a consumed body. Change behaviour in `trellis_shelf`, not here
+  (`dev/architecture/system-architecture.md`, Dart Frog).
 - **`lib/src/htmx_helpers.dart` has near-identical copies in `trellis_shelf` and `trellis_relic`** (ADR-011). Change
   header handling in all three.

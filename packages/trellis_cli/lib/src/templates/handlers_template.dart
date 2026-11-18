@@ -3,7 +3,7 @@
 /// Demonstrates full-page rendering, HTMX fragment responses for SPA
 /// navigation and counter updates, and automatic request-context merging via
 /// `trellis_shelf`.
-String handlersTemplate(String projectName) {
+String handlersTemplate(String projectName, {bool ui = false}) {
   return "import 'package:shelf/shelf.dart';\n"
       "import 'package:trellis_shelf/trellis_shelf.dart';\n"
       '\n'
@@ -80,5 +80,18 @@ String handlersTemplate(String projectName) {
       'Future<Response> resetCounter(Request request) async {\n'
       '  _counter = 0;\n'
       "  return renderFragment(request, 'pages/index.html', 'counter', _counterContext());\n"
-      '}\n';
+      '}\n'
+      '${ui ? _uiPageHandler(projectName) : ''}';
 }
+
+String _uiPageHandler(String projectName) =>
+    '''
+
+/// GET /ui — Components page.
+Future<Response> uiPage(Request request) => renderPage(
+  request,
+  'pages/ui.html',
+  {'pageTitle': 'Components — $projectName'},
+  htmxFragment: 'page-content',
+);
+''';

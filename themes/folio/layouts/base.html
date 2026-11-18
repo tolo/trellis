@@ -26,6 +26,8 @@
   <!-- Theme CSS (compiled from sass/main.scss), root-absolute via assetBase. -->
   <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/main.css'" href="/css/main.css">
   <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/theme-props.css'" href="/css/theme-props.css">
+  <link rel="stylesheet" tl:href="${assetBase} + 'trellis-ui/trellis-ui.css'" href="/trellis-ui/trellis-ui.css">
+  <script tl:src="${assetBase} + 'trellis-ui/trellis-ui.js'" defer></script>
 
   <script tl:if="${theme.skin} == 'auto'">
     try {
@@ -48,10 +50,10 @@
 
   <!-- Client-side search: first-party, same-origin, no CDN.
        Reads the index URL from the shell's data-search-index attribute. The shell
-       ships hidden and search.js reveals it only once the index has loaded, so a
+       ships hidden and trellis-search.js reveals it only once the index has loaded, so a
        page without JavaScript shows no permanently disabled control. -->
   <script tl:if="${theme.show_search}"
-          tl:attr="src=${assetBase} + 'js/search.js'" defer></script>
+          tl:attr="src=${assetBase} + 'trellis-search.js'" defer></script>
 
   <!-- Auto-skin edition toggle (first-party, same-origin, no CDN): reveals the
        control, synchronizes it with the saved or OS choice, labels it with the
@@ -100,7 +102,8 @@
       </nav>
       <!-- Hidden until the edition script runs: with no JavaScript the control could
            not change anything, so it must not occupy the masthead. -->
-      <button tl:if="${theme.skin} == 'auto'" class="skin-toggle" type="button" data-folio-skin-toggle
+      <button tl:if="${theme.skin} == 'auto'" tl:replace="~{trellis-ui/button :: button('default', 'xs')}"
+              class="skin-toggle" type="button" data-folio-skin-toggle
               aria-label="Change color scheme" aria-pressed="false" hidden>Edition</button>
     </div>
   </header>
@@ -118,22 +121,16 @@
           <summary class="sidebar-toggle" tl:text="${theme.sidebar_title}">Documentation</summary>
 
           <div class="docs-sidebar">
-            <!-- Search UI shell. The querying behavior lives in the vendored
-                 static/js/search.js. The static script cannot interpolate
-                 ${site.pathPrefix}, so the root-absolute index URL is passed in
-                 via data-search-index, computed with the same assetBase rule the
-                 <head> asset links use (pathPrefix, or / when served at root).
-                 The index is written to the output root, so it is served at
-                 ${assetBase}search-index.json (e.g. /trellis/search-index.json).
-                 Ships hidden; search.js reveals it once the index has loaded. -->
-            <div class="search-shell" hidden tl:if="${theme.show_search}"
+            <!-- The shell stays hidden until the shared search client loads its index. -->
+            <div class="search-shell" data-trellis-search hidden tl:if="${theme.show_search}"
                  tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}"
                  tl:attr="data-search-index=${assetBase} + 'search-index.json'">
               <label class="search-label" for="docs-search">Search documentation</label>
-              <input type="search" id="docs-search" class="search-input"
-                     placeholder="Search…" autocomplete="off"
-                     data-arbor-search disabled>
-              <ul class="search-results" data-arbor-search-results hidden></ul>
+              <div tl:replace="~{trellis-ui/combobox :: combobox('docs-search', 'page', 'Search…', '', null)}"
+                   disabled></div>
+              <template data-trellis-search-results>
+                <div tl:replace="~{trellis-ui/combobox :: comboboxOptions('docs-search', ${data['trellis-search']})}"></div>
+              </template>
             </div>
 
             <nav class="sidebar-nav" tl:attr="aria-label=${theme.sidebar_title}">

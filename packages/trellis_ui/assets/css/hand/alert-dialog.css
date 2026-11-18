@@ -1,0 +1,10 @@
+.trellis-alert-dialog-content {
+  max-inline-size: 32rem;
+}
+.trellis-alert-dialog-content[open] { display: grid; }
+.trellis-alert-dialog-action { display: contents; }
+
+@media (width < 40rem) {
+  .trellis-alert-dialog-content { max-inline-size: 20rem; }
+  .trellis-alert-dialog-footer { justify-content: center; }
+}

@@ -22,7 +22,7 @@
 | [ADR-011](adrs/ADR-011-htmx-version-policy.md) | HTMX Version Policy | Accepted (amended 2026-09-04, 2026-10-04) | Hypermedia coupling boundary; HTMX 4-compatible adapters, pin unchanged; scaffolds self-host HTMX, CDN opt-in |
 | [ADR-012](adrs/ADR-012-trellis-ui-contract.md) | Single Trellis-Owned UI Contract | Accepted (2026-10-04) | UI component public contract and expansion boundary; Tier 1 is a Trellis-owned shadcn/ui port |
 | [ADR-013](adrs/ADR-013-sass-module-bridge.md) | SASS Module Bridge and Per-Mode Colour Params | Accepted (owner, 2026-10-04) | `@use … with()` theme bridge, palette-map skins, per-mode colour params; hard cut, implemented in 0.12 |
-| [ADR-014](adrs/ADR-014-component-composition-primitives.md) | Component Composition Primitives | Accepted (owner, 2026-10-15) | Core slots, attribute spreading, pass-through, bare-name top-level rendering of parameterised fragments (PB-012); implementation in 0.13 |
+| [ADR-014](adrs/ADR-014-component-composition-primitives.md) | Component Composition Primitives | Accepted (owner, 2026-10-15) | Core slots, attribute spreading, pass-through, bare-name top-level rendering of parameterised fragments (Linear LEA-16); implementation in 0.13 |
 | [ADR-015](adrs/ADR-015-url-scheme-blocking.md) | Block Script-Capable URL Schemes in Dynamic URL Attributes | Accepted (owner, 2026-11-18) | `javascript:`/`vbscript:`/non-image `data:` in dynamic `href`/`src`/`action`/`formaction`/`data`/`xlink:href` become `about:invalid#trellis-unsafe-url`; `TrustedUrl` opt-out; implementation in 0.14 |
 
 ## Superseded
@@ -54,8 +54,8 @@
   Linear project `Trellis`; GitHub Issues stay the public intake, synced one way
   into Linear. Plans, FIS, briefs and amendment proposals for the release in flight
   go under `dev/spec/<milestone>/` in this repository and are deleted at release
-  prep. 0.14 runs from the private repo's `docs/specs/0.14/`, as it was already
-  executing. The private planning repo is being retired. Tracker details:
+  prep. 0.14's moved there from the private repo on 2026-11-18, after its
+  implementation. The private planning repo is being retired. Tracker details:
   `dev/guidelines/ISSUE-TRACKER.md`.
 - **ADR location**: Contributor-facing ADRs live in this repository under
   `dev/adrs/`; research bundles link to them rather than duplicating the
@@ -83,7 +83,7 @@
   strings. `excerpt_length` is an optional theme-specific content-rendering
   parameter, not a nineteenth standard parameter. The gallery recognizes the
   current informal built-in archetype tokens (`docs`, `landing`, `blog`) without
-  settling PB-013's future typing model.
+  settling LEA-17's future typing model.
 - **Lattice/site implementation comparator**: The project owner approved the A3
   Lattice direction; implementation-time Lattice and migrated-site homepage
   comparisons used that asset. The shipped result and review evidence are

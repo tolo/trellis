@@ -50,13 +50,14 @@ each: `- **{title}** – trap + pointer`. Admit an entry only if a frontier mode
 git history do not carry it, and it outlives the current initiative. -->``.
 
 > Product backlog, release planning and every PRD live in the maintainers' Linear workspace (project `Trellis`, see
-> `Issue Tracker` below); bug reports and requests come in through GitHub Issues. Roadmap and Research are still in a
-> **separate private repo** while it is being retired.
+> `Issue Tracker` below), and each release's scope and status is its Linear milestone; bug reports and requests come
+> in through GitHub Issues. Research is kept outside this repository; ADRs carry its distilled form in
+> `dev/adrs/research/`.
 >
 > **Where requirements history lives.** Each release has exactly one durable requirements document: the PRD that is
 > the description of its Linear issue (`Record: tracker`). Plans, per-story specs (FIS), clarifications, mockups and
-> review reports are working material with a bounded life: from 0.15 they live in `dev/spec/<milestone>/` on the
-> release's feature branch (0.14's are still in the private repo) and are deleted at release prep, once the PRD has
+> review reports are working material with a bounded life: they live in `dev/spec/<milestone>/` on the release's
+> feature branch, with a working copy of the PRD as `prd.md`, and are deleted at release prep, once the PRD has
 > been consolidated into the complete record of the cycle (requirements, every story's outcome, deviations, tech debt
 > opened/closed).
 > In *this* repository the durable record of behaviour is `packages/*/CHANGELOG.md`, with `dev/adrs/` for decisions
@@ -65,7 +66,7 @@ git history do not carry it, and it outlives the current initiative. -->``.
 | Document Type        | Location                                | Notes                                                |
 |----------------------|-----------------------------------------|------------------------------------------------------|
 | Product              | `dev/PRODUCT.md`                        | SDK vision, positioning, audiences, design principles. Read before scoping a feature or release |
-| Specs & Plans        | `dev/spec/<milestone>/`                 | Plan and FIS for the release in flight, from 0.15; the PRD is its Linear issue. Deleted at release prep |
+| Specs & Plans        | `dev/spec/<milestone>/`                 | Plan, FIS and PRD working copy for the release in flight; the PRD record is its Linear issue. Deleted at release prep |
 | Architecture         | `dev/architecture/`                     | System overview + engine internals; each carries a "Current through" marker |
 | Decisions            | `dev/DECISIONS.md`                      | ADR index, superseded lineage, Still Current notes. Read before proposing or changing a design choice |
 | ADRs                 | `dev/adrs/`                             | Architecture Decision Records (+ curated `dev/adrs/research/`) |

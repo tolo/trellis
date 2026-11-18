@@ -384,7 +384,7 @@ component remains gated on the revisit triggers below.
 
 ### First component slice
 
-**Prerequisite — core composition primitives (PB-012, ADR-014).** Thymeleaf
+**Prerequisite — core composition primitives (0.13, ADR-014).** Thymeleaf
 ecosystem research (2026-08-15) showed component libraries on fragment engines fail
 at three identifiable gaps: content slots, attribute spreading, and attribute
 pass-through. Trellis core lacks all three (verified against

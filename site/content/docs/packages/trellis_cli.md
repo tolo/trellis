@@ -128,15 +128,67 @@ Available templates:
 | `relic` | Relic + HTMX counter app with explicit-engine wiring and security headers |
 | `theme` | Trellis theme scaffold with `theme.yaml`, layouts, SASS architecture, and example preview site |
 
-The `htmx`, `dart_frog`, and `relic` templates each generate a ready-to-run
-server app: server or route wiring, base and page layouts with HTMX
-navigation, a starter stylesheet, and `pubspec.yaml`, `analysis_options.yaml`,
-and `.gitignore`. `htmx` and `dart_frog` put the navigation in a
-`templates/partials/nav.html` partial; `relic` keeps it in
-`templates/base.html`. The `blog` template scaffolds a static site
-(`trellis_site.yaml`, `content/`, `layouts/`, `static/styles.css`, and the Dart
-project files). The `theme` template scaffolds `theme.yaml`, `layouts/`,
-`sass/`, and an `example/` preview site, with no `pubspec.yaml`.
+**`htmx` template** generates:
+
+- `bin/server.dart` – Shelf server with logging, security headers, Trellis
+  engine injection, CSRF, and optional live reload.
+- `lib/handlers.dart` – Home/about handlers plus counter mutation endpoints
+  using `renderPage()` and `renderFragment()`.
+- `templates/layouts/base.html` – base layout with HTMX, CSRF meta tag, and
+  shared page shell.
+- `templates/pages/index.html` – home page with counter fragment and feature
+  list.
+- `templates/pages/about.html` – About page covering Shelf middleware ordering,
+  request context, CSRF, and hot reload.
+- `templates/partials/nav.html` – HTMX SPA navigation partial (`hx-get` +
+  `hx-target="#content"` + `hx-push-url="true"`).
+- `static/styles.css` – starter stylesheet.
+- `pubspec.yaml`, `analysis_options.yaml`, `.gitignore`.
+
+**`blog` template** generates:
+
+- `trellis_site.yaml` – site configuration (title, baseUrl, taxonomies).
+- `content/` – Markdown content with front matter (`_index.md`, posts, about
+  page).
+- `layouts/` – Trellis HTML layouts (base, home, single, list, post).
+- `static/styles.css` – starter stylesheet.
+- `pubspec.yaml`, `analysis_options.yaml`, `.gitignore`.
+
+**`dart_frog` template** generates:
+
+- `routes/_middleware.dart` – Trellis provider, security headers, CSRF
+  middleware, and optional hot reload bridge.
+- `routes/index.dart` and `routes/about.dart` – file-based routes for Home/About
+  page rendering.
+- `lib/counter_state.dart` – shared in-memory counter state and page context.
+- `routes/counter/increment.dart`, `decrement.dart`, `reset.dart` – HTMX
+  mutation endpoints returning the counter fragment.
+- `templates/layouts/base.html` – base layout with HTMX, CSRF meta tag, and
+  shared shell.
+- `templates/pages/index.html` – home page using template inheritance with a
+  counter fragment.
+- `templates/pages/about.html` – About page covering providers, routing,
+  middleware, CSRF, and hot reload.
+- `templates/partials/nav.html` – HTMX SPA navigation partial.
+- `public/styles.css` – starter stylesheet served by Dart Frog.
+- `dart_frog.yaml`, `pubspec.yaml`, `analysis_options.yaml`, `.gitignore`.
+
+**`relic` template** generates:
+
+- `bin/server.dart` – Relic server setup with security headers, explicit Trellis
+  engine wiring, routes, and static CSS serving.
+- `lib/handlers.dart` – Home/about handlers plus counter mutation endpoints
+  using `trellis_relic` response helpers.
+- `templates/base.html` – base layout with HTMX-powered Home/About navigation.
+- `templates/index.html` – home page with the counter fragment and shared
+  feature list.
+- `templates/about.html` – About page covering Relic's no-DI pattern, middleware
+  scoping, and fragment rendering.
+- `static/styles.css` – starter stylesheet.
+- `pubspec.yaml`, `analysis_options.yaml`, `.gitignore`.
+
+**`theme` template** generates `theme.yaml`, `layouts/`, `sass/`, and an `example/` preview site, with no
+`pubspec.yaml`.
 
 ### `trellis build`
 

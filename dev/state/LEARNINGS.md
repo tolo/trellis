@@ -196,9 +196,12 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
   `tolo/trellis` `--ref` pin in the release commit and `--check-refs` fails on a stale one; a pin on a continuation
   line is invisible to both. A hand-kept state file missed both releases the same way; 0.12 retired it instead of
   guarding it, because the `## X.Y.Z` changelog check in `tool/release.sh` already proves the release is recorded.
-- **A user-facing command lives in hand-kept copies, and a fix to one misses the others**: each
-  `site/content/docs/packages/<pkg>.md` mirrors its package README's command blocks by hand (and until 0.14 the theme
-  guides also had `docs/guides/` twins). The 0.12 quick-start rename (`my-theme` →
-  `my_theme`, the only form `trellis create` accepts) fixed the README and both guides and missed the docs-site CLI
-  page. Before closing a doc fix, `rg` the exact command string across `README.md`, `packages/*/README.md`
-  and `site/content/`.
+- **A user-facing command lives in hand-kept copies, and a fix to one misses the others**: until 0.14 each
+  `packages/<pkg>/README.md` mirrored its `site/content/docs/packages/<pkg>.md` page by hand (and the theme guides had
+  `docs/guides/` twins). The 0.12 quick-start rename (`my-theme` → `my_theme`, the only form `trellis create` accepts)
+  fixed the README and both guides and missed the docs-site CLI page, and the 0.14 docs audit found the same errors
+  in both copies repeatedly. Since 0.14 the package READMEs are thin (intro, install snippet, one quick start, a
+  feature list, a link to the site page) and the site page is the full guide, so new detail goes on the site page
+  only. The overlap that remains (install snippets, quick starts, `trellis_cli`'s install channels) still drifts:
+  before closing a doc fix, `rg` the exact command string across `README.md`, `packages/*/README.md` and
+  `site/content/`.

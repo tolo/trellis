@@ -74,6 +74,10 @@ Trellis(
 )
 ```
 
+To pass strict HTML5 validation, set `prefix: 'data-tl'` and write `data-tl-*`
+attributes; see
+[HTML5-valid attribute names](/docs/getting-started/#html5-valid-attribute-names).
+
 `TrellisContext` is a fluent builder for constructing rendering-context maps:
 
 ```dart
@@ -99,7 +103,8 @@ cross-file fragment includes (`~{file :: fragment}`):
 - **`FileSystemLoader(basePath)`** – loads from the filesystem, enforcing
   path-traversal and symlink-escape protection.
 - **`AssetLoader(packageUri)`** – loads from Dart package assets (JIT only; not
-  AOT-compatible).
+  AOT-compatible, see the
+  [AOT deployment notes](/docs/packages/framework-integration/#aot-deployment-notes)).
 - **`CompositeLoader(delegates)`** – tries multiple loaders in order with
   fallback.
 - **`MapLoader(templates)`** – in-memory templates, useful for testing.
@@ -139,7 +144,9 @@ For a framework-specific request/response layer – middleware, response helpers
 and HTMX detection – use the integration package for your server:
 [trellis_shelf](/docs/packages/trellis_shelf/),
 [trellis_dart_frog](/docs/packages/trellis_dart_frog/), or
-[trellis_relic](/docs/packages/trellis_relic/).
+[trellis_relic](/docs/packages/trellis_relic/). The
+[Framework Integration](/docs/packages/framework-integration/) guide walks
+through all three, plus HTMX out-of-band swaps and error handling.
 
 ## Dev mode (file watching)
 
@@ -347,3 +354,8 @@ final result = evaluator.evaluate(r'${a} + ${b}', {'a': 1, 'b': 2}); // 3
 
 See [Text](/docs/syntax/text/) and [Attributes](/docs/syntax/attributes/) for
 the escaping rules that bear on template syntax.
+
+## API reference
+
+Generated Dart API documentation for every public class and method:
+[pub.dev/documentation/trellis/latest](https://pub.dev/documentation/trellis/latest/).

@@ -398,7 +398,7 @@ _Note: Original roadmap had CSS Processing as Phase 2 and SSG as Phase 3. Reorde
 - Blog starter template
 - Hybrid static/dynamic — same templates serve SSG pages and HTMX dynamic fragments
 
-Deferred to Phase 4 (spike complete — see results (private planning research: csslib round-trip spike results)): CSS purging, CSS minification, utility CSS generation.
+Deferred to Phase 4 (spike complete — see the [ADR-006 research appendix](adrs/research/ADR-006-research.md)): CSS purging, CSS minification, utility CSS generation.
 Deferred to Phase 5: incremental builds, Isolate parallelism.
 
 ### Phase 3 — Framework Ecosystem & Developer Experience
@@ -416,7 +416,7 @@ Trellis currently integrates with Shelf only (`trellis_shelf`). Dart Frog (VGV/c
 - Updated framework integration guide covering all three frameworks
 
 ### Phase 4 — Full CSS Processing
-**Goal:** Pure Dart CSS pipeline with no npm dependency (informed by `csslib` round-trip feasibility spike — results (private planning research: csslib round-trip spike results)).
+**Goal:** Pure Dart CSS pipeline with no npm dependency (informed by `csslib` round-trip feasibility spike — results in the [ADR-006 research appendix](adrs/research/ADR-006-research.md)).
 
 The spike confirmed that `csslib` round-trips standard CSS at 100% fidelity but cannot parse `@scope`, `@layer`, or `@container`. Recommended approach: hybrid strategy (csslib for standard CSS + opaque preservation of modern at-rule blocks).
 

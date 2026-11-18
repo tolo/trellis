@@ -130,9 +130,11 @@ git history do not carry it, and it outlives the current initiative. -->``.
   "Current through" marker, redraw any affected SVG diagram, and write or amend the ADR when a recorded decision
   changes. Don't defer.
 - **Files here stand alone.** ADRs, `dev/state/`, and architecture docs must be usable without the private
-  planning repo. **Never write a clickable link into it** (`../../../trellis-private/...`) – it 404s for every
+  repos (the retiring planning repo, and the maintainer's research repo, where open research now lives under
+  `trellis/research/`). **Never write a clickable link into one** (`../../../trellis-private/...`) – it 404s for every
   reader who has only this repo. An **unlinked, labelled** provenance mention is fine where the private document
-  really is canonical: "private planning repo, canonical: `docs/research/<topic>/`", `PRD <version>, story <id>`.
+  really is canonical: "maintainer's private research repo, canonical: `trellis/research/<topic>`",
+  `PRD <version>, story <id>`.
   Substance belongs here: distilled research as an appendix under `dev/adrs/research/<adr>-research.md`, decisions
   in the ADR, behaviour in the CHANGELOG. Never cite a plan, FIS, mockup or review at all – they are deleted at
   release prep; refer to the release by version fact ("decided for 0.11", "shipped in 0.9").

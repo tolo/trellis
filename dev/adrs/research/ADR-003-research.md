@@ -315,8 +315,9 @@ Option E was recommended (and adopted by ADR-003) as the primary direction:
 
 ## 7. Cross-References (plain text)
 
-- The original decision-context document ("ADR input") for this strategy lives in the private specs directory for the
-  v0.6 cycle. It contains the full requirements breakdown (must/should/could/won't) and the initial recommendation bias
-  toward Option A, later overturned by benchmarks.
+- The original decision-context document ("ADR input") for this strategy was a v0.6 working document in the private
+  planning repo and was not kept. It held the full requirements breakdown (must/should/could/won't) and the initial
+  recommendation bias toward Option A, later overturned by benchmarks.
 - Full source research — the consolidated multi-option research, the trade-off matrix, the recommendation, and the
-  Option E deep-dive — lives in the private research directory under `precompiled-template-strategy/`.
+  Option E deep-dive — is in the maintainer's private research repo, canonical:
+  `trellis/research/precompiled-template-strategy/`.

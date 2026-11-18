@@ -59,7 +59,9 @@ raw strings (`r'...'`) so Dart does not interpolate `${...}`. Without a `loader:
 - Testing helpers in `package:trellis/testing.dart`: `testEngine`, `hasElement`, snapshot goldens
 - Custom processors, filters, and dialects
 - Synchronous `render()`, LRU DOM cache, optional strict mode, dev-mode file watching
-- `FileSystemLoader` rejects path traversal and symlink escapes; `tl:text` always HTML-escapes
+- `tl:text` always HTML-escapes; a dynamic `javascript:`, `vbscript:` or non-image `data:` URL in `href`, `src` and
+  other URL attributes is replaced (opt out per value with `TrustedUrl`); `FileSystemLoader` rejects path traversal
+  and symlink escapes
 - AOT-compatible: the context is a `Map<String, dynamic>`, no reflection
 
 ## License

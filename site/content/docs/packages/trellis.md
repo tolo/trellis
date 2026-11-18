@@ -347,6 +347,11 @@ final result = evaluator.evaluate(r'${a} + ${b}', {'a': 1, 'b': 2}); // 3
 - `tl:utext` renders **unescaped HTML** – only use it with trusted content to
   avoid XSS. The inserted HTML is output, never template code: `tl:*`
   attributes in it are emitted as-is, not evaluated.
+- A dynamic `javascript:`, `vbscript:` or non-image `data:` URL written to
+  `href`, `src`, `action`, `formaction`, `data` or `xlink:href` renders as
+  `about:invalid#trellis-unsafe-url`. Wrap a URL the application vouches for in
+  `TrustedUrl` to write it unchanged. Dynamic `on*`, `style` and `srcdoc` values
+  are not checked. See [Unsafe URLs are blocked](/docs/syntax/attributes/#unsafe-urls-are-blocked).
 - `tl:inline` in `javascript`/`css` mode escapes output, including `</script>`
   and `</style>` closing tags.
 - `FileSystemLoader` rejects absolute paths, `..` traversal, and symlink escapes

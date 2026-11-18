@@ -29,14 +29,17 @@ Thymeleaf-inspired HTML template engine for Dart: templates are valid HTML annot
 | Directive | Output | Use for |
 |---|---|---|
 | `tl:text` | HTML-escaped | **Default** for all text, especially user input |
-| `tl:attr` + shorthands (`tl:href`, `tl:src`, `tl:value`, `tl:class`, `tl:id`) | HTML-escaped only; no URL or value checks | Dynamic attribute values (see the rule below for URLs) |
+| `tl:attr` + shorthands (`tl:href`, `tl:src`, `tl:value`, `tl:class`, `tl:id`) | HTML-escaped; URL attributes scheme-checked | Dynamic attribute values (see the rule below for URLs) |
 | `tl:utext` | **raw, unescaped** | **Only** pre-rendered, trusted HTML |
-| `tl:attrs` (map spread) | names validated, values HTML-escaped only | Developer-built maps; never untrusted keys |
+| `tl:attrs` (map spread) | names validated, values HTML-escaped, URL attributes scheme-checked | Developer-built maps; never untrusted keys |
 
-**HTML-escaping is not URL validation.** `tl:href="${u}"` with `u = 'javascript:alert(1)'` renders a
-working `javascript:` link, through any attribute directive. Scheme-check every untrusted URL in Dart
-(allow `http`/`https` or a relative path) before it reaches the context, and never let an untrusted
-value reach an `on*` handler, `style` or `srcdoc`.
+**Unsafe URL schemes are blocked.** A dynamic value written to `href`, `src`, `action`, `formaction`,
+`data` or `xlink:href` (through any attribute directive) that is `javascript:`, `vbscript:` or a
+non-image `data:` URL renders as `about:invalid#trellis-unsafe-url`. Literal attributes in the template
+are not checked. To write a URL you vouch for, put `TrustedUrl('...')` in the context from Dart; a
+template cannot create one. The engine does not check other values: never let an untrusted value reach
+an `on*` handler, `style`, `srcdoc` or `hx-on*`, and a custom processor that writes attributes itself
+must check URLs itself.
 
 ```html
 <span tl:text="${title}">Title</span>            <!-- safe default -->

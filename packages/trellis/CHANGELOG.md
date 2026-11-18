@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.14.0
+
+### Breaking
+
+- **Dynamic URL attributes block script-capable schemes** (ADR-015). A value an expression writes to `href`, `src`, `action`, `formaction`, `data` or `xlink:href`, through a shorthand (`tl:href`, `tl:src`), `tl:attr` or `tl:attrs`, renders as `about:invalid#trellis-unsafe-url` when it is a `javascript:` or `vbscript:` URL, or a `data:` URL other than a PNG, GIF, JPEG, WebP or AVIF image. The check reads the URL as a browser does: leading and trailing U+0000–U+0020 are ignored, tab, LF and CR are removed anywhere, and the scheme and media type are case-folded, so ` JavaScript:`, `\x01javascript:` and `java\tscript:` are caught. Relative URLs and every other scheme pass unchanged. Literal attributes in the template are not checked, and neither are the values a fragment's `...rest` map forwards, which were literals or already checked on the host. Strict mode replaces as well. To keep a dynamic URL you vouch for, wrap it in the new `TrustedUrl` (below). A `javascript:void(0)` or a `data:image/svg+xml` value that reached one of these attributes from the context or a string literal expression (`tl:href="'javascript:void(0)'"`) now renders the replacement.
+
+### Added
+
+- **`TrustedUrl`**: a value type that a URL attribute writes as-is, put in the render context from Dart (`{'link': TrustedUrl('javascript:go()')}`); a template cannot create one. It renders as its URL in text and in any attribute. Concatenating it, putting it in a `|...|` literal or passing it through a filter that returns a `String` produces a plain string, which is checked.
+
 ## 0.13.0
 
 ### Breaking

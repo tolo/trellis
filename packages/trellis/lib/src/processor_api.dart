@@ -17,6 +17,9 @@ enum ProcessorPriority {
 }
 
 /// Base class for processors (built-in and custom) [D01].
+///
+/// A processor that writes `element.attributes` itself bypasses the engine's URL-scheme check (ADR-015), so one that
+/// writes a data-derived value to `href`, `src` or another URL attribute must reject unsafe schemes itself.
 abstract class Processor {
   /// Attribute suffix (e.g. 'with' for tl:with, 'text' for tl:text).
   String get attribute;

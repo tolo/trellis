@@ -1,8 +1,11 @@
+import 'dart:collection';
+
 import 'package:html/dom.dart';
 
 import '../evaluator.dart';
 import '../exceptions.dart';
 import '../processor_api.dart';
+import '../trusted_url.dart';
 import '../utils/binding_parser.dart';
 
 /// Standard HTML boolean attributes — `true` renders valueless, `false` removes.
@@ -33,11 +36,64 @@ const _shorthands = {'href', 'src', 'value', 'class', 'id'};
 /// Every `tl:*` directive the attribute group evaluates, so detection and capture-time stripping share one list.
 const _groupDirectives = {'attrs', 'attr', 'classappend', 'styleappend', ..._shorthands};
 
-/// Attributes known to contain URLs — values from `@{}` expressions are
-/// percent-encoded via `Uri.encodeComponent()` (RFC 3986) at the evaluator
-/// layer. Plain `${var}` values are assumed pre-built and are not re-encoded.
-// ignore: unused_element
-const _urlAttributes = {'href', 'src', 'action', 'formaction', 'poster', 'data'};
+/// Attributes where a `javascript:` or `data:` URL runs script (links, iframes, forms, `<object>`, SVG links), so a
+/// dynamic value written to one is scheme-checked (ADR-015). Lower case; names are matched ignoring ASCII case.
+const _checkedUrlAttributes = {'href', 'src', 'action', 'formaction', 'data', 'xlink:href'};
+
+/// What an unsafe URL is written as: it never navigates or runs, and the marker is greppable in output.
+const unsafeUrlReplacement = 'about:invalid#trellis-unsafe-url';
+
+/// The `data:` media types that stay allowed: raster images, which cannot run script in any context. SVG is excluded,
+/// since `<object data>` or `<iframe src>` runs its script. Requires the `;` or `,` that ends the type, so
+/// `image/pngx` does not pass. Matched against the folded text after `data:`.
+final _safeDataImage = RegExp(r'^image/(?:png|gif|jpeg|webp|avif)[;,]');
+
+/// Whether [url] would run script when a browser follows it: a `javascript:` or `vbscript:` scheme, or a `data:` URL
+/// that is not a raster image.
+///
+/// Normalises the way the WHATWG URL parser does before it reads the scheme: strips leading and trailing
+/// U+0000–U+0020 and removes ASCII tab, LF and CR anywhere. `String.trim()` would leave `\x01` (which a browser
+/// strips, so `\x01javascript:` runs) and strip U+00A0 (which a browser keeps, so that URL is relative). `Uri.tryParse`
+/// is no gate either: it returns `null` for exactly these inputs.
+bool isUnsafeUrl(String url) {
+  var start = 0;
+  var end = url.length;
+  while (start < end && url.codeUnitAt(start) <= 0x20) {
+    start++;
+  }
+  while (end > start && url.codeUnitAt(end - 1) <= 0x20) {
+    end--;
+  }
+  final normalized = StringBuffer();
+  for (var i = start; i < end; i++) {
+    final c = url.codeUnitAt(i);
+    if (c != 0x09 && c != 0x0A && c != 0x0D) normalized.writeCharCode(c);
+  }
+  final value = normalized.toString();
+  final colon = value.indexOf(':');
+  if (colon <= 0) return false;
+  // A scheme is ALPHA *( ALPHA / DIGIT / "+" / "-" / "." ). Any other character before the first colon
+  // (`/javascript:`, `java script:`) makes the browser read a relative URL.
+  for (var i = 0; i < colon; i++) {
+    final c = _foldAscii(value.codeUnitAt(i));
+    final isAlpha = c >= 0x61 && c <= 0x7A;
+    final ok = isAlpha || (i > 0 && ((c >= 0x30 && c <= 0x39) || c == 0x2B || c == 0x2D || c == 0x2E));
+    if (!ok) return false;
+  }
+  return switch (value.substring(0, colon).toLowerCase()) {
+    'javascript' || 'vbscript' => true,
+    'data' => !_safeDataImage.hasMatch(value.substring(colon + 1).toLowerCase()),
+    _ => false,
+  };
+}
+
+/// The `...rest` map [captureHostAttributes] returns. Every value in it is a literal host attribute or was already
+/// checked when the host's directives ran, so [_spreadAttributes] writes it without checking again: otherwise a
+/// literal `href` or a `TrustedUrl`, flattened to a string in the map, would be blocked in the callee (ADR-015).
+/// Unmodifiable so that guarantee cannot be broken by a value added later.
+final class _CheckedAttributes extends UnmodifiableMapView<String, dynamic> {
+  _CheckedAttributes(super.map);
+}
 
 /// Whether [name] is an HTML attribute name (WHATWG "attribute name" state): non-empty, and no ASCII whitespace,
 /// control character, `"`, `'`, `>`, `/`, `=` or noncharacter. Shorthands such as `@click`, `:class` and `_` qualify,
@@ -110,6 +166,7 @@ void _spreadAttributes(Element element, Object? map, String attrPrefix) {
       );
     }
   }
+  final checked = map is _CheckedAttributes;
   for (final MapEntry(:key, :value) in map.entries) {
     switch (key) {
       case 'class':
@@ -117,7 +174,7 @@ void _spreadAttributes(Element element, Object? map, String attrPrefix) {
       case 'style':
         _appendStyle(element, value);
       default:
-        _setAttribute(element, key as String, value);
+        _setAttribute(element, key as String, value, alreadyChecked: checked);
     }
   }
 }
@@ -198,9 +255,16 @@ void _processAttributesImpl(
   }
 }
 
-void _setAttribute(Element element, String attrName, dynamic value) {
+void _setAttribute(Element element, String attrName, dynamic value, {bool alreadyChecked = false}) {
   _dropCaseVariants(element, attrName);
-  if (value == null) {
+  if (value is TrustedUrl) {
+    element.attributes[attrName] = value.value;
+  } else if (!alreadyChecked &&
+      value != null &&
+      _checkedUrlAttributes.contains(attrName.toLowerCase()) &&
+      isUnsafeUrl(value.toString())) {
+    element.attributes[attrName] = unsafeUrlReplacement;
+  } else if (value == null) {
     element.attributes.remove(attrName);
   } else if (_booleanHtmlAttrs.contains(attrName.toLowerCase())) {
     if (value == true) {
@@ -254,10 +318,10 @@ Map<String, dynamic> captureHostAttributes(
       host.attributes.remove('$attrPrefix$name');
     }
   }
-  return {
+  return _CheckedAttributes({
     for (final MapEntry(:key, :value) in host.attributes.entries)
       if (key is String && !_hasPrefix(key, lowerPrefix)) key: value,
-  };
+  });
 }
 
 /// Processor class for `tl:attr` and related attributes — attribute mutation.

@@ -4,7 +4,8 @@ import '../ui_scaffold_template.dart';
 /// Generates the templates/base.html content for a Relic + Trellis project.
 ///
 /// Uses template inheritance (`tl:define`) and HTMX for client-side navigation.
-/// No CSRF meta tag — trellis_relic has no CSRF middleware.
+/// Carries the CSRF meta tag that `/js/csrf.js` copies into the `X-CSRF-Token`
+/// header of HTMX requests.
 String relicBaseLayoutTemplate(String projectName, {bool htmxCdn = false, bool ui = false}) =>
     '''
 <!DOCTYPE html>
@@ -13,8 +14,10 @@ String relicBaseLayoutTemplate(String projectName, {bool htmxCdn = false, bool u
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title tl:text="\${pageTitle}">$projectName</title>
+  <meta name="csrf-token" tl:attr="content=\${csrfToken}" content="">
   $htmxConfigMeta
   ${scaffoldHtmxScriptTag(htmxCdn: htmxCdn)}
+  <script src="/js/csrf.js"></script>
   <link rel="stylesheet" href="/styles.css">
 ${ui ? uiAssetTags('../$staticUiPreview') : ''}</head>
 <body>

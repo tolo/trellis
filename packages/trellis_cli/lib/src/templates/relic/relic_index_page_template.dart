@@ -21,17 +21,21 @@ String relicIndexPageTemplate() => r'''
           <button type="button" id="counter-decrement" hx-post="/counter/decrement"
                   hx-target="#counter"
                   hx-swap="outerHTML"
+                  hx-include="[name='_csrf']"
                   tl:classappend="${isZero} ? 'disabled' : ''"
                   >-</button>
           <button type="button" id="counter-reset" hx-post="/counter/reset"
                   hx-target="#counter"
                   hx-swap="outerHTML"
+                  hx-include="[name='_csrf']"
                   >Reset</button>
           <button type="button" id="counter-increment" hx-post="/counter/increment"
                   hx-target="#counter"
                   hx-swap="outerHTML"
+                  hx-include="[name='_csrf']"
                   >+</button>
         </div>
+        <input type="hidden" name="_csrf" tl:attr="value=${csrfToken}">
         <p class="counter-hint">
           Each button click sends a POST request. The server renders only
           this counter section and returns it as an HTML fragment.
@@ -46,6 +50,7 @@ String relicIndexPageTemplate() => r'''
           <li><strong>HTMX fragments</strong> — partial page updates without JavaScript</li>
           <li><strong>Template inheritance</strong> — <code>tl:extends</code> + <code>tl:define</code></li>
           <li><strong>Security headers</strong> — via <code>trellisSecurityHeaders()</code></li>
+          <li><strong>CSRF protection</strong> — via <code>trellisCsrf()</code></li>
           <li><strong>Natural templates</strong> — valid HTML, browsable as prototypes</li>
         </ul>
       </section>

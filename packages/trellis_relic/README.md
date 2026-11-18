@@ -1,6 +1,6 @@
 # trellis_relic
 
-Serverpod Relic integration for the [Trellis](https://pub.dev/packages/trellis) template engine — response helpers, HTMX detection, and security headers.
+Serverpod Relic integration for the [Trellis](https://pub.dev/packages/trellis) template engine — response helpers, HTMX detection, security headers, and CSRF protection.
 
 Part of the [Trellis SDK](https://github.com/tolo/trellis).
 
@@ -157,10 +157,37 @@ Set any directive to `null` to omit it. Pass `enableCsp: false` to disable CSP e
 
 ## CSRF Protection
 
-CSRF middleware is **not included** in `trellis_relic`. If you need CSRF protection:
+`trellisCsrf` uses a double-submit cookie pattern with HMAC-SHA256 signing,
+matching `trellisCsrf` in `trellis_shelf`. Attach it at `'/'` like the
+security headers:
 
-- Read the body with `request.readAsString()`, parse it with `Uri.splitQueryString`, and validate the submitted token against a signed cookie.
-- Use a JavaScript fetch API with custom headers instead of form submissions (HTMX supports this via `hx-headers`).
+```dart
+final app = RelicApp()
+  ..use('/', trellisSecurityHeaders())
+  ..use('/', trellisCsrf(secret: Platform.environment['CSRF_SECRET']!))
+  ..get('/', homePage)
+  ..post('/todos', addTodo);
+```
+
+- **GET/HEAD/OPTIONS** set a signed `__csrf` cookie (`HttpOnly`,
+  `SameSite=Strict`) or reuse a valid one.
+- **POST/PUT/DELETE/PATCH** need the token in the `X-CSRF-Token` header or the
+  `_csrf` field of an `application/x-www-form-urlencoded` body; a missing or
+  wrong token gets 403. The middleware buffers the form, so the handler can
+  still call `request.urlEncodedForm()`. A body over Relic's default form limit
+  gets Relic's 413.
+- `cookieName`, `fieldName`, `headerName` and `excludedPaths` (exact request
+  paths) are configurable.
+
+`renderPage`, `renderFragment` and `renderOobFragments` pass the token to the
+template as `csrfToken`; `csrfToken(request)` returns it in a handler. For HTMX,
+put it in a meta tag and copy it into the header from a same-origin script (the
+`trellis create --template relic` scaffold ships one as `static/js/csrf.js`):
+
+```html
+<meta name="csrf-token" tl:attr="content=${csrfToken}" content="">
+<input type="hidden" name="_csrf" tl:attr="value=${csrfToken}">
+```
 
 ---
 

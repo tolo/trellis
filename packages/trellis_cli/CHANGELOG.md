@@ -14,11 +14,9 @@
 - App scaffolds use strict CSP, self-host pinned HTMX and external CSRF scripts, and disable injected indicator styles. `create --htmx-cdn` opts into the pinned CDN origin. Shelf and Dart Frog watch static CSS/JS in dev mode.
 - `trellis create --ui` adds Trellis UI and a Components page to Shelf, Relic and Dart Frog projects.
   Shelf and Dart Frog dev mode materialize gitignored local-preview assets at startup.
-
-
-### Changed
-
 - `trellis create --template relic` writes `relic: ^2.0.0` (was `^1.2.0`). The generated code needs no change for Relic 2.
+- `trellis create --template relic` adds CSRF protection like the Shelf and Dart Frog scaffolds: `trellisCsrf()` with a
+  `CSRF_SECRET` override, the `csrf-token` meta tag, `static/js/csrf.js`, and the counter's hidden `_csrf` field.
 
 ## 0.13.0
 

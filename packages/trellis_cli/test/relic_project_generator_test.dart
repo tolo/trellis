@@ -14,7 +14,7 @@ void main() {
         staticRoot: 'static',
         layout: 'templates/base.html',
         server: 'bin/server.dart',
-        csrf: false,
+        csrf: true,
       );
     });
   }
@@ -39,6 +39,7 @@ void main() {
         'templates/index.html',
         'templates/about.html',
         'static/styles.css',
+        'static/js/csrf.js',
       ];
 
       for (final path in expectedFiles) {
@@ -46,8 +47,8 @@ void main() {
       }
     });
 
-    test('generates exactly 10 files', () {
-      expect(writer.files.length, 10);
+    test('generates exactly 11 files', () {
+      expect(writer.files.length, 11);
     });
 
     test('all files have non-empty content', () {
@@ -113,6 +114,12 @@ void main() {
 
       test('uses trellisSecurityHeaders', () {
         expect(content, contains('trellisSecurityHeaders'));
+      });
+
+      test('uses trellisCsrf with an overridable secret and serves the header script', () {
+        expect(content, contains("..use('/', trellisCsrf(secret: csrfSecret))"));
+        expect(content, contains("Platform.environment['CSRF_SECRET']"));
+        expect(content, contains("..get('/js/csrf.js'"));
       });
 
       test('configures strict CSP for same-origin scripts', () {
@@ -204,9 +211,9 @@ void main() {
         expect(content, contains('hx-push-url="true"'));
       });
 
-      test('does not have CSRF meta tag', () {
-        // No CSRF in the Relic scaffold: trellis_relic has no CSRF middleware
-        expect(content, isNot(contains('csrf-token')));
+      test('has CSRF meta tag and header script', () {
+        expect(content, contains(r'<meta name="csrf-token" tl:attr="content=${csrfToken}" content="">'));
+        expect(content, contains('<script src="/js/csrf.js"></script>'));
       });
 
       test('contains project name', () {
@@ -242,6 +249,11 @@ void main() {
         expect(content, contains('hx-post="/counter/increment"'));
         expect(content, contains('hx-post="/counter/decrement"'));
         expect(content, contains('hx-post="/counter/reset"'));
+      });
+
+      test('counter buttons submit the CSRF field', () {
+        expect(content, contains(r'<input type="hidden" name="_csrf" tl:attr="value=${csrfToken}">'));
+        expect("hx-include=\"[name='_csrf']\"".allMatches(content), hasLength(3));
       });
 
       test('uses tl:text for counter display', () {

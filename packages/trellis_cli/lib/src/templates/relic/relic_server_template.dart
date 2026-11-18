@@ -26,11 +26,17 @@ String relicServerTemplate(String projectName, {bool htmxCdn = false, bool ui = 
     '    loader: ${ui ? 'CompositeLoader([FileSystemLoader(templatesDir, devMode: true), TrellisUiLoader()])' : 'FileSystemLoader(templatesDir, devMode: true)'},\n'
     '    devMode: true,\n'
     '  );\n'
+    '  // CSRF secret: use an environment variable in production.\n'
+    '  // WARNING: Change this default before deploying to production!\n'
+    "  final csrfSecret = Platform.environment['CSRF_SECRET'] ?? '$projectName-dev-secret';\n"
     '  const csp = ${scaffoldStrictCsp(htmxCdn: htmxCdn, ui: ui, indent: '  ')};\n'
     '\n'
     '  final app = RelicApp()\n'
     '    // Security headers — applies to all matched routes.\n'
     "    ..use('/', trellisSecurityHeaders(csp: csp))\n"
+    '    // Double-submit cookie CSRF check on POST/PUT/DELETE/PATCH; templates get\n'
+    '    // the token as csrfToken, and /js/csrf.js sends it on HTMX requests.\n'
+    "    ..use('/', trellisCsrf(secret: csrfSecret))\n"
     '    // Page routes\n'
     "    ..get('/', (request) => homePage(request, engine))\n"
     "    ..get('/about', (request) => aboutPage(request, engine))\n"
@@ -43,6 +49,10 @@ String relicServerTemplate(String projectName, {bool htmxCdn = false, bool ui = 
     "    ..get('/styles.css', (_) async {\n"
     "      final css = await File('\$staticDir/styles.css').readAsString();\n"
     '      return Response.ok(body: Body.fromString(css, mimeType: MimeType.css));\n'
+    '    })\n'
+    "    ..get('/js/csrf.js', (_) async {\n"
+    "      final js = await File('\$staticDir/js/csrf.js').readAsString();\n"
+    '      return Response.ok(body: Body.fromString(js, mimeType: MimeType.javascript));\n'
     '    })'
     '${htmxCdn ? '' : "\n    ..get('/js/htmx.min.js', (_) async {\n      final js = await File('\$staticDir/js/htmx.min.js').readAsString();\n      return Response.ok(body: Body.fromString(js, mimeType: MimeType.javascript));\n    })"}'
     ';\n'

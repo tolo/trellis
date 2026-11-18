@@ -389,8 +389,6 @@ Relic response helpers take `request` and `engine` as the first two arguments:
 > **Engine is always explicit** – unlike Shelf and Dart Frog, where the engine is retrieved from
 > the request context, Relic response helpers require the engine to be passed directly.
 
-> **CSRF not available for Relic** – see [CSRF protection](#csrf-protection) for details.
-
 > **Middleware scope** – Relic middleware only fires for matched routes. A `404` or `405`
 > response does **not** pass through `trellisSecurityHeaders()`. Shelf's `Pipeline`, by contrast,
 > always runs middleware regardless of routing outcome.
@@ -517,9 +515,9 @@ CSRF field renders only when `csrfToken` is non-null:
 </section>
 ```
 
-> `${csrfToken}` is automatically available in Shelf and Dart Frog when `trellisCsrf` middleware
-> is active. For Relic, CSRF is not available – see [CSRF protection](#csrf-protection).
-> Where no token is set (Relic, `excludedPaths` routes), a `strict: true` engine throws on the
+> `${csrfToken}` is automatically available in Shelf, Dart Frog and Relic when `trellisCsrf`
+> middleware is active.
+> Where no token is set (no `trellisCsrf`, `excludedPaths` routes), a `strict: true` engine throws on the
 > undefined `csrfToken` even inside the `tl:if`, so pass `'csrfToken': null` in the context or
 > drop the hidden input; a lenient engine treats the missing variable as null.
 
@@ -620,7 +618,7 @@ trellisSecurityHeaders(
 
 `trellisCsrf` uses a double-submit cookie pattern with HMAC-SHA256 signing.
 
-**Available for:** Shelf and Dart Frog. Not available for Relic; see the note below.
+**Available for:** Shelf, Dart Frog and Relic.
 
 **Shelf setup:**
 
@@ -660,17 +658,20 @@ helpers. Use `${csrfToken}` in a hidden form field:
 </form>
 ```
 
-**Relic – CSRF not available.** `trellis_relic` ships no CSRF middleware. For Relic apps that
-need CSRF protection, options include:
+**Relic setup** – attach it at `'/'`, since Relic middleware fires only for matched routes:
 
-- Read the body with `request.readAsString()`, parse it with `Uri.splitQueryString`, and
-  validate the submitted token against a signed cookie.
-- Submit the token only via HTMX's `hx-headers` as `X-CSRF-Token` (avoids form parsing, but
-  requires HTMX for all state-changing requests).
+```dart
+final app = RelicApp()
+  ..use('/', trellisCsrf(secret: 'your-secret-key'))
+  ..post('/todos', addTodo);
+```
+
+The Relic middleware buffers a urlencoded form body to read `_csrf`, so the handler can still call
+`request.urlEncodedForm()`. Its `excludedPaths` match the full request path.
 
 ### Strict scaffolds and CDN opt-in
 
-`trellis create my_app` self-hosts HTMX, the CSRF listener (Shelf and Dart Frog), and indicator CSS.
+`trellis create my_app` self-hosts HTMX, the CSRF listener, and indicator CSS.
 All three app scaffolds use the strict preset. `trellis create my_app --htmx-cdn` keeps the pinned
 CDN script and allows exactly that origin in `script-src`; it also works with `--template relic`
 and `--template dart_frog`. The flag is rejected for `blog` and `theme`.

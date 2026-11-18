@@ -16,12 +16,14 @@ Run from `packages/trellis_relic/`.
 
 ## Conventions
 
-- **Depends on `trellis` and `relic` only, not on `shelf` or `trellis_shelf`.** There is no DI layer: the engine is
-  passed to each helper explicitly (`dev/architecture/system-architecture.md`, Relic).
+- **Depends on `trellis`, `relic` and `crypto` only, not on `shelf` or `trellis_shelf`.** There is no DI layer: the
+  engine is passed to each helper explicitly (`dev/architecture/system-architecture.md`, Relic).
 - **Targets Relic 2.** Content-Type comes from the `Body` (`mimeType:` or `bodyType:`); one set in response headers
   is dropped on the wire, so a test of what a client receives goes through a real socket.
-- **No CSRF support.** It was left out because Relic 1 had no form body parser; Relic 2 has one
-  (`request.urlEncodedForm()`), but no CSRF middleware is built on it yet. Relic middleware fires only for matched
-  routes, unlike Shelf.
+- **`trellisCsrf` mirrors `trellis_shelf`'s** (cookie format, defaults, 403 body); change behaviour in both. Relic
+  middleware fires only for matched routes, unlike Shelf.
+- **A test that needs a `Request` uses a real one** (`test/_real_request.dart` or a served `RelicApp`): Relic builds
+  requests only through an adapter, and a mock cannot stub the `@internal` context properties the render helpers read
+  for the CSRF token.
 - **`lib/src/htmx_helpers.dart` has near-identical copies in `trellis_shelf` and `trellis_dart_frog`** (ADR-011). Change
   header handling in all three.

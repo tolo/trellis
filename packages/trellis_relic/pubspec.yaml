@@ -2,7 +2,7 @@ name: trellis_relic
 version: 0.13.0
 description: >-
   Serverpod Relic integration for the Trellis template engine — response
-  helpers, HTMX detection, and security headers.
+  helpers, HTMX detection, security headers, and CSRF protection.
 repository: https://github.com/tolo/trellis/tree/main/packages/trellis_relic
 resolution: workspace
 
@@ -10,6 +10,7 @@ environment:
   sdk: ^3.10.0
 
 dependencies:
+  crypto: ^3.0.0
   relic: ^2.0.0
   trellis: ^0.13.0
 

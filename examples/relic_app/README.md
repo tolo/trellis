@@ -66,11 +66,13 @@ Templates use Trellis's `tl:extends` and `tl:define`:
 - `X-XSS-Protection: 0`
 - `Content-Security-Policy` (configurable via `CspBuilder`)
 
-### CSRF Not Included
+### CSRF Protection
 
-CSRF middleware is not provided for Relic in this phase. Relic lacks a built-in form body
-parser, making double-submit cookie validation impractical without manual parsing. This may
-be addressed as Relic matures.
+`trellisCsrf(secret: ...)` sets a signed `__csrf` cookie on safe requests and rejects a
+POST/PUT/DELETE/PATCH with 403 unless it carries the matching token. The render helpers pass
+the token to templates as `csrfToken`: `base.html` puts it in a `csrf-token` meta tag that
+`static/js/csrf.js` copies into the `X-CSRF-Token` header of HTMX requests, and the counter
+also submits it as a hidden `_csrf` field. Set `CSRF_SECRET` in production.
 
 ## Project Structure
 
@@ -81,6 +83,7 @@ templates/base.html    — Base layout with nav and footer
 templates/index.html   — Home page with HTMX counter
 templates/about.html   — About page with Relic pattern docs
 static/styles.css      — Minimal CSS
+static/js/csrf.js      — Sends the CSRF token on HTMX requests
 ```
 
 ## Dependencies

@@ -15,7 +15,7 @@ import 'file_writer.dart';
 ///
 /// Produces a runnable server project demonstrating Relic's explicit
 /// engine-passing pattern (no DI), `trellis_relic` response helpers,
-/// template inheritance, security headers, and HTMX fragment interactions
+/// template inheritance, security headers, CSRF protection, and HTMX fragment interactions
 /// (counter example with increment, decrement, and reset).
 class RelicProjectGenerator {
   /// Creates a generator for a Relic project with [projectName], writing
@@ -57,6 +57,7 @@ class RelicProjectGenerator {
     await writer.writeFile('templates/about.html', relicAboutPageTemplate());
 
     // Static assets
+    await writer.writeFile('static/js/csrf.js', csrfScript);
     await writer.writeFile('static/styles.css', scaffoldStyles(relicStylesTemplate() + htmxIndicatorCss, ui: ui));
     if (!htmxCdn) {
       await writer.writeFile('static/js/htmx.min.js', htmxSource);

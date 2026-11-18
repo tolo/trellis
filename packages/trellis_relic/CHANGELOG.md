@@ -5,6 +5,10 @@
 ### Added
 
 - `CspBuilder.strict()` provides same-origin script/style defaults without changing `CspBuilder()`.
+- `trellisCsrf()` middleware and `csrfToken(request)`: double-submit cookie CSRF protection matching `trellis_shelf`
+  (signed `__csrf` cookie, token from the `X-CSRF-Token` header or a urlencoded `_csrf` field, 403 otherwise).
+  `renderPage`, `renderFragment` and `renderOobFragments` pass the token to templates as `csrfToken`. The form body is
+  buffered, so a handler can still read it. The Relic scaffold (`trellis create --template relic`) and example use it.
 
 
 ### Breaking

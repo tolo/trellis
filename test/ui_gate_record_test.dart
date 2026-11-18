@@ -123,6 +123,45 @@ void main() {
     final record = gateRecord('fixture', {'chrome': changed, 'firefox': passingBrowser});
     expect(((record['items'] as Map)['visual'] as Map)['status'], 'fail');
 
+    final saved = jsonDecode(baseline.readAsStringSync()) as Map<String, Object?>;
+    final chrome = (saved['browsers'] as Map)['chrome'] as Map<String, Object?>;
+    final states = chrome['states'] as Map<String, Object?>;
+    final dark = states['default/dark'];
+    expect(dark, isA<Map<String, Object?>>());
+    states['default/dark'] = true;
+    baseline.writeAsStringSync(encodeCapture(saved));
+    final malformedState = await visual('/pass.html?unsupported-dark');
+    expect(malformedState.status, 'not-run');
+    expect(malformedState.unsupported, isFalse);
+    expect(malformedState.evidence.single, contains('default/dark'));
+    final malformedRecord = gateRecord('fixture', {
+      'chrome': {...passingBrowser, 'visual': malformedState},
+      'firefox': passingBrowser,
+    });
+    expect(malformedRecord['automated'], 'fail');
+    final changedWithMalformedState = await visual('/pass.html?unsupported-dark&defect=late-outline');
+    expect(changedWithMalformedState.status, 'fail');
+    expect(changedWithMalformedState.evidence.join('\n'), contains('default/focus-visible:input #name outlineColor'));
+
+    states['default/dark'] = dark;
+    final darkNodes = (dark as Map<String, Object?>)['nodes'] as List<Object?>;
+    final firstNode = darkNodes.first as Map<String, Object?>;
+    final originalNode = Map<String, Object?>.of(firstNode);
+    firstNode['ox'] = 'bad';
+    baseline.writeAsStringSync(encodeCapture(saved));
+    final malformedNode = await visual('/pass.html?unsupported-dark');
+    expect(malformedNode.status, 'not-run');
+    expect(malformedNode.unsupported, isFalse);
+    expect(malformedNode.evidence.single, contains('default/dark'));
+    darkNodes[0] = originalNode;
+
+    (chrome['tokens'] as Map<String, Object?>)['dark'] = true;
+    baseline.writeAsStringSync(encodeCapture(saved));
+    final malformedTokens = await visual('/pass.html?unsupported-dark');
+    expect(malformedTokens.status, 'not-run');
+    expect(malformedTokens.unsupported, isFalse);
+    expect(malformedTokens.evidence.single, contains('dark tokens'));
+
     baseline.writeAsStringSync('{');
     final unreadable = await visual('/pass.html?unsupported-dark');
     expect(unreadable.status, 'not-run');
@@ -132,7 +171,7 @@ void main() {
     final measured = await visual('/pass.html?unsupported-dark&defect=overlap');
     expect(measured.status, 'fail');
     expect(measured.evidence.join('\n'), contains('default #toast-one overlaps #toast-two'));
-  }, timeout: const Timeout(Duration(minutes: 2)));
+  }, timeout: const Timeout(Duration(minutes: 3)));
 
   test('a visual capture artifact that cannot be written is unavailable', () async {
     if (BrowserProbe.locateChrome() == null) {

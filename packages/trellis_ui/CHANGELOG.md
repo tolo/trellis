@@ -15,4 +15,6 @@
   component's public reference and catalogue entry.
 - Qualification accepts a passing measurement when the other browser records unsupported emulation with a
   reason. A later emulation limit preserves appearance differences already captured against a baseline.
+  Malformed saved states or token samples make an otherwise clean comparison unavailable, even for states the
+  browser could not reach.
   Component and app release checks and the reference generator use the same verdict.

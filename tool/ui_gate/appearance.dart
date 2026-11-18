@@ -195,44 +195,117 @@ Future<Map<String, Object?>> captureAppearance(
 /// A partial capture compares only states and token modes that were reached.
 List<String> compareAppearance(Map<String, Object?> expected, Map<String, Object?> actual, {bool partial = false}) {
   final differences = <String>[];
-  final before = (expected['states'] as Map).cast<String, Object?>(),
-      after = (actual['states'] as Map).cast<String, Object?>();
-  for (final key in {if (!partial) ...before.keys, ...after.keys}) {
-    if (!before.containsKey(key) || !after.containsKey(key)) {
-      differences.add('$key state added/removed');
-      continue;
-    }
-    final left = before[key] as Map, right = after[key] as Map;
-    if (jsonEncode(left['focus']) != jsonEncode(right['focus']))
-      differences.add('$key focus state ${left['focus']} -> ${right['focus']}');
-    Capture capture(Map raw) => Capture(
-      page: '/',
-      width: 1440,
-      scheme: key,
-      doc: (raw['doc'] as Map).cast<String, Object?>(),
-      nodes: (raw['nodes'] as List).map((e) => (e as Map).cast<String, Object?>()).toList(),
-    );
-    differences.addAll(compareCaptures(capture(left), capture(right)).map((d) => '$key ${d.where} ${d.detail}'));
-    final le = left['elements'] as Map, re = right['elements'] as Map;
-    for (final name in {...le.keys, ...re.keys}) {
-      if (!le.containsKey(name) || !re.containsKey(name)) {
-        differences.add('$key $name element added/removed');
+  final invalid = <String>[];
+  final before = expected['states'];
+  final after = (actual['states'] as Map).cast<String, Object?>();
+  if (before is Map<String, Object?>) {
+    for (final key in {...before.keys, ...after.keys}) {
+      final recorded = before.containsKey(key);
+      if (recorded && !_validRecordedState(before[key])) {
+        invalid.add('invalid appearance state $key');
         continue;
       }
-      final ls = (le[name] as Map)['style'] as Map, rs = (re[name] as Map)['style'] as Map;
-      for (final property in {...ls.keys, ...rs.keys}) {
-        if (ls[property] != rs[property])
-          differences.add('$key ${(re[name] as Map)['selector']} $property ${ls[property]} -> ${rs[property]}');
+      if (partial && !after.containsKey(key)) {
+        continue;
+      }
+      if (!recorded || !after.containsKey(key)) {
+        differences.add('$key state added/removed');
+        continue;
+      }
+      final left = before[key] as Map, right = after[key] as Map;
+      if (jsonEncode(left['focus']) != jsonEncode(right['focus'])) {
+        differences.add('$key focus state ${left['focus']} -> ${right['focus']}');
+      }
+      Capture capture(Map raw) => Capture(
+        page: '/',
+        width: 1440,
+        scheme: key,
+        doc: (raw['doc'] as Map).cast<String, Object?>(),
+        nodes: (raw['nodes'] as List).map((e) => (e as Map).cast<String, Object?>()).toList(),
+      );
+      differences.addAll(compareCaptures(capture(left), capture(right)).map((d) => '$key ${d.where} ${d.detail}'));
+      final le = left['elements'] as Map, re = right['elements'] as Map;
+      for (final name in {...le.keys, ...re.keys}) {
+        if (!le.containsKey(name) || !re.containsKey(name)) {
+          differences.add('$key $name element added/removed');
+          continue;
+        }
+        final ls = (le[name] as Map)['style'] as Map, rs = (re[name] as Map)['style'] as Map;
+        for (final property in {...ls.keys, ...rs.keys}) {
+          if (ls[property] != rs[property]) {
+            differences.add('$key ${(re[name] as Map)['selector']} $property ${ls[property]} -> ${rs[property]}');
+          }
+        }
       }
     }
+  } else {
+    invalid.add('invalid appearance states');
   }
-  final lt = expected['tokens'] as Map, rt = actual['tokens'] as Map;
-  for (final mode in {if (!partial) ...lt.keys, ...rt.keys}) {
-    final left = (lt[mode] as Map?) ?? const {}, right = (rt[mode] as Map?) ?? const {};
-    for (final token in {...left.keys, ...right.keys}) {
-      if (left[token] != right[token]) differences.add('token $mode $token ${left[token]} -> ${right[token]}');
+
+  final lt = expected['tokens'];
+  final rt = (actual['tokens'] as Map).cast<String, Object?>();
+  if (lt is Map<String, Object?>) {
+    for (final mode in {...lt.keys, ...rt.keys}) {
+      if (lt.containsKey(mode) && !_validStyleMap(lt[mode])) {
+        invalid.add('invalid appearance $mode tokens');
+        continue;
+      }
+      if (partial && !rt.containsKey(mode)) {
+        continue;
+      }
+      final left = (lt[mode] as Map?) ?? const {}, right = (rt[mode] as Map?) ?? const {};
+      for (final token in {...left.keys, ...right.keys}) {
+        if (left[token] != right[token]) {
+          differences.add('token $mode $token ${left[token]} -> ${right[token]}');
+        }
+      }
     }
+  } else {
+    invalid.add('invalid appearance tokens');
   }
+
   differences.addAll((actual['invariants'] as List).cast<String>());
+  // An invalid saved sample prevents qualification, without erasing differences measured against other samples.
+  if (differences.isEmpty && invalid.isNotEmpty) {
+    throw FormatException(invalid.join('\n'));
+  }
   return differences.toSet().toList()..sort();
 }
+
+bool _validRecordedState(Object? state) {
+  if (state
+      case final Map<String, Object?> sample &&
+          {
+            'doc': {'sw': int _, 'cw': int _, 'sh': int _},
+            'nodes': List<Object?> nodes,
+            'elements': Map<String, Object?> elements,
+          }) {
+    final validFocus = switch (sample['focus']) {
+      {'applicable': true, 'document': bool _, 'target': bool _, 'visible': bool _} => true,
+      null || {'applicable': false} => true,
+      _ => false,
+    };
+    return validFocus &&
+        nodes.every(_validRecordedNode) &&
+        elements.values.every(
+          (element) => switch (element) {
+            {'selector': String _, 'style': final style} => _validStyleMap(style),
+            _ => false,
+          },
+        );
+  }
+  return false;
+}
+
+bool _validRecordedNode(Object? node) {
+  if (node case final Map<String, Object?> fields && {'k': String _, 'b': [int _, int _, int _, int _]}) {
+    return (fields['ox'] ?? 0) is int &&
+        (fields['oy'] ?? 0) is int &&
+        (fields['c'] ?? '') is String &&
+        (fields['i'] ?? '') is String &&
+        const ['s', 'pb', 'pa'].every((key) => fields[key] == null || _validStyleMap(fields[key]));
+  }
+  return false;
+}
+
+bool _validStyleMap(Object? value) => value is Map<String, Object?> && value.values.every((value) => value is String);

@@ -152,7 +152,8 @@ non-focusable elements are marked inapplicable for that state. Real keyboard and
 `--captures <dir>` also writes `<component>.<browser>.json` snapshots. Sync tools may use `captureAppearance` and
 `compareAppearance` in one owned driver run for A/B comparisons; differences name the state, selector/property and
 changed token. If emulation becomes unsupported partway through, the gate still compares completed states against
-any existing browser baseline. Unreadable or malformed baseline evidence makes the check unavailable.
+any existing browser baseline. It retains measured differences. Unreadable or malformed baseline evidence makes
+an otherwise clean comparison unavailable.
 The three spike regressions are replayed by `ui_gate_appearance_test.dart`; all are detected by
 styles or box invariants, so no pixel-diff fallback is currently needed.
 

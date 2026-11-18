@@ -10,6 +10,7 @@ import '../generator/project_generator.dart';
 import '../generator/relic_project_generator.dart';
 import '../generator/theme_example_link.dart';
 import '../generator/theme_project_generator.dart';
+import '../templates/ui_scaffold_template.dart';
 import '../validators.dart';
 
 /// The `trellis create <project-name>` command.
@@ -25,6 +26,8 @@ class CreateCommand extends Command<int> {
   final String? workingDirectory;
 
   CreateCommand({this.workingDirectory}) {
+    argParser.addFlag('ui', negatable: false, help: 'Include Trellis UI and a Components page.');
+    argParser.addFlag('htmx-cdn', negatable: false, help: 'Load HTMX from its pinned CDN instead of self-hosting.');
     argParser.addOption(
       'template',
       abbr: 't',
@@ -71,9 +74,14 @@ class CreateCommand extends Command<int> {
       usageException('Directory "$projectName" already exists.');
     }
 
-    await dir.create();
-
     final template = argResults!['template'] as String;
+    final htmxCdn = argResults!['htmx-cdn'] as bool;
+    final ui = argResults!['ui'] as bool;
+    if (!['htmx', 'relic', 'dart_frog'].contains(template)) {
+      if (ui) usageException('--ui is supported only by the htmx, relic and dart_frog templates.');
+      if (htmxCdn) usageException('--htmx-cdn is supported only by the htmx, relic and dart_frog templates.');
+    }
+    await dir.create();
     final writer = DiskFileWriter(dir.path);
 
     if (template == 'blog') {
@@ -87,7 +95,7 @@ class CreateCommand extends Command<int> {
       stdout.writeln('  trellis build');
       stdout.writeln('  trellis serve');
     } else if (template == 'dart_frog') {
-      final generator = DartFrogProjectGenerator(projectName: projectName, writer: writer);
+      final generator = DartFrogProjectGenerator(projectName: projectName, writer: writer, htmxCdn: htmxCdn, ui: ui);
       await generator.generate();
 
       stdout.writeln('Created Dart Frog project "$projectName".');
@@ -97,7 +105,7 @@ class CreateCommand extends Command<int> {
       stdout.writeln('  dart pub get');
       stdout.writeln('  dart_frog dev');
     } else if (template == 'relic') {
-      final generator = RelicProjectGenerator(projectName: projectName, writer: writer);
+      final generator = RelicProjectGenerator(projectName: projectName, writer: writer, htmxCdn: htmxCdn, ui: ui);
       await generator.generate();
 
       stdout.writeln('Created Relic project "$projectName".');
@@ -119,7 +127,7 @@ class CreateCommand extends Command<int> {
       stdout.writeln('  Edit theme.yaml and customize params');
       stdout.writeln('  Preview: cd example && trellis build && trellis serve');
     } else {
-      final generator = ProjectGenerator(projectName: projectName, writer: writer);
+      final generator = ProjectGenerator(projectName: projectName, writer: writer, htmxCdn: htmxCdn, ui: ui);
       await generator.generate();
 
       stdout.writeln('Created project "$projectName".');
@@ -130,6 +138,11 @@ class CreateCommand extends Command<int> {
       stdout.writeln('  dart run bin/server.dart');
     }
 
+    if (ui) {
+      final previewArgs = template == 'dart_frog' ? ' $publicUiPreview' : '';
+      stdout.writeln('  Open /ui to see Trellis UI components.');
+      stdout.writeln('  Preview templates from disk: dart run trellis_ui:materialize$previewArgs');
+    }
     return 0;
   }
 }

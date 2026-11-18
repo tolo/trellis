@@ -125,9 +125,9 @@ jobs:
       - name: Check formatting
         run: melos run --no-select format:check
 
-      # Excludes @Tags(['e2e']); the e2e job covers those.
+      # E2E runs below; ui-gate runs locally on the baseline-authoring host.
       - name: Unit tests
-        run: melos exec --dir-exists=test -- dart test --exclude-tags=e2e
+        run: melos exec --dir-exists=test -- dart test --exclude-tags=e2e --exclude-tags=ui-gate
 
       # The workspace ROOT is not a melos member, so `melos exec` skips it —
       # yet it carries the release-distribution contract test, the docs-site
@@ -135,7 +135,7 @@ jobs:
       # rendered suites (theme_contract_test, visual_baseline_test). That is
       # exactly the pipeline TD-010 said was ungated, so cover it here.
       #
-      # `visual` excluded on purpose. test/visual_baseline_test.dart is a golden-file
+      # `visual` and `ui-gate` are excluded on purpose (local ADR-012 gates). test/visual_baseline_test.dart is a golden-file
       # layout check whose baselines encode font metrics, so a recording is only valid
       # on the exact Chrome build and font set that made it. Runner images drift in
       # both: recordings made in an ubuntu:24.04 container with Chrome 152 failed here
@@ -148,7 +148,7 @@ jobs:
       # the tier costs ~10s of this step (124s -> 114s). The step's real cost is the
       # rendered sweeps - site reflow and the theme masthead/anchor checks. See TD-035.
       - name: Root workspace tests
-        run: dart test --exclude-tags=visual
+        run: dart test --exclude-tags=visual --exclude-tags=ui-gate
 
       - name: Check root formatting
         run: dart format --output=none --set-exit-if-changed tool test
@@ -186,4 +186,4 @@ jobs:
       # package where nothing carries the tag, and only trellis_cli has E2E
       # tests. Re-running the unit tests here is cheap next to the E2E cost.
       - name: Full suite
-        run: melos exec --dir-exists=test -- dart test
+        run: melos exec --dir-exists=test -- dart test --exclude-tags=ui-gate

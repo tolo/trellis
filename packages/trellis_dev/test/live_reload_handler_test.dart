@@ -62,6 +62,17 @@ void main() {
       expect(response.context['shelf.io.buffer_output'], isFalse);
     });
 
+    test('flushes SSE connection with a comment before any file change', () async {
+      final dir = Directory.systemTemp.createTempSync('trellis_ready_');
+      final loader = FileSystemLoader(dir.path, devMode: true);
+      addTearDown(() async {
+        await loader.close();
+        dir.deleteSync(recursive: true);
+      });
+      final response = await liveReloadHandler(loader)(Request('GET', Uri.parse('http://localhost/_dev/reload')));
+      expect(utf8.decode(await response.read().first.timeout(const Duration(seconds: 1))), ': connected\n\n');
+    });
+
     test('emits SSE frame on file change', () async {
       final dir = Directory.systemTemp.createTempSync('trellis_dev_test_');
       final loader = FileSystemLoader(dir.path, devMode: true);
@@ -76,7 +87,9 @@ void main() {
 
       // Listen for the first SSE frame.
       final completer = Completer<String>();
-      final subscription = response.read().listen((List<int> bytes) {
+      final subscription = response.read().where((bytes) => utf8.decode(bytes).startsWith('event: reload')).listen((
+        List<int> bytes,
+      ) {
         if (!completer.isCompleted) {
           completer.complete(utf8.decode(bytes));
         }
@@ -105,7 +118,9 @@ void main() {
       final response = await handler(request);
 
       final frames = <String>[];
-      final subscription = response.read().listen((List<int> bytes) {
+      final subscription = response.read().where((bytes) => utf8.decode(bytes).startsWith('event: reload')).listen((
+        List<int> bytes,
+      ) {
         frames.add(utf8.decode(bytes));
       });
 
@@ -141,10 +156,14 @@ void main() {
       final completer1 = Completer<String>();
       final completer2 = Completer<String>();
 
-      final sub1 = response1.read().listen((List<int> bytes) {
+      final sub1 = response1.read().where((bytes) => utf8.decode(bytes).startsWith('event: reload')).listen((
+        List<int> bytes,
+      ) {
         if (!completer1.isCompleted) completer1.complete(utf8.decode(bytes));
       });
-      final sub2 = response2.read().listen((List<int> bytes) {
+      final sub2 = response2.read().where((bytes) => utf8.decode(bytes).startsWith('event: reload')).listen((
+        List<int> bytes,
+      ) {
         if (!completer2.isCompleted) completer2.complete(utf8.decode(bytes));
       });
 

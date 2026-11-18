@@ -2,6 +2,16 @@
 
 ## 0.14.0
 
+### Added
+
+- Site and theme manifests can opt into named `SiteSource` factories with `uses`. Source fragments
+  resolve behind site and theme templates in pages and shortcodes. Source assets are copied before
+  theme and site static files, and conflicting source paths fail the build. Post-Markdown shortcodes
+  in builds with sources can pass structured page front matter to templates.
+
+- Search-enabled builds write `trellis-search.js` beside the index when pages qualify. Arbor, Folio,
+  and Lattice use it with the suite combobox for same-origin, all-term search.
+
 ### Fixed
 
 - **Feeds honour `pathPrefix`.** A feed's self link, site link and `<id>` (site-wide and per-section, Atom and RSS)

@@ -1,0 +1,22 @@
+<tl-dialog tl:fragment="dialog(id, title, description, open, ...attrs)">
+  <span data-slot="dialog-trigger"><tl:block tl:slot="trigger"></tl:block></span>
+  <dialog data-slot="dialog-content" class="trellis-dialog-content" aria-modal="true" data-closed
+    tl:attr="id=${id}, aria-labelledby=${id + '-title'}, aria-describedby=${id + '-description'}, open=${open ? '' : null}"
+    tl:attrs="${attrs}">
+    <div data-slot="dialog-header" class="trellis-dialog-header">
+      <h2 data-slot="dialog-title" class="trellis-dialog-title trellis-font-heading"
+        tl:attr="id=${id + '-title'}" tl:text="${title} ?: 'Dialog'">Dialog</h2>
+      <p data-slot="dialog-description" class="trellis-dialog-description"
+        tl:attr="id=${id + '-description'}" tl:text="${description}">Description</p>
+    </div>
+    <tl:block tl:slot=""></tl:block>
+    <div data-slot="dialog-footer" class="trellis-dialog-footer"><tl:block tl:slot="footer"></tl:block></div>
+    <button tl:replace="~{trellis-ui/button :: button('ghost', 'icon-sm')}" data-slot="dialog-close"
+      class="trellis-dialog-close" aria-label="Close" data-dialog-close>
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m18 6-12 12"/><path d="m6 6 12 12"/>
+      </svg>
+    </button>
+  </dialog>
+</tl-dialog>

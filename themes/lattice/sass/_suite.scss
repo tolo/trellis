@@ -1,0 +1,44 @@
+.search-shell,
+.mode-toggle {
+  --primary: var(--leaf);
+  --primary-foreground: var(--on-leaf);
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --border: var(--lattice);
+  --input: var(--lattice);
+  --ring: var(--leaf);
+  --accent: var(--tint);
+  --accent-foreground: var(--ink);
+  --popover: var(--card);
+  --popover-foreground: var(--ink);
+  --muted-foreground: var(--ink-soft);
+  // Lattice's own radius already supplies the inherited suite radius.
+}
+
+// Keep the legacy field-to-navigation gap inside the shell.
+.search-shell { padding-block-end: 18px; }
+.search-shell .trellis-combobox-input { block-size: 33px; }
+.search-shell input[role='combobox'] { block-size: 100%; }
+// Keep the suite add-on's negative end margin from widening the docs column.
+.search-shell .trellis-input-group-addon { margin-right: 0; padding-block: 0; }
+// Keep article text from showing through popup options.
+.search-shell [popover] { background-color: var(--popover); }
+
+// Fit the suite's 44px touch targets plus the input group border.
+@media (pointer: coarse) {
+  .search-shell .trellis-combobox-input { block-size: 46px; }
+}
+
+// The sidebar can clip a ring outside the search field.
+.search-shell :is(input[role='combobox'], .trellis-combobox-trigger):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+.search-shell .trellis-combobox-input:has(input:focus-visible) { box-shadow: none; }
+
+// The button label color also contrasts with its primary fill.
+.mode-toggle:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}

@@ -71,8 +71,8 @@ Adds configurable security headers to all responses:
 
 // Customize CSP
 .addMiddleware(trellisSecurityHeaders(
-  csp: CspBuilder(
-    scriptSrc: "'self' 'unsafe-inline'",
+  csp: CspBuilder.strict(
+    scriptSrc: "'self'",
     connectSrc: "'self' ws:",
   ),
 ))
@@ -84,6 +84,15 @@ Adds configurable security headers to all responses:
 ## HTMX Helpers
 
 Convenience functions for reading HTMX request headers:
+
+`CspBuilder.strict()` sets `script-src 'self'; style-src 'self'` while preserving the other
+security defaults. Use it with `trellisSecurityHeaders(csp: const CspBuilder.strict())`.
+The plain `CspBuilder()` retains its existing inline-style allowance for compatibility.
+Under the strict preset, inline `<script>` bodies, `<style>` elements, `style="…"` attributes
+and `on*` handlers are blocked. Move them to same-origin JS/CSS files; CSSOM property writes
+(such as `element.style.top`) remain allowed by browsers. HTMX's injected indicator style
+must be disabled with the `htmx-config` meta option `includeIndicatorStyles: false`, with
+indicator rules in your stylesheet. CLI app scaffolds do this automatically.
 
 ```dart
 if (isHtmxRequest(request)) {

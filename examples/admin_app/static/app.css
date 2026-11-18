@@ -1,0 +1,24 @@
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font: 1rem/1.5 system-ui, sans-serif;
+}
+
+.admin-page { padding-block: 2rem; }
+.admin-page h1 { margin: 0; }
+.admin-list > p { margin-block: 0; }
+.admin-tabs, .admin-panel, .admin-list { min-inline-size: 0; }
+.admin-list, .admin-form { display: grid; gap: 1rem; }
+.admin-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem; }
+.admin-filters > div:first-of-type { flex: 1 1 14rem; }
+.admin-control { display: grid; gap: 0.5rem; }
+.admin-table { min-inline-size: 42rem; }
+.admin-summary { display: flex; flex-wrap: wrap; gap: 2rem; margin: 0; }
+.admin-summary dd { margin-inline-start: 0; font-size: 1.5rem; font-weight: 600; }
+
+@media (max-width: 36rem) {
+  .admin-page { padding-block: 1rem; }
+  .admin-panel > .trellis-card-header { grid-template-columns: 1fr; }
+  .admin-panel > .trellis-card-header > .trellis-card-action { grid-column: 1; grid-row: auto; }
+}

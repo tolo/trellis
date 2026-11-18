@@ -35,12 +35,23 @@ void requireChromeInCi(String what) {
   }
 }
 
+/// Shared load-time CSP capture, also usable as a Firefox BiDi preload.
+/// Deliberate policy controls are kept separate from page violations.
+const cspViolationPreload = r'''(() => {
+  window.__trellisCsp = {violations:[], controls:[]};
+  document.addEventListener('securitypolicyviolation', e => {
+    const reports = e.target?.id === 'ui-gate-policy-control' ? window.__trellisCsp.controls : window.__trellisCsp.violations;
+    reports.push({directive:e.effectiveDirective, source:e.sourceFile.replace(location.origin,''),
+      blocked:e.blockedURI.replace(location.origin,''), line:e.lineNumber, sample:e.sample});
+  });
+})()''';
+
 /// A headless Chrome process driven over the DevTools protocol.
 ///
 /// One instance per suite: process startup dominates the cost of a measurement,
 /// while [evaluate] reuses a single tab and re-navigates.
 class BrowserProbe {
-  BrowserProbe._(this._process, this._socket, this._profile) {
+  BrowserProbe._(this._process, this._socket, this._profile, this._output) {
     _socket.listen(
       _dispatch,
       onDone: () {
@@ -55,11 +66,42 @@ class BrowserProbe {
   final Process _process;
   final WebSocket _socket;
   final Directory _profile;
+  final List<StreamSubscription<Object?>> _output;
   final _pending = <int, Completer<Map<String, dynamic>>>{};
   final _events = StreamController<Map<String, dynamic>>.broadcast();
   var _nextId = 0;
   String? _sessionId;
-  String? _targetId;
+
+  /// Events from the attached page, for request and console observation.
+  Stream<Map<String, dynamic>> get events => _events.stream.where((event) => event['sessionId'] == _sessionId);
+
+  /// Sends a page-scoped command through the shared DevTools connection.
+  ///
+  /// Gate input and instrumentation reuse this lifecycle instead of launching
+  /// a second browser client with different profile and shutdown behavior.
+  Future<Map<String, dynamic>> command(String method, [Map<String, Object?> params = const {}]) =>
+      _send(method, params, session: true);
+
+  /// Arms instrumentation before any script in the next document executes.
+  Future<void> preloadScript(String script) async {
+    await command('Page.addScriptToEvaluateOnNewDocument', {'source': script});
+  }
+
+  /// Captures violations from the first page script, before the next navigation.
+  Future<void> captureSecurityPolicyViolations() => preloadScript(cspViolationPreload);
+
+  /// Structured CSP violations from the current document, excluding controls.
+  Future<List<Map<String, Object?>>> securityPolicyViolations() async =>
+      (await evaluateHere('window.__trellisCsp?.violations || []') as List)
+          .map((item) => (item as Map).cast<String, Object?>())
+          .toList();
+
+  /// Native listeners on an object, including ones installed by page scripts.
+  Future<int> listenerCount([String expression = 'document']) async {
+    final object = await command('Runtime.evaluate', {'expression': expression});
+    final result = await command('DOMDebugger.getEventListeners', {'objectId': (object['result'] as Map)['objectId']});
+    return (result['listeners'] as List).length;
+  }
 
   /// Absolute path of a Chrome/Chromium binary, or null when none is installed.
   ///
@@ -92,48 +134,64 @@ class BrowserProbe {
     final executable = locateChrome();
     if (executable == null) throw StateError('no Chrome/Chromium binary found');
     final profile = Directory.systemTemp.createTempSync('trellis_probe_profile_');
-    final process = await Process.start(executable, [
-      '--headless=new',
-      '--remote-debugging-port=0',
-      '--user-data-dir=${profile.path}',
-      // Scrollbars would eat a browser-specific slice of clientWidth and make
-      // an exact width comparison depend on the platform's scrollbar policy.
-      '--hide-scrollbars',
-      '--no-first-run',
-      '--no-default-browser-check',
-      '--no-sandbox',
-      '--disable-gpu',
-      '--disable-extensions',
-      '--disable-sync',
-      '--disable-background-networking',
-      '--use-mock-keychain',
-      'about:blank',
-    ]);
-
-    final endpoint = Completer<String>();
-    process.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
-      final match = RegExp(r'ws://\S+').firstMatch(line);
-      if (match != null && !endpoint.isCompleted) endpoint.complete(match[0]);
-    });
-    process.stdout.drain<void>();
-
-    final String url;
+    Process? process;
+    BrowserProbe? probe;
+    final output = <StreamSubscription<Object?>>[];
     try {
-      url = await endpoint.future.timeout(const Duration(seconds: 30));
-    } on TimeoutException {
-      process.kill(ProcessSignal.sigkill);
-      profile.deleteSync(recursive: true);
+      process = await Process.start(executable, [
+        '--headless=new',
+        '--remote-debugging-port=0',
+        '--user-data-dir=${profile.path}',
+        // Scrollbars would eat a browser-specific slice of clientWidth and make
+        // an exact width comparison depend on the platform's scrollbar policy.
+        '--hide-scrollbars',
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--no-sandbox',
+        '--disable-gpu',
+        '--disable-extensions',
+        '--disable-sync',
+        '--disable-background-networking',
+        '--use-mock-keychain',
+        'about:blank',
+      ]);
+
+      final endpoint = Completer<String>();
+      output.add(
+        process.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
+          final match = RegExp(r'ws://\S+').firstMatch(line);
+          if (match != null && !endpoint.isCompleted) {
+            endpoint.complete(match[0]);
+          }
+        }),
+      );
+      output.add(process.stdout.listen((_) {}));
+
+      final url = await endpoint.future.timeout(const Duration(seconds: 30));
+      probe = BrowserProbe._(process, await WebSocket.connect(url), profile, output);
+      await probe._attach();
+      return probe;
+    } on Object {
+      if (probe != null) {
+        await probe.close();
+      } else {
+        process?.kill(ProcessSignal.sigkill);
+        if (process != null) {
+          await process.exitCode;
+        }
+        for (final subscription in output) {
+          await subscription.cancel();
+        }
+        await _removeProfile(profile);
+      }
       rethrow;
     }
-    final probe = BrowserProbe._(process, await WebSocket.connect(url), profile);
-    await probe._attach();
-    return probe;
   }
 
   Future<void> _attach() async {
     final target = await _send('Target.createTarget', {'url': 'about:blank'});
-    _targetId = target['targetId'] as String;
-    final attached = await _send('Target.attachToTarget', {'targetId': _targetId, 'flatten': true});
+    final targetId = target['targetId'] as String;
+    final attached = await _send('Target.attachToTarget', {'targetId': targetId, 'flatten': true});
     _sessionId = attached['sessionId'] as String;
     await _send('Page.enable', const {}, session: true);
   }
@@ -260,15 +318,27 @@ class BrowserProbe {
   /// Shut the browser down and remove its throwaway profile.
   Future<void> close() async {
     try {
-      if (_targetId != null) await _send('Target.closeTarget', {'targetId': _targetId});
+      // Chrome can close the connection before acknowledging Browser.close.
+      // Process exit, not that acknowledgement, determines shutdown completion.
+      unawaited(_send('Browser.close', const {}).then<void>((_) {}, onError: (Object _) {}));
     } on Object {
-      // The browser may already be gone; the kill below is the real guarantee.
+      // The transport may already be closed; the process deadline still applies.
     }
-    await _socket.close();
-    await _events.close();
-    _process.kill(ProcessSignal.sigkill);
-    await _process.exitCode;
-    await _removeProfile();
+    try {
+      await _process.exitCode.timeout(const Duration(seconds: 5));
+    } on TimeoutException {
+      _process.kill(ProcessSignal.sigkill);
+      await _process.exitCode;
+    } finally {
+      // Descendants can retain these writers after the main browser exits.
+      // Release our readers rather than waiting for an EOF they may never send.
+      for (final subscription in _output) {
+        await subscription.cancel();
+      }
+      await _socket.close();
+      await _events.close();
+      await _removeProfile(_profile);
+    }
   }
 
   /// Delete the throwaway profile, tolerating Chrome outliving its own process.
@@ -283,17 +353,19 @@ class BrowserProbe {
   ///
   /// The profile is a temp directory, so not removing it is litter the OS
   /// reaps, not a broken assertion: retry briefly, then say so and move on.
-  Future<void> _removeProfile() async {
+  static Future<void> _removeProfile(Directory profile) async {
     for (var attempt = 0; attempt < 20; attempt++) {
-      if (!_profile.existsSync()) return;
+      if (!profile.existsSync()) {
+        return;
+      }
       try {
-        _profile.deleteSync(recursive: true);
+        profile.deleteSync(recursive: true);
         return;
       } on FileSystemException {
         await Future<void>.delayed(const Duration(milliseconds: 50));
       }
     }
-    stderr.writeln('browser probe: ${_profile.path} still busy after the browser exited; left for the OS to reap');
+    stderr.writeln('browser probe: ${profile.path} still busy after the browser exited; left for the OS to reap');
   }
 
   void _dispatch(Object? data) {
@@ -329,14 +401,20 @@ class BrowserProbe {
 /// only be laid out correctly over HTTP. Binds an ephemeral loopback port so
 /// concurrent suites never collide.
 class StaticSiteServer {
-  StaticSiteServer._(this._server, this._root);
+  StaticSiteServer._(this._server, this._root, this._headers, this._statusCodes);
 
   final HttpServer _server;
   final Directory _root;
+  final Map<String, String> _headers;
+  final Map<String, int> _statusCodes;
 
-  static Future<StaticSiteServer> serve(Directory root) async {
+  static Future<StaticSiteServer> serve(
+    Directory root, {
+    Map<String, String> headers = const {},
+    Map<String, int> statusCodes = const {},
+  }) async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    final instance = StaticSiteServer._(server, root);
+    final instance = StaticSiteServer._(server, root, Map.unmodifiable(headers), Map.unmodifiable(statusCodes));
     unawaited(instance._listen());
     return instance;
   }
@@ -348,6 +426,12 @@ class StaticSiteServer {
 
   Future<void> _listen() async {
     await for (final request in _server) {
+      _headers.forEach(request.response.headers.set);
+      if (_statusCodes[request.uri.path] case final status?) {
+        request.response.statusCode = status;
+        await request.response.close();
+        continue;
+      }
       final relative = Uri.decodeComponent(request.uri.path).replaceFirst(RegExp('^/'), '');
       var file = File('${_root.path}/$relative');
       if (relative.isEmpty || file.statSync().type == FileSystemEntityType.directory) {

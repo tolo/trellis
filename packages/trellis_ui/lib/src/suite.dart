@@ -5,6 +5,11 @@ import 'package:trellis/trellis.dart';
 
 import 'embedded_assets.g.dart';
 
+const _assetPrefix = '/trellis-ui/';
+
+/// Root-absolute URL paths of the embedded assets served by [trellisUiRespond].
+final List<String> trellisUiAssetPaths = List.unmodifiable([for (final name in assetBase64.keys) '$_assetPrefix$name']);
+
 /// Loads embedded suite templates through the application's own engine.
 ///
 /// Use `tl:replace` so the host's attributes and anonymous slot reach the root.
@@ -41,9 +46,8 @@ final class TrellisUiResponse {
 /// A matching quoted digest in [ifNoneMatch] returns 304. Lists and the wildcard
 /// use the HTTP If-None-Match semantics, including weak validators on GET.
 TrellisUiResponse? trellisUiRespond(String path, {String? ifNoneMatch}) {
-  const prefix = '/trellis-ui/';
-  if (!path.startsWith(prefix)) return null;
-  final name = path.substring(prefix.length);
+  if (!path.startsWith(_assetPrefix)) return null;
+  final name = path.substring(_assetPrefix.length);
   final encoded = assetBase64[name];
   if (encoded == null) return null;
   final etag = '"${assetDigests[name]}"';

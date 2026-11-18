@@ -138,9 +138,18 @@ Handler middleware(Handler handler) {
 
 Custom CSP:
 
+`CspBuilder.strict()` sets `script-src 'self'; style-src 'self'` while preserving the other
+security defaults. Use it with `trellisSecurityHeaders(csp: const CspBuilder.strict())`.
+The plain `CspBuilder()` retains its existing inline-style allowance for compatibility.
+Under the strict preset, inline `<script>` bodies, `<style>` elements, `style="…"` attributes
+and `on*` handlers are blocked. Move them to same-origin JS/CSS files; CSSOM property writes
+(such as `element.style.top`) remain allowed by browsers. HTMX's injected indicator style
+must be disabled with the `htmx-config` meta option `includeIndicatorStyles: false`, with
+indicator rules in your stylesheet. CLI app scaffolds do this automatically.
+
 ```dart
 trellisSecurityHeaders(
-  csp: CspBuilder(
+  csp: CspBuilder.strict(
     scriptSrc: "'self' https://cdn.jsdelivr.net",
     connectSrc: "'self' ws:",
   ),
@@ -194,7 +203,7 @@ final _engine = Trellis(loader: _loader, devMode: true);
 Handler middleware(Handler handler) {
   return handler
       .use(trellisProvider(_engine))
-      .use(fromShelfMiddleware(devMiddleware(_loader)));
+      .use(fromShelfMiddleware(devMiddleware(_loader, staticDirectory: 'public')));
 }
 ```
 

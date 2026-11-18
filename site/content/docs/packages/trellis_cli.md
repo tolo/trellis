@@ -117,6 +117,7 @@ Generates a new Trellis project from a starter template.
 Options:
 
 - `--template` (`-t`): the project template to use.
+- `--ui`: add Trellis UI and a Components page to an app scaffold.
 
 Available templates:
 
@@ -127,6 +128,26 @@ Available templates:
 | `dart_frog` | Dart Frog + HTMX counter app with file-based routing, CSRF, security headers, and hot reload |
 | `relic` | Relic + HTMX counter app with explicit-engine wiring and security headers |
 | `theme` | Trellis theme scaffold with `theme.yaml`, layouts, SASS architecture, and example preview site |
+
+App templates (`htmx`, `relic`, `dart_frog`) self-host the pinned HTMX build under `/js/htmx.min.js`
+and use `CspBuilder.strict()`. Shelf and Dart Frog also write `/js/csrf.js`. The layout disables
+HTMX's injected indicator styles; the rules ship in `styles.css`. Generated markup has no inline
+scripts or styles. Shelf and Dart Frog dev mode also reloads on CSS/JS edits in `static/` or `public/`.
+
+Use `trellis create my_app --template htmx --htmx-cdn` to opt into the SRI-pinned CDN build.
+The generated `script-src` allows only `'self'` plus the pinned CDN origin; no local htmx file is
+written. `--htmx-cdn` is also accepted by `relic` and `dart_frog`, and rejected by `blog` and `theme`.
+
+Run `trellis create my_app --ui` to generate a Components page at `/ui`. The
+option works with the `htmx`, `relic`, and `dart_frog` templates and combines
+with `--htmx-cdn`. Follow the printed `dart pub get` and run commands, then open
+Components in the app's navigation.
+
+For previews from disk, run `dart run trellis_ui:materialize` from the project
+root. Shelf and Relic use `static/trellis-ui`. In a Dart Frog project, run
+`dart run trellis_ui:materialize public/trellis-ui`. Shelf started with `--dev` and
+Dart Frog started with `DEV=true` refresh these gitignored files at startup.
+Relic writes previews on demand.
 
 The `htmx`, `dart_frog`, and `relic` templates each generate a ready-to-run
 server app: server or route wiring, base and page layouts with HTMX
@@ -143,6 +164,11 @@ project files). The `theme` template scaffolds `theme.yaml`, `layouts/`,
 Builds a static site from the current directory. Reads `trellis_site.yaml` for
 configuration, runs the full [trellis_site](/docs/packages/trellis_site/)
 pipeline, and compiles any SASS/SCSS files in the static directory.
+
+The CLI embeds the [Trellis UI suite](/docs/ui/) for builds that specify
+`uses: [trellis_ui]` in the site config or theme manifest. Those builds can
+render the embedded fragments and publish their same-origin assets under
+`trellis-ui/`. Layouts link the assets wherever they use the components.
 
 Options:
 

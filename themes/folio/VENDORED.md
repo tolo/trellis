@@ -2,13 +2,12 @@
 
 Last reviewed: 2026-08-27.
 
-All runtime assets are committed and served same-origin. No CDN, npm, or client-side syntax highlighter is used.
+Folio serves runtime assets from the site's origin.
 
 ## First-party scripts
 
-- `static/js/folio.js` – persistent auto-skin edition switch; authored for Folio.
-- `static/js/search.js` – progressive search over the generated same-origin index; inherited from Arbor's first-party
-  code.
+- `static/js/folio.js` handles the persistent auto-skin edition switch.
+- The build emits `trellis-search.js` beside the index and copies the embedded suite assets for search and the reader toggle.
 
 ## Fonts
 

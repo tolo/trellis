@@ -1,0 +1,10 @@
+<div class="ui-reference-preview">
+  <div tl:replace="~{trellis-ui/alert-dialog :: alertDialog('reference-delete', 'Delete project?', 'The project and its settings will be removed.', false)}">
+    <tl:block tl:slot="trigger">
+      <button tl:replace="~{trellis-ui/button :: button('destructive')}">Delete project</button>
+    </tl:block>
+    <tl:block tl:slot="action">
+      <button tl:replace="~{trellis-ui/button :: button('destructive')}">Confirm deletion</button>
+    </tl:block>
+  </div>
+</div>

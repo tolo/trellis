@@ -1,9 +1,11 @@
 import '../../version.dart';
 
+import '../ui_scaffold_template.dart';
+
 /// Generates the pubspec.yaml content for a Dart Frog + Trellis project.
 ///
 /// Trellis packages are constrained to the CLI's own [cliVersion]: under lockstep (ADR-009) that is the SDK version.
-String dartFrogPubspecTemplate(String projectName) =>
+String dartFrogPubspecTemplate(String projectName, {bool ui = false}) =>
     '''
 name: $projectName
 version: 0.1.0
@@ -17,7 +19,7 @@ dependencies:
   trellis: ^$cliVersion
   trellis_dart_frog: ^$cliVersion
   trellis_dev: ^$cliVersion
-
+${ui ? uiDependency : ''}
 dev_dependencies:
   lints: ^6.0.0
   test: ^1.25.0

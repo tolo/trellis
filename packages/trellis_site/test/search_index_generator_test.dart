@@ -4,6 +4,7 @@ import 'dart:isolate';
 
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+import 'package:trellis_site/src/search_client.dart';
 import 'package:trellis_site/trellis_site.dart';
 
 /// Creates a minimal [Page] for search index tests.
@@ -536,10 +537,10 @@ void main() {
       expect(gen.writeToOutput([draft], tempDir.path), isFalse);
     });
 
-    test('no file written when no pages qualify', () {
+    test('neither file written when no pages qualify', () {
       const gen = SearchIndexGenerator(SearchConfig(enabled: true));
       gen.writeToOutput([], tempDir.path);
-      expect(File(p.join(tempDir.path, 'search-index.json')).existsSync(), isFalse);
+      expect(tempDir.listSync(), isEmpty);
     });
 
     test('returns true and writes file when pages qualify', () {
@@ -564,6 +565,34 @@ void main() {
       ], tempDir.path);
       expect(File(p.join(tempDir.path, 'index.json')).existsSync(), isTrue);
       expect(File(p.join(tempDir.path, 'search-index.json')).existsSync(), isFalse);
+    });
+
+    test('rejects an index name that would overwrite the client', () {
+      const gen = SearchIndexGenerator(SearchConfig(enabled: true, output: 'catalogue/trellis-search.js'));
+      expect(() => gen.writeToOutput([makePage()], tempDir.path), throwsArgumentError);
+      expect(tempDir.listSync(), isEmpty);
+    });
+
+    test('preserves an incompatible client file and leaves the index unwritten', () {
+      const gen = SearchIndexGenerator(SearchConfig(enabled: true, output: 'assets/index.json'));
+      final assets = Directory(p.join(tempDir.path, 'assets'))..createSync();
+      final client = File(p.join(assets.path, 'trellis-search.js'))..writeAsStringSync('// Site client');
+
+      expect(
+        () => gen.writeToOutput([makePage()], tempDir.path),
+        throwsA(isA<FileSystemException>().having((error) => error.path, 'path', client.path)),
+      );
+      expect(client.readAsStringSync(), '// Site client');
+      expect(File(p.join(assets.path, 'index.json')).existsSync(), isFalse);
+    });
+
+    test('can refresh an index beside an identical shared client', () {
+      const gen = SearchIndexGenerator(SearchConfig(enabled: true));
+      expect(gen.writeToOutput([makePage()], tempDir.path), isTrue);
+      expect(gen.writeToOutput([makePage(url: '/new/')], tempDir.path), isTrue);
+
+      expect(File(p.join(tempDir.path, 'search-index.json')).readAsStringSync(), contains('/new/'));
+      expect(File(p.join(tempDir.path, 'trellis-search.js')).readAsBytesSync(), utf8.encode(searchClient));
     });
 
     test('written file contains valid JSON', () {
@@ -604,7 +633,7 @@ void main() {
   // Build pipeline integration
   // ──────────────────────────────────────────────────
   group('search index integration', () {
-    SiteConfig isolatedSearchConfig({required bool enabled}) {
+    SiteConfig isolatedSearchConfig({required bool enabled, String output = 'search-index.json'}) {
       final outputDir = Directory.systemTemp.createTempSync('search_integ_').path;
       addTearDown(() => Directory(outputDir).deleteSync(recursive: true));
       return SiteConfig(
@@ -613,7 +642,7 @@ void main() {
         layoutsDir: p.join(buildSiteDir, 'layouts'),
         staticDir: p.join(buildSiteDir, '_no_static'),
         outputDir: outputDir,
-        searchConfig: SearchConfig(enabled: enabled),
+        searchConfig: SearchConfig(enabled: enabled, output: output),
       );
     }
 
@@ -623,10 +652,12 @@ void main() {
       expect(File(p.join(config.outputDir, 'search-index.json')).existsSync(), isTrue);
     });
 
-    test('search-index.json not generated when disabled', () async {
+    test('writes neither file when search is disabled', () async {
       final config = isolatedSearchConfig(enabled: false);
-      await TrellisSite(config).build();
+      final result = await TrellisSite(config).build();
       expect(File(p.join(config.outputDir, 'search-index.json')).existsSync(), isFalse);
+      expect(File(p.join(config.outputDir, 'trellis-search.js')).existsSync(), isFalse);
+      expect(result.staticFileCount, 0);
     });
 
     test('search-index.json contains valid JSON array', () async {
@@ -651,11 +682,14 @@ void main() {
       expect(content, isNot(contains('Draft Page')));
     });
 
-    test('search index counted in BuildResult.staticFileCount', () async {
-      final config = isolatedSearchConfig(enabled: true);
+    test('writes the client beside the index and counts it', () async {
+      final config = isolatedSearchConfig(enabled: true, output: 'assets/content.json');
       final result = await TrellisSite(config).build();
-      // sitemap.xml + search-index.json at minimum
-      expect(result.staticFileCount, greaterThanOrEqualTo(1));
+      expect(result.staticFileCount, 2);
+      final assets = p.join(config.outputDir, 'assets');
+      expect(File(p.join(assets, 'content.json')).existsSync(), isTrue);
+      expect(File(p.join(assets, 'trellis-search.js')).readAsBytesSync(), utf8.encode(searchClient));
+      expect(File(p.join(config.outputDir, 'trellis-search.js')).existsSync(), isFalse);
     });
 
     test('excluded sections excluded from index', () async {

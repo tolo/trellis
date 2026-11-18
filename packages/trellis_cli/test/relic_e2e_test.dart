@@ -17,11 +17,15 @@ import 'package:trellis_cli/trellis_cli.dart';
 
 import '_e2e_server.dart';
 import '_workspace_root.dart';
+import '_csp_browser.dart';
+import '_ui_scaffold_e2e.dart';
 
 /// Numeric loopback host every client connects to; the Relic template binds `anyIPv4`, which covers it.
 final String _host = e2eLoopback.address;
 
 void main() {
+  if (BrowserProbe.locateChrome() == null) requireChromeInCi('CSP browser proofs');
+  testUiScaffold(UiScaffold.relic);
   group('Relic starter E2E', () {
     late Directory projectDir;
     late int port;
@@ -76,6 +80,10 @@ void main() {
       expect(pubspec, contains('trellis_relic:'));
     });
 
+    test('strict CSP pages and htmx interactions', () async {
+      await expectStrictCspApp(Uri.parse('http://$_host:$port/'), csrf: true);
+    }, skip: BrowserProbe.locateChrome() == null ? 'Chrome not installed' : false);
+
     test('GET / returns 200', () async {
       final res = await _get('http://$_host:$port/');
       expect(res.statusCode, 200);
@@ -96,16 +104,40 @@ void main() {
       expect(res.body, isNot(contains('<!DOCTYPE html>')));
     });
 
-    test('POST /counter/increment returns 200', () async {
-      final res = await _post('http://$_host:$port/counter/increment', body: '', headers: {'HX-Request': 'true'});
-      expect(res.statusCode, 200);
-      expect(res.body, contains('counter-value'));
-      expect(res.body, contains('>1<'));
+    test('POST /counter/increment with valid CSRF token returns 200', () async {
+      final getRes = await _get('http://$_host:$port/');
+      final cookieValue = _extractCsrfCookieValue(getRes.setCookieHeader);
+      expect(cookieValue, isNotNull, reason: '__csrf cookie should be set on GET /');
+      // The cookie is `rawToken.hmac`; only rawToken goes in the form field.
+      final rawToken = cookieValue!.split('.').first;
+      expect(getRes.body, contains('<meta name="csrf-token" content="$rawToken">'));
+
+      final postRes = await _post(
+        'http://$_host:$port/counter/increment',
+        body: '_csrf=$rawToken',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'HX-Request': 'true',
+          'Cookie': '__csrf=$cookieValue',
+        },
+      );
+      expect(postRes.statusCode, 200);
+      expect(postRes.body, contains('counter-value'));
+      expect(postRes.body, contains('>1<'));
+    });
+
+    test('POST /counter/increment without CSRF token returns 403', () async {
+      final postRes = await _post(
+        'http://$_host:$port/counter/increment',
+        body: '',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded', 'HX-Request': 'true'},
+      );
+      expect(postRes.statusCode, 403);
     });
   }, timeout: const Timeout(Duration(minutes: 4)));
 }
 
-typedef _Response = ({int statusCode, String body});
+typedef _Response = ({int statusCode, String? setCookieHeader, String body});
 
 Future<bool> _waitForServer(String host, int port, {Duration timeout = const Duration(seconds: 15)}) async {
   final deadline = DateTime.now().add(timeout);
@@ -129,7 +161,7 @@ Future<_Response> _get(String url, {Map<String, String> headers = const {}}) asy
     headers.forEach(req.headers.set);
     final res = await req.close();
     final body = await res.transform(utf8.decoder).join();
-    return (statusCode: res.statusCode, body: body);
+    return (statusCode: res.statusCode, setCookieHeader: res.headers['set-cookie']?.join(', '), body: body);
   } finally {
     client.close();
   }
@@ -144,8 +176,18 @@ Future<_Response> _post(String url, {required String body, Map<String, String> h
     req.write(body);
     final res = await req.close();
     final responseBody = await res.transform(utf8.decoder).join();
-    return (statusCode: res.statusCode, body: responseBody);
+    return (statusCode: res.statusCode, setCookieHeader: res.headers['set-cookie']?.join(', '), body: responseBody);
   } finally {
     client.close();
   }
+}
+
+/// Extracts the `__csrf` cookie value (`rawToken.hmac`) from joined `Set-Cookie` headers.
+String? _extractCsrfCookieValue(String? setCookieHeader) {
+  if (setCookieHeader == null) return null;
+  for (final segment in setCookieHeader.split(',')) {
+    final cookiePart = segment.trim().split(';').first.trim();
+    if (cookiePart.startsWith('__csrf=')) return cookiePart.substring('__csrf='.length);
+  }
+  return null;
 }

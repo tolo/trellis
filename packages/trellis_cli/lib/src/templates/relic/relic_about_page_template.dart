@@ -1,7 +1,7 @@
 /// Generates the templates/about.html content for a Relic + Trellis project.
 ///
-/// Explains the Relic-specific patterns: no-DI, middleware scoping, and HTMX
-/// fragment rendering.
+/// Explains the Relic-specific patterns: no-DI, middleware scoping, CSRF, and
+/// HTMX fragment rendering.
 String relicAboutPageTemplate() => r'''
 <html tl:extends="base.html">
 <body>
@@ -21,6 +21,13 @@ String relicAboutPageTemplate() => r'''
          successful responses but <strong>not</strong> to 404 or 405 responses.
          This is a behavioral difference from Shelf, where middleware wraps the
          entire handler chain.</p>
+
+      <h2>CSRF Protection</h2>
+      <p><code>trellisCsrf()</code> uses the double-submit cookie pattern. The
+         base layout puts the token in a <code>csrf-token</code> meta tag, and
+         <code>/js/csrf.js</code> sends it on HTMX requests in the
+         <code>X-CSRF-Token</code> header. Regular forms include a hidden
+         <code>_csrf</code> field instead.</p>
 
       <h2>HTMX Fragment Rendering</h2>
       <p>HTMX requests are detected via the <code>HX-Request</code> header.

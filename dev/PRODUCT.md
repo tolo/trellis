@@ -509,7 +509,7 @@ The spike confirmed that `csslib` round-trips standard CSS at 100% fidelity but 
 ### Dart Ecosystem
 - **Shelf** (v1.4.2) — 4.99M downloads, Dart team, canonical HTTP framework
 - **Dart Frog** (v1.2.6) — File-based routing, CLI, provider DI
-- **Relic** (v1.2.0) — Serverpod team, trie router, typed headers (watch this one)
+- **Relic** (v2.0.0) — Serverpod team, trie router, typed headers (watch this one)
 - **Jaspr** (v0.22.3) — Flutter-like SSR (different philosophy — widgets vs natural HTML)
 - **Static Shock** (v0.0.14) — Only notable Dart SSG (Jinja templates, 547 downloads)
 - **`package:sass`** (v1.98.0) — Canonical SASS implementation, Dart-native

@@ -1,0 +1,10 @@
+.trellis-radio { margin: 0; padding: 0; min-inline-size: 0; border: 0; }
+.trellis-radio-group-item { appearance: none; position: relative; border: none; box-shadow: none; background: transparent; vertical-align: middle; cursor: pointer; }
+.trellis-radio-group-item::before { content: ''; position: absolute; inline-size: 1rem; block-size: 1rem; inset: 50% auto auto 50%; transform: translate(-50%,-50%); border: 1px solid var(--input); border-radius: 50%; background: var(--background); box-shadow: 0 1px 2px #0000000d; }
+.trellis-radio-group-item:checked::before { border-color: var(--primary); }
+.trellis-radio-group-item:checked::after { content: ''; position: absolute; inline-size: .5rem; block-size: .5rem; border-radius: 50%; background: var(--primary); inset: 50% auto auto 50%; transform: translate(-50%,-50%); }
+.trellis-radio-group-item:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.trellis-radio-group-item[aria-invalid=true]::before { border-color: var(--destructive); }
+.trellis-radio-group-item:disabled { cursor: not-allowed; opacity: .5; }
+
+.trellis-radio-group-item::before, .trellis-radio-group-item::after { box-sizing: border-box; }

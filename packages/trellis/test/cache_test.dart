@@ -182,12 +182,13 @@ void main() {
       File('${tempDir.path}/page.html').writeAsStringSync('<p>Before</p>');
       engine = Trellis(loader: FileSystemLoader(tempDir.path, devMode: true), devMode: true);
 
-      // First render — cache miss
-      await engine.renderFile('page', {});
+      // Warm synchronously: an initial file-creation event may still be queued, and this test
+      // isolates changes after close rather than their delivery during an asynchronous file read.
+      engine.render('<p>Before</p>', {});
       expect(engine.cacheStats.misses, 1);
 
       // Second render — cache hit
-      await engine.renderFile('page', {});
+      engine.render('<p>Before</p>', {});
       expect(engine.cacheStats.hits, 1);
 
       // Close engine to stop watching

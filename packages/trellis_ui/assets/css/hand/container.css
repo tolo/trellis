@@ -1,0 +1,14 @@
+.trellis-container { inline-size: 100%; margin-inline: auto; padding-inline: 1rem; }
+.trellis-container-size-sm { max-inline-size: 40rem; }
+.trellis-container-size-md { max-inline-size: 56rem; }
+.trellis-container-size-lg { max-inline-size: 72rem; }
+.trellis-container-size-xl { max-inline-size: 80rem; }
+.trellis-sidebar { display: flex; flex-wrap: wrap; }
+.trellis-sidebar > :first-child { flex: 1 1 15rem; min-inline-size: 0; }
+.trellis-sidebar > :last-child { flex: 999 1 50%; min-inline-size: min(100%, 20rem); }
+.trellis-sidebar-gap-none { gap: 0; }
+.trellis-sidebar-gap-xs { gap: .25rem; }
+.trellis-sidebar-gap-sm { gap: .5rem; }
+.trellis-sidebar-gap-md { gap: 1rem; }
+.trellis-sidebar-gap-lg { gap: 1.5rem; }
+.trellis-sidebar-gap-xl { gap: 2rem; }

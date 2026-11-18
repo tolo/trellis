@@ -156,6 +156,7 @@ Generates a new Trellis project from a starter template.
 
 Options:
 - `--template` (`-t`): Project template to use
+- `--ui`: Add Trellis UI and a Components page to an app scaffold.
 
 Available templates:
 
@@ -166,6 +167,24 @@ Available templates:
 | `dart_frog` | Dart Frog + HTMX counter app with file-based routing, CSRF, security headers, and hot reload |
 | `relic` | Relic + HTMX counter app with explicit-engine wiring and security headers |
 | `theme` | Trellis theme scaffold with `theme.yaml`, layouts, SASS architecture, and example preview site |
+
+App templates (`htmx`, `relic`, `dart_frog`) self-host the pinned HTMX build under `/js/htmx.min.js`
+and use `CspBuilder.strict()`. Shelf and Dart Frog also write `/js/csrf.js`. The layout disables
+HTMX's injected indicator styles; the rules ship in `styles.css`. Generated markup has no inline
+scripts or styles. Shelf and Dart Frog dev mode also reloads on CSS/JS edits in `static/` or `public/`.
+
+Use `trellis create my_app --template htmx --htmx-cdn` to opt into the SRI-pinned CDN build.
+The generated `script-src` allows only `'self'` plus the pinned CDN origin; no local htmx file is
+written. `--htmx-cdn` is also accepted by `relic` and `dart_frog`, and rejected by `blog` and `theme`.
+
+Use `trellis create my_app --ui` to add `trellis_ui` and a Components page at `/ui`. The flag works with
+`htmx`, `relic`, and `dart_frog`, and can be combined with `--htmx-cdn`. Follow the printed `dart pub get`
+and run commands, then open Components in the app's navigation.
+
+To preview the Components template from disk, run `dart run trellis_ui:materialize` from the generated
+Shelf or Relic project, or `dart run trellis_ui:materialize public/trellis-ui` from its Dart Frog counterpart.
+The three assets go into a gitignored preview directory. Shelf with `--dev` and Dart Frog with `DEV=true`
+also refresh the directory at startup. Relic materializes its previews on demand.
 
 **`htmx` template** generates:
 - `bin/server.dart` — Shelf server with logging, security headers, Trellis engine injection, CSRF, and optional live reload

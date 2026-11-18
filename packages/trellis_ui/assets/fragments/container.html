@@ -1,0 +1,5 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>container</title></head><body>
+<div tl:fragment="container(size, ...attrs)" data-slot="container" class="trellis-container" tl:attrs="${attrs}" tl:with="size=${size == 'sm' or size == 'md' or size == 'lg' or size == 'xl' ? size : 'lg'}" tl:classappend="${'trellis-container-size-' + size}"><tl:block tl:slot=""></tl:block></div>
+<div tl:fragment="sidebar(gap, ...attrs)" data-slot="sidebar" class="trellis-sidebar" tl:attrs="${attrs}" tl:with="gap=${gap == 'none' or gap == 'xs' or gap == 'sm' or gap == 'md' or gap == 'lg' or gap == 'xl' ? gap : 'md'}" tl:classappend="${'trellis-sidebar-gap-' + gap}"><tl:block tl:slot=""></tl:block></div>
+</body></html>

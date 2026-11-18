@@ -3,6 +3,7 @@
 // build with "This module was already loaded".
 @forward 'variables';
 @use 'variables' as *;
+@use 'suite';
 
 @font-face {
   font-family: 'Bricolage Grotesque';
@@ -116,10 +117,11 @@ body {
    the viewport. `anywhere` does shrink it. Scoped to page content: the brand and the nav/footer
    labels keep `break-word` so short words are never split mid-label. */
 main * { overflow-wrap: anywhere; }
-button, a { font: inherit; }
+// Keep the inherited theme font off the layered suite reader button.
+button:where(:not(.icon-button)), a { font: inherit; }
 a { color: inherit; }
 [hidden] { display: none !important; }
-:where(a, button, summary):focus-visible {
+:where(a, button:not(.icon-button), summary):focus-visible {
   outline: 3px solid currentColor;
   outline-offset: -3px;
   border-radius: 8px;
@@ -201,7 +203,7 @@ body > main { flex: 1 0 auto; }
 /* The label is `hero.ctas[0].label`, which a landing page is free to make a sentence. Truncating
    keeps the sticky header on its 72px rhythm instead of growing a three-line button. */
 .nav-cta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.icon-button, .mobile-menu summary {
+.mobile-menu summary {
   min-width: 44px;
   min-height: 44px;
   display: grid;

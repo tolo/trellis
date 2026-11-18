@@ -1,0 +1,7 @@
+<h1>Switch</h1>
+<section id="demo"><a id="before" href="#after">Before example</a><section id="component" aria-label="switch examples"><div class="gallery-sample"><label for="primary">Primary</label><input tl:replace="~{trellis-ui/switch :: switch}" id="primary" name="switch-primary" aria-label="Primary"></input></div>
+<div class="gallery-sample"><label for="disabled">Disabled</label><input tl:replace="~{trellis-ui/switch :: switch}" id="disabled" name="switch-disabled" aria-label="Disabled" disabled></input></div>
+<div class="gallery-sample"><label for="invalid">Invalid</label><input tl:replace="~{trellis-ui/switch :: switch}" id="invalid" name="switch-invalid" aria-label="Invalid" aria-invalid="true"></input></div>
+<div class="gallery-sample"><label for="checked">Checked</label><input tl:replace="~{trellis-ui/switch :: switch}" id="checked" name="switch-checked" aria-label="Checked" checked></input></div>
+</section><a id="after" href="#before">After example</a>
+<button id="swap" type="button" class="gallery-action" hx-get="/components/switch" hx-select="#demo" hx-target="#demo" hx-swap="outerHTML">Refresh example</button> <a id="navigate" class="gallery-action" hx-boost="true" href="/components/button">Next example</a></section>

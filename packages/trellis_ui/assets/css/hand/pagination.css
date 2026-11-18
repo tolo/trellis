@@ -1,0 +1,6 @@
+.trellis-pagination-content { list-style: none; padding: 0; flex-wrap: wrap; }
+.trellis-pagination-ellipsis { min-inline-size: 2rem; }
+.trellis-pagination [aria-disabled=true] { color: var(--muted-foreground); padding-inline: .5rem; }
+
+/* Text replaces upstream chevrons, so it remains visible at the mobile breakpoint. */
+.trellis-pagination-previous-text, .trellis-pagination-next-text { display: inline; }

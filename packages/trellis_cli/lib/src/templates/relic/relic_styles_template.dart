@@ -1,7 +1,7 @@
 /// Generates the static/styles.css content for a Relic + Trellis project.
 ///
-/// Relic has no built-in static file handler, so the server serves this via
-/// a dedicated route at `/styles.css`.
+/// The server serves this one file via a dedicated route at `/styles.css`;
+/// Relic's `StaticHandler` is the tool for a directory of assets.
 String relicStylesTemplate() => '''
 /* Reset and base */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -82,7 +82,7 @@ p { margin-bottom: 1rem; }
 .counter-controls button:hover { background: #e8e8e8; }
 .counter-controls button.disabled { opacity: 0.4; pointer-events: none; }
 
-.counter-hint { font-size: 0.875rem; color: #888; margin-top: 1rem; }
+.counter-hint { font-size: 0.875rem; color: #666; margin-top: 1rem; }
 
 /* Features list */
 .features ul { padding-left: 1.5rem; }
@@ -94,7 +94,7 @@ footer {
   border-top: 1px solid #e0e0e0;
   text-align: center;
   font-size: 0.875rem;
-  color: #888;
+  color: #666;
 }
 
 footer a { color: #2563eb; text-decoration: none; }

@@ -1,0 +1,199 @@
+{
+  "name": "combobox",
+  "page": "/components/combobox",
+  "root": "#component",
+  "elements": {
+    "input": "#fruit",
+    "trigger": "[data-slot=combobox-trigger]",
+    "popup": "#fruit-popup",
+    "results": "#fruit-listbox"
+  },
+  "states": {
+    "default": [],
+    "open": [
+      {
+        "focus": "#fruit"
+      },
+      {
+        "press": "ArrowDown"
+      },
+      {
+        "wait": "document.querySelector('#fruit-popup').matches(':popover-open')"
+      }
+    ],
+    "empty": [
+      {
+        "focus": "#fruit"
+      },
+      {
+        "type": "zz"
+      },
+      {
+        "wait": "document.querySelector('#component [role=status]').textContent === 'No results' && !document.querySelector('#fruit-option-0') && !document.querySelector('#fruit-results').classList.contains('htmx-settling')"
+      }
+    ]
+  },
+  "keyboard": [
+    {
+      "eval": "(() => {window.optionRequests = 0; document.querySelector('#fruit').addEventListener('htmx:beforeRequest',()=>window.optionRequests++)})()"
+    },
+    {
+      "focus": "#fruit"
+    },
+    {
+      "type": "ap"
+    },
+    {
+      "wait": "document.querySelector('#component [role=status]').textContent === '2 results available'"
+    },
+    {
+      "expect": {
+        "expression": "window.optionRequests === 1 && document.querySelector('#fruit-popup').matches(':popover-open') && document.querySelector('#fruit').getAttribute('aria-expanded') === 'true' && document.querySelector('#fruit').value === 'ap'",
+        "equals": true
+      }
+    },
+    {
+      "press": "ArrowDown"
+    },
+    {
+      "expect": {
+        "expression": "document.activeElement === document.querySelector('#fruit') && document.querySelector('#fruit').getAttribute('aria-activedescendant') === 'fruit-option-0'",
+        "equals": true
+      }
+    },
+    {
+      "press": "ArrowDown"
+    },
+    {
+      "expect": {
+        "expression": "document.querySelector('#fruit').getAttribute('aria-activedescendant') === 'fruit-option-1'",
+        "equals": true
+      }
+    },
+    {
+      "press": "ArrowUp"
+    },
+    {
+      "expect": {
+        "expression": "document.querySelector('#fruit').getAttribute('aria-activedescendant') === 'fruit-option-0'",
+        "equals": true
+      }
+    },
+    {
+      "press": "Home"
+    },
+    {
+      "expect": {
+        "expression": "document.querySelector('#fruit').selectionStart === 0 && document.querySelector('#fruit').getAttribute('aria-activedescendant') === 'fruit-option-0'",
+        "equals": true
+      }
+    },
+    {
+      "press": "End"
+    },
+    {
+      "expect": {
+        "expression": "document.querySelector('#fruit').selectionStart === 2 && document.querySelector('#fruit').getAttribute('aria-activedescendant') === 'fruit-option-0'",
+        "equals": true
+      }
+    },
+    {
+      "press": "Enter"
+    },
+    {
+      "expect": {
+        "expression": "!document.querySelector('#fruit-popup').matches(':popover-open') && document.querySelector('#fruit').getAttribute('aria-expanded') === 'false' && !document.querySelector('#fruit').hasAttribute('aria-activedescendant') && document.querySelector('#fruit').value === 'Apple' && document.querySelector('[name=fruitId]').value === 'apple'",
+        "equals": true
+      }
+    },
+    {
+      "press": "ArrowDown"
+    },
+    {
+      "wait": "document.querySelector('#fruit-popup').matches(':popover-open')"
+    },
+    {
+      "press": "Escape"
+    },
+    {
+      "expect": {
+        "expression": "!document.querySelector('#fruit-popup').matches(':popover-open') && document.querySelector('#fruit').getAttribute('aria-expanded') === 'false' && !document.querySelector('#fruit').hasAttribute('aria-activedescendant') && document.activeElement === document.querySelector('#fruit')",
+        "equals": true
+      }
+    },
+    {
+      "press": "ArrowDown"
+    },
+    {
+      "wait": "document.querySelector('#fruit-popup').matches(':popover-open')"
+    },
+    {
+      "press": "Tab"
+    },
+    {
+      "expect": {
+        "expression": "!document.querySelector('#fruit-popup').matches(':popover-open') && document.querySelector('#fruit').getAttribute('aria-expanded') === 'false' && !document.querySelector('#fruit').hasAttribute('aria-activedescendant') && document.activeElement.id === 'after'",
+        "equals": true
+      }
+    }
+  ],
+  "semantics": [
+    {
+      "expression": "document.querySelector('#fruit').getAttribute('role') === 'combobox' && document.querySelector('#fruit').getAttribute('aria-autocomplete') === 'list' && document.querySelector('#fruit').getAttribute('aria-expanded') === String(document.querySelector('#fruit-popup').matches(':popover-open')) && document.getElementById(document.querySelector('#fruit').getAttribute('aria-controls')).getAttribute('role') === 'listbox' && document.querySelector('label[for=fruit]')?.textContent.trim() === 'Fruit' && document.querySelector('[name=fruitId]').type === 'hidden'",
+      "equals": true
+    }
+  ],
+  "htmx": {
+    "region": "#demo",
+    "swap": [
+      {
+        "press": "Escape"
+      },
+      {
+        "expect": {
+          "expression": "!document.querySelector('#fruit-popup').matches(':popover-open') && document.querySelector('#fruit').getAttribute('aria-expanded') === 'false' && !document.querySelector('#fruit').hasAttribute('aria-activedescendant') && document.querySelector('#fruit-popup').hasAttribute('style')",
+          "equals": true
+        }
+      },
+      {
+        "eval": "window.oldComboboxRegion = document.querySelector('#demo')"
+      },
+      {
+        "click": "#swap"
+      },
+      {
+        "wait": "!window.oldComboboxRegion.isConnected && !document.querySelector('#demo').classList.contains('htmx-settling')"
+      }
+    ],
+    "navigate": [
+      {
+        "focus": "#fruit"
+      },
+      {
+        "press": "ArrowDown"
+      },
+      {
+        "wait": "document.querySelector('#fruit-popup').matches(':popover-open')"
+      },
+      {
+        "eval": "document.querySelector('#navigate').click()"
+      }
+    ],
+    "transient": "#fruit-popup[data-open], #fruit-popup[style], #fruit[aria-activedescendant]"
+  },
+  "instances": [
+    "tl-combobox",
+    "#fruit-results",
+    "#fruit-listbox"
+  ],
+  "provenance": [
+    {
+      "file": "../../../packages/trellis_ui/vendor/shadcn/shadcn@4.23.0/LICENSE.md",
+      "license": "MIT"
+    },
+    {
+      "file": "../../../packages/trellis_ui/vendor/lucide/LICENSE",
+      "license": "ISC"
+    }
+  ]
+}

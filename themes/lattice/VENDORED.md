@@ -108,7 +108,7 @@ files on 2026-08-27.
 
 ## First-party JavaScript
 
-`static/js/lattice.js` and `static/js/search.js` are dependency-free first-party scripts. They progressively enhance
+`static/js/lattice.js` is a dependency-free first-party script. It progressively enhances
 the server-rendered page and do not own content needed for reading or navigation.
 
 ## First-party artwork
@@ -118,3 +118,7 @@ artwork shipped with Lattice. `static/trellis-logo.png` is the first-party compa
 byte-for-byte from the repository's canonical `assets/logo-small-with-text.png`; `static/trellis-mark.png` is copied
 byte-for-byte from the canonical square `assets/logo-small.png`. The canonical gallery images are
 `screenshots/light.png` and `screenshots/dark.png`, captured from the bridged example.
+
+
+Trellis 0.14 builds emit `trellis-search.js` alongside the index and include the
+embedded suite assets for the combobox and reader toggle.

@@ -4,4 +4,4 @@
 library;
 
 export 'src/dev_middleware.dart' show devMiddleware;
-export 'src/live_reload_handler.dart' show liveReloadHandler, liveReloadScript;
+export 'src/live_reload_handler.dart' show liveReloadHandler, liveReloadScript, liveReloadClientScript;

@@ -1,0 +1,13 @@
+<div tl:replace="~{trellis-ui/dialog :: dialog('server-dialog', 'Edit project', 'Update the project details.', true)}"
+  data-return-focus="load-dialog">
+  <div class="gallery-sample">
+    <label for="server-dialog-name">Project name</label>
+    <input tl:replace="~{trellis-ui/input :: input}" id="server-dialog-name" autofocus>
+  </div>
+  <div tl:slot="footer">
+    <button tl:replace="~{trellis-ui/button :: button('outline')}" id="replace-server-dialog"
+      hx-get="/demo/dialog" hx-target="#dialog-response">Replace dialog</button>
+    <button tl:replace="~{trellis-ui/button :: button}" id="remove-server-dialog"
+      hx-get="/demo/dialog?close=1" hx-target="#dialog-response">Save</button>
+  </div>
+</div>

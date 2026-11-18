@@ -29,7 +29,7 @@ This file covers working **on** the SDK. For template syntax, see the
 | `trellis_dev` | Hot reload / dev tooling |
 | `trellis_cli` | Scaffolding CLI (`trellis` command) |
 
-`examples/` holds runnable apps; `dev/` holds contributor docs; `docs/` holds user-facing docs.
+`examples/` holds runnable apps; `dev/` holds contributor docs; `site/content/docs/` holds user-facing docs.
 
 
 ---
@@ -102,7 +102,7 @@ git history do not carry it, and it outlives the current initiative. -->``.
 - Never reformat the whole repo — format only the files/dirs you touched.
 - **Asset sourcing (repo-wide)** — prefer self-contained, build-time output; then vendored, same-origin
   assets; runtime CDN dependencies only as a last resort (a deliberate, documented exception, not a ban).
-  Covers shipped themes, `site/`, and `trellis_site` client assets (e.g. `search.js`). See the theme guide's
+  Covers shipped themes, `site/`, and `trellis_site` client assets (e.g. `trellis-search.js`). See the theme guide's
   [Third-Party and Vendored Assets](site/content/docs/themes/authoring.md#third-party-and-vendored-assets) section
   and [ADR-010](dev/adrs/ADR-010-syntax-highlighting.md).
 
@@ -224,3 +224,10 @@ Accessibility, after the same kinds of change, audited on the served pages again
 See [dev/guidelines/KEY_DEVELOPMENT_COMMANDS.md](dev/guidelines/KEY_DEVELOPMENT_COMMANDS.md) for the
 full reference. Tests run in two tiers (`fast`, `full`) plus a run-one-test row, declared there. Melos scripts:
 `analyze`, `test`, `format:check`.
+
+### trellis_ui hand CSS
+
+Component hand files sort before `zz-touch.css`, `zz-contrast.css` and `zz-forced-colors.css`; keep cross-cutting
+hit-box, contrast and forced-colour rules there. Native checkbox/radio/switch inputs own the measured 24/44px box,
+while pseudo-elements paint the smaller control. Forced colours remove shadow rings, so retain outline and
+system-colour checked paint. Avoid geometry transitions: a pointer change must reach the minimum immediately.

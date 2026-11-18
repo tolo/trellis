@@ -3,6 +3,8 @@
 Meadow is a self-contained Trellis landing theme with the Fresh Bloom visual language: Bricolage Grotesque display
 type, Schibsted Grotesk body text, JetBrains Mono code, a lime headline marker, color-blocked feature cards, and a
 theme-owned trellis illustration. It works offline and supports `light`, `dark`, and OS-aware `auto` skins.
+Meadow requires Trellis 0.14.0 for its suite reader toggle.
+
 
 ## Use
 

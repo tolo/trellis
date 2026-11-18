@@ -1,11 +1,12 @@
 import 'htmx_asset.dart';
+import 'ui_scaffold_template.dart';
 
 /// Generates the templates/layouts/base.html content.
 ///
 /// Uses raw string concatenation to avoid conflicts with Trellis `${}`
-/// expressions. Includes the HTMX CDN script, CSRF meta tag, and SPA-style
+/// expressions. Includes same-origin HTMX and CSRF scripts, CSRF meta tag, and SPA-style
 /// navigation anchors.
-String baseLayoutTemplate(String projectName) =>
+String baseLayoutTemplate(String projectName, {bool htmxCdn = false, bool ui = false}) =>
     r'''
 <!DOCTYPE html>
 <html lang="en">
@@ -18,22 +19,12 @@ String baseLayoutTemplate(String projectName) =>
   <meta name="csrf-token" tl:attr="content=${csrfToken}" content="">
   <link rel="stylesheet" href="/styles.css">
   ''' +
-    htmxScriptTag(trailingNewline: true) +
-    r'''  <!-- Set CSRF header on all HTMX requests (htmx 2 and htmx 4 event shapes) -->
-  <script>
-    (function () {
-      function setCsrfHeader(headers) {
-        if (!headers) return;
-        var token = document.querySelector('meta[name="csrf-token"]').content;
-        if (token) headers['X-CSRF-Token'] = token;
-      }
-      document.addEventListener('htmx:configRequest', function(evt) { setCsrfHeader(evt.detail.headers); });
-      document.addEventListener('htmx:config:request', function(evt) {
-        setCsrfHeader(evt.detail.ctx.request.headers);
-      });
-    })();
-  </script>
-</head>
+    '$htmxConfigMeta\n  ${scaffoldHtmxScriptTag(htmxCdn: htmxCdn)}\n' +
+    r'''
+  <script src="/js/csrf.js"></script>
+''' +
+    (ui ? uiAssetTags('../../$staticUiPreview') : '') +
+    r'''</head>
 <body>
   <header>
     <nav tl:insert="~{partials/nav.html :: nav}">

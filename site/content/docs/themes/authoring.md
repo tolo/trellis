@@ -156,14 +156,28 @@ params:
 | `min_trellis_version` | No | Minimum `trellis_site` version required. Advisory: `trellis theme add` and `trellis theme update` print a warning when the installed `trellis_site` is older, and nothing blocks the build |
 | `screenshots` | No | Relative paths to preview PNG files, resolving inside the theme directory |
 | `features` | Yes | Feature tags: exactly one **archetype** tag — `docs`, `landing`, or `blog` — plus any number of free-form tags. The archetype is required for the built-in themes listed in the gallery and recommended for your own; `trellis create` leaves it out |
+| `uses` | No | Registered build sources the theme uses. List names matching `[a-z][a-z0-9_]*` |
 | `params` | Yes | Parameter definitions (see below). Required by the standard-params contract below, not by the loader: a theme with no `params:` loads and builds, and simply ignores every `theme_params:` a site sets |
 
-The loader (`ThemeManifest.load`) enforces only a non-empty `name` and a
-`version`. The other "Yes" rows are enforced elsewhere: `description` and
+The loader (`ThemeManifest.load`) requires a non-empty `name` and a
+`version` and validates the shape of an optional `uses` list. The other
+"Yes" rows are enforced elsewhere: `description` and
 `features` by the gallery generator below, which gates only the built-in themes
 in this repository, and `params` by the standard-params contract. Nothing checks
 a third-party theme's archetype, so the build and `trellis theme add` accept a
 theme without one.
+
+A theme can declare `uses: [trellis_ui]` to make the CLI's embedded suite
+available to its layouts. A direct Dart build must register the names it uses
+as `SiteSource` factories. The build combines the site and theme lists and
+loads each named source once. Theme templates and static files take
+precedence over source files. See [Build sources](/docs/packages/trellis_site/#build-sources)
+for the priority and asset rules.
+
+Arbor, Folio, Lattice, and Meadow require Trellis 0.14.0 and link the suite CSS
+and deferred JS from their asset base. They apply suite colour tokens on the
+search shell, reader toggle, or code bar so the page's other suite fragments
+keep their defaults.
 
 #### Name and archetype rules
 
@@ -769,8 +783,8 @@ stylesheet, or a highlighter:
    [ADR-010](https://github.com/tolo/trellis/blob/main/dev/adrs/ADR-010-syntax-highlighting.md)).
 2. **Vendored, same-origin asset (acceptable).** Commit the asset and serve it
    from `static/`, alongside the HTML that loads it. Auditable, pinnable, and
-   outage-independent. Example: Arbor's first-party `search.js` and
-   `code-enhance.js`, documented for provenance in
+   outage-independent. Example: Arbor's first-party `code-enhance.js`,
+   documented for provenance in
    [`themes/arbor/VENDORED.md`](https://github.com/tolo/trellis/blob/main/themes/arbor/VENDORED.md).
    Folio, Lattice, and Meadow each keep a `VENDORED.md` too.
 3. **Runtime CDN dependency (last resort).** Fetching a script, font, or
@@ -800,6 +814,15 @@ spans with its `--trellis-code-*` token colors, so code is colored with
 JavaScript off, no CDN, and no runtime dependency. Arbor, the docs sibling, used
 to vendor Prism (tier 2) before ADR-010 moved highlighting for every theme to
 tier 1.
+
+The shared `trellis-search.js` is built beside the JSON search index. To reuse
+it, link it with `defer` and wrap the suite combobox in a hidden
+`data-trellis-search` shell with a prefix-aware `data-search-index` URL.
+Render the combobox with its input disabled and include a
+`template[data-trellis-search-results]` with one option rendered by
+`comboboxOptions`. The client reveals the control after load and clones that
+option to render results. See the Arbor sidebar for the template bindings.
+
 
 ## Publishing
 

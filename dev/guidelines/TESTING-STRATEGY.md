@@ -25,6 +25,7 @@ checks sit below all of them and run first.
 | Integration | one boundary: temp dir, in-process HTTP, one socket | adapters, `trellis_site` fixture builds, `trellis_dev`, CLI generator tests | every push |
 | Contract (rendered) | `node` or headless Chrome over the DevTools protocol | root `test/`: theme, reflow, search-client, font suites | every push, except `visual` |
 | E2E | generated project, `pub get`, spawned servers | `trellis_cli`, files tagged `e2e` (5 files) | `e2e` job on `main` and manual dispatch |
+| UI qualification | Chrome + Firefox, served component pages | `tool/ui_gate/`; tests tagged `ui-gate` | local release gate only |
 | Visual baseline | Chrome plus the host's fonts | `test/visual_baseline_test.dart`, tag `visual` | release gate only |
 
 Static call sites of `test(` per package, as a size indication only (loops generate more): trellis 1283, trellis_site
@@ -65,8 +66,8 @@ contract test that reads manifests and compiled CSS is a wiring check, not a ren
 - Layout claims are asserted on rendered geometry (`getBoundingClientRect`, `scrollWidth` against `clientWidth`) via
   `test/browser_reflow_probe.dart`, the repo's CDP client. A CSS substring check is a wiring check and does not count as
   proof of layout.
-- `site_reflow_test.dart` holds the docs site to the same reflow contract. `search_client_behavior_test.dart` and the
-  theme client-behaviour harness run vendored JS against a DOM under system `node`.
+- `site_reflow_test.dart` holds the docs site to the same reflow contract. `search_client_browser_test.dart` exercises
+  shared search in Chrome and Firefox. The older theme toggle harness still runs under system `node`.
 - `release_distribution_contract_test.dart` and `docs_preview_script_test.dart` run the release and preview scripts
   against fixture repos with fake binaries first on `PATH`. `link_check_test.dart` covers `tool/link_check.dart` as unit
   and as subprocess.
@@ -87,6 +88,83 @@ because Chrome and system-font drift on Linux runners moved layout for the theme
 fallback (TD-035); `tool/release.sh` runs the whole root suite with `CI=true`, which is the only place this tier gates.
 To change a baseline on purpose, set `UPDATE_VISUAL_BASELINES=1` (optionally `VISUAL_BASELINE_THEMES`) and
 review the JSON diff like code; the test refuses to update when `CI=true`.
+
+
+### UI qualification gate
+
+`tool/ui_gate.dart` drives Chrome through the existing `BrowserProbe` and Firefox through raw WebDriver/BiDi.
+No browser download, Node invocation or additional package is part of the harness. Use Firefox 157 and
+[geckodriver 0.37.1](https://github.com/mozilla/geckodriver/releases/tag/v0.37.1): extract the macOS
+`geckodriver-v0.37.1-macos-aarch64.tar.gz` (Apple Silicon) or `geckodriver-v0.37.1-macos.tar.gz` (Intel), put the
+binary on `PATH`, or set `GECKODRIVER` to its absolute path. `FIREFOX_PATH` overrides Firefox discovery;
+`CHROME_PATH`/`CHROME_BIN` override Chrome. The tested Mac app paths are discovered automatically. The gate owns
+throwaway profiles and OS-assigned HTTP/BiDi ports. Tests may skip absent Firefox locally; the CLI records
+`not-run` and exits nonzero instead. Final local verification requires both engines.
+
+A complete fixture recipe is [`test/ui_gate_fixtures/pass.yaml`](../../test/ui_gate_fixtures/pass.yaml). Run it:
+
+```sh
+dart run tool/ui_gate.dart --serve 'dart run test/ui_gate_fixtures/server.dart' \
+  --records .agent_temp/ui-gate/records --baselines .agent_temp/ui-gate/baselines \
+  --record test/ui_gate_fixtures/pass.yaml
+```
+
+Use `--base <url>` for an existing server. `--serve` reads `Serving <base-url>` from the command's first stdout
+line and stops that process after the run. With no component arguments, every YAML file in `--manifests` runs;
+names resolve in that directory, and `.yaml` paths work directly. Defaults are `dev/ui-gate/manifests/`,
+`dev/ui-gate/records/` and `dev/ui-gate/baselines/`. `--browsers chrome,firefox` is the default.
+
+The YAML recipe is the component boundary:
+
+- `name` defaults to the filename; `page` is a same-origin absolute path and `root` is its component selector.
+- `states` maps names to steps, `elements` maps appearance aliases to selectors, and `keyboard` is a step list.
+  Include every applicable interaction, disabled, invalid, checked and dark state. Missing keyboard, semantics
+  or HTMX recipes produce `not-run`, rather than a vacuous pass.
+- Steps are `focus`, `click`, `hover`, `type`, `press`, `wait` (milliseconds or a true JS expression), `state`,
+  `eval`, `axe`, and `expect: {expression: <JS>, equals: <JSON value>}`. Each step has one key. Missing elements
+  and failed expectations name the step. Browser execution bypasses page CSP without injecting inline handlers.
+- `semantics` contains `{selector, attribute, equals}` or `{expression, equals}` assertions for every state.
+  `provenance` lists `{file, license}` notices, relative to the manifest. Allowed licences are MIT, ISC,
+  Apache-2.0, BSD-*-Clause and 0BSD. `axe.disable` maps a rule id to a required written reason.
+- `htmx` declares `region`, `swap` steps and `navigate` steps; optional `transient` must be absent after history
+  restore, and `probe: {steps, expression, equals}` verifies single-fire behavior. `instances` lists selectors
+  whose live counts must survive 20 swaps. `distinct` lists selector groups whose visible boxes must not overlap.
+
+The automated items are provenance, self-hosting, strict CSP (including a labelled enforcement control), semantic
+markup, HTMX lifecycle, keyboard, WCAG 2.0/2.1/2.2 A/AA axe, forced colours, responsive widths 390/768/1440, zoom
+widths 640/320, reduced motion, fine/coarse targets (24/44 px, 16 px input text under coarse), and appearance.
+Every emulated condition is read back. Unsupported emulation is recorded per browser and can pass the item only
+when another requested browser actually runs it; an unavailable browser or no capable browser prevents a pass.
+
+Each `<component>.json` record has `component`, `automated` (`pass`/`fail`) and ordered `items`. Automated items
+carry `status`, per-browser `status`/`evidence`, and an `unsupported` marker where applicable. Manual VoiceOver +
+Safari, NVDA + Firefox, and Safari items begin as `release-prep`; existing human-entered values are preserved.
+Records have no timestamps, ports or host paths and repeated runs are byte-identical.
+
+Appearance uses `<component>.<os>.json` with both browser captures. `--record` is refused under `CI=true` and
+still fails clipping, overflow or overlap; the first recording is a reference, not a waiver. The computed-style
+fingerprint includes selected elements and forced-state outlines in the same settled frame as geometry. Explicit
+forced-focus captures keep actual document/target focus confirmed throughout settling; hidden, disabled and
+non-focusable elements are marked inapplicable for that state. Real keyboard and lifecycle checks stay unforced.
+`--captures <dir>` also writes `<component>.<browser>.json` snapshots. Sync tools may use `captureAppearance` and
+`compareAppearance` in one owned driver run for A/B comparisons; differences name the state, selector/property and
+changed token. The three spike regressions are replayed by `ui_gate_appearance_test.dart`; all are detected by
+styles or box invariants, so no pixel-diff fallback is currently needed.
+
+The local component sweep (`packages/trellis_ui/test/qualification_gate_test.dart`) runs all 25 canonical
+manifests in three disjoint CLI chunks and compares each record byte for byte, retaining manual results.
+`packages/trellis_cli/test/ui_surfaces_gate_test.dart` launches the actual admin entry point and three generated
+`--ui` scaffolds. The same CLI checks the admin list, filter, menu, validation, alert dialog, Summary and toast,
+and each scaffold's counter swap and UI dialog, using the seven recipes and records in `dev/ui-gate/apps/`.
+
+Release limits are 25,000 bytes for the sum of the three embedded responses gzipped separately at level 9,
+400 authored JavaScript lines in the suite, and 50 authored CSS lines with zero authored JavaScript in the admin
+example. Run `test/release_gates_test.dart` and `test/budget_test.dart` from `packages/trellis_ui/`, and
+`test/footprint_test.dart` from `examples/admin_app/`.
+
+Harness fixture tests are untagged in fast/full. A test running the full gate over real component or app pages
+carries `ui-gate`; OS-baseline comparisons carry `visual`. Both are excluded from CI's check/E2E tiers and run in
+the local `release-gate` tier, preserving ADR-012's local gate decision.
 
 
 ---

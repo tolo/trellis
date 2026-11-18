@@ -22,7 +22,7 @@ search:
 
 | Key | Default | Meaning |
 |---|---|---|
-| `enabled` | `false` | Write the index. |
+| `enabled` | `false` | Write the index and shared search client when pages qualify. |
 | `output` | `search-index.json` | File name under the output directory. |
 | `fields` | `[title, summary, content, tags]` | Entry fields; also `date` and `section`. |
 | `excludeSections` | `[]` | Top-level sections to leave out. |
@@ -31,9 +31,19 @@ search:
 
 Every entry includes its built URL plus the configured fields. Only single
 pages are indexed: the home page and section listings are not. Drafts are left
-out, and `search: false` in a page's front matter omits it. A theme can fetch the
-same-origin `search-index.json`, filter it in the browser, and use each entry's
-URL verbatim; URLs already include the configured `pathPrefix`.
+out, and `search: false` in a page's front matter omits it.
+
+Trellis writes `trellis-search.js` beside the index. Arbor, Folio, and Lattice
+load it for the docs sidebar when `theme_params.show_search` is on. The combobox
+appears after the same-origin index loads. It lists up to 20 page titles that
+match every search term across title, summary, content, and tags, ignoring case.
+Use the arrow keys and Enter or click a result to open its page. The indexed URL
+already carries the configured path prefix.
+
+The bundled themes use the default index location. If you change `search.output`,
+adjust your layout's script URL and its `data-search-index` attribute to point
+to the new directory and index. The name `trellis-search.js` is reserved for
+the shared client. Keep that path free of site assets in the index directory.
 
 ## Sitemap
 

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:path/path.dart' as p;
+import 'package:trellis_site/src/search_client.dart';
 import 'package:trellis_site/trellis_site.dart';
 import 'package:test/test.dart';
 
@@ -444,6 +445,9 @@ void main() {
 
       final outputDir = await buildBuildSite(); // no pathPrefix
       final produced = snapshot(outputDir);
+      // The shared client was added after the golden. Keep the older artifacts'
+      // byte comparison and verify the additional asset from its shipped source.
+      expect(produced.remove('trellis-search.js'), searchClient);
 
       expect(produced.keys.toSet(), golden.keys.toSet(), reason: 'output file set changed');
       for (final entry in golden.entries) {
@@ -498,6 +502,7 @@ void main() {
       // search-index url fields carry the prefix, and the file is at the root.
       expect(prefixed.containsKey('search-index.json'), isTrue);
       expect(prefixed['search-index.json'], contains('/trellis/'));
+      expect(prefixed['trellis-search.js'], searchClient);
     });
   });
 

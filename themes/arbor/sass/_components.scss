@@ -169,88 +169,8 @@
   }
 }
 
-// ── Search shell (client-side search wired in static/js/search.js) ───────────
-// Progressive enhancement: the shell ships `hidden` and the <input> ships disabled;
-// search.js lifts both once the index has loaded. With JavaScript off, or on a failed
-// index fetch, nothing is shown — rather than a permanently disabled search box. The
-// hiding is the [hidden] normalization in _base.scss, not a class of this component's
-// own: a class-toggle mechanism only covers the failure it was written for, never the
-// script-never-ran case.
-
 .search-shell {
   margin-bottom: $trellis-space-lg;
-}
-
-.search-input {
-  width: 100%;
-  padding: $trellis-space-sm $trellis-space-md;
-  font-size: $trellis-font-size-sm;
-  font-family: inherit;
-  color: var(--trellis-text, #{$trellis-text-color});
-  background-color: var(--trellis-bg, #{$trellis-bg-color});
-  border: 1px solid var(--trellis-border, #{$trellis-border-color});
-  border-radius: 9999px;
-  box-shadow: var(--trellis-shadow-sm, none);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-
-  &::placeholder { color: var(--trellis-muted, #{$trellis-muted-color}); }
-
-  &:hover {
-    border-color: color-mix(in srgb, var(--trellis-primary, #{$trellis-primary-color}) 35%, var(--trellis-border, #{$trellis-border-color}));
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--trellis-primary, #{$trellis-primary-color});
-    outline-offset: -2px;
-  }
-
-  &:disabled { opacity: 0.6; cursor: not-allowed; }
-}
-
-.search-results {
-  margin-top: $trellis-space-sm;
-  list-style: none;
-  padding: 0;
-
-  &[hidden] { display: none; }
-}
-
-.search-empty {
-  padding: $trellis-space-sm $trellis-space-md;
-  font-size: $trellis-font-size-sm;
-  color: var(--trellis-muted, #{$trellis-muted-color});
-}
-
-.search-result {
-  margin-bottom: $trellis-space-xs;
-}
-
-.search-result-link {
-  display: block;
-  padding: $trellis-space-sm $trellis-space-md;
-  border-radius: $trellis-border-radius;
-  text-decoration: none;
-  color: var(--trellis-text, #{$trellis-text-color});
-
-  &:hover,
-  &:focus-visible {
-    background-color: var(--trellis-surface, #{$trellis-surface-color});
-  }
-}
-
-.search-result-title {
-  display: block;
-  font-size: $trellis-font-size-sm;
-  font-weight: 600;
-  color: var(--trellis-primary, #{$trellis-primary-color});
-}
-
-.search-result-snippet {
-  display: block;
-  margin-top: $trellis-space-xs;
-  font-size: $trellis-font-size-xs;
-  line-height: 1.4;
-  color: var(--trellis-muted, #{$trellis-muted-color});
 }
 
 // ── In-page table of contents ────────────────────────────────────────────────

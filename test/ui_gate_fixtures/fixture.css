@@ -1,0 +1,28 @@
+*{box-sizing:border-box}body{font:16px system-ui;margin:16px;color:#171717;background:white}main{max-width:40rem}button,input,a{font:inherit;min-width:44px;min-height:44px}button,input{padding:8px;margin:4px}a{display:inline-flex;align-items:center;padding:8px}button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #005fcc;outline-offset:2px}button{color:#171717;background:#ededed;border:1px solid #333}button:hover{background:#ddd}button:active{background:#ccc}button:disabled{color:#555}#popup{border:1px solid #333;padding:4px}#popup[hidden]{display:none}.toast{padding:12px;margin:4px;border:1px solid #444}.dark{color-scheme:dark}.dark body{background:#171717;color:white}.dark button{color:white;background:#333}:root{--primary:#005fcc;--destructive:#b00020}.dark{--primary:#86b7ff;--destructive:#ff8080}@media(forced-colors:active){button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid Highlight}}
+
+.defect-forced button:focus-visible{outline:none;box-shadow:0 0 0 3px blue}.defect-motion #trigger{animation:moving 2s infinite}@keyframes moving{to{transform:translateX(20px)}}@media(max-width:400px){.defect-width main{min-width:500px}}@media(max-width:330px){.defect-zoom main{min-width:500px}}.defect-popup #popup:not([hidden]){position:fixed;left:95%;width:200px}.tiny{min-height:20px;height:20px;padding:0}.small{min-height:30px;height:30px;padding:0}
+
+#name[data-outline-step="1"]{outline-color:rgb(1,0,0)}
+#name[data-outline-step="2"]{outline-color:rgb(2,0,0)}
+#name[data-outline-step="3"]{outline-color:rgb(3,0,0)}
+#name[data-outline-step="4"]{outline-color:rgb(4,0,0)}
+#name[data-outline-step="5"]{outline-color:rgb(5,0,0)}
+#name[data-outline-step="6"]{outline-color:rgb(6,0,0)}
+#name[data-outline-step="7"]{outline-color:rgb(7,0,0)}
+#name[data-outline-step="8"]{outline-color:rgb(8,0,0)}
+#name[data-outline-step="9"]{outline-color:rgb(9,0,0)}
+#name[data-outline-step="10"]{outline-color:rgb(10,0,0)}
+#name[data-outline-step="11"]{outline-color:rgb(11,0,0)}
+#name[data-outline-step="12"]{outline-color:rgb(12,0,0)}
+#name[data-outline-step="13"]{outline-color:rgb(13,0,0)}
+#name[data-outline-step="14"]{outline-color:rgb(14,0,0)}
+#name[data-outline-step="15"]{outline-color:rgb(15,0,0)}
+#name[data-outline-step="16"]{outline-color:rgb(16,0,0)}
+#name[data-outline-step="17"]{outline-color:rgb(17,0,0)}
+#name[data-outline-step="18"]{outline-color:rgb(18,0,0)}
+#name[data-outline-step="19"]{outline-color:rgb(19,0,0)}
+#name[data-outline-step="20"]{outline-color:rgb(20,0,0)}
+#name[data-outline-step="21"]{outline-color:rgb(21,0,0)}
+#name[data-outline-step="22"]{outline-color:rgb(22,0,0)}
+#name[data-outline-step="23"]{outline-color:rgb(23,0,0)}
+#name[data-outline-step="24"]{outline-color:rgb(0,0,255)}

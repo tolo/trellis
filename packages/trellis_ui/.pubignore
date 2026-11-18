@@ -7,3 +7,4 @@ assets/
 generated/
 .tools/
 .agent_temp/
+sync-reports/

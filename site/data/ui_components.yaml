@@ -1,0 +1,614 @@
+# GENERATED FILE – do not edit by hand.
+# Sources: dev/ui-gate/records/ and packages/trellis_ui/ fragments and stylesheets.
+# Regenerate with: dart run tool/generate_ui_reference.dart
+"alert-dialog":
+  name: "alert-dialog"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-alert-dialog-action","trellis-alert-dialog-content","trellis-alert-dialog-description","trellis-alert-dialog-footer","trellis-alert-dialog-header","trellis-alert-dialog-media","trellis-alert-dialog-overlay","trellis-alert-dialog-title"]
+  fragments:
+    - {"name":"alertDialog","signature":"alertDialog(id, title, description, open, ...attrs)","parameters":["id","title","description","open","...attrs"],"slots":["trigger","anonymous","action"],"attribute_targets":[{"tag":"<dialog>","part":"alert-dialog-content"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"alert":
+  name: "alert"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-alert","trellis-alert-action","trellis-alert-description","trellis-alert-title","trellis-alert-variant-default","trellis-alert-variant-destructive"]
+  fragments:
+    - {"name":"alert","signature":"alert(variant, ...attrs)","parameters":["variant","...attrs"],"slots":["title","anonymous"],"attribute_targets":[{"tag":"<div>","part":"alert"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"badge":
+  name: "badge"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-badge","trellis-badge-variant-default","trellis-badge-variant-destructive","trellis-badge-variant-ghost","trellis-badge-variant-link","trellis-badge-variant-outline","trellis-badge-variant-secondary"]
+  fragments:
+    - {"name":"badge","signature":"badge(variant, ...attrs)","parameters":["variant","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<span>","part":"badge"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"breadcrumb":
+  name: "breadcrumb"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-breadcrumb-ellipsis","trellis-breadcrumb-item","trellis-breadcrumb-link","trellis-breadcrumb-list","trellis-breadcrumb-page","trellis-breadcrumb-separator"]
+  fragments:
+    - {"name":"breadcrumb","signature":"breadcrumb(items, ...attrs)","parameters":["items","...attrs"],"slots":[],"attribute_targets":[{"tag":"<nav>","part":"breadcrumb"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"button":
+  name: "button"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-button","trellis-button-size-default","trellis-button-size-icon","trellis-button-size-icon-lg","trellis-button-size-icon-sm","trellis-button-size-icon-xs","trellis-button-size-lg","trellis-button-size-sm","trellis-button-size-xs","trellis-button-variant-default","trellis-button-variant-destructive","trellis-button-variant-ghost","trellis-button-variant-link","trellis-button-variant-outline","trellis-button-variant-secondary"]
+  fragments:
+    - {"name":"button","signature":"button(variant, size, ...attrs)","parameters":["variant","size","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<button>","part":"button"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"card":
+  name: "card"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-card","trellis-card-action","trellis-card-content","trellis-card-description","trellis-card-footer","trellis-card-header","trellis-card-title"]
+  fragments:
+    - {"name":"card","signature":"card(...attrs)","parameters":["...attrs"],"slots":["title","description","action","anonymous","footer"],"attribute_targets":[{"tag":"<section>","part":"card"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"checkbox":
+  name: "checkbox"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-checkbox","trellis-checkbox-indicator"]
+  fragments:
+    - {"name":"checkbox","signature":"checkbox(...attrs)","parameters":["...attrs"],"slots":[],"attribute_targets":[{"tag":"<input>","part":"checkbox"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"cluster":
+  name: "cluster"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-cluster","trellis-cluster-gap-lg","trellis-cluster-gap-md","trellis-cluster-gap-none","trellis-cluster-gap-sm","trellis-cluster-gap-xl","trellis-cluster-gap-xs"]
+  fragments:
+    - {"name":"cluster","signature":"cluster(gap, ...attrs)","parameters":["gap","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<div>","part":"cluster"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"combobox":
+  name: "combobox"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-combobox-chip","trellis-combobox-chip-indicator-icon","trellis-combobox-chip-input","trellis-combobox-chip-remove","trellis-combobox-chips","trellis-combobox-clear-icon","trellis-combobox-content","trellis-combobox-content-logical","trellis-combobox-empty","trellis-combobox-input","trellis-combobox-item","trellis-combobox-item-indicator","trellis-combobox-item-indicator-icon","trellis-combobox-label","trellis-combobox-list","trellis-combobox-separator","trellis-combobox-trigger","trellis-combobox-trigger-icon"]
+  fragments:
+    - {"name":"combobox","signature":"combobox(id, name, placeholder, value, options, displayValue, ...attrs)","parameters":["id","name","placeholder","value","options","displayValue","...attrs"],"slots":[],"attribute_targets":[{"tag":"<input>","part":"input-group-control"}]}
+    - {"name":"comboboxOptions","signature":"comboboxOptions(id, options, ...attrs)","parameters":["id","options","...attrs"],"slots":[],"attribute_targets":[{"tag":"<div>"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"container":
+  name: "container"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-container","trellis-container-size-lg","trellis-container-size-md","trellis-container-size-sm","trellis-container-size-xl","trellis-sidebar","trellis-sidebar-gap-lg","trellis-sidebar-gap-md","trellis-sidebar-gap-none","trellis-sidebar-gap-sm","trellis-sidebar-gap-xl","trellis-sidebar-gap-xs"]
+  fragments:
+    - {"name":"container","signature":"container(size, ...attrs)","parameters":["size","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<div>","part":"container"}]}
+    - {"name":"sidebar","signature":"sidebar(gap, ...attrs)","parameters":["gap","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<div>","part":"sidebar"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"dialog":
+  name: "dialog"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-dialog-close","trellis-dialog-content","trellis-dialog-description","trellis-dialog-footer","trellis-dialog-header","trellis-dialog-overlay","trellis-dialog-title"]
+  fragments:
+    - {"name":"dialog","signature":"dialog(id, title, description, open, ...attrs)","parameters":["id","title","description","open","...attrs"],"slots":["trigger","anonymous","footer"],"attribute_targets":[{"tag":"<dialog>","part":"dialog-content"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"dropdown-menu":
+  name: "dropdown-menu"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-dropdown-menu-checkbox-item","trellis-dropdown-menu-content","trellis-dropdown-menu-content-logical","trellis-dropdown-menu-item","trellis-dropdown-menu-item-indicator","trellis-dropdown-menu-label","trellis-dropdown-menu-radio-item","trellis-dropdown-menu-separator","trellis-dropdown-menu-shortcut","trellis-dropdown-menu-sub-content","trellis-dropdown-menu-sub-trigger"]
+  fragments:
+    - {"name":"dropdownMenu","signature":"dropdownMenu(id, ...attrs)","parameters":["id","...attrs"],"slots":["trigger","anonymous"],"attribute_targets":[{"tag":"<div>","part":"dropdown-menu-content"}]}
+    - {"name":"menuItem","signature":"menuItem(variant, ...attrs)","parameters":["variant","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<button>","part":"dropdown-menu-item"}]}
+    - {"name":"menuCheckboxItem","signature":"menuCheckboxItem(checked, ...attrs)","parameters":["checked","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<button>","part":"dropdown-menu-checkbox-item"}]}
+    - {"name":"menuSeparator","signature":"menuSeparator(...attrs)","parameters":["...attrs"],"slots":[],"attribute_targets":[{"tag":"<div>","part":"dropdown-menu-separator"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"field":
+  name: "field"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-field","trellis-field-content","trellis-field-description","trellis-field-error","trellis-field-group","trellis-field-label","trellis-field-legend","trellis-field-orientation-horizontal","trellis-field-orientation-responsive","trellis-field-orientation-vertical","trellis-field-separator","trellis-field-separator-content","trellis-field-set","trellis-field-title","trellis-label"]
+  fragments:
+    - {"name":"field","signature":"field(controlId, label, hint, error, ...attrs)","parameters":["controlId","label","hint","error","...attrs"],"slots":[],"attribute_targets":[{"tag":"<input>","part":"input"}]}
+    - {"name":"label","signature":"label(controlId, ...attrs)","parameters":["controlId","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<label>","part":"label"}]}
+    - {"name":"fieldset","signature":"fieldset(legend, ...attrs)","parameters":["legend","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<fieldset>","part":"field-set"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"grid":
+  name: "grid"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-grid","trellis-grid-gap-lg","trellis-grid-gap-md","trellis-grid-gap-none","trellis-grid-gap-sm","trellis-grid-gap-xl","trellis-grid-gap-xs","trellis-grid-minimum-lg","trellis-grid-minimum-md","trellis-grid-minimum-sm"]
+  fragments:
+    - {"name":"grid","signature":"grid(gap, minimum, ...attrs)","parameters":["gap","minimum","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<div>","part":"grid"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"input":
+  name: "input"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-input","trellis-input-group","trellis-input-group-addon","trellis-input-group-addon-align-block-end","trellis-input-group-addon-align-block-start","trellis-input-group-addon-align-inline-end","trellis-input-group-addon-align-inline-start","trellis-input-group-button","trellis-input-group-button-size-icon-sm","trellis-input-group-button-size-icon-xs","trellis-input-group-button-size-xs","trellis-input-group-input","trellis-input-group-text","trellis-input-group-textarea"]
+  fragments:
+    - {"name":"input","signature":"input(...attrs)","parameters":["...attrs"],"slots":[],"attribute_targets":[{"tag":"<input>","part":"input"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"native-select":
+  name: "native-select"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-native-select","trellis-native-select-icon","trellis-native-select-wrapper"]
+  fragments:
+    - {"name":"native-select","signature":"native-select(size, ...attrs)","parameters":["size","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<select>","part":"native-select"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"pagination":
+  name: "pagination"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-pagination","trellis-pagination-content","trellis-pagination-ellipsis","trellis-pagination-link","trellis-pagination-next","trellis-pagination-next-text","trellis-pagination-previous","trellis-pagination-previous-text"]
+  fragments:
+    - {"name":"pagination","signature":"pagination(pages, previous, next, ...attrs)","parameters":["pages","previous","next","...attrs"],"slots":[],"attribute_targets":[{"tag":"<nav>","part":"pagination"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"radio":
+  name: "radio"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-radio","trellis-radio-group","trellis-radio-group-indicator","trellis-radio-group-indicator-icon","trellis-radio-group-item"]
+  fragments:
+    - {"name":"radio","signature":"radio(legend, ...attrs)","parameters":["legend","...attrs"],"slots":[],"attribute_targets":[{"tag":"<input>","part":"radio-group-item"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"separator":
+  name: "separator"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-separator","trellis-separator-vertical"]
+  fragments:
+    - {"name":"separator","signature":"separator(orientation, ...attrs)","parameters":["orientation","...attrs"],"slots":[],"attribute_targets":[{"tag":"<hr>","part":"separator"},{"tag":"<div>","part":"separator"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"stack":
+  name: "stack"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-stack","trellis-stack-gap-lg","trellis-stack-gap-md","trellis-stack-gap-none","trellis-stack-gap-sm","trellis-stack-gap-xl","trellis-stack-gap-xs"]
+  fragments:
+    - {"name":"stack","signature":"stack(gap, ...attrs)","parameters":["gap","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<div>","part":"stack"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"switch":
+  name: "switch"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-switch","trellis-switch-thumb"]
+  fragments:
+    - {"name":"switch","signature":"switch(size, ...attrs)","parameters":["size","...attrs"],"slots":[],"attribute_targets":[{"tag":"<input>","part":"switch"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"table":
+  name: "table"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-table","trellis-table-body","trellis-table-caption","trellis-table-cell","trellis-table-container","trellis-table-footer","trellis-table-head","trellis-table-header","trellis-table-row"]
+  fragments:
+    - {"name":"table","signature":"table(caption, columns, rows, ...attrs)","parameters":["caption","columns","rows","...attrs"],"slots":["header","row","footer"],"attribute_targets":[{"tag":"<table>","part":"table"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"tabs":
+  name: "tabs"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-tabs","trellis-tabs-content","trellis-tabs-list","trellis-tabs-list-variant-default","trellis-tabs-list-variant-line","trellis-tabs-trigger"]
+  fragments:
+    - {"name":"tabs","signature":"tabs(id, active, vertical, ...attrs)","parameters":["id","active","vertical","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<div>","part":"tabs"}]}
+    - {"name":"tabList","signature":"tabList(...attrs)","parameters":["...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<div>","part":"tabs-list"}]}
+    - {"name":"tabTrigger","signature":"tabTrigger(value, ...attrs)","parameters":["value","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<button>","part":"tabs-trigger"}]}
+    - {"name":"tabPanel","signature":"tabPanel(value, ...attrs)","parameters":["value","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<div>","part":"tabs-content"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"textarea":
+  name: "textarea"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-textarea"]
+  fragments:
+    - {"name":"textarea","signature":"textarea(...attrs)","parameters":["...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<textarea>","part":"textarea"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
+"toast":
+  name: "toast"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-toast","trellis-toast-body","trellis-toast-close","trellis-toast-description","trellis-toast-icon","trellis-toast-title","trellis-toaster"]
+  fragments:
+    - {"name":"toast","signature":"toast(type, title, description, duration, outOfBand, ...attrs)","parameters":["type","title","description","duration","outOfBand","...attrs"],"slots":[],"attribute_targets":[{"tag":"<div>","part":"toast"}]}
+    - {"name":"toastViewport","signature":"toastViewport(id, ...attrs)","parameters":["id","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<div>","part":"toast-viewport"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}

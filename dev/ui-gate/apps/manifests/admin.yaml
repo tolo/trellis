@@ -1,0 +1,118 @@
+name: admin
+page: /contacts
+root: body
+elements:
+  contacts-tab: '#directory-tab-contacts'
+states:
+  default: []
+  empty-filter:
+    - focus: '#contact-query'
+    - type: No matching contact ZZZ
+    - wait: "document.querySelector('#contact-list [role=status]')?.textContent.trim() === 'No contacts match these filters.' && !document.querySelector('.htmx-settling')"
+  row-menu:
+    - focus: '#contact-query'
+    - eval: "(() => {document.activeElement.select();})()"
+    - press: Backspace
+    - wait: "document.querySelector('#actions-1-trigger') !== null && !document.querySelector('.htmx-settling')"
+    - click: '#actions-1-trigger'
+    - wait: "document.querySelector('#actions-1:popover-open') !== null && document.activeElement.textContent.trim() === 'Edit'"
+    - wait: "document.getElementById('actions-1').getAnimations().every(animation => animation.playState !== 'running')"
+  edit-validation:
+    - eval: "(() => {if (!document.querySelector('#actions-1:popover-open')) document.querySelector('#actions-1-trigger').click();})()"
+    - wait: "document.querySelector('#actions-1:popover-open') !== null && document.activeElement.textContent.trim() === 'Edit'"
+    - press: Enter
+    - wait: "document.querySelector('#edit-1:modal') !== null && !document.querySelector('.htmx-settling')"
+    - focus: '#contact-email'
+    - eval: "(() => {document.activeElement.select();})()"
+    - press: Backspace
+    - click: '#save-contact'
+    - wait: >-
+        document.querySelector('#edit-1:modal #contact-email[aria-invalid=true]') === document.activeElement &&
+        !document.querySelector('.htmx-settling')
+    - expect:
+        expression: >-
+          document.activeElement.getAttribute('aria-describedby')?.trim().split(/\s+/).some(id =>
+            document.getElementById(id)?.textContent.trim() === 'Enter a valid email address.')
+        equals: true
+  alert-dialog:
+    - press: Escape
+    - wait: "document.querySelector('dialog:modal') === null"
+    - click: '#actions-1-trigger'
+    - wait: "document.querySelector('#actions-1:popover-open') !== null && document.activeElement.textContent.trim() === 'Edit'"
+    - press: ArrowDown
+    - expect: {expression: document.activeElement.textContent.trim(), equals: Delete}
+    - press: Enter
+    - wait: "document.querySelector('#delete-1:modal[role=alertdialog]') !== null && !document.querySelector('.htmx-settling')"
+  summary:
+    - press: Escape
+    - wait: "document.querySelector('dialog:modal') === null"
+    - click: '#directory-tab-summary'
+    - expect: {expression: "document.querySelector('#directory-panel-summary dl').getClientRects().length > 0", equals: true}
+  toast:
+    - click: '#directory-tab-contacts'
+    - click: '#actions-1-trigger'
+    - wait: "document.querySelector('#actions-1:popover-open') !== null && document.activeElement.textContent.trim() === 'Edit'"
+    - press: Enter
+    - wait: "document.querySelector('#edit-1:modal') !== null && !document.querySelector('.htmx-settling')"
+    - click: '#save-contact'
+    - wait: >-
+        document.querySelector('dialog:modal') === null && !document.querySelector('.htmx-settling') &&
+        document.querySelector('#toaster [data-slot=toast-title]')?.textContent.trim() === 'Contact updated'
+keyboard:
+  - focus: '#directory-tab-contacts'
+  - press: ArrowRight
+  - expect: {expression: document.activeElement.id, equals: directory-tab-summary}
+  - press: Enter
+  - expect: {expression: "document.querySelector('#directory-tab-summary').getAttribute('aria-selected')", equals: 'true'}
+  - press: ArrowLeft
+  - expect: {expression: document.activeElement.id, equals: directory-tab-contacts}
+  - press: Enter
+  - expect: {expression: "document.querySelector('#directory-tab-contacts').getAttribute('aria-selected')", equals: 'true'}
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: directory-panel-contacts}
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: new-contact}
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: contact-query}
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: contact-status}
+semantics:
+  - expression: >-
+      document.querySelector('h1')?.textContent.trim() === 'Contacts' &&
+      document.querySelectorAll('main').length === 1 &&
+      document.querySelectorAll('[role=tab][aria-selected=true]').length === 1 &&
+      document.querySelector('#toaster')?.getAttribute('aria-live') === 'polite'
+    equals: true
+  - expression: >-
+      (() => {
+        const table = document.querySelector('#contact-list table');
+        return table ? table.caption?.textContent.trim() === 'Contacts' &&
+          [...table.querySelectorAll('th')].every(th => th.scope === 'col') :
+          document.querySelector('#contact-list [role=status]')?.textContent.includes('No contacts');
+      })()
+    equals: true
+  - expression: >-
+      [...document.querySelectorAll('dialog:modal')].every(dialog =>
+        dialog.getAttribute('aria-modal') === 'true' &&
+        document.getElementById(dialog.getAttribute('aria-labelledby'))?.textContent.trim() &&
+        document.getElementById(dialog.getAttribute('aria-describedby'))?.textContent.trim())
+    equals: true
+htmx:
+  region: '#contact-list'
+  swap:
+    - click: '#toaster [data-slot=toast-close]'
+    - focus: '#contact-query'
+    - press: Enter
+    - wait: "document.querySelector('#contact-list table') !== null && !document.querySelector('.htmx-settling')"
+  navigate:
+    - click: '#sort-email'
+    - wait: "location.search.includes('sort=email') && !document.querySelector('.htmx-settling')"
+  transient: 'dialog[open], [popover][data-open], #toaster tl-toast'
+instances:
+  - '#contact-list'
+  - tl-dropdown-menu
+  - '#contact-summary'
+  - '#toaster'
+provenance:
+  - file: ../../../../LICENSE
+    license: MIT

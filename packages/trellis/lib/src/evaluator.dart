@@ -253,21 +253,31 @@ class ExpressionEvaluator {
 
     final evaluatedArgs = args.map((a) => _eval(a, expr, context)).toList();
 
-    if (evaluatedArgs.isEmpty) {
-      // No args — try calling with value only (old-style), fallback to empty args list (new-style)
-      try {
-        return filter(value);
-      } on NoSuchMethodError {
-        return (filter as dynamic)(value, <dynamic>[]);
-      }
+    // Arity is read from the function type, not from a NoSuchMethodError at the call: that error is
+    // indistinguishable from one raised inside the filter body. A `Never` parameter is a supertype of every
+    // parameter type, so `(String v)` and `(num v, List<dynamic> args)` match too.
+    final takesArgs = filter is Object? Function(Never, Never);
+    final takesValueOnly = filter is Object? Function(Never);
+    final List<dynamic> callArgs;
+    if (evaluatedArgs.isEmpty && takesValueOnly) {
+      callArgs = [value];
+    } else if (takesArgs) {
+      callArgs = [value, evaluatedArgs];
+    } else if (takesValueOnly) {
+      throw ExpressionException("Filter '$filterName' does not accept arguments", expression: expr);
+    } else {
+      throw ExpressionException(
+        "Filter '$filterName' must take (value) or (value, List<dynamic> args), got ${filter.runtimeType}",
+        expression: expr,
+      );
     }
 
-    // Args present — try calling with args list [D03]
     try {
-      return (filter as dynamic)(value, evaluatedArgs);
-    } on NoSuchMethodError {
-      // Old-style filter doesn't accept args
-      throw ExpressionException("Filter '$filterName' does not accept arguments", expression: expr);
+      return Function.apply(filter, callArgs);
+    } on TemplateException {
+      rethrow;
+    } catch (e, st) {
+      Error.throwWithStackTrace(ExpressionException("Filter '$filterName' failed: $e", expression: expr), st);
     }
   }
 

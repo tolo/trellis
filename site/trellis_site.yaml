@@ -14,6 +14,7 @@ pathPrefix: /trellis/
 # site/ is a direct child of the repo root, so this normalized relative path
 # resolves to the reusable Lattice theme without copying or forking it.
 theme: ../../themes/lattice
+uses: [trellis_ui]
 
 theme_params:
   skin: auto

@@ -1,12 +1,14 @@
 import '../version.dart';
 
+import 'ui_scaffold_template.dart';
+
 /// Generates the pubspec.yaml content for a new Trellis project.
 ///
 /// `trellis_dev` is a regular dependency because it is imported from `bin/server.dart`.
 /// In production, the dev middleware is conditionally added to the pipeline.
 ///
 /// Trellis packages are constrained to the CLI's own [cliVersion]: under lockstep (ADR-009) that is the SDK version.
-String pubspecTemplate(String projectName) =>
+String pubspecTemplate(String projectName, {bool ui = false}) =>
     '''
 name: $projectName
 version: 0.1.0
@@ -22,7 +24,7 @@ dependencies:
   trellis: ^$cliVersion
   trellis_dev: ^$cliVersion
   trellis_shelf: ^$cliVersion
-
+${ui ? uiDependency : ''}
 dev_dependencies:
   lints: ^6.0.0
 ''';

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Contact dialog</title></head>
+<body>
+<tl:block tl:fragment="form">
+  <div tl:replace="~{trellis-ui/dialog :: dialog(dialogId, title, 'Enter the details for this contact.', true)}"
+    tl:attr="data-return-focus=${returnFocus}">
+    <form id="contact-form" novalidate class="admin-form" hx-target="#dialog-host"
+      tl:attr="hx-post=${editing ? null : url}, hx-put=${editing ? url : null}">
+      <input tl:replace="~{trellis-ui/field :: field('contact-name', 'Name', null, errors.name)}" name="name"
+        autocomplete="name" tl:attr="value=${name}, autofocus=${focus == 'name'}">
+      <input tl:replace="~{trellis-ui/field :: field('contact-email', 'Email', null, errors.email)}" name="email"
+        type="email" autocomplete="email" tl:attr="value=${email}, autofocus=${focus == 'email'}">
+      <div class="admin-control">
+        <label tl:replace="~{trellis-ui/field :: label('contact-company')}">Company</label>
+        <div tl:replace="~{trellis-ui/combobox :: combobox('contact-company', 'company', 'Search companies', companyId, options, companyText)}"
+          name="q" hx-get="/companies" hx-trigger="input changed delay:250ms" hx-target="#contact-company-results"
+          hx-swap="outerHTML" hx-sync="this:replace"
+          tl:attr="autofocus=${focus == 'company'}, aria-invalid=${errors.company ? 'true' : null}, aria-describedby=${errors.company ? 'contact-company-error' : null}"></div>
+        <p tl:if="${errors.company}" id="contact-company-error" role="alert" class="trellis-field-error"
+          tl:text="${errors.company}">Choose a company from the suggestions.</p>
+      </div>
+      <div class="admin-control">
+        <label tl:replace="~{trellis-ui/field :: label('contact-edit-status')}">Status</label>
+        <select tl:replace="~{trellis-ui/native-select :: native-select}" id="contact-edit-status" name="status"
+          tl:attr="autofocus=${focus == 'status'}, aria-invalid=${errors.status ? 'true' : null}, aria-describedby=${errors.status ? 'contact-status-error' : null}">
+          <option tl:if="${errors.status}" value="">Choose a status</option>
+          <option tl:each="option : ${statuses}" tl:value="${option.value}" tl:text="${option.label}"
+            tl:attr="selected=${option.selected}">Active</option>
+        </select>
+        <p tl:if="${errors.status}" id="contact-status-error" role="alert" class="trellis-field-error"
+          tl:text="${errors.status}">Choose a status from the list.</p>
+      </div>
+    </form>
+    <div tl:slot="footer">
+      <button tl:replace="~{trellis-ui/button :: button('outline')}" type="button" data-dialog-close>Cancel</button>
+      <button tl:replace="~{trellis-ui/button :: button}" id="save-contact" type="submit" form="contact-form">Save contact</button>
+    </div>
+  </div>
+</tl:block>
+<tl:block tl:fragment="delete">
+  <div tl:replace="~{trellis-ui/alert-dialog :: alertDialog(dialogId, title, 'This permanently removes the contact from the directory.', true)}"
+    tl:attr="data-return-focus=${returnFocus}">
+    <div tl:slot="action">
+      <button tl:replace="~{trellis-ui/button :: button('destructive')}" type="button" id="confirm-delete"
+        tl:attr="hx-delete=${url}" hx-target="#dialog-host">Delete contact</button>
+    </div>
+  </div>
+</tl:block>
+<div tl:fragment="clear" id="dialog-host" hx-swap-oob="true"></div>
+</body>
+</html>

@@ -66,8 +66,8 @@ contract test that reads manifests and compiled CSS is a wiring check, not a ren
 - Layout claims are asserted on rendered geometry (`getBoundingClientRect`, `scrollWidth` against `clientWidth`) via
   `test/browser_reflow_probe.dart`, the repo's CDP client. A CSS substring check is a wiring check and does not count as
   proof of layout.
-- `site_reflow_test.dart` holds the docs site to the same reflow contract. `search_client_behavior_test.dart` and the
-  theme client-behaviour harness run vendored JS against a DOM under system `node`.
+- `site_reflow_test.dart` holds the docs site to the same reflow contract. `search_client_browser_test.dart` exercises
+  shared search in Chrome and Firefox. The older theme toggle harness still runs under system `node`.
 - `release_distribution_contract_test.dart` and `docs_preview_script_test.dart` run the release and preview scripts
   against fixture repos with fake binaries first on `PATH`. `link_check_test.dart` covers `tool/link_check.dart` as unit
   and as subprocess.

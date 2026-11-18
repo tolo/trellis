@@ -125,7 +125,8 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
   a page-layout invocation and a post-Markdown invocation.
 - **Lattice preview isolation** – Lattice's unlayered `--card` and `--radius` override layered suite tokens and
   their derived values. Its Markdown table selectors also reach shortcode output. Compare previews to a suite-only
-  page before adjusting the scoped rules in `site/static/ui-reference.css`.
+  page before adjusting the scoped rules in `site/static/ui-reference.css`. Scope adopting themes' token bridges
+  to their controls too. Unlayered theme focus rules win over the suite's layer even when idle paint matches.
 
 - **A skin file's value can be dead in the render it names**: lattice's dark skin set `$trellis-border-color: #27392c`, but every dark view renders `--lattice: #1a2620` from the `lattice-dark` mixin's literal, because `[data-skin=dark]` on `<html>` overrides the base `:root` the skin file reached. Seeding the `border_color_dark` twin from the skin file would have shipped a default no mode renders; seed it from what the dark view renders, and expect the forced-dark base `:root` (not the rendered CSS) to change in the baseline diff.
 - **A fragment inserted twice (responsive dual-render) must not carry a literal `id`**: a TOC/nav fragment rendered once for mobile and once for desktop (one CSS-hidden per breakpoint) puts two copies in the DOM. Any hard-coded `id`/`aria-labelledby` inside it becomes a duplicate id (invalid HTML, ambiguous ARIA). Name the region with `aria-label` on a `<nav>` instead of `aria-labelledby`+`id`.

@@ -9,6 +9,7 @@ import 'package:trellis_site/trellis_site.dart';
 import 'package:yaml/yaml.dart';
 
 import '../tool/generate_theme_gallery.dart';
+import 'theme_use_support.dart';
 
 void main() {
   late Directory root;
@@ -156,6 +157,7 @@ $screenshotsYaml
         outputDir: outputDir.path,
         themeConfig: ThemeConfig(name: relativeTheme),
       ),
+      sourceFactories: themeSourceFactories,
     ).build();
     expect(result.hasWarnings, isFalse);
     final gallery = html_parser.parse(

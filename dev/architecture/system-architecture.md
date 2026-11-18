@@ -38,7 +38,7 @@ Trellis is a Dart toolkit for building server-rendered web applications and stat
 | **`trellis_ui`** | Embedded UI fragments, same-origin CSS/JS, neutral asset response and materialization. | `trellis` | v0.14.0 |
 | **`trellis_dev`** | Dev tools: SSE browser hot reload, script injection middleware | `trellis`, `shelf` | v0.13.0 |
 | **`trellis_css`** | CSS processing: Dart-native SASS/SCSS compilation via `package:sass`, `tl:scope` fragment-scoped CSS via CSS `@scope` | `trellis`, `sass`, `html` | v0.13.0 |
-| **`trellis_site`** | Static site generation: content discovery, front matter, Markdown, taxonomies, pagination, sitemap, shortcodes, data cascade, Atom/RSS feeds, JSON search index, named build sources | `trellis`, `trellis_css`, `highlight`, `html`, `markdown`, `path`, `yaml` | v0.13.0 |
+| **`trellis_site`** | Static site generation: content discovery, front matter, Markdown, taxonomies, pagination, sitemap, shortcodes, data cascade, Atom/RSS feeds, JSON search index and client, named build sources | `trellis`, `trellis_css`, `highlight`, `html`, `markdown`, `path`, `yaml` | v0.13.0 |
 | **`trellis_cli`** | CLI tool: `trellis create` (htmx + blog + dart_frog + relic templates), `trellis build` (SSG, SASS and the embedded UI source), `trellis serve` (local preview server), and `trellis theme` (`add`, `update`, `list`, `info`, `remove`) | `args`, `path`, `shelf`, `shelf_static`, `trellis_css`, `trellis_site`, `trellis_ui` | v0.13.0 |
 | ~~`trellis_test`~~ | *Merged into `trellis` core as `testing.dart` entry point (2026-03-18)* | — | — |
 
@@ -352,7 +352,7 @@ layouts/**/*.html ──►  TaxonomyCollector   (term collection, virtual pages
 static/**         ──►  PageGenerator       (layout resolution, data cascade, Trellis render)
                        SitemapGenerator    (sitemap.xml with lastmod)
                        FeedGenerator       (Atom + RSS feeds — opt-in)
-                       SearchIndexGenerator (JSON search index — opt-in)
+                       SearchIndexGenerator (JSON index and client, opt-in)
                        Static asset copy   (+ bundle asset copy)
                             │
                             ▼
@@ -375,7 +375,7 @@ static/**         ──►  PageGenerator       (layout resolution, data cascad
 10. **Static assets** — write source bytes, copy theme then site static files (skip `.scss`/`.sass`), copy bundle assets
 11. **Sitemap** — `sitemap.xml` with `<lastmod>` from date or mtime
 12. **Feeds** — Atom `feed.xml` (+ optional `rss.xml`) when `feeds:` config present; per-section feeds supported
-13. **Search index** — JSON array at configured path when `search.enabled: true`
+13. **Search** — JSON index at the configured path and `trellis-search.js` beside it when enabled and pages qualify
 
 In 0.14 the source registry connects the same fallback loaders to the page and shortcode engines.
 Site templates resolve first and theme templates second. Source factories provide the remaining
@@ -506,7 +506,7 @@ Targets Relic 2, where Content-Type comes from the `Body` and one set in respons
 ```
 ... (steps 1-9 as before) ...
 10. Feed generation   ← opt-in via feeds: config; Atom (RFC 4287) + optional RSS 2.0
-11. Search index      ← opt-in via search: config; JSON array (Lunr.js / Fuse.js / Pagefind)
+11. Search            ← opt-in via search: config; JSON index and shared client
 ```
 
 ### Feed Generation (`FeedGenerator`)
@@ -521,7 +521,7 @@ Targets Relic 2, where Content-Type comes from the `Body` and one set in respons
 ### Search Index (`SearchIndexGenerator`)
 
 - Activated by `search: enabled: true` in `trellis_site.yaml`
-- Outputs a JSON array at configured path (default: `output/search-index.json`)
+- Writes a JSON array at the configured path (default `output/search-index.json`) with `trellis-search.js` alongside it
 - Configurable fields: `title`, `summary`, `content`, `tags`, `date`, `section`, `url`
 - HTML stripping (`search.stripHtml: true`) and content truncation (`search.maxContentLength`)
 - Only `PageKind.single` content pages indexed; draft pages, excluded sections, and `search: false` front matter omitted
@@ -584,12 +584,13 @@ A documentation-oriented theme sitting beside the `verdant` blog theme (both are
 
 **Build-time syntax highlighting (ADR-010)** — arbor ships **no** highlighter JS. `trellis_site` colors fenced code at build time (`CodeHighlighter`, `package:highlight`), baking `.hljs-*` token spans into the HTML; the theme carries only the matching token CSS (`sass/_code.scss`), so code is colored with JavaScript disabled. See [ADR-010](../adrs/ADR-010-syntax-highlighting.md).
 
-**Vendored-JS discipline** — the two remaining client-side scripts are both first-party (no third-party library), vendored (committed) and served same-origin with `defer`; no Subresource Integrity hash is used, since for a same-origin script committed alongside the HTML that loads it an SRI hash guards nothing extra (anyone who can alter a served script can alter the served HTML). **No CDN, no `npm`/Node, no runtime fetch from an external host.** Two assets:
+**Client assets**. Arbor loads the generated `trellis-search.js` and suite styles and scripts
+from the site's origin. The theme's own `code-enhance.js` adds a language label and clones a
+server-rendered suite copy button into each code bar. It reads the language from the
+`language-*` class and the code from `textContent`.
 
-- **`search.js`** — a hand-authored, dependency-free vanilla-JS search client (no Lunr/Fuse/MiniSearch vendored library), chosen to keep the asset small and fully auditable while still satisfying the vendored, same-origin discipline.
-- **`code-enhance.js`** — adds a language label and copy button to each code block; reads the language from the `language-*` class and the code from `textContent`, so it is independent of the build-time tokenizer. Provenance for both is recorded in `themes/arbor/VENDORED.md`.
-
-Both search and the code copy button are **progressive enhancements**: the docs are fully readable and navigable with JavaScript disabled (and highlighting, being build-time, needs no client JS at all).
+Search and code copy are progressive enhancements. The docs remain readable and navigable with
+JavaScript disabled.
 
 ### Lattice Docs Theme (`themes/lattice/`)
 
@@ -603,23 +604,23 @@ and prevents a partial whole-file data override from publishing an empty section
 
 ### Client-Side Search Flow
 
-The engine and the theme meet at one artifact — `search-index.json`:
+Arbor, Folio, and Lattice use the same client. Their layouts load it with `defer` beside the suite
+script and render a disabled combobox inside a hidden search shell. The shell's `data-search-index`
+attribute carries the index URL with the configured path prefix.
 
 ```
-trellis_site build                         selected theme (browser)
-  SearchIndexGenerator                       search.js (vendored, same-origin)
-  (search.enabled: true)                       │
-        │  emits                                │  reads index URL from the shell's
-        ▼                                       │  data-search-index attribute
-  output/search-index.json  ──────────────────►│  (computed with ${site.pathPrefix},
-        (url fields already                     │   so the fetch resolves under any
-         pathPrefix-prefixed)                    │   deploy sub-path)
-                                                 ▼
-                                          same-origin fetch → in-memory filter →
-                                          result list (title + snippet, entry.url used verbatim)
+SearchIndexGenerator
+  └── JSON index + trellis-search.js
+          └── same-origin fetch
+                └── all-term match in title, summary, content and tags
+                      └── up to 20 server-rendered option clones
+                            └── selection navigates to indexed URL
 ```
 
-The `<input>` ships `disabled` in the static HTML and is enabled only after the index loads; any index-fetch failure (missing file, non-OK response, malformed payload) hides the control so the page stays usable. Result links use each entry's already-prefixed `url` verbatim — never re-prefixed client-side.
+The client reveals the shell after the same-origin index loads and the combobox is ready. An absent
+or invalid index leaves the shell hidden. The combobox handles focus, keyboard selection, and
+announcements. The client replaces its results wrapper and reads its hidden value after selection.
+The indexed URL already includes the path prefix.
 
 ### Docs Site (`site/`)
 

@@ -1,0 +1,22 @@
+.icon-button {
+  --primary: var(--meadow-primary-bg);
+  --primary-foreground: var(--meadow-primary-text);
+  --background: var(--meadow-paper);
+  --foreground: var(--meadow-ink);
+  --border: var(--meadow-line);
+  --ring: var(--meadow-ink);
+  --accent: var(--meadow-lime);
+  --accent-foreground: var(--meadow-ink);
+  --muted-foreground: var(--meadow-muted);
+
+  // Preserve the round touch target in the sticky masthead.
+  inline-size: 44px;
+  block-size: 44px;
+  border-radius: 999px;
+}
+
+// The button label color also contrasts with its primary fill.
+.icon-button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}

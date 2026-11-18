@@ -155,7 +155,7 @@ void main() {
       expect(homeDocument.querySelector('[data-demo-panel="rendered"]')!.attributes, contains('hidden'));
 
       final docs = File(p.join(outputDir, 'docs', 'syntax', 'expressions', 'index.html')).readAsStringSync();
-      expect(docs, allOf(contains('docs-sidebar'), contains('docs-toc'), contains('data-lattice-search')));
+      expect(docs, allOf(contains('docs-sidebar'), contains('docs-toc'), contains('data-trellis-search')));
       expect(docs, contains('page-nav'));
       expect(docs, contains('hljs-'));
       final contentDoc = html_parser.parse(

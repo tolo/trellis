@@ -34,26 +34,18 @@
   }
 
   function copyText(text, button) {
-    var done = function () {
-      button.textContent = 'Copied';
-      button.classList.add('is-copied');
-      window.setTimeout(function () {
-        button.textContent = 'Copy';
-        button.classList.remove('is-copied');
-      }, 1600);
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done, function () {
-        button.textContent = 'Error';
-        window.setTimeout(function () { button.textContent = 'Copy'; }, 1600);
-      });
-    } else {
-      button.textContent = 'Error';
+    function report(label) {
+      button.textContent = label;
       window.setTimeout(function () { button.textContent = 'Copy'; }, 1600);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { report('Copied'); }, function () { report('Error'); });
+    } else {
+      report('Error');
     }
   }
 
-  function enhance(code) {
+  function enhance(code, template) {
     var pre = code.parentElement;
     if (!pre || pre.tagName !== 'PRE') return;
     // Idempotent: skip if already wrapped (e.g. re-invoked).
@@ -72,11 +64,7 @@
     lang.className = 'code-lang';
     lang.textContent = label || '';
 
-    var button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'code-copy';
-    button.textContent = 'Copy';
-    button.setAttribute('aria-label', 'Copy code to clipboard');
+    var button = template.content.firstElementChild.cloneNode(true);
     button.addEventListener('click', function () {
       copyText(code.textContent, button);
     });
@@ -88,8 +76,10 @@
   }
 
   function run() {
+    var template = document.querySelector('template[data-code-copy]');
+    if (!template) return;
     var blocks = document.querySelectorAll('pre > code[class*="language-"]');
-    Array.prototype.forEach.call(blocks, enhance);
+    Array.prototype.forEach.call(blocks, function (code) { enhance(code, template); });
   }
 
   if (document.readyState === 'loading') {

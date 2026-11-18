@@ -1,0 +1,49 @@
+@use 'variables' as *;
+
+.search-shell,
+.code-bar {
+  --primary: var(--trellis-primary);
+  --primary-foreground: var(--trellis-bg);
+  --background: var(--trellis-bg);
+  --foreground: var(--trellis-text);
+  --border: var(--trellis-border);
+  --input: var(--trellis-border);
+  --ring: var(--trellis-primary);
+  --accent: var(--trellis-tint-strong);
+  --accent-foreground: var(--trellis-text);
+  --popover: var(--trellis-surface);
+  --popover-foreground: var(--trellis-text);
+  --muted-foreground: var(--trellis-muted);
+  --radius: #{$trellis-border-radius};
+}
+
+// Keep the surrounding sidebar and code frame on their original rhythm.
+.search-shell .trellis-combobox-input { block-size: 35px; }
+.search-shell input[role='combobox'] { block-size: 100%; }
+.code-bar { block-size: calc(#{$trellis-font-size-xs} + 4 * #{$trellis-space-xs} + 3px); }
+
+// The suite add-on's negative end margin creates a scrollbar in the docs column.
+.search-shell .trellis-input-group-addon { margin-right: 0; padding-block: 0; }
+
+// A docs result can sit over article text. Use the theme's opaque surface.
+.search-shell [popover] { background-color: var(--popover); }
+
+// Fit the suite's 44px touch targets plus the input group border.
+@media (pointer: coarse) {
+  .search-shell .trellis-combobox-input { block-size: 46px; }
+  .code-bar { block-size: auto; }
+}
+
+// The sidebar can clip a ring outside the search field.
+.search-shell :is(input[role='combobox'], .trellis-combobox-trigger):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+.search-shell .trellis-combobox-input:has(input:focus-visible) { box-shadow: none; }
+
+// The button label color also contrasts with its primary fill.
+.code-bar .trellis-button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}

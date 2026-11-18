@@ -10,6 +10,48 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
+import 'package:trellis_ui/trellis_ui.dart';
+
+import '../tool/ui_gate/driver.dart';
+import 'browser_reflow_probe.dart';
+
+/// Mounts an unprefixed build at its deployed URL.
+Future<StaticSiteServer> serveThemeOutput(
+  Directory output, {
+  String pathPrefix = '',
+  Map<String, String> headers = const {},
+  Map<String, int> statusCodes = const {},
+}) async {
+  var root = output;
+  if (pathPrefix.isNotEmpty) {
+    root = output.parent.createTempSync('mount_');
+    addTearDown(() => root.deleteSync(recursive: true));
+    Link(
+      p.join(root.path, pathPrefix.split('/').where((part) => part.isNotEmpty).single),
+    ).createSync(output.absolute.path);
+  }
+  final server = await StaticSiteServer.serve(root, headers: headers, statusCodes: statusCodes);
+  addTearDown(server.close);
+  return server;
+}
+
+/// Waits for an observable browser state, including fetches and navigation.
+Future<void> waitForThemeBrowser(GateDriver driver, String condition, {String? reason}) async {
+  final deadline = DateTime.now().add(const Duration(seconds: 5));
+  do {
+    if (await driver.evaluate(condition) == true) return;
+    await Future<void>.delayed(const Duration(milliseconds: 25));
+  } while (DateTime.now().isBefore(deadline));
+  fail('${driver.name}: ${reason ?? condition}');
+}
+
+/// The named source supplied by the CLI, for tests that inspect the in-process build result.
+final themeSourceFactories = <String, SiteSource Function()>{
+  'trellis_ui': () => SiteSource(
+    loader: TrellisUiLoader(),
+    assets: {for (final path in trellisUiAssetPaths) path.substring(1): trellisUiRespond(path)!.body},
+  ),
+};
 
 /// Two colours no output style abbreviates, so `contains` assertions are stable.
 const lightOverride = '#123456';

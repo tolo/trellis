@@ -94,11 +94,11 @@ void main() {
             p.basename(p.dirname(path)) != 'components';
         expect(
           refs,
-          unorderedEquals(
-            componentPage
-                ? ['$prefixForLinks$_suiteCss', '$prefixForLinks$_suiteJs', '${prefixForLinks}ui-reference.css']
-                : <String>[],
-          ),
+          unorderedEquals([
+            '$prefixForLinks$_suiteCss',
+            '$prefixForLinks$_suiteJs',
+            if (componentPage) '${prefixForLinks}ui-reference.css',
+          ]),
           reason: '$prefix:$path',
         );
       }
@@ -273,8 +273,11 @@ void main() {
     expect(
       await example('dropdown-menu', r'''(async () => {
       const trigger = document.querySelector('#reference-menu-trigger');
+      const popup = document.getElementById(trigger.getAttribute('popovertarget'));
+      // The suite syncs aria-expanded and focus in the native toggle task.
+      const toggled = new Promise(resolve => popup.addEventListener('toggle', resolve, {once: true}));
       trigger.click();
-      await new Promise(requestAnimationFrame);
+      await toggled;
       return [trigger.getAttribute('aria-expanded'), document.activeElement.getAttribute('role'), typeof window.htmx];
     })()'''),
       ['true', 'menuitem', 'undefined'],

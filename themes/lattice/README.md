@@ -3,6 +3,9 @@
 Lattice is a reusable `docs` theme with an expressive, content-driven home page and Arbor-compatible documentation
 navigation. It includes light, dark, and automatic skins; sidebar, TOC, search, prev/next links; build-time syntax
 highlighting; and progressive enhancements that never gate access to content.
+Lattice requires Trellis 0.14.0 for its suite combobox and reader toggle.
+The build supplies the shared search client beside the JSON index.
+
 
 ## Use
 

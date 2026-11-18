@@ -9,6 +9,9 @@
   theme and site static files, and conflicting source paths fail the build. Post-Markdown shortcodes
   in builds with sources can pass structured page front matter to templates.
 
+- Search-enabled builds write `trellis-search.js` beside the index when pages qualify. Arbor, Folio,
+  and Lattice use it with the suite combobox for same-origin, all-term search.
+
 ## 0.13.0
 
 ### Breaking

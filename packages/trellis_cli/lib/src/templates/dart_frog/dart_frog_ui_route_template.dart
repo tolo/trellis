@@ -22,7 +22,7 @@ import 'package:dart_frog/dart_frog.dart';
 import 'package:trellis_dart_frog/trellis_dart_frog.dart';
 import 'package:trellis_ui/trellis_ui.dart';
 
-const _csp = CspBuilder.strict(${htmxCdn ? '\n  scriptSrc: "\'self\' $htmxCdnOrigin",\n' : ''});
+const _csp = ${scaffoldStrictCsp(htmxCdn: htmxCdn, ui: true)};
 
 Future<void> init(InternetAddress _, int _) async {
   if (Platform.environment['DEV'] == 'true') {

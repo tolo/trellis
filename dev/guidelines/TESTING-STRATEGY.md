@@ -151,6 +151,17 @@ non-focusable elements are marked inapplicable for that state. Real keyboard and
 changed token. The three spike regressions are replayed by `ui_gate_appearance_test.dart`; all are detected by
 styles or box invariants, so no pixel-diff fallback is currently needed.
 
+The local component sweep (`packages/trellis_ui/test/qualification_gate_test.dart`) runs all 25 canonical
+manifests in three disjoint CLI chunks and compares each record byte for byte, retaining manual results.
+`packages/trellis_cli/test/ui_surfaces_gate_test.dart` launches the actual admin entry point and three generated
+`--ui` scaffolds. The same CLI checks the admin list, filter, menu, validation, alert dialog, Summary and toast,
+and each scaffold's counter swap and UI dialog, using the seven recipes and records in `dev/ui-gate/apps/`.
+
+Release limits are 25,000 bytes for the sum of the three embedded responses gzipped separately at level 9,
+400 authored JavaScript lines in the suite, and 50 authored CSS lines with zero authored JavaScript in the admin
+example. Run `test/release_gates_test.dart` and `test/budget_test.dart` from `packages/trellis_ui/`, and
+`test/footprint_test.dart` from `examples/admin_app/`.
+
 Harness fixture tests are untagged in fast/full. A test running the full gate over real component or app pages
 carries `ui-gate`; OS-baseline comparisons carry `visual`. Both are excluded from CI's check/E2E tiers and run in
 the local `release-gate` tier, preserving ADR-012's local gate decision.

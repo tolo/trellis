@@ -1,0 +1,58 @@
+name: shelf-home
+page: /
+root: body
+elements:
+  increment: '#counter-increment'
+states:
+  default:
+    - eval: "window.counterBeforeReset = document.getElementById('counter')"
+    - click: '#counter-reset'
+    - wait: >-
+        !window.counterBeforeReset.isConnected && document.querySelector('.counter-value').textContent.trim() === '0' &&
+        !document.querySelector('.htmx-settling')
+  counter-swapped:
+    - state: default
+    - click: '#counter-increment'
+    - wait: "document.querySelector('.counter-value').textContent.trim() === '1' && !document.querySelector('.htmx-settling')"
+    - expect: {expression: document.activeElement.id, equals: counter-increment}
+keyboard:
+  - focus: 'header nav .brand'
+  - press: Tab
+  - expect: {expression: "document.activeElement.getAttribute('hx-get')", equals: '/'}
+  - press: Tab
+  - expect: {expression: "document.activeElement.getAttribute('hx-get')", equals: /about}
+  - press: Tab
+  - expect: {expression: "document.activeElement.getAttribute('hx-get')", equals: /ui}
+  - focus: '#counter-reset'
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: counter-increment}
+  - eval: "window.counterBeforeKey = Number(document.querySelector('.counter-value').textContent)"
+  - press: Enter
+  - wait: >-
+      Number(document.querySelector('.counter-value').textContent) === window.counterBeforeKey + 1 &&
+      !document.querySelector('.htmx-settling')
+  - expect: {expression: document.activeElement.id, equals: counter-increment}
+semantics:
+  - expression: >-
+      document.querySelectorAll('main#content').length === 1 &&
+      document.querySelectorAll('h1').length === 1 &&
+      document.querySelector('#counter h2')?.textContent.trim() === 'HTMX Counter'
+    equals: true
+  - expression: >-
+      [...document.querySelectorAll('#counter button')].length === 3 &&
+      [...document.querySelectorAll('#counter button')].every(el => el.textContent.trim() && el.type === 'button')
+    equals: true
+htmx:
+  region: '#counter'
+  swap:
+    - click: '#counter-increment'
+    - wait: "document.querySelector('.counter-value').textContent.trim() === '2' && !document.querySelector('.htmx-settling')"
+  navigate:
+    - click: 'header a[hx-get="/about"]'
+    - wait: "location.pathname === '/about' && !document.querySelector('#counter')"
+instances:
+  - '#counter'
+  - '#counter-increment'
+provenance:
+  - file: ../../../../LICENSE
+    license: MIT

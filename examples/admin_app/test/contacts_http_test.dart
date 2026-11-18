@@ -174,7 +174,7 @@ void main() {
     final saved = await request('/contacts', method: 'POST', headers: headers, fields: validContact);
     expect(saved.statusCode, 200);
     expect(saved.headers['hx-retarget'], '#contact-list');
-    expect(saved.headers['hx-reswap'], 'outerHTML');
+    expect(saved.headers['hx-reswap'], 'outerHTML focus-scroll:true');
     final payload = parseFragment(await saved.readAsString());
     expect(names(payload.children.first).first, 'A Aaron Example');
     expect(payload.querySelector('#dialog-host[hx-swap-oob]')?.children, isEmpty);

@@ -1,0 +1,61 @@
+name: relic-ui
+page: /ui
+root: body
+elements:
+  close: '#components-dialog [data-dialog-close]'
+states:
+  default: []
+  dialog-open:
+    - click: '#content [data-slot="dialog-trigger"] button'
+    - wait: "document.querySelector('#components-dialog:modal[data-open]') !== null"
+keyboard:
+  - focus: 'header a[hx-get="/ui"]'
+  - press: Tab
+  - expect: {expression: "document.activeElement.matches('.trellis-button-variant-default')", equals: true}
+  - press: Tab
+  - expect: {expression: "document.activeElement.matches('.trellis-button-variant-secondary')", equals: true}
+  - press: Tab
+  - expect: {expression: "document.activeElement.matches('.trellis-button-variant-outline')", equals: true}
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: example-name}
+  - press: Tab
+  - expect: {expression: "document.activeElement.closest('[data-slot=dialog-trigger]') !== null", equals: true}
+  - press: Enter
+  - wait: "document.querySelector('#components-dialog:modal[data-open]') !== null"
+  - expect: {expression: "document.activeElement.matches('#components-dialog [data-dialog-close]')", equals: true}
+  - press: Escape
+  - wait: "document.querySelector('#components-dialog:modal') === null"
+  - expect: {expression: "document.activeElement.closest('[data-slot=dialog-trigger]') !== null", equals: true}
+semantics:
+  - expression: >-
+      document.querySelectorAll('main#content').length === 1 &&
+      document.querySelector('main h1')?.textContent.trim() === 'Components' &&
+      document.querySelector('label[for="example-name"]')?.control === document.querySelector('#example-name')
+    equals: true
+  - expression: >-
+      (() => {
+        const dialog = document.getElementById('components-dialog');
+        const ref = name => document.getElementById(dialog.getAttribute(name));
+        return dialog instanceof HTMLDialogElement && dialog.getAttribute('aria-modal') === 'true' &&
+          ref('aria-labelledby')?.textContent.trim() === 'Example dialog' &&
+          ref('aria-describedby')?.textContent.trim() === 'Close it to return to the Components page.' &&
+          dialog.matches(':modal') === dialog.hasAttribute('data-open');
+      })()
+    equals: true
+htmx:
+  region: '#content'
+  swap:
+    - press: Escape
+    - wait: "document.querySelector('#components-dialog:modal') === null"
+    - click: 'header a[hx-get="/ui"]'
+    - wait: "document.querySelector('#components-dialog') !== null && !document.querySelector('.htmx-settling')"
+  navigate:
+    - click: 'header a[hx-get="/about"]'
+    - wait: "location.pathname === '/about' && !document.querySelector('#components-dialog')"
+  transient: '#components-dialog[open]'
+instances:
+  - tl-dialog
+  - '#components-dialog'
+provenance:
+  - file: ../../../../LICENSE
+    license: MIT

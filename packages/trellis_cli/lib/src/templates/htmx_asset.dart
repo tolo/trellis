@@ -44,6 +44,16 @@ String htmxScriptTag({String indent = '  ', bool trailingNewline = false}) =>
 /// Origin allowed by the strict preset when CDN loading is requested.
 final htmxCdnOrigin = Uri.parse(htmxCdnUrl).origin;
 
+/// Strict builder invocation shared by the app scaffold entry points.
+String scaffoldStrictCsp({required bool htmxCdn, required bool ui, String indent = ''}) {
+  final arguments = [
+    if (htmxCdn) 'scriptSrc: "\'self\' $htmxCdnOrigin"',
+    if (ui) ...['baseUri: "\'none\'"', 'connectSrc: "\'self\'"', 'fontSrc: "\'self\' data:"'],
+  ];
+  if (arguments.isEmpty) return 'CspBuilder.strict()';
+  return 'CspBuilder.strict(\n${arguments.map((arg) => '$indent  $arg,\n').join()}$indent)';
+}
+
 /// Disable htmx's injected style element under the strict style policy.
 const htmxConfigMeta = '''<meta name="htmx-config" content='{"includeIndicatorStyles":false}'>''';
 

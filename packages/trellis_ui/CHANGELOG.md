@@ -8,3 +8,4 @@
   One deferred classic script handles keyboard interaction and cleans up state across swaps and history restores.
 - Add `dart run trellis_ui:materialize [dir]` to write or refresh the three embedded preview assets.
 - Add a table header slot for column controls and `aria-sort`.
+- Pin the vega port to `shadcn@4.23.0` and add a checked upstream sync report.

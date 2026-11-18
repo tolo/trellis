@@ -45,6 +45,11 @@ final class UnsupportedCondition implements Exception {
   String toString() => reason;
 }
 
+/// A browser state condition evaluated successfully but was not met.
+final class GateConditionError extends StateError {
+  GateConditionError(super.message);
+}
+
 /// Executes data recipes against one browser, with fresh loads per state.
 final class GateSession {
   GateSession(this.manifest, this.driver, this.base);
@@ -130,7 +135,7 @@ final class GateSession {
             final assertion = value! as Map;
             final actual = await driver.evaluate(assertion['expression'] as String);
             if (jsonEncode(actual) != jsonEncode(assertion['equals']))
-              throw StateError('expected ${jsonEncode(assertion['equals'])}, actual ${jsonEncode(actual)}');
+              throw GateConditionError('expected ${jsonEncode(assertion['equals'])}, actual ${jsonEncode(actual)}');
           case 'state':
             if (!manifest.states.containsKey(value)) throw StateError('unknown state: $value');
             await this.steps(manifest.steps(manifest.states[value]), label: 'state $value');
@@ -139,7 +144,9 @@ final class GateSession {
             if (issues.isNotEmpty) throw StateError(issues.join('; '));
         }
       } on Object catch (error) {
-        throw StateError('$label step ${index + 1} ${entry.key}: ${normalize('$error')}');
+        final message = '$label step ${index + 1} ${entry.key}: ${normalize('$error')}';
+        if (error is GateConditionError) throw GateConditionError(message);
+        throw StateError(message);
       }
     }
   }
@@ -149,7 +156,7 @@ final class GateSession {
       if (await driver.evaluate(expression) == true) return;
       await Future<void>.delayed(const Duration(milliseconds: 20));
     }
-    throw StateError('wait timed out: $expression');
+    throw GateConditionError('wait timed out: $expression');
   }
 
   Future<GateResult> measured(Future<void> Function() check) async {
@@ -423,7 +430,8 @@ final class GateSession {
       final selectors =
           await driver.evaluate('''(() => {const root=document.querySelector(${jsonEncode(manifest.root)});
         return [root,...root.querySelectorAll('*')].filter(el=>el.matches('button,input,select,textarea,a[href],summary,[tabindex]')).filter(el=>{
-          const r=el.getBoundingClientRect();return r.width&&r.height&&!el.disabled;
+          const r=el.getBoundingClientRect();
+          return ($modalAllowsFocusScript)(el)&&r.width&&r.height&&!el.disabled;
         }).map((el,i)=>{el.setAttribute('data-ui-gate-focus',String(i));return '[data-ui-gate-focus="'+i+'"]';});})()''')
               as List;
       for (final selector in selectors.cast<String>()) {

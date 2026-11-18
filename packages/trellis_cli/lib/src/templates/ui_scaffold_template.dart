@@ -8,7 +8,27 @@ const uiNavLink = '<a href="/ui" hx-get="/ui" hx-target="#content" hx-push-url="
 const uiImport = "import 'package:trellis_ui/trellis_ui.dart';\n";
 
 /// Put the scaffold reset below the suite's component dimensions and spacing.
-String scaffoldStyles(String styles, {required bool ui}) => ui ? '@layer scaffold {\n$styles}\n' : styles;
+String scaffoldStyles(String styles, {required bool ui}) =>
+    ui ? '@layer scaffold {\n$styles$_accessibleShellStyles}\n' : styles;
+
+const _accessibleShellStyles = '''
+/* The suite sizes its own controls; the starter's shell needs the same targets. */
+nav, .nav-links, .counter-controls { flex-wrap: wrap; }
+.counter-section { padding-inline: clamp(0.75rem, 4vw, 2rem); }
+:is(nav, footer) a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 24px;
+  min-block-size: 24px;
+}
+@media (pointer: coarse) {
+  :is(nav, footer) a, .counter-controls button { min-inline-size: 44px; min-block-size: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .counter-controls button { transition: none; }
+}
+''';
 
 /// Relative paths make previews work from disk. Trellis rewrites them for HTTP.
 String uiAssetTags(String previewPath) =>

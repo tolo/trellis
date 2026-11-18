@@ -52,8 +52,8 @@
     }
   },
   "shadcn": {
-    "tag": "shadcn@4.21.1",
-    "commit": "3502dbcde11d1eaf967a47ac375744dc336641f3"
+    "tag": "shadcn@4.23.0",
+    "commit": "96da9cc7f1aa10580a3741664e2a77c721206c00"
   },
   "compiler": {
     "version": "4.3.3",

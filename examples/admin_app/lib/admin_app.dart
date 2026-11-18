@@ -27,7 +27,11 @@ import 'contacts.dart';
 
   final filesAndRoutes = Cascade().add(createStaticHandler('${root.path}/static')).add(router.call).handler;
   final handler = const Pipeline()
-      .addMiddleware(trellisSecurityHeaders(csp: const CspBuilder.strict()))
+      .addMiddleware(
+        trellisSecurityHeaders(
+          csp: const CspBuilder.strict(baseUri: "'none'", connectSrc: "'self'", fontSrc: "'self' data:"),
+        ),
+      )
       .addMiddleware(trellisEngine(engine))
       .addMiddleware(trellisCsrf(secret: csrfSecret))
       .addHandler((request) {
@@ -152,9 +156,14 @@ final class _Contacts {
       fragment: 'toast',
       context: {'type': 'success', 'title': title, 'description': name, 'duration': 6000, 'outOfBand': true},
     );
-    return htmlResponse(
-      '$list$host$summary$toast',
-    ).change(headers: {'HX-Retarget': '#contact-list', 'HX-Reswap': 'outerHTML', 'HX-Push-Url': query.url()});
+    return htmlResponse('$list$host$summary$toast').change(
+      headers: {
+        'HX-Retarget': '#contact-list',
+        // On narrow screens the replacement scroller must reveal the restored row action.
+        'HX-Reswap': 'outerHTML focus-scroll:true',
+        'HX-Push-Url': query.url(),
+      },
+    );
   }
 
   Future<Response> suggestCompanies(Request request) => renderFragment(

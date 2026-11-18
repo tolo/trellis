@@ -1,5 +1,6 @@
 import 'package:test/test.dart';
 
+import '../tool/ui_gate/appearance.dart';
 import '../tool/ui_gate/checks.dart';
 import '../tool/ui_gate/driver.dart';
 import 'ui_gate_test_support.dart';
@@ -49,6 +50,79 @@ void main() {
         server.baseUrl,
       ).forcedColors();
       expect(result.status, 'pass', reason: '${driver.name}: ${result.evidence}');
+    });
+  }, timeout: Timeout(Duration(minutes: 2)));
+
+  test('forced colors checks native-modal controls while the visible background is inert', () async {
+    final server = await fixtureServer();
+    final failures = <String>[];
+    await forBrowsers((driver) async {
+      GateSession modal({required bool broken}) => GateSession(
+        fixtureManifest(
+          page: '/pass.html${broken ? '?defect=forced' : ''}',
+          replace: "  default: []\n  open:\n    - click: '#trigger'",
+          withText: '''  modal:
+    - eval: >
+        (() => {
+          const root = document.querySelector('#component');
+          root.insertAdjacentHTML('beforeend', '<dialog id="modal"><button id="inside">Close</button><button>Cancel</button></dialog>');
+          root.querySelector('#modal').showModal();
+        })()
+    - expect: {expression: "document.querySelector('#modal').matches(':modal')", equals: true}
+''',
+        ),
+        driver,
+        server.baseUrl,
+      );
+
+      final passing = await modal(broken: false).forcedColors();
+      if (passing.status != 'pass') {
+        failures.add('${driver.name}: ${passing.evidence}');
+        return;
+      }
+      expect(await driver.evaluate("document.querySelector('#trigger').hasAttribute('data-ui-gate-focus')"), isFalse);
+      expect(await driver.evaluate("document.querySelector('#inside').hasAttribute('data-ui-gate-focus')"), isTrue);
+      final appearance = await captureAppearance(modal(broken: false));
+      final states = appearance['states'] as Map;
+      final outer = states['modal/focus-visible:trigger'] as Map;
+      expect(outer['focus'], {'applicable': false}, reason: driver.name);
+      final broken = await modal(broken: true).forcedColors();
+      expect(broken.status, 'fail', reason: '${driver.name}: ${broken.evidence}');
+      expect(broken.evidence.join(), contains('no outline/border focus indicator'));
+    });
+    expect(failures, isEmpty);
+  }, timeout: Timeout(Duration(minutes: 2)));
+
+  test('forced colors reaches a single-tab-stop dialog opened with the pointer', () async {
+    final server = await fixtureServer();
+    await forBrowsers((driver) async {
+      final session = GateSession(
+        fixtureManifest(
+          replace: "  default: []\n  open:\n    - click: '#trigger'",
+          withText: '''  modal:
+    - eval: >
+        (() => {
+          const root = document.querySelector('#component');
+          root.insertAdjacentHTML('beforeend', '<button id="launch">Launch</button><dialog id="modal"><button id="only">Close</button></dialog>');
+          const dialog = root.querySelector('#modal'), button = root.querySelector('#only');
+          root.querySelector('#launch').addEventListener('click', () => dialog.showModal());
+          dialog.addEventListener('keydown', event => {
+            if (event.key === 'Tab' && event.target === button) {
+              event.preventDefault();
+              button.focus();
+            }
+          });
+        })()
+    - click: '#launch'
+    - expect: {expression: "document.activeElement.id === 'only' && !document.activeElement.matches(':focus-visible')", equals: true}
+''',
+        ),
+        driver,
+        server.baseUrl,
+      );
+      final result = await session.forcedColors();
+      expect(result.status, 'pass', reason: '${driver.name}: ${result.evidence}');
+      expect(await driver.evaluate("document.querySelector('#modal').hasAttribute('tabindex')"), isFalse);
     });
   }, timeout: Timeout(Duration(minutes: 2)));
 

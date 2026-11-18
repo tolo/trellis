@@ -58,12 +58,31 @@ Future<Map<String, Object?>> captureAppearance(GateSession session) async {
     return true;
   }
 
+  Future<void> loadState(String state, {bool dark = false}) async {
+    // A visible Firefox window can lose focus during the native recipe itself.
+    // Replay only that failed measurement; native keyboard and lifecycle checks
+    // continue to run their recipes directly. Remove this retry when Firefox can
+    // hold document activation across the whole recipe.
+    for (var attempt = 1; ; attempt++) {
+      try {
+        await session.configure(state, dark: dark);
+        return;
+      } on GateConditionError {
+        if (driver is! FirefoxDriver ||
+            attempt == 3 ||
+            await driver.evaluate('window.__uiGate.lostVisibleFocus && !document.hasFocus()') != true) {
+          rethrow;
+        }
+      }
+    }
+  }
+
   Future<void> captureFirefoxHover(String state, MapEntry<String, String> element) async {
     final key = '$state/hover:${element.key}';
     // Native focusout can dismiss a real popup when another window takes focus.
     // Replay the complete recipe instead of trying to reopen the changed DOM.
     for (var attempt = 0; attempt < 3; attempt++) {
-      await session.load(state);
+      await loadState(state);
       await driver.evaluate('''(() => {
         const guard = {lost: !document.hasFocus(), onBlur: () => guard.lost = true};
         window.__uiGateHoverFocus = guard;
@@ -84,7 +103,7 @@ Future<Map<String, Object?>> captureAppearance(GateSession session) async {
   }
 
   for (final state in manifest.states.keys) {
-    await session.load(state);
+    await loadState(state);
     await capture(state);
     for (final element in manifest.elements.entries) {
       for (final pseudo in ['hover', 'focus-visible', 'active', 'disabled']) {
@@ -92,7 +111,7 @@ Future<Map<String, Object?>> captureAppearance(GateSession session) async {
           await captureFirefoxHover(state, element);
           continue;
         }
-        await session.load(state);
+        await loadState(state);
         Object? originalDisabled;
         if (pseudo == 'disabled') {
           originalDisabled = await driver.evaluate(
@@ -101,7 +120,9 @@ Future<Map<String, Object?>> captureAppearance(GateSession session) async {
           );
           await driver.evaluate('''(() => {const el=document.querySelector(${jsonEncode(element.value)});
             if('disabled' in el)el.disabled=true; else el.setAttribute('aria-disabled','true');})()''');
-        } else {
+        } else if (pseudo != 'focus-visible' ||
+            await driver.evaluate('($modalAllowsFocusScript)(document.querySelector(${jsonEncode(element.value)}))') ==
+                true) {
           await driver.pseudo(element.value, pseudo == 'focus-visible' ? ['focus', 'focus-visible'] : [pseudo]);
         }
         await capture(
@@ -120,11 +141,11 @@ Future<Map<String, Object?>> captureAppearance(GateSession session) async {
         await driver.pseudo(element.value, []);
       }
     }
-    await session.configure(state, dark: true);
+    await loadState(state, dark: true);
     await driver.evaluate("document.documentElement.classList.add('dark')");
     await capture('$state/dark');
     for (final dark in [false, true]) {
-      await session.configure(state, dark: dark);
+      await loadState(state, dark: dark);
       await driver.evaluate("document.documentElement.classList.toggle('dark',$dark)");
       tokens['${dark ? 'dark' : 'light'}'] = await driver.evaluate(
         '''(() => {const s=getComputedStyle(document.documentElement);

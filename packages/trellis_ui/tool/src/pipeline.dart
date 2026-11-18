@@ -29,7 +29,7 @@ class Pipeline {
     }
   }
 
-  Future<void> fetch() async {
+  Future<void> fetchShadcn() async {
     final p = pins;
     final source = p['shadcn'] as Map<String, dynamic>;
     final tag = source['tag'] as String;
@@ -50,6 +50,12 @@ class Pipeline {
         '# shadcn/ui $tag\n\nCommit `${source['commit']}`. Base `${p['base']}`, style `${p['style']}`.\nUnmodified MIT inputs from $base/. See LICENSE.md.\n\n${[for (final e in files.entries) '- `${e.key}`: `${e.value}`'].join('\n')}\n',
       ),
     );
+    stdout.writeln('Fetched ${files.length} shadcn inputs at $tag');
+  }
+
+  Future<void> fetch() async {
+    await fetchShadcn();
+    final p = pins;
     final animate = p['twAnimate'] as Map<String, dynamic>;
     for (final entry in {'tw-animate.css': 'dist/tw-animate.css', 'LICENSE': 'LICENSE'}.entries) {
       await _write(
@@ -84,7 +90,7 @@ class Pipeline {
         utf8.encode('Lucide ${lucide['tag']} at commit ${lucide['commit']}. ISC and Feather MIT notices in LICENSE.\n'),
       );
     }
-    stdout.writeln('Fetched ${files.length} shadcn inputs at $tag and dependency licences');
+    stdout.writeln('Fetched dependency licences');
   }
 
   Future<void> _fetchFiles(String destination, String base, Map<String, String> files) async {

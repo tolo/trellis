@@ -273,6 +273,7 @@ final class FirefoxDriver implements GateDriver {
   @override
   Future<void> pointer(String selector, {bool click = false, bool down = false}) async {
     await _activate();
+    await evaluate('Boolean(($pointerTargetScript)(${jsonEncode(selector)}))');
     final element = await _wd('POST', '/element', {'using': 'css selector', 'value': selector}) as Map;
     await _wd('POST', '/actions', {
       'actions': [
@@ -339,15 +340,27 @@ final class FirefoxDriver implements GateDriver {
         return !el.disabled && (el.matches('button,input,select,textarea,a[href],summary,[tabindex]') || el.isContentEditable);})()''',
       );
       if (focusable != true) return;
-      // Reset the sequential-focus starting point to the body. Blurring alone
-      // retains the previous control's position and can Tab into browser chrome.
-      await evaluate(
-        "(() => {window.__gateBodyTabIndex=document.body.getAttribute('tabindex');document.body.tabIndex=-1;document.body.focus();})()",
-      );
-      await press('Tab');
-      await evaluate('''(() => {document.querySelector(${jsonEncode(selector)}).focus();
-        if(window.__gateBodyTabIndex===null)document.body.removeAttribute('tabindex');
-        else document.body.setAttribute('tabindex',window.__gateBodyTabIndex);})()''');
+      // Reset the sequential starting point so native Tab enters the control list.
+      // A modal makes the body inert, and a one-stop dialog can cancel a Tab sent
+      // from its only control before Firefox switches to keyboard focus paint.
+      await evaluate('''(() => {
+        const element = document.querySelector(${jsonEncode(selector)});
+        const start = element.closest('dialog:modal') ?? document.body;
+        window.__gateFocusStart = {start, tabindex: start.getAttribute('tabindex')};
+        start.tabIndex = -1;
+        start.focus();
+      })()''');
+      try {
+        await press('Tab');
+        await evaluate('document.querySelector(${jsonEncode(selector)}).focus()');
+      } finally {
+        await evaluate('''(() => {
+          const {start, tabindex} = window.__gateFocusStart;
+          if (tabindex === null) start.removeAttribute('tabindex');
+          else start.setAttribute('tabindex', tabindex);
+          delete window.__gateFocusStart;
+        })()''');
+      }
       final applied = await evaluate('($forceFocusScript)(${jsonEncode(selector)})') as Map;
       if (applied['applicable'] != true) throw StateError('focus-visible did not take effect: $selector');
     }

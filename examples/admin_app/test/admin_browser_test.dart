@@ -166,6 +166,42 @@ void main() {
     }
   });
 
+  test('a narrow keyboard edit keeps the restored row action visible', () async {
+    await browser.driver.viewport(390, 844);
+    await open(await serve());
+    Future<void> tabTo(String id, int limit) async {
+      for (var i = 0; i < limit && await browser.eval('document.activeElement.id') != id; i++) {
+        await browser.driver.press('Tab');
+      }
+      expect(await browser.eval('document.activeElement.id'), id);
+    }
+
+    await tabTo('actions-1-trigger', 25);
+    const actionVisible = r'''(() => {
+      const action = document.getElementById('actions-1-trigger');
+      const bounds = action.getBoundingClientRect();
+      const clip = action.closest('.trellis-table-container').getBoundingClientRect();
+      return action === document.activeElement && action.matches(':focus-visible') &&
+        bounds.left >= clip.left - 1 && bounds.right <= clip.right + 1 &&
+        document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)?.closest('button') === action;
+    })()''';
+    expect(await browser.eval(actionVisible), isTrue, reason: 'traversing the table reveals its focused action');
+    await browser.driver.press('Enter');
+    await browser.waitFor(
+      "document.querySelector('#actions-1:popover-open') !== null && document.activeElement.textContent.trim() === 'Edit'",
+    );
+    await browser.action(
+      () => browser.driver.press('Enter'),
+      'GET',
+      '/contacts/1/edit',
+      "document.querySelector('#edit-1:modal') !== null",
+    );
+    await tabTo('save-contact', 8);
+    await browser.save('edit-1', keyboard: true);
+    await browser.expectToast('Contact updated');
+    expect(await browser.eval(actionVisible), isTrue, reason: 'the replaced table must reveal the restored focus');
+  });
+
   test('the contact table scrolls within the page at 390px', () async {
     await browser.driver.viewport(390, 844);
     await open(await serve());

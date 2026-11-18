@@ -5,6 +5,7 @@ import 'pipeline.dart';
 import 'sync_report.dart';
 
 const _protectedPaths = ['vendor', 'generated', 'tool/pins.json', 'tool/parity-ignore.json', 'assets', 'sync-reports'];
+final _activeSyncs = <String>{};
 
 /// Builds a candidate from the committed pin and installs it only after all inputs compile.
 Future<File> syncPin(Pipeline pipeline, String tag, {String? compilerPath, String? platform}) async {
@@ -12,8 +13,15 @@ Future<File> syncPin(Pipeline pipeline, String tag, {String? compilerPath, Strin
     throw FormatException('Invalid shadcn tag $tag (expected shadcn@X.Y.Z)');
   }
   final root = pipeline.root.absolute;
-  final lock = File('${root.path}/.tools/sync.lock')..createSync(recursive: true, exclusive: true);
+  final lockFile = File('${root.resolveSymbolicLinksSync()}/.tools/sync.lock');
+  // The OS releases advisory locks when the command exits, even after an interrupt.
+  // Keep the inode and refuse reentry before opening it, since POSIX locks are per process.
+  if (!_activeSyncs.add(lockFile.path)) throw StateError('A sync is already running in ${root.path}');
+  RandomAccessFile? lock;
   try {
+    lockFile.parent.createSync(recursive: true);
+    lock = lockFile.openSync(mode: FileMode.append);
+    lock.lockSync();
     await _requireClean(root);
     final head = (await _git(root, ['rev-parse', 'HEAD'])).trim();
     final prefix = (await _git(root, ['rev-parse', '--show-prefix'])).trim();
@@ -53,7 +61,7 @@ Future<File> syncPin(Pipeline pipeline, String tag, {String? compilerPath, Strin
       }
 
       // Resolving a tag through the commits endpoint peels annotated tags.
-      final resolved = (await get('commits/$tag')) as Map;
+      final resolved = (await get('commits/refs/tags/$tag')) as Map;
       final commit = resolved['sha'] as String?;
       if (commit == null || !RegExp(r'^[a-f0-9]{40}$').hasMatch(commit)) {
         throw FormatException('$tag did not resolve to a commit');
@@ -87,7 +95,8 @@ Future<File> syncPin(Pipeline pipeline, String tag, {String? compilerPath, Strin
       scratch.deleteSync(recursive: true);
     }
   } finally {
-    lock.deleteSync();
+    _activeSyncs.remove(lockFile.path);
+    lock?.closeSync();
   }
 }
 

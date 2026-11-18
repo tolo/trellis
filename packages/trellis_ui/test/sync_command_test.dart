@@ -68,7 +68,7 @@ cp "$input" "$output"
       download: (uri) async {
         if (uri.host == 'api.github.com') {
           if (uri.path.contains('/commits/')) {
-            expect(uri.path, endsWith('/$_newTag'));
+            expect(uri.path, '/repos/example/ui/commits/refs/tags/$_newTag');
             return utf8.encode(jsonEncode({'sha': _newCommit}));
           }
           expect(uri.path, endsWith('/registry/bases/base/ui'));
@@ -133,6 +133,52 @@ cp "$input" "$output"
       );
       expect(_syncFiles(root), original);
     }
+  });
+
+  test('interrupting a fetch releases the sync lock and leaves the inputs unchanged', () async {
+    final suite = Directory.current.uri;
+    final blocker = _write(root, '.agent_temp/interrupted-sync.dart', '''
+import 'dart:io';
+
+import '${suite.resolve('tool/port.dart')}';
+import '${suite.resolve('tool/src/pipeline.dart')}';
+
+Future<void> main(List<String> args) async {
+  exitCode = await runPortCommand(['sync', '$_newTag'], Pipeline(Directory(args.single), download: (_) async {
+    stdout.writeln('fetch started');
+    await stdout.flush();
+    await stdin.first;
+    throw StateError('The fixture should be interrupted while fetching');
+  }));
+}
+''');
+    final process = await Process.start(Platform.resolvedExecutable, [
+      '--packages=${suite.resolve('../../.dart_tool/package_config.json').toFilePath()}',
+      blocker.path,
+      root.path,
+    ]);
+    final ready = process.stdout.transform(utf8.decoder).transform(const LineSplitter()).first;
+    final errors = utf8.decodeStream(process.stderr);
+    try {
+      expect(await ready.timeout(const Duration(seconds: 10)), 'fetch started');
+      await expectLater(sync(_newTag), throwsA(isA<FileSystemException>()));
+      expect(_syncFiles(root), original);
+    } finally {
+      process.kill(ProcessSignal.sigint);
+      expect(
+        await process.exitCode.timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            process.kill(ProcessSignal.sigkill);
+            return process.exitCode;
+          },
+        ),
+        isNot(0),
+      );
+      expect(await errors, isEmpty);
+    }
+    expect(_syncFiles(root), original);
+    expect(await sync(_newTag), 0);
   });
 
   test('dirty committed sources are rejected before fetching', () async {

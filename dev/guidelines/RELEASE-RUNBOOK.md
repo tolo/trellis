@@ -101,7 +101,8 @@ for example `badge | unsupported | safari` or `badge | removed | visual, safari`
 - `removed` keeps the failing record. Remove the fragment, gallery page and manifest, and migrate their callers,
   examples and component-specific tests. Re-embed the package after removing a fragment.
 
-For either disposition, migrate any use of the fragment in the admin example to a qualified component.
+For either disposition, migrate any use of the fragment in the admin example to a qualified component, including
+uses through another suite fragment.
 Remove the reference page from `site/content/docs/ui/components/` and its package
 README catalogue rows. Regenerate `site/data/ui_components.yaml` with `dart run tool/generate_ui_reference.dart`.
 The generator omits removed components and recorded manual failures. An automated failure for an unsupported

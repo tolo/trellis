@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
+import '../tool/ui_gate/appearance.dart';
 import '../tool/ui_gate/checks.dart';
+import '../tool/ui_gate/driver.dart';
 import '../tool/ui_gate/firefox.dart';
 import '../tool/ui_gate/manifest.dart';
 import '../tool/ui_gate/record.dart';
@@ -68,7 +70,7 @@ void main() {
     }
     final server = await fixtureServer();
     final scratch = Directory('.agent_temp')..createSync(recursive: true);
-    final baselineDir = scratch.createTempSync('gate-emulation-after-overlap-');
+    final baselineDir = scratch.createTempSync('gate-emulation-after-capture-');
     addTearDown(() => baselineDir.deleteSync(recursive: true));
 
     Future<GateResult> visual(String page) async {
@@ -86,7 +88,51 @@ void main() {
     expect(unsupported.status, 'not-run');
     expect(unsupported.unsupported, isTrue);
     expect(unsupported.evidence.single, contains('dark=true'));
-  });
+
+    final baseline = File('${baselineDir.path}/fixture.${Platform.operatingSystem}.json');
+    final driver = await ChromeDriver.launch();
+    try {
+      final captured = await captureAppearance(GateSession(fixtureManifest(), driver, server.baseUrl));
+      expect(captured['invariants'], isEmpty);
+      baseline.writeAsStringSync(
+        encodeCapture({
+          'platform': Platform.operatingSystem,
+          'browsers': {'chrome': captured},
+        }),
+      );
+    } finally {
+      await driver.close();
+    }
+    final unchanged = await visual('/pass.html?unsupported-dark');
+    expect(unchanged.toJson(), unsupported.toJson(), reason: 'unmeasured states are still eligible for fallback');
+
+    final changed = await runGate(
+      fixtureManifest(page: '/pass.html?unsupported-dark&defect=late-outline'),
+      server.baseUrl,
+      'chrome',
+      baselines: baselineDir,
+    );
+    final visualChange = changed['visual']!;
+    expect(visualChange.status, 'fail', reason: '${visualChange.toJson()}');
+    expect(visualChange.unsupported, isFalse);
+    expect(visualChange.evidence.join('\n'), contains('default/focus-visible:input #name outlineColor'));
+    expect(visualChange.evidence.join('\n'), contains('dark=true'));
+    final passingBrowser = {
+      for (final item in automatedItems) item: const GateResult('pass', ['observed']),
+    };
+    final record = gateRecord('fixture', {'chrome': changed, 'firefox': passingBrowser});
+    expect(((record['items'] as Map)['visual'] as Map)['status'], 'fail');
+
+    baseline.writeAsStringSync('{');
+    final unreadable = await visual('/pass.html?unsupported-dark');
+    expect(unreadable.status, 'not-run');
+    expect(unreadable.unsupported, isFalse);
+    expect(unreadable.evidence.single, contains('Unexpected end of input'));
+
+    final measured = await visual('/pass.html?unsupported-dark&defect=overlap');
+    expect(measured.status, 'fail');
+    expect(measured.evidence.join('\n'), contains('default #toast-one overlaps #toast-two'));
+  }, timeout: const Timeout(Duration(minutes: 2)));
 
   test('a visual capture artifact that cannot be written is unavailable', () async {
     if (BrowserProbe.locateChrome() == null) {
@@ -143,7 +189,11 @@ void main() {
     Future<ProcessResult> run(List<String> extra, {Map<String, String>? environment}) => Process.run(
       Platform.resolvedExecutable,
       ['run', 'tool/ui_gate.dart', '--records', records.path, '--baselines', baselines.path, ...extra],
-      environment: environment,
+      environment: {
+        // The fixture writes its baselines under a disposable directory, including on CI.
+        if (extra.contains('--record')) 'CI': 'false',
+        ...?environment,
+      },
     );
     final browsers = [
       'chrome',

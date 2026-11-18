@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:html/parser.dart';
 import 'package:test/test.dart';
+import 'package:trellis_ui/trellis_ui.dart';
 
 import '../../../tool/ui_gate/release_policy.dart';
 
@@ -10,12 +11,30 @@ Iterable<File> filesUnder(String path) => Directory(path).listSync(recursive: tr
 void main() {
   test('the example uses no withdrawn suite fragments', () {
     final policy = ComponentReleasePolicy.read(Directory.current.parent.parent);
-    // The templates compose most fragments. The HTTP handlers also render some by name.
-    final reference = RegExp(r'''(?:~\{\s*|['"])trellis-ui/([\w-]+)(?=\s*::|['"])''');
-    for (final file in [...filesUnder('templates'), ...filesUnder('lib')]) {
-      final components = reference.allMatches(file.readAsStringSync()).map((match) => match[1]!);
-      expect(components.where(policy.isWithdrawn), isEmpty, reason: file.path);
-    }
+    final sources = {
+      for (final file in [...filesUnder('templates'), ...filesUnder('lib')]) file.path: file.readAsStringSync(),
+    };
+    expect(_withdrawnSuiteUses(sources, policy), isEmpty);
+  });
+
+  test('withdrawal applies to nested suite fragments and HTML template names', () {
+    final policy = ComponentReleasePolicy.parse('''
+#### Optional component release dispositions
+
+```text
+button | unsupported | safari
+```
+''');
+    expect(_withdrawnSuiteUses({'edit.html': '<div tl:replace="~{trellis-ui/dialog :: dialog}"></div>'}, policy), [
+      'edit.html → dialog → button',
+    ]);
+    expect(_withdrawnSuiteUses({'edit.html': '<div tl:replace="~{trellis-ui/dialog.html :: dialog}"></div>'}, policy), [
+      'edit.html → dialog → button',
+    ]);
+    expect(
+      _withdrawnSuiteUses({'edit.html': '<div tl:replace="~{trellis-ui/combobox :: combobox}"></div>'}, policy),
+      isEmpty,
+    );
   });
 
   test('templates are provider-free and strict-clean', () {
@@ -68,4 +87,27 @@ void main() {
       ['static/js/htmx.min.js'],
     );
   });
+}
+
+Iterable<String> _withdrawnSuiteUses(Map<String, String> sources, ComponentReleasePolicy policy) sync* {
+  // The templates compose most fragments. The HTTP handlers also render some by name.
+  final reference = RegExp(r'''(?:~\{\s*|['"])trellis-ui/([\w-]+)(?:\.html)?(?=\s*::|['"])''');
+  final loader = TrellisUiLoader();
+  final visited = <String>{};
+  Iterable<String> visit(String source, String path) sync* {
+    for (final match in reference.allMatches(source)) {
+      final component = match[1]!;
+      if (!visited.add(component)) continue;
+      final chain = '$path → $component';
+      if (policy.isWithdrawn(component)) {
+        yield chain;
+      } else {
+        yield* visit(loader.loadSync('trellis-ui/$component'), chain);
+      }
+    }
+  }
+
+  for (final entry in sources.entries) {
+    yield* visit(entry.value, entry.key);
+  }
 }

@@ -81,14 +81,15 @@ class DevCommand extends Command<int> {
     final initialConfig = readConfig();
     if (initialConfig == null) return 1;
 
-    final buildRoot = Directory.systemTemp.createTempSync('trellis_dev_');
+    Directory? buildRoot;
+    late final String previewRoot;
     final rebuilt = StreamController<void>.broadcast();
     var generation = 0;
     Directory? servedDir;
     Handler? served;
 
     Future<void> rebuild(SiteConfig loaded) async {
-      final outDir = Directory(p.join(buildRoot.path, 'build-${generation++}'));
+      final outDir = Directory(p.join(buildRoot!.path, 'build-${generation++}'));
       var code = 1;
       try {
         final config = overrideSiteBuildConfig(
@@ -115,7 +116,6 @@ class DevCommand extends Command<int> {
     }
 
     final subscriptions = <String, StreamSubscription<WatchEvent>>{};
-    final previewRoot = buildRoot.resolveSymbolicLinksSync();
     String? outputRoot;
 
     // One rebuild at a time; changes during a build queue exactly one more.
@@ -197,65 +197,75 @@ class DevCommand extends Command<int> {
       });
     }
 
-    stdout.writeln('Building site...');
-    await rebuild(initialConfig);
-
-    await updateWatches(initialConfig, queueRebuild);
-
-    final handler = const Pipeline().addMiddleware(liveReloadMiddleware(rebuilt.stream)).addHandler((request) {
-      final current = served;
-      if (current != null) return current(request);
-      // No successful build yet. The page still carries the reload script, so it refreshes once a build succeeds.
-      return Response(
-        503,
-        body:
-            '<!DOCTYPE html><html><body><p>The site has not built yet. See the terminal for the error.</p></body>'
-            '</html>',
-        headers: {'content-type': 'text/html; charset=utf-8'},
-      );
+    final processStop = stopSignal == null ? processStopSignal() : null;
+    final stopped = (stopSignal ?? processStop!.stopped).then((_) {
+      stopping = true;
     });
-
-    final HttpServer server;
+    HttpServer? server;
     try {
-      server = await io.serve(handler, InternetAddress.loopbackIPv4, port);
-    } on SocketException catch (e) {
-      stderr.writeln('Error: Could not bind to port $port. ${e.message}');
-      stderr.writeln('Try --port <another-port>.');
+      final temp = Directory.systemTemp.createTempSync('trellis_dev_');
+      buildRoot = temp;
+      previewRoot = temp.resolveSymbolicLinksSync();
+      stdout.writeln('Building site...');
+      await rebuild(initialConfig);
+      if (stopping) return 0;
+
+      await updateWatches(initialConfig, queueRebuild);
+      if (stopping) return 0;
+
+      final handler = const Pipeline().addMiddleware(liveReloadMiddleware(rebuilt.stream)).addHandler((request) {
+        final current = served;
+        if (current != null) return current(request);
+        // No successful build yet. The page still carries the reload script, so it refreshes once a build succeeds.
+        return Response(
+          503,
+          body:
+              '<!DOCTYPE html><html><body><p>The site has not built yet. See the terminal for the error.</p></body>'
+              '</html>',
+          headers: {'content-type': 'text/html; charset=utf-8'},
+        );
+      });
+      try {
+        server = await io.serve(handler, InternetAddress.loopbackIPv4, port);
+      } on SocketException catch (e) {
+        stderr.writeln('Error: Could not bind to port $port. ${e.message}');
+        stderr.writeln('Try --port <another-port>.');
+        return 1;
+      }
+      if (stopping) return 0;
+      stdout.writeln('Serving http://localhost:$port, watching ${subscriptions.keys.join(', ')}');
+      stdout.writeln('Press Ctrl-C to stop.');
+      await stopped;
+      return 0;
+    } finally {
       stopping = true;
       debounceTimer?.cancel();
-      await building;
-      missingThemeTimer?.cancel();
-      await _shutdown(subscriptions.values.toList(), rebuilt, buildRoot);
-      return 1;
+      try {
+        // Open SSE connections never finish on their own, so close them rather than wait.
+        await server?.close(force: true);
+        await building; // Let an in-flight build finish before its directory is deleted.
+      } finally {
+        missingThemeTimer?.cancel();
+        try {
+          await _shutdown(subscriptions.values.toList(), rebuilt, buildRoot);
+        } finally {
+          await processStop?.cancel();
+        }
+      }
     }
-
-    // A supervisor can send SIGTERM as soon as it reads the readiness line.
-    final stopped = stopSignal ?? processStopSignal();
-    stdout.writeln('Serving http://localhost:$port, watching ${subscriptions.keys.join(', ')}');
-    stdout.writeln('Press Ctrl-C to stop.');
-
-    await stopped;
-    stopping = true;
-    // Open SSE connections never finish on their own, so close them rather than wait.
-    await server.close(force: true);
-    debounceTimer?.cancel();
-    await building; // Let an in-flight build finish before its directory is deleted.
-    missingThemeTimer?.cancel();
-    await _shutdown(subscriptions.values.toList(), rebuilt, buildRoot);
-    return 0;
   }
 }
 
 Future<void> _shutdown(
   Iterable<StreamSubscription<WatchEvent>> subscriptions,
   StreamController<void> rebuilt,
-  Directory buildRoot,
+  Directory? buildRoot,
 ) async {
   for (final subscription in subscriptions) {
     await subscription.cancel();
   }
   await rebuilt.close();
-  if (buildRoot.existsSync()) buildRoot.deleteSync(recursive: true);
+  if (buildRoot != null && buildRoot.existsSync()) buildRoot.deleteSync(recursive: true);
 }
 
 /// Watchers report physical paths even when the configured output sits below a symlink

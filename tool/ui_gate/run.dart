@@ -39,8 +39,21 @@ Future<Map<String, GateResult>> runGate(
     results['reduced-motion'] = await session.reducedMotion();
     results['touch-target'] = await session.touchTargets();
     try {
-      final appearance = await captureAppearance(session);
       final baseline = File('${baselines.path}/${manifest.name}.${Platform.operatingSystem}.json');
+      final appearance = await captureAppearance(
+        session,
+        comparePartial: record
+            ? null
+            : (appearance) {
+                try {
+                  return _compareBaseline(baseline, manifest.name, browser, appearance, partial: true);
+                } on Object catch (error) {
+                  throw VisualCaptureUnavailable(
+                    session.normalize(error is FormatException ? error.message : '$error'),
+                  );
+                }
+              },
+      );
       final issues = (appearance['invariants'] as List).cast<String>().toList();
       if (captures != null) {
         captures.createSync(recursive: true);
@@ -93,16 +106,35 @@ Future<Map<String, GateResult>> runGate(
   return results;
 }
 
-List<String> _compareBaseline(File baseline, String name, String browser, Map<String, Object?> appearance) {
+List<String> _compareBaseline(
+  File baseline,
+  String name,
+  String browser,
+  Map<String, Object?> appearance, {
+  bool partial = false,
+}) {
   final platform = Platform.operatingSystem;
-  if (!baseline.existsSync()) throw FormatException('no baseline for $name/$browser on $platform');
-  final existing = jsonDecode(baseline.readAsStringSync()) as Map;
+  final Object? existing;
+  try {
+    existing = jsonDecode(baseline.readAsStringSync());
+  } on PathNotFoundException {
+    // A browser with unsupported emulation may never have completed a baseline.
+    if (partial) return const [];
+    throw FormatException('no baseline for $name/$browser on $platform');
+  }
+  if (existing is! Map<String, Object?>) throw FormatException('invalid baseline for $name/$browser');
   if (existing['platform'] != platform) throw FormatException('baseline platform does not match $platform');
-  final recorded = (existing['browsers'] as Map)[browser];
-  if (recorded is! Map<String, Object?> || recorded['browser'] != browser) {
+  final browsers = existing['browsers'];
+  if (browsers is! Map<String, Object?>) throw FormatException('invalid browser captures in baseline for $name');
+  if (!browsers.containsKey(browser)) {
+    if (partial) return const [];
     throw FormatException('no $browser capture in baseline for $name');
   }
-  return compareAppearance(recorded, appearance);
+  final recorded = browsers[browser];
+  if (recorded is! Map<String, Object?> || recorded['browser'] != browser) {
+    throw FormatException('invalid $browser capture in baseline for $name');
+  }
+  return compareAppearance(recorded, appearance, partial: partial);
 }
 
 GateResult _provenance(GateManifest manifest) {

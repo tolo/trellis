@@ -3,7 +3,8 @@
 Canonical reference for understanding the Trellis SDK architecture: how the packages compose, what each package is responsible for, the dependency graph, and how a request flows through the system.
 
 **Current through**: dev reload, scaffold CSP and UI previews updated for 0.14 on 2026-11-17; `trellis dev` site
-preview, including theme watch recovery and output exclusions, is current through 0.14 on 2026-11-18. The named site source
+preview, including theme watch recovery, output exclusions and startup cleanup, is current through 0.14 on
+2026-11-18. The named site source
 pipeline and CLI registry were verified for 0.14 on 2026-11-18. The wider scope is the v0.11.0 SDK + the
 2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
 Lattice `site_demo` home block, and the `examples/docs_site/` proof) + the 2026-09-04 HTMX 4 adapter
@@ -244,8 +245,8 @@ resolve existing symlinked ancestors even before the output exists. Events under
 rebuilding. Events debounce for 150 ms. One build runs at a time and edits
 during it queue exactly one more. A successful build swaps the static handler to the new directory, deletes the
 old one and emits on the stream behind `liveReloadMiddleware`; a failed build is deleted and the last good build
-stays served. Ctrl-C or SIGTERM (SIGINT only on Windows) force-closes the server (open SSE connections never finish), waits for an in-flight build and
-removes the temp directory.
+stays served. Ctrl-C or SIGTERM (SIGINT only on Windows) waits for an in-flight build and removes the temp
+directory, including during startup. If the server has bound, shutdown first closes it and its open SSE connections.
 
 ---
 

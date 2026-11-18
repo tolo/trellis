@@ -4,7 +4,7 @@ import '../visual_baseline.dart';
 import 'checks.dart';
 import 'firefox.dart';
 
-/// The browser stopped providing a stable state to sample.
+/// A stable capture or its baseline comparison is unavailable.
 final class VisualCaptureUnavailable implements Exception {
   const VisualCaptureUnavailable(this.reason);
   final String reason;
@@ -14,9 +14,21 @@ final class VisualCaptureUnavailable implements Exception {
 }
 
 /// Deterministic state captures, reusable before and after an upstream sync.
-Future<Map<String, Object?>> captureAppearance(GateSession session) async {
+///
+/// [comparePartial] checks captured states if a later emulation limit interrupts the run.
+Future<Map<String, Object?>> captureAppearance(
+  GateSession session, {
+  List<String> Function(Map<String, Object?>)? comparePartial,
+}) async {
   final states = <String, Object?>{}, tokens = <String, Object?>{}, invariants = <String>[];
   final driver = session.driver, manifest = session.manifest;
+  Map<String, Object?> snapshot() => {
+    'browser': driver.name,
+    'states': states,
+    'tokens': tokens,
+    'invariants': invariants.toSet().toList()..sort(),
+  };
+
   await driver.viewport(1440, 900);
   Future<bool> capture(
     String key, {
@@ -77,9 +89,10 @@ Future<Map<String, Object?>> captureAppearance(GateSession session) async {
         await session.configure(state, dark: dark);
         return;
       } on UnsupportedCondition catch (error) {
-        if (invariants.isEmpty) rethrow;
         // A later emulation limit cannot waive a defect already measured in this browser.
         final failures = invariants.toSet().toList()..sort();
+        if (failures.isEmpty) failures.addAll(comparePartial?.call(snapshot()) ?? const []);
+        if (failures.isEmpty) rethrow;
         throw GateConditionError([...failures, error.reason].join('\n'));
       } on GateConditionError {
         if (driver is! FirefoxDriver ||
@@ -116,7 +129,8 @@ Future<Map<String, Object?>> captureAppearance(GateSession session) async {
     throw VisualCaptureUnavailable('$key: Firefox lost document focus during three hover captures');
   }
 
-  for (final state in manifest.states.keys) {
+  final recipes = manifest.states.keys;
+  for (final state in recipes) {
     await loadState(state);
     await capture(state);
     for (final element in manifest.elements.entries) {
@@ -158,6 +172,11 @@ Future<Map<String, Object?>> captureAppearance(GateSession session) async {
     await loadState(state, dark: true);
     await driver.evaluate("document.documentElement.classList.add('dark')");
     await capture('$state/dark');
+  }
+
+  // The baseline stores token samples for the final recipe only.
+  if (recipes.isNotEmpty) {
+    final state = recipes.last;
     for (final dark in [false, true]) {
       await loadState(state, dark: dark);
       await driver.evaluate("document.documentElement.classList.toggle('dark',$dark)");
@@ -168,20 +187,17 @@ Future<Map<String, Object?>> captureAppearance(GateSession session) async {
     }
   }
   await session.collect();
-  return {
-    'browser': driver.name,
-    'states': states,
-    'tokens': tokens,
-    'invariants': invariants.toSet().toList()..sort(),
-  };
+  return snapshot();
 }
 
 /// Names each changed state/element/property and token, plus fresh invariants.
-List<String> compareAppearance(Map<String, Object?> expected, Map<String, Object?> actual) {
+///
+/// A partial capture compares only states and token modes that were reached.
+List<String> compareAppearance(Map<String, Object?> expected, Map<String, Object?> actual, {bool partial = false}) {
   final differences = <String>[];
   final before = (expected['states'] as Map).cast<String, Object?>(),
       after = (actual['states'] as Map).cast<String, Object?>();
-  for (final key in {...before.keys, ...after.keys}) {
+  for (final key in {if (!partial) ...before.keys, ...after.keys}) {
     if (!before.containsKey(key) || !after.containsKey(key)) {
       differences.add('$key state added/removed');
       continue;
@@ -211,7 +227,7 @@ List<String> compareAppearance(Map<String, Object?> expected, Map<String, Object
     }
   }
   final lt = expected['tokens'] as Map, rt = actual['tokens'] as Map;
-  for (final mode in {...lt.keys, ...rt.keys}) {
+  for (final mode in {if (!partial) ...lt.keys, ...rt.keys}) {
     final left = (lt[mode] as Map?) ?? const {}, right = (rt[mode] as Map?) ?? const {};
     for (final token in {...left.keys, ...right.keys}) {
       if (left[token] != right[token]) differences.add('token $mode $token ${left[token]} -> ${right[token]}');

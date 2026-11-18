@@ -92,7 +92,7 @@ class ServeCommand extends Command<int> {
     }
 
     // A supervisor can send SIGTERM as soon as it reads the readiness line.
-    final stopped = stopSignal ?? processStopSignal();
+    final stopped = stopSignal ?? processStopSignal().stopped;
     stdout.writeln('Serving http://localhost:$port from "$outputOption/"');
     stdout.writeln('Press Ctrl-C to stop.');
 

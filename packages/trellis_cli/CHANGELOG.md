@@ -31,6 +31,7 @@
   throws a Dart error leaves the last successful preview available and can be retried by saving another edit.
   Replacing the theme directory resumes live preview when it returns. Writing to an output directory reached
   through a theme symlink no longer triggers a rebuild.
+- Stopping `trellis dev` during its initial build removes the temporary preview directory.
 - Relic starters generate a CSRF signing key at startup when `CSRF_SECRET` is unset.
 - `trellis serve` also stops cleanly on SIGTERM (`kill`, a process manager, an IDE stop button), not only on Ctrl-C.
 

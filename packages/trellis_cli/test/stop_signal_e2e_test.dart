@@ -6,6 +6,7 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -80,6 +81,42 @@ void main() {
     final leftovers = tmpDir.listSync().map((e) => p.basename(e.path)).where((name) => name.startsWith('trellis_dev_'));
     expect(leftovers, isEmpty);
   });
+
+  for (final signal in [ProcessSignal.sigint, ProcessSignal.sigterm]) {
+    test('trellis dev cleans up after ${signal.name} during its initial build', () async {
+      final site = Directory(p.join(root.path, 'site'))..createSync();
+      final tmpDir = Directory(p.join(root.path, 'tmp'))..createSync();
+      write('site/trellis_site.yaml', 'title: Test Site\nbaseUrl: https://example.com\n');
+      write('site/content/_index.md', '---\ntitle: Home\n---\nHello.\n');
+      write('site/layouts/home.html', '<!DOCTYPE html><html><body>Home</body></html>');
+      final staticDir = Directory(p.join(site.path, 'static'))..createSync();
+      // Leave time to deliver the signal before the initial build finishes.
+      for (var i = 0; i < 1000; i++) {
+        File(p.join(staticDir.path, '$i.txt')).writeAsStringSync('Preview asset');
+      }
+
+      final port = await allocateFreePort();
+      final process = await Process.start(
+        Platform.resolvedExecutable,
+        ['run', entryPoint, 'dev', '--port', '$port'],
+        workingDirectory: site.path,
+        environment: {'TMPDIR': tmpDir.path},
+      );
+      addTearDown(() => stopServer(process));
+      final errors = process.stderr.transform(utf8.decoder).join();
+      final output = <String>[];
+      final finished = process.stdout.transform(utf8.decoder).transform(const LineSplitter()).forEach((line) {
+        output.add(line);
+        if (line == 'Building site...') process.kill(signal);
+      });
+
+      expect(await process.exitCode.timeout(const Duration(seconds: 30)), 0, reason: await errors);
+      await finished;
+      expect(output, contains('Building site...'));
+      expect(output, isNot(contains(startsWith('Serving '))));
+      expect(tmpDir.listSync().map((entry) => p.basename(entry.path)), isNot(contains(startsWith('trellis_dev_'))));
+    });
+  }
 
   test('trellis serve stops on SIGTERM with exit code 0', () async {
     final tmpDir = Directory(p.join(root.path, 'tmp'))..createSync();

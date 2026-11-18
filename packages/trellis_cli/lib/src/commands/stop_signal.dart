@@ -6,18 +6,22 @@ import 'dart:io';
 ///
 /// Both subscriptions are cancelled once one signal arrives, so a second signal gets the default handling and
 /// terminates a shutdown that hangs.
-Future<void> processStopSignal() {
+({Future<void> stopped, Future<void> Function() cancel}) processStopSignal() {
   final stopped = Completer<void>();
   final subscriptions = <StreamSubscription<ProcessSignal>>[];
+
+  Future<void> cancel() async {
+    await Future.wait(subscriptions.map((subscription) => subscription.cancel()));
+  }
+
   void stop(ProcessSignal _) {
-    for (final subscription in subscriptions) {
-      unawaited(subscription.cancel());
-    }
-    if (!stopped.isCompleted) stopped.complete();
+    if (stopped.isCompleted) return;
+    unawaited(cancel());
+    stopped.complete();
   }
 
   subscriptions.add(ProcessSignal.sigint.watch().listen(stop));
   // Windows supports watching SIGINT only; `ProcessSignal.sigterm.watch()` throws there.
   if (!Platform.isWindows) subscriptions.add(ProcessSignal.sigterm.watch().listen(stop));
-  return stopped.future;
+  return (stopped: stopped.future, cancel: cancel);
 }

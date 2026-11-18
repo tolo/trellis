@@ -14,4 +14,5 @@
 - Release checks match optional component retirements to recorded failures and require withdrawal of the
   component's public reference and catalogue entry.
 - Qualification accepts a passing measurement when the other browser records unsupported emulation with a
-  reason. Component and app release checks and the reference generator use the same verdict.
+  reason. A later emulation limit preserves appearance differences already captured against a baseline.
+  Component and app release checks and the reference generator use the same verdict.

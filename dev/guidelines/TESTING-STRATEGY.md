@@ -151,7 +151,9 @@ forced-focus captures keep actual document/target focus confirmed throughout set
 non-focusable elements are marked inapplicable for that state. Real keyboard and lifecycle checks stay unforced.
 `--captures <dir>` also writes `<component>.<browser>.json` snapshots. Sync tools may use `captureAppearance` and
 `compareAppearance` in one owned driver run for A/B comparisons; differences name the state, selector/property and
-changed token. The three spike regressions are replayed by `ui_gate_appearance_test.dart`; all are detected by
+changed token. If emulation becomes unsupported partway through, the gate still compares completed states against
+any existing browser baseline. Unreadable or malformed baseline evidence makes the check unavailable.
+The three spike regressions are replayed by `ui_gate_appearance_test.dart`; all are detected by
 styles or box invariants, so no pixel-diff fallback is currently needed.
 
 The local component sweep (`packages/trellis_ui/test/qualification_gate_test.dart`) runs all active manifests in
@@ -258,10 +260,8 @@ ASSUMPTION: flaky-test quarantine is approved by the maintainer (repo owner), re
 the suspected trigger, and lasts until the next release; would change if the owner wants another approver or a longer
 or shorter window. An agent never quarantines on its own call.
 
-ASSUMPTION: the bar's size comes from what the repo already runs (tag workflows that refuse to publish unless `ci.yml`
-is green, eight publishable packages released in lockstep), because the Product document's stage and scale
-facts are not in this repository; would change if those facts say the SDK is allowed a lighter or must carry a
-heavier bar.
+The bar reflects the lockstep release of the publishable packages, the tag workflows' green CI requirement, and
+the SDK stage and maintainer scale recorded in [Product](../PRODUCT.md#proportionality).
 
 
 ---

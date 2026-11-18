@@ -740,13 +740,15 @@ $showcaseCards''',
     final cardCommands = lines.join('\n').replaceAll(RegExp(r'\\\n\s*'), ' ').split('\n');
     final ctaCommands = (params['cta_commands']! as List).map((c) => c.toString()).toList();
     final commands = <String>{...cardCommands, ...ctaCommands};
-    // Both surfaces have to carry the install: a Lattice site is `create` *then* `theme add`, and
-    // either one alone scaffolds a site on the wrong theme. Asserted per surface, because the two
-    // are read independently — the card is what the gallery screenshot shows, the CTA is what a
-    // visitor copies.
+    // The gallery card and copyable CTA each need the full sequence. Theme installation and
+    // preview look for the scaffold's config in the current directory.
     for (final surface in {'terminal card': cardCommands, 'cta_commands': ctaCommands}.entries) {
-      expect(surface.value.any((c) => c.contains('theme add')), isTrue, reason: surface.key);
-      expect(surface.value.any((c) => c.contains('trellis create')), isTrue, reason: surface.key);
+      expect(surface.value, [
+        'trellis create my_docs --template blog',
+        'cd my_docs',
+        startsWith('trellis theme add '),
+        'trellis dev',
+      ], reason: surface.key);
     }
 
     // The hero card is the first thing a gallery visitor reads and it is baked into both
@@ -756,7 +758,7 @@ $showcaseCards''',
     final cli = p.join(Directory.current.path, 'packages', 'trellis_cli', 'bin', 'trellis.dart');
     final probeDir = Directory.systemTemp.createTempSync('lattice_cli_probe_');
     addTearDown(() => probeDir.deleteSync(recursive: true));
-    for (final command in commands) {
+    for (final command in commands.where((command) => command != 'cd my_docs')) {
       expect(command, startsWith('trellis '), reason: command);
       final args = [...command.split(RegExp(r'\s+')).skip(1), '--help'];
       final result = await Process.run('dart', ['run', cli, ...args], workingDirectory: probeDir.path);

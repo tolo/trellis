@@ -100,10 +100,19 @@ Future<void> _runRelicApp(Directory workspaceRoot) async {
     final about = await _get('http://localhost:$port/about');
     expect(about.statusCode, 200);
 
+    // The Relic example checks CSRF like the Shelf apps (double-submit cookie), so send the token back.
+    final cookieValue = _extractCsrfCookieValue(home.setCookieHeader);
+    expect(cookieValue, isNotNull);
+
+    final rawToken = cookieValue!.split('.').first;
     final increment = await _post(
       'http://localhost:$port/counter/increment',
-      body: '',
-      headers: {'HX-Request': 'true'},
+      body: '_csrf=$rawToken',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'HX-Request': 'true',
+        'Cookie': '__csrf=$cookieValue',
+      },
     );
     expect(increment.statusCode, 200);
     expect(increment.body, contains('counter-value'));

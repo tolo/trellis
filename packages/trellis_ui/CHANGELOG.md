@@ -9,4 +9,7 @@
   The combobox shows and announces “No results” after a request timeout and keeps the typed text.
 - Add `dart run trellis_ui:materialize [dir]` to write or refresh the three embedded preview assets.
 - Add a table header slot for column controls and `aria-sort`.
-- Pin the vega port to `shadcn@4.23.0` and add a checked upstream sync report.
+- Pin the vega port to `shadcn@4.23.0`. The sync checker matches the report's upstream rows to the inventory
+  generated for the active pin.
+- Release checks match optional component retirements to recorded failures and require withdrawal of the
+  component's public reference and catalogue entry.

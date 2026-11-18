@@ -12,7 +12,9 @@ compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme
 `compileThemeEntry` that configures each entry with the params Sass accepts and reports the ones it drops,
 build-time warnings for palette-default drift and for a site override Sass cannot apply (`trellis_site` now
 depends on `trellis_css`), and the redrawn package graph. The `trellis_ui` package map, pipeline and qualification sections
-are current through the 0.14 upstream sync and composed app gates (2026-11-18), and so is the Relic section (Relic 2, CSRF 2026-11-18); the content model's bundle rule and the `pathPrefix` coverage of feed and taxonomy URLs are current through 0.14;
+are current through the 0.14 sync inventory and optional-component release checks (2026-11-18), and so is the
+Relic section (Relic 2, CSRF 2026-11-18). The content model's bundle rule and the `pathPrefix` coverage of feed
+and taxonomy URLs are current through 0.14.
 other sections retain the verification scope above.
 The Dart Frog CSRF bridge note is current through 0.14 (it runs on Dart Frog's own request, so a handler can read the body after a form-field token).
 
@@ -108,8 +110,9 @@ results region. Toast responses append to a pre-existing live region using an HT
 The package's development pipeline vendors pinned shadcn TSX/style/tokens and licences, extracts `cn-*` hooks and
 structural utilities, renames them to `trellis-*`, then compiles using a checksummed Tailwind standalone binary.
 `tool/port.dart sync <tag>` snapshots the previous package at committed `HEAD`, fetches and builds a candidate
-in scratch, then replaces the single vendor pin and writes a deterministic triage report. The report validator
-requires dispositions and reasons for upstream differences and failed gates.
+in scratch, then installs the single vendor pin, deterministic triage report and generated upstream inventory
+together. The validator checks the active pin and compares the report's old and new identities and ordered
+upstream rows with that inventory. Dispositions and reasons stay in the report.
 `tool/port.dart check` regenerates and compares the four committed outputs. `tool/embed.dart` layers hand CSS, bundles
 one classic script, and embeds assets and fragments as base64 plus digests. Runtime and tests use these committed
 outputs without invoking Tailwind or Node. Scoped resets replace page-wide preflight; all suite declarations are in
@@ -124,7 +127,9 @@ The digest settles geometry and selected styles atomically without a CSP-blocked
 sampling replays the page state if another window takes focus before the snapshot. A failed visual setup can
 also replay after a trusted visible blur in that attempt. Fixture proofs
 run in the normal test tiers. The local release gate uses the same CLI for the gallery and for the admin and
-scaffold launcher. App recipes, records and baselines live under `dev/ui-gate/apps/`. During a native modal state
+scaffold launcher. App recipes, records and baselines live under `dev/ui-gate/apps/`. Release checks match documented
+optional component dispositions in ADR-012 to the exact failed items in the records. They replay active manifests
+and preserve evidence for removed subjects. During a native modal state
 the gate measures focus paint on controls inside the modal and still captures the visible background.
 
 ---

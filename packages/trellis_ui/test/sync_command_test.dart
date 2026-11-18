@@ -48,6 +48,15 @@ cp "$input" "$output"
       }),
     );
     _write(root, 'tool/parity-ignore.json', '[]');
+    _write(
+      root,
+      'tool/sync-inventory.json',
+      jsonEncode({
+        'previous': {'tag': 'shadcn@1.0.0', 'commit': '0000000000000000000000000000000000000000'},
+        'current': {'tag': _oldTag, 'commit': _oldCommit},
+        'entries': <Object>[],
+      }),
+    );
     for (final file in ['style-vega.css', 'tailwind.css', 'colors-neutral.json', 'LICENSE.md', 'ui/button.tsx']) {
       _write(root, 'vendor/shadcn/$_oldTag/$file', _input(file));
     }
@@ -78,6 +87,8 @@ cp "$input" "$output"
             jsonEncode([
               {'name': 'button.tsx', 'type': 'file'},
               if (commit == _newCommit) {'name': 'slider.tsx', 'type': 'file'},
+              if (commit == _newCommit) {'name': 'trace.tsx', 'type': 'file'},
+              if (commit == _oldCommit) {'name': 'legacy.tsx', 'type': 'file'},
               {'name': 'README.md', 'type': 'file'},
               {'name': 'fixture.tsx', 'type': 'dir'},
             ]),
@@ -110,6 +121,57 @@ cp "$input" "$output"
     final report = File('${root.path}/sync-reports/sync-$_oldTag-to-$_newTag.md');
     expect(report.readAsStringSync(), contains('Upstream component added: `slider`'));
     expect(await runPortCommand(['sync', '--check-report', report.path], Pipeline(root)), 1);
+  });
+
+  test('check-report binds editable triage to the inventory even when the count is adjusted', () async {
+    expect(await sync(_newTag), 0);
+    final report = File('${root.path}/sync-reports/sync-$_oldTag-to-$_newTag.md');
+    final complete = report
+        .readAsStringSync()
+        .replaceAll('Kind: new component\nTriage: pending', 'Kind: new component\nTriage: defer')
+        .replaceAll('Triage: pending', 'Triage: mechanical')
+        .replaceAll('Disposition: pending\nReason:', 'Disposition: expected\nReason: Reviewed.')
+        .replaceAll('Result: pending', 'Result: pass');
+    report.writeAsStringSync(complete);
+    final command = ['sync', '--check-report', report.path];
+    expect(await runPortCommand(command, Pipeline(root)), 0);
+
+    final triageStart = complete.indexOf('### U001 ');
+    final triageEnd = complete.indexOf('## Gates', triageStart);
+    final rows = complete.substring(triageStart, triageEnd);
+    final mutations = {
+      'all rows omitted': complete.replaceFirst(
+        RegExp(r'Upstream entries: \d+[\s\S]*?(?=\n## Gates)'),
+        'Upstream entries: 0\n',
+      ),
+      'middle row omitted and counts adjusted': complete
+          .replaceFirst('Upstream entries: 3', 'Upstream entries: 2')
+          .replaceFirst(RegExp(r'^### U002 [\s\S]*?(?=^### U003 )', multiLine: true), '')
+          .replaceFirst('### U003 ', '### U002 '),
+      'wrong component with the same count': complete.replaceFirst('added: `slider`', 'added: `unrelated`'),
+      'changed kind and triage': complete.replaceFirst(
+        'Kind: new component\nTriage: defer',
+        'Kind: mechanical\nTriage: mechanical',
+      ),
+      'wrong upstream commit': complete.replaceFirst(_oldCommit, _newCommit),
+      'rows moved outside Upstream triage': '${complete.replaceRange(triageStart, triageEnd, '')}\n$rows',
+      'rows hidden by an HTML comment': complete.replaceRange(triageStart, triageEnd, '<!--\n$rows-->\n\n'),
+      'rows in a code fence': complete.replaceRange(triageStart, triageEnd, '```text\n$rows```\n\n'),
+    };
+    for (final MapEntry(key: mutation, value: edited) in mutations.entries) {
+      expect(edited, isNot(complete), reason: mutation);
+      report.writeAsStringSync(edited);
+      expect(await runPortCommand(command, Pipeline(root)), 1, reason: mutation);
+    }
+
+    report.writeAsStringSync(complete);
+    final pins = File('${root.path}/tool/pins.json');
+    final pinned = pins.readAsStringSync();
+    pins.writeAsStringSync(pinned.replaceFirst(_newCommit, _oldCommit));
+    expect(await runPortCommand(command, Pipeline(root)), 1, reason: 'wrong current pin');
+    pins.writeAsStringSync(pinned);
+    File('${root.path}/tool/sync-inventory.json').deleteSync();
+    expect(await runPortCommand(command, Pipeline(root)), 1, reason: 'missing generated inventory');
   });
 
   test('a tag that cannot be fetched changes nothing', () async {
@@ -212,6 +274,8 @@ String _input(String name) => switch (name) {
 
 Map<String, String> _syncFiles(Directory root) => {
   'tool/pins.json': File('${root.path}/tool/pins.json').readAsStringSync(),
+  if (File('${root.path}/tool/sync-inventory.json').existsSync())
+    'tool/sync-inventory.json': File('${root.path}/tool/sync-inventory.json').readAsStringSync(),
   for (final name in ['vendor', 'generated', 'sync-reports'])
     if (Directory('${root.path}/$name').existsSync())
       for (final file in Directory('${root.path}/$name').listSync(recursive: true).whereType<File>())

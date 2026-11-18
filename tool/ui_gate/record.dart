@@ -9,6 +9,16 @@ bool validManualResult(Object? result) => switch (result) {
   _ => false,
 };
 
+/// Folds one automated item according to the gate's browser fallback decision.
+String gateItemStatus(Iterable<GateResult> results) {
+  if (results.any((result) => result.status == 'fail')) return 'fail';
+  if (results.any((result) => result.status == 'not-run' && !result.unsupported) ||
+      !results.any((result) => result.status == 'pass')) {
+    return 'not-run';
+  }
+  return 'pass';
+}
+
 /// Folds browser results without changing any human-entered manual item.
 Map<String, Object?> gateRecord(
   String name,
@@ -20,14 +30,8 @@ Map<String, Object?> gateRecord(
     final results = {
       for (final run in runs.entries) run.key: run.value[item] ?? const GateResult('not-run', ['item did not run']),
     };
-    final status = results.values.any((r) => r.status == 'fail')
-        ? 'fail'
-        : results.values.any((r) => r.status == 'not-run' && !r.unsupported) ||
-              !results.values.any((r) => r.status == 'pass')
-        ? 'not-run'
-        : 'pass';
     items[item] = {
-      'status': status,
+      'status': gateItemStatus(results.values),
       'browsers': {for (final entry in results.entries) entry.key: entry.value.toJson()},
     };
   }

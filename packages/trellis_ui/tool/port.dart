@@ -33,7 +33,26 @@ Future<int> runPortCommand(List<String> args, Pipeline pipeline, {String? compil
       final report = await syncPin(pipeline, tag, compilerPath: compilerPath, platform: platform);
       stdout.writeln('Sync report: ${report.path}');
     case ['sync', '--check-report', final path]:
-      final issues = syncReportIssues(File(path).readAsStringSync());
+      final List<String> issues;
+      try {
+        final inventory = SyncReportInventory.read(pipeline.root);
+        final pin = pipeline.pins['shadcn'];
+        if (pin case {
+          'tag': final String tag,
+          'commit': final String commit,
+        } when inventory.current == (tag: tag, commit: commit)) {
+          issues = syncReportIssues(File(path).readAsStringSync(), inventory);
+        } else {
+          stderr.writeln('Generated sync inventory does not match the current shadcn pin');
+          return 1;
+        }
+      } on FormatException catch (error) {
+        stderr.writeln(error.message);
+        return 1;
+      } on FileSystemException catch (error) {
+        stderr.writeln(error);
+        return 1;
+      }
       if (issues.isNotEmpty) {
         issues.forEach(stderr.writeln);
         return 1;

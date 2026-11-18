@@ -4,6 +4,15 @@ import '../visual_baseline.dart';
 import 'checks.dart';
 import 'firefox.dart';
 
+/// The browser stopped providing a stable state to sample.
+final class VisualCaptureUnavailable implements Exception {
+  const VisualCaptureUnavailable(this.reason);
+  final String reason;
+
+  @override
+  String toString() => reason;
+}
+
 /// Deterministic state captures, reusable before and after an upstream sync.
 Future<Map<String, Object?>> captureAppearance(GateSession session) async {
   final states = <String, Object?>{}, tokens = <String, Object?>{}, invariants = <String>[];
@@ -99,7 +108,7 @@ Future<Map<String, Object?>> captureAppearance(GateSession session) async {
         await driver.pseudo(element.value, []);
       }
     }
-    throw StateError('$key: Firefox lost document focus during three hover captures');
+    throw VisualCaptureUnavailable('$key: Firefox lost document focus during three hover captures');
   }
 
   for (final state in manifest.states.keys) {

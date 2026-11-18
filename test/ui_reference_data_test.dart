@@ -6,7 +6,9 @@ import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
 import '../tool/generate_ui_reference.dart';
-import '../tool/ui_gate/checks.dart' show manualItems;
+import '../tool/ui_gate/checks.dart' show GateResult, automatedItems, manualItems;
+import '../tool/ui_gate/record.dart' show encodeRecord, gateRecord;
+import '../tool/ui_gate/release_policy.dart' show releaseComponents, releasePolicyPath;
 
 const _records = 'dev/ui-gate/records';
 const _suite = 'packages/trellis_ui';
@@ -27,10 +29,16 @@ void main() {
   void copy(String relativePath) => write(relativePath, File(relativePath).readAsStringSync());
   YamlMap generated() => loadYaml(file(_data).readAsStringSync()) as YamlMap;
 
-  void copyComponents(Iterable<String> names) {
+  void fixtureComponents(Iterable<String> names) {
+    final pass = {
+      for (final item in automatedItems) item: const GateResult('pass', ['Observed a passing check']),
+    };
     for (final name in names) {
-      copy('$_records/$name.json');
-      copy('$_suite/assets/fragments/$name.html');
+      write('$_records/$name.json', encodeRecord(gateRecord(name, {'chrome': pass, 'firefox': pass})));
+      write(
+        '$_suite/assets/fragments/$name.html',
+        '<div class="trellis-$name" tl:fragment="sample(...attrs)" tl:attrs="\${attrs}"></div>',
+      );
       write('$_pages/$name.md', 'Reference page for $name');
     }
   }
@@ -45,6 +53,7 @@ void main() {
   setUp(() {
     fixture = Directory.systemTemp.createTempSync('trellis_ui_reference_data_');
     addTearDown(() => fixture.deleteSync(recursive: true));
+    write(releasePolicyPath, '#### Optional component release dispositions\n\n```text\n```\n');
     generator = UiReferenceGenerator(fixture.path);
   });
 
@@ -55,8 +64,16 @@ void main() {
         .where((file) => file.path.endsWith('.json'))
         .map((file) => p.basenameWithoutExtension(file.path))
         .toList();
-    expect(names, hasLength(25));
-    copyComponents(names);
+    expect(names, unorderedEquals(releaseComponents));
+    copy(releasePolicyPath);
+    for (final name in names) {
+      copy('$_records/$name.json');
+      final fragment = '$_suite/assets/fragments/$name.html';
+      if (File(fragment).existsSync()) copy(fragment);
+    }
+    for (final page in Directory(_pages).listSync(followLinks: false).whereType<File>()) {
+      if (page.path.endsWith('.md')) copy(page.path);
+    }
     copy('$_suite/generated/trellis.min.css');
     for (final css in Directory('$_suite/assets/css/hand').listSync(followLinks: false).whereType<File>()) {
       if (css.path.endsWith('.css')) copy(css.path);
@@ -69,16 +86,19 @@ void main() {
     generator.write();
     expect(file(_data).readAsBytesSync(), expected);
 
-    final button = file('$_suite/assets/fragments/button.html');
-    final source = button.readAsStringSync();
-    final changed = source.replaceFirst('button(variant, size, ...attrs)', 'button(variant, size, rounding, ...attrs)');
+    final dialog = file('$_suite/assets/fragments/dialog.html');
+    final source = dialog.readAsStringSync();
+    final changed = source.replaceFirst(
+      'dialog(id, title, description, open, ...attrs)',
+      'dialog(id, title, description, open, rounding, ...attrs)',
+    );
     expect(changed, isNot(source));
-    button.writeAsStringSync(changed);
+    dialog.writeAsStringSync(changed);
     expect(generator.check(), [contains('Regenerate with: dart run tool/generate_ui_reference.dart')]);
   });
 
   test('a failing record is not qualified and a stale file names the regeneration command', () {
-    copyComponents(['button', 'badge']);
+    fixtureComponents(['button', 'badge']);
     write('$_suite/generated/trellis.min.css', '.trellis-button {} .trellis-badge {}');
     generator.write();
     expect(generator.check(), isEmpty);
@@ -97,7 +117,7 @@ void main() {
   });
 
   test('a manual gate failure removes the published component inventory and page', () {
-    copyComponents(['button', 'badge']);
+    fixtureComponents(['button', 'badge']);
     write('$_suite/generated/trellis.min.css', '.trellis-button {} .trellis-badge {}');
     generator.write();
     expect(generator.check(), isEmpty);
@@ -121,8 +141,38 @@ void main() {
     expect(generator.check(), isEmpty);
   });
 
+  test('an explicitly removed component keeps its record without requiring a fragment', () {
+    fixtureComponents(['button', 'badge']);
+    write('$_suite/generated/trellis.min.css', '.trellis-button {} .trellis-badge {}');
+    editRecord('badge', (record) {
+      record['automated'] = 'fail';
+      final visual = (record['items'] as Map)['visual'] as Map;
+      visual['status'] = 'fail';
+      (visual['browsers'] as Map)['firefox'] = {
+        'status': 'fail',
+        'evidence': ['The badge clips its text'],
+      };
+    });
+    final evidence = file('$_records/badge.json').readAsBytesSync();
+    file('$_suite/assets/fragments/badge.html').deleteSync();
+    file('$_pages/badge.md').deleteSync();
+    write(
+      releasePolicyPath,
+      '#### Optional component release dispositions\n\n```text\nbadge | removed | visual\n```\n',
+    );
+    generator.write();
+    expect(generated().keys, ['button']);
+    expect(generator.check(), isEmpty);
+    expect(file('$_records/badge.json').readAsBytesSync(), evidence);
+    file('$_records/badge.json').deleteSync();
+    expect(
+      generator.check,
+      throwsA(isA<UiReferenceException>().having((error) => error.message, 'message', contains('badge'))),
+    );
+  });
+
   test('part classes go to the longest matching component name', () {
-    copyComponents(['alert', 'alert-dialog']);
+    fixtureComponents(['alert', 'alert-dialog']);
     write('$_suite/generated/trellis.min.css', '''
       .trellis-alert { color: red; }
       .trellis-alert-title, .trellis-alert-dialog-title { color: blue; }
@@ -146,7 +196,7 @@ void main() {
   });
 
   test('support requires every manual result and preserves all recorded statuses', () {
-    copyComponents(['button']);
+    fixtureComponents(['button']);
     write('$_suite/generated/trellis.min.css', '.trellis-button {}');
     for (final status in ['pass', 'fail', 'not-run', 'release-prep']) {
       editRecord('button', (record) {
@@ -185,7 +235,7 @@ void main() {
   });
 
   test('a passing automated item cannot hide a failing browser result', () {
-    copyComponents(['button']);
+    fixtureComponents(['button']);
     write('$_suite/generated/trellis.min.css', '.trellis-button {}');
     editRecord('button', (record) {
       final items = record['items'] as Map<String, dynamic>;

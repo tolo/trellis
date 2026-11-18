@@ -1,15 +1,20 @@
 @Tags(['ui-gate', 'visual'])
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:test/test.dart';
 
+import '../../../tool/ui_gate/checks.dart' show manualItems;
 import '../../../tool/ui_gate/manifest.dart';
+import '../../../tool/ui_gate/release_policy.dart';
 
 void main() {
   test('automated qualification remains green in Chrome and Firefox', () async {
     final root = Directory.current.parent.parent;
+    final policy = ComponentReleasePolicy.read(root);
+    expect(policy.inventoryIssues(root), isEmpty);
     final files =
         Directory(
             '${root.path}/dev/ui-gate/manifests',
@@ -17,17 +22,28 @@ void main() {
           ..sort((a, b) => a.path.compareTo(b.path));
     expect(files, isNotEmpty);
     final names = files.map(GateManifest.load).map((manifest) => manifest.name).toList();
-    expect(names.toSet(), hasLength(names.length), reason: 'Each manifest must own a distinct record: $names');
+    expect(names, unorderedEquals(policy.activeComponents), reason: 'Each active component must have one recipe');
     final records = Directory('${root.path}/dev/ui-gate/records');
     final scratchParent = Directory('${root.path}/.agent_temp')..createSync(recursive: true);
     final scratch = scratchParent.createTempSync('component-records-');
     addTearDown(() => scratch.deleteSync(recursive: true));
     final expected = <String, List<int>>{};
-    for (final name in names) {
+    final failures = <String>{};
+    for (final name in releaseComponents) {
       final filename = '$name.json';
-      final canonical = File('${records.path}/$filename');
-      expected[filename] = canonical.readAsBytesSync();
-      canonical.copySync('${scratch.path}/$filename');
+      final bytes = File('${records.path}/$filename').readAsBytesSync();
+      final record = (jsonDecode(utf8.decode(bytes)) as Map).cast<String, Object?>();
+      expect(policy.recordIssues(name, record), isEmpty);
+      if (policy.isRemoved(name)) continue;
+      expected[filename] = bytes;
+      if (record['automated'] == 'fail') failures.add('$name.yaml');
+      final items = (record['items'] as Map).cast<String, Object?>();
+      // Seed only the human results. A crash before writing cannot match the full record.
+      File('${scratch.path}/$filename').writeAsStringSync(
+        jsonEncode({
+          'items': {for (final item in manualItems) item: items[item]},
+        }),
+      );
     }
     final paths = files.map((file) => file.absolute.path).toList();
     final chunks = List.generate(paths.length < 3 ? paths.length : 3, (_) => <String>[]);
@@ -58,7 +74,9 @@ void main() {
       for (final (index, chunk) in chunks.indexed) run(index, chunk),
     ], eagerError: false);
     for (var i = 0; i < results.length; i++) {
-      expect(results[i].exitCode, 0, reason: 'UI gate chunk ${i + 1}: ${chunks[i]}');
+      final expectsFailure = chunks[i].any((path) => failures.contains(File(path).uri.pathSegments.last));
+      expect(results[i].stderr, isEmpty, reason: 'UI gate chunk ${i + 1}');
+      expect(results[i].exitCode, expectsFailure ? 1 : 0, reason: 'UI gate chunk ${i + 1}: ${chunks[i]}');
     }
     for (final entry in expected.entries) {
       final actual = File('${scratch.path}/${entry.key}');

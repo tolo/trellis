@@ -9,6 +9,7 @@ import 'package:trellis_ui/trellis_ui.dart';
 import 'package:yaml/yaml.dart';
 
 import '../tool/generate_ui_reference.dart';
+import '../tool/ui_gate/release_policy.dart';
 import 'browser_reflow_probe.dart';
 import 'reflow_sweep.dart' show builtPages;
 
@@ -21,6 +22,7 @@ const _tabs = 'reference-tabs';
 
 void main() {
   final root = Directory.current.path;
+  final policy = ComponentReleasePolicy.read(Directory(root));
   final data = loadYaml(File('site/data/ui_components.yaml').readAsStringSync()) as YamlMap;
   final qualified = {
     for (final item in data.values.cast<YamlMap>())
@@ -116,7 +118,7 @@ void main() {
     'each page states its fragments, slots, attribute target, part classes and gate results from the generated data',
     () {
       final names = builtComponents(outputs['']!);
-      expect(names, contains('button'));
+      expect(names, unorderedEquals(qualified));
       for (final component in names) {
         final inventory = data[component] as YamlMap;
         final document = referencePage(component);
@@ -221,7 +223,13 @@ void main() {
         .map((match) => match[0]!)
         .where((name) => !{'trellis-ui', 'trellis-ui-css', 'trellis-ui-js'}.contains(name))
         .toSet();
-    expect(classes, containsAll(['trellis-button', 'trellis-card']));
+    expect(
+      classes,
+      containsAll([
+        if (!policy.isWithdrawn('button')) 'trellis-button',
+        if (!policy.isWithdrawn('card')) 'trellis-card',
+      ]),
+    );
     for (final name in classes) {
       expect(css, matches(RegExp('\\.$name(?![a-z0-9-])')), reason: name);
     }
@@ -293,16 +301,18 @@ void main() {
     })()'''),
       [true, true, 'undefined'],
     );
-    expect(
-      await example('button', r'''(() => {
+    if (!policy.isWithdrawn('button')) {
+      expect(
+        await example('button', r'''(() => {
       const button = document.querySelector('.ui-reference-preview .trellis-button');
       const swatch = document.createElement('span');
       swatch.style.backgroundColor = 'var(--primary)';
       button.parentElement.appendChild(swatch);
       return [getComputedStyle(button).backgroundColor === getComputedStyle(swatch).backgroundColor, typeof window.htmx];
     })()'''),
-      [true, 'undefined'],
-    );
+        [true, 'undefined'],
+      );
+    }
     const skin = '''new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() =>
       resolve([document.documentElement.dataset.theme,
         document.querySelector('.ui-reference-preview').classList.contains('dark')]))))''';
@@ -377,6 +387,12 @@ void main() {
   }, timeout: const Timeout(Duration(minutes: 3)));
 
   test('the example table scrolls locally on narrow screens and fits desktop', () async {
+    if (policy.isWithdrawn('table')) {
+      for (final output in outputs.values) {
+        expect(builtComponents(output), isNot(contains('table')));
+      }
+      return;
+    }
     final browser = await _startChrome('Trellis UI reference table reflow');
     if (browser == null) return;
     final site = await StaticSiteServer.serve(outputs['']!);

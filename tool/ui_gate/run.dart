@@ -41,15 +41,15 @@ Future<Map<String, GateResult>> runGate(
     try {
       final appearance = await captureAppearance(session);
       final baseline = File('${baselines.path}/${manifest.name}.${Platform.operatingSystem}.json');
-      final existing = baseline.existsSync() ? jsonDecode(baseline.readAsStringSync()) as Map : null;
       final issues = (appearance['invariants'] as List).cast<String>().toList();
-      final encoded = encodeCapture(appearance);
       if (captures != null) {
         captures.createSync(recursive: true);
-        File('${captures.path}/${manifest.name}.$browser.json').writeAsStringSync(encoded);
+        File('${captures.path}/${manifest.name}.$browser.json').writeAsStringSync(encodeCapture(appearance));
       }
+      var compared = true;
       if (record) {
         if (issues.isEmpty) {
+          final existing = baseline.existsSync() ? jsonDecode(baseline.readAsStringSync()) as Map : null;
           baseline.parent.createSync(recursive: true);
           final browsers = existing?['platform'] == Platform.operatingSystem
               ? (existing!['browsers'] as Map).cast<String, Object?>()
@@ -57,28 +57,27 @@ Future<Map<String, GateResult>> runGate(
           browsers[browser] = appearance;
           baseline.writeAsStringSync(encodeCapture({'platform': Platform.operatingSystem, 'browsers': browsers}));
         }
-      } else if (!baseline.existsSync()) {
-        issues.add('no baseline for ${manifest.name}/$browser on ${Platform.operatingSystem}');
       } else {
-        if (existing!['platform'] != Platform.operatingSystem) {
-          issues.add('baseline platform does not match ${Platform.operatingSystem}');
-        } else {
-          final recorded = (existing['browsers'] as Map)[browser] as Map?;
-          if (recorded == null || recorded['browser'] != browser) {
-            issues.add('no $browser capture in baseline for ${manifest.name}');
-          } else {
-            issues.addAll(compareAppearance(recorded.cast<String, Object?>(), appearance));
-          }
+        try {
+          issues.addAll(_compareBaseline(baseline, manifest.name, browser, appearance));
+        } on Object catch (error) {
+          // An unavailable comparison cannot serve as evidence of a component defect.
+          compared = false;
+          issues.add(session.normalize(error is FormatException ? error.message : '$error'));
         }
       }
       results['visual'] = GateResult(
-        issues.isEmpty ? 'pass' : 'fail',
+        compared ? (issues.isEmpty ? 'pass' : 'fail') : 'not-run',
         issues.isEmpty
             ? ['${(appearance['states'] as Map).length} states captured; no clipping, overlap or appearance differences']
             : issues,
       );
     } on UnsupportedCondition catch (error) {
       results['visual'] = GateResult('not-run', [error.reason], unsupported: true);
+    } on VisualCaptureUnavailable catch (error) {
+      results['visual'] = GateResult('not-run', [error.reason]);
+    } on FileSystemException catch (error) {
+      results['visual'] = GateResult('not-run', [session.normalize('$error')]);
     } on Object catch (error) {
       results['visual'] = GateResult('fail', [session.normalize('$error')]);
     }
@@ -92,6 +91,18 @@ Future<Map<String, GateResult>> runGate(
     await driver?.close();
   }
   return results;
+}
+
+List<String> _compareBaseline(File baseline, String name, String browser, Map<String, Object?> appearance) {
+  final platform = Platform.operatingSystem;
+  if (!baseline.existsSync()) throw FormatException('no baseline for $name/$browser on $platform');
+  final existing = jsonDecode(baseline.readAsStringSync()) as Map;
+  if (existing['platform'] != platform) throw FormatException('baseline platform does not match $platform');
+  final recorded = (existing['browsers'] as Map)[browser];
+  if (recorded is! Map<String, Object?> || recorded['browser'] != browser) {
+    throw FormatException('no $browser capture in baseline for $name');
+  }
+  return compareAppearance(recorded, appearance);
 }
 
 GateResult _provenance(GateManifest manifest) {

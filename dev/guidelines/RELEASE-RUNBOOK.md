@@ -75,9 +75,10 @@ On the macOS baseline host, install Dart Frog CLI 1.2.6 and put geckodriver on `
 From the repository root run `dart run packages/trellis_ui/tool/port.dart parity`,
 `dart run packages/trellis_ui/tool/port.dart check` and `dart run packages/trellis_ui/tool/embed.dart --check`, then
 run the report through `dart run packages/trellis_ui/tool/port.dart sync --check-report "$report"` with `report` set
-to the selected file in `packages/trellis_ui/sync-reports/`. Run these browser gates with Chrome and Firefox.
+to the active pin's file in `packages/trellis_ui/sync-reports/`. The command checks the generated inventory for
+that pin. Run these browser gates with Chrome and Firefox.
 
-- From `packages/trellis_ui/`, run `dart test test/qualification_gate_test.dart` for all 25 component subjects.
+- From `packages/trellis_ui/`, run `dart test test/qualification_gate_test.dart` for all active component subjects.
 - From `packages/trellis_cli/`, run `dart test test/ui_surfaces_gate_test.dart` for the admin example and both pages
   of each of the three UI scaffolds. The app records live in `dev/ui-gate/apps/records/`.
 - Verify the payload and authored code limits listed in [Testing Strategy](TESTING-STRATEGY.md#ui-qualification-gate).
@@ -87,13 +88,22 @@ browser pass. Replace the corresponding `release-prep` values with the observed 
 manual checks after a change to the affected markup or behaviour. The owner reviews each sync disposition and
 records `Owner review: pass` in the sync report.
 
-A failure in Dialog, Dropdown Menu, Combobox, Tabs or Toast blocks release. Land a standalone fix and rerun that
-component's automated and manual checks. For any other failing component, remove it or ship it unsupported.
-Keep the failing gate evidence and add the component and item to [ADR-012's revisit triggers](../adrs/ADR-012-trellis-ui-contract.md#revisit-triggers).
-Remove its reference page from `site/content/docs/ui/components/`. Run `dart run tool/generate_ui_reference.dart`
-to remove the inventory entry for a recorded manual failure. Automated failures retain an internal
-`qualified: false` entry for diagnosis. Run the generator with `--check` to verify the data and page set.
-Claim support only for components with every automated and manual item passing.
+An actual failure in Dialog, Dropdown Menu, Combobox, Tabs, Toast or an app surface blocks release. Fix it and
+rerun its automated and manual checks. For another failing component, keep its gate record and list the exact
+failed items under [Optional component release dispositions](../adrs/ADR-012-trellis-ui-contract.md#optional-component-release-dispositions),
+for example `badge | unsupported | safari` or `badge | removed | visual, safari`.
+
+- `unsupported` keeps the fragment, gallery and manifest. The browser gate reruns the component and matches the
+  fresh result to the committed record.
+- `removed` keeps the failing record. Remove the fragment, gallery page and manifest, and migrate their callers,
+  examples and component-specific tests. Re-embed the package after removing a fragment.
+
+For either disposition, remove the reference page from `site/content/docs/ui/components/` and its package
+README catalogue rows. Regenerate `site/data/ui_components.yaml` with `dart run tool/generate_ui_reference.dart`.
+The generator omits removed components and recorded manual failures. An automated failure for an unsupported
+component with its fragment still present keeps an internal `qualified: false` entry. Run the generator with
+`--check` and rerun the local release gates. The raw browser record keeps each failing result. Claim support after
+every automated and manual item passes.
 
 ## 1. Fresh-context adversarial review — not optional
 

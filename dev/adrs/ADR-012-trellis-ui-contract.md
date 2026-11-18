@@ -418,6 +418,22 @@ limitation: `renderFragment` renders a parameterised fragment by bare name, see 
 - Do not define a generic provider interface before two real integrations reveal a
   stable shared seam.
 
+#### Optional component release dispositions
+
+Record one accepted qualification failure per component below, in the form
+`component | unsupported or removed | comma-separated failed gate item IDs`.
+Use the exact failed item IDs from the retained gate record. Dialog, dropdown
+menu, combobox, tabs, toast, and composed app routes cannot have a disposition.
+
+`unsupported` keeps the runtime fragment, gallery and manifest available for
+repeatable checks. `removed` drops the runtime fragment, gallery and manifest
+after their consumers are migrated. Both keep the failure evidence and withdraw
+the reference page and package catalogue entry. Remove the disposition when the
+component qualifies again. An unavailable check cannot justify a disposition.
+
+```text
+```
+
 ## Project Compliance
 
 - **ADR-004** – UI remains optional and depends toward core; core stays minimal.

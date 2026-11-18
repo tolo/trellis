@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import '../packages/trellis_ui/tool/src/bundle.dart';
 import 'ui_gate/checks.dart' show automatedItems, manualItems;
 import 'ui_gate/record.dart' show validManualResult;
+import 'ui_gate/release_policy.dart';
 
 const _regenerate = 'dart run tool/generate_ui_reference.dart';
 const _usage = 'Usage: $_regenerate [--check] [project-root]';
@@ -64,9 +65,14 @@ final class UiReferenceGenerator {
   }
 
   ({String yaml, Set<String> qualified}) _build() {
+    final policy = ComponentReleasePolicy.read(Directory(projectRoot));
     final files = sourceFiles(Directory(p.join(projectRoot, 'dev', 'ui-gate', 'records')), '.json');
     if (files.isEmpty) throw const UiReferenceException('No dev/ui-gate/records/*.json found');
     final names = files.map((file) => p.basenameWithoutExtension(file.path)).toList();
+    final missingEvidence = releaseComponents.where((name) => policy.isWithdrawn(name) && !names.contains(name));
+    if (missingEvidence.isNotEmpty) {
+      throw UiReferenceException('Missing gate evidence for withdrawn components: ${missingEvidence.join(', ')}');
+    }
     final prefixes = [...names]..sort((a, b) => b.length.compareTo(a.length));
     final classes =
         _partClass.allMatches(bundleCss(_suite).replaceAll(_comments, '')).map((match) => match[1]!).toSet().toList()
@@ -87,7 +93,13 @@ final class UiReferenceGenerator {
     final qualified = <String>{};
     for (final (index, file) in files.indexed) {
       final name = names[index];
-      final (passes, items) = _gate(name, file);
+      final Object? record = jsonDecode(file.readAsStringSync());
+      if (policy.isWithdrawn(name)) {
+        final problems = policy.recordIssues(name, record);
+        if (problems.isNotEmpty) throw UiReferenceException(problems.join('\n'));
+        if (policy.isRemoved(name)) continue;
+      }
+      final (passes, items) = _gate(name, record);
       // Keep a release-prep failure in its gate record without publishing the component.
       if (items.skip(automatedItems.length).any((item) => item['status'] == 'fail')) continue;
       final (fragments, aliases) = _fragments(name);
@@ -118,8 +130,7 @@ final class UiReferenceGenerator {
     return (yaml: buffer.toString(), qualified: qualified);
   }
 
-  (bool, List<Map<String, Object>>) _gate(String name, File file) {
-    final Object? root = jsonDecode(file.readAsStringSync());
+  (bool, List<Map<String, Object>>) _gate(String name, Object? root) {
     if (!_componentName.hasMatch(name) ||
         root is! Map<String, Object?> ||
         root['component'] != name ||

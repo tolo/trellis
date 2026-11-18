@@ -2,11 +2,11 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-import 'browser_reflow_probe.dart';
+import '../tool/ui_gate/appearance.dart';
 import '../tool/ui_gate/checks.dart';
 import '../tool/ui_gate/firefox.dart';
 import '../tool/ui_gate/manifest.dart';
-import '../tool/ui_gate/appearance.dart';
+import 'browser_reflow_probe.dart';
 
 void main() {
   for (final (mode, description) in [
@@ -76,7 +76,9 @@ states:
       if (mode == 'always') {
         await expectLater(
           capture(mode),
-          throwsA(isA<StateError>().having((error) => error.message, 'message', contains('three hover captures'))),
+          throwsA(
+            isA<VisualCaptureUnavailable>().having((error) => error.reason, 'reason', contains('three hover captures')),
+          ),
         );
         expect(observations('blur-observed'), hasLength(3));
         expect(await driver.evaluate("Object.hasOwn(window, '__uiGateHoverFocus')"), isFalse);

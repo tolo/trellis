@@ -8,15 +8,22 @@ import '../tool/src/sync_report.dart';
 void main() {
   late Directory scratch;
   late String skeleton;
+  late SyncReportInventory inventory;
+
+  List<String> issues(String report) => syncReportIssues(report, inventory);
 
   setUp(() {
     scratch = Directory('../../.agent_temp').createTempSync('sync-report-test-');
     addTearDown(() => scratch.deleteSync(recursive: true));
-    skeleton = buildSyncReport(_tree(scratch, 1), _tree(scratch, 2));
+    final report = buildSyncReport(_tree(scratch, 1), _tree(scratch, 2));
+    skeleton = report.markdown;
+    inventory = report.inventory;
   });
 
   test('a fixture sync yields entries, breaking flag, token diff and revisit rows, identical twice', () {
-    expect(buildSyncReport(_tree(scratch, 1), _tree(scratch, 2)), skeleton);
+    final repeated = buildSyncReport(_tree(scratch, 1), _tree(scratch, 2));
+    expect(repeated.markdown, skeleton);
+    expect(repeated.inventory.encode(), inventory.encode());
     expect(skeleton, contains('| `ui/button.tsx` | 1 | 1 | 1 | 1 |'));
     expect(skeleton, contains('BREAKING public class removed: `trellis-obsolete`'));
     expect(skeleton, contains('BREAKING public class removed: `trellis-old-hand`'));
@@ -32,7 +39,7 @@ void main() {
     expect(skeleton, isNot(contains(scratch.path)));
     final pending = RegExp(r'^### (U\d+)', multiLine: true).allMatches(skeleton).map((match) => match[1]!);
     expect(pending, hasLength(12));
-    expect(syncReportIssues(skeleton), containsAll(pending.map((id) => '$id: unresolved triage')));
+    expect(issues(skeleton), containsAll(pending.map((id) => '$id: unresolved triage')));
   });
 
   test(
@@ -43,13 +50,13 @@ void main() {
           .replaceAll('Triage: pending', 'Triage: mechanical')
           .replaceAll('Disposition: pending\nReason:', 'Disposition: expected\nReason: Reviewed the source change.')
           .replaceAll('Result: pending', 'Result: pass');
-      expect(syncReportIssues(valid), isEmpty);
+      expect(issues(valid), isEmpty);
       expect(
-        syncReportIssues(valid.replaceFirst('### Gate parity\n\nResult: pass', '### Gate parity\n\nResult: fail')),
+        issues(valid.replaceFirst('### Gate parity\n\nResult: pass', '### Gate parity\n\nResult: fail')),
         contains('Gate parity: unresolved disposition'),
       );
       expect(
-        syncReportIssues(
+        issues(
           valid.replaceFirst(
             'Disposition: expected\nReason: Reviewed the source change.',
             'Disposition: deferred\nReason:',
@@ -59,26 +66,21 @@ void main() {
       );
       for (final (label, count) in [('Template lines', 5), ('Hand CSS lines', 4), ('Config entries', 2)]) {
         final outOfRange = valid.replaceFirst('$label: 0', '$label: $count');
-        expect(syncReportIssues(outOfRange).single, startsWith('$label: $count exceeds '));
-        expect(
-          syncReportIssues(outOfRange.replaceFirst('$label: $count', '$label: $count | Replaced changed hooks.')),
-          isEmpty,
-        );
+        expect(issues(outOfRange).single, startsWith('$label: $count exceeds '));
+        expect(issues(outOfRange.replaceFirst('$label: $count', '$label: $count | Replaced changed hooks.')), isEmpty);
       }
       final missing = valid.replaceFirst(RegExp(r'^### U001 [\s\S]*?(?=^### U002 )', multiLine: true), '');
-      expect(syncReportIssues(missing), contains('Upstream entries: count or numbering does not match entries'));
+      expect(issues(missing), contains('Upstream entries: count or numbering does not match entries'));
       final unknown = valid.replaceFirst('Owner review: release-prep', 'Owner review: pending');
-      expect(syncReportIssues(unknown), contains('Owner review: missing status'));
+      expect(issues(unknown), contains('Owner review: missing status'));
       final appearance = valid.replaceFirst(
         'Appearance entries: 0',
         'Appearance entries: 1\n\n### A001 button / firefox / hover / .trellis-button / color\n\n'
             'Disposition: expected\nReason: Upstream changed the hover paint.',
       );
-      expect(syncReportIssues(appearance), isEmpty);
+      expect(issues(appearance), isEmpty);
       expect(
-        syncReportIssues(
-          appearance.replaceFirst('Disposition: expected\nReason: Upstream', 'Disposition:\nReason: Upstream'),
-        ),
+        issues(appearance.replaceFirst('Disposition: expected\nReason: Upstream', 'Disposition:\nReason: Upstream')),
         contains('A001: unresolved disposition'),
       );
     },

@@ -1,0 +1,28 @@
+{
+  "previous": {
+    "tag": "shadcn@4.21.1",
+    "commit": "3502dbcde11d1eaf967a47ac375744dc336641f3"
+  },
+  "current": {
+    "tag": "shadcn@4.23.0",
+    "commit": "96da9cc7f1aa10580a3741664e2a77c721206c00"
+  },
+  "entries": [
+    {
+      "heading": "U001 Input `style-vega.css` (+77/-0)",
+      "kind": "mechanical"
+    },
+    {
+      "heading": "U002 Upstream component added: `code-block`",
+      "kind": "new component"
+    },
+    {
+      "heading": "U003 Upstream component added: `trace`",
+      "kind": "new component"
+    },
+    {
+      "heading": "U004 Revisit structuralSkip `cn-toast` (upstream unchanged)",
+      "kind": "hand-layer candidate"
+    }
+  ]
+}

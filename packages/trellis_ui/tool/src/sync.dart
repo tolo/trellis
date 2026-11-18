@@ -4,7 +4,15 @@ import 'dart:io';
 import 'pipeline.dart';
 import 'sync_report.dart';
 
-const _protectedPaths = ['vendor', 'generated', 'tool/pins.json', 'tool/parity-ignore.json', 'assets', 'sync-reports'];
+const _protectedPaths = [
+  'vendor',
+  'generated',
+  'tool/pins.json',
+  'tool/parity-ignore.json',
+  SyncReportInventory.path,
+  'assets',
+  'sync-reports',
+];
 final _activeSyncs = <String>{};
 
 /// Builds a candidate from the committed pin and installs it only after all inputs compile.
@@ -80,7 +88,9 @@ Future<File> syncPin(Pipeline pipeline, String tag, {String? compilerPath, Strin
       final reportPath = 'sync-reports/sync-${oldTree.tag}-to-$tag.md';
       final report = newTree.file(reportPath);
       report.parent.createSync(recursive: true);
-      report.writeAsStringSync(buildSyncReport(oldTree, newTree));
+      final (:markdown, :inventory) = buildSyncReport(oldTree, newTree);
+      report.writeAsStringSync(markdown);
+      newTree.file(SyncReportInventory.path).writeAsStringSync(inventory.encode());
 
       Directory('${candidate.path}/${oldTree.vendor}').deleteSync(recursive: true);
       if ((await _git(root, ['rev-parse', 'HEAD'])).trim() != head) {
@@ -89,7 +99,13 @@ Future<File> syncPin(Pipeline pipeline, String tag, {String? compilerPath, Strin
       await _requireClean(root);
       final target = File('${root.path}/$reportPath');
       if (target.existsSync()) throw StateError('Sync report already exists: $reportPath');
-      _install(root, candidate, scratch, ['vendor/shadcn', 'generated'], ['tool/pins.json', reportPath]);
+      _install(
+        root,
+        candidate,
+        scratch,
+        ['vendor/shadcn', 'generated'],
+        ['tool/pins.json', reportPath, SyncReportInventory.path],
+      );
       return target;
     } finally {
       scratch.deleteSync(recursive: true);

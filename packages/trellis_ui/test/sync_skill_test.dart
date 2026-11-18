@@ -2,7 +2,18 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
+import '../tool/port.dart';
+import '../tool/src/pipeline.dart';
+import '../tool/src/sync_report.dart';
+
 void main() {
+  test('the active pin has a checked sync report and generated inventory', () async {
+    final root = Directory.current;
+    final inventory = SyncReportInventory.read(root);
+    final report = 'sync-reports/sync-${inventory.previous.tag}-to-${inventory.current.tag}.md';
+    expect(await runPortCommand(['sync', '--check-report', report], Pipeline(root)), 0);
+  });
+
   test('every command and path the skill names exists', () async {
     final root = Directory.current.parent.parent;
     final skill = File('${root.path}/.claude/skills/trellis-ui-sync/SKILL.md');

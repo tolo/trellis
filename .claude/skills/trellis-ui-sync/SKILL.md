@@ -15,7 +15,8 @@ Chrome, Firefox, geckodriver on `PATH` or via `GECKODRIVER`, and the baseline's 
 1. From the repository root, run `git ls-remote --tags https://github.com/shadcn-ui/ui.git 'refs/tags/shadcn@*'`.
    Select the highest numeric stable `shadcn@X.Y.Z` tag. Stop if it equals the pin. Set `tag` to that value.
    Run `dart run packages/trellis_ui/tool/port.dart sync "$tag"`. The tool uses committed `HEAD` as the old side and
-   installs the candidate after it builds. It prints the report path. Set `report` to that file.
+   installs the candidate after it builds. It prints the report path and writes the active upstream inventory to
+   `packages/trellis_ui/tool/sync-inventory.json`. Set `report` to the printed path.
 2. Run `dart test test/ui_gate_appearance_test.dart --plain-name 'spike regressions'`. The secondary button hover,
    changed light/dark tokens and two overlapping toasts must all be caught before using the appearance gate.
    A state the digest misses needs a same-browser pixel comparison before its verdict can be used.
@@ -30,6 +31,8 @@ Chrome, Firefox, geckodriver on `PATH` or via `GECKODRIVER`, and the baseline's 
    Dialog, Table and Toast against the differences.
 5. Classify all upstream rows and record every nonpassing gate and appearance difference in the report. Fix at the
    hand-layer cause and rerun the affected gates. Keep the recorded failure and stop if it survives two real fixes.
+   An existing [ADR-012 release disposition](../../../dev/adrs/ADR-012-trellis-ui-contract.md#optional-component-release-dispositions)
+   can account for the same failed items. Keep the raw failure evidence and stop on any new failure.
    Keep release limits, recipes, states, axe rules and comparison tolerances intact. Record a hand-layer JS change
    for the revisit threshold in [ADR-012](../../../dev/adrs/ADR-012-trellis-ui-contract.md#revisit-triggers).
 6. Only for a reviewed `expected` appearance change, record the affected components to a separate baseline directory
@@ -39,14 +42,15 @@ Chrome, Firefox, geckodriver on `PATH` or via `GECKODRIVER`, and the baseline's 
    change passes in compare mode.
 7. Run `dart run packages/trellis_ui/tool/port.dart sync --check-report "$report"`. Run the whole component gate again
    with `dart test test/qualification_gate_test.dart` from `packages/trellis_ui/` and compare the record and baseline
-   hashes across the two passing runs. Check the three separate gzip responses, owned JS, and example CSS against the
+   hashes with the reviewed raw sweep. Check the three separate gzip responses, owned JS, and example CSS against the
    [release limits](../../../dev/guidelines/TESTING-STRATEGY.md#ui-qualification-gate). Commit only the verified
-   pin, vendor/generated files, embed output, explained hand changes, references and report in the sync commit.
+   pin, vendor/generated files, upstream inventory, embed output, explained hand changes, references and report.
    Keep the owner review at `release-prep`.
 
 ## Report fields
 
-- Each generated `U001` row has a `Kind` and `Triage`. Classify an input as `mechanical` or `hand-layer edit`.
+- Keep every generated `U001` heading and `Kind` in order. The checker matches them against the generated inventory for
+  the active pin. Classify an input as `mechanical` or `hand-layer edit`.
   For a new component enter `port`, `defer` or `skip`, with a reason. An independent port belongs in its own change.
 - Each gate has a `Result` of `pass`, `fail` or `not-run`. Keep nonpassing evidence even after a passing rerun.
   Use additional `### Gate <name>` rows for failures and leave the baseline pass result visible.

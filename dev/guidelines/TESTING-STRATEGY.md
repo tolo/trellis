@@ -151,8 +151,9 @@ non-focusable elements are marked inapplicable for that state. Real keyboard and
 changed token. The three spike regressions are replayed by `ui_gate_appearance_test.dart`; all are detected by
 styles or box invariants, so no pixel-diff fallback is currently needed.
 
-The local component sweep (`packages/trellis_ui/test/qualification_gate_test.dart`) runs all 25 canonical
-manifests in three disjoint CLI chunks and compares each record byte for byte, retaining manual results.
+The local component sweep (`packages/trellis_ui/test/qualification_gate_test.dart`) runs all active manifests in
+disjoint CLI chunks and compares freshly written records byte for byte, retaining manual results. The release
+policy checks optional failures against their [ADR-012 dispositions](../adrs/ADR-012-trellis-ui-contract.md#optional-component-release-dispositions).
 `packages/trellis_cli/test/ui_surfaces_gate_test.dart` launches the actual admin entry point and three generated
 `--ui` scaffolds. The same CLI checks the admin list, filter, menu, validation, alert dialog, Summary and toast,
 and each scaffold's counter swap and UI dialog, using the seven recipes and records in `dev/ui-gate/apps/`.

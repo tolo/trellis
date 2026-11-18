@@ -3,10 +3,11 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-import '../tool/ui_gate/manifest.dart';
-import '../tool/ui_gate/firefox.dart';
 import '../tool/ui_gate/checks.dart';
+import '../tool/ui_gate/firefox.dart';
+import '../tool/ui_gate/manifest.dart';
 import '../tool/ui_gate/record.dart';
+import '../tool/ui_gate/run.dart';
 import 'browser_reflow_probe.dart';
 import 'ui_gate_test_support.dart';
 
@@ -42,6 +43,64 @@ void main() {
     results['touch-target'] = const GateResult('not-run', ['condition unavailable'], unsupported: true);
     expect(gateRecord('fixture', {'chrome': supported, 'firefox': results})['automated'], 'pass');
   });
+
+  test('a missing visual baseline reports that the comparison did not run', () async {
+    if (BrowserProbe.locateChrome() == null) {
+      requireChromeInCi('UI gate visual baseline availability');
+      markTestSkipped('Chrome not installed');
+      return;
+    }
+    final server = await fixtureServer();
+    final scratch = Directory('.agent_temp')..createSync(recursive: true);
+    final baselineDir = scratch.createTempSync('gate-missing-baseline-');
+    addTearDown(() => baselineDir.deleteSync(recursive: true));
+    final results = await runGate(fixtureManifest(), server.baseUrl, 'chrome', baselines: baselineDir);
+    expect(results['visual']!.status, 'not-run');
+    expect(results['visual']!.unsupported, isFalse);
+    expect(results['visual']!.evidence, ['no baseline for fixture/chrome on ${Platform.operatingSystem}']);
+  });
+
+  test('a visual capture artifact that cannot be written is unavailable', () async {
+    if (BrowserProbe.locateChrome() == null) {
+      requireChromeInCi('UI gate capture artifact availability');
+      markTestSkipped('Chrome not installed');
+      return;
+    }
+    final server = await fixtureServer();
+    final scratch = Directory('.agent_temp')..createSync(recursive: true);
+    final fixture = scratch.createTempSync('gate-unwritable-capture-');
+    addTearDown(() => fixture.deleteSync(recursive: true));
+    final blocked = File('${fixture.path}/captures')..createSync();
+    final results = await runGate(
+      fixtureManifest(),
+      server.baseUrl,
+      'chrome',
+      baselines: fixture,
+      captures: Directory(blocked.path),
+    );
+    expect(results['visual']!.status, 'not-run');
+    expect(results['visual']!.unsupported, isFalse);
+    expect(results['visual']!.evidence.single, contains('captures'));
+  });
+
+  test('exhausted Firefox hover capture retries report an unavailable visual check', () async {
+    if (FirefoxDriver.locateFirefox() == null || FirefoxDriver.locateGeckodriver() == null) {
+      markTestSkipped('Firefox or geckodriver not installed');
+      return;
+    }
+    final server = await fixtureServer();
+    final scratch = Directory('.agent_temp')..createSync(recursive: true);
+    final fixture = scratch.createTempSync('gate-hover-without-focus-');
+    addTearDown(() => fixture.deleteSync(recursive: true));
+    final manifest = fixtureManifest(
+      replace: 'default: []',
+      withText: 'default:\n    - eval: "document.hasFocus = () => false"',
+    );
+    final results = await runGate(manifest, server.baseUrl, 'firefox', baselines: fixture);
+    expect(results['visual']!.status, 'not-run');
+    expect(results['visual']!.unsupported, isFalse);
+    expect(results['visual']!.evidence.single, contains('Firefox lost document focus during three hover captures'));
+  }, timeout: const Timeout(Duration(minutes: 2)));
 
   test('record and cli', () async {
     if (BrowserProbe.locateChrome() == null) {

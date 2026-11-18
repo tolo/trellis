@@ -6,6 +6,7 @@ import 'generate.dart';
 import 'tsx_scan.dart';
 
 typedef _Object = Map<String, Object?>;
+typedef SyncPinIdentity = ({String tag, String commit});
 
 _Object _object(File file) => (jsonDecode(file.readAsStringSync()) as Map).cast<String, Object?>();
 
@@ -19,8 +20,8 @@ final class SyncTree {
   late final _Object _pins = _object(file('tool/pins.json'));
   late final _Object _scanReport = _object(file('generated/report.json'));
   late final _Object _source = (_pins['shadcn']! as Map).cast<String, Object?>();
-  String get tag => _source['tag']! as String;
-  String get commit => _source['commit']! as String;
+  SyncPinIdentity get identity => (tag: _source['tag']! as String, commit: _source['commit']! as String);
+  String get tag => identity.tag;
   String get vendor => 'vendor/shadcn/$tag';
 
   File file(String path) => File('${root.path}/$path');
@@ -96,10 +97,62 @@ List<String> _sorted(Iterable<String> values) => values.toSet().toList()..sort()
 const _requiredGates = ['regression-replay', 'parity', 'regeneration', 'embedding', 'component-gate'];
 const _handLimits = {'Template lines': 4, 'Hand CSS lines': 3, 'Config entries': 1, 'Owned JS lines': 0};
 
+/// The upstream identities and ordered row headings emitted by the generator, before human triage.
+final class SyncReportInventory {
+  SyncReportInventory(this.previous, this.current, this.entries);
+
+  static const path = 'tool/sync-inventory.json';
+
+  final SyncPinIdentity previous;
+  final SyncPinIdentity current;
+  final List<(String, String)> entries;
+
+  String get heading => '# Sync ${previous.tag} to ${current.tag}';
+  String get commits => 'Commits `${previous.commit}` to `${current.commit}`.';
+
+  String encode() =>
+      '${const JsonEncoder.withIndent('  ').convert({
+        'previous': {'tag': previous.tag, 'commit': previous.commit},
+        'current': {'tag': current.tag, 'commit': current.commit},
+        'entries': [
+          for (final (heading, kind) in entries) {'heading': heading, 'kind': kind},
+        ],
+      })}\n';
+
+  factory SyncReportInventory.read(Directory root) {
+    final Object? data = jsonDecode(File('${root.path}/$path').readAsStringSync());
+    SyncPinIdentity pin(Object? value) {
+      if (value case {'tag': final String tag, 'commit': final String commit}) {
+        return (tag: tag, commit: commit);
+      }
+      throw const FormatException('Invalid sync inventory pin');
+    }
+
+    if (data case {
+      'previous': final Object? previous,
+      'current': final Object? current,
+      'entries': final List<Object?> rows,
+    }) {
+      final entries = <(String, String)>[];
+      for (final row in rows) {
+        if (row case {'heading': final String heading, 'kind': final String kind}) {
+          entries.add((heading, kind));
+        } else {
+          throw const FormatException('Invalid sync inventory entry');
+        }
+      }
+      return SyncReportInventory(pin(previous), pin(current), entries);
+    }
+    throw const FormatException('Invalid sync inventory');
+  }
+}
+
 /// Generates the static report and unresolved gates without machine-local data.
-String buildSyncReport(SyncTree previous, SyncTree next) {
-  final report = StringBuffer('# Sync ${previous.tag} to ${next.tag}\n\n')
-    ..writeln('Commits `${previous.commit}` to `${next.commit}`.')
+({String markdown, SyncReportInventory inventory}) buildSyncReport(SyncTree previous, SyncTree next) {
+  final rows = <(String, String)>[];
+  final inventory = SyncReportInventory(previous.identity, next.identity, rows);
+  final report = StringBuffer('${inventory.heading}\n\n')
+    ..writeln(inventory.commits)
     ..writeln('\n## Vendored inputs\n')
     ..writeln('| Input | Old lines | New lines | Added | Removed |')
     ..writeln('| --- | ---: | ---: | ---: | ---: |');
@@ -208,8 +261,10 @@ String buildSyncReport(SyncTree previous, SyncTree next) {
     ..writeln('\n## Upstream triage\n')
     ..writeln('Upstream entries: ${entries.length}');
   for (final (index, (title, kind)) in entries.indexed) {
+    final heading = 'U${(index + 1).toString().padLeft(3, '0')} $title';
+    rows.add((heading, kind));
     report.writeln(
-      '\n### U${(index + 1).toString().padLeft(3, '0')} $title\n\n'
+      '\n### $heading\n\n'
       'Kind: $kind\nTriage: pending\nDisposition: pending\nReason:',
     );
   }
@@ -225,12 +280,16 @@ String buildSyncReport(SyncTree previous, SyncTree next) {
     report.writeln('$label: 0');
   }
   report.writeln('\nOwner review: release-prep');
-  return report.toString();
+  return (markdown: report.toString(), inventory: inventory);
 }
 
 /// Lists all unresolved, missing or invalid classifications and gate results.
-List<String> syncReportIssues(String report) {
+List<String> syncReportIssues(String report, SyncReportInventory inventory) {
   final issues = <String>[];
+  report = _visibleMetadata(report);
+  if (!report.startsWith('${inventory.heading}\n\n${inventory.commits}\n')) {
+    issues.add('Sync report pin transition does not match the generated inventory');
+  }
   String? value(String section, String key) {
     final fields = RegExp('^${RegExp.escape(key)}:[ \\t]*(.*)\$', multiLine: true).allMatches(section).toList();
     return fields.length == 1 ? fields.single[1]!.trim() : null;
@@ -245,6 +304,7 @@ List<String> syncReportIssues(String report) {
 
   final headings = <String>{};
   final upstream = <int>{}, appearance = <int>{};
+  final reportedEntries = <(String, String?)>[];
   final gates = <String>{};
   for (final block in report.split(RegExp(r'^### ', multiLine: true)).skip(1)) {
     final heading = block.split('\n').first;
@@ -268,6 +328,7 @@ List<String> syncReportIssues(String report) {
       }
       if (upstreamEntry) {
         final kind = value(block, 'Kind');
+        reportedEntries.add((heading, kind));
         final triage = value(block, 'Triage');
         final allowed = switch (kind) {
           'new component' => {'port', 'defer', 'skip'},
@@ -280,6 +341,16 @@ List<String> syncReportIssues(String report) {
     } else {
       issues.add('Unrecognized report entry $heading');
     }
+  }
+  final triageSections = report
+      .split(RegExp(r'^## ', multiLine: true))
+      .where((section) => section.startsWith('Upstream triage\n'))
+      .toList();
+  if (triageSections.length != 1 ||
+      RegExp(r'^### U\d{3,} ', multiLine: true).allMatches(triageSections.single).length != reportedEntries.length ||
+      reportedEntries.length != inventory.entries.length ||
+      reportedEntries.indexed.any((entry) => entry.$2 != inventory.entries[entry.$1])) {
+    issues.add('Upstream triage does not match the generated inventory');
   }
   for (final (label, values) in [('Upstream entries', upstream), ('Appearance entries', appearance)]) {
     final count = int.tryParse(value(report, label) ?? '');
@@ -301,4 +372,26 @@ List<String> syncReportIssues(String report) {
   }
   if (!{'pass', 'release-prep'}.contains(value(report, 'Owner review'))) issues.add('Owner review: missing status');
   return issues;
+}
+
+String _visibleMetadata(String report) {
+  // The maintainer must be able to see each triage row in its section. Fenced
+  // evidence and Markdown comments cannot supply a heading or a field.
+  final comments = RegExp(r'<!--[\s\S]*?(?:-->|$)');
+  final fence = RegExp(r'^ {0,3}(`{3,}|~{3,})(.*)$');
+  final visible = StringBuffer();
+  String? openFence;
+  for (final line in report.replaceAll('\r\n', '\n').replaceAll(comments, '').split('\n')) {
+    final match = fence.firstMatch(line);
+    if (openFence == null) {
+      if (match == null) {
+        visible.writeln(line);
+      } else {
+        openFence = match[1];
+      }
+    } else if (match != null && match[1]!.startsWith(openFence) && match[2]!.trim().isEmpty) {
+      openFence = null;
+    }
+  }
+  return visible.toString();
 }

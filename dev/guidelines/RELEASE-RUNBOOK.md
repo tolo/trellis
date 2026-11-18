@@ -69,7 +69,7 @@ human action. Steps are in execution order; each names the guard that enforces i
 
 ### Trellis UI release prep
 
-On the macOS baseline host, install Dart Frog CLI 1.2.6 and set `GECKODRIVER` as described in
+On the macOS baseline host, install Dart Frog CLI 1.2.6 and put geckodriver on `PATH` (or set `GECKODRIVER`) as described in
 [the UI qualification guide](TESTING-STRATEGY.md#ui-qualification-gate).
 From the repository root run `dart run packages/trellis_ui/tool/port.dart parity`,
 `dart run packages/trellis_ui/tool/port.dart check` and `dart run packages/trellis_ui/tool/embed.dart --check`, then

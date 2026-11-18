@@ -196,7 +196,7 @@ Paths are relative to the trellis-public root, where the story executes. The 19 
   - **SATISFIES**: S11
 
 - **TI12** All 19 components pass every automated gate item: the gate command exits 0 in Chrome and Firefox, records and the first `visual` baselines are committed, and each defect the gate finds is fixed in the component, not waived (an `axe` override needs a written reason and none is expected).
-  - **Verify**: `cmd: GECKODRIVER=/Users/tobias/Repos/Libs/trellis/trellis-private/.agent_temp/tools/geckodriver dart run tool/ui_gate.dart --serve 'dart run packages/trellis_ui/tool/gallery.dart --port 0'` – exit 0, run twice, `git diff --quiet -- dev/ui-gate` after the second run; and `packages/trellis_ui/test/gate_records_test.dart#every record passes every automated item in each browser it ran and leaves manual items for release prep` and `#a page without a manifest or a failing record fails` (S12, on a temp copy of the directories).
+  - **Verify**: `cmd: dart run tool/ui_gate.dart --serve 'dart run packages/trellis_ui/tool/gallery.dart --port 0'` – exit 0, run twice, `git diff --quiet -- dev/ui-gate` after the second run; and `packages/trellis_ui/test/gate_records_test.dart#every record passes every automated item in each browser it ran and leaves manual items for release prep` and `#a page without a manifest or a failing record fails` (S12, on a temp copy of the directories).
   - **SATISFIES**: S11, S12
 
 - **TI13** The isolation fixture and theme-block check pass against the aggregate stylesheet with all 19 components.

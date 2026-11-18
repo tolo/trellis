@@ -34,7 +34,12 @@ const gatePreload = cspViolationPreload + ';' + gateInstrumentationPreload;
 
 const gateInstrumentationPreload = r'''(() => {
   const live = new WeakMap();
-  window.__uiGate = {get violations(){return window.__trellisCsp.violations;}, get controls(){return window.__trellisCsp.controls;}, instances: {}, listeners: () => {
+  let lostVisibleFocus = false;
+  // Install before counting app listeners.
+  window.addEventListener('blur', event => {
+    if (event.isTrusted && !document.hidden) lostVisibleFocus = true;
+  });
+  window.__uiGate = {get lostVisibleFocus(){return lostVisibleFocus;}, get violations(){return window.__trellisCsp.violations;}, get controls(){return window.__trellisCsp.controls;}, instances: {}, listeners: () => {
     const targets = [document, window, document.body];
     return targets.reduce((sum, target) => sum + (live.get(target)?.length || 0), 0);
   }};

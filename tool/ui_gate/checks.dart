@@ -45,6 +45,11 @@ final class UnsupportedCondition implements Exception {
   String toString() => reason;
 }
 
+/// An input or assertion failed during execution of a declared recipe.
+final class GateRecipeError extends StateError {
+  GateRecipeError(super.message);
+}
+
 /// Executes data recipes against one browser, with fresh loads per state.
 final class GateSession {
   GateSession(this.manifest, this.driver, this.base);
@@ -139,7 +144,7 @@ final class GateSession {
             if (issues.isNotEmpty) throw StateError(issues.join('; '));
         }
       } on Object catch (error) {
-        throw StateError('$label step ${index + 1} ${entry.key}: ${normalize('$error')}');
+        throw GateRecipeError('$label step ${index + 1} ${entry.key}: ${normalize('$error')}');
       }
     }
   }

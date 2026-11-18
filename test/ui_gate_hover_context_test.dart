@@ -100,4 +100,103 @@ states:
       }
     }, timeout: const Timeout(Duration(minutes: 2)));
   }
+
+  for (final (mode, description) in [
+    ('once', 'replays visible recipe blur and retains diagnostics'),
+    ('dismiss', 'keeps an in-page recipe failure'),
+    ('synthetic', 'ignores a synthetic blur'),
+    ('always', 'fails after three visible interruptions'),
+  ]) {
+    test('Firefox appearance $description', () async {
+      if (FirefoxDriver.locateFirefox() == null || FirefoxDriver.locateGeckodriver() == null) {
+        markTestSkipped('Firefox or geckodriver not installed');
+        return;
+      }
+      final tmp = Directory('.agent_temp').absolute..createSync(recursive: true);
+      final root = tmp.createTempSync('appearance-recipe-focus-');
+      addTearDown(() => root.deleteSync(recursive: true));
+      File('${root.path}/contender.html').writeAsStringSync('<!doctype html><title>Owned focus contender</title>');
+      File('${root.path}/visible-blur').writeAsStringSync('Observed actual visible blur');
+      File('${root.path}/index.html').writeAsStringSync('''
+<!doctype html><title>Native End fixture</title>
+<style>#last[data-highlighted] { color: green; }</style>
+<main><button id="first">First</button><button id="last">Destructive</button></main>
+<script>
+const last = document.getElementById('last'), mode = '$mode';
+last.addEventListener('focusin', () => last.setAttribute('data-highlighted', ''));
+last.addEventListener('focusout', () => last.removeAttribute('data-highlighted'));
+document.querySelector('main').addEventListener('keydown', event => {
+  if (event.key !== 'End') return;
+  event.preventDefault();
+  last.focus();
+  window.afterEnd = Promise.resolve(true);
+  if (mode === 'dismiss' || mode === 'synthetic') {
+    if (mode === 'synthetic') window.dispatchEvent(new FocusEvent('blur'));
+    last.blur();
+    return;
+  }
+  if (mode === 'once' && sessionStorage.recipeDisplaced) return;
+  sessionStorage.recipeDisplaced = 'true';
+  const csp = new Promise(resolve => {
+    window.addEventListener('securitypolicyviolation', () => resolve(true), {once:true});
+    document.body.append(Object.assign(new Image(), {src:'data:image/gif;base64,R0lGODlhAQABAIAAAAUEBA=='}));
+  });
+  queueMicrotask(() => { throw Error('interrupted recipe diagnostic'); });
+  const blur = new Promise(resolve => {
+    window.addEventListener('blur', () => {
+      if (!document.hidden) fetch('/visible-blur');
+      resolve(true);
+    }, {once:true});
+    window.open('/contender.html','_blank','popup,width=260,height=180');
+  });
+  window.afterEnd = Promise.all([csp, blur]);
+});
+</script>
+''');
+      final server = await StaticSiteServer.serve(
+        root,
+        headers: {'content-security-policy': "script-src 'self' 'unsafe-inline'; img-src 'self'"},
+      );
+      addTearDown(server.close);
+      final driver = await FirefoxDriver.launch();
+      addTearDown(driver.close);
+      final manifest = GateManifest.load(
+        File('${root.path}/recipe.yaml')..writeAsStringSync('''
+page: /
+root: main
+elements: {destructive: '#last'}
+states:
+  destructive:
+    - focus: '#first'
+    - press: End
+    - eval: window.afterEnd
+    - expect: {expression: "document.activeElement.id === 'last' && document.activeElement.hasAttribute('data-highlighted')", equals: true}
+'''),
+      );
+      final session = GateSession(manifest, driver, server.baseUrl);
+      final result = captureAppearance(session);
+      Iterable<String> interruptions() => driver.requests.where((url) => Uri.parse(url).path == '/visible-blur');
+      if (mode != 'once') {
+        await expectLater(
+          result,
+          throwsA(
+            isA<StateError>().having((error) => error.message, 'message', contains('state destructive step 4 expect:')),
+          ),
+        );
+        expect(interruptions(), hasLength(mode == 'always' ? 3 : 0));
+        if (mode == 'synthetic') {
+          expect(await driver.evaluate('window.__uiGate.lostVisibleFocus'), false);
+          expect(await driver.evaluate('document.hasFocus()'), true);
+        }
+        return;
+      }
+      final measured = await result;
+      expect(interruptions(), isNotEmpty);
+      expect(session.violations, contains(contains('img-src')));
+      expect(driver.console, contains(contains('interrupted recipe diagnostic')));
+      final states = measured['states'] as Map;
+      final elements = (states['destructive'] as Map)['elements'] as Map;
+      expect((elements['destructive'] as Map)['style'], containsPair('color', 'rgb(0, 128, 0)'));
+    }, timeout: const Timeout(Duration(minutes: 2)));
+  }
 }

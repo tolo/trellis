@@ -11,11 +11,12 @@ import 'package:trellis_site/trellis_site.dart';
 import 'package:watcher/watcher.dart';
 
 import 'build_command.dart';
+import 'stop_signal.dart';
 
 /// The `trellis dev` command.
 ///
 /// Builds the site for local preview, serves it, rebuilds when a source file changes, and reloads open browser tabs
-/// after each successful rebuild. Runs until Ctrl-C (SIGINT) is received.
+/// after each successful rebuild. Runs until Ctrl-C (SIGINT) or SIGTERM is received.
 ///
 /// The preview build is served from the root (`pathPrefix` cleared), uses `http://localhost:<port>` as its base URL,
 /// and goes to a temporary directory, never the site's output directory, so a preview build cannot be deployed by
@@ -24,7 +25,7 @@ import 'build_command.dart';
 class DevCommand extends Command<int> {
   /// Optional stop signal. When this future completes the server shuts down.
   ///
-  /// Defaults to `ProcessSignal.sigint.watch().first` (Ctrl-C). Tests inject their own future.
+  /// Defaults to [processStopSignal] (Ctrl-C or SIGTERM). Tests inject their own future.
   final Future<void>? stopSignal;
 
   /// Base directory the site is loaded from. Defaults to the process current directory. Injected by tests so the
@@ -204,7 +205,7 @@ class DevCommand extends Command<int> {
     stdout.writeln('Serving http://localhost:$port, watching ${subscriptions.keys.join(', ')}');
     stdout.writeln('Press Ctrl-C to stop.');
 
-    await (stopSignal ?? ProcessSignal.sigint.watch().first);
+    await (stopSignal ?? processStopSignal());
     stopping = true;
     // Open SSE connections never finish on their own, so close them rather than wait.
     await server.close(force: true);

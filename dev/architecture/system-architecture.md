@@ -240,7 +240,7 @@ directory or a `.`-prefixed segment are ignored. Each valid config edit updates 
 exclusion before rebuilding. Events debounce for 150 ms; one build runs at a time and edits
 during it queue exactly one more. A successful build swaps the static handler to the new directory, deletes the
 old one and emits on the stream behind `liveReloadMiddleware`; a failed build is deleted and the last good build
-stays served. Ctrl-C force-closes the server (open SSE connections never finish), waits for an in-flight build and
+stays served. Ctrl-C or SIGTERM (SIGINT only on Windows) force-closes the server (open SSE connections never finish), waits for an in-flight build and
 removes the temp directory.
 
 ---

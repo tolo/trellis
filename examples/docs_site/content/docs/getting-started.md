@@ -17,7 +17,7 @@ The generated site is written to `output/`.
 ## Preview
 
 ```bash
-trellis serve
+trellis dev
 ```
 
 Open `http://localhost:8080` and follow the sidebar through the section.

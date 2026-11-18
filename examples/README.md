@@ -51,8 +51,7 @@ default "Built with Trellis" attribution.
 
 ```bash
 cd examples/docs_site
-trellis build
-trellis serve
+trellis dev
 ```
 
 ### [shelf_app/](shelf_app/) -- Shelf + HTMX Starter App

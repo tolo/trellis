@@ -188,8 +188,7 @@ and card lift. See [VENDORED.md](VENDORED.md) for provenance.
 
 ```bash
 cd example
-trellis build
-trellis serve
+trellis dev
 ```
 
 The screenshots declared by the manifest are 1280×800 captures of this bridged example in auto mode with light and

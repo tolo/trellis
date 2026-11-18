@@ -14,7 +14,7 @@ class TrellisCli extends CommandRunner<int> {
   /// Creates a [TrellisCli] with all commands registered.
   ///
   /// [serveStopSignal] is forwarded to [ServeCommand] and [DevCommand] to
-  /// override the default SIGINT-based shutdown. Tests may inject a [Completer.future] here to
+  /// override the default SIGINT/SIGTERM-based shutdown. Tests may inject a [Completer.future] here to
   /// stop the server without sending a process signal.
   ///
   /// [workingDirectory] is forwarded to every command as the base directory for

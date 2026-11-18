@@ -9,7 +9,8 @@
 - `trellis dev` previews a static site while you edit it: builds root-served (`pathPrefix` cleared, `baseUrl`
   `http://localhost:<port>`) into a temp directory, serves it, rebuilds on changes under the site and its theme
   (including a theme outside the site or symlinked into it), and reloads the browser. A failed rebuild keeps the last
-  good build served. Options: `--port`, `--drafts`, `--verbose`. Adds `trellis_dev` and `watcher` dependencies.
+  good build served. Stops on Ctrl-C or SIGTERM and removes its temp build. Options: `--port`, `--drafts`,
+  `--verbose`. Adds `trellis_dev` and `watcher` dependencies.
 
 ### Changed
 
@@ -29,6 +30,7 @@
 - `trellis dev` picks up changes to the external theme and output directory in `trellis_site.yaml`. A build that
   throws a Dart error leaves the last successful preview available and can be retried by saving another edit.
 - Relic starters generate a CSRF signing key at startup when `CSRF_SECRET` is unset.
+- `trellis serve` also stops cleanly on SIGTERM (`kill`, a process manager, an IDE stop button), not only on Ctrl-C.
 
 ## 0.13.0
 

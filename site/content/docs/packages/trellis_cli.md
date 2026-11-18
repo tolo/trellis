@@ -247,7 +247,7 @@ be deployed by mistake:
 
 - It is served from `/`: `pathPrefix` is cleared, and `baseUrl` becomes
   `http://localhost:<port>`.
-- It goes to a temporary directory, removed on Ctrl-C, never to `output/`.
+- It goes to a temporary directory, removed when the server stops (Ctrl-C or SIGTERM), never to `output/`.
 - A failed rebuild prints the error and keeps the last good build on screen;
   the next save tries again.
 

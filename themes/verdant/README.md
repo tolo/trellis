@@ -104,7 +104,7 @@ Plus all 25 [standard params](https://tolo.github.io/trellis/docs/themes/standar
 
 ```bash
 cd example
-trellis build && trellis serve
+trellis dev
 ```
 
 The example site (`Verdant Blog`) exercises the home hero, four posts, an about

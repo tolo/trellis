@@ -130,7 +130,7 @@ explicitly, insert it with the `theme:` prefix:
 
 ```bash
 cd example
-trellis build && trellis serve
+trellis dev
 ```
 
 ## Theme-specific params

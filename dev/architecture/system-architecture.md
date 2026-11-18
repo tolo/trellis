@@ -11,7 +11,7 @@ compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme
 `compileThemeEntry` that configures each entry with the params Sass accepts and reports the ones it drops,
 build-time warnings for palette-default drift and for a site override Sass cannot apply (`trellis_site` now
 depends on `trellis_css`), and the redrawn package graph. The `trellis_ui` package map, pipeline and qualification sections
-are current through 0.14 (2026-11-17), including the CSS-only catalogue and interactive widgets, and so is the Relic section (Relic 2); other sections retain the verification scope above.
+are current through the 0.14 upstream sync and composed app gates (2026-11-18), and so is the Relic section (Relic 2); other sections retain the verification scope above.
 
 ---
 
@@ -102,6 +102,9 @@ results region. Toast responses append to a pre-existing live region using an HT
 
 The package's development pipeline vendors pinned shadcn TSX/style/tokens and licences, extracts `cn-*` hooks and
 structural utilities, renames them to `trellis-*`, then compiles using a checksummed Tailwind standalone binary.
+`tool/port.dart sync <tag>` snapshots the previous package at committed `HEAD`, fetches and builds a candidate
+in scratch, then replaces the single vendor pin and writes a deterministic triage report. The report validator
+requires dispositions and reasons for upstream differences and failed gates.
 `tool/port.dart check` regenerates and compares the four committed outputs. `tool/embed.dart` layers hand CSS, bundles
 one classic script, and embeds assets and fragments as base64 plus digests. Runtime and tests use these committed
 outputs without invoking Tailwind or Node. Scoped resets replace page-wide preflight; all suite declarations are in
@@ -113,8 +116,11 @@ keyboard/HTMX steps and invariants; one `GateDriver` surface shares the checks a
 `BrowserProbe` and a raw WebDriver/BiDi Firefox adapter. Each run writes a deterministic per-component record,
 keeps human-entered release-prep items, and compares per-OS state/style baselines containing both browsers.
 The digest settles geometry and selected styles atomically without a CSP-blocked style element. Firefox hover
-sampling replays the page state if another window takes focus before the snapshot. Fixture proofs
-run in the normal test tiers; tests over real component/app pages and visual recordings run locally at release.
+sampling replays the page state if another window takes focus before the snapshot. A failed visual setup can
+also replay after a trusted visible blur in that attempt. Fixture proofs
+run in the normal test tiers. The local release gate uses the same CLI for the gallery and for the admin and
+scaffold launcher. App recipes, records and baselines live under `dev/ui-gate/apps/`. During a native modal state
+the gate measures focus paint on controls inside the modal and still captures the visible background.
 
 ---
 

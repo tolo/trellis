@@ -43,7 +43,7 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
 ## Filter System
 
 - **`Map<String, Function>` not `Map<String, dynamic Function(dynamic)>`**: The narrower type can't accept new-style `Function(dynamic, List<dynamic>)` filters. `Function` (untyped) enables runtime arity detection without ugly casts.
-- **Arity detection via `NoSuchMethodError`**: `(filter as dynamic)(value, args)` — old-style (1-arg) filters throw `NoSuchMethodError`, caught and retried without args. Consistent with `_autoConvert()` pattern.
+- **Filter arity comes from the function type, never from catching `NoSuchMethodError`**: up to 0.13 `_evalPipe` caught it around the call, so a `NoSuchMethodError` inside the filter body (an extension getter such as `firstOrNull` on a `dynamic` parameter) became "does not accept arguments", or reran the body as `filter(value, [])`. Test `filter is Object? Function(Never)` / `Function(Never, Never)`: `Never` parameters match any declared parameter type, so typed filters (`(String v)`) still qualify.
 
 ## Strict Mode
 

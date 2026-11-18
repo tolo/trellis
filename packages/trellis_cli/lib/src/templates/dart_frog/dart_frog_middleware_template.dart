@@ -19,7 +19,7 @@ String dartFrogMiddlewareTemplate(String projectName, {bool htmxCdn = false, boo
     '\n'
     "final _loader = FileSystemLoader('templates/', devMode: _devMode);\n"
     'final _engine = Trellis(loader: ${ui ? 'CompositeLoader([_loader, TrellisUiLoader()])' : '_loader'}, devMode: _devMode);\n'
-    '${ui ? '' : _cspDeclaration(htmxCdn)}'
+    '${ui ? '' : 'const _csp = ${scaffoldStrictCsp(htmxCdn: htmxCdn, ui: false)};\n'}'
     '\n'
     '// CSRF secret: use an environment variable in production.\n'
     '// WARNING: Change this default before deploying!\n'
@@ -34,6 +34,3 @@ String dartFrogMiddlewareTemplate(String projectName, {bool htmxCdn = false, boo
     // devMiddleware from trellis_dev is a Shelf middleware; adapt via fromShelfMiddleware
     '      .use(_devMode ? fromShelfMiddleware(devMiddleware(_loader, staticDirectory: \'public\')) : (h) => h);\n'
     '}\n';
-
-String _cspDeclaration(bool htmxCdn) =>
-    'const _csp = CspBuilder.strict(${htmxCdn ? '\n  scriptSrc: "\'self\' $htmxCdnOrigin",\n' : ''});\n';

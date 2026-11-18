@@ -53,6 +53,18 @@ dart test --exclude-tags=visual --exclude-tags=ui-gate          # root suite wit
 dart format --output=none --set-exit-if-changed tool test
 ```
 
+## Trellis UI sync
+
+Follow [`trellis-ui-sync`](../../.claude/skills/trellis-ui-sync/SKILL.md) from the repository root.
+`dart run packages/trellis_ui/tool/port.dart sync "$tag"` builds the new pin. Validate the completed report with
+`dart run packages/trellis_ui/tool/port.dart sync --check-report "$report"`.
+
+With both browsers and the recorded host OS, run the same gate at release prep through these tests.
+
+- From `packages/trellis_ui/`, `dart test test/qualification_gate_test.dart` sweeps the 25 gallery subjects.
+- From `packages/trellis_cli/`, `dart test test/ui_surfaces_gate_test.dart` sweeps the admin example and both UI
+  scaffold routes for Shelf, Relic and Dart Frog.
+
 ## Release
 
 See [RELEASE-RUNBOOK.md](RELEASE-RUNBOOK.md). Entry point: `tool/release.sh X.Y.Z` on `main` (`--dry-run` to rehearse);

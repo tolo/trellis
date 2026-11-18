@@ -37,7 +37,7 @@ ${ui ? "  if (devMode) materializeTrellisUi(Directory('\$scriptDir/$staticUiPrev
   // CSRF secret: use an environment variable in production.
   // WARNING: Change this default before deploying to production!
   final csrfSecret = Platform.environment['CSRF_SECRET'] ?? '$projectName-dev-secret';
-  const csp = CspBuilder.strict(${htmxCdn ? '\n    scriptSrc: "\'self\' $htmxCdnOrigin",\n  ' : ''});
+  const csp = ${scaffoldStrictCsp(htmxCdn: htmxCdn, ui: ui, indent: '  ')};
 
   final router = Router()
     ..get('/', (Request req) => indexPage(req))

@@ -24,11 +24,12 @@
 - **FR9: Dev reload for CSS/JS** _(Should / P1)_ – the dev server reloads the browser on static CSS/JS changes.
 - **FR10: Natural-template preview assets** _(Should / P1)_ – suite assets reach `file://` previews via `static/trellis-ui/`.
 - **FR11: Suite components in `trellis_site` themes** _(Could / P2)_ – search combobox, dark/light toggle, code-copy button; TD-021. First to move to 0.15.
+- **FR12: `trellis dev` static-site preview** _(Should / P1)_ – one command builds, serves, rebuilds on change and reloads the browser; added 2026-11-18, outside the UI slice.
 
 ### Scope Highlights
 - **In scope**: pipeline + one reviewed sync, the 20-component slice + 4 layout primitives, strict-CSP scaffolds with a UI option, admin example, component docs.
 - **Out of scope**: Tier 2 recipes (Cally, Tabulator, Uppy) – next minor; public-web extras (sheet/drawer, navigation menu, tooltip, accordion) – 0.15.
-- **MVP boundary**: FR1–FR8; FR9–FR10 are small DX stories; FR11 moves to 0.15 first if the release runs long.
+- **MVP boundary**: FR1–FR8; FR9–FR10 and FR12 are small DX stories; FR11 moves to 0.15 first if the release runs long.
 
 ### Key Constraints, Assumptions & Dependencies
 - *Dependency:* 0.13 composition primitives (`tl:slot`, `tl:attrs`, `...rest`, bare-name `renderFragment`) shipped; Tier 1 authoring starts after they land (ADR-012 § First component slice).
@@ -83,8 +84,7 @@ An app author depends on `trellis_ui`, composes screens from its fragments, rest
 - One reference page per qualified component on the docs site, with live examples.
 - Dev reload on static CSS/JS changes; `static/trellis-ui/` preview assets.
 - Suite components in `trellis_site` themes (FR11), cut first.
-- `trellis dev` static-site preview (build, watch, browser reload, root-served); added by the owner on 2026-11-18,
-  outside the UI slice. Record it in the Linear PRD at release prep.
+- `trellis dev` static-site preview (FR12), added by the owner on 2026-11-18, outside the UI slice.
 
 ### Out of Scope
 - Tier 2 recipes (Cally, Tabulator, Uppy, AG Grid fallback) – next minor (roadmap sequence 2026-09-02).
@@ -96,7 +96,7 @@ An app author depends on `trellis_ui`, composes screens from its fragments, rest
 - Exit animations, submenus, toast stacking/swipe, RTL – not ported in O6; not required in 0.14.
 
 ### MVP Boundary
-FR1–FR8: a qualified slice an author can adopt from the scaffold or by hand, proven by the admin example and documented. FR9–FR10 ship with it unless time runs out; FR11 moves to 0.15 first.
+FR1–FR8: a qualified slice an author can adopt from the scaffold or by hand, proven by the admin example and documented. FR9–FR10 and FR12 ship with it unless time runs out; FR11 moves to 0.15 first.
 
 
 ## Functional Requirements
@@ -114,6 +114,7 @@ FR1–FR8: a qualified slice an author can adopt from the scaffold or by hand, p
 | US07 | As an app author, I want the browser to reload when I edit my CSS or JS, so that styling iteration matches template iteration | FR9 | Should / P1 |
 | US08 | As an app author, I want a template opened from disk to show suite styling and behaviour, so that natural-template previews keep working with components | FR10 | Should / P1 |
 | US09 | As a `trellis_site` user, I want themes to offer search, dark/light toggle and code copy from the suite, so that sites get the same qualified components | FR11 | Could / P2 |
+| US10 | As a `trellis_site` author, I want one command that previews my site and reloads it as I edit, so that I stop rerunning `build` and `serve` and passing `--path-prefix ''` | FR12 | Should / P1 |
 
 ### Feature Specifications
 
@@ -268,6 +269,21 @@ FR1–FR8: a qualified slice an author can adopt from the scaffold or by hand, p
 **Inputs / Outputs**: theme templates → built static site.
 **Priority**: Could / P2
 
+#### FR12: `trellis dev` static-site preview
+**Description**: Added by the owner on 2026-11-18, after the UI stories, to close the gap with `hugo server`: `trellis serve` only served a prebuilt directory, so previewing meant rerunning `trellis build`, passing `--path-prefix ''` for a prefixed site, and reloading by hand. `trellis dev` builds, serves, watches and reloads, reusing `trellis build`'s pipeline and `trellis_dev`'s reload client through a new `liveReloadMiddleware(Stream<void>)`. `tool/serve_docs.sh` runs it for the docs site. Planned as `trellis dev` in PRODUCT.md.
+
+**Acceptance Criteria**:
+- [ ] The preview build shall be served from `/` with `pathPrefix` cleared and `baseUrl` set to `http://localhost:<port>`, so a prefixed site's internal links resolve locally.
+- [ ] The preview build shall go to a temporary directory removed on Ctrl-C, never to the site's output directory.
+- [ ] When a file under the site directory or its theme directory changes, including a theme outside the site or symlinked into it, the site shall rebuild and connected browsers shall reload once the build succeeds.
+- [ ] If a rebuild fails, then the error shall be printed, the last successful build shall stay served with no reload sent, and the next change shall rebuild again.
+- [ ] Changes under the output directory or a `.`-prefixed directory shall not trigger a rebuild.
+- [ ] The reload client shall load as a same-origin script, so it works under `script-src 'self'`.
+- [ ] Watching shall work on macOS and Linux (recursive `Directory.watch` is silent on Linux; LEARNINGS).
+
+**Inputs / Outputs**: site and theme file changes → rebuilt root-served preview + SSE reload.
+**Priority**: Should / P1
+
 ### User Flows
 1. **New project**: `trellis create --ui` → `dart run` → example page with suite components under strict CSP.
 2. **Existing app**: add `trellis_ui` → wire engine and asset serving per the guide → replace hand-written controls with fragments → delete app component CSS.
@@ -371,3 +387,5 @@ None. The look comes from shadcn's vega style and the docs site's existing layou
 | A report check refuses a sync commit while anything is untriaged | FR1's no-commit rule needs a mechanical stop in an unattended run (owner, 2026-10-21) | Skill checklist only |
 | Full automated gate also over the admin example and the UI scaffolds | Composed screens expose problems per-component gates miss (owner, 2026-10-21) | CSP-only checks on composed pages |
 | Reference-page previews follow the docs skin | Dark-mode readers see dark components (owner, 2026-10-21) | Light previews only |
+| `trellis dev` (FR12) added to 0.14 | Previewing a site needed three manual steps and a `--path-prefix ''` override; the owner chose to close the gap with `hugo server` in 0.14 rather than a later release (owner, 2026-11-18) | A later release; `serve --watch`; Hugo-style `relativeURLs` for `file://` viewing |
+| `trellis dev` builds into a temp directory and swaps on success | A dev build in `output/` could be deployed by mistake; swapping keeps the last good build on screen after a broken edit (planner's call, 2026-11-18) | Build into `output/`; rebuild in place |

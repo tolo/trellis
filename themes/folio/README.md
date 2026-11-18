@@ -4,6 +4,9 @@ Folio is a self-contained documentation and reference theme with chart-paper tex
 rubrication, light/night editions, and semantic apparatus. It remains readable without JavaScript; search and the
 optional edition switch are progressive enhancements.
 
+Folio requires Trellis 0.14.0 for its suite combobox and edition toggle. The
+build supplies the shared search client beside the JSON index.
+
 ## Use and preview
 
 Install it from the Trellis repository:

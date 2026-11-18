@@ -345,7 +345,7 @@ void main() {
 
   test('bridged example builds cleanly', () async {
     final config = exampleSiteCopy(themeDir);
-    final result = await TrellisSite(config).build();
+    final result = await TrellisSite(config, sourceFactories: themeSourceFactories).build();
     expect(result.warnings, isEmpty);
     expect(result.pageCount, greaterThanOrEqualTo(6));
 
@@ -401,28 +401,7 @@ void main() {
     }
     // flex: 1 0 auto inside the 100vh body column already reaches the footer; a vh floor over-reserves.
     expect(RegExp(r'\.docs-shell\s*\{[^}]*min-height:').hasMatch(css), isFalse);
-    // Every class static/js/search.js builds has to be styled, or the results list falls
-    // back to unstyled body text. Derived from the script rather than hardcoded, so a rename
-    // on one side alone fails, and anchored so a longer selector cannot satisfy the match.
-    final searchClasses = RegExp(
-      r"className = '([\w-]+)'",
-    ).allMatches(File(p.join(themeDir, 'static', 'js', 'search.js')).readAsStringSync()).map((m) => m[1]!).toSet();
-    expect(searchClasses, containsAll(<String>['search-result', 'search-result-title', 'search-result-snippet']));
-    for (final built in searchClasses) {
-      expect(RegExp('\\.$built(?=[\\s,{:])').hasMatch(css), isTrue, reason: built);
-    }
-    expect(_declared(css, r'\.search-results', 'max-height'), '320px');
-    // The cap needs its own scroll, or a 20-hit list overflows the sidebar instead of scrolling.
-    expect(_declared(css, r'\.search-results', 'overflow-y'), 'auto');
-    // The defect was layout, not absence: title and snippet are <span>s, so without an explicit
-    // block they render inline and concatenate ("Semantic apparatusUse ordinary HTML..."), and
-    // the link inherits the body underline. Selector presence alone does not hold any of that.
-    for (final rule in ['search-result-title', 'search-result-snippet']) {
-      final declared = _declared(css, '\\.$rule', 'display');
-      expect(declared, isNotNull, reason: '$rule must declare a display');
-      expect(declared, isNot('inline'), reason: '$rule renders concatenated when inline');
-    }
-    expect(_declared(css, r'\.search-result-link', 'text-decoration'), 'none');
+    // The browser search contract exercises the suite list and its scroll cap.
     // An ancestor of the current page is marked; the class is computed in all three tree levels.
     expect(css, contains('.sidebar-link.is-active-trail'));
     // A selector that exists but declares nothing reproduces the finding exactly: the trail
@@ -525,7 +504,7 @@ void main() {
     // Both enhanced controls ship hidden: with no JavaScript neither can do anything, and a
     // permanently disabled search box in the sidebar is worse than no search box.
     expect(apparatus.querySelector('.search-shell')!.attributes, contains('hidden'));
-    expect(apparatus.querySelector('.search-input')!.attributes, contains('disabled'));
+    expect(apparatus.querySelector('[data-trellis-search] [role=combobox]')!.attributes, contains('disabled'));
     expect(apparatus.querySelector('.skin-toggle')!.attributes, contains('hidden'));
     expect(apparatus.querySelector('.page-nav'), isNotNull);
     // The trail ends on the current page, inline, rather than stopping at its parent section.
@@ -560,7 +539,7 @@ void main() {
     File(p.join(tempDir.path, 'trellis_site.yaml')).writeAsStringSync('$source\npathPrefix: /trellis/\n');
 
     final config = SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
-    final result = await TrellisSite(config).build();
+    final result = await TrellisSite(config, sourceFactories: themeSourceFactories).build();
     expect(result.warnings, isEmpty);
     final home = File(p.join(config.outputDir, 'index.html')).readAsStringSync();
     expect(home, contains('href="/trellis/css/main.css"'));
@@ -577,7 +556,7 @@ void main() {
 
     final docs = File(p.join(config.outputDir, 'docs', 'apparatus', 'index.html')).readAsStringSync();
     final docsDocument = html_parser.parse(docs);
-    expect(docs, contains('src="/trellis/js/search.js"'));
+    expect(docs, contains('src="/trellis/trellis-search.js"'));
     expect(docs, contains('src="/trellis/js/folio.js"'));
     expect(docs, contains('data-search-index="/trellis/search-index.json"'));
     expect(docs, contains('href="/trellis/css/main.css"'));
@@ -587,7 +566,7 @@ void main() {
         .whereType<String>()
         .where((url) => url.startsWith('/'));
     expect(docsRootUrls, everyElement(startsWith('/trellis/')));
-    for (final asset in ['search-index.json', 'fonts/eb-garamond-latin.woff2']) {
+    for (final asset in ['search-index.json', 'trellis-search.js', 'fonts/eb-garamond-latin.woff2']) {
       expect(File(p.join(config.outputDir, asset)).existsSync(), isTrue, reason: asset);
     }
   });
@@ -611,7 +590,7 @@ void main() {
     File(p.join(tempDir.path, 'trellis_site.yaml')).writeAsStringSync(source);
 
     final config = SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
-    final result = await TrellisSite(config).build();
+    final result = await TrellisSite(config, sourceFactories: themeSourceFactories).build();
     expect(result.warnings, isEmpty);
     final docs = html_parser.parse(
       File(p.join(config.outputDir, 'docs', 'apparatus', 'index.html')).readAsStringSync(),
@@ -620,7 +599,7 @@ void main() {
     expect(docs.querySelector('.docs-toc'), isNull);
     expect(docs.querySelector('.page-nav'), isNull);
     expect(docs.querySelector('.search-shell'), isNull);
-    expect(docs.querySelector('script[src*="search.js"]'), isNull);
+    expect(docs.querySelector('script[src*="trellis-search.js"]'), isNull);
     expect(docs.querySelector('.social-links'), isNull);
     expect(docs.querySelector('.footer-text'), isNull);
     expect(docs.querySelector('.footer-powered-by'), isNull);
@@ -637,7 +616,7 @@ void main() {
     File(p.join(tempDir.path, 'trellis_site.yaml')).writeAsStringSync(source.replaceFirst('skin: auto', 'skin: dark'));
 
     final config = SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
-    final result = await TrellisSite(config).build();
+    final result = await TrellisSite(config, sourceFactories: themeSourceFactories).build();
     expect(result.warnings, isEmpty);
     final home = File(p.join(config.outputDir, 'index.html')).readAsStringSync();
     expect(home, isNot(contains('data-folio-skin-toggle')));
@@ -657,9 +636,8 @@ void main() {
     final skinScript = File(p.join(themeDir, 'static', 'js', 'folio.js')).readAsStringSync();
     expect(skinScript.indexOf('sync()'), lessThan(skinScript.indexOf("button.addEventListener('click'")));
     expect(skinScript, contains("media.matches ? 'dark' : 'light'"));
-    // Both scripts reveal the control they drive; the layout ships it hidden.
+    // The edition script reveals the button, which ships hidden.
     expect(skinScript, contains('button.hidden = false'));
-    expect(File(p.join(themeDir, 'static', 'js', 'search.js')).readAsStringSync(), contains('shell.hidden = false'));
   });
 
   test('auto skin control follows OS only without a stored choice', () async {
@@ -800,7 +778,7 @@ void main() {
     }
     for (final asset in [
       'static/js/folio.js',
-      'static/js/search.js',
+      'data/trellis-search.yaml',
       'static/fonts/eb-garamond-latin.woff2',
       'static/fonts/OFL-EB-Garamond.txt',
       'screenshots/light.png',
@@ -869,7 +847,7 @@ Future<Document> _buildVariant(
   File(p.join(tempDir.path, 'trellis_site.yaml')).writeAsStringSync(config == null ? source : config(source));
 
   final siteConfig = SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
-  final result = await TrellisSite(siteConfig).build();
+  final result = await TrellisSite(siteConfig, sourceFactories: themeSourceFactories).build();
   expect(result.warnings, isEmpty, reason: label);
   return html_parser.parse(File(p.join(siteConfig.outputDir, 'index.html')).readAsStringSync());
 }

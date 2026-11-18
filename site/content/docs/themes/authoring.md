@@ -174,6 +174,11 @@ loads each named source once. Theme templates and static files take
 precedence over source files. See [Build sources](/docs/packages/trellis_site/#build-sources)
 for the priority and asset rules.
 
+Arbor, Folio, Lattice, and Meadow require Trellis 0.14.0 and link the suite CSS
+and deferred JS from their asset base. They apply suite colour tokens on the
+search shell, reader toggle, or code bar so the page's other suite fragments
+keep their defaults.
+
 #### Name and archetype rules
 
 The theme gallery is generated from the manifests and CI gates the generated
@@ -778,8 +783,8 @@ stylesheet, or a highlighter:
    [ADR-010](https://github.com/tolo/trellis/blob/main/dev/adrs/ADR-010-syntax-highlighting.md)).
 2. **Vendored, same-origin asset (acceptable).** Commit the asset and serve it
    from `static/`, alongside the HTML that loads it. Auditable, pinnable, and
-   outage-independent. Example: Arbor's first-party `search.js` and
-   `code-enhance.js`, documented for provenance in
+   outage-independent. Example: Arbor's first-party `code-enhance.js`,
+   documented for provenance in
    [`themes/arbor/VENDORED.md`](https://github.com/tolo/trellis/blob/main/themes/arbor/VENDORED.md).
    Folio, Lattice, and Meadow each keep a `VENDORED.md` too.
 3. **Runtime CDN dependency (last resort).** Fetching a script, font, or
@@ -809,6 +814,15 @@ spans with its `--trellis-code-*` token colors, so code is colored with
 JavaScript off, no CDN, and no runtime dependency. Arbor, the docs sibling, used
 to vendor Prism (tier 2) before ADR-010 moved highlighting for every theme to
 tier 1.
+
+The shared `trellis-search.js` is built beside the JSON search index. To reuse
+it, link it with `defer` and wrap the suite combobox in a hidden
+`data-trellis-search` shell with a prefix-aware `data-search-index` URL.
+Render the combobox with its input disabled and include a
+`template[data-trellis-search-results]` with one option rendered by
+`comboboxOptions`. The client reveals the control after load and clones that
+option to render results. See the Arbor sidebar for the template bindings.
+
 
 ## Publishing
 

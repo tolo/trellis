@@ -10,9 +10,11 @@ JavaScript-free collapsible mobile sidebar.
 Arbor is a sibling of the `verdant` blog theme and shares its conventions
 (manifest shape, SASS bridge, `tl:extends`/`tl:define` layout inheritance). Code
 is colored at build time (`.hljs-*` spans baked in by the SSG, ADR-010), so the
-theme ships no highlighter JS; the client-side scripts it does ship — the search
-UI and the code-block copy button — are **vendored, same-origin assets, never
-CDN-loaded** (see [`VENDORED.md`](VENDORED.md)).
+theme ships no highlighter JS. The sidebar search and code-copy button use suite
+fragments and same-origin assets (see [`VENDORED.md`](VENDORED.md)).
+
+Arbor requires Trellis 0.14.0 for its suite combobox and code-copy button.
+The build supplies the shared search client beside the JSON index.
 
 ## Features
 

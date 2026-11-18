@@ -6,9 +6,15 @@
 
 - `trellis build` registers the embedded `trellis_ui` source. Sites and themes can specify
   `uses: [trellis_ui]` to render its fragments and publish its same-origin CSS and JavaScript.
+- `trellis dev` previews a static site while you edit it: builds root-served (`pathPrefix` cleared, `baseUrl`
+  `http://localhost:<port>`) into a temp directory, serves it, rebuilds on changes under the site and its theme
+  (including a theme outside the site or symlinked into it), and reloads the browser. A failed rebuild keeps the last
+  good build served. Options: `--port`, `--drafts`, `--verbose`. Adds `trellis_dev` and `watcher` dependencies.
 
 ### Changed
 
+- The `blog` and `theme` scaffolds' next steps and READMEs preview with `trellis dev` instead of `trellis build` +
+  `trellis serve`.
 - Counter fragment swaps preserve keyboard focus through stable control IDs, allowing repeated Enter activation.
 
 - App scaffolds use strict CSP, self-host pinned HTMX and external CSRF scripts, and disable injected indicator styles. `create --htmx-cdn` opts into the pinned CDN origin. Shelf and Dart Frog watch static CSS/JS in dev mode.

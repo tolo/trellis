@@ -92,8 +92,7 @@ class CreateCommand extends Command<int> {
       stdout.writeln('');
       stdout.writeln('Next steps:');
       stdout.writeln('  cd $projectName');
-      stdout.writeln('  trellis build');
-      stdout.writeln('  trellis serve');
+      stdout.writeln('  trellis dev');
     } else if (template == 'dart_frog') {
       final generator = DartFrogProjectGenerator(projectName: projectName, writer: writer, htmxCdn: htmxCdn, ui: ui);
       await generator.generate();
@@ -125,7 +124,7 @@ class CreateCommand extends Command<int> {
       stdout.writeln('Next steps:');
       stdout.writeln('  cd $projectName');
       stdout.writeln('  Edit theme.yaml and customize params');
-      stdout.writeln('  Preview: cd example && trellis build && trellis serve');
+      stdout.writeln('  Preview: cd example && trellis dev');
     } else {
       final generator = ProjectGenerator(projectName: projectName, writer: writer, htmxCdn: htmxCdn, ui: ui);
       await generator.generate();

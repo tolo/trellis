@@ -9,11 +9,13 @@ weight: 70
 changes on disk, all connected browser tabs refresh automatically via
 Server-Sent Events (SSE).
 
-Three public APIs are provided:
+Four public APIs are provided:
 
 - **`liveReloadHandler()`** – a Shelf `Handler` that serves SSE events.
 - **`devMiddleware()`** – a Shelf `Middleware` combining the SSE endpoint with
   optional script injection.
+- **`liveReloadMiddleware()`** – the same middleware driven by any change
+  stream instead of a template loader.
 - **`liveReloadScript()`** – the vanilla JS `EventSource` snippet.
 
 ## Installation
@@ -106,6 +108,24 @@ Returns a Shelf `Middleware` that:
   as `path:line: severity: message (attribute)`, the `dart run trellis:validate`
   format. An unchanged template is reported once. Pass `validate: false` to turn
   it off, or a configured `validator` to match a custom prefix or dialect set.
+
+### `liveReloadMiddleware(Stream<void> changes, {String ssePath, String scriptPath, bool injectScript})`
+
+Returns the SSE endpoint, same-origin reload client and script injection of
+`devMiddleware`, without template validation, sending a `reload` event for each
+event on `changes`. Use it when something other than a template loader decides
+that the page is stale, such as a static site rebuild that just finished
+(`trellis dev` works this way). `changes` must be a broadcast stream; closing
+it ends every open SSE connection.
+
+```dart
+final rebuilt = StreamController<void>.broadcast();
+final handler = const Pipeline()
+    .addMiddleware(liveReloadMiddleware(rebuilt.stream))
+    .addHandler(staticHandler);
+// After each successful rebuild:
+rebuilt.add(null);
+```
 
 ### `liveReloadScript({String ssePath})`
 

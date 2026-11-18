@@ -1,7 +1,8 @@
 # trellis_cli
 
 The `trellis` command: project scaffolding (`create`: htmx, Dart Frog, Relic, blog and theme templates), static site
-build (`build`), local dev server (`serve`), and theme management (`theme add|list|info|update|remove`). See the
+build (`build`), site preview with rebuild and browser reload (`dev`), static output server (`serve`), and theme
+management (`theme add|list|info|update|remove`). See the
 [README](README.md).
 
 ## Key Development Commands

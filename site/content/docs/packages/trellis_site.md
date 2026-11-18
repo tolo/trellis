@@ -40,8 +40,8 @@ print('Built ${result.pageCount} pages in ${result.elapsed.inMilliseconds}ms');
 Or use [trellis_cli](/docs/packages/trellis_cli/):
 
 ```bash
-trellis build
-trellis serve
+trellis dev     # preview at http://localhost:8080, rebuilds and reloads on change
+trellis build   # deployable site in output/
 ```
 
 ### SASS and theme CSS

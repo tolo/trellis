@@ -7,7 +7,7 @@ void main() {
   final root = Directory.current.path;
   final script = p.join(root, 'tool', 'serve_docs.sh');
 
-  test('docs preview builds root-served output and uses port 8765 by default', () async {
+  test('docs preview regenerates inventories, then runs trellis dev on port 8765 by default', () async {
     expect(File(script).existsSync(), isTrue);
 
     final temp = Directory.systemTemp.createTempSync('trellis_docs_preview_');
@@ -21,7 +21,7 @@ void main() {
   printf ' arg=<%s>' "$@"
   printf '\n'
 } >> "$DOCS_PREVIEW_TEST_LOG"
-if [[ "${DOCS_PREVIEW_FAIL_BUILD:-0}" == 1 && " $* " == *" build "* ]]; then
+if [[ "${DOCS_PREVIEW_FAIL_GENERATE:-0}" == 1 && " $* " == *"generate_ui_reference.dart"* ]]; then
   exit 37
 fi
 ''');
@@ -50,9 +50,7 @@ fi
     final expectedDefault = [
       ...expectedGenerators,
       'cwd=<${p.join(root, 'site')}> arg=<run> arg=<../packages/trellis_cli/bin/trellis.dart> '
-          'arg=<build> arg=<--path-prefix> arg=<> arg=<--output> arg=<output-root>',
-      'cwd=<${p.join(root, 'site')}> arg=<run> arg=<../packages/trellis_cli/bin/trellis.dart> '
-          'arg=<serve> arg=<--output> arg=<output-root> arg=<--port> arg=<8765>',
+          'arg=<dev> arg=<--port> arg=<8765>',
     ];
     final defaultRun = await run([]);
     expect(defaultRun.exitCode, 0, reason: '${defaultRun.stdout}\n${defaultRun.stderr}');
@@ -74,9 +72,10 @@ fi
       ]);
     }
 
-    final failedBuild = await run([], environment: {'DOCS_PREVIEW_FAIL_BUILD': '1'});
-    expect(failedBuild.exitCode, 37);
-    expect(log.readAsLinesSync(), expectedDefault.take(expectedDefault.length - 1));
+    // A failed regeneration stops the script before the preview starts.
+    final failedGenerate = await run([], environment: {'DOCS_PREVIEW_FAIL_GENERATE': '1'});
+    expect(failedGenerate.exitCode, 37);
+    expect(log.readAsLinesSync(), expectedGenerators);
 
     for (final arguments in [
       [''],
@@ -94,9 +93,9 @@ fi
       expect((await Process.run('test', ['-x', script])).exitCode, 0);
     }
     final rootReadme = File(p.join(root, 'README.md')).readAsStringSync();
-    expect(rootReadme, contains('tool/serve_docs.sh       # builds and serves http://localhost:8765'));
+    expect(rootReadme, contains('tool/serve_docs.sh       # builds, serves and watches http://localhost:8765'));
     expect(rootReadme, contains('tool/serve_docs.sh 9000  # optional custom port'));
-    expect(rootReadme, contains('root-served snapshot'));
+    expect(rootReadme, contains('reloads the browser'));
     expect(rootReadme, contains('Ctrl-C'));
     expect(rootReadme, contains('site/README.md'));
 
@@ -106,7 +105,7 @@ fi
     expect(siteReadme, contains('http://localhost:8765'));
     expect(siteReadme, contains('`tool/serve_docs.sh 9000`'));
     expect(siteReadme, contains('Stop the server with Ctrl-C'));
-    expect(siteReadme, contains('Rerun the script after'));
-    expect(siteReadme, contains('changing site content, layouts, or theme assets'));
+    expect(siteReadme, contains('rerun the script after'));
+    expect(siteReadme, contains('theme manifest or screenshot change'));
   });
 }

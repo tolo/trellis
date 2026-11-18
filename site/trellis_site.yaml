@@ -95,7 +95,7 @@ theme_params:
       text: created Markdown site
       kind: output
     - prefix: "$"
-      text: trellis build && trellis serve
+      text: trellis dev
       kind: command
     - prefix: ">"
       text: http://localhost:8080

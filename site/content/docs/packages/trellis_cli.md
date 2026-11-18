@@ -74,8 +74,7 @@ Then open `http://localhost:8080`.
 ```bash
 trellis create my_blog --template blog
 cd my_blog
-trellis build
-trellis serve
+trellis dev
 ```
 
 ### Dart Frog app
@@ -102,7 +101,7 @@ dart run bin/server.dart
 trellis create my_theme --template theme
 cd my_theme
 # Edit theme.yaml, layouts/, and sass/
-cd example && trellis build && trellis serve
+cd example && trellis dev
 ```
 
 See the [Theme Authoring](/docs/themes/authoring/) guide for a complete
@@ -237,11 +236,41 @@ trellis build --output dist --drafts --verbose
 trellis build --path-prefix '' --output output-root
 ```
 
+### `trellis dev`
+
+Previews a site while you edit it. Builds the site, serves it with clean URLs,
+rebuilds when a file under the site directory or its theme changes, and reloads
+open browser tabs after each successful rebuild.
+
+The preview build differs from `trellis build` so it works locally and cannot
+be deployed by mistake:
+
+- It is served from `/`: `pathPrefix` is cleared, and `baseUrl` becomes
+  `http://localhost:<port>`.
+- It goes to a temporary directory, removed on Ctrl-C, never to `output/`.
+- A failed rebuild prints the error and keeps the last good build on screen;
+  the next save tries again.
+
+Edits to `.`-prefixed directories (`.git`, `.dart_tool`) and to the output
+directory do not trigger a rebuild. The reload script is served same-origin at
+`/_dev/reload.js`, so it works under `script-src 'self'`.
+
+Options:
+
+- `--port` (`-p`): port to listen on (default: `8080`).
+- `--drafts`: include draft content (default: `false`).
+- `--verbose` (`-v`): show a detailed build log.
+
+```bash
+trellis dev
+trellis dev --port 3000 --drafts
+```
+
 ### `trellis serve`
 
-Starts a local static file server to preview a built site. Serves from the
-output directory with clean-URL support (`/about/` resolves to
-`/about/index.html`).
+Serves an already-built output directory with clean-URL support (`/about/`
+resolves to `/about/index.html`). It does not build or watch; use `trellis dev`
+while editing, and `serve` to look at the exact output of `trellis build`.
 
 Options:
 
@@ -255,8 +284,8 @@ trellis serve --port 3000
 ```
 
 `serve` serves the output directory at `/` and ignores `pathPrefix`, so a
-prefixed build's links return 404 locally. Preview a root-served build instead;
-see [Sites: Deploy](/docs/sites/deploy/#preview-a-sub-path-site).
+prefixed build's links return 404 locally. Use `trellis dev`, or serve a
+root-served build; see [Sites: Deploy](/docs/sites/deploy/#preview-a-sub-path-site).
 
 ### `trellis --version` / `trellis --help`
 

@@ -26,18 +26,18 @@ deploy workflow hardcodes the domain.
 
 ## Preview locally
 
-From the repository root, [`tool/serve_docs.sh`](../tool/serve_docs.sh) builds a
-root-served variant and serves it at `http://localhost:8765`:
+From the repository root, [`tool/serve_docs.sh`](../tool/serve_docs.sh) runs
+`trellis dev`, which builds a root-served variant, serves it at `http://localhost:8765`,
+and rebuilds and reloads the browser when content, layouts, or theme files change:
 
 ```sh
 tool/serve_docs.sh
 ```
 
 Pass a different port as the only argument when needed, for example
-`tool/serve_docs.sh 9000`. Stop the server with Ctrl-C. Rerun the script after
-changing site content, layouts, or theme assets — it regenerates the themes
-gallery first, so a theme manifest or screenshot change shows up in the preview
-and the regenerated files are ready to commit.
+`tool/serve_docs.sh 9000`. Stop the server with Ctrl-C. The script regenerates the
+themes gallery and UI reference data only at startup, so rerun the script after
+a theme manifest or screenshot change; the regenerated files are then ready to commit.
 
 An intentional screenshot recapture must be reviewed before it becomes gallery input. After reviewing the image,
 update its SHA-256 entry in `tool/theme_screenshot_digests.json`, then regenerate the gallery; an unpinned byte change

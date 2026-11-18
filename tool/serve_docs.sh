@@ -30,6 +30,6 @@ cd "${REPO_ROOT}"
 dart run tool/generate_theme_gallery.dart
 dart run tool/generate_ui_reference.dart
 
+# `dev` builds root-served into a temp directory, then rebuilds and reloads the browser on every source change.
 cd "${REPO_ROOT}/site"
-dart run "${CLI}" build --path-prefix '' --output output-root
-exec dart run "${CLI}" serve --output output-root --port "${DOCS_PORT}"
+exec dart run "${CLI}" dev --port "${DOCS_PORT}"

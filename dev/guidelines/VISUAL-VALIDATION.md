@@ -25,9 +25,12 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8765/    # 200 when re
   prints the page and asset counts.
 - `--path-prefix ''` is required: `site/trellis_site.yaml` mounts the site under `/trellis/` for GitHub Pages, so
   without the override every asset URL 404s on a root-served preview.
-- `tool/serve_docs.sh [port]` does the same into `site/output-root` (git-ignored), first regenerating theme gallery
-  and UI reference data. The regenerated files belong in the same commit as their sources.
-- Rebuild after any change to `site/content`, `site/layouts`, or `themes/`. `serve` does not watch.
+- `tool/serve_docs.sh [port]` regenerates theme gallery and UI reference data, then runs `trellis dev`: root-served,
+  built into a temp directory, rebuilt and browser-reloaded on any change to `site/` or `themes/lattice`. The
+  regenerated files belong in the same commit as their sources. For a capture, prefer the explicit build above: a
+  capture taken while `dev` is rebuilding can catch the reload.
+- With the explicit build, rebuild after any change to `site/content`, `site/layouts`, or `themes/`. `serve` does not
+  watch.
 
 ### Theme examples (`themes/<name>/example/`)
 

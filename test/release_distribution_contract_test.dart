@@ -75,8 +75,8 @@ void main() {
 
       expect(docs, isNot(contains('cd my_blog && dart pub get')));
       expect(docs, isNot(contains('cd my_blog\ndart pub get\ntrellis build')));
-      expect(docs, contains('cd my_blog && trellis build && trellis serve'));
-      expect(docs, contains('cd my_blog\ntrellis build\ntrellis serve'));
+      expect(docs, contains('cd my_blog && trellis dev'));
+      expect(docs, contains('cd my_blog\ntrellis dev'));
     });
 
     test('Windows checksum snippet compares expected and actual hashes', () {

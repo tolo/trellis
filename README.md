@@ -99,12 +99,12 @@ cd my_app && dart pub get && dart run bin/server.dart   # http://localhost:8080
 
 # Static site (Markdown + SSG)
 trellis create my_blog --template blog
-cd my_blog && trellis build && trellis serve
+cd my_blog && trellis dev   # http://localhost:8080, reloads as you edit
 ```
 
 Available `trellis create` templates: `htmx` (default — Shelf + HTMX), `blog` (static site), `dart_frog`, `relic`, and `theme` (authoring an SSG theme).
 
-Other CLI commands: `trellis build` (run the static-site pipeline), `trellis serve` (preview built output), and `trellis theme` (`add`/`update`/`list`/`info`/`remove`) for managing SSG themes.
+Other CLI commands: `trellis build` (run the static-site pipeline), `trellis serve` (serve built output), and `trellis theme` (`add`/`update`/`list`/`info`/`remove`) for managing SSG themes.
 
 ## SDK packages
 
@@ -155,12 +155,12 @@ melos run format:check  # check formatting
 **Documentation site preview** (from the repository root):
 
 ```bash
-tool/serve_docs.sh       # builds and serves http://localhost:8765
+tool/serve_docs.sh       # builds, serves and watches http://localhost:8765
 tool/serve_docs.sh 9000  # optional custom port
 ```
 
-This creates a root-served snapshot rather than watching source files. Stop it
-with Ctrl-C and rerun the command after changes. See the
+It runs `trellis dev`, which rebuilds and reloads the browser when site content,
+layouts or the theme change. Stop it with Ctrl-C. See the
 [docs-site README](site/README.md#preview-locally) for the production sub-path
 and link-checking workflow.
 

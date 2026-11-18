@@ -225,8 +225,7 @@ void main() {
       ], workingDirectory: tempDir.path);
 
       expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
-      expect(result.stdout, contains('  trellis build'));
-      expect(result.stdout, contains('  trellis serve'));
+      expect(result.stdout, contains('  trellis dev'));
       expect(result.stdout, isNot(contains('dart pub get')));
     });
 

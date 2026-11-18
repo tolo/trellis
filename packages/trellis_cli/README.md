@@ -94,16 +94,16 @@ dart compile exe packages/trellis_cli/bin/trellis.dart -o trellis
 
 ## Quick start
 
-Scaffold, build, and preview a static blog:
+Scaffold and preview a static blog:
 
 ```bash
 trellis create my_blog --template blog
 cd my_blog
-trellis build
-trellis serve
+trellis dev
 ```
 
-Or in one line: `cd my_blog && trellis build && trellis serve`. Then open http://localhost:8080 in your browser.
+Or in one line: `cd my_blog && trellis dev`. Then open http://localhost:8080 in your browser; it reloads as you edit.
+`trellis build` writes the deployable site to `output/`.
 
 ## Features
 
@@ -111,7 +111,10 @@ Or in one line: `cd my_blog && trellis build && trellis serve`. Then open http:/
   `relic` app, or a `theme` project.
 - `trellis build`: builds a static site from `trellis_site.yaml` and compiles SASS/SCSS, with `--output`, `--base-url`,
   `--path-prefix`, `--drafts`, and `--verbose`.
-- `trellis serve`: previews a built site with clean URLs (`/about/` resolves to `/about/index.html`).
+- `trellis dev`: builds a root-served preview into a temp directory, serves it, rebuilds when site or theme files
+  change, and reloads the browser. A failed rebuild keeps the last good build on screen.
+- `trellis serve`: serves an already-built output directory with clean URLs (`/about/` resolves to
+  `/about/index.html`).
 - `trellis theme add|update|list|info|remove`: installs, pins, updates, and removes themes.
 
 ## Documentation

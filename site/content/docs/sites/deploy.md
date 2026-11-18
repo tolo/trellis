@@ -28,7 +28,9 @@ prefix into content; the same source should build for either target.
 
 `trellis serve` serves the output directory at `/` and does not strip the
 prefix, so links in a prefixed build such as `/my-site/docs/` return 404
-locally. Preview a root-served build instead:
+locally. `trellis dev` clears the prefix for its own preview, so it is the
+quickest check while editing. To look at the built files, preview a root-served
+build instead:
 
 ```bash
 trellis build --path-prefix '' --output output-root

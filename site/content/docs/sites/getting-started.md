@@ -68,11 +68,13 @@ after changing content, layouts, configuration, or assets.
 ## 4. Preview
 
 ```bash
-trellis serve
+trellis dev
 ```
 
-Open `http://localhost:8080`. The preview server resolves clean URLs such as
-`/uses/` to their generated `index.html` files.
+Open `http://localhost:8080`. The preview rebuilds and reloads the browser when
+you change content, layouts, configuration, or the theme, and resolves clean
+URLs such as `/uses/` to their generated `index.html` files. It builds into a
+temporary directory, so `output/` keeps only what `trellis build` writes.
 
 ## 5. Deploy to GitHub Pages
 
@@ -86,8 +88,9 @@ pathPrefix: /my-site/
 
 Build again and publish the contents of `output/` as the Pages artifact. The
 prefix is written into URLs while files keep their normal on-disk paths, so
-`trellis serve` no longer previews this build: preview a root-served build as
-the deployment guide shows. Run a link check before publishing so a
+`trellis serve` no longer previews this build. `trellis dev` still works,
+because it clears the prefix for its preview; to check the built files
+themselves, preview a root-served build as the deployment guide shows. Run a link check before publishing so a
 valid-looking but root-relative URL cannot become a production 404.
 
 The [deployment guide](/docs/sites/deploy/) includes a complete GitHub Actions

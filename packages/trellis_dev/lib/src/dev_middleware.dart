@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:shelf/shelf.dart';
 import 'package:trellis/trellis.dart';
 
-import 'live_reload_handler.dart';
+import 'live_reload_middleware.dart';
 
 /// Creates a Shelf [Middleware] that provides live reload functionality.
 ///
@@ -64,11 +64,6 @@ Middleware devMiddleware(
   if (changes == null) {
     throw StateError('Create the loader with devMode: true to enable live reload.');
   }
-  final sseHandler = liveReloadChangesHandler(_reloadChanges(changes, staticDirectory));
-  final ssePathNormalized = ssePath.startsWith('/') ? ssePath.substring(1) : ssePath;
-  final scriptPathNormalized = scriptPath.startsWith('/') ? scriptPath.substring(1) : scriptPath;
-  final script = '<script src="${Uri(path: '/$scriptPathNormalized')}"></script>';
-
   if (validate) {
     final effectiveValidator = validator ?? TemplateValidator();
     final sink = validationSink ?? stderr;
@@ -82,38 +77,12 @@ Middleware devMiddleware(
     changes.listen((_) => validateLoadedTemplates(loader, effectiveValidator, cache, sink));
   }
 
-  return (Handler innerHandler) {
-    return (Request request) async {
-      // Route SSE path to the live reload handler.
-      if (request.url.path == ssePathNormalized) {
-        return sseHandler(request);
-      }
-
-      if (request.url.path == scriptPathNormalized) {
-        return Response.ok(
-          liveReloadClientScript(ssePath: ssePath),
-          headers: {'content-type': 'application/javascript'},
-        );
-      }
-
-      final response = await innerHandler(request);
-
-      if (!injectScript) return response;
-
-      // Only inject into buffered text/html responses.
-      final contentType = response.headers['content-type'];
-      if (contentType == null || !contentType.contains('text/html')) {
-        return response;
-      }
-      if (response.contentLength == null) {
-        return response;
-      }
-
-      final body = await response.readAsString();
-      final injected = body.replaceFirst('</body>', '$script\n</body>');
-      return response.change(body: injected);
-    };
-  };
+  return liveReloadMiddleware(
+    _reloadChanges(changes, staticDirectory),
+    ssePath: ssePath,
+    scriptPath: scriptPath,
+    injectScript: injectScript,
+  );
 }
 
 /// Validates every template under [loader] and writes any issues to [sink].

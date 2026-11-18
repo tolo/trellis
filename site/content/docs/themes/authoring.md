@@ -41,8 +41,7 @@ cd my_theme
 # repository, one archetype tag in features:)
 # Preview with the bundled example site
 cd example
-trellis build
-trellis serve
+trellis dev
 ```
 
 `trellis create` writes `example/trellis_site.yaml` with `theme: my_theme` and
@@ -763,7 +762,7 @@ to the example directory itself, not the theme.
 Run the preview from the theme root:
 
 ```bash
-cd example && trellis build && trellis serve
+cd example && trellis dev
 ```
 
 ## Third-Party and Vendored Assets

@@ -2,7 +2,8 @@
 
 Canonical reference for understanding the Trellis SDK architecture: how the packages compose, what each package is responsible for, the dependency graph, and how a request flows through the system.
 
-**Current through**: dev reload, scaffold CSP and UI previews updated for 0.14 on 2026-11-17. The named site source
+**Current through**: dev reload, scaffold CSP and UI previews updated for 0.14 on 2026-11-17; `trellis dev` site
+preview and `liveReloadMiddleware` added for 0.14 on 2026-11-18. The named site source
 pipeline and CLI registry were verified for 0.14 on 2026-11-18. The wider scope is the v0.11.0 SDK + the
 2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
 Lattice `site_demo` home block, and the `examples/docs_site/` proof) + the 2026-09-04 HTMX 4 adapter
@@ -38,10 +39,10 @@ Trellis is a Dart toolkit for building server-rendered web applications and stat
 | **`trellis_dart_frog`** | Dart Frog integration: `trellisProvider()` DI middleware, response helpers (`renderPage`, `renderFragment`, `renderOobFragments`), HTMX detection, CSRF/security middleware bridged from `trellis_shelf` | `trellis`, `trellis_shelf`, `dart_frog` | v0.13.0 |
 | **`trellis_relic`** | Serverpod Relic integration: response helpers with explicit engine passing, HTMX detection, `trellisSecurityHeaders()` and `trellisCsrf()` middleware | `trellis`, `relic`, `crypto` | v0.13.0 |
 | **`trellis_ui`** | Embedded UI fragments, same-origin CSS/JS, neutral asset response and materialization. | `trellis` | v0.14.0 |
-| **`trellis_dev`** | Dev tools: SSE browser hot reload, script injection middleware | `trellis`, `shelf` | v0.13.0 |
+| **`trellis_dev`** | Dev tools: SSE browser hot reload, script injection middleware driven by a template loader or any change stream | `trellis`, `shelf` | v0.13.0 |
 | **`trellis_css`** | CSS processing: Dart-native SASS/SCSS compilation via `package:sass`, `tl:scope` fragment-scoped CSS via CSS `@scope` | `trellis`, `sass`, `html` | v0.13.0 |
 | **`trellis_site`** | Static site generation: content discovery, front matter, Markdown, taxonomies, pagination, sitemap, shortcodes, data cascade, Atom/RSS feeds, JSON search index and client, named build sources | `trellis`, `trellis_css`, `highlight`, `html`, `markdown`, `path`, `yaml` | v0.13.0 |
-| **`trellis_cli`** | CLI tool: `trellis create` (htmx + blog + dart_frog + relic templates), `trellis build` (SSG, SASS and the embedded UI source), `trellis serve` (local preview server), and `trellis theme` (`add`, `update`, `list`, `info`, `remove`) | `args`, `path`, `shelf`, `shelf_static`, `trellis_css`, `trellis_site`, `trellis_ui` | v0.13.0 |
+| **`trellis_cli`** | CLI tool: `trellis create` (htmx + blog + dart_frog + relic templates), `trellis build` (SSG, SASS and the embedded UI source), `trellis dev` (site preview: rebuild on change + browser reload), `trellis serve` (static output server), and `trellis theme` (`add`, `update`, `list`, `info`, `remove`) | `args`, `path`, `shelf`, `shelf_static`, `trellis_css`, `trellis_dev`, `trellis_site`, `trellis_ui`, `watcher` | v0.13.0 |
 | ~~`trellis_test`~~ | *Merged into `trellis` core as `testing.dart` entry point (2026-03-18)* | — | — |
 
 ---
@@ -67,6 +68,8 @@ trellis_cli ──► trellis_site ──► trellis ──► package:html
      │         ├──► sass
      │         └──► html
      ├──► trellis_ui ──► trellis
+     ├──► trellis_dev ──► trellis
+     ├──► watcher
      ├──► shelf
      └──► shelf_static
 trellis_shelf ──► trellis ──► package:html
@@ -218,6 +221,21 @@ Browser                          Server
    ├── location.reload() ──────────►│  Browser refreshes
    │                                │
 ```
+
+`devMiddleware` is a thin layer over `liveReloadMiddleware(Stream<void>)`, which owns the SSE endpoint, the reload
+client and script injection. Anything that can say "the page is stale" can drive it.
+
+### Static site preview (`trellis dev`)
+
+`trellis dev` reuses `trellis build`'s config loading and build (`loadSiteBuildConfig`, `buildSite`) with three
+overrides: `pathPrefix` cleared, `baseUrl` set to `http://localhost:<port>`, and output to `build-<n>` under a temp
+directory. `package:watcher` watches the site directory and, when its real path lies outside the site, the theme
+directory (a relative `theme: ../..` or a theme project's symlinked example). Events under the configured output
+directory or a `.`-prefixed segment are ignored. Events debounce for 150 ms; one build runs at a time and edits
+during it queue exactly one more. A successful build swaps the static handler to the new directory, deletes the
+old one and emits on the stream behind `liveReloadMiddleware`; a failed build is deleted and the last good build
+stays served. Ctrl-C force-closes the server (open SSE connections never finish), waits for an in-flight build and
+removes the temp directory.
 
 ---
 

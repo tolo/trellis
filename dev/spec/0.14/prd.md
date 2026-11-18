@@ -83,6 +83,8 @@ An app author depends on `trellis_ui`, composes screens from its fragments, rest
 - One reference page per qualified component on the docs site, with live examples.
 - Dev reload on static CSS/JS changes; `static/trellis-ui/` preview assets.
 - Suite components in `trellis_site` themes (FR11), cut first.
+- `trellis dev` static-site preview (build, watch, browser reload, root-served); added by the owner on 2026-11-18,
+  outside the UI slice. Record it in the Linear PRD at release prep.
 
 ### Out of Scope
 - Tier 2 recipes (Cally, Tabulator, Uppy, AG Grid fallback) – next minor (roadmap sequence 2026-09-02).

@@ -5,6 +5,8 @@
 ### Added
 
 - `liveReloadClientScript()` returns bare JavaScript. `devMiddleware` serves a same-origin reload client, accepts `scriptPath` and `staticDirectory`, and watches CSS/JS recursively. SSE connections flush headers before the first edit; the inline `liveReloadScript()` remains available.
+- `liveReloadMiddleware(Stream<void> changes)` serves the SSE endpoint and reload client and injects the script for any
+  broadcast change stream, such as a finished site rebuild. `devMiddleware` is built on it, unchanged in behaviour.
 
 ## 0.13.0
 

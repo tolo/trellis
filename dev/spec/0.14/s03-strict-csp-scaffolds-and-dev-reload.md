@@ -28,7 +28,7 @@ mode ignores the CSS/JS an author edits most.
   (unattended plan: every in-plan browser check is headless, committed test code runs without Node).
 - `dev/adrs/ADR-011-htmx-version-policy.md#amendment-2026-10-04-scaffolds-self-host-htmx-cdn-opt-in` –
   self-hosted by default, opt-in CLI flag keeps the SRI-pinned CDN tag, `htmx_asset.dart` stays the single pin.
-- `../trellis-private/docs/research/12-trellis-ui-csp-spike.md` § Mechanism – which style paths a strict policy blocks (`<style>`
+- `~/Repos/home/trellis/research/12-trellis-ui-csp-spike.md` § Mechanism – which style paths a strict policy blocks (`<style>`
   elements and `style=""` markup; CSSOM writes pass), the basis for the htmx indicator finding in TD-018.
 - `dev/state/TECH-DEBT-BACKLOG.md` rows TD-017 and TD-018 – the two items this story closes.
 - `dev/state/LEARNINGS.md#file-watching-dev-mode` – Linux watches one directory at a time; the

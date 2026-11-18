@@ -135,9 +135,9 @@
       ],
       "provenance": null,
       "assetRefs": [
-        "../trellis-private/docs/research/11-trellis-ui-packaging-spike.md",
-        "../trellis-private/docs/research/14-trellis-ui-seed-reevaluation/o6-spike.md",
-        "../trellis-private/docs/research/14-trellis-ui-seed-reevaluation/shadcn-porting.md"
+        "~/Repos/home/trellis/research/11-trellis-ui-packaging-spike.md",
+        "~/Repos/home/trellis/research/14-trellis-ui-seed-reevaluation/o6-spike.md",
+        "~/Repos/home/trellis/research/14-trellis-ui-seed-reevaluation/shadcn-porting.md"
       ],
       "sequencing": null
     },
@@ -173,8 +173,8 @@
       ],
       "provenance": null,
       "assetRefs": [
-        "../trellis-private/docs/research/14-trellis-ui-seed-reevaluation/o6-spike.md",
-        "../trellis-private/docs/research/12-trellis-ui-csp-spike.md"
+        "~/Repos/home/trellis/research/14-trellis-ui-seed-reevaluation/o6-spike.md",
+        "~/Repos/home/trellis/research/12-trellis-ui-csp-spike.md"
       ],
       "sequencing": null
     },
@@ -212,7 +212,7 @@
       ],
       "provenance": null,
       "assetRefs": [
-        "../trellis-private/docs/research/12-trellis-ui-csp-spike.md"
+        "~/Repos/home/trellis/research/12-trellis-ui-csp-spike.md"
       ],
       "sequencing": "Needs neither the 0.13 primitives nor `trellis_ui`, so it can start before 0.13 merges."
     },
@@ -251,9 +251,9 @@
       ],
       "provenance": null,
       "assetRefs": [
-        "../trellis-private/docs/research/14-trellis-ui-seed-reevaluation/o6-spike.md",
-        "../trellis-private/docs/research/14-trellis-ui-seed-reevaluation/build-own-cost-map.md",
-        "../trellis-private/docs/research/13-trellis-ui-behaviour-layer-spike.md",
+        "~/Repos/home/trellis/research/14-trellis-ui-seed-reevaluation/o6-spike.md",
+        "~/Repos/home/trellis/research/14-trellis-ui-seed-reevaluation/build-own-cost-map.md",
+        "~/Repos/home/trellis/research/13-trellis-ui-behaviour-layer-spike.md",
         "Linear LEA-16 (0.13 PRD)"
       ],
       "sequencing": "Runs after S05 (owner, 2026-10-21): the behaviour components reuse its button, input, field and touch layer, and the two stories would otherwise edit the same generated files, README table and record tests."
@@ -294,8 +294,8 @@
       ],
       "provenance": null,
       "assetRefs": [
-        "../trellis-private/docs/research/14-trellis-ui-seed-reevaluation/build-own-cost-map.md",
-        "../trellis-private/docs/research/14-trellis-ui-seed-reevaluation/o6-spike.md"
+        "~/Repos/home/trellis/research/14-trellis-ui-seed-reevaluation/build-own-cost-map.md",
+        "~/Repos/home/trellis/research/14-trellis-ui-seed-reevaluation/o6-spike.md"
       ],
       "sequencing": null
     },
@@ -341,7 +341,7 @@
       "provenance": null,
       "assetRefs": [
         "Linear LEA-19 (app-conventions intent)",
-        "../trellis-private/docs/research/13-trellis-ui-behaviour-layer-spike.md"
+        "~/Repos/home/trellis/research/13-trellis-ui-behaviour-layer-spike.md"
       ],
       "sequencing": null
     },
@@ -416,8 +416,8 @@
       ],
       "provenance": null,
       "assetRefs": [
-        "../trellis-private/docs/research/14-trellis-ui-seed-reevaluation/o6-stress-sync.md",
-        "../trellis-private/docs/research/14-trellis-ui-seed-reevaluation/o6-spike.md"
+        "~/Repos/home/trellis/research/14-trellis-ui-seed-reevaluation/o6-stress-sync.md",
+        "~/Repos/home/trellis/research/14-trellis-ui-seed-reevaluation/o6-spike.md"
       ],
       "sequencing": "S06 and S07 come first so the full gate run covers the admin example and the final component markup the docs render."
     },

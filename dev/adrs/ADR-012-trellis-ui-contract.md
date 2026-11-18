@@ -438,10 +438,10 @@ limitation: `renderFragment` renders a parameterised fragment by bare name, see 
 
 ## References
 
-- Research – private planning repo, canonical (no public digest yet):
-  `docs/research/trellis-ui-component-architecture/` – bundle, `design-tree.md`,
+- Research – maintainer's private research repo, canonical (no public digest yet):
+  `trellis/research/trellis-ui-component-architecture/` – bundle, `design-tree.md`,
   `tradeoff-matrix.md`, `recommendation.md`, and the 2026-08-15 verification addendum
-  (`research.md`); `docs/research/11-trellis-ui-packaging-spike.md`,
+  (`research.md`); `trellis/research/11-trellis-ui-packaging-spike.md`,
   `12-trellis-ui-csp-spike.md`, `13-trellis-ui-behaviour-layer-spike.md`, and
   `14-trellis-ui-seed-reevaluation/` (brief, O5 and O6 spikes, stress sync)
 - Spike branches: `spike/trellis-ui-registry-vs-basecoat` (`21f4a5b`),

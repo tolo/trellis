@@ -24,8 +24,8 @@
 - `dev/spec/0.14/prd.md#open-questions` – the preflight question this story settles first; the owner's ruling is that isolation stays a Must.
 - `dev/spec/0.14/prd.md#constraints` and `#edge-cases` – no Node, unattended headless checks, twice-inserted fragment ids, hand-edited materialized folder.
 - `dev/adrs/ADR-012-trellis-ui-contract.md#porting-pipeline` and `#delivery-packaging-spike-resolved-2026-08-18` – pinned inputs, `@apply` cannot apply `group/*` or `peer/*` markers, base64 not string literals, aggregate bundle.
-- `../trellis-private/docs/research/11-trellis-ui-packaging-spike.md` – measured delivery: tree-shaking, 1.33x, ETag from compile-time digest, why a CLI-vendored bundle was rejected.
-- `../trellis-private/docs/research/14-trellis-ui-seed-reevaluation/o6-spike.md` and `../trellis-private/docs/research/14-trellis-ui-seed-reevaluation/shadcn-porting.md` – what the spike pipeline did and where it was unverified (§4 no-Node build).
+- `~/Repos/home/trellis/research/11-trellis-ui-packaging-spike.md` – measured delivery: tree-shaking, 1.33x, ETag from compile-time digest, why a CLI-vendored bundle was rejected.
+- `~/Repos/home/trellis/research/14-trellis-ui-seed-reevaluation/o6-spike.md` and `~/Repos/home/trellis/research/14-trellis-ui-seed-reevaluation/shadcn-porting.md` – what the spike pipeline did and where it was unverified (§4 no-Node build).
 - `packages/trellis/CHANGELOG.md#0130` – `tl:slot`, `tl:attrs`, the `...rest` parameter and bare-name `renderFragment`, which the button fragment is written with.
 - Starting code, local trellis-private branch `spike/trellis-ui-o6-shadcn-port`, read with `git show spike/trellis-ui-o6-shadcn-port:docs/temp/trellis-ui-o6-shadcn-spike/<path>` (never check it out): `tool/port.dart`, `tool/src/tsx_scan.dart`, `tool/parity.dart`, `tool/bundle.dart`, `bin/server.dart`, `parity-ignore.json`, `pins.json`, `static/trellis-hand.css`, `vendor/`. The spike's README says do not merge it: port the code, add what it lacked (tests, gates, isolation, checksum), do not copy its layout.
 

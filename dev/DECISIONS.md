@@ -97,7 +97,7 @@
   light and dark directions on 2026-08-16 after responsive and independent visual
   validation. Implementation compared bridged builds against those assets.
 - **Trellis UI delivery — package-managed embedded suite** (spike 2026-08-18,
-  research 11, Trellis UI packaging spike (private planning repo)): `trellis_ui` is a
+  research 11, Trellis UI packaging spike (maintainer's private research repo)): `trellis_ui` is a
   publishable lockstep package carrying templates and assets as **base64**
   constants, with optional deploy-time materialization beside the binary as a
   flag, not a second mechanism; embedded bytes/digests are authoritative and
@@ -110,7 +110,7 @@
   unreferenced embedded assets tree-shake to +0 B — but a map-shaped registry is
   all-or-nothing, so per-component elimination is forfeited.
 - **Trellis UI Tier 2 provider — per-widget fillers, not Vaadin** (CSP spike
-  2026-08-18, research 12, Trellis UI CSP spike (private planning repo)): under
+  2026-08-18, research 12, Trellis UI CSP spike (maintainer's private research repo)): under
   `style-src 'self'` with no escape hatch, Cally, Tom Select, Tabulator and Uppy
   pass with zero violations; AG Grid Community passes via its documented
   `styleNonce`; both Vaadin 24.7.6 builds fail (the Lit build only recoverable
@@ -129,7 +129,7 @@
   [ADR-012](adrs/ADR-012-trellis-ui-contract.md) § Constraint
   clarifications.
 - **Trellis UI behaviour layer — light-DOM custom elements** (owner, 2026-10-03,
-  research 13, Trellis UI behaviour layer spike (private planning repo)): Trellis-authored
+  research 13, Trellis UI behaviour layer spike (maintainer's private research repo)): Trellis-authored
   behaviour is plain-JS custom elements wrapping server-rendered markup, not
   Stimulus (same authored size, 15.2 KB gzip dependency avoided) and not Dart
   compiled to JS/Wasm. Wrapper tags get `display: contents`; behaviour ships as one
@@ -138,7 +138,7 @@
   [ADR-012](adrs/ADR-012-trellis-ui-contract.md) § Decision
   item 3.
 - **Trellis UI seed — Trellis-owned shadcn/ui port** (owner, 2026-10-04,
-  research 14, Trellis UI seed re-evaluation (private planning repo)): replaces vendored
+  research 14, Trellis UI seed re-evaluation (maintainer's private research repo)): replaces vendored
   Basecoat. Vega style only, Base UI `data-*` contract, shadcn token names and
   `trellis-*` part classes public; synced per shadcn release batch by an agent-run
   skill with local gates, no CI gates for now; Web Awesome Free is the recorded

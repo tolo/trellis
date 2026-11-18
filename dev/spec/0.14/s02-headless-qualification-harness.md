@@ -19,9 +19,9 @@
 - `dev/spec/0.14/prd.md#non-functional-requirements` and `#constraints` – strict policy `script-src 'self'; style-src 'self'`, WCAG 2.2 AA, 390/768/1440, unattended plan, committed gate code without Node.
 - `dev/spec/0.14/plan.json#sharedDecisions` – "Harness input and gate record": the harness takes a base URL, page paths and per-component interaction scripts, never package internals; stories S04, S05, S07 and S08 consume the record.
 - `dev/adrs/ADR-012-trellis-ui-contract.md#decision` (qualification gate and sync paragraphs) and `#htmx-lifecycle` – gate items; the appearance check exists because behaviour gates "do not see" skipped-hook breakage.
-- `../trellis-private/docs/research/14-trellis-ui-seed-reevaluation/o6-spike.md` – "Chrome gates" table and "Mechanisms found while running the gates" (htmx settle versus `style-src-attr`, the two-toast overlap); the checks to generalise.
-- `../trellis-private/docs/research/14-trellis-ui-seed-reevaluation/o6-stress-sync.md#gates-and-screenshots-across-the-window` – the screenshot-only findings scenario S14 replays.
-- `../trellis-private/docs/research/12-trellis-ui-csp-spike.md#mechanism--what-strict-csp-actually-governs` – CSSOM writes and constructed stylesheets pass the policy; `<style>` elements and style attributes do not.
+- `~/Repos/home/trellis/research/14-trellis-ui-seed-reevaluation/o6-spike.md` – "Chrome gates" table and "Mechanisms found while running the gates" (htmx settle versus `style-src-attr`, the two-toast overlap); the checks to generalise.
+- `~/Repos/home/trellis/research/14-trellis-ui-seed-reevaluation/o6-stress-sync.md#gates-and-screenshots-across-the-window` – the screenshot-only findings scenario S14 replays.
+- `~/Repos/home/trellis/research/12-trellis-ui-csp-spike.md#mechanism--what-strict-csp-actually-governs` – CSSOM writes and constructed stylesheets pass the policy; `<style>` elements and style attributes do not.
 - `test/browser_reflow_probe.dart#BrowserProbe` – the repo's only CDP client; `StaticSiteServer` and `requireChromeInCi` live beside it.
 - `tool/visual_baseline.dart` – `digestScript`, `Capture`, `compareCaptures`, `scanClipping`: the digest this story extends.
 - `dev/guidelines/TESTING-STRATEGY.md#conventions-and-fixtures` and `KEY_DEVELOPMENT_COMMANDS.md` – CI guard convention, loopback port 0, run-one-test row.

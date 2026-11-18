@@ -156,9 +156,8 @@ List<ThemeExample> discoverThemeExamples(String repoRoot) {
 
 /// Copies [example] into [into] and builds it with the shipped CLI.
 ///
-/// The copy is a copy, never a symlink, and [into] must live outside the
-/// repository: an agent on this branch symlinked repo-root entries into a
-/// scratch tree and the build wrote through the link over the real `site/`.
+/// Use a scratch directory for [into]. The build writes into the copy, so
+/// linking its files to repository originals could overwrite those originals.
 /// Returns the built `output/` directory.
 ///
 /// The build shells out to `packages/trellis_cli/bin/trellis.dart` rather than
@@ -167,7 +166,13 @@ List<ThemeExample> discoverThemeExamples(String repoRoot) {
 /// command, not in the SSG. Calling the SSG alone produces a site with no
 /// `css/main.css`, which renders in Times New Roman and would have made every
 /// baseline here a measurement of the browser's default stylesheet.
-Future<Directory> buildExample(ThemeExample example, {required Directory into, required String repoRoot}) async {
+Future<Directory> buildExample(
+  ThemeExample example, {
+  required Directory into,
+  required String repoRoot,
+  String? pathPrefix,
+  String Function(String)? editConfig,
+}) async {
   final siteDir = Directory(p.join(into.path, example.name))..createSync(recursive: true);
   _copyTree(Directory(example.exampleDir), siteDir, skip: const {'output', '.trellis', '.dart_tool'});
   _copyTree(
@@ -176,10 +181,15 @@ Future<Directory> buildExample(ThemeExample example, {required Directory into, r
     skip: const {'example'},
   );
 
+  if (editConfig != null) {
+    final config = File(p.join(siteDir.path, 'trellis_site.yaml'));
+    config.writeAsStringSync(editConfig(config.readAsStringSync()));
+  }
   final result = await Process.run(Platform.resolvedExecutable, [
     'run',
     p.join(repoRoot, 'packages', 'trellis_cli', 'bin', 'trellis.dart'),
     'build',
+    if (pathPrefix != null) ...['--path-prefix', pathPrefix],
   ], workingDirectory: siteDir.path);
   if (result.exitCode != 0) {
     throw StateError('building the ${example.name} example failed:\n${result.stdout}\n${result.stderr}');
@@ -301,9 +311,8 @@ const forceFocusScript = r'''async function(selector) {
 /// baseline and a coin flip. Three separate races showed up on the first
 /// recording of these six themes, and none of them is visible in the CSS:
 ///
-/// * Arbor's docs search input records `opacity: 0.6` or nothing at all,
-///   depending on whether `search.js` had finished fetching the index and
-///   enabled the field.
+/// * The docs search shell appears after `trellis-search.js` finishes fetching
+///   its index and the combobox is ready.
 /// * Folio's docs page settles 85 px shorter or taller between runs.
 /// * Lattice's home page reports 72 px of horizontal overflow at 390 px until
 ///   the headline-fitting script runs, and none afterwards.

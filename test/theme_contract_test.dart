@@ -287,7 +287,7 @@ void main() {
             width: 390,
             height: 844,
             // The whole question is what a reader without JavaScript sees. Leaving
-            // scripts on races them: search.js reveals its shell after a fetch that
+            // scripts on races them: trellis-search.js reveals its shell after a fetch that
             // resolves some time after the load event, so the same assertion reads
             // the pre-script DOM on one run and the post-script DOM on the next.
             disableScripts: true,

@@ -42,7 +42,7 @@ const cspViolationPreload = r'''(() => {
   document.addEventListener('securitypolicyviolation', e => {
     const reports = e.target?.id === 'ui-gate-policy-control' ? window.__trellisCsp.controls : window.__trellisCsp.violations;
     reports.push({directive:e.effectiveDirective, source:e.sourceFile.replace(location.origin,''),
-      blocked:e.blockedURI.replace(location.origin,''), line:e.lineNumber});
+      blocked:e.blockedURI.replace(location.origin,''), line:e.lineNumber, sample:e.sample});
   });
 })()''';
 
@@ -401,15 +401,20 @@ class BrowserProbe {
 /// only be laid out correctly over HTTP. Binds an ephemeral loopback port so
 /// concurrent suites never collide.
 class StaticSiteServer {
-  StaticSiteServer._(this._server, this._root, this._headers);
+  StaticSiteServer._(this._server, this._root, this._headers, this._statusCodes);
 
   final HttpServer _server;
   final Directory _root;
   final Map<String, String> _headers;
+  final Map<String, int> _statusCodes;
 
-  static Future<StaticSiteServer> serve(Directory root, {Map<String, String> headers = const {}}) async {
+  static Future<StaticSiteServer> serve(
+    Directory root, {
+    Map<String, String> headers = const {},
+    Map<String, int> statusCodes = const {},
+  }) async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    final instance = StaticSiteServer._(server, root, Map.unmodifiable(headers));
+    final instance = StaticSiteServer._(server, root, Map.unmodifiable(headers), Map.unmodifiable(statusCodes));
     unawaited(instance._listen());
     return instance;
   }
@@ -422,6 +427,11 @@ class StaticSiteServer {
   Future<void> _listen() async {
     await for (final request in _server) {
       _headers.forEach(request.response.headers.set);
+      if (_statusCodes[request.uri.path] case final status?) {
+        request.response.statusCode = status;
+        await request.response.close();
+        continue;
+      }
       final relative = Uri.decodeComponent(request.uri.path).replaceFirst(RegExp('^/'), '');
       var file = File('${_root.path}/$relative');
       if (relative.isEmpty || file.statSync().type == FileSystemEntityType.directory) {

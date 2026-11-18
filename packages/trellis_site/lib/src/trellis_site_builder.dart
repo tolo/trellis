@@ -53,7 +53,7 @@ class BuildResult {
   /// The number of HTML pages written to the output directory.
   final int pageCount;
 
-  /// The number of static asset files copied to the output directory.
+  /// The number of static asset files copied or generated in the output directory.
   final int staticFileCount;
 
   /// Total time elapsed for the build.
@@ -143,7 +143,7 @@ class TrellisSite {
   /// 7. Copy static assets
   /// 8. Generate sitemap
   /// 8.5. Generate feeds (when `feeds:` config section exists)
-  /// 9. Generate search index (when `search.enabled: true`)
+  /// 9. Generate the search index and client (when `search.enabled: true`)
   ///
   /// Throws [SiteConfigException] if the output directory configuration is
   /// unsafe. Throws [TemplateNotFoundException] if a required layout is
@@ -400,10 +400,10 @@ class TrellisSite {
       }
     }
 
-    // 9. Generate search index
+    // 9. Generate the search index and client
     if (config.searchConfig.enabled) {
       final searchGenerator = SearchIndexGenerator(config.searchConfig);
-      if (searchGenerator.writeToOutput(pages, config.outputDir)) staticCount++;
+      if (searchGenerator.writeToOutput(pages, config.outputDir)) staticCount += 2;
     }
 
     stopwatch.stop();

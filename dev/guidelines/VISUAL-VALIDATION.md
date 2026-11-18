@@ -103,7 +103,7 @@ In the commands below, `agent-browser $S` stands for `agent-browser --session vv
   glyphs the content emits (arrows, marks) and then render them in a system font with no error, so read non-ASCII
   characters in the image.
 - Interaction: `agent-browser $S snapshot -i` lists controls with refs (`@e8`), then `click @e8`. `find text "+" click`
-  matched the wrong element on the Shelf app, so prefer refs. `fill "input[type=search]" "fragment"` fills the docs
+  matched the wrong element on the Shelf app, so prefer refs. `fill "[data-trellis-search] [role=combobox]" "fragment"` fills the docs
   search.
 
 The Chrome DevTools MCP is also installed on this machine but was not used to prove this procedure.
@@ -129,8 +129,7 @@ Non-default states, all proven:
 
 - Dark skin: `set media dark reduced-motion` before `open`.
 - Mobile menu open: at 390px, `agent-browser $S find text "Menu" click`, wait 500ms, capture.
-- Search results: at 1440px on any docs page, `fill "input[type=search]" "fragment"`, wait 800ms. Results render in the
-  sidebar above the section tree.
+- Search results: at 1440px on any docs page, `fill "[data-trellis-search] [role=combobox]" "fragment"`, wait 800ms. Results open in a popup attached to the sidebar input.
 
 Theme examples (`http://localhost:8766` when serving lattice): `/` and the pages under `/docs/`. Fixture pages for
 deliberately awkward content are built by `buildFixtures` in `tool/visual_baseline.dart` and are not served by the

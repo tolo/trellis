@@ -187,6 +187,9 @@ final class FirefoxDriver implements GateDriver {
     await evaluate('document.fonts.ready.then(() => true)');
   }
 
+  /// Reads the location through WebDriver while a document may be unloading.
+  Future<Uri> currentUrl() async => Uri.parse(await _wd('GET', '/url') as String);
+
   @override
   Future<Object?> evaluate(String expression) async {
     final response =

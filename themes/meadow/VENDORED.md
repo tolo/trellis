@@ -85,3 +85,6 @@ Bricolage Grotesque, Schibsted Grotesk and JetBrains Mono are all SIL Open Font 
 beside each font as `static/fonts/OFL-*.txt`. None of the three declares a Reserved Font Name in its copyright notice,
 so OFL §3 places no naming restriction on these modified, subsetted copies. Re-verified against the upstream `OFL.txt`
 files on 2026-08-27.
+
+
+The Trellis 0.14 build includes the embedded suite assets for the reader toggle.

@@ -1,0 +1,37 @@
+.search-shell,
+.skin-toggle {
+  --primary: var(--folio-green);
+  --primary-foreground: var(--folio-paper);
+  --background: var(--folio-paper);
+  --foreground: var(--folio-ink);
+  --border: var(--folio-rule);
+  --input: var(--folio-rule);
+  --ring: var(--folio-green);
+  --accent: var(--folio-paper-wash);
+  --accent-foreground: var(--folio-ink);
+  --popover: var(--folio-surface);
+  --popover-foreground: var(--folio-ink);
+  --muted-foreground: var(--folio-muted);
+  --radius: var(--folio-radius);
+}
+
+.search-shell .trellis-combobox-input { block-size: 44px; }
+.search-shell input[role='combobox'] { block-size: 100%; }
+// The suite add-on's negative end margin can widen this sidebar.
+.search-shell .trellis-input-group-addon { margin-right: 0; padding-block: 0; }
+// Keep article text from showing through popup options.
+.search-shell [popover] { background-color: var(--popover); }
+
+// The sidebar can clip a ring outside the search field.
+.search-shell :is(input[role='combobox'], .trellis-combobox-trigger):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+.search-shell .trellis-combobox-input:has(input:focus-visible) { box-shadow: none; }
+
+// The button label color also contrasts with its primary fill.
+.skin-toggle:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}

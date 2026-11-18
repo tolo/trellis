@@ -3,9 +3,9 @@
 const assetBase64 = <String, String>{
   'trellis-ui.css':
       'LyohIHRhaWx3aW5kY3NzIHY0LjMuMyB8IE1JVCBMaWNlbnNlIHwgaHR0cHM6Ly90YWlsd2luZGNzcy5jb20gKi8KLyohIFRyZWxs'
-      'aXMgVUkuIEdFTkVSQVRFRCBieSB0b29sL3BvcnQuZGFydCBmcm9tIHNoYWRjbi11aS91aSBzaGFkY25ANC4yMS4xICgzNTAyZGJj'
+      'aXMgVUkuIEdFTkVSQVRFRCBieSB0b29sL3BvcnQuZGFydCBmcm9tIHNoYWRjbi11aS91aSBzaGFkY25ANC4yMy4wICg5NmRhOWNj'
       'KSwgYmFzZSBiYXNlLCBzdHlsZSB2ZWdhLiBEbyBub3QgZWRpdC4KICAgRGVyaXZlZCBmcm9tIHNoYWRjbi91aSwgTUlUIExpY2Vu'
-      'c2UsIENvcHlyaWdodCAoYykgMjAyMyBzaGFkY24uIFNlZSB2ZW5kb3Ivc2hhZGNuL3NoYWRjbkA0LjIxLjEvTElDRU5TRS5tZC4g'
+      'c2UsIENvcHlyaWdodCAoYykgMjAyMyBzaGFkY24uIFNlZSB2ZW5kb3Ivc2hhZGNuL3NoYWRjbkA0LjIzLjAvTElDRU5TRS5tZC4g'
       'Ki8KQGxheWVyIHByb3BlcnRpZXN7QHN1cHBvcnRzICgoKC13ZWJraXQtaHlwaGVuczpub25lKSkgYW5kIChub3QgKG1hcmdpbi10'
       'cmltOmlubGluZSkpKSBvciAoKC1tb3otb3JpZW50OmlubGluZSkgYW5kIChub3QgKGNvbG9yOnJnYihmcm9tIHJlZCByIGcgYikp'
       'KSl7OnJvb3QsOmhvc3R7LS1zaGltbWVyLWFuZ2xlOjIwZGVnfSosOmJlZm9yZSw6YWZ0ZXIsOjpiYWNrZHJvcHstLXR3LWFuaW1h'
@@ -2031,7 +2031,7 @@ const assetBase64 = <String, String>{
 };
 
 const assetDigests = <String, String>{
-  'trellis-ui.css': '1585eb91ed18e601f04ff7a8892e6b947a3c50a758ad4bf7cbb71cf27a0263c1',
+  'trellis-ui.css': 'f2b8b812496adbb8535ad722c63028db60b05bbe9e983926fddb905d283a1524',
   'trellis-ui.js': '24354796c38ded2d2f0fdce9ce19189967a1894b57c324d376c4d70058565374',
   'htmx-indicator.css': '5bb6c044cfd189b2e27d55db0704af11141eb2bec3d80c1294fd636838b80521',
 };

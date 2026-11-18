@@ -7,6 +7,7 @@ Embedded HTML fragments and CSS/JS. Runtime depends toward `trellis` only.
   `ui-gate`/`visual` tags are declared in this package; fast/full workspace tiers exclude it.
 - `dart run tool/port.dart fetch` vendors the pinned sources and notices; `build` verifies the standalone compiler
   checksum before writing `generated/`. `check` regenerates all four outputs and rejects any byte drift.
+- Follow the project `trellis-ui-sync` skill at [`.claude/skills/trellis-ui-sync/SKILL.md`](../../.claude/skills/trellis-ui-sync/SKILL.md) to bump the pin, run the local gates and triage the report.
 - `dart run tool/port.dart parity` rejects unexplained slot, hook or marker drift. Every ignore needs a reason.
 - `dart run tool/embed.dart` bundles sources and embeds base64 plus digests. `--check` rejects drift.
 - Never edit `generated/` or `*.g.dart` by hand. Tests and runtime never start the compiler.

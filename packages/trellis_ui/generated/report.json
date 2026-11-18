@@ -1,5 +1,5 @@
 {
-  "tag": "shadcn@4.21.1",
+  "tag": "shadcn@4.23.0",
   "tsxFiles": 23,
   "hooksPrimary": 154,
   "hooks": [
@@ -165,9 +165,9 @@
   ],
   "hooksSecondary": 5,
   "hooksWithStructural": 84,
-  "styleRulesTotal": 422,
+  "styleRulesTotal": 441,
   "styleRulesKept": 134,
-  "styleRulesWithoutTsxHook": 288,
+  "styleRulesWithoutTsxHook": 307,
   "slots": [
     "alert",
     "alert-action",

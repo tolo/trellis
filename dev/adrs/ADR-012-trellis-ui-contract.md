@@ -139,8 +139,8 @@ unmodified, vendored Basecoat).
   8× the port's. Switching would also break application CSS written against the
   public styling surface below, though not application templates.
 
-**Upstream sync.** A coding agent runs each sync through a project skill plus
-scripts, per batch of shadcn releases (monthly or bimonthly): bump the pinned tag,
+**Upstream sync.** A coding agent runs each sync through [`trellis-ui-sync`](../../.claude/skills/trellis-ui-sync/SKILL.md)
+and its scripts, per batch of shadcn releases (monthly or bimonthly): bump the pinned tag,
 regenerate, run the sync gates locally (slot parity, the behaviour gates, an
 appearance check per component state, and a check that the committed CSS regenerates
 unchanged), triage each upstream change (mechanical, hand-layer edit, or new
@@ -351,9 +351,12 @@ The CLI uses the same embedded package to supply fragments and assets to opted-i
   either link order. The shadcn legacy page-wide `.shimmer` fallback is omitted;
   its `@utility` retains reduced-motion behavior for components that apply it.
 - Tailwind standalone v4.3.3 has SHA-256 pins for macOS/Linux arm64/x64 in
-  `packages/trellis_ui/tool/pins.json`; a mismatch stops before generation. Inputs
-  remain pinned at `shadcn@4.21.1` until the first upstream sync. Regeneration and
-  embedding checks compare bytes; the ordinary test tier never starts the compiler.
+  `packages/trellis_ui/tool/pins.json`; a mismatch stops before generation.
+  Regeneration and embedding checks compare bytes. The ordinary test tier never starts the real compiler.
+- The first sync moved `shadcn@4.21.1` to `shadcn@4.23.0` with no changed colour tokens or in-scope style rules.
+  The report defers Code Block and Trace. The sync used 0 template lines, 0 hand CSS lines, 0 config entries and
+  0 hand JS lines. The suite has 397 owned JS lines. Both automated sweeps passed all 25 components in Chrome
+  and Firefox. The combined gzip level 9 payload across the three suite assets was 20,225 bytes.
 
 ### HTMX lifecycle
 

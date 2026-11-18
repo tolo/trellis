@@ -70,7 +70,7 @@ instances: ['#toaster']
 distinct:
   - ['#toaster tl-toast:first-child .trellis-toast', '#toaster tl-toast:nth-child(2) .trellis-toast']
 provenance:
-  - file: ../../../packages/trellis_ui/vendor/shadcn/shadcn@4.21.1/LICENSE.md
+  - file: ../../../packages/trellis_ui/vendor/shadcn/shadcn@4.23.0/LICENSE.md
     license: MIT
   - file: ../../../packages/trellis_ui/vendor/lucide/LICENSE
     license: ISC

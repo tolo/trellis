@@ -120,7 +120,7 @@ htmx:
     equals: [1, 1]
 instances: [tl-dropdown-menu]
 provenance:
-  - file: ../../../packages/trellis_ui/vendor/shadcn/shadcn@4.21.1/LICENSE.md
+  - file: ../../../packages/trellis_ui/vendor/shadcn/shadcn@4.23.0/LICENSE.md
     license: MIT
   - file: ../../../packages/trellis_ui/vendor/lucide/LICENSE
     license: ISC

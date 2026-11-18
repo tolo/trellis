@@ -1,7 +1,7 @@
-# shadcn/ui shadcn@4.21.1
+# shadcn/ui shadcn@4.23.0
 
-Commit `3502dbcde11d1eaf967a47ac375744dc336641f3`. Base `base`, style `vega`.
-Unmodified MIT inputs from https://raw.githubusercontent.com/shadcn-ui/ui/3502dbcde11d1eaf967a47ac375744dc336641f3/. See LICENSE.md.
+Commit `96da9cc7f1aa10580a3741664e2a77c721206c00`. Base `base`, style `vega`.
+Unmodified MIT inputs from https://raw.githubusercontent.com/shadcn-ui/ui/96da9cc7f1aa10580a3741664e2a77c721206c00/. See LICENSE.md.
 
 - `style-vega.css`: `apps/v4/registry/styles/style-vega.css`
 - `tailwind.css`: `packages/shadcn/src/tailwind.css`

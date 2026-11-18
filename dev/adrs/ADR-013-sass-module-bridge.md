@@ -190,8 +190,8 @@ entry does not follow it, and tokens with no colour param stay theme-authored.
 **Dark is never derived from light** (`darken()`, `color.adjust()`, a mixed tint). The bundled dark palettes carry
 hand-computed WCAG ratios per pair; one derived override would silently shift all of them. The reasoning, with a survey of
 eleven theming systems (Docusaurus, MkDocs Material, Starlight, VitePress and Hextra resolve brand colours per mode, and
-none ships one global brand colour applied unchanged to both), is in the private planning repo, canonical:
-`docs/research/10-skin-vs-override-precedence.md`.
+none ships one global brand colour applied unchanged to both), is in the maintainer's private research repo, canonical:
+`trellis/research/10-skin-vs-override-precedence.md`.
 
 ### The hard cut
 

@@ -167,6 +167,15 @@ highlighter JS across every theme.
   list** and paired with a since-removed SRI discipline — a sunk-cost artifact, not
   a general highlighting decision.
 
+## Reconsider If
+
+- `package:highlight` is abandoned and cannot be forked or vendored: re-evaluate B (client highlight.js) or a
+  maintained TextMate-grammar path.
+- Trellis needs runtime highlighting of dynamic or user-submitted code: that surface has to be client-side, while
+  build-time A still covers static content.
+- A maintained pure-Dart, CSS-classed, broad-language build-time tokenizer overtakes `package:highlight`: swap the
+  tokenizer behind the same `CodeHighlighter` seam.
+
 ## References
 
 - `package:highlight`: https://pub.dev/packages/highlight · repo https://github.com/pd4d10/highlight.dart

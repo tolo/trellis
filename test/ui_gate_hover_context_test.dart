@@ -135,7 +135,13 @@ document.querySelector('main').addEventListener('keydown', event => {
   last.focus();
   window.afterEnd = Promise.resolve(true);
   if (mode === 'dismiss' || mode === 'synthetic') {
-    if (mode === 'synthetic') window.dispatchEvent(new FocusEvent('blur'));
+    if (mode === 'synthetic') {
+      const evidence = () => ({focused: document.hasFocus(), lostVisibleFocus: window.__uiGate.lostVisibleFocus});
+      // Record what the synthetic event did before an unrelated native blur can change the marker.
+      const before = evidence();
+      window.dispatchEvent(new FocusEvent('blur'));
+      window.syntheticBlurEvidence = {before, after: evidence()};
+    }
     last.blur();
     return;
   }
@@ -213,8 +219,9 @@ states:
           expect(interruptions().map((url) => Uri.parse(url).queryParameters['attempt']), ['1', '2', '3']);
         }
         if (mode == 'synthetic') {
-          expect(await driver.evaluate('window.__uiGate.lostVisibleFocus'), false);
-          expect(await driver.evaluate('document.hasFocus()'), true);
+          expect(driver.requests.where((url) => Uri.parse(url).path == '/contender.html'), isEmpty);
+          const focused = {'focused': true, 'lostVisibleFocus': false};
+          expect(await driver.evaluate('window.syntheticBlurEvidence'), {'before': focused, 'after': focused});
         }
         return;
       }

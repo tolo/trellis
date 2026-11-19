@@ -184,6 +184,17 @@ Guards after the push:
 - Publish jobs are independent (`fail-fast: false`); pub.dev refuses to re-publish an existing version, so re-running
   a failed job is safe.
 
+### First publication of `trellis_ui` in 0.14.0
+
+[pub.dev requires the first version of a package to be published with `dart pub publish`](https://dart.dev/tools/pub/automated-publishing#publishing-packages-using-github-actions).
+The `v0.14.0` matrix publishes the eight existing packages automatically. When `trellis` 0.14.0 appears on pub.dev,
+the package owner runs `dart pub publish` from `packages/trellis_ui` in a clean checkout of the exact `v0.14.0` tag.
+Use the intended pub.dev owner account. Enable GitHub Actions publishing in the package's Admin tab with repository
+`tolo/trellis` and tag pattern `v{{version}}` for later versions.
+
+The distribution verifier still requires all nine packages. If its wait expires before the first upload is visible,
+rerun the failed verification job after pub.dev lists `trellis_ui` 0.14.0.
+
 ## 6. Verify
 
 ```bash

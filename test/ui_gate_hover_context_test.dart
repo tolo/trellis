@@ -41,8 +41,9 @@ document.getElementById('trigger').addEventListener('pointerover',()=>{
   }
   if (!['once','always'].includes(mode) || (mode==='once' && sessionStorage.getItem('hoverContended'))) return;
   sessionStorage.setItem('hoverContended','true');
-  window.addEventListener('blur',()=>{
-    if (!document.hidden) fetch('/blur-observed');
+  window.addEventListener('blur',event=>{
+    // The next appearance attempt may navigate before a plain fetch is sent.
+    if (event.isTrusted && !document.hidden) navigator.sendBeacon('/blur-observed');
   }, {once:true});
   requestAnimationFrame(()=>window.open('/contender.html','_blank','popup,width=260,height=180'));
 });
@@ -138,19 +139,30 @@ document.querySelector('main').addEventListener('keydown', event => {
     last.blur();
     return;
   }
-  if (mode !== 'always' && sessionStorage.recipeDisplaced) return;
-  sessionStorage.recipeDisplaced = 'true';
+  const attempt = Number(sessionStorage.recipeAttempts || 0) + 1;
+  if (mode !== 'always' && attempt > 1) return;
+  sessionStorage.recipeAttempts = String(attempt);
   const csp = new Promise(resolve => {
     window.addEventListener('securitypolicyviolation', () => resolve(true), {once:true});
-    document.body.append(Object.assign(new Image(), {src:'data:image/gif;base64,R0lGODlhAQABAIAAAAUEBA=='}));
+    const image = document.body.appendChild(new Image());
+    image.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAUEBA==#'+attempt;
   });
   if (mode !== 'script-error') queueMicrotask(() => { throw Error('interrupted recipe diagnostic'); });
-  const blur = new Promise(resolve => {
-    window.addEventListener('blur', () => {
-      if (!document.hidden) fetch('/visible-blur');
-      resolve(true);
+  const blur = new Promise((resolve, reject) => {
+    window.addEventListener('blur', event => {
+      if (!event.isTrusted || document.hidden) {
+        reject(Error('expected a trusted blur while the source stays visible'));
+        return;
+      }
+      // A replay can navigate away before Firefox sends an unawaited marker.
+      fetch('/visible-blur?attempt='+attempt).then(resolve, reject);
     }, {once:true});
-    window.open('/contender.html','_blank','popup,width=260,height=180');
+    // Let the native End key sequence finish before switching windows.
+    window.addEventListener('keyup', () => requestAnimationFrame(() => {
+      if (!window.open('/contender.html','_blank','popup,width=260,height=180')) {
+        reject(Error('Firefox blocked the focus contender window'));
+      }
+    }), {once:true});
   });
   window.afterEnd = Promise.all([csp, blur]).then(() => {
     if (mode === 'script-error') throw Error('interrupted recipe script error');
@@ -197,6 +209,9 @@ states:
             _ => 0,
           }),
         );
+        if (mode == 'always') {
+          expect(interruptions().map((url) => Uri.parse(url).queryParameters['attempt']), ['1', '2', '3']);
+        }
         if (mode == 'synthetic') {
           expect(await driver.evaluate('window.__uiGate.lostVisibleFocus'), false);
           expect(await driver.evaluate('document.hasFocus()'), true);

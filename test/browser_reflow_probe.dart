@@ -130,7 +130,7 @@ class BrowserProbe {
   ///
   /// The profile is a throwaway temp directory: a shared profile would let a
   /// previous run's cache answer for a rebuilt stylesheet.
-  static Future<BrowserProbe> launch() async {
+  static Future<BrowserProbe> launch({List<String> extraArguments = const []}) async {
     final executable = locateChrome();
     if (executable == null) throw StateError('no Chrome/Chromium binary found');
     final profile = Directory.systemTemp.createTempSync('trellis_probe_profile_');
@@ -153,6 +153,7 @@ class BrowserProbe {
         '--disable-sync',
         '--disable-background-networking',
         '--use-mock-keychain',
+        ...extraArguments,
         'about:blank',
       ]);
 
@@ -230,13 +231,19 @@ class BrowserProbe {
         {'name': 'prefers-reduced-motion', 'value': reducedMotion},
       ],
     }, session: true);
+    await _loadPage('Page.navigate', {'url': url.toString()});
+    return _evaluate(expression, url.toString());
+  }
 
+  /// Reload the attached document without changing its URL or history entry.
+  Future<void> reload() => _loadPage('Page.reload');
+
+  Future<void> _loadPage(String method, [Map<String, Object?> params = const {}]) async {
     final loaded = _events.stream.firstWhere(
       (event) => event['method'] == 'Page.loadEventFired' && event['sessionId'] == _sessionId,
     );
-    await _send('Page.navigate', {'url': url.toString()}, session: true);
+    await _send(method, params, session: true);
     await loaded.timeout(const Duration(seconds: 30));
-    return _evaluate(expression, url.toString());
   }
 
   /// Re-measure the page [evaluate] last loaded, optionally under a different

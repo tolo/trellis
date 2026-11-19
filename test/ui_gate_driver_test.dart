@@ -224,8 +224,25 @@ Future<void> exerciseDriver(Future<GateDriver> Function() launch) async {
     "(() => {const controller=new AbortController(); document.addEventListener('gate-abort',()=>{},{signal:controller.signal}); controller.abort();})()",
   );
   expect(await driver.listeners(), count + 1, reason: 'an aborted listener is not live');
+  const fineHover = "matchMedia('(pointer: fine)').matches && matchMedia('(hover: hover)').matches";
+  if (driver is ChromeDriver) {
+    expect(await driver.evaluate(fineHover), true);
+    // A reload must keep the live route even when it differs from the one opened by the driver.
+    await driver.evaluate("history.replaceState(null, '', '?pointer=check#current')");
+  }
   expect(await driver.media(coarse: true), isTrue);
+  if (driver is ChromeDriver) {
+    expect(
+      await driver.evaluate("matchMedia('(pointer: coarse)').matches && matchMedia('(hover: none)').matches"),
+      true,
+    );
+  }
   expect(await driver.media(forcedColors: true), isTrue);
+  if (driver is ChromeDriver) {
+    expect(await driver.evaluate(fineHover), true);
+    expect(await driver.evaluate('location.search + location.hash'), '?pointer=check#current');
+    await driver.evaluate("history.replaceState(null, '', location.pathname)");
+  }
   expect(await driver.media(reducedMotion: true), isTrue);
   expect(await driver.media(dark: true), isTrue);
   await driver.viewport(390, 844);

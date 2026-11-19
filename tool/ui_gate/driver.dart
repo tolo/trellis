@@ -11,6 +11,8 @@ abstract interface class GateDriver {
   Future<void> open(Uri url);
   Future<Object?> evaluate(String expression);
   Future<void> viewport(int width, int height);
+
+  /// Browsers that cannot switch a capability live may reload the current page.
   Future<bool> media({bool coarse = false, bool forcedColors = false, bool reducedMotion = false, bool dark = false});
   Future<void> press(String key);
   Future<void> type(String text);
@@ -81,7 +83,7 @@ const gateInstrumentationPreload = r'''(() => {
 
 /// Chrome adapter using the repository's existing CDP process owner.
 final class ChromeDriver implements GateDriver {
-  ChromeDriver._(this.probe) {
+  ChromeDriver._(this.probe, this._desktopPointerOverride) {
     _subscription = probe.events.listen((event) {
       final params = (event['params'] as Map?) ?? const {};
       if (event['method'] == 'Network.requestWillBeSent') requests.add((params['request'] as Map)['url'] as String);
@@ -90,7 +92,9 @@ final class ChromeDriver implements GateDriver {
   }
 
   final BrowserProbe probe;
+  final bool _desktopPointerOverride;
   late final StreamSubscription<Map<String, dynamic>> _subscription;
+  bool _coarse = false;
   int _width = 1440;
   int _height = 900;
   @override
@@ -100,17 +104,44 @@ final class ChromeDriver implements GateDriver {
   @override
   final console = <String>[];
 
+  static const _fineHover = "matchMedia('(pointer: fine)').matches && matchMedia('(hover: hover)').matches";
+
   static Future<ChromeDriver> launch() async {
-    final driver = ChromeDriver._(await BrowserProbe.launch());
-    await driver.probe.command('Network.enable');
-    await driver.probe.command('Runtime.enable');
-    await driver.probe.captureSecurityPolicyViolations();
-    await driver.probe.preloadScript(gateInstrumentationPreload);
-    return driver;
+    var probe = await BrowserProbe.launch();
+    final bool needsDesktopPointer;
+    try {
+      needsDesktopPointer = await probe.evaluateHere(_fineHover) != true;
+    } on Object {
+      await probe.close();
+      rethrow;
+    }
+    if (needsDesktopPointer) {
+      await probe.close();
+      // Some Linux headless builds have no embedder pointing device. Blink's
+      // fine pointer (4) and hover (2) settings give desktop CSS a real media match.
+      // Remove the fallback once headless Chrome supplies both capabilities.
+      probe = await BrowserProbe.launch(
+        extraArguments: const [
+          '--blink-settings=availablePointerTypes=4,primaryPointerType=4,availableHoverTypes=2,primaryHoverType=2',
+        ],
+      );
+    }
+    final driver = ChromeDriver._(probe, needsDesktopPointer);
+    try {
+      await probe.command('Network.enable');
+      await probe.command('Runtime.enable');
+      await probe.captureSecurityPolicyViolations();
+      await probe.preloadScript(gateInstrumentationPreload);
+      return driver;
+    } on Object {
+      await driver.close();
+      rethrow;
+    }
   }
 
   @override
   Future<void> open(Uri url) async {
+    if (_desktopPointerOverride && _coarse) await _emulateTouch(false);
     await probe.command('Emulation.setFocusEmulationEnabled', {'enabled': false});
     await probe.evaluate(url, 'true', width: _width, height: _height);
   }
@@ -137,7 +168,14 @@ final class ChromeDriver implements GateDriver {
     bool reducedMotion = false,
     bool dark = false,
   }) async {
-    await probe.command('Emulation.setTouchEmulationEnabled', {'enabled': coarse});
+    if (!_desktopPointerOverride || coarse) {
+      await _emulateTouch(coarse);
+    } else if (_coarse) {
+      // Disabling touch restores the embedder's pointer values. Reload the
+      // current route to reapply Blink's override without adding a history entry.
+      await _emulateTouch(false);
+      await probe.reload();
+    }
     await probe.command('Emulation.setEmulatedMedia', {
       'features': [
         {'name': 'forced-colors', 'value': forcedColors ? 'active' : 'none'},
@@ -145,11 +183,19 @@ final class ChromeDriver implements GateDriver {
         {'name': 'prefers-color-scheme', 'value': dark ? 'dark' : 'light'},
       ],
     });
-    return await evaluate('''matchMedia('(pointer: coarse)').matches === $coarse &&
+    final pointer = coarse
+        ? "matchMedia('(pointer: coarse)').matches && matchMedia('(hover: none)').matches"
+        : _fineHover;
+    return await evaluate('''$pointer &&
       matchMedia('(forced-colors: active)').matches === $forcedColors &&
       matchMedia('(prefers-reduced-motion: reduce)').matches === $reducedMotion &&
       matchMedia('(prefers-color-scheme: dark)').matches === $dark''') ==
         true;
+  }
+
+  Future<void> _emulateTouch(bool enabled) async {
+    await probe.command('Emulation.setTouchEmulationEnabled', {'enabled': enabled});
+    _coarse = enabled;
   }
 
   @override

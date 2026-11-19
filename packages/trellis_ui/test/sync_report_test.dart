@@ -13,7 +13,7 @@ void main() {
   List<String> issues(String report) => syncReportIssues(report, inventory);
 
   setUp(() {
-    scratch = Directory('../../.agent_temp').createTempSync('sync-report-test-');
+    scratch = Directory.systemTemp.createTempSync('sync-report-test-');
     addTearDown(() => scratch.deleteSync(recursive: true));
     final report = buildSyncReport(_tree(scratch, 1), _tree(scratch, 2));
     skeleton = report.markdown;

@@ -25,7 +25,13 @@ void main() {
   String realPage() => File(p.join(site.path, 'output', 'index.html')).readAsStringSync();
 
   setUpAll(() async {
-    entryPoint = p.join((await findWorkspaceRoot()).path, 'packages', 'trellis_cli', 'bin', 'trellis.dart');
+    final source = p.join((await findWorkspaceRoot()).path, 'packages', 'trellis_cli', 'bin', 'trellis.dart');
+    final compiled = Directory.systemTemp.createTempSync('trellis_cli_ui_kernel_');
+    addTearDown(() => compiled.deleteSync(recursive: true));
+    entryPoint = p.join(compiled.path, 'trellis.dill');
+    // Compiling on each launch can exhaust the test deadline before the build starts.
+    final result = await Process.run(Platform.resolvedExecutable, ['compile', 'kernel', source, '-o', entryPoint]);
+    expect(result.exitCode, 0, reason: '${result.stderr}\n${result.stdout}');
   });
 
   setUp(() {

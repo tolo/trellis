@@ -18,7 +18,7 @@ void main() {
   late Map<String, String> original;
 
   setUp(() {
-    final repo = Directory('../../.agent_temp').absolute.createTempSync('sync-command-test-');
+    final repo = Directory.systemTemp.createTempSync('sync-command-test-');
     addTearDown(() => repo.deleteSync(recursive: true));
     root = Directory('${repo.path}/packages/trellis_ui')..createSync(recursive: true);
     compiler = _write(root, 'fixture-compiler', r'''#!/bin/sh

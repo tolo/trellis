@@ -4,6 +4,7 @@ import 'package:test/test.dart';
 
 import '../tool/ui_gate/appearance.dart';
 import '../tool/ui_gate/checks.dart';
+import '../tool/ui_gate/driver.dart' show gateInstrumentationPreload;
 import '../tool/ui_gate/firefox.dart';
 import '../tool/ui_gate/manifest.dart';
 import 'browser_reflow_probe.dart';
@@ -143,13 +144,7 @@ document.querySelector('main').addEventListener('keydown', event => {
   last.focus();
   window.afterEnd = Promise.resolve(true);
   if (mode === 'dismiss' || mode === 'synthetic') {
-    if (mode === 'synthetic') {
-      const evidence = () => ({focused: document.hasFocus(), lostVisibleFocus: window.__uiGate.lostVisibleFocus});
-      // Record what the synthetic event did before an unrelated native blur can change the marker.
-      const before = evidence();
-      window.dispatchEvent(new FocusEvent('blur'));
-      window.syntheticBlurEvidence = {before, after: evidence()};
-    }
+    if (mode === 'synthetic') window.dispatchEvent(new FocusEvent('blur'));
     last.blur();
     return;
   }
@@ -228,8 +223,23 @@ states:
         }
         if (mode == 'synthetic') {
           expect(driver.requests.where((url) => Uri.parse(url).path == '/contender.html'), isEmpty);
-          const focused = {'focused': true, 'lostVisibleFocus': false};
-          expect(await driver.evaluate('window.syntheticBlurEvidence'), {'before': focused, 'after': focused});
+          // Sample the actual preload in a fresh realm. A native blur in the top
+          // window earlier in the recipe can already have set its sticky flag.
+          final evidence = await driver.evaluate('''(() => {
+            const frame = document.body.appendChild(document.createElement('iframe'));
+            try {
+              return ((window) => {
+                const {document, EventTarget, customElements, FocusEvent} = window;
+                $gateInstrumentationPreload;
+                const before = window.__uiGate.lostVisibleFocus;
+                window.dispatchEvent(new FocusEvent('blur'));
+                return {visible: !document.hidden, before, after: window.__uiGate.lostVisibleFocus};
+              })(frame.contentWindow);
+            } finally {
+              frame.remove();
+            }
+          })()''');
+          expect(evidence, {'visible': true, 'before': false, 'after': false});
         }
         return;
       }

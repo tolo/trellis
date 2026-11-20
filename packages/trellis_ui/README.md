@@ -79,6 +79,7 @@ slots take the contents of the caller marker; unmarked caller content fills the 
 | `popover :: popoverDescription` | none | anonymous description | a `p` |
 | `radio :: radio` | `legend` | none | one native radio in a fieldset; repeat with the same `name` to group choices |
 | `separator :: separator` | `orientation` | none | `vertical`, otherwise horizontal `hr` |
+| `sheet :: sheet` | `id, side, title, inlineAbove` | `trigger`, `content` | forwards to the panel; native modal or inline content |
 | `stack :: stack` | `gap` | anonymous | gap scale; fallback `md` |
 | `switch :: switch` | `size` | none | `default`, `sm`; fallback `default`; native checkbox with switch role |
 | `table :: table` | `caption, columns, rows` | `header`, `row`, `footer` | server lists; row marker reads the `row` map in loop scope |
@@ -127,7 +128,7 @@ that scrolls horizontally. Keep table minimum widths in application CSS (the gal
 
 ### Interactive fragments
 
-Use a unique base `id` for each dialog, alert dialog, menu, popover, tabs, combobox, toast viewport, and tooltip on a
+Use a unique base `id` for each dialog, alert dialog, menu, popover, sheet, tabs, combobox, toast viewport, and tooltip on a
 page. Menu and tab parts derive their IDs and relationships from the parent scope. Keep tab values unique within their list and
 choose an enabled tab's value for `active`. Arrow keys wrap, skip disabled items and tabs, and move focus; tabs
 activate on Enter, Space or click. Menu checkbox items stay open, and item clicks also dispatch a bubbling
@@ -146,6 +147,12 @@ the trigger. Use a plain link or native disclosure when an action must stay avai
 The Tooltip trigger slot contains the existing native control. Its label and action stay intact and the suite
 adds the hint ID to `aria-describedby`. Use Tooltip for supplementary text and put essential information in
 visible content for touch readers and readers without the suite script.
+
+A Sheet accepts a button in its `trigger` slot and links or controls in its `content` slot. Use
+`top`, `right`, `bottom` or `left` to choose the edge. `inlineAbove` is an optional CSS-pixel
+threshold above which the content appears inline. Escape, Close and a backdrop click restore
+trigger focus. Activating a link leaves focus with its destination. Without the suite script, the
+links and controls remain in the page.
 
 Give the combobox input a separate label using its base ID. Send text through an app-chosen query parameter
 (`name="q"`, for example) and use `hx-target="#<id>-results"` with `hx-swap="outerHTML"` to replace suggestions.

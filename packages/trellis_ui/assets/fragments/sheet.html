@@ -1,0 +1,19 @@
+<tl-dialog data-slot="sheet" tl:fragment="sheet(id, side, title, inlineAbove, ...attrs)"
+  tl:attr="data-inline-above=${inlineAbove}">
+  <span data-slot="sheet-trigger" hidden><tl:block tl:slot="trigger"></tl:block></span>
+  <section data-slot="sheet-content" class="trellis-sheet-content" data-closed
+    tl:attr="id=${id}, aria-labelledby=${id + '-title'}, data-side=${side} ?: 'right'" tl:attrs="${attrs}">
+    <div data-slot="sheet-header" class="trellis-sheet-header">
+      <h2 data-slot="sheet-title" class="trellis-sheet-title trellis-font-heading"
+        tl:attr="id=${id + '-title'}" tl:text="${title} ?: 'Sheet'">Sheet</h2>
+    </div>
+    <tl:block tl:slot="content"></tl:block>
+    <button tl:replace="~{trellis-ui/button :: button('ghost', 'icon-sm')}" data-slot="sheet-close"
+      class="trellis-sheet-close" aria-label="Close" data-dialog-close hidden>
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m18 6-12 12"/><path d="m6 6 12 12"/>
+      </svg>
+    </button>
+  </section>
+</tl-dialog>

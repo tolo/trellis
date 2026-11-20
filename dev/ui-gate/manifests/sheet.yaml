@@ -1,0 +1,85 @@
+name: sheet
+page: /components/sheet
+root: '#right-sheet'
+elements:
+  trigger: '#open-right'
+  panel: '#right-sheet'
+  link: '#right-jump'
+  close: '#right-sheet [data-slot=sheet-close]'
+states:
+  default: []
+  open:
+    - press: Escape
+    - focus: '#open-right'
+    - press: Enter
+    - wait: "document.querySelector('#right-sheet:modal[data-open]') !== null"
+    - wait: "document.getElementById('right-sheet').getAnimations().every(animation => animation.playState !== 'running')"
+    # Give appearance a confirmed keyboard-focused link even when the trigger is inert.
+    - press: Tab
+    - focus: '#right-jump'
+    - wait: "document.getElementById('right-jump').matches(':focus-visible')"
+keyboard:
+  - state: open
+  - expect: {expression: document.activeElement.id, equals: right-jump}
+  - focus: '#right-sheet [data-slot=sheet-close]'
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: right-jump}
+  - press: Escape
+  - &closed
+    wait: "document.activeElement.id === 'open-right' && !document.getElementById('right-sheet').open && document.getElementById('open-right').getAttribute('aria-expanded') === 'false'"
+  - press: Enter
+  - wait: "document.querySelector('#right-sheet:modal[data-open]') !== null"
+  - focus: '#right-sheet [data-slot=sheet-close]'
+  - press: Enter
+  - *closed
+  - state: open
+  - eval: >-
+      (() => {
+        window.sheetFocusBounce = 0;
+        document.getElementById('open-right').addEventListener('focus', () => window.sheetFocusBounce++, {once: true});
+      })()
+  - press: Enter
+  - wait: "document.activeElement.id === 'destination' && location.hash === '#destination' && !document.getElementById('right-sheet').open"
+  - expect: {expression: window.sheetFocusBounce, equals: 0}
+semantics:
+  - expression: >-
+      (() => {
+        const trigger = document.getElementById('open-right'), panel = document.getElementById('right-sheet');
+        const modal = panel.matches(':modal');
+        return panel instanceof HTMLDialogElement &&
+          trigger.getAttribute('aria-haspopup') === 'dialog' && trigger.getAttribute('aria-controls') === panel.id &&
+          trigger.getAttribute('aria-expanded') === String(modal) && panel.hasAttribute('aria-modal') === modal &&
+          document.getElementById(panel.getAttribute('aria-labelledby')).textContent.trim() === 'Page links' &&
+          panel.querySelector('[data-slot=sheet-close]').getAttribute('aria-label') === 'Close';
+      })()
+    equals: true
+htmx:
+  region: '#demo'
+  swap:
+    - eval: document.getElementById('swap').click()
+  navigate:
+    - state: open
+    - eval: document.getElementById('navigate').click()
+  transient: '#right-sheet[open], #right-sheet[data-open], #sheet-options[data-open], #sheet-options[style]'
+  probe:
+    steps:
+      - state: open
+      - eval: >-
+          (() => {
+            window.previousPanel = document.getElementById('right-sheet');
+            window.sheetCloses = 0;
+            window.previousPanel.addEventListener('close', () => window.sheetCloses++);
+          })()
+      - click: '#update-sheet'
+      - wait: "document.getElementById('updated-sheet') !== null && window.previousPanel.contains(document.activeElement)"
+      - expect: {expression: "window.previousPanel === document.querySelector('#right-sheet:modal')", equals: true}
+      - press: Escape
+      - *closed
+    expression: window.sheetCloses
+    equals: 1
+instances: [tl-dialog, '#right-sheet']
+provenance:
+  - file: ../../../packages/trellis_ui/vendor/shadcn/shadcn@4.23.0/LICENSE.md
+    license: MIT
+  - file: ../../../packages/trellis_ui/vendor/lucide/LICENSE
+    license: ISC

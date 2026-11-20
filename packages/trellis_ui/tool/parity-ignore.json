@@ -544,5 +544,47 @@
     "direction": "missing",
     "name": "tooltip-provider",
     "reason": "Trellis supplies delays per Tooltip fragment so it does not render Base UI's shared provider."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "sheet-description",
+    "reason": "The title supplies the accessible name. Authors put supporting text in the single content slot."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "sheet-footer",
+    "reason": "The content slot also accepts any actions the caller adds."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "sheet-overlay",
+    "reason": "The native dialog backdrop renders outside the DOM."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "sheet-portal",
+    "reason": "showModal() puts the panel in the browser top layer."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-sheet-description",
+    "reason": "The title supplies the accessible name. Authors put supporting text in the single content slot."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-sheet-footer",
+    "reason": "The content slot also accepts any actions the caller adds."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-sheet-overlay",
+    "reason": "The native dialog backdrop renders outside the DOM."
   }
 ]

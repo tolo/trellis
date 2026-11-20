@@ -491,6 +491,30 @@
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
     - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
     - {"name":"safari","status":"release-prep","browsers":[]}
+"sheet":
+  name: "sheet"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-sheet-close","trellis-sheet-content","trellis-sheet-description","trellis-sheet-footer","trellis-sheet-header","trellis-sheet-overlay","trellis-sheet-title"]
+  fragments:
+    - {"name":"sheet","signature":"sheet(id, side, title, inlineAbove, ...attrs)","parameters":["id","side","title","inlineAbove","...attrs"],"slots":["trigger","content"],"attribute_targets":[{"tag":"<section>","part":"sheet-content"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
 "stack":
   name: "stack"
   qualified: true

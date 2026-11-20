@@ -127,3 +127,20 @@
 - **TI06** The component reference and catalogue describe the shipped Sheet.
   - **Verify**: `cmd: dart run tool/generate_ui_reference.dart --check` – the Sheet's published fragment contract and catalogue status match its fragment and gate record. Read the authored reference for the inline, focus and fallback guidance in SC04.
   - **SATISFIES**: SC04
+
+## Discovered Requirements
+
+- **Title** Keep the stylesheet-free fallback in normal flow. **Description** Render the Sheet body as a labelled section and move its existing children into a native dialog on enhancement. **Rationale** Browsers position `<dialog open>` absolutely without author CSS. **Interpretation** The server sends one set of links and controls. Enhancement supplies native modal behavior, and the inline breakpoint keeps the same nodes. **Traced from** TI03. **Date** 2026-11-20.
+
+## Implementation Observations
+
+- ASSUMPTION: Omitting or supplying an unrecognised side selects `right`, the pinned Vega default. Optional attributes go to the panel, following the suite convention.
+- ASSUMPTION: Ordinary link activation dismisses the Sheet. A modified click leaves it open while the browser handles the link.
+- Sheet is in the automated release inventory. ADR-012 still governs which subjects may have a recorded disposition. Its three manual items remain at release prep.
+- A text-only HTMX swap has no element to emit `htmx:afterSettle`. The reviewed focus recovery observes actual child removal inside the modal. Routing: Fix applied.
+- Where author markup supplies positive `tabindex`, the shared Dialog calculation uses sequential focus order for wrap boundaries. Routing: Fix applied.
+- The visual review found a 34 px gap at the end of top and bottom sheets, caused by the native dialog width cap. The repaired geometry proof checks the full edge span. Routing: Fix applied.
+- To retain a list or navigation element supplied in the named content slot, place it inside `<tl:block tl:slot="content">`. The live reference checks its two list links and their 44 px targets. S06 can use the same composition for its theme navigation.
+- P3 gallery spacing. At 390 and 699 px the related-pages launcher touches the row above it. Both buttons retain distinct borders and hit areas. Routing: Note.
+- The pinned Sheet styles add `--container-sm` and `--ease-in-out` to the shared theme. The browser gate captures all root tokens, including on existing components and app routes. The observed additions update each affected capture mode without changing existing values.
+- The Sheet appearance recipe establishes visible keyboard focus on its first link before capturing the active panel. Firefox otherwise varied incidental link focus paint while measuring the inert background trigger. Routing: Fix applied.

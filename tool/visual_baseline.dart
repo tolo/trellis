@@ -449,9 +449,9 @@ async function (selectors = {}, focusSelector = null, keepDocumentFocused = fals
       try { animation.finish(); } catch (e) { /* infinite animations cannot finish; the freeze rule holds them */ }
     }
     await frame();
-    if (keepDocumentFocused && !document.hasFocus()) {
-      // A held Firefox pointer retains :active under backgrounding but loses
-      // native focus paint. Restore the window while keeping pointer modality.
+    if ((focusSelector || keepDocumentFocused) && !document.hasFocus()) {
+      // Backgrounding Firefox drops native focus paint. An inert focus target
+      // can still have focused modal controls in its capture.
       // Remove this when the driver can retain document activation through readback.
       window.focus();
       previousJson = null;

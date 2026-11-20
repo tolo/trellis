@@ -4,11 +4,46 @@ import 'package:test/test.dart';
 
 import '../tool/ui_gate/appearance.dart';
 import '../tool/ui_gate/checks.dart';
-import '../tool/ui_gate/manifest.dart';
 import '../tool/ui_gate/firefox.dart';
+import '../tool/ui_gate/manifest.dart';
+import '../tool/visual_baseline.dart' show digestScript;
 import 'ui_gate_test_support.dart';
 
 void main() {
+  test('Firefox preserves the modal focus ring when the requested background control is inert', () async {
+    if (FirefoxDriver.locateFirefox() == null || FirefoxDriver.locateGeckodriver() == null) {
+      markTestSkipped('Firefox or geckodriver not installed');
+      return;
+    }
+    final server = await fixtureServer();
+    final driver = await FirefoxDriver.launch();
+    addTearDown(driver.close);
+    await driver.open(server.baseUrl.resolve('/pass.html'));
+    await driver.evaluate('''(() => {
+      const modal = document.createElement('dialog');
+      document.getElementById('component').append(modal);
+      modal.append(document.getElementById('name'), document.createElement('button'));
+      modal.showModal();
+    })()''');
+    await driver.pseudo('#name', ['focus', 'focus-visible']);
+    final blurred = await driver.evaluate('''new Promise((resolve, reject) => {
+      window.addEventListener('blur', event => {
+        resolve(event.isTrusted && !document.hidden && document.activeElement.id === 'name');
+      }, {once: true});
+      if (!window.open('/next.html', 'focus-contender', 'popup,width=260,height=180')) {
+        reject(Error('Firefox blocked the focus contender'));
+      }
+    })''');
+    expect(blurred, isTrue);
+    expect(await driver.evaluate("document.getElementById('name').matches(':focus-visible')"), isFalse);
+
+    final state = await driver.evaluate('($digestScript)({input: "#name"}, "#trigger")') as Map;
+    expect(state['focus'], {'applicable': false});
+    final input = (state['elements'] as Map)['input'] as Map;
+    expect(input['style'], containsPair('outlineStyle', 'solid'));
+    expect(input['style'], containsPair('outlineColor', 'rgb(0, 95, 204)'));
+  }, timeout: Timeout(Duration(minutes: 2)));
+
   test('state capture keeps native focus during asynchronous backgrounding', () async {
     if (FirefoxDriver.locateFirefox() == null || FirefoxDriver.locateGeckodriver() == null) {
       markTestSkipped('Firefox or geckodriver not installed');

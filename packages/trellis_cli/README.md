@@ -10,7 +10,7 @@ Part of the [Trellis SDK](https://github.com/tolo/trellis).
 `trellis` ships as a self-contained binary (no Dart SDK required) and as a pub.dev
 package. Pick whichever fits your workflow.
 
-### Homebrew (macOS / Linux)
+### Homebrew (macOS on Apple silicon / Linux)
 
 ```bash
 brew install tolo/trellis/trellis

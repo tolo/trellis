@@ -60,7 +60,7 @@ Install the `trellis` CLI, then scaffold a complete, runnable project. The CLI
 ships as a self-contained binary (no Dart SDK required) and on pub.dev:
 
 ```bash
-# Homebrew (macOS / Linux)
+# Homebrew (macOS on Apple silicon / Linux)
 brew install tolo/trellis/trellis
 
 # Scoop (Windows)

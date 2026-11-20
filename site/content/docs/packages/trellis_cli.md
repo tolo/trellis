@@ -14,7 +14,7 @@ building, local preview, and theme management. It ties the SDK together – the
 `trellis` ships as a self-contained binary (no Dart SDK required) and as a
 pub.dev package.
 
-Homebrew (macOS and Linux):
+Homebrew (macOS on Apple silicon and Linux):
 
 ```bash
 brew install tolo/trellis/trellis

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.15.0
+
+### Added
+
+- Declare trusted URL fields by source and field in `trellis_site.yaml`. The build preserves trust through
+  render contexts and reports missing sources or fields and non-string values.
+
 ## 0.14.0
 
 ### Added

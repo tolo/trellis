@@ -330,9 +330,21 @@
       "id": "S11",
       "name": "Site trusted URLs",
       "dependsOn": [],
-      "status": "in-progress",
+      "status": "done",
       "fis": "s11-site-trusted-urls.md",
-      "completedTaskIds": [],
+      "completedTaskIds": [
+        "TI01",
+        "TI02",
+        "TI03",
+        "TI04",
+        "TI05",
+        "TI06",
+        "TI07"
+      ],
+      "verified": {
+        "at": "2026-11-20T15:33Z",
+        "summary": "cd packages/trellis_cli && dart test test/build_command_test.dart --plain-name trustedUrls -> exit=0, 00:00 +7: All tests passed!"
+      },
       "scope": "Apply the ADR-015 source-and-field declaration through the normal site build, including source isolation, invalid declarations, front matter and site data. Close TD-059.",
       "sourceRefs": [
         "dev/spec/0.15/prd.md#fr10-site-url-scheme-opt-out-td-059",

@@ -9,6 +9,7 @@ import 'navigation_builder.dart' show humanizeSegment, nodeTitleFor;
 import 'page.dart';
 import 'paginator.dart';
 import 'trellis_site_builder.dart' show BuildWarning;
+import 'trusted_url_sources.dart';
 import 'yaml_utils.dart';
 
 /// Thrown when no layout template can be found for a page.
@@ -134,12 +135,15 @@ class PageGenerator {
   /// Throws [TemplateNotFoundException] if no layout is found for a page.
   ///
   /// Returns the total number of output HTML files written (including all paginated pages).
-  Future<int> generateAll(List<Page> pages) async {
+  Future<int> generateAll(List<Page> pages) => _generateAll(pages);
+
+  Future<int> _generateAll(List<Page> pages, {TrustedUrlSources? trustedUrls}) async {
     _sectionOrderCache.clear();
     // A reused generator must not report files from an earlier pass — the output
     // directory is cleaned between builds, so those paths no longer exist.
     emittedPages.clear();
-    final globalData = _loadGlobalData();
+    final globalData = _loadGlobalData(trustedUrls);
+    trustedUrls?.requireLoadedSources();
     final nonDraftPages = pages.where((pg) => !pg.isDraft).toList();
     _collectWeightWarnings(nonDraftPages);
     var outputCount = 0;
@@ -302,11 +306,11 @@ class PageGenerator {
         .where((pg) => pg.sectionPath == page.sectionPath && pg.kind == PageKind.section)
         .firstOrNull;
     if (sectionPage != null) {
-      context.addAll(sectionPage.frontMatter);
+      context.addAll(renderFrontMatter(sectionPage));
     }
 
     // Level 1 (highest): page front matter
-    context.addAll(page.frontMatter);
+    context.addAll(renderFrontMatter(page));
 
     // Inject `page` context variable (spread FM + add SSG fields)
     final pageMap = pageToMap(page);
@@ -443,7 +447,7 @@ class PageGenerator {
   /// without running a full build.
   Map<String, dynamic> loadGlobalData() => _loadGlobalData();
 
-  Map<String, dynamic> _loadGlobalData() {
+  Map<String, dynamic> _loadGlobalData([TrustedUrlSources? trustedUrls]) {
     final result = <String, dynamic>{};
 
     // Load theme data first (lower priority fallback)
@@ -466,9 +470,20 @@ class PageGenerator {
       for (final file in siteDataDir.listSync().whereType<File>()) {
         if (p.extension(file.path) != '.yaml') continue;
         final stem = p.basenameWithoutExtension(file.path);
-        final dynamic yaml = loadYaml(file.readAsStringSync());
+        final Object? yaml;
+        try {
+          yaml = loadYaml(file.readAsStringSync());
+        } on YamlException catch (error) {
+          trustedUrls?.rejectSourceFailure(file.path, error.message);
+          rethrow;
+        } on FileSystemException catch (error) {
+          trustedUrls?.rejectSourceFailure(file.path, error.message);
+          rethrow;
+        }
+        final urls = trustedUrls?.loadFields(file.path, yaml);
         if (yaml == null) continue;
-        result[stem] = convertYaml(yaml);
+        final data = convertYaml(yaml);
+        result[stem] = urls != null && urls.isNotEmpty ? {...data as Map<String, dynamic>, ...urls} : data;
       }
     }
 
@@ -533,6 +548,10 @@ class PageGenerator {
     ];
   }
 }
+
+/// Renders with build-scoped declarations, including those matched by the site data loader.
+Future<int> generatePagesWithTrustedUrls(PageGenerator generator, List<Page> pages, TrustedUrlSources trustedUrls) =>
+    generator._generateAll(pages, trustedUrls: trustedUrls);
 
 /// Returns a section's own-level content pages in canonical order.
 ///

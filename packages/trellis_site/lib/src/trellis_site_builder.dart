@@ -25,6 +25,7 @@ import 'theme_manifest.dart';
 import 'theme_param_merger.dart';
 import 'theme_sass_compiler.dart';
 import 'theme_sass_generator.dart';
+import 'trusted_url_sources.dart';
 
 /// A non-fatal issue collected during a site build.
 class BuildWarning {
@@ -244,8 +245,14 @@ class TrellisSite {
 
     // 3. Parse front matter
     final fmParser = const FrontMatterParser();
+    final trustedUrls = TrustedUrlSources(config);
     for (final page in pages) {
-      fmParser.parse(page, config.contentDir);
+      try {
+        parseFrontMatterWithTrustedUrls(fmParser, page, config.contentDir, trustedUrls);
+      } on FrontMatterException catch (error) {
+        trustedUrls.rejectSourceFailure(p.join(config.contentDir, page.sourcePath), error.message);
+        rethrow;
+      }
     }
 
     // Build-time syntax highlighter (ADR-010) — shared by the page Markdown pass
@@ -274,7 +281,10 @@ class TrellisSite {
 
     // 4.5. Process post-Markdown shortcodes
     for (final page in pages) {
-      shortcodeProcessor.processPostMarkdown(page, context: sources.loaders.isEmpty ? const {} : page.frontMatter);
+      shortcodeProcessor.processPostMarkdown(
+        page,
+        context: sources.loaders.isEmpty ? const {} : renderFrontMatter(page),
+      );
     }
     buildWarnings.addAll(shortcodeProcessor.warnings);
 
@@ -328,7 +338,7 @@ class TrellisSite {
       pathPrefix: config.pathPrefix,
     );
     // pageCount reflects actual output files, including paginated pages
-    final pageCount = await generator.generateAll(pages);
+    final pageCount = await generatePagesWithTrustedUrls(generator, pages, trustedUrls);
     buildWarnings.addAll(generator.warnings);
 
     // 7. Copy static assets in order of increasing precedence.

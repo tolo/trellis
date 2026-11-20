@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:html/parser.dart' as html;
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:trellis_cli/trellis_cli.dart';
@@ -96,6 +98,327 @@ void main() {}
 </html>
 ''');
   }
+
+  group('BuildCommand trustedUrls', () {
+    const bookmarklet = 'javascript:void(0)';
+    const svg = 'data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22/%3E';
+    const blocked = 'about:invalid#trellis-unsafe-url';
+
+    File write(String path, String content) => File(p.join(tempDir.path, path))
+      ..createSync(recursive: true)
+      ..writeAsStringSync(content);
+
+    String read(String path) => File(p.join(tempDir.path, path)).readAsStringSync();
+
+    String? attribute(String outputPath, String selector, [String name = 'href']) =>
+        html.parse(read(outputPath)).querySelector(selector)!.attributes[name];
+
+    File configure(String settings) => write('trellis_site.yaml', '''
+title: Trust fixture
+baseUrl: https://example.com
+contentDir: pages
+dataDir: records
+$settings
+''');
+
+    Future<int> build([List<String> flags = const []]) =>
+        TrellisCli(workingDirectory: tempDir.path).run(['build', ...flags]);
+
+    Future<void> expectInvalidDeclaration(String source, String field) async {
+      final config = SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
+      late String expectedError;
+      try {
+        await TrellisSite(config).build();
+        fail('Expected SiteConfigException for $source and $field');
+      } on SiteConfigException catch (error) {
+        expect(error.message, allOf(contains(source), contains(field)));
+        expectedError = error.toString();
+      }
+      final stderrOutput = StringBuffer();
+      final exitCode = await IOOverrides.runZoned(build, stderr: () => _BufferStdout(stderrOutput));
+      expect(exitCode, 1);
+      expect(stderrOutput.toString(), contains(expectedError));
+    }
+
+    test('keeps configured URLs under default and overridden builds while metadata stays textual', () async {
+      configure('''
+search:
+  enabled: true
+  fields: [title]
+feeds:
+  atom: true
+  rss: true
+trustedUrls:
+  - source: pages/tools.md
+    field: bookmarklet
+  - source: pages/tools.md
+    field: title
+  - source: records/brand.yaml
+    field: brand.logo
+''');
+      write('pages/tools.md', '''
+---
+title: "$bookmarklet"
+bookmarklet: "$bookmarklet"
+date: 2026-11-20
+---
+Web tools.
+''');
+      write('records/brand.yaml', '''
+brand.logo: "$svg"
+brand:
+  logo: "$svg"
+''');
+      write('layouts/_default/single.html', r"""
+<a id="direct" tl:href="${bookmarklet}">Open</a>
+<a id="page-field" tl:href="${page.bookmarklet}">Open from page</a>
+<a id="metadata" tl:href="${page.title}">Open from title</a>
+<img id="literal-field" tl:src="${data.brand['brand.logo']}" alt="Brand">
+<img id="nested-field" tl:src="${data.brand.brand.logo}" alt="Nested">
+<a id="root-relative" href="/docs/">Docs</a>
+<a id="relative" href="../docs/">Docs</a>
+""");
+
+      for (final (output, prefix, flags) in [
+        ('output', '', <String>[]),
+        ('dist', '/handbook', ['--output', 'dist', '--path-prefix', 'handbook']),
+      ]) {
+        expect(await build(flags), 0);
+        final page = '$output/tools/index.html';
+        expect(attribute(page, '#direct'), bookmarklet);
+        expect(attribute(page, '#page-field'), bookmarklet);
+        expect(attribute(page, '#metadata'), bookmarklet);
+        expect(attribute(page, '#literal-field', 'src'), svg);
+        expect(attribute(page, '#nested-field', 'src'), blocked);
+        expect(attribute(page, '#root-relative'), '$prefix/docs/');
+        expect(attribute(page, '#relative'), '../docs/');
+        expect(jsonDecode(read('$output/search-index.json')), [
+          {'url': '$prefix/tools/', 'title': bookmarklet},
+        ]);
+        expect(read('$output/feed.xml'), contains('<title>$bookmarklet</title>'));
+        expect(read('$output/rss.xml'), contains('<title>$bookmarklet</title>'));
+      }
+
+      write('records/brand.yaml', 'brand:\n  logo: "$svg"\n');
+      await expectInvalidDeclaration('records/brand.yaml', 'brand.logo');
+    });
+
+    test('trust follows section inheritance and the declaring page through list and taxonomy projections', () async {
+      configure('''
+paginate: 1
+taxonomies: [tags]
+trustedUrls:
+  - source: pages/tools/_index.md
+    field: bookmarklet
+  - source: pages/tools/declared.md
+    field: bookmarklet
+  - source: pages/tools/declared.md
+    field: url
+''');
+      write('pages/tools/_index.md', '---\nbookmarklet: "$bookmarklet"\n---\nTools.\n');
+      write('pages/tools/inherited.md', '---\ntitle: Inherited\nweight: 3\n---\nInherited.\n');
+      write('pages/tools/declared.md', '''
+---
+title: Declared
+weight: 1
+bookmarklet: "$bookmarklet"
+url: "$bookmarklet"
+tags: [common]
+---
+Declared.
+''');
+      write('pages/tools/override.md', '''
+---
+title: Override
+weight: 2
+bookmarklet: "$bookmarklet"
+tags: [common]
+---
+Override.
+''');
+      write('pages/elsewhere.md', '---\nbookmarklet: "$bookmarklet"\n---\nElsewhere.\n');
+      const links = r'''
+<a id="direct" tl:href="${bookmarklet}">Open</a>
+<a id="page-field" tl:href="${page.bookmarklet}">Page field</a>
+<a id="page-url" tl:href="${page.url}">Generated URL</a>
+''';
+      const items = r'''
+<article tl:each="item : ${pages}">
+  <a class="listed-field" tl:href="${item.bookmarklet}">Listed field</a>
+  <a class="listed-url" tl:href="${item.url}">Generated URL</a>
+</article>
+''';
+      write('layouts/_default/single.html', links);
+      write('layouts/_default/list.html', '$links$items');
+      write('layouts/tags/term.html', items);
+      write('layouts/tags/list.html', r'''
+<article tl:each="term : ${terms}">
+  <a tl:each="item : ${term.pages}" tl:attr="data-page=${item.title},href=${item.bookmarklet}">Term item</a>
+</article>
+''');
+
+      expect(await build(), 0);
+      const section = 'output/tools/index.html';
+      const declared = 'output/tools/declared/index.html';
+      expect(attribute(section, '#direct'), bookmarklet);
+      expect(attribute(section, '#page-field'), bookmarklet);
+      expect(attribute('output/tools/inherited/index.html', '#direct'), bookmarklet);
+      expect(attribute(declared, '#direct'), bookmarklet);
+      expect(attribute(declared, '#page-field'), bookmarklet);
+      expect(attribute(declared, '#page-url'), '/tools/declared/');
+      for (final page in ['output/tools/override/index.html', 'output/elsewhere/index.html']) {
+        expect(attribute(page, '#direct'), blocked);
+        expect(attribute(page, '#page-field'), blocked);
+      }
+      expect(attribute(section, '.listed-field'), bookmarklet);
+      expect(attribute(section, '.listed-url'), '/tools/declared/');
+      expect(attribute('output/tools/page/2/index.html', '.listed-field'), blocked);
+      expect(attribute('output/tags/common/index.html', '.listed-field'), bookmarklet);
+      expect(attribute('output/tags/common/page/2/index.html', '.listed-field'), blocked);
+      expect(attribute('output/tags/index.html', '[data-page=Declared]'), bookmarklet);
+      expect(attribute('output/tags/index.html', '[data-page=Override]'), blocked);
+    });
+
+    test('ignores content and theme self-declarations and requires a matching site data file', () async {
+      configure('theme: sample');
+      write('themes/sample/theme.yaml', 'name: sample\nversion: 1.0.0\n');
+      write('pages/_index.md', '''
+---
+bookmarklet: "$bookmarklet"
+trustedUrls:
+  - source: pages/_index.md
+    field: bookmarklet
+---
+Home.
+''');
+      const data =
+          '''
+logo: "$svg"
+other: "$svg"
+trustedUrls:
+  - source: records/brand.yaml
+    field: logo
+''';
+      write('records/brand.yaml', data);
+      write('themes/sample/data/brand.yaml', data);
+      write('themes/sample/data/only.yaml', data);
+      write('layouts/home.html', r'''
+<a id="front" tl:href="${bookmarklet}">Open</a>
+<img id="site" tl:src="${data.brand.logo}" alt="Site">
+<img id="site-other" tl:src="${data.brand.other}" alt="Other site field">
+<img id="theme" tl:src="${data.only.logo}" alt="Theme">
+''');
+      const page = 'output/index.html';
+      expect(await build(), 0);
+      expect(attribute(page, '#front'), blocked);
+      expect(attribute(page, '#site', 'src'), blocked);
+      expect(attribute(page, '#theme', 'src'), blocked);
+
+      configure('''
+theme: sample
+trustedUrls:
+  - source: records/brand.yaml
+    field: logo
+''');
+      expect(await build(), 0);
+      expect(attribute(page, '#front'), blocked);
+      expect(attribute(page, '#site', 'src'), svg);
+      expect(attribute(page, '#site-other', 'src'), blocked);
+      expect(attribute(page, '#theme', 'src'), blocked);
+
+      File(p.join(tempDir.path, 'records', 'brand.yaml')).deleteSync();
+      await expectInvalidDeclaration('records/brand.yaml', 'logo');
+    });
+
+    test('reports the source and field for absent or invalid values', () async {
+      write('pages/_index.md', '# Home\n');
+      write('layouts/home.html', '<h1>Home</h1>');
+      write('outside/source.yaml', 'target: "$svg"');
+      write('records/missing-field.yaml', 'other: "$svg"');
+      write('records/null-field.yaml', 'target: null');
+      write('records/non-string.yaml', 'target: 42');
+      write('records/non-mapping.yaml', '["$svg"]');
+      write('records/empty.yaml', '');
+      write('pages/null-field.md', '---\ntarget: null\n---\nEmpty.\n');
+      write('layouts/_default/single.html', '<h1>Sample</h1>');
+
+      for (final source in [
+        'outside/source.yaml',
+        'pages/missing.md',
+        'pages/null-field.md',
+        'records/missing-field.yaml',
+        'records/null-field.yaml',
+        'records/non-string.yaml',
+        'records/non-mapping.yaml',
+        'records/empty.yaml',
+      ]) {
+        configure('''
+trustedUrls:
+  - source: $source
+    field: target
+''');
+        await expectInvalidDeclaration(source, 'target');
+      }
+      write('pages/non-mapping.md', '---\n[target]\n---\nSample.\n');
+      configure('''
+trustedUrls:
+  - source: pages/non-mapping.md
+    field: target
+''');
+      await expectInvalidDeclaration('pages/non-mapping.md', 'target');
+    });
+
+    test('requires literal YAML keys and rejects a declaration shadowed by a converted key', () async {
+      write('pages/_index.md', '# Home\n');
+      write('layouts/home.html', '<h1>Home</h1>');
+      write('layouts/_default/single.html', '<h1>Sample</h1>');
+      const typedKey = '42: "/typed"';
+      const literalKey = '"42": "/literal"';
+      write('pages/typed-key.md', '---\n$typedKey\n---\nSample.\n');
+      write('pages/shadowed-key.md', '---\n$literalKey\n$typedKey\n---\nSample.\n');
+      write('records/shadowed-key.yaml', '$literalKey\n$typedKey\n');
+      for (final source in ['pages/typed-key.md', 'pages/shadowed-key.md', 'records/shadowed-key.yaml']) {
+        configure('''
+trustedUrls:
+  - source: $source
+    field: "42"
+''');
+        await expectInvalidDeclaration(source, '42');
+      }
+    });
+
+    test('reports malformed declared site data as a source and field error', () async {
+      write('pages/_index.md', '# Home\n');
+      write('layouts/home.html', '<h1>Home</h1>');
+      write('records/broken.yaml', 'target: [');
+      configure('''
+trustedUrls:
+  - source: records/broken.yaml
+    field: target
+''');
+      await expectInvalidDeclaration('records/broken.yaml', 'target');
+    });
+
+    test('does not grant trust through an aliased input directory', () async {
+      write('pages/_index.md', '# Home\n');
+      write('layouts/home.html', '<h1>Home</h1>');
+      write('outside/source.yaml', 'target: "/ordinary"');
+      try {
+        Link(p.join(tempDir.path, 'records')).createSync(p.join(tempDir.path, 'outside'));
+      } on FileSystemException {
+        markTestSkipped('symlink creation not permitted on this platform');
+        return;
+      }
+      configure('');
+      expect(await build(), 0);
+      configure('''
+trustedUrls:
+  - source: records/source.yaml
+    field: target
+''');
+      await expectInvalidDeclaration('records/source.yaml', 'target');
+    });
+  });
 
   group('BuildCommand', () {
     // T01: valid site → exits 0, prints summary

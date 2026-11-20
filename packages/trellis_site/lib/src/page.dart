@@ -1,3 +1,8 @@
+import 'package:trellis/trellis.dart' show TrustedUrl;
+
+// Keep trust on the discovered page's identity without changing the public Page interface.
+final _trustedPageUrls = Expando<Map<String, TrustedUrl>>();
+
 /// Represents a single entry in a page's table of contents.
 class TocEntry {
   /// The heading anchor id (e.g. `getting-started`).
@@ -109,6 +114,22 @@ class Page {
       'isDraft: $isDraft, isBundle: $isBundle)';
 }
 
+/// Associates the source's validated URL fields with its page for rendering.
+void setTrustedPageUrls(Page page, Map<String, TrustedUrl> urls) {
+  _trustedPageUrls[page] = urls.isEmpty ? null : urls;
+}
+
+/// Projects front matter for render contexts without replacing raw metadata.
+Map<String, dynamic> renderFrontMatter(Page page) {
+  final urls = _trustedPageUrls[page];
+  if (urls == null) return page.frontMatter;
+  return {
+    ...page.frontMatter,
+    for (final MapEntry(:key, :value) in urls.entries)
+      if (page.frontMatter[key] == value.value) key: value,
+  };
+}
+
 /// Converts a [Page] to a plain [Map] suitable for use as a Trellis context value.
 ///
 /// The resulting map spreads [Page.frontMatter] and overrides it with the SSG
@@ -121,7 +142,7 @@ class Page {
 /// nested lineage (e.g. `docs/guides`), and `ancestors` is its list form
 /// (e.g. `['docs', 'docs/guides']`) — the additive nested-section fields.
 Map<String, dynamic> pageToMap(Page page) => <String, dynamic>{
-  ...page.frontMatter,
+  ...renderFrontMatter(page),
   'url': page.url,
   'content': page.content,
   'summary': page.summary,

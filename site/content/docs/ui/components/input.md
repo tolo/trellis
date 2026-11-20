@@ -19,10 +19,21 @@ Use an input with a visible label. Pass standard attributes such as `type`,
   type="email" name="email" autocomplete="email">
 ```
 
+## Date fields
+
+For a single date, use a native `<input type="date">`. The browser provides
+the date control without JavaScript. Place the labelled field inside your form
+and set its `name` so the form submits the date.
+
+```html
+<label for="appointment-date">Appointment date</label>
+<input type="date" id="appointment-date" name="appointment_date">
+```
+
 ## Keyboard interaction
 
-Tab focuses the input. Arrow keys move the caret and ordinary typing edits
-the value. Enter can submit the containing form.
+Tab focuses the input. In text fields, arrow keys move the caret and typing
+edits the value. Enter can submit the containing form.
 
 ## Accessibility notes
 

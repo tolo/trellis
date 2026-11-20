@@ -235,9 +235,15 @@
       "id": "S08",
       "name": "Native date field",
       "dependsOn": [],
-      "status": "in-progress",
+      "status": "done",
       "fis": "s08-native-date-field.md",
-      "completedTaskIds": [],
+      "completedTaskIds": [
+        "TI01"
+      ],
+      "verified": {
+        "at": "2026-11-20T12:30Z",
+        "summary": "git grep -n -A 12 '^## Date fields$' -- site/content/docs/ui/components/input.md -> exit=0, site/content/docs/ui/components/input.md:22:## Date fields"
+      },
       "scope": "Give authors a documented native date-field baseline that survives a cut to the optional calendar recipe.",
       "sourceRefs": [
         "dev/spec/0.15/prd.md#fr8-tier-2-recipe-seam-and-date-recipe",

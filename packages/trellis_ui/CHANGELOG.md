@@ -1,3 +1,7 @@
+## 0.15.0
+
+- Document a labelled native date field in the Input reference.
+
 ## 0.14.0
 
 - Add embedded suite fragments, same-origin assets and the pinned shadcn porting pipeline

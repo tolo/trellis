@@ -16,6 +16,7 @@ depends on `trellis_css`), and the redrawn package graph. The `trellis_ui` packa
 are current through the 0.14 sync inventory and shared browser qualification decision (2026-11-18), and so is the
 Relic section (Relic 2, CSRF 2026-11-18). The content model's bundle rule and the `pathPrefix` coverage of feed
 and taxonomy URLs are current through 0.14.
+Embedded UI placement and Popover are current through 0.15 (2026-11-20).
 Other sections retain the verification scope above.
 The Dart Frog CSRF bridge note is current through 0.14 (it runs on Dart Frog's own request, so a handler can read the body after a form-field token).
 
@@ -105,8 +106,10 @@ An app with the suite dependency can invoke the same function through `dart run 
 
 Interactive fragments upgrade to light-DOM custom elements from the deferred classic script. One base owns
 listener cleanup and popup sanitisation for HTMX swaps and history. Native dialogs provide modality; native
-popovers share CSSOM positioning that stays inside the viewport. Combobox option responses replace only the
-results region. Toast responses append to a pre-existing live region using an HTMX out-of-band swap.
+popovers share four-sided CSSOM placement with viewport flip, size caps and repositioning on scroll and resize.
+Popover exposes trigger and content slots and restores focus on dismissal. The shared hover helper cancels a
+pending open or close when pointer intent changes. Combobox option responses replace only the results region.
+Toast responses append to a pre-existing live region using an HTMX out-of-band swap.
 
 The package's development pipeline vendors pinned shadcn TSX/style/tokens and licences, extracts `cn-*` hooks and
 structural utilities, renames them to `trellis-*`, then compiles using a checksummed Tailwind standalone binary.

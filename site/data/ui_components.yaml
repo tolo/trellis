@@ -416,6 +416,33 @@
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
     - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
     - {"name":"safari","status":"release-prep","browsers":[]}
+"popover":
+  name: "popover"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-popover-content","trellis-popover-content-logical","trellis-popover-description","trellis-popover-header","trellis-popover-title"]
+  fragments:
+    - {"name":"popover","signature":"popover(id, side, align, offset, ...attrs)","parameters":["id","side","align","offset","...attrs"],"slots":["trigger","content"],"attribute_targets":[{"tag":"<div>","part":"popover-content"}]}
+    - {"name":"popoverHeader","signature":"popoverHeader(...attrs)","parameters":["...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<div>","part":"popover-header"}]}
+    - {"name":"popoverTitle","signature":"popoverTitle(...attrs)","parameters":["...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<h2>","part":"popover-title"}]}
+    - {"name":"popoverDescription","signature":"popoverDescription(...attrs)","parameters":["...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<p>","part":"popover-description"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
 "radio":
   name: "radio"
   qualified: true

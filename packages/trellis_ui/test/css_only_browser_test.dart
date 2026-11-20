@@ -10,7 +10,13 @@ void main() {
   late HttpServer server;
   late ChromeDriver driver;
   setUp(() async {
-    server = await shelf_io.serve(galleryHandler(Directory.current), InternetAddress.loopbackIPv4, 0);
+    final gallery = galleryHandler(Directory.current);
+    final fixtures = galleryHandler(Directory.current, pages: Directory('test/fixtures'));
+    server = await shelf_io.serve(
+      (request) => request.requestedUri.path == '/components/card-partial' ? fixtures(request) : gallery(request),
+      InternetAddress.loopbackIPv4,
+      0,
+    );
     driver = await ChromeDriver.launch();
   });
   tearDown(() async {
@@ -127,6 +133,36 @@ void main() {
     final title = boxes['title'] as Map, description = boxes['description'] as Map;
     expect(description['x'], closeTo(title['x'] as num, 1));
     expect(description['y'] as num, greaterThanOrEqualTo(title['bottom'] as num));
+  });
+
+  test('partial and filled Cards show only their supplied visible text in order', () async {
+    Future<Object?> card(String selector) => driver.evaluate("""(() => {
+      const card = document.querySelector('$selector');
+      return {
+        copy: card.innerText.trim().split(/\\s*\\n\\s*/).filter(Boolean),
+        headings: [...card.querySelectorAll('h2[data-slot=card-title]')].filter(h => h.getClientRects().length).map(h => h.innerText.trim()),
+      };
+    })()""");
+
+    await open('card-partial', 390);
+    expect(await card('#title-and-body'), {
+      'copy': ['On this page', 'Contents of this page.'],
+      'headings': ['On this page'],
+    });
+    expect(await card('#body-only'), {
+      'copy': ['Body only.'],
+      'headings': <String>[],
+    });
+    expect(await card('#title-only'), {
+      'copy': ['Title only'],
+      'headings': ['Title only'],
+    });
+
+    await open('card', 390);
+    expect(await card('#component [data-slot=card]'), {
+      'copy': ['Project details', 'A card with named slots.', 'All data stays on your server.', 'Updated today'],
+      'headings': ['Project details'],
+    });
   });
 
   test('navigation links inherit their suite colour in both modes', () async {

@@ -151,3 +151,35 @@
 - **TI09** Remove the three demo strings from the Card fragment’s slot fallbacks and regenerate the embedded package assets. Keep gallery copy in `gallery/pages/card.html` and preserve public part hooks.
   - **Verify**: `cmd: cd packages/trellis_ui && dart run tool/embed.dart --check && CI=true dart test test/css_only_components_test.dart test/css_only_browser_test.dart` – assert the three partial Cards’ exact visible text through the exported loader. On the served gallery Card, assert “Project details”, “A card with named slots.”, “All data stays on your server.” and “Updated today” in order. Assert `h2` for every supplied title and retain the filled-gallery layout check.
   - **SATISFIES**: S07
+
+## Discovered Requirements
+
+- **Title** Unobscured sequential focus. **Description** Close the panel when Tab or Shift+Tab moves focus
+  out of it and preserve the browser's new focus. **Rationale** Independent visual review found the focused
+  gallery link fully covered by the open panel, failing WCAG 2.2 AA 2.4.11. **Interpretation** Native traversal
+  continues at the surrounding control. Escape and pointer light dismissal still return to the opener.
+  **Traced from** TI06. **Date** 2026-11-20.
+- **Title** Compact title in the reference preview. **Description** Retain the suite's Popover title typography
+  in the live example. **Rationale** Visual review found Lattice's document heading font and size leaking into
+  the panel. **Interpretation** Reset typography only inside the preview, preserving the Lattice headings around
+  it. **Traced from** TI08. **Date** 2026-11-20.
+
+## Implementation Observations
+
+- ASSUMPTION: Popover forwards caller attributes to its panel and exposes the three shadcn content helpers as
+  anonymous-slot fragments, following the suite catalogue and the pinned port's slot parity. Revisit the helpers'
+  signatures if compositions need a separate trigger attribute target.
+- Firefox focuses the destination of a same-document link after native light dismissal. Popover restores the
+  trigger after the hash change with `preventScroll`, preserving the link's URL and scroll behavior.
+- The shared positioning seam publishes `--available-width` as well as `--available-height`. Consumers using
+  `data-trellis-popup` inherit both caps. A horizontal popup with a minimum width must keep that rule compatible
+  with the available-width cap.
+- The hover-intent helper remains internal. The gallery-browser probe exercises its callbacks and lifecycle before
+  Tooltip and Navigation menu adopt it.
+- The trigger can be an HTMX swap target by itself. Popover closes before losing that anchor and uses a live
+  trigger lookup for later clicks, focus and positioning. Closed state is reflected before history serialization,
+  while open state is reflected after the native opening succeeds.
+- Hiding an empty Card title preserves its part hook and keeps an unnamed `h2` out of heading navigation.
+- The viewport-recovery proof waits for placement animations after the scrollbar disappears. Chrome
+  reported an intermediate 152.58 px rendered box with three animations running and a 164 px layout
+  height, then rendered the expected 164 px box after they finished.

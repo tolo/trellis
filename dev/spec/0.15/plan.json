@@ -82,9 +82,23 @@
       "id": "S01",
       "name": "Popover and shared positioning",
       "dependsOn": [],
-      "status": "in-progress",
+      "status": "done",
       "fis": "s01-popover-and-shared-positioning.md",
-      "completedTaskIds": [],
+      "completedTaskIds": [
+        "TI01",
+        "TI02",
+        "TI03",
+        "TI04",
+        "TI05",
+        "TI06",
+        "TI07",
+        "TI08",
+        "TI09"
+      ],
+      "verified": {
+        "at": "2026-11-20T13:07Z",
+        "summary": "CI=true mise check -> exit=0, 14:52 +295 ~2: All tests passed!"
+      },
       "scope": "Deliver Popover from pinned source through the public fragment, served gallery and both browser records. Add shared positioning and hover timing. Record the agreed ADR-012 changes before raising the suite ceilings. Correct the embedded Card's omitted-slot copy in the same package build.",
       "sourceRefs": [
         "dev/spec/0.15/prd.md#fr1-popover-and-shared-positioning",

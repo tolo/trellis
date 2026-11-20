@@ -322,6 +322,30 @@ void main() {
     expect(errors, isEmpty);
   });
 
+  test('Popover reference preserves the suite title typography inside an open panel', () async {
+    final browser = await _startChrome('Trellis UI Popover reference typography');
+    if (browser == null) return;
+    final site = await StaticSiteServer.serve(outputs['']!);
+    addTearDown(site.close);
+    final styles = await browser.evaluate(
+      site.baseUrl.resolve('/$_componentRoute/popover/'),
+      r"""(async () => {
+        const trigger = document.querySelector('#reference-options-trigger');
+        const panel = document.querySelector('#reference-options');
+        const opened = new Promise(resolve => panel.addEventListener('toggle', resolve, {once: true}));
+        trigger.click();
+        await opened;
+        const title = getComputedStyle(panel.querySelector('.trellis-popover-title'));
+        const body = getComputedStyle(panel);
+        return [title.fontFamily === body.fontFamily, title.fontSize === body.fontSize,
+          title.lineHeight === body.lineHeight, title.fontWeight];
+      })()""",
+      width: 390,
+      height: 844,
+    );
+    expect(styles, [true, true, true, '500']);
+  });
+
   test('the docs page leaves each preview as the suite renders it', () async {
     final browser = await _startChrome('Trellis UI reference style isolation');
     if (browser == null) return;

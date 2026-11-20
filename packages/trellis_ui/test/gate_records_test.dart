@@ -53,13 +53,18 @@ void main() {
   });
 
   test('a required component cannot ship with a failed manual item', () {
-    final required = record('dialog');
-    manualFailure(required);
-    expect(
-      disposition('').recordIssues('dialog', required),
-      contains('dialog: safari failed without a release disposition'),
-    );
-    expect(() => disposition('dialog | unsupported | safari'), throwsFormatException);
+    for (final name in ['dialog', 'popover']) {
+      expect(requiredReleaseComponents, contains(name));
+      final required = record(name);
+      manualFailure(required);
+      expect(
+        disposition('').recordIssues(name, required),
+        contains('$name: safari failed without a release disposition'),
+      );
+      for (final status in ['unsupported', 'removed']) {
+        expect(() => disposition('$name | $status | safari'), throwsFormatException);
+      }
+    }
   });
 
   test('alert-dialog keeps both browser checks and can be withdrawn for an observed failure', () {

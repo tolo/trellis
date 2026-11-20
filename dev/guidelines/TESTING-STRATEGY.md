@@ -166,9 +166,9 @@ and each scaffold's counter swap and UI dialog, using the seven recipes and reco
 The sweep seeds only manual results, checks each fresh record against the same release policy, then compares
 its bytes to the committed record.
 
-Release limits are 25,000 bytes for the sum of the three embedded responses gzipped separately at level 9,
-400 authored JavaScript lines in the suite, and 50 authored CSS lines with zero authored JavaScript in the admin
-example. Run `test/release_gates_test.dart` and `test/budget_test.dart` from `packages/trellis_ui/`, and
+Release limits are 30,000 bytes for the sum of the three embedded responses gzipped separately at level 9,
+700 authored JavaScript lines in the suite (excluding app-owned recipe glue), and 50 authored CSS lines with zero
+authored JavaScript in the admin example. Run `test/release_gates_test.dart` and `test/budget_test.dart` from `packages/trellis_ui/`, and
 `test/footprint_test.dart` from `examples/admin_app/`.
 
 Harness fixture tests are untagged in fast/full. A test running the full gate over real component or app pages

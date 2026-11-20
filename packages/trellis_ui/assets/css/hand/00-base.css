@@ -15,14 +15,14 @@
 
 :where(a)[class*="trellis-"] { color: inherit; text-decoration: inherit; }
 
-:where(tl-dialog, tl-dropdown-menu, tl-combobox, tl-tabs, tl-toast, [data-slot="dialog-trigger"]) { display: contents; }
+:where(tl-dialog, tl-dropdown-menu, tl-popover, tl-combobox, tl-tabs, tl-toast, [data-slot="dialog-trigger"]) { display: contents; }
 
 /* Top-layer popovers normally center themselves. place() owns their geometry. */
 :where([popover][data-trellis-popup]) {
   position: fixed;
   inset: auto;
   margin: 0;
-  max-inline-size: calc(100vw - 8px);
+  max-inline-size: var(--available-width, calc(100vw - 8px));
   max-block-size: var(--available-height, calc(100vh - 8px));
   overflow: auto;
   overscroll-behavior: contain;

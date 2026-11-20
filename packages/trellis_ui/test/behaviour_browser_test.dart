@@ -1,23 +1,30 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:test/test.dart';
 
 import '../../../tool/ui_gate/driver.dart';
+import '../tool/src/bundle.dart';
 import '../tool/src/gallery.dart';
 
 void main() {
   late HttpServer server;
   late ChromeDriver driver;
   Future<void> Function()? holdOptions;
+  String? suiteScript;
 
   setUp(() async {
     holdOptions = null;
+    suiteScript = null;
     final gallery = galleryHandler(Directory.current);
     server = await shelf_io.serve(
       (request) async {
         final uri = request.requestedUri;
+        if (uri.path == '/trellis-ui/trellis-ui.js' && suiteScript != null) {
+          return Response.ok(suiteScript, headers: {'content-type': 'text/javascript'});
+        }
         if (uri.path == '/demo/options' &&
             (uri.queryParameters['q'] == 'zz' || uri.queryParameters['mode'] == 'timeout')) {
           await holdOptions?.call();
@@ -221,5 +228,45 @@ void main() {
       expect(await verify(), greaterThan(left));
       expect(await driver.evaluate(noCsp), isEmpty);
     }
+  });
+
+  test('hover intent cancels opposite transitions and pending work on disconnect', () async {
+    final script = bundleScript(Directory.current);
+    // Observe the internal helper without adding a production export or a second bundle.
+    final end = script.lastIndexOf('})();');
+    suiteScript = script.replaceRange(end, end, r"""
+window.hoverTransitions = [];
+customElements.define('hover-intent-probe', class extends TlElement {
+  onConnect() {
+    const transition = action => () => window.hoverTransitions.push(action);
+    this.intent = hoverIntent({open: transition('open'), close: transition('close'), openDelay: 40, closeDelay: 40});
+    this.listen(this, 'pointerenter', this.intent.enter);
+    this.listen(this, 'pointerleave', this.intent.leave);
+  }
+  onDisconnect() { this.intent.cancel(); }
+});
+""");
+    await open('dropdown-menu');
+    final result = await driver.evaluate(r"""(async () => {
+      const probe = document.createElement('hover-intent-probe');
+      document.body.append(probe);
+      const fire = type => probe.dispatchEvent(new PointerEvent(type));
+      const settle = () => new Promise(resolve => setTimeout(resolve, 80));
+
+      fire('pointerenter');
+      fire('pointerleave');
+      await settle();
+
+      fire('pointerleave');
+      fire('pointerenter');
+      await settle();
+
+      fire('pointerleave');
+      probe.remove();
+      await settle();
+      return window.hoverTransitions;
+    })()""");
+    expect(result, ['close', 'open']);
+    expect(await driver.evaluate(noCsp), isEmpty);
   });
 }

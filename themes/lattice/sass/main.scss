@@ -290,6 +290,13 @@ a:hover {
   padding: 0;
   list-style: none;
 }
+@media (width > 700px) {
+  /* Native open disclosures need room in flow. Enhanced popovers leave the scroll strip in the top layer. */
+  #lattice-main-menu:is(dialog, :not(:has(details[open]))) [data-slot="navigation-menu-list"] {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+}
 .header-navigation summary,
 .header-navigation a {
   color: var(--ink-soft);

@@ -158,3 +158,7 @@
 - **Leave sidebar disclosure visibility to native details.** S04 reproduced a failed Chromium text-fragment
   reveal when CSS hid a closed panel with `display: none`. Keep Lattice's multiple-open sidebar groups unnamed
   and let the browser reveal a section containing the target. Traced from S04/TI02, 2026-11-20.
+
+- **Keep grouped destinations readable when CSS is blocked.** In S05, adjacent bare anchors ran together.
+  Render each group as a native list. For the current-page marker, pass the destination and page URL in the
+  same final, prefixed form from the theme layout. Traced from S05/TI02 and TI04, 2026-11-20.

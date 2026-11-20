@@ -136,3 +136,8 @@
   If this port adds root tokens, compare the observed light and dark values from each affected browser
   against the generated CSS. Preserve every existing capture value unless the change is independently
   explained. Traced from S03/TI05, 2026-11-20.
+
+- **Measure the composed palette against the integrated suite.** S05 shipped on the feature branch at
+  699 of 700 owned JavaScript lines and 26,922 of 30,000 gzip bytes. Its scale utilities already register
+  the three neutral scale properties. The reference generator accepts fixed-signature fragments without an
+  attribute target. Traced from S05/TI01 and TI04, 2026-11-20.

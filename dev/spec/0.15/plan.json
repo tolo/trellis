@@ -243,7 +243,7 @@
         "S04",
         "S05"
       ],
-      "status": "pending",
+      "status": "in-progress",
       "fis": "s06-theme-and-docs-site-adoption.md",
       "completedTaskIds": [],
       "scope": "Adopt Sheet in Meadow and Lattice, grouped header navigation in Lattice, Accordion for Lattice sidebar groups and Tooltip for its icon-only colour-mode control. Preserve public overrides, wide appearance and working navigation without assets. Retire TD-031 and establish the nine lockstep changelog sections for the MVP.",

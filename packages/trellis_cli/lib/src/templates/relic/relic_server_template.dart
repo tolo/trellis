@@ -16,16 +16,18 @@ String relicServerTemplate(String projectName, {bool htmxCdn = false, bool ui = 
     '\n'
     "import 'package:$projectName/handlers.dart';\n"
     '\n'
-    'Future<void> main() async {\n'
+    'Future<void> main(List<String> args) async {\n'
+    "  final devMode = args.contains('--dev') || Platform.environment['DEV'] == 'true';\n"
     '  final scriptDir = File(Platform.script.toFilePath()).parent.parent.path;\n'
     "  final templatesDir = '\$scriptDir/templates';\n"
     "  final staticDir = '\$scriptDir/static';\n"
     '\n'
     '  // Engine is an application-level singleton — Relic has no DI/context\n'
     '  // mechanism. Route handlers capture it via closure.\n'
+    '  final loader = FileSystemLoader(templatesDir, devMode: devMode);\n'
     '  final engine = Trellis(\n'
-    '    loader: ${ui ? 'CompositeLoader([FileSystemLoader(templatesDir, devMode: true), TrellisUiLoader()])' : 'FileSystemLoader(templatesDir, devMode: true)'},\n'
-    '    devMode: true,\n'
+    '    loader: ${ui ? 'CompositeLoader([loader, TrellisUiLoader()])' : 'loader'},\n'
+    '    devMode: devMode,\n'
     '  );\n'
     '  // Set CSRF_SECRET to keep tokens valid across restarts and replicas.\n'
     "  final csrfSecret = Platform.environment['CSRF_SECRET'] ?? _generateCsrfSecret();\n"
@@ -57,8 +59,17 @@ String relicServerTemplate(String projectName, {bool htmxCdn = false, bool ui = 
     '${htmxCdn ? '' : "\n    ..get('/js/htmx.min.js', (_) async {\n      final js = await File('\$staticDir/js/htmx.min.js').readAsString();\n      return Response.ok(body: Body.fromString(js, mimeType: MimeType.javascript));\n    })"}'
     ';\n'
     '\n'
-    '  await app.serve(address: InternetAddress.anyIPv4, port: 8080);\n'
-    "  print('$projectName running at http://localhost:8080');\n"
+    '  if (devMode) trellisDevReload(app, loader, staticDirectory: staticDir);\n'
+    '  final server = await app.serve(address: InternetAddress.anyIPv4, port: 8080);\n'
+    "  print('$projectName running at http://localhost:\${server.port}');\n"
+    '  if (devMode) {\n'
+    "    print('Dev mode enabled. Live reload active.');\n"
+    '    ProcessSignal.sigint.watch().take(1).listen((_) async {\n'
+    '${ui ? '      await loader.close();\n' : ''}'
+    '      await engine.close();\n'
+    '      await app.close();\n'
+    '    });\n'
+    '  }\n'
     '}\n'
     '\n'
     'String _generateCsrfSecret() {\n'

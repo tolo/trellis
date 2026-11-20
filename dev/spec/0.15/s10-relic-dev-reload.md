@@ -95,3 +95,20 @@
 - **TI05** The development entry point, transport and verified TD-058 outcome are recorded.
   - **Verify**: `inspect: dev/architecture/system-architecture.md:215` – the reload flow and Current through marker agree with ADR-002’s Relic adapter note, Relic CLI and integration guides, affected package 0.15.0 entries, and the resolved TD-058 row.
   - **SATISFIES**: SC02
+
+## Discovered Requirements
+
+- **Title** Coalesce file-watch notifications from one save. **Description** A save must deliver
+  one reload on the stable browser connection. **Rationale** One file append emitted multiple
+  notifications on the real Relic socket. **Interpretation** Wait for a 50 ms quiet period across
+  template and static watches. The browser proof separates saves with a reload and reconnect.
+  **Traced from** TI01. **Date** 2026-11-20.
+
+## Implementation Observations
+
+- ASSUMPTION: Use one native registration call, `trellisDevReload(app, loader, staticDirectory: ...)`,
+  and the standard root-relative routes. Revisit the API if a Relic application needs to mount
+  reload under a path prefix.
+- The independent review reproduced HTTP 500 for valid HTML with a document-declared charset
+  and no HTTP charset. Script injection now preserves the original bytes in that case. The
+  native socket proves the status, body bytes and unchanged Content-Type. Routing: Fix applied.

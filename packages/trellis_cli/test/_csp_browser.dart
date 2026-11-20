@@ -113,11 +113,25 @@ Future<void> expectStaticReload(Uri base, Directory project, String staticRoot) 
   }
 }
 
-Future<void> expectBrowserReload(Uri base, Directory project) async {
+Future<void> expectBrowserReload(
+  Uri base,
+  Directory project, {
+  List<String> assets = const ['styles.css'],
+  bool observeEvents = false,
+}) async {
   final browser = await BrowserProbe.launch();
   addTearDown(browser.close);
   await browser.captureSecurityPolicyViolations();
-  await browser.evaluate(base, 'window.__beforeReload = true', width: 1024, height: 800);
+  // Observe the scaffold's own connection without adding a second one in this page.
+  await browser.preloadScript("""
+    window.EventSource = class extends EventSource {
+      constructor(url, options) {
+        super(url, options);
+        if (new URL(this.url).pathname === '/_dev/reload') window.__reloadSource = this;
+      }
+    };
+  """);
+  await browser.evaluate(base, 'document.readyState', width: 1024, height: 800);
   expect(
     await browser.evaluateHere('[...document.scripts].every(script => script.src && !script.textContent.trim())'),
     isTrue,
@@ -128,16 +142,66 @@ Future<void> expectBrowserReload(Uri base, Directory project) async {
   expect(response.statusCode, 200);
   expect(response.headers.contentType?.mimeType, contains('javascript'));
   await response.drain<void>();
-  await waitForBrowser(browser, "document.readyState === 'complete'");
-  // Wait for the EventSource handshake before changing an asset.
-  await Future<void>.delayed(const Duration(milliseconds: 300));
-  final css = File('${project.path}/static/styles.css');
-  await css.writeAsString('${await css.readAsString()}\n/* browser reload proof */\n');
-  await waitForBrowser(
-    browser,
-    "window.__beforeReload !== true && document.readyState === 'complete' && typeof htmx === 'object'",
-  );
-  expect(await browser.securityPolicyViolations(), isEmpty);
+
+  const ready =
+      "document.readyState === 'complete' && typeof htmx === 'object' && "
+      'window.__reloadSource?.readyState === EventSource.OPEN';
+  await waitForBrowser(browser, ready);
+  expect(await browser.evaluateHere('window.__reloadSource.url'), base.resolve('/_dev/reload').toString());
+  expect(await browser.securityPolicyViolations(), isEmpty, reason: 'Before file edits');
+  var documentStart = await browser.evaluateHere('performance.timeOrigin') as num;
+
+  final observer = observeEvents ? await _openReloadObserver(base) : null;
+  for (final (index, path) in assets.indexed) {
+    final file = File('${project.path}/static/$path');
+    final original = await file.readAsString();
+    final loaded = browser.events
+        .firstWhere((event) => event['method'] == 'Page.loadEventFired')
+        .timeout(const Duration(seconds: 10));
+    await Future.wait([loaded, file.writeAsString('$original\n/* browser reload proof */\n')]);
+    await waitForBrowser(browser, ready);
+    expect(await browser.evaluateHere("performance.getEntriesByType('navigation')[0].type"), 'reload', reason: path);
+    final reloadedAt = await browser.evaluateHere('performance.timeOrigin') as num;
+    expect(reloadedAt, greaterThan(documentStart), reason: path);
+    documentStart = reloadedAt;
+    expect(await browser.securityPolicyViolations(), isEmpty, reason: path);
+    if (observer != null) {
+      await waitForBrowser(observer, 'window.__reloadEvents.length >= ${index + 1}');
+      expect(await observer.evaluateHere('window.__reloadEvents'), List.filled(index + 1, 'reload'), reason: path);
+      expect(
+        await observer.evaluateHere('[window.__reloadOpens, window.__reloadErrors, window.__observer.readyState]'),
+        [1, 0, 1],
+        reason: 'One observer connection received the reload for $path',
+      );
+      expect(await observer.securityPolicyViolations(), isEmpty, reason: path);
+    }
+  }
+}
+
+Future<BrowserProbe> _openReloadObserver(Uri base) async {
+  final observer = await BrowserProbe.launch();
+  addTearDown(observer.close);
+  await observer.captureSecurityPolicyViolations();
+  await observer.command('Network.enable');
+  // A served HTMX fragment gives the observer a same-origin document with no reload client.
+  await observer.command('Network.setExtraHTTPHeaders', {
+    'headers': {'HX-Request': 'true'},
+  });
+  expect(await observer.evaluate(base.resolve('/about'), 'document.scripts.length', width: 1024, height: 800), 0);
+  await observer.evaluateHere("""
+    (() => {
+      window.__reloadEvents = [];
+      window.__reloadOpens = 0;
+      window.__reloadErrors = 0;
+      const source = window.__observer = new EventSource('/_dev/reload');
+      source.addEventListener('open', () => window.__reloadOpens++);
+      source.addEventListener('error', () => window.__reloadErrors++);
+      source.addEventListener('reload', ({data}) => window.__reloadEvents.push(data));
+    })()
+  """);
+  await waitForBrowser(observer, 'window.__observer.readyState === EventSource.OPEN');
+  expect(await observer.evaluateHere('window.__observer.url'), base.resolve('/_dev/reload').toString());
+  return observer;
 }
 
 Future<void> expectAccessibleScaffold(BrowserProbe browser) async {

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.15.0
+
+### Added
+
+- Relic scaffolds reload the browser on template, CSS and JavaScript edits with `--dev` or `DEV=true`.
+  The normal server boot omits both reload routes and the client script.
+
 ## 0.14.0
 
 ### Added

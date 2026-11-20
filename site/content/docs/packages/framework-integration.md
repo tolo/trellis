@@ -683,9 +683,12 @@ and `--template dart_frog`. The flag is rejected for `blog` and `theme`.
 Pass `staticDirectory: 'static'` (Shelf) or `'public'` (Dart Frog) to reload on CSS/JS edits,
 including nested and newly created directories. A missing directory is ignored. Manual
 `liveReloadClientScript()` supplies bare JS; the older inline `liveReloadScript()` needs an
-inline-script allowance. Relic has no browser reload integration yet.
+inline-script allowance.
 
-`trellis_dev` live reload uses a same-origin `EventSource` (SSE), not a WebSocket. The default
+Relic mounts equivalent native GET routes and script injection with
+[`trellisDevReload`](/docs/packages/trellis_relic/#development-reload).
+
+Live reload connects to a same-origin `EventSource` (SSE) in all three adapters. The default
 `CspBuilder` emits `default-src 'self'`, which already covers same-origin connections, so no
 extra directive is needed. Only if you narrow `default-src` (for example to `'none'`) add
 `connect-src 'self'` so the browser can reach the SSE endpoint:
@@ -694,7 +697,7 @@ extra directive is needed. Only if you narrow `default-src` (for example to `'no
 trellisSecurityHeaders(
   csp: CspBuilder(
     defaultSrc: "'none'",
-    connectSrc: "'self'", // reach trellis_dev's SSE endpoint (/_dev/reload)
+    connectSrc: "'self'", // reach the SSE endpoint (/_dev/reload)
   ),
 )
 ```

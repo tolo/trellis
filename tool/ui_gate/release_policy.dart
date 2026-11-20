@@ -27,6 +27,7 @@ const releaseComponents = {
   'pagination',
   'radio',
   'separator',
+  'sheet',
   'stack',
   'switch',
   'table',

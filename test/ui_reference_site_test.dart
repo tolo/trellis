@@ -301,6 +301,20 @@ void main() {
     })()'''),
       [true, true, 'undefined'],
     );
+    expect(
+      await example('sheet', r'''(() => {
+      const trigger = document.querySelector('#reference-sheet-trigger');
+      const sheet = document.querySelector('#reference-sheet');
+      trigger.click();
+      const links = [...sheet.querySelectorAll('ul > li > a')];
+      const opened = sheet.matches(':modal') && document.activeElement === links[0];
+      const targetsFit = links.every(link => link.getBoundingClientRect().height >= 44);
+      sheet.querySelector('[data-slot=sheet-close]').click();
+      return [opened, !sheet.open, document.activeElement === trigger, typeof window.htmx,
+        links.length, targetsFit];
+    })()'''),
+      [true, true, true, 'undefined', 2, true],
+    );
     if (!policy.isWithdrawn('tooltip')) {
       expect(
         await example('tooltip', r'''(() => {

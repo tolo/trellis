@@ -1,7 +1,7 @@
 {
   "tag": "shadcn@4.23.0",
-  "tsxFiles": 25,
-  "hooksPrimary": 160,
+  "tsxFiles": 26,
+  "hooksPrimary": 167,
   "hooks": [
     "trellis-alert",
     "trellis-alert-action",
@@ -148,6 +148,13 @@
     "trellis-radio-group-indicator-icon",
     "trellis-radio-group-item",
     "trellis-rtl-flip",
+    "trellis-sheet-close",
+    "trellis-sheet-content",
+    "trellis-sheet-description",
+    "trellis-sheet-footer",
+    "trellis-sheet-header",
+    "trellis-sheet-overlay",
+    "trellis-sheet-title",
     "trellis-switch",
     "trellis-switch-thumb",
     "trellis-table",
@@ -173,10 +180,10 @@
     "trellis-tooltip-content-logical"
   ],
   "hooksSecondary": 8,
-  "hooksWithStructural": 87,
+  "hooksWithStructural": 91,
   "styleRulesTotal": 441,
-  "styleRulesKept": 143,
-  "styleRulesWithoutTsxHook": 298,
+  "styleRulesKept": 150,
+  "styleRulesWithoutTsxHook": 291,
   "slots": [
     "alert",
     "alert-action",
@@ -288,6 +295,16 @@
     "radio-group-indicator",
     "radio-group-item",
     "separator",
+    "sheet",
+    "sheet-close",
+    "sheet-content",
+    "sheet-description",
+    "sheet-footer",
+    "sheet-header",
+    "sheet-overlay",
+    "sheet-portal",
+    "sheet-title",
+    "sheet-trigger",
     "switch",
     "switch-thumb",
     "table",
@@ -326,6 +343,7 @@
     "data-icon",
     "data-inset",
     "data-orientation",
+    "data-side",
     "data-size",
     "data-slot",
     "data-variant"
@@ -474,6 +492,12 @@
       "line": 16,
       "slot": "separator",
       "literal": "shrink-0 bg-border data-horizontal:h-px data-horizontal:w-full data-vertical:w-px data-vertical:self-stretch"
+    },
+    {
+      "file": "sheet.tsx",
+      "line": 80,
+      "slot": "sheet-close",
+      "literal": "sr-only"
     },
     {
       "file": "toast.tsx",

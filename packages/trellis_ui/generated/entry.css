@@ -975,6 +975,18 @@
   .trellis-rtl-flip {
     @apply ml-auto;
   }
+  .trellis-sheet-content {
+    @apply data-ending-style:opacity-0 data-starting-style:opacity-0 data-[side=bottom]:data-ending-style:translate-y-[2.5rem] data-[side=bottom]:data-starting-style:translate-y-[2.5rem] data-[side=left]:data-ending-style:translate-x-[-2.5rem] data-[side=left]:data-starting-style:translate-x-[-2.5rem] data-[side=right]:data-ending-style:translate-x-[2.5rem] data-[side=right]:data-starting-style:translate-x-[2.5rem] data-[side=top]:data-ending-style:translate-y-[-2.5rem] data-[side=top]:data-starting-style:translate-y-[-2.5rem];
+  }
+  .trellis-sheet-footer {
+    @apply mt-auto flex flex-col;
+  }
+  .trellis-sheet-header {
+    @apply flex flex-col;
+  }
+  .trellis-sheet-overlay {
+    @apply fixed inset-0 z-50 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0;
+  }
   .trellis-switch {
     @apply relative inline-flex items-center transition-all outline-none after:absolute after:-inset-x-3 after:-inset-y-2 data-disabled:cursor-not-allowed data-disabled:opacity-50;
   }
@@ -1012,7 +1024,7 @@
     @apply z-50 w-fit max-w-xs origin-(--transform-origin) bg-foreground text-background;
   }
 
-  /* style-vega.css, unwrapped, 143 of 441 rules */
+  /* style-vega.css, unwrapped, 150 of 441 rules */
   .trellis-alert-dialog-overlay {
       @apply data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs;
     }
@@ -1336,6 +1348,27 @@
     }
   .trellis-radio-group-indicator-icon {
       @apply bg-primary-foreground absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full;
+    }
+  .trellis-sheet-overlay {
+      @apply bg-black/10 supports-backdrop-filter:backdrop-blur-xs;
+    }
+  .trellis-sheet-content {
+      @apply bg-popover text-popover-foreground fixed z-50 flex flex-col gap-4 bg-clip-padding text-sm shadow-lg transition duration-200 ease-in-out data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:border-t data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-r data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:border-l data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:h-auto data-[side=top]:border-b data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm;
+    }
+  .trellis-sheet-close {
+      @apply absolute top-4 right-4;
+    }
+  .trellis-sheet-header {
+      @apply gap-1.5 p-4;
+    }
+  .trellis-sheet-footer {
+      @apply gap-2 p-4;
+    }
+  .trellis-sheet-title {
+      @apply text-foreground font-medium;
+    }
+  .trellis-sheet-description {
+      @apply text-muted-foreground text-sm;
     }
   .trellis-toast {
       @apply rounded-2xl;

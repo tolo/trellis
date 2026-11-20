@@ -59,6 +59,8 @@ Handler galleryHandler(Directory root, {Directory? pages}) {
         final page = engine.render(file.readAsStringSync(), {
           'dialogOpen': request.requestedUri.queryParameters['open'] == '1',
           'fruitOptions': _fruitOptions,
+          'sheetSides': ['right', 'top', 'bottom', 'left'],
+          'sheetUpdated': request.requestedUri.queryParameters['updated'] == '1',
           'columns': ['Name', 'Email address', 'Status'],
           'rows': [
             {'name': 'Ada Lovelace', 'email': 'ada@example.test', 'status': 'Paid'},

@@ -26,6 +26,7 @@ Unmodified MIT inputs from https://raw.githubusercontent.com/shadcn-ui/ui/96da9c
 - `ui/popover.tsx`: `apps/v4/registry/bases/base/ui/popover.tsx`
 - `ui/radio-group.tsx`: `apps/v4/registry/bases/base/ui/radio-group.tsx`
 - `ui/separator.tsx`: `apps/v4/registry/bases/base/ui/separator.tsx`
+- `ui/sheet.tsx`: `apps/v4/registry/bases/base/ui/sheet.tsx`
 - `ui/switch.tsx`: `apps/v4/registry/bases/base/ui/switch.tsx`
 - `ui/table.tsx`: `apps/v4/registry/bases/base/ui/table.tsx`
 - `ui/tabs.tsx`: `apps/v4/registry/bases/base/ui/tabs.tsx`

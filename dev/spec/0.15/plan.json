@@ -383,7 +383,7 @@
         "S01",
         "S03"
       ],
-      "status": "pending",
+      "status": "in-progress",
       "fis": "s12-dropdown-submenus-exit-animations-and-toast-gestures.md",
       "completedTaskIds": [],
       "scope": "First-cut optional improvements to dropdown submenus, four overlay exit animations and stacked swipe-to-dismiss toasts. Requalify each changed subject.",

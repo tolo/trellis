@@ -1,7 +1,7 @@
 {
   "tag": "shadcn@4.23.0",
-  "tsxFiles": 24,
-  "hooksPrimary": 158,
+  "tsxFiles": 25,
+  "hooksPrimary": 160,
   "hooks": [
     "trellis-alert",
     "trellis-alert-action",
@@ -166,13 +166,17 @@
     "trellis-tabs-list-variant-line",
     "trellis-tabs-trigger",
     "trellis-textarea",
-    "trellis-toast"
+    "trellis-toast",
+    "trellis-tooltip-arrow",
+    "trellis-tooltip-arrow-logical",
+    "trellis-tooltip-content",
+    "trellis-tooltip-content-logical"
   ],
-  "hooksSecondary": 6,
-  "hooksWithStructural": 85,
+  "hooksSecondary": 8,
+  "hooksWithStructural": 87,
   "styleRulesTotal": 441,
-  "styleRulesKept": 139,
-  "styleRulesWithoutTsxHook": 302,
+  "styleRulesKept": 143,
+  "styleRulesWithoutTsxHook": 298,
   "slots": [
     "alert",
     "alert-action",
@@ -308,7 +312,11 @@
     "toast-icon",
     "toast-portal",
     "toast-title",
-    "toast-viewport"
+    "toast-viewport",
+    "tooltip",
+    "tooltip-content",
+    "tooltip-provider",
+    "tooltip-trigger"
   ],
   "dataAttrs": [
     "data-active",
@@ -526,6 +534,12 @@
       "line": 233,
       "slot": "toast-icon",
       "literal": "flex min-w-0 flex-1 flex-col gap-1"
+    },
+    {
+      "file": "tooltip.tsx",
+      "line": 47,
+      "slot": "tooltip-trigger",
+      "literal": "isolate z-50"
     }
   ]
 }

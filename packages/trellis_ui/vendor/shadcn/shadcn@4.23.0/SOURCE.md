@@ -31,3 +31,4 @@ Unmodified MIT inputs from https://raw.githubusercontent.com/shadcn-ui/ui/96da9c
 - `ui/tabs.tsx`: `apps/v4/registry/bases/base/ui/tabs.tsx`
 - `ui/textarea.tsx`: `apps/v4/registry/bases/base/ui/textarea.tsx`
 - `ui/toast.tsx`: `apps/v4/registry/bases/base/ui/toast.tsx`
+- `ui/tooltip.tsx`: `apps/v4/registry/bases/base/ui/tooltip.tsx`

@@ -639,3 +639,27 @@
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
     - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
     - {"name":"safari","status":"release-prep","browsers":[]}
+"tooltip":
+  name: "tooltip"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-tooltip-arrow","trellis-tooltip-arrow-logical","trellis-tooltip-content","trellis-tooltip-content-logical"]
+  fragments:
+    - {"name":"tooltip","signature":"tooltip(id, text, side, openDelay, closeDelay, ...attrs)","parameters":["id","text","side","openDelay","closeDelay","...attrs"],"slots":["trigger"],"attribute_targets":[{"tag":"<tl-tooltip>","part":"tooltip"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}

@@ -114,3 +114,18 @@
 - **TI04** The catalogue and reference advertise the tested composition and fallback.
   - **Verify**: `cmd: dart run tool/generate_ui_reference.dart --check && git grep -n 'aria-describedby' -- site/content/docs/ui/components/tooltip.md` – the generated support state matches the record, and the reference and package catalogue agree with the signature, trigger slot and non-hover fallback guidance.
   - **SATISFIES**: SC02
+
+## Implementation Observations
+
+- ASSUMPTION: Accept optional pass-through attributes on `tl-tooltip`, keeping the five named arguments
+  and the trigger's own attributes. The reference generator requires an attribute target for each
+  fragment, matching the rest of the suite. Revisit if the generator supports fragments without a target.
+- ASSUMPTION: Use a centred 4 px offset, 300 ms open delay and 150 ms close delay by default. The FIS leaves
+  omitted timing and alignment to the component. Revisit if a gallery or consumer interaction shows a need
+  for other defaults.
+- **P3** `packages/trellis_ui/assets/css/hand/zz-forced-colors.css`: The hint outline stays visible in
+  forced colours. The arrow blends into the system Canvas colour and looks like a small break at its tip.
+  Routing: Note.
+- **P3** `packages/trellis_ui/gallery/pages/tooltip.html`: The secondary Keyboard shortcuts button
+  demonstrates omitted delays and opens a hint on focus. Enter has no separate visible action. The primary
+  Colour mode link keeps its native navigation. Routing: Note.

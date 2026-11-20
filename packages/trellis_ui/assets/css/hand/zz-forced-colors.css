@@ -3,4 +3,5 @@
   :is(.trellis-checkbox, .trellis-radio-group-item, .trellis-switch)::before { border: 1px solid CanvasText; background: Canvas; }
   :is(.trellis-checkbox, .trellis-radio-group-item, .trellis-switch):checked::before { border: 3px double Highlight; background: Highlight; forced-color-adjust: none; }
   :is(.trellis-checkbox, .trellis-radio-group-item, .trellis-switch):checked::after { background: HighlightText; border-color: HighlightText; forced-color-adjust: none; }
+  .trellis-tooltip-content { outline: 1px solid CanvasText; }
 }

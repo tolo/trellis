@@ -31,6 +31,7 @@ const releaseComponents = {
   'switch',
   'table',
   'textarea',
+  'tooltip',
 };
 
 /// Release decisions are recorded next to the ADR's revisit trigger, apart from the observed results.

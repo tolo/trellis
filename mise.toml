@@ -38,14 +38,14 @@ run = [
 # The workspace root is not a melos member, so `melos exec` skips it; the second line covers its release
 # contract, docs-site and rendered suites. `visual` and `ui-gate` are local release gates (ADR-012, TD-035).
 [tasks.test]
-description = "Fast-tier tests: package unit tests without E2E, then the root suite"
+description = "Branch CI tests: package tests without E2E or UI qualification, then the root suite without local release gates"
 run = [
   "melos exec --dir-exists=test -- dart test --exclude-tags=e2e --exclude-tags=ui-gate",
   "dart test --exclude-tags=visual --exclude-tags=ui-gate",
 ]
 
 [tasks.check]
-description = "Fast tier and the CI job on feature branches: lint, then fast tests"
+description = "CI job on feature branches: lint, then branch CI tests"
 run = [{ task = "lint" }, { task = "test" }]
 
 # The dart_frog E2E suites activate their CLI when missing; doing it up front keeps that out of per-test timeouts.

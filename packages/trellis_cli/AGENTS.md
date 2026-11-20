@@ -13,8 +13,8 @@ Run from `packages/trellis_cli/`. `dart_test.yaml` declares the `e2e` tag, which
 |---|---|
 | analyze | `dart analyze --fatal-infos` |
 | format check | `dart format --output none --set-exit-if-changed .` |
-| test, fast (no e2e) | `dart test --exclude-tags=e2e` |
-| test, full (with e2e) | `dart test` |
+| package suite in branch CI | `dart test --exclude-tags=e2e --exclude-tags=ui-gate` |
+| package suite in the full tier | `dart test --exclude-tags=ui-gate` |
 | run one test | `dart test "{file}" --plain-name "{test}"` |
 
 ## Conventions

@@ -11,7 +11,7 @@ Run from `packages/trellis_dart_frog/`.
 |---|---|
 | analyze | `dart analyze --fatal-infos` |
 | format check | `dart format --output none --set-exit-if-changed .` |
-| test (fast and full are the same here; no `e2e` tests) | `dart test` |
+| package suite (branch CI and full) | `dart test` |
 | run one test | `dart test "{file}" --plain-name "{test}"` |
 
 ## Conventions

@@ -155,7 +155,9 @@ final class UiReferenceGenerator {
       final parameters = (match[2] ?? '').split(',').map((value) => value.trim()).where((value) => value.isNotEmpty);
       final nodes = [definition, ...definition.querySelectorAll('*')];
       final receivers = nodes.where((node) => node.attributes['tl:attrs'] == r'${attrs}').toList();
-      if (receivers.isEmpty) throw UiReferenceException('$component :: $name: no attribute target');
+      if (parameters.contains('...attrs') && receivers.isEmpty) {
+        throw UiReferenceException('$component :: $name: no attribute target');
+      }
       // Aliases such as sidebar and toastViewport can expose unprefixed component hooks.
       aliases.addAll(definition.classes.where((part) => part.startsWith('trellis-')));
       fragments.add({

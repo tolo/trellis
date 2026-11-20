@@ -186,7 +186,7 @@ void main() {
     await focus('guides-trigger');
     await driver.press('Enter');
     await driver.press('Tab');
-    expect(await driver.evaluate("document.activeElement.id"), 'nav-overview');
+    expect(await driver.evaluate('document.activeElement.id'), 'nav-overview');
     expect(await driver.evaluate("document.getElementById('nav-overview').checkVisibility()"), isTrue);
     await driver.probe.command('Network.setBlockedURLs', {'urls': []});
     await driver.evaluate(r'''new Promise((resolve, reject) => {
@@ -198,7 +198,7 @@ void main() {
     })''');
     expect(await driver.evaluate(onlyGuides), isTrue);
     expect(await driver.evaluate("document.getElementById('nav-overview').checkVisibility()"), isTrue);
-    expect(await driver.evaluate("document.activeElement.id"), 'nav-overview');
+    expect(await driver.evaluate('document.activeElement.id'), 'nav-overview');
     expect(await driver.evaluate('window.__uiGate.violations'), isEmpty);
   });
 

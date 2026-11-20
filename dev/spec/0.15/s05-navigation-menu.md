@@ -164,3 +164,6 @@
   The history trace confirmed clean restored markup before that new input. The qualification
   setup opens without focus or pointer paint, while native keyboard and pointer interactions have
   their own proofs. Complete catalogue and app-surface replays are pending at plan integration.
+- The reference generator previously required every fragment to forward attributes. The fixed-signature
+  group leaves its target list empty, while a fragment declaring `...attrs` still needs a receiver.
+  A fixture checks both sides of that inventory rule.

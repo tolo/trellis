@@ -417,6 +417,32 @@
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
     - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
     - {"name":"safari","status":"release-prep","browsers":[]}
+"navigation-menu":
+  name: "navigation-menu"
+  qualified: true
+  supported: false
+  part_classes: ["trellis-navigation-menu","trellis-navigation-menu-content","trellis-navigation-menu-indicator","trellis-navigation-menu-indicator-arrow","trellis-navigation-menu-item","trellis-navigation-menu-link","trellis-navigation-menu-list","trellis-navigation-menu-popup","trellis-navigation-menu-positioner","trellis-navigation-menu-trigger","trellis-navigation-menu-trigger-icon"]
+  fragments:
+    - {"name":"navigationMenu","signature":"navigationMenu(label, ...attrs)","parameters":["label","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<nav>","part":"navigation-menu"}]}
+    - {"name":"navigationMenuGroup","signature":"navigationMenuGroup(id, title, side, align, offset)","parameters":["id","title","side","align","offset"],"slots":["anonymous"],"attribute_targets":[]}
+    - {"name":"navigationMenuLink","signature":"navigationMenuLink(href, currentUrl, ...attrs)","parameters":["href","currentUrl","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<a>","part":"navigation-menu-link"}]}
+  items:
+    - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"self-hosting","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"strict-csp","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"semantic-markup","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"htmx-lifecycle","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"keyboard","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"wcag-axe","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"forced-colors","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"responsive","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"zoom","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"reduced-motion","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
+    - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
+    - {"name":"safari","status":"release-prep","browsers":[]}
 "pagination":
   name: "pagination"
   qualified: true

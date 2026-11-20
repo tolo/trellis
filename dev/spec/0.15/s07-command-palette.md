@@ -141,3 +141,9 @@
   699 of 700 owned JavaScript lines and 26,922 of 30,000 gzip bytes. Its scale utilities already register
   the three neutral scale properties. The reference generator accepts fixed-signature fragments without an
   attribute target. Traced from S05/TI01 and TI04, 2026-11-20.
+
+- **Keep the docs search trigger reachable with the narrow header closed.** Lattice has one header
+  Navigation menu in a responsive Sheet. Place the independent Search trigger outside that Sheet. Preserve
+  S06's inline Tab handoff and the standalone sidebar search shell. Compare the palette and header with
+  S06's wide and dark baselines. The Sheet fix brings the suite to 700 lines and 26,931 gzip bytes.
+  Traced from S06/TI01, TI04 and TI06, 2026-11-20.

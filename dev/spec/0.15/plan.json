@@ -280,7 +280,7 @@
       "dependsOn": [
         "S06"
       ],
-      "status": "pending",
+      "status": "in-progress",
       "fis": "s07-command-palette.md",
       "completedTaskIds": [],
       "scope": "Qualify a reusable dialog and combobox composition with static items and connect it to the existing docs search index. Readers can search from every eligible docs page with the trigger or shortcut.",

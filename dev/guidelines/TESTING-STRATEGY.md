@@ -171,8 +171,8 @@ Release limits are 30,000 bytes for the sum of the three embedded responses gzip
 authored JavaScript in the admin example. Run `test/release_gates_test.dart` and `test/budget_test.dart` from `packages/trellis_ui/`, and
 `test/footprint_test.dart` from `examples/admin_app/`.
 
-Harness fixture tests are untagged in fast/full. A test running the full gate over real component or app pages
-carries `ui-gate`; OS-baseline comparisons carry `visual`. Both are excluded from CI's check/E2E tiers and run in
+Harness fixture tests are untagged in branch CI and the full tier. A test running the full gate over real component
+or app pages carries `ui-gate`; OS-baseline comparisons carry `visual`. Both are excluded from CI's check/E2E tiers and run in
 the local `release-gate` tier, preserving ADR-012's local gate decision.
 
 
@@ -217,9 +217,9 @@ the local `release-gate` tier, preserving ADR-012's local gate decision.
 
 ## Before-merge bar
 
-1. **Fast tier green** (KEY_DEVELOPMENT_COMMANDS.md, `fast`). It is the `check` job, so a green local run predicts the
+1. **Branch CI green** (Key Dev Commands, `branch CI`). It is the `check` job, so a green local run predicts the
    feature-branch CI result. That includes `dart analyze --fatal-infos`, the format check, the gallery check, every
-   package suite without `e2e`, and the root suite without `visual`.
+   package suite without `e2e` and `ui-gate`, and the root suite without `visual` and `ui-gate`.
 2. **Full tier green when the change can reach an E2E journey.** Feature branches get only `check` in CI; `e2e` runs on
    `main`, so a red E2E would first appear after the squash. Run the `full` tier before merging a change to
    `trellis_cli` templates or generators, server adapters, `trellis_dev`, or anything an example app imports.
@@ -274,9 +274,9 @@ Each is explained where it was found; this list says where to look.
 
 - **`dart test` at the workspace root runs only root `test/`.** The package suites need `melos exec`. A hand-rolled root
   `dart test` passes while skipping every package suite (ci.yml header comment). KEY_DEVELOPMENT_COMMANDS.md
-  `fast` and `full` already do both.
-- **`dart test --tags=e2e` exits 79 in any package where nothing carries the tag**, and only `trellis_cli` has tagged
-  files. Narrow with `--exclude-tags`, as the tiers do.
+  `branch CI` and `full` already do both.
+- **`dart test --tags=e2e` exits 79 in packages without that tag.** The CLI and admin example have E2E-tagged tests.
+  Run that selection in those packages when adding E2E coverage to the local release gate.
 - **A local run without Chrome or `node` reports a pass with those assertions unrun.** CI turns the skip into a failure;
   your machine does not. Check the output for skipped tests before calling a theme change verified.
 - **Shared worktree red runs are not evidence.** A suite that imports a helper someone is mid-edit on goes red for no

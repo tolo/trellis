@@ -113,6 +113,9 @@ git history do not carry it, and it outlives the current initiative. -->``.
 
 ## Workflow Rules
 
+- **Plan verification by scope.** A story runs the fast tier and proves its changed behavior and affected callers.
+  Name the test, browser subject or app route in its FIS. Put workspace tests and complete qualification sweeps in
+  the plan's final verification. The orchestrator runs them on the integrated revision. See Key Dev Commands.
 - **Squash merge to `main`** (`git merge --squash`). Stay on the current branch unless told otherwise.
 - **Commit each verified fix round on the `feat/*` branch**, your own paths only (`git commit -- <paths>`), with a
   one-line message. The squash merge absorbs these commits, so they cost nothing, and an uncommitted pile mixes with
@@ -225,7 +228,7 @@ Accessibility, after the same kinds of change, audited on the served pages again
 ## Key Development Commands
 
 See [dev/guidelines/KEY_DEVELOPMENT_COMMANDS.md](dev/guidelines/KEY_DEVELOPMENT_COMMANDS.md) for the
-full reference. Tests run in two tiers (`fast`, `full`) plus a run-one-test row, declared there. Melos scripts:
+full reference. It distinguishes story checks, branch CI, integrated verification and release qualification. Melos scripts:
 `analyze`, `test`, `format:check`.
 
 ### trellis_ui hand CSS

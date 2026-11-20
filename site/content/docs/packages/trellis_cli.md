@@ -92,8 +92,12 @@ dart_frog dev
 trellis create my_relic_app --template relic
 cd my_relic_app
 dart pub get
-dart run bin/server.dart
+dart run bin/server.dart --dev
 ```
+
+Use `--dev` or `DEV=true` to reload connected pages on template changes and
+CSS or JavaScript changes under `static/`. Run `dart run bin/server.dart` without
+either opt-in in production.
 
 ### Theme scaffold
 
@@ -196,7 +200,7 @@ Relic writes previews on demand.
 **`relic` template** generates:
 
 - `bin/server.dart` – Relic server setup with security headers, explicit Trellis
-  engine wiring, routes, and static CSS serving.
+  engine wiring, routes, static assets, and development live reload.
 - `lib/handlers.dart` – Home/about handlers plus counter mutation endpoints
   using `trellis_relic` response helpers.
 - `templates/base.html` – base layout with HTMX-powered Home/About navigation.

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.15.0
+
+### Added
+
+- `trellisDevReload` mounts native Relic SSE and same-origin script routes for template, CSS and JavaScript
+  changes. Closing the dev template loader ends the connections and releases the static file watches.
+
 ## 0.14.0
 
 ### Added

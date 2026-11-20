@@ -68,6 +68,20 @@ Package provides:
 - Non-HTMX users use a small EventSource script
 - Future: SSE data could include file paths for HTMX partial/OOB reload (differentiator)
 
+## Relic adapter (0.15)
+
+`trellis_relic` registers native GET routes at `/_dev/reload` and `/_dev/reload.js`
+and injects the external client into buffered full-page HTML. Relic middleware runs
+only for matched routes, so the development scaffold mounts both routes explicitly.
+The same `FileSystemLoader.changes` model supplies template, CSS and JS signals
+and owns the lifetime of the connection and static watchers.
+
+The default `relic_io` 2.0 adapter calls `flush()` after the stream ends. Each
+development handshake and reload frame carries an ignored 8 KiB SSE comment in
+the same chunk so the reader receives it while the connection remains open. Remove
+the comment when the I/O adapter can flush individual writes and the real-socket
+proof delivers all frames before closure without the padding.
+
 ## Implementation Scope (Future Milestone)
 
 Estimated components:

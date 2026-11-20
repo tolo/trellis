@@ -45,6 +45,8 @@ void main() async {
   and a `Content-Security-Policy` built with `CspBuilder`, on matched routes only (not 404/405).
 - `trellisCsrf()` is a double-submit cookie with HMAC-SHA256 signing, accepted from the `X-CSRF-Token` header or a
   form field; the handler can still read the form.
+- `trellisDevReload(app, loader, staticDirectory: 'static')` refreshes connected pages when templates,
+  CSS or JavaScript change. In a generated Relic app, run `dart run bin/server.dart --dev` or set `DEV=true`.
 - `CspBuilder.strict()` gives `script-src 'self'; style-src 'self'` for apps without inline scripts or styles.
 
 ## Documentation

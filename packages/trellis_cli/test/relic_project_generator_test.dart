@@ -77,9 +77,11 @@ void main() {
         expect(content, contains('trellis_relic:'));
       });
 
-      test('does not depend on shelf or dart_frog', () {
+      test('uses Relic without extra adapter or reload dependencies', () {
         expect(content, isNot(contains('trellis_shelf:')));
         expect(content, isNot(contains('dart_frog:')));
+        expect(content, isNot(contains('trellis_dev:')));
+        expect(content, isNot(contains('relic_native:')));
       });
     });
 

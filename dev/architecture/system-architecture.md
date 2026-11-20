@@ -13,9 +13,9 @@ compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme
 `compileThemeEntry` that configures each entry with the params Sass accepts and reports the ones it drops,
 build-time warnings for palette-default drift and for a site override Sass cannot apply (`trellis_site` now
 depends on `trellis_css`), and the redrawn package graph. The `trellis_ui` package map, pipeline and qualification sections
-are current through the 0.14 sync inventory and shared browser qualification decision (2026-11-18), and so is the
-Relic section (Relic 2, CSRF 2026-11-18). The content model's bundle rule and the `pathPrefix` coverage of feed
-and taxonomy URLs are current through 0.14.
+are current through the 0.14 sync inventory and shared browser qualification decision (2026-11-18).
+Relic is current through its 0.15 development reload (2026-11-20).
+The content model's bundle rule and the `pathPrefix` coverage of feed and taxonomy URLs are current through 0.14.
 Embedded UI placement, Popover and Tooltip are current through 0.15 (2026-11-20).
 Other sections retain the verification scope above.
 The Dart Frog CSRF bridge note is current through 0.14 (it runs on Dart Frog's own request, so a handler can read the body after a form-field token).
@@ -41,7 +41,7 @@ Trellis is a Dart toolkit for building server-rendered web applications and stat
 | **`trellis`** | HTML template engine: parsing, expression evaluation (incl. utility objects), processor pipeline, fragment rendering, caching, validation, template inheritance, contextual escaping. Also includes testing utilities via `testing.dart` (test engine factory, CSS-selector matchers, snapshot golden file testing, fragment helpers). | `html`, `args`, `path`, `matcher`, `string_scanner` | v0.13.0 |
 | **`trellis_shelf`** | Shelf middleware: engine injection, HTMX helpers, security defaults (CSRF, CSP), response builders | `trellis`, `shelf`, `crypto` | v0.13.0 |
 | **`trellis_dart_frog`** | Dart Frog integration: `trellisProvider()` DI middleware, response helpers (`renderPage`, `renderFragment`, `renderOobFragments`), HTMX detection, CSRF/security middleware bridged from `trellis_shelf` | `trellis`, `trellis_shelf`, `dart_frog` | v0.13.0 |
-| **`trellis_relic`** | Serverpod Relic integration: response helpers with explicit engine passing, HTMX detection, `trellisSecurityHeaders()` and `trellisCsrf()` middleware | `trellis`, `relic`, `crypto` | v0.13.0 |
+| **`trellis_relic`** | Serverpod Relic integration: response helpers with explicit engine passing, HTMX detection, `trellisSecurityHeaders()` and `trellisCsrf()` middleware, development browser reload | `trellis`, `relic`, `crypto` | v0.13.0 |
 | **`trellis_ui`** | Embedded UI fragments, same-origin CSS/JS, neutral asset response and materialization. | `trellis` | v0.14.0 |
 | **`trellis_dev`** | Dev tools: SSE browser hot reload, script injection middleware driven by a template loader or any change stream | `trellis`, `shelf` | v0.13.0 |
 | **`trellis_css`** | CSS processing: Dart-native SASS/SCSS compilation via `package:sass`, `tl:scope` fragment-scoped CSS via CSS `@scope` | `trellis`, `sass`, `html` | v0.13.0 |
@@ -211,14 +211,14 @@ formats, so a project can run either version against unchanged packages. Scaffol
 constant, `trellis_cli`'s `htmx_asset.dart`; the HTMX 4 migration is deferred pending an
 explicit trigger. See [ADR-011](../adrs/ADR-011-htmx-version-policy.md).
 
-### Dev-Mode Hot Reload (trellis_dev)
+### Dev-Mode Hot Reload
 
 Current for 0.14 (2026-11-17): app scaffolds self-host the pinned HTMX build by default;
 `--htmx-cdn` opts into the pinned CDN origin. All use `CspBuilder.strict()`, external CSRF
 scripts where needed, and local indicator CSS. Plain `CspBuilder()` defaults remain unchanged.
 
 In development, a same-origin reload script and parallel SSE connection keep the browser updated.
-Shelf watches `static/` and Dart Frog watches `public/`; Relic has no browser reload integration:
+Shelf and Relic watch `static/`. Dart Frog watches `public/`:
 
 ```
 Browser                          Server
@@ -235,8 +235,12 @@ Browser                          Server
    │                                │
 ```
 
-`devMiddleware` is a thin layer over `liveReloadMiddleware(Stream<void>)`, which owns the SSE endpoint, the reload
-client and script injection. Anything that can say "the page is stale" can drive it.
+Shelf's `devMiddleware` adapts its watcher to `liveReloadMiddleware(Stream<void>)`. Relic's
+`trellisDevReload` mounts both GET routes and uses native response bodies. It inserts the client
+before the closing body tag of buffered HTML. It coalesces file signals with a 50 ms quiet
+period and closes the static watches and event streams when the template loader closes.
+The default I/O transport pads each dev frame with an ignored SSE comment to reach the
+socket before stream close. See [ADR-002](../adrs/ADR-002-browser-hot-reload-strategy.md#relic-adapter-015).
 
 ### Static site preview (`trellis dev`)
 
@@ -531,6 +535,10 @@ handler(Request request) async {
     ← returns Relic Response with Body.fromString(html, mimeType: MimeType.html)
 }
 ```
+
+The generated app sets `devMode` from `--dev` or `DEV=true` before it creates the template loader
+and mounts browser reload. With `--ui`, the scaffold retains ownership of the file-system loader
+inside its `CompositeLoader` and closes it on Ctrl-C.
 
 Targets Relic 2, where Content-Type comes from the `Body` and one set in response headers is dropped on the wire. `trellisCsrf` is a native port of the Shelf middleware (same cookie format and defaults, no Shelf bridge): it keeps the token in a `ContextProperty` that the response helpers merge as `csrfToken`, and reads `_csrf` by buffering a urlencoded body (Relic's `FormLimits.defaults` cap), parsing a copy with `urlEncodedForm()` and handing the handler a fresh `Body` over the same bytes. Middleware only fires for matched routes (Relic behavioral difference vs Shelf). Does NOT depend on `trellis_shelf` or `shelf`.
 

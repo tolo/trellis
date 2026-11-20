@@ -302,9 +302,19 @@
       "id": "S10",
       "name": "Relic dev reload",
       "dependsOn": [],
-      "status": "in-progress",
+      "status": "done",
       "fis": "s10-relic-dev-reload.md",
-      "completedTaskIds": [],
+      "completedTaskIds": [
+        "TI01",
+        "TI02",
+        "TI03",
+        "TI04",
+        "TI05"
+      ],
+      "verified": {
+        "at": "2026-11-20T14:17Z",
+        "summary": "CI=true mise exec -- dart test packages/trellis_cli/test/relic_e2e_test.dart -> exit=0, 00:24 +10: All tests passed!"
+      },
       "scope": "Reload an actual generated Relic development app on static CSS and JS edits. Keep production free of reload facilities and close TD-058.",
       "sourceRefs": [
         "dev/spec/0.15/prd.md#fr9-relic-dev-reload-td-058",

@@ -54,6 +54,29 @@ final engine = Trellis(
 return renderPage(request, engine, 'pages/home', {'title': 'Home'});
 ```
 
+## Development reload
+
+In a generated Relic app, run `dart run bin/server.dart --dev` or set `DEV=true`
+when you start the server. Template edits and CSS or JS edits under `static/`
+refresh connected pages. The normal start command omits the reload routes and script.
+
+To enable reload in your own app, reuse the development template loader and
+mount the native Relic routes before serving:
+
+```dart
+final loader = FileSystemLoader('templates', devMode: devMode);
+final engine = Trellis(loader: loader, devMode: devMode);
+final app = RelicApp()
+  ..use('/', trellisSecurityHeaders(csp: const CspBuilder.strict()));
+// Register your page routes using engine.
+if (devMode) trellisDevReload(app, loader, staticDirectory: 'static');
+await app.serve(port: 8080);
+```
+
+The same-origin client works with strict CSP. Closing the loader stops the
+static watches and closes the event streams. If you wrap the loader in
+`CompositeLoader`, close the file-system loader explicitly at shutdown.
+
 ## Response helpers
 
 ### `renderPage`

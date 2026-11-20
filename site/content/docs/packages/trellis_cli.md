@@ -29,7 +29,7 @@ scoop install trellis
 
 Manual download: each
 [release](https://github.com/tolo/trellis/releases/latest) carries
-`trellis-v<version>-<platform>` archives for macOS (arm64, x64), Linux (x64,
+`trellis-v<version>-<platform>` archives for macOS (arm64), Linux (x64,
 arm64), and Windows (x64), plus `SHA256SUMS.txt`. Verify the checksum, extract
 the `trellis` binary, and put it on your `PATH`. The
 [package README](https://github.com/tolo/trellis/blob/main/packages/trellis_cli/README.md)

@@ -34,14 +34,11 @@ human action. Steps are in execution order; each names the guard that enforces i
   Both tiers skip silently when their binary is absent; `_requireNodeInCi` / `requireChromeInCi` turn that skip into a
   failure only when `CI=true`, so **locally a missing Node or Chrome means those checks quietly do not run**.
   ```bash
-  dart run tool/generate_theme_gallery.dart --check          # CI runs this first; a stale gallery fails the job
-  melos run --no-select analyze
-  melos run --no-select format:check
-  melos exec --dir-exists=test -- dart test --exclude-tags=e2e
-  dart test                                                  # root suite: release/distribution contracts, tool/
-  dart format --output=none --set-exit-if-changed tool test
+  mise run setup
+  CI=true mise run lint
+  CI=true mise run release-gate
   ```
-  Root `dart test` alone covers only the root suite; `melos exec` alone skips the root — run both.
+  The release gate runs package tests through Melos and tests the workspace root separately.
   CI excludes `ui-gate` in both test commands and `visual` from the root suite. The local commands include the UI
   qualification tests and the root golden-file layout check, `test/visual_baseline_test.dart`. Its baselines encode font
   metrics, so a recording is only valid on the Chrome build and font set that made it; CI runners drift in both
@@ -136,19 +133,19 @@ that run is `success` (it waits while the run is in flight). If CI is red: fix o
 
 ## 4. Prepare the release on `main` — `tool/release.sh`
 
-The script requires both `melos` and `gh` on `PATH`, and `gh` must already be authenticated. Install/authenticate them
-before starting this step; `release.sh` fails before the bump if either prerequisite is missing.
+Run through Mise to use the pinned Dart and Node versions. Run `mise run setup` first to activate Melos.
+The script also requires an authenticated `gh` on `PATH`.
 
 ```bash
-tool/release.sh X.Y.Z --dry-run   # rehearsal: same checks + bump + gate + a temporary commit, then unwinds everything
-tool/release.sh X.Y.Z
+CI=true mise run release X.Y.Z --dry-run   # rehearses the bump, checks, and temporary commit, then restores the tree
+CI=true mise run release X.Y.Z
 ```
 It refuses unless: on `main`, tree clean, `HEAD == origin/main`, every changelog has `## X.Y.Z`, CI green for HEAD.
 Then: `tool/version_lockstep.sh X.Y.Z` (one `melos version` pass over all publishable pubspecs and their inter-package constraints, 2
 `version.dart` constants, 2 README download examples, every `trellis*: ^x.y.z` install-snippet line in `README.md`,
 `packages/*/README.md`, `docs/`, `site/content/`, every `tolo/trellis` `--ref v<semver>` pin repo-wide, and the
 docs-site hero version) → `--check-refs X.Y.Z` (no stale pin left) → asserts **only** those files changed → local
-gate (step 0's five repeated local commands; gallery freshness is supplied by the required green CI run) → commit
+gate (analyze, formatting and release tests; CI checks gallery freshness) → commit
 `chore(release): trellis SDK X.Y.Z` → `dart pub publish --dry-run` for each publishable package (commit is undone if one fails) →
 `git tag vX.Y.Z` → prints the push command. **Nothing is pushed.**
 
@@ -200,8 +197,8 @@ rerun the failed verification job after pub.dev lists `trellis_ui` 0.14.0.
 ```bash
 tool/verify_release.sh X.Y.Z --wait 20
 ```
-The script checks every publishable package on pub.dev, the GitHub Release with 11 assets
-(5 binaries, 5 `.sha256` files and `SHA256SUMS.txt`), the Homebrew formula and the
+The script checks every publishable package on pub.dev, the GitHub Release with nine assets
+(four binary archives, four `.sha256` files and `SHA256SUMS.txt`), the Homebrew formula and the
 Scoop manifest. The same script runs as the last job (`verify`) of `release-binaries.yml`, so a half-published release
 is red in the run.
 
@@ -224,6 +221,4 @@ is red in the run.
 
 ## Not enabled: platform-level protection
 
-`main` has no branch protection. Enabling *Require status checks to pass* with `CI / Analyze, format, unit tests` on
-`main` (GitHub → Settings → Branches → Add rule) would make step 3 unskippable at the platform level; the release gate
-above works without it and remains the rail for the tag workflows either way.
+`main` has no branch protection. The tag workflows require a successful `ci.yml` run on `main` for the tagged commit.

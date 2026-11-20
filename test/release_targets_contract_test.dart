@@ -19,11 +19,17 @@ void main() {
     expect(matrix, _targets);
   });
 
-  test('verify_release.sh checks an archive and checksum for every release target and no other', () {
+  test('verify_release.sh checks all release archives and checksums', () {
     final assets = RegExp(
-      r'"trellis-\$\{TAG\}-([a-z0-9]+-[a-z0-9]+)\.(?:tar\.gz|zip)"',
+      r'"(trellis-\$\{TAG\}-[^"]+|SHA256SUMS\.txt)"',
     ).allMatches(read('tool/verify_release.sh')).map((m) => m[1]!).toSet();
-    expect(assets, _targets);
+    final expected = {'SHA256SUMS.txt'};
+    for (final target in _targets) {
+      final extension = target.startsWith('windows-') ? 'zip' : 'tar.gz';
+      final archive = 'trellis-\${TAG}-$target.$extension';
+      expected.addAll([archive, '$archive.sha256']);
+    }
+    expect(assets, expected);
   });
 
   test('the Homebrew formula refuses an Intel Mac instead of pointing at a missing archive', () async {

@@ -18,8 +18,8 @@ Usage:
 
 Checks:
   * pub.dev lists <version> for every publishable package
-  * the GitHub Release v<version> is published (not draft) and carries the five
-    binaries, their .sha256 sidecars, and SHA256SUMS.txt
+  * the published GitHub Release v<version> carries four binary archives,
+    their .sha256 sidecars, and SHA256SUMS.txt
   * the Homebrew formula and the Scoop manifest are at <version>
     (--no-taps skips these: release-binaries.yml skips the tap updates when
     TAP_TOKEN is not configured)

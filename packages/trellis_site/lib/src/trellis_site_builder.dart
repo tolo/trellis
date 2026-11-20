@@ -296,7 +296,7 @@ class TrellisSite {
     }
 
     // 5. Taxonomy: collect terms and inject virtual pages
-    final siteContext = _buildSiteContext(pages);
+    final siteContext = _buildSiteContext(pages, mergedThemeParams?['nav_links']);
     var siteParams = <String, dynamic>{'site': siteContext, 'theme': ?mergedThemeParams};
     if (config.taxonomies.isNotEmpty) {
       final collector = TaxonomyCollector(pathPrefix: config.pathPrefix);
@@ -484,7 +484,9 @@ class TrellisSite {
   /// section, home, and taxonomy virtual pages alike. Taxonomy virtual pages are
   /// injected into the pipeline after this call, so they never appear as menu
   /// nodes but still receive the tree.
-  Map<String, dynamic> _buildSiteContext(List<Page> pages) {
+  Map<String, dynamic> _buildSiteContext(List<Page> pages, Object? headerLinks) {
+    const navigation = NavigationBuilder();
+    final menu = navigation.build(pages);
     final context = <String, dynamic>{
       'title': config.title,
       'baseUrl': config.baseUrl,
@@ -498,7 +500,9 @@ class TrellisSite {
       // Hierarchical navigation tree (nested {title, url, children} nodes),
       // built once and shared across every render. Active-trail state is resolved
       // at render time by comparing node.url to ${page.url} (no per-node flag).
-      'menu': const NavigationBuilder().build(pages),
+      'menu': menu,
+      if (headerLinks is List<Object?>)
+        'headerNavigation': buildHeaderNavigation(menu, headerLinks, pathPrefix: config.pathPrefix),
     };
 
     if (config.feeds != null) context['feeds'] = config.feeds!.siteFeedUrls(config.pathPrefix);

@@ -13,16 +13,11 @@
         tl:with="faviconPath=${#strings.startsWith(theme.favicon, '/')}
           ? ${#strings.substring(theme.favicon, 1)} : ${theme.favicon}"
         tl:attr="href=${assetBase} + ${faviconPath}" href="/favicon.svg">
+  <script tl:if="${theme.skin} == 'auto'" tl:src="${assetBase} + 'js/meadow-skin.js'"></script>
   <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/main.css'" href="/css/main.css">
   <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/theme-props.css'" href="/css/theme-props.css">
   <link rel="stylesheet" tl:href="${assetBase} + 'trellis-ui/trellis-ui.css'" href="/trellis-ui/trellis-ui.css">
   <script tl:src="${assetBase} + 'trellis-ui/trellis-ui.js'" defer></script>
-  <script tl:if="${theme.skin} == 'auto'">
-    try {
-      const saved = localStorage.getItem('meadow-skin');
-      document.documentElement.dataset.skin = saved === 'dark' || saved === 'light' ? saved : '';
-    } catch (_) {}
-  </script>
   <link tl:if="${site.feeds.atom} and ${theme.show_rss_link}" rel="alternate" type="application/atom+xml"
         title="Atom Feed" tl:attr="href=${site.feeds.atom}">
   <link tl:if="${site.feeds.rss} and ${theme.show_rss_link}" rel="alternate" type="application/rss+xml"
@@ -61,14 +56,24 @@
                 aria-label="Change color scheme" aria-pressed="false" hidden>Theme</button>
         <a class="nav-cta" tl:if="${page.hero} and ${page.hero.ctas}"
            tl:href="${page.hero.ctas[0].href}"><span tl:text="${page.hero.ctas[0].label}">Start</span></a>
-        <details class="mobile-menu">
-          <summary aria-label="Open navigation menu">Menu</summary>
-          <nav aria-label="Mobile navigation" tl:with="homeBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
-            <a tl:each="link : ${theme.nav_links}"
-               tl:href="${#strings.startsWith(link.url, '#')} ? ${homeBase} + ${link.url} : ${link.url}"
-               tl:text="${link.label}">Link</a>
-          </nav>
-        </details>
+        <div class="mobile-navigation">
+          <section tl:replace="~{trellis-ui/sheet :: sheet('meadow-main-menu', 'right', 'Navigation', 840)}"
+                   data-meadow-main-menu>
+            <tl:block tl:slot="trigger">
+              <button type="button" class="nav-menu-toggle" aria-label="Open navigation menu">Menu</button>
+            </tl:block>
+            <tl:block tl:slot="content">
+              <nav aria-label="Mobile navigation" tl:with="homeBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}">
+                <ul role="list">
+                  <li tl:each="link : ${theme.nav_links}">
+                    <a tl:href="${#strings.startsWith(link.url, '#')} ? ${homeBase} + ${link.url} : ${link.url}"
+                       tl:text="${link.label}">Link</a>
+                  </li>
+                </ul>
+              </nav>
+            </tl:block>
+          </section>
+        </div>
       </div>
     </div>
   </header>

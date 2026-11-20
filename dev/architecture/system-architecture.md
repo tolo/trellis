@@ -6,7 +6,7 @@ Canonical reference for understanding the Trellis SDK architecture: how the pack
 preview, including theme watch recovery, output exclusions and startup cleanup, is current through 0.14 on
 2026-11-18. The named site source
 pipeline and CLI registry were verified for 0.14 on 2026-11-18. Source-scoped URL trust is current through
-0.15 on 2026-11-20. The wider scope is the v0.11.0 SDK + the
+0.15 on 2026-11-20, as are grouped header navigation and the Lattice and Meadow suite adoption. The wider scope is the v0.11.0 SDK + the
 2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
 Lattice `site_demo` home block, and the `examples/docs_site/` proof) + the 2026-09-04 HTMX 4 adapter
 compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme stylesheets compile through
@@ -494,6 +494,11 @@ The content model is additive-nested: `Page.section` stays the top-level folder,
 
 `NavigationBuilder` produces one nested `${site.menu}` tree of `{title, url, children}` map nodes, mirroring the content section hierarchy. It is built once from the discovered pages and injected into the shared `siteParams` (`site.menu`) at both assembly sites (with and without taxonomy), so it rides the existing every-page context to **every** render — single, section, home, and taxonomy virtual pages — from a single injection point (list-page-only assembly would omit it from single/home renders). Own-level page order comes from `orderedSectionPages` (the builder holds no comparator or lineage filter of its own); sections nest by `Page.sectionPath` lineage. Because the tree is shared across renders it carries **no** per-page active flag: a theme resolves the active page and its ancestor trail by comparing each `node.url` against `${page.url}` at render time. Title precedence is `menu_title` → `title` → humanized URL slug. Drafts and `menu_exclude: true` pages are filtered (mirroring `!isDraft`); an opted-out section drops its own node but hoists surviving children to its parent, while a folder with no `_index.md` still yields a synthesized node. Empty content yields `[]`, and sites not referencing `${site.menu}` stay byte-for-byte unchanged. Taxonomy virtual pages are injected after the tree is built, so they receive the menu but never appear as menu nodes.
 
+The same build projects `theme.nav_links` into `site.headerNavigation` when the theme provides that list.
+This ordered view uses the existing menu nodes and final URLs. A configured section with children includes its
+own landing link and descendants until the next configured destination. A matching leaf or unmatched link stays
+direct. Lattice compares the resulting URLs with `page.url` when it renders each Navigation menu link.
+
 ### In-Section Prev/Next
 
 `PageGenerator._resolvePrevNext(page, allPages)` supplies each **single doc page** with `${page.prev}`/`${page.next}` neighbor references (`{url, title}` maps). It holds **no** comparator or lineage filter of its own: it calls `orderedSectionPages(page.sectionPath, allPages)` — the same single ordering seam the `${pages}` listing and the `NavigationBuilder` menu tree consume — finds the page's index in that own-level sequence, and returns the flanking pages. Prev/next order therefore matches sidebar and list order by construction; a second sort here would be the only way they could diverge. Boundaries are handled by absence (no `prev` at index 0, no `next` at the last index, neither for a single-element section), and the keys attach **additively** onto the existing `pageToMap` output in `_buildContext` — each only when present. Attachment is gated to the non-list single-doc render branch (`PageKind.single` and not a list page), so section, home, and taxonomy pages (including single-kind taxonomy *term* pages, which are list pages via `termName`) receive neither key and keep their `paginator.dart` sequencing. The `arbor` theme's `_default/single.html` renders a `tl:if`-guarded region reading these values, so only the links that exist appear. Because attachment only adds keys (never mutates existing ones), a site whose templates do not reference `${page.prev}`/`${page.next}` is byte-for-byte unchanged.
@@ -679,6 +684,16 @@ breadcrumbs, prev/next navigation, search client, and build-time code highlighti
 defaults to `false`; when enabled, the home layout renders its Markdown-to-page block only if `site_demo.title`,
 `site_demo.markdown_html`, and `site_demo.page_title` are all present. This leaf-level guard preserves existing installs
 and prevents a partial whole-file data override from publishing an empty section or failing the build.
+
+Lattice keeps one header Navigation menu and one sidebar tree. Their Sheets expose the same content inline above
+700 px and as modals on smaller viewports. The argument-free `sidebar` fragment stays site-overridable, and docs
+layouts that use the bundled sidebar resolve it through the explicit theme loader. An initially open Accordion
+groups each sidebar section. A Tooltip describes the existing skin button.
+
+Meadow serves its compact navigation through a Sheet up to 840 px. Wider layouts show the desktop navigation
+and release the hidden Sheet's modality. The fallback Sheet section exposes normal links in both themes. Each
+theme loads a same-origin skin initializer before its stylesheets, and Meadow uses a native progress element for
+the confidence value.
 
 ### Client-Side Search Flow
 

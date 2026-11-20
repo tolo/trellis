@@ -7,6 +7,7 @@
       Page — Site
     </title>
     <meta name="description" tl:attr="content=${page.description} ?: ${page.summary} ?: ${site.description}" />
+    <script tl:if="${theme.skin} == 'auto'" tl:src="${assetBase} + 'js/lattice-skin.js'"></script>
     <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/main.css'" href="/css/main.css" />
     <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/theme-props.css'" href="/css/theme-props.css" />
     <link rel="stylesheet" tl:href="${assetBase} + 'trellis-ui/trellis-ui.css'" href="/trellis-ui/trellis-ui.css">
@@ -28,17 +29,6 @@
       type="application/atom+xml"
       tl:attr="href=${site.feeds.atom}"
     />
-    <script tl:if="${theme.skin} == 'auto'">
-      (function () {
-        var saved = null;
-        try {
-          saved = localStorage.getItem("trellis-theme");
-        } catch (_) {}
-        saved = saved === "dark" || saved === "light" ? saved : null;
-        document.documentElement.dataset.theme =
-          saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-      })();
-    </script>
     <script tl:if="${theme.show_search}" tl:attr="src=${assetBase} + 'trellis-search.js'" defer></script>
     <script tl:attr="src=${assetBase} + 'js/lattice.js'" defer></script>
     <meta tl:define="head-extra" />
@@ -80,51 +70,69 @@
           <span tl:unless="${theme.logo} != null and ${theme.logo} != ''" tl:text="${site.title}">Site title</span>
         </a>
         <div class="nav-right">
-          <nav class="desktop-nav" aria-label="Main navigation">
-            <ul class="nav-links">
-              <li tl:each="link : ${theme.nav_links}"><a tl:href="${link.url}" tl:text="${link.label}">Link</a></li>
-            </ul>
-          </nav>
-          <details class="mobile-nav">
-            <summary>Menu</summary>
-            <nav aria-label="Mobile navigation">
-              <ul>
-                <li tl:each="link : ${theme.nav_links}">
-                  <a tl:href="${link.url}" tl:text="${link.label}">Link</a>
-                </li>
-              </ul>
-            </nav>
-          </details>
+          <div class="header-navigation" tl:unless="${#lists.isEmpty(site.headerNavigation)}">
+            <div tl:replace="~{trellis-ui/sheet :: sheet('lattice-main-menu', 'right', 'Main navigation', 700)}" data-lattice-main-menu>
+              <tl:block tl:slot="trigger">
+                <button type="button" class="nav-menu-toggle">Menu</button>
+              </tl:block>
+              <tl:block tl:slot="content">
+                <nav tl:replace="~{trellis-ui/navigation-menu :: navigationMenu('Main navigation')}"
+                    >
+                  <tl:block tl:each="link, status : ${site.headerNavigation}">
+                    <li tl:if="${#lists.size(link.children) > 0}"
+                        tl:replace="~{trellis-ui/navigation-menu :: navigationMenuGroup('lattice-header-' + ${status.index}, ${link.label}, 'bottom', 'start', 4)}">
+                      <ul class="nav-destinations" role="list">
+                        <li tl:each="destination : ${link.children}">
+                          <a tl:replace="~{trellis-ui/navigation-menu :: navigationMenuLink(${destination.url}, ${page.url})}">
+                            <span tl:text="${destination.label}">Destination</span>
+                          </a>
+                        </li>
+                      </ul>
+                    </li>
+                    <li tl:if="${#lists.isEmpty(link.children)}">
+                      <a tl:replace="~{trellis-ui/navigation-menu :: navigationMenuLink(${link.url}, ${page.url})}">
+                        <span tl:text="${link.label}">Link</span>
+                      </a>
+                    </li>
+                  </tl:block>
+                </nav>
+              </tl:block>
+            </div>
+          </div>
           <!-- Rendered hidden; lattice.js reveals it. Without JavaScript the toggle cannot do
                anything, and the PRD's no-JS contract is "no skin toggle" — the media query applies. -->
-          <button
-            tl:if="${theme.skin} == 'auto'"
-            tl:replace="~{trellis-ui/button :: button('default', 'icon')}"
-            class="mode-toggle"
-            type="button"
-            data-lattice-theme-toggle
-            aria-label="Switch color mode"
-            hidden
-          >
-            <svg class="moon" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <svg class="sun" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="2" />
-              <path
-                d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3 7 7M17 17l1.7 1.7M18.7 5.3 17 7M7 17l-1.7 1.7"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              />
-            </svg>
-          </button>
+          <tl-tooltip tl:if="${theme.skin} == 'auto'"
+                      tl:replace="~{trellis-ui/tooltip :: tooltip('lattice-color-hint', 'Switch color mode', 'bottom')}">
+            <tl:block tl:slot="trigger">
+              <button
+                tl:replace="~{trellis-ui/button :: button('default', 'icon')}"
+                class="mode-toggle"
+                type="button"
+                data-lattice-theme-toggle
+                aria-label="Switch color mode"
+                hidden
+              >
+                <svg class="moon" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                <svg class="sun" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="2" />
+                  <path
+                    d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3 7 7M17 17l1.7 1.7M18.7 5.3 17 7M7 17l-1.7 1.7"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </button>
+            </tl:block>
+          </tl-tooltip>
         </div>
       </div>
     </header>
@@ -132,66 +140,79 @@
     <main id="main-content" tabindex="-1" tl:define="content">
       <div class="wrap"><p>Override content.</p></div>
 
-      <details class="sidebar-disclosure" open data-docs-sidebar tl:fragment="sidebar">
-        <summary class="sidebar-toggle" tl:text="${theme.sidebar_title}">Documentation</summary>
-        <div class="docs-sidebar">
-          <!-- The shell stays hidden until the shared search client loads its index. -->
-          <div class="search-shell" data-trellis-search hidden tl:if="${theme.show_search}"
-               tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}"
-               tl:attr="data-search-index=${assetBase} + 'search-index.json'">
-            <div tl:replace="~{trellis-ui/combobox :: combobox('lattice-docs-search', 'page', 'Search…', '', null)}"
-                 aria-label="Search documentation" disabled></div>
-            <template data-trellis-search-results>
-              <div tl:replace="~{trellis-ui/combobox :: comboboxOptions('lattice-docs-search', ${data['trellis-search']})}"></div>
-            </template>
-          </div>
-          <nav class="sidebar-nav" tl:attr="aria-label=${theme.sidebar_title}">
-            <p class="sidebar-title" tl:text="${theme.sidebar_title}">Documentation</p>
-            <ul class="sidebar-tree">
-              <li class="sidebar-item" tl:each="n1 : ${site.menu}">
-                <a
-                  class="sidebar-link"
-                  tl:if="${n1.url != ''}"
-                  tl:href="${n1.url}"
-                  tl:text="${n1.title}"
-                  tl:classappend="${n1.url == page.url} ? 'is-active' : ''"
-                  tl:attr="aria-current=${n1.url == page.url} ? 'page' : _"
-                  >Page</a
-                >
-                <span class="sidebar-label" tl:unless="${n1.url != ''}" tl:text="${n1.title}">Section</span>
-                <ul class="sidebar-subtree" tl:if="${#lists.size(n1.children)} > 0">
-                  <li class="sidebar-item" tl:each="n2 : ${n1.children}">
-                    <a
-                      class="sidebar-link"
-                      tl:if="${n2.url != ''}"
-                      tl:href="${n2.url}"
-                      tl:text="${n2.title}"
-                      tl:classappend="${n2.url == page.url} ? 'is-active' : ''"
-                      tl:attr="aria-current=${n2.url == page.url} ? 'page' : _"
-                      >Page</a
-                    >
-                    <span class="sidebar-label" tl:unless="${n2.url != ''}" tl:text="${n2.title}">Section</span>
-                    <ul class="sidebar-subtree" tl:if="${#lists.size(n2.children)} > 0">
-                      <li class="sidebar-item" tl:each="n3 : ${n2.children}">
-                        <a
-                          class="sidebar-link"
-                          tl:if="${n3.url != ''}"
-                          tl:href="${n3.url}"
-                          tl:text="${n3.title}"
-                          tl:classappend="${n3.url == page.url} ? 'is-active' : ''"
-                          tl:attr="aria-current=${n3.url == page.url} ? 'page' : _"
-                          >Page</a
-                        >
-                        <span class="sidebar-label" tl:unless="${n3.url != ''}" tl:text="${n3.title}">Section</span>
-                      </li>
-                    </ul>
-                  </li>
-                </ul>
-              </li>
-            </ul>
-          </nav>
-        </div>
-      </details>
+      <tl:block tl:fragment="sidebar">
+        <section tl:replace="~{trellis-ui/sheet :: sheet('lattice-sidebar', 'left', ${theme.sidebar_title}, 700)}"
+                 data-lattice-sidebar>
+          <tl:block tl:slot="trigger">
+            <button class="docs-menu-toggle" type="button" tl:text="${theme.sidebar_title}">Documentation</button>
+          </tl:block>
+          <tl:block tl:slot="content">
+            <div class="docs-sidebar">
+              <!-- The shell stays hidden until the shared search client loads its index. -->
+              <div class="search-shell" data-trellis-search hidden tl:if="${theme.show_search}"
+                   tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}"
+                   tl:attr="data-search-index=${assetBase} + 'search-index.json'">
+                <div tl:replace="~{trellis-ui/combobox :: combobox('lattice-docs-search', 'page', 'Search…', '', null)}"
+                     aria-label="Search documentation" disabled></div>
+                <template data-trellis-search-results>
+                  <div tl:replace="~{trellis-ui/combobox :: comboboxOptions('lattice-docs-search', ${data['trellis-search']})}"></div>
+                </template>
+              </div>
+              <nav class="sidebar-nav" tl:attr="aria-label=${theme.sidebar_title}">
+                <p class="sidebar-title" tl:text="${theme.sidebar_title}">Documentation</p>
+                <div tl:replace="~{trellis-ui/accordion :: accordion()}">
+                  <ul class="sidebar-tree" role="list">
+                    <li class="sidebar-item" tl:each="n1 : ${site.menu}">
+                      <a
+                        class="sidebar-link"
+                        tl:if="${n1.url != ''}"
+                        tl:href="${n1.url}"
+                        tl:text="${n1.title}"
+                        tl:classappend="${n1.url == page.url} ? 'is-active' : ''"
+                        tl:attr="aria-current=${n1.url == page.url} ? 'page' : _"
+                        >Page</a
+                      >
+                      <span class="sidebar-label" tl:if="${n1.url == '' and #lists.isEmpty(n1.children)}" tl:text="${n1.title}">Section</span>
+                      <details tl:if="${#lists.size(n1.children)} > 0"
+                               tl:replace="~{trellis-ui/accordion :: accordionItem(null, ${n1.url == '' ? n1.title : n1.title + ' pages'}, true)}">
+                        <ul class="sidebar-subtree" role="list">
+                          <li class="sidebar-item" tl:each="n2 : ${n1.children}">
+                            <a
+                              class="sidebar-link"
+                              tl:if="${n2.url != ''}"
+                              tl:href="${n2.url}"
+                              tl:text="${n2.title}"
+                              tl:classappend="${n2.url == page.url} ? 'is-active' : ''"
+                              tl:attr="aria-current=${n2.url == page.url} ? 'page' : _"
+                              >Page</a
+                            >
+                            <span class="sidebar-label" tl:unless="${n2.url != ''}" tl:text="${n2.title}">Section</span>
+                            <ul class="sidebar-subtree" role="list" tl:if="${#lists.size(n2.children)} > 0">
+                              <li class="sidebar-item" tl:each="n3 : ${n2.children}">
+                                <a
+                                  class="sidebar-link"
+                                  tl:if="${n3.url != ''}"
+                                  tl:href="${n3.url}"
+                                  tl:text="${n3.title}"
+                                  tl:classappend="${n3.url == page.url} ? 'is-active' : ''"
+                                  tl:attr="aria-current=${n3.url == page.url} ? 'page' : _"
+                                  >Page</a
+                                >
+                                <span class="sidebar-label" tl:unless="${n3.url != ''}" tl:text="${n3.title}">Section</span>
+                              </li>
+                            </ul>
+                          </li>
+                        </ul>
+                      </details>
+                    </li>
+                  </ul>
+                </div>
+              </nav>
+            </div>
+          </tl:block>
+        </section>
+      </tl:block>
+
 
       <aside class="docs-toc" tl:fragment="toc">
         <nav aria-label="Table of contents">

@@ -9,6 +9,13 @@
 - Add a four-edge Sheet with native modal focus, link dismissal and an optional inline breakpoint.
 - Add native single-open and multiple-open Accordion groups that work without JavaScript.
 - Add Navigation menu with grouped site links, delayed hover, keyboard interaction and native disclosure fallback.
+- Lattice and the docs site use Navigation menu, Accordion, Sheet, and Tooltip. Meadow closes its mobile
+  Sheet on navigation. Both themes resolve the saved skin before paint under strict CSP.
+- Inline Sheets allow Tab to leave the panel.
+
+## 0.15.0
+
+- Lockstep version bump to keep all Trellis SDK packages on a single shared version. No functional changes in this package.
 
 ## 0.14.0
 

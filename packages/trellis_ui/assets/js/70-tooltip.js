@@ -61,12 +61,7 @@ class TlTooltip extends TlElement {
     this.trackPopup(trigger, hint, options);
   }
 
-  onBeforeSwap(region) { if (region?.contains(this)) this.dismiss?.(); }
-  onHistorySave() { this.dismiss?.(); }
-  onDisconnect() {
-    this.dismiss?.();
-    if (TlTooltip.active === this) TlTooltip.active = null;
-    this.preparePopups(this);
-  }
+  onPopupCleanup() { this.dismiss?.(); }
+  onDisconnect() { if (TlTooltip.active === this) TlTooltip.active = null; }
 }
 customElements.define('tl-tooltip', TlTooltip);

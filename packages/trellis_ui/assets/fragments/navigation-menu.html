@@ -1,0 +1,31 @@
+<nav tl:fragment="navigationMenu(label, ...attrs)" data-slot="navigation-menu"
+  class="trellis-navigation-menu group/navigation-menu" tl:attr="aria-label=${label}" tl:attrs="${attrs}">
+  <tl-navigation-menu>
+    <ul data-slot="navigation-menu-list" class="trellis-navigation-menu-list group" role="list">
+      <tl:block tl:slot=""></tl:block>
+    </ul>
+  </tl-navigation-menu>
+</nav>
+
+<li tl:fragment="navigationMenuGroup(id, title, side, align, offset)" data-slot="navigation-menu-item"
+  class="trellis-navigation-menu-item">
+  <details tl:attr="data-side=${side} ?: 'bottom', data-align=${align} ?: 'start', data-offset=${offset} ?: 4">
+    <summary data-slot="navigation-menu-trigger" class="trellis-navigation-menu-trigger group/navigation-menu-trigger group"
+      tl:attr="id=${id + '-trigger'}, aria-controls=${id}">
+      <tl:block tl:text="${title}"></tl:block>
+      <svg aria-hidden="true" class="trellis-navigation-menu-trigger-icon" viewBox="0 0 24 24" width="16" height="16"
+        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m6 9 6 6 6-6"/>
+      </svg>
+    </summary>
+    <div data-trellis-popup class="trellis-navigation-menu-positioner trellis-navigation-menu-popup" tl:attr="id=${id}">
+      <div data-slot="navigation-menu-content" class="trellis-navigation-menu-content">
+        <tl:block tl:slot=""></tl:block>
+      </div>
+    </div>
+  </details>
+</li>
+
+<a tl:fragment="navigationMenuLink(href, currentUrl, ...attrs)" data-slot="navigation-menu-link"
+  class="trellis-navigation-menu-link" tl:attr="href=${href}, aria-current=${href == currentUrl ? 'page' : null}"
+  tl:attrs="${attrs}"><tl:block tl:slot=""></tl:block></a>

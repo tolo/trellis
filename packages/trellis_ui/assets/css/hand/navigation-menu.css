@@ -1,0 +1,15 @@
+.trellis-navigation-menu tl-navigation-menu { min-inline-size: 0; }
+.trellis-navigation-menu-list { flex-wrap: wrap; justify-content: start; align-items: start; margin: 0; padding: 0; }
+.trellis-navigation-menu-trigger { cursor: pointer; }
+.trellis-navigation-menu-trigger::-webkit-details-marker { display: none; }
+.trellis-navigation-menu-item details[open] > summary { background: var(--muted); }
+.trellis-navigation-menu-item details[open] > summary > svg { rotate: 180deg; }
+.trellis-navigation-menu-link[aria-current="page"] { background: var(--muted); text-decoration: underline; }
+.trellis-navigation-menu-positioner { color: var(--popover-foreground); transition: none; }
+.trellis-navigation-menu-popup { border: 1px solid var(--border); }
+.trellis-navigation-menu-content { overflow-wrap: anywhere; }
+.trellis-navigation-menu-content > :is(ul, ol) { margin: 0; padding: 0; list-style: none; }
+:is(.trellis-navigation-menu-trigger, .trellis-navigation-menu-link):focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: -2px;
+}

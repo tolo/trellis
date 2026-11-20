@@ -28,7 +28,9 @@ Handler galleryHandler(Directory root, {Directory? pages}) {
       .replaceFirst('<!-- page -->', body);
   Response policy(Response response) => response.change(headers: {'content-security-policy': galleryPolicy});
   return (request) async {
-    final path = request.requestedUri.path;
+    final requestPath = request.requestedUri.path;
+    final navPrefix = requestPath.startsWith('/preview/components/') ? '/preview' : '';
+    final path = requestPath.substring(navPrefix.length);
     final asset = trellisUiRespond(path, ifNoneMatch: request.headers['if-none-match']);
     if (asset != null) return policy(Response(asset.statusCode, body: asset.body, headers: asset.headers));
     if (path.startsWith('/static/')) {
@@ -62,6 +64,10 @@ Handler galleryHandler(Directory root, {Directory? pages}) {
           'fruitOptions': _fruitOptions,
           // HTMX inserts new details before removing the old named group.
           if (name == 'accordion') 'accordionRender': ++accordionRender,
+          if (name == 'navigation-menu') ...{
+            'navPrefix': navPrefix,
+            'navCurrent': request.requestedUri.queryParameters.containsKey('unlisted') ? null : requestPath,
+          },
           'sheetSides': ['right', 'top', 'bottom', 'left'],
           'sheetUpdated': request.requestedUri.queryParameters['updated'] == '1',
           'columns': ['Name', 'Email address', 'Status'],

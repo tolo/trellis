@@ -128,3 +128,42 @@
   If this port adds root tokens, compare the observed light and dark values from each affected browser
   against the generated CSS. Preserve every existing capture value unless the change is independently
   explained. Traced from S03/TI05, 2026-11-20.
+
+- **Pinned Navigation Menu viewport utilities need a structural exclusion.** The pinned upstream
+  activation-direction and easing utilities fail standalone compilation. The corresponding size and
+  position animations depend on Base UI's shared viewport. Keep the TSX and Vega paint and use a
+  native top-layer panel with the shared placement seam. Traced from TI01, 2026-11-20.
+
+- **Leave the next focused control visible.** At narrow widths a top-layer panel can cover the next focus
+  target outside Navigation menu. Close it when focus crosses the landmark boundary and keep focus on its
+  destination. Keep the group-switch behavior when focus stays within navigation. Traced from TI03, 2026-11-20.
+
+- **Keep an already-open disclosure usable when the script arrives.** The independent browser review
+  opened a group before loading the suite script. On upgrade its links disappeared while the summary
+  still announced expanded. Carry open native state into the enhanced panel. Traced from TI02, 2026-11-20.
+
+## Implementation Observations
+
+- The port keeps the pinned Vega paint. Three Base UI structural groups are excluded because
+  they depend on a measured viewport or use variants the standalone compiler rejects. Native
+  details, popup placement and a summary chevron carry their behavior.
+- Enabled Navigation menu in the release inventory at 699 suite-owned JavaScript lines
+  and 26,922 gzip bytes. Popover and Tooltip share full-region popup cleanup with Navigation menu.
+- The Vega scale utilities register three non-inherited custom properties. Both browser engines
+  observed `--tw-scale-x`, `--tw-scale-y` and `--tw-scale-z` as `1` in both skins. Only those
+  token entries changed in 36 earlier component and app baselines.
+- Visual review caught focus covered by the open panel after Tab and adjacent unstyled links
+  without separators. The recheck passed after closing on outside focus and giving the sample
+  links native list markup. Code review also reproduced links disappearing when suite JS arrives
+  late. A browser test now verifies the open group and its link focus survive upgrade.
+- ASSUMPTION: the public shortcode uses page-relative links because it renders before the full
+  layout context exists. Revisit if post-Markdown shortcodes receive `site` and `page` objects.
+  Both root and prefixed builds mark the intended example link, and the reference explains the
+  corresponding prefix-absolute arguments.
+- Chrome delivered a new hover on Back when the test cursor stayed over the recreated trigger.
+  The history trace confirmed clean restored markup before that new input. The qualification
+  setup opens without focus or pointer paint, while native keyboard and pointer interactions have
+  their own proofs. Complete catalogue and app-surface replays are pending at plan integration.
+- The reference generator previously required every fragment to forward attributes. The fixed-signature
+  group leaves its target list empty, while a fragment declaring `...attrs` still needs a receiver.
+  A fixture checks both sides of that inventory rule.

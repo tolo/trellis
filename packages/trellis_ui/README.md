@@ -46,7 +46,7 @@ letting the application's router decide. Strong ETags contain the embedded SHA-2
 
 ## Fragment catalogue
 
-Every signature ends in `...attrs`, forwarded to the native control or component root. Base classes survive a caller
+Where a signature takes `...attrs`, it forwards attributes to the native control or component root. Base classes survive a caller
 `class`; boolean, `aria-*` and `hx-*` attributes pass through. Omitted arguments select the defaults below. Named
 slots take the contents of the caller marker; unmarked caller content fills the anonymous slot.
 
@@ -73,6 +73,9 @@ slots take the contents of the caller marker; unmarked caller content fills the 
 | `field :: field` | `controlId, label, hint, error` | none | vertical labelled text input; caller attributes land on the input |
 | `grid :: grid` | `gap, minimum` | anonymous | gap scale; minimum `sm` 10rem, `md` 15rem, `lg` 20rem; fallback `md` |
 | `input :: input` | none | none | native text input; caller `type` overrides text |
+| `navigation-menu :: navigationMenu` | `label` | anonymous list items | labelled navigation landmark |
+| `navigation-menu :: navigationMenuGroup` | `id, title, side, align, offset` | anonymous panel links | native disclosure; unique ID; placement defaults to bottom, start, 4 px |
+| `navigation-menu :: navigationMenuLink` | `href, currentUrl` | anonymous label | anchor marks an exact `currentUrl` match with `aria-current="page"` |
 | `native-select :: native-select` | `size` | anonymous native `option` / `optgroup` markup | `default`, `sm`; fallback `default` |
 | `pagination :: pagination` | `pages, previous, next` | none | pages `{label, href, current, ellipsis}`; nullable previous/next URLs |
 | `popover :: popover` | `id, side, align, offset` | `trigger`, `content` | forwards attributes to the panel; sides `top`, `right`, `bottom`, `left`; alignment `start`, `center`, `end`; defaults `bottom`, `start`, 4 px |
@@ -130,7 +133,7 @@ that scrolls horizontally. Keep table minimum widths in application CSS (the gal
 
 ### Interactive fragments
 
-Use a unique base `id` for each dialog, alert dialog, menu, popover, sheet, tabs, combobox, toast viewport, and tooltip on a
+Use a unique base `id` for each dialog, alert dialog, menu, navigation menu group, popover, sheet, tabs, combobox, toast viewport, and tooltip on a
 page. Menu and tab parts derive their IDs and relationships from the parent scope. Keep tab values unique within their list and
 choose an enabled tab's value for `active`. Arrow keys wrap, skip disabled items and tabs, and move focus; tabs
 activate on Enter, Space or click. Menu checkbox items stay open, and item clicks also dispatch a bubbling

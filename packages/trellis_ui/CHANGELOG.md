@@ -8,6 +8,7 @@
 - Add Tooltip for delayed, hoverable text hints and immediate hints on keyboard focus.
 - Add a four-edge Sheet with native modal focus, link dismissal and an optional inline breakpoint.
 - Add native single-open and multiple-open Accordion groups that work without JavaScript.
+- Add Navigation menu with grouped site links, delayed hover, keyboard interaction and native disclosure fallback.
 
 ## 0.14.0
 

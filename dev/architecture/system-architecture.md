@@ -17,7 +17,7 @@ depends on `trellis_css`), and the redrawn package graph. The `trellis_ui` packa
 are current through the 0.14 sync inventory and shared browser qualification decision (2026-11-18).
 Relic is current through its 0.15 development reload (2026-11-20).
 The content model's bundle rule and the `pathPrefix` coverage of feed and taxonomy URLs are current through 0.14.
-Embedded UI placement, Popover, Tooltip, Sheet and Accordion are current through 0.15 (2026-11-20).
+Embedded UI placement, Popover, Tooltip, Sheet, Accordion and Navigation menu are current through 0.15 (2026-11-20).
 Other sections retain the verification scope above.
 The Dart Frog CSRF bridge note is current through 0.14 (it runs on Dart Frog's own request, so a handler can read the body after a form-field token).
 The app-owned Tier 2 date recipe is current through 0.15 (2026-11-20).
@@ -110,14 +110,15 @@ Frog. Assets live under `/trellis-ui/`, use compile-time SHA-256 ETags and answe
 An app with the suite dependency can invoke the same function through `dart run trellis_ui:materialize [dir]`.
 
 Interactive fragments upgrade to light-DOM custom elements from the deferred classic script. One base owns
-listener cleanup and popup sanitisation for HTMX swaps and history. Dialog, Alert Dialog and Sheet share
+listener and popup cleanup for HTMX swaps, history and disconnect. Dialog, Alert Dialog and Sheet share
 native modality and tab containment. Sheet upgrades a labelled section and keeps its content nodes through
 its optional inline breakpoint. Link dismissal lets the destination take focus. Native popovers share
 four-sided CSSOM placement with viewport flip, size caps and repositioning on scroll and resize.
 Popover exposes trigger and content slots and restores focus on dismissal. Tooltip adds a description to a
 slotted control and uses the shared hover helper to cancel pending transitions when pointer intent changes.
-Its manual popover opens on keyboard focus and consumes Escape in the current modal scope. Combobox
-option responses replace only the results region.
+Its manual popover opens on keyboard focus and consumes Escape in the current modal scope. Navigation menu enhances native disclosures inside a navigation landmark. Each panel is an auto popover.
+The suite tracks delayed pointer intent per disclosure and uses the native top layer to switch active panels.
+The server compares final URLs to mark the current link. Combobox option responses replace only the results region.
 Toast responses append to a pre-existing live region using an HTMX out-of-band swap.
 
 The package's development pipeline vendors pinned shadcn TSX/style/tokens and licences, extracts `cn-*` hooks and

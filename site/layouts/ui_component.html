@@ -45,6 +45,7 @@
                 </dd>
                 <dt>Pass-through attributes</dt>
                 <dd class="ui-reference-targets">
+                  <span tl:if="${#lists.isEmpty(fragment.attribute_targets)}">None</span>
                   <span tl:each="target : ${fragment.attribute_targets}">
                     <code tl:text="${target.tag}">Tag</code>
                     <span tl:if="${target.part}">(<code tl:text="${target.part}">Part</code>)</span>

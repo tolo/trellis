@@ -18,6 +18,7 @@ class TlElement extends HTMLElement {
   disconnectedCallback() {
     this.listeners.abort();
     this.onDisconnect?.();
+    this.preparePopups(this);
   }
 
   listen(target, type, callback, options = {}) {
@@ -25,6 +26,7 @@ class TlElement extends HTMLElement {
   }
 
   preparePopups(region) {
+    if (region?.contains(this)) this.onPopupCleanup?.();
     // htmx settles matching IDs by copying attributes. CSSOM positioning is safe
     // under CSP until htmx copies it or serializes it into a history snapshot.
     for (const popup of this.querySelectorAll(popupSelector)) {
@@ -52,7 +54,10 @@ function setOpenState(element, open) {
   element.toggleAttribute('data-closed', !open);
 }
 
-function place(anchor, popup, { side = 'bottom', align = 'start', offset = 4 } = {}) {
+function place(anchor, popup, { side, align, offset } = {}) {
+  if (!['top', 'right', 'bottom', 'left'].includes(side)) side = 'bottom';
+  if (!['start', 'center', 'end'].includes(align)) align = 'start';
+  offset = Number.isFinite(Number(offset)) ? Number(offset) : 4;
   const edge = 4;
   const rect = anchor.getBoundingClientRect();
   const style = popup.style;

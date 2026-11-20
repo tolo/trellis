@@ -97,6 +97,24 @@ void main() {
     expect(generator.check(), [contains('Regenerate with: dart run tool/generate_ui_reference.dart')]);
   });
 
+  test('only fragments that accept pass-through attributes need an attribute target', () {
+    fixtureComponents(['button']);
+    write('$_suite/generated/trellis.min.css', '.trellis-button {}');
+    const fragment = '$_suite/assets/fragments/button.html';
+    write(fragment, '<div class="trellis-button" tl:fragment="sample(label)"></div>');
+    generator.write();
+    final data = generated()['button'] as YamlMap;
+    final definition = (data['fragments'] as YamlList).single as YamlMap;
+    expect(definition['parameters'], ['label']);
+    expect(definition['attribute_targets'], isEmpty);
+
+    write(fragment, '<div class="trellis-button" tl:fragment="sample(label, ...attrs)"></div>');
+    expect(
+      generator.write,
+      throwsA(isA<UiReferenceException>().having((error) => error.message, 'message', contains('no attribute target'))),
+    );
+  });
+
   test('a failing record is not qualified and a stale file names the regeneration command', () {
     fixtureComponents(['button', 'badge']);
     write('$_suite/generated/trellis.min.css', '.trellis-button {} .trellis-badge {}');

@@ -1,0 +1,24 @@
+<div class="ui-reference-preview">
+  <nav tl:replace="~{trellis-ui/navigation-menu :: navigationMenu('Trellis UI docs')}">
+    <li>
+      <a tl:replace="~{trellis-ui/navigation-menu :: navigationMenuLink('../', './')}">Components</a>
+    </li>
+    <li tl:replace="~{trellis-ui/navigation-menu :: navigationMenuGroup('reference-guides', 'Guides')}">
+      <ul role="list">
+        <li>
+          <a tl:replace="~{trellis-ui/navigation-menu :: navigationMenuLink('../../guide/', './')}">Using Trellis UI</a>
+        </li>
+      </ul>
+    </li>
+    <li tl:replace="~{trellis-ui/navigation-menu :: navigationMenuGroup('reference-patterns', 'Patterns', 'bottom', 'end')}">
+      <ul role="list">
+        <li>
+          <a tl:replace="~{trellis-ui/navigation-menu :: navigationMenuLink('./', './')}">Navigation menu</a>
+        </li>
+        <li>
+          <a tl:replace="~{trellis-ui/navigation-menu :: navigationMenuLink('../accordion/', './')}">Accordion</a>
+        </li>
+      </ul>
+    </li>
+  </nav>
+</div>

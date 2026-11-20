@@ -110,3 +110,30 @@
   If this port adds root tokens, compare the observed light and dark values from each affected browser
   against the generated CSS. Preserve every existing capture value unless the change is independently
   explained. Traced from S03/TI05, 2026-11-20.
+
+- **Title** Distinct names during HTMX replacement. **Description** Preserve the replacement's server-rendered
+  open item. **Rationale** Before HTMX removed the old instance, its name took precedence in both browsers.
+  **Interpretation** Give each response a fresh group name and keep fixed names for static markup.
+  **Traced from** TI03. **Date** 2026-11-20.
+
+## Implementation Observations
+
+- Native `details[open]` drives the chevron and grouping without suite JavaScript. Closed descendants retain
+  geometry in both engines. The review reproduced a failed Chromium text-fragment reveal when author CSS
+  used `display: none`, so the suite leaves concealment to native details and browser proofs check actual
+  visibility.
+- Visual review measured a 2.58:1 light focus border. A foreground outline repaired it to 19.80:1 in light,
+  18.97:1 in dark, and 11.31:1 in forced colours. Routing: Fix applied.
+- The shared root token values matched the existing Sheet captures in Chrome and Firefox across both colour
+  modes. No prior appearance baseline needed a token edit.
+- The required component sweep exposed intermittent Firefox Sheet focus failures. The Sheet probe now moves
+  the pointer onto the heading before capture and starts a real Tab at the dialog to focus its first link.
+  Both original browser checks and the previously recorded Sheet appearance remain binding.
+- The generated chevron auto margin resolved differently at the two reference container widths. Removing the
+  empty upstream focus pseudo-element lets the summary's two-item flex layout keep the chevron at the end
+  during keyboard focus without the redundant margin.
+- The maintainer moved full-catalogue replay to final integration. The focused Accordion gate passed all
+  13 automated items in both browsers and matched the retained record byte for byte. The last per-story
+  catalogue replay was stopped after the Accordion result was written. An earlier catalogue run failed
+  Firefox Dropdown Menu keyboard focus after Space. Its focused controls passed and its real cause
+  was not established. The integrated replay still owns that check.

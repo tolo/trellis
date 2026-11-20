@@ -6,6 +6,7 @@
 - Keep disabled Button progress labels at full opacity while `aria-busy="true"`.
 - Add Tooltip for delayed, hoverable text hints and immediate hints on keyboard focus.
 - Add a four-edge Sheet with native modal focus, link dismissal and an optional inline breakpoint.
+- Add native single-open and multiple-open Accordion groups that work without JavaScript.
 
 ## 0.14.0
 

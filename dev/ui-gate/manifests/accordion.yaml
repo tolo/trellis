@@ -1,0 +1,91 @@
+name: accordion
+page: /components/accordion
+root: '#component'
+elements:
+  multiple: '#multiple'
+  multipleTrigger: '#multiple-second > summary'
+  multiplePanel: '#multiple-second > [data-slot=accordion-content]'
+  single: '#single'
+  singleTrigger: '#single-second > summary'
+  singlePanel: '#single-second > [data-slot=accordion-content]'
+states:
+  default: []
+  opened:
+    # Keyboard and lifecycle exercise activation. Appearance starts with no incidental focus paint.
+    - eval: document.getElementById('multiple-second').open = true
+    - eval: document.getElementById('single-second').open = true
+keyboard:
+  - &start
+    expect:
+      expression: >-
+        [...document.querySelectorAll('#component details[open]')].map(item => item.id)
+      equals: [multiple-first, single-first, independent-first]
+  - focus: '#multiple-second > summary'
+  - press: ' '
+  - &multipleOpen
+    expect:
+      expression: >-
+        document.getElementById('multiple-first').open &&
+        document.getElementById('multiple-second').open &&
+        document.getElementById('multiple-link').checkVisibility()
+      equals: true
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: multiple-link}
+  - focus: '#multiple-second > summary'
+  - press: Enter
+  - expect:
+      expression: >-
+        document.getElementById('multiple-second').open ||
+        document.getElementById('multiple-link').checkVisibility()
+      equals: false
+  - focus: '#single-second > summary'
+  - press: Enter
+  - &singleOpen
+    expect:
+      expression: >-
+        !document.getElementById('single-first').open &&
+        document.getElementById('single-second').open &&
+        document.getElementById('independent-first').open &&
+        !document.getElementById('independent-second').open &&
+        document.getElementById('single-link').checkVisibility()
+      equals: true
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: single-link}
+semantics:
+  - expression: >-
+      (() => {
+        const groups = [...document.querySelectorAll('#component > [data-slot=accordion]')];
+        const items = [...document.querySelectorAll('#component [data-slot=accordion-item]')];
+        const account = groups[1]?.firstElementChild?.name, notifications = groups[2]?.firstElementChild?.name;
+        return groups.length === 3 && items.length === 6 && account && notifications && account !== notifications &&
+          items.every(item => item instanceof HTMLDetailsElement && item.firstElementChild.matches('summary') &&
+            !item.firstElementChild.hasAttribute('aria-expanded') && item.firstElementChild.textContent.trim()) &&
+          [...groups[0].children].every(item => !item.hasAttribute('name')) &&
+          [...groups[1].children].every(item => item.name === account) &&
+          [...groups[2].children].every(item => item.name === notifications);
+      })()
+    equals: true
+htmx:
+  region: '#demo'
+  swap:
+    - click: '#swap'
+  navigate:
+    - click: '#navigate'
+  probe:
+    steps:
+      - *start
+      - click: '#multiple-second > summary'
+      - *multipleOpen
+      - click: '#single-second > summary'
+      - *singleOpen
+      - click: '#multiple-second > summary'
+      - click: '#single-first > summary'
+    expression: >-
+      [...document.querySelectorAll('#component details[open]')].map(item => item.id).join(',')
+    equals: multiple-first,single-first,independent-first
+instances: ['#component details', '#component summary']
+provenance:
+  - file: ../../../packages/trellis_ui/vendor/shadcn/shadcn@4.23.0/LICENSE.md
+    license: MIT
+  - file: ../../../packages/trellis_ui/vendor/lucide/LICENSE
+    license: ISC

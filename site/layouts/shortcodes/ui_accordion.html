@@ -1,0 +1,20 @@
+<div class="ui-reference-preview">
+  <h3>Multiple open</h3>
+  <div tl:replace="~{trellis-ui/accordion :: accordion}">
+    <div tl:replace="~{trellis-ui/accordion :: accordionItem(null, 'Delivery', true)}">
+      <p>Orders ship within two working days.</p>
+    </div>
+    <div tl:replace="~{trellis-ui/accordion :: accordionItem(null, 'Returns')}">
+      <p>Return unused items within 30 days.</p>
+    </div>
+  </div>
+  <h3>Single open</h3>
+  <div tl:replace="~{trellis-ui/accordion :: accordion}">
+    <div tl:replace="~{trellis-ui/accordion :: accordionItem('reference-account', 'Profile', true)}">
+      <p>Change your name and contact details.</p>
+    </div>
+    <div tl:replace="~{trellis-ui/accordion :: accordionItem('reference-account', 'Security')}">
+      <p>Update your sign-in details.</p>
+    </div>
+  </div>
+</div>

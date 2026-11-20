@@ -181,9 +181,18 @@
       "dependsOn": [
         "S01"
       ],
-      "status": "in-progress",
+      "status": "done",
       "fis": "s04-accordion.md",
-      "completedTaskIds": [],
+      "completedTaskIds": [
+        "TI01",
+        "TI02",
+        "TI03",
+        "TI04"
+      ],
+      "verified": {
+        "at": "2026-11-20T17:47Z",
+        "summary": "dart test test/accordion_browser_test.dart -> exit=0, 00:06 +6: All tests passed!"
+      },
       "scope": "Provide single-open and multiple-open native disclosure groups with usable sections before enhancement.",
       "sourceRefs": [
         "dev/spec/0.15/prd.md#fr4-accordion",

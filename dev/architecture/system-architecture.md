@@ -17,7 +17,7 @@ depends on `trellis_css`), and the redrawn package graph. The `trellis_ui` packa
 are current through the 0.14 sync inventory and shared browser qualification decision (2026-11-18).
 Relic is current through its 0.15 development reload (2026-11-20).
 The content model's bundle rule and the `pathPrefix` coverage of feed and taxonomy URLs are current through 0.14.
-Embedded UI placement, Popover, Tooltip and Sheet are current through 0.15 (2026-11-20).
+Embedded UI placement, Popover, Tooltip, Sheet and Accordion are current through 0.15 (2026-11-20).
 Other sections retain the verification scope above.
 The Dart Frog CSRF bridge note is current through 0.14 (it runs on Dart Frog's own request, so a handler can read the body after a form-field token).
 
@@ -98,8 +98,11 @@ trellis_dev ──► trellis
 ## Embedded UI delivery (0.14)
 
 `trellis_ui` depends only on core at runtime. Its native controls, data views and four layout primitives are plain
-fragments. Closed layout scales select hand CSS classes; final `zz-` hand files set target sizes, destructive contrast
-and forced-colour paint without modifying the pinned token values. `TrellisUiLoader` feeds embedded fragments into the app's engine via
+fragments. Accordion uses native details and summary elements. A shared name limits a group to one open item.
+When an HTMX swap inserts a replacement before removing its predecessor, distinct names preserve the intended
+open item in both instances. CSS paints native state without suite JavaScript. Closed layout scales select hand CSS
+classes. Final `zz-` hand files set target sizes, destructive contrast and forced-colour paint without altering the
+pinned token values. `TrellisUiLoader` feeds embedded fragments into the app's engine via
 `CompositeLoader`; `trellisUiRespond` exposes immutable status/headers/bytes for server glue on Shelf, Relic or Dart
 Frog. Assets live under `/trellis-ui/`, use compile-time SHA-256 ETags and answer conditional GETs with 304.
 `materializeTrellisUi` optionally writes the same bytes beside the binary and overwrites divergence.

@@ -586,5 +586,11 @@
     "direction": "missing",
     "name": "trellis-sheet-overlay",
     "reason": "The native dialog backdrop renders outside the DOM."
+  },
+  {
+    "kind": "marker",
+    "direction": "missing",
+    "name": "group/accordion-trigger",
+    "reason": "The native summary exposes expanded state without an aria-expanded attribute. A single icon rotates from its parent details open state instead of using Base UI's two conditional icons."
   }
 ]

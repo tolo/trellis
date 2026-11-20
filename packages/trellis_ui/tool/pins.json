@@ -4,6 +4,7 @@
   "style": "vega",
   "baseColor": "neutral",
   "components": [
+    "accordion",
     "alert",
     "alert-dialog",
     "badge",

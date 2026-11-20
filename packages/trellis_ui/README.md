@@ -52,6 +52,8 @@ slots take the contents of the caller marker; unmarked caller content fills the 
 
 | Template / fragment | Signature before `...attrs` | Slots | Closed values and defaults |
 |---|---|---|---|
+| `accordion :: accordion` | none | anonymous items | forwards to the group |
+| `accordion :: accordionItem` | `name, title, open` | anonymous panel | native summary and details; null name permits multiple open items, a shared name allows one |
 | `alert :: alert` | `variant` | anonymous description, `title` | `default`, `destructive`; fallback `default` |
 | `alert-dialog :: alertDialog` | `id, title, description, open` | anonymous body, `trigger`, `action` | forwards to the native dialog; starts on Cancel; `data-open` / `data-closed` |
 | `badge :: badge` | `variant` | anonymous | `default`, `secondary`, `destructive`, `outline`, `ghost`, `link`; fallback `default` |

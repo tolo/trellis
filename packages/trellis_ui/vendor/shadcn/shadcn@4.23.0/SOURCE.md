@@ -7,6 +7,7 @@ Unmodified MIT inputs from https://raw.githubusercontent.com/shadcn-ui/ui/96da9c
 - `tailwind.css`: `packages/shadcn/src/tailwind.css`
 - `colors-neutral.json`: `apps/v4/public/r/colors/neutral.json`
 - `LICENSE.md`: `LICENSE.md`
+- `ui/accordion.tsx`: `apps/v4/registry/bases/base/ui/accordion.tsx`
 - `ui/alert.tsx`: `apps/v4/registry/bases/base/ui/alert.tsx`
 - `ui/alert-dialog.tsx`: `apps/v4/registry/bases/base/ui/alert-dialog.tsx`
 - `ui/badge.tsx`: `apps/v4/registry/bases/base/ui/badge.tsx`

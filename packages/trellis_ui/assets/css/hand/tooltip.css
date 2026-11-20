@@ -1,0 +1,33 @@
+.trellis-tooltip-content {
+  inline-size: max-content;
+  max-inline-size: min(var(--available-width, calc(100vw - 8px)), 20rem);
+  overflow: visible;
+  overflow-wrap: anywhere;
+  background: var(--foreground);
+  color: var(--background);
+  transform-origin: var(--transform-origin);
+}
+
+/* The upstream inline-flex layout overrides the user agent's closed-popover display. */
+.trellis-tooltip-content:not(:popover-open) { display: none; }
+
+/* Retain a pointer path across the offset, even with a zero close delay. */
+.trellis-tooltip-content::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+}
+
+.trellis-tooltip-arrow {
+  position: absolute;
+  inset-inline-start: calc(50% - 3px);
+  inset-block-end: -3px;
+  inline-size: 6px;
+  block-size: 6px;
+  translate: none;
+  background: inherit;
+}
+
+[data-side="bottom"] > .trellis-tooltip-arrow { inset-block: -3px auto; }
+[data-side="left"] > .trellis-tooltip-arrow { inset: calc(50% - 3px) -3px auto auto; }
+[data-side="right"] > .trellis-tooltip-arrow { inset: calc(50% - 3px) auto auto -3px; }

@@ -1,0 +1,25 @@
+<h1>Tooltip</h1>
+<section id="demo">
+  <button id="before-hint" type="button" class="gallery-action">Previous control</button>
+  <section id="component" aria-label="Tooltip examples">
+    <div class="gallery-row">
+      <div tl:replace="~{trellis-ui/tooltip :: tooltip('colour-hint', 'Find light and dark themes.', 'top', 450, 220)}">
+        <tl:block tl:slot="trigger">
+          <a id="colour-mode" class="gallery-action" href="#colour-settings"
+            aria-describedby="colour-mode-help">Colour mode</a>
+        </tl:block>
+      </div>
+      <div tl:replace="~{trellis-ui/tooltip :: tooltip('shortcut-hint', 'Press Tab to move between controls.')}">
+        <tl:block tl:slot="trigger">
+          <button id="shortcuts" type="button" class="gallery-action">Keyboard shortcuts</button>
+        </tl:block>
+      </div>
+    </div>
+    <p id="colour-mode-help">Light and dark modes are available.</p>
+  </section>
+  <button id="swap" type="button" class="gallery-action" hx-get="/components/tooltip" hx-select="#demo"
+    hx-target="#demo" hx-swap="outerHTML">Refresh example</button>
+  <a id="navigate" class="gallery-action" hx-boost="true" href="/components/button">Next example</a>
+  <h2 id="colour-settings" tabindex="-1">Colour settings</h2>
+  <p>Choose light or dark mode using your device’s appearance settings.</p>
+</section>

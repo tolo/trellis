@@ -27,7 +27,8 @@
     "table",
     "tabs",
     "textarea",
-    "toast"
+    "toast",
+    "tooltip"
   ],
   "twAnimate": {
     "version": "1.4.0",

@@ -15,7 +15,7 @@
 
 :where(a)[class*="trellis-"] { color: inherit; text-decoration: inherit; }
 
-:where(tl-dialog, tl-dropdown-menu, tl-popover, tl-combobox, tl-tabs, tl-toast, [data-slot="dialog-trigger"]) { display: contents; }
+:where(tl-dialog, tl-dropdown-menu, tl-popover, tl-combobox, tl-tabs, tl-toast, tl-tooltip, [data-slot="dialog-trigger"], [data-slot="tooltip-trigger"]) { display: contents; }
 
 /* Top-layer popovers normally center themselves. place() owns their geometry. */
 :where([popover][data-trellis-popup]) {

@@ -538,5 +538,11 @@
     "direction": "extra",
     "name": "trellis-toaster",
     "reason": "Stacks the HTMX live-region entries with a CSS gap."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "tooltip-provider",
+    "reason": "Trellis supplies delays per Tooltip fragment so it does not render Base UI's shared provider."
   }
 ]

@@ -89,6 +89,7 @@ slots take the contents of the caller marker; unmarked caller content fills the 
 | `textarea :: textarea` | none | anonymous text | native textarea |
 | `toast :: toast` | `type, title, description, duration, outOfBand` | none | forwards to the card; `data-type`: `info` (default), `success`, `warning`, `error`; duration in ms defaults to 5000, 0 persists |
 | `toast :: toastViewport` | `id` | anonymous toasts | forwards to the live region; default ID and out-of-band target `toaster` |
+| `tooltip :: tooltip` | `id, text, side, openDelay, closeDelay` | `trigger` | one native focusable control; forwards to the wrapper; default side `top`, delays 300/150 ms; zero is valid |
 
 Template names in the table have the `trellis-ui/` prefix. Gap values are `none` 0, `xs` .25rem, `sm` .5rem,
 `md` 1rem, `lg` 1.5rem and `xl` 2rem. Unrecognised layout values fall back and never create an inline style.
@@ -126,8 +127,8 @@ that scrolls horizontally. Keep table minimum widths in application CSS (the gal
 
 ### Interactive fragments
 
-Use a unique base `id` for each dialog, alert dialog, menu, popover, tabs, combobox and toast viewport on a page. Menu and tab
-parts derive their IDs and relationships from the parent scope. Keep tab values unique within their list and
+Use a unique base `id` for each dialog, alert dialog, menu, popover, tabs, combobox, toast viewport, and tooltip on a
+page. Menu and tab parts derive their IDs and relationships from the parent scope. Keep tab values unique within their list and
 choose an enabled tab's value for `active`. Arrow keys wrap, skip disabled items and tabs, and move focus; tabs
 activate on Enter, Space or click. Menu checkbox items stay open, and item clicks also dispatch a bubbling
 `tl-select` event with the item in its detail.
@@ -141,6 +142,10 @@ on the fragment host.
 The Popover trigger slot supplies the label of a native button. Click, Enter or Space opens the panel and moves focus
 inside. Tabbing out of the panel closes it without moving focus again. Escape or clicking outside returns focus to
 the trigger. Use a plain link or native disclosure when an action must stay available without the suite script.
+
+The Tooltip trigger slot contains the existing native control. Its label and action stay intact and the suite
+adds the hint ID to `aria-describedby`. Use Tooltip for supplementary text and put essential information in
+visible content for touch readers and readers without the suite script.
 
 Give the combobox input a separate label using its base ID. Send text through an app-chosen query parameter
 (`name="q"`, for example) and use `hx-target="#<id>-results"` with `hx-swap="outerHTML"` to replace suggestions.

@@ -4,6 +4,7 @@
 - Render only supplied Card copy. Omitted title, description and body slots no longer show demo text.
 - Document a labelled native date field in the Input reference.
 - Keep disabled Button progress labels at full opacity while `aria-busy="true"`.
+- Add Tooltip for delayed, hoverable text hints and immediate hints on keyboard focus.
 
 ## 0.14.0
 

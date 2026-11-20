@@ -1,0 +1,9 @@
+<tl-tooltip tl:fragment="tooltip(id, text, side, openDelay, closeDelay, ...attrs)" data-slot="tooltip" tl:attrs="${attrs}"
+  tl:attr="data-side=${side} ?: 'top', data-open-delay=${openDelay} ?: 300, data-close-delay=${closeDelay} ?: 150">
+  <span data-slot="tooltip-trigger"><tl:block tl:slot="trigger"></tl:block></span>
+  <span popover="manual" role="tooltip" data-slot="tooltip-content" data-trellis-popup data-closed
+    class="trellis-tooltip-content trellis-tooltip-content-logical" tl:attr="id=${id}">
+    <tl:block tl:text="${text}"></tl:block>
+    <span aria-hidden="true" class="trellis-tooltip-arrow trellis-tooltip-arrow-logical"></span>
+  </span>
+</tl-tooltip>

@@ -301,6 +301,20 @@ void main() {
     })()'''),
       [true, true, 'undefined'],
     );
+    if (!policy.isWithdrawn('tooltip')) {
+      expect(
+        await example('tooltip', r'''(() => {
+      const control = document.querySelector('#reference-mode');
+      const hint = document.querySelector('#reference-mode-hint');
+      control.focus();
+      const open = hint.matches(':popover-open') && hint.getBoundingClientRect().height > 0;
+      const stillFocused = document.activeElement === control;
+      control.blur();
+      return [open, stillFocused, !hint.matches(':popover-open'), control.getAttribute('aria-describedby')];
+    })()'''),
+        [true, true, true, 'reference-mode-hint'],
+      );
+    }
     if (!policy.isWithdrawn('button')) {
       expect(
         await example('button', r'''(() => {

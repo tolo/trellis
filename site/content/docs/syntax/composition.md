@@ -556,7 +556,7 @@ takes 2 positional argument(s) before its rest parameter
 ### Spread the map, do not probe it
 
 In strict mode, reading a key the map lacks throws before an elvis or ternary can
-apply a default, and filters take one argument. A component therefore spreads the
+apply a default, or a filter can see the value. A component therefore spreads the
 whole map and keeps its defaults as literal attributes that the spread
 overwrites, as `field` does with `type="text"`.
 

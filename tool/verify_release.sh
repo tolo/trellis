@@ -17,9 +17,9 @@ Usage:
   tool/verify_release.sh --help
 
 Checks:
-  * pub.dev lists <version> for every publishable package (8)
-  * the GitHub Release v<version> is published (not draft) and carries the five
-    binaries, their .sha256 sidecars, and SHA256SUMS.txt
+  * pub.dev lists <version> for every publishable package
+  * the published GitHub Release v<version> carries four binary archives,
+    their .sha256 sidecars, and SHA256SUMS.txt
   * the Homebrew formula and the Scoop manifest are at <version>
     (--no-taps skips these: release-binaries.yml skips the tap updates when
     TAP_TOKEN is not configured)
@@ -75,11 +75,10 @@ REPO="${GH_REPO:-$(gh repo view --json nameWithOwner --jq .nameWithOwner)}"
 export GH_REPO="${REPO}"
 TAG="v${VERSION}"
 # Keep in sync with tool/version_lockstep.sh PACKAGES and publish.yml's matrix.
-PACKAGES=(trellis trellis_shelf trellis_dev trellis_cli trellis_css trellis_site trellis_dart_frog trellis_relic)
+PACKAGES=(trellis trellis_shelf trellis_dev trellis_cli trellis_css trellis_site trellis_dart_frog trellis_relic trellis_ui)
 # Keep in sync with release-binaries.yml's build matrix + checksums job.
 ASSETS=(
   "trellis-${TAG}-macos-arm64.tar.gz" "trellis-${TAG}-macos-arm64.tar.gz.sha256"
-  "trellis-${TAG}-macos-x64.tar.gz" "trellis-${TAG}-macos-x64.tar.gz.sha256"
   "trellis-${TAG}-linux-x64.tar.gz" "trellis-${TAG}-linux-x64.tar.gz.sha256"
   "trellis-${TAG}-linux-arm64.tar.gz" "trellis-${TAG}-linux-arm64.tar.gz.sha256"
   "trellis-${TAG}-windows-x64.zip" "trellis-${TAG}-windows-x64.zip.sha256"

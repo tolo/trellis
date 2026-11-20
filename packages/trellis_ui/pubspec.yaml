@@ -1,0 +1,22 @@
+name: trellis_ui
+version: 0.13.0
+description: Embedded HTML fragments and same-origin CSS and JavaScript for Trellis applications.
+repository: https://github.com/tolo/trellis/tree/main/packages/trellis_ui
+resolution: workspace
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  trellis: ^0.13.0
+
+dev_dependencies:
+  crypto: ^3.0.0
+  dart_frog: ^1.2.0
+  html: ^0.15.6
+  http: ^1.6.0
+  lints: ^6.0.0
+  path: ^1.9.0
+  relic: ^2.0.0
+  shelf: ^1.4.0
+  test: ^1.25.0

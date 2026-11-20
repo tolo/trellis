@@ -26,6 +26,8 @@
   <!-- Theme CSS (compiled from sass/main.scss), root-absolute via assetBase. -->
   <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/main.css'" href="/css/main.css">
   <link rel="stylesheet" tl:attr="href=${assetBase} + 'css/theme-props.css'" href="/css/theme-props.css">
+  <link rel="stylesheet" tl:href="${assetBase} + 'trellis-ui/trellis-ui.css'" href="/trellis-ui/trellis-ui.css">
+  <script tl:src="${assetBase} + 'trellis-ui/trellis-ui.js'" defer></script>
 
   <!-- RSS/Atom feed link — controlled by show_rss_link param -->
   <link tl:if="${site.feeds.atom} and ${theme.show_rss_link}"
@@ -43,7 +45,7 @@
        Reads the index URL from the shell's data-search-index attribute; on a
        failed index fetch it hides the control so the page stays fully readable. -->
   <script tl:if="${theme.show_search}"
-          tl:attr="src=${assetBase} + 'js/search.js'" defer></script>
+          tl:attr="src=${assetBase} + 'trellis-search.js'" defer></script>
 
   <!-- Code-block enhancement (first-party, same-origin, no CDN): adds a language
        label and copy button to each code block. Progressive enhancement — code
@@ -94,23 +96,15 @@
           <summary class="sidebar-toggle" tl:text="${theme.sidebar_title}">Documentation</summary>
 
           <div class="docs-sidebar">
-            <!-- Search UI shell. The querying behavior lives in the vendored
-                 static/js/search.js. The static script cannot interpolate
-                 ${site.pathPrefix}, so the root-absolute index URL is passed in
-                 via data-search-index, computed with the same assetBase rule the
-                 <head> asset links use (pathPrefix, or / when served at root).
-                 The index is written to the output root, so it is served at
-                 ${assetBase}search-index.json (e.g. /trellis/search-index.json).
-                 Ships hidden; search.js reveals it once the index has loaded, so a page
-                 without JavaScript shows no permanently disabled control. -->
-            <div class="search-shell" hidden tl:if="${theme.show_search}"
+            <!-- Keep the search hidden until the shared client loads its index. -->
+            <div class="search-shell" data-trellis-search hidden tl:if="${theme.show_search}"
                  tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}"
                  tl:attr="data-search-index=${assetBase} + 'search-index.json'">
-              <label class="sr-only" for="docs-search">Search documentation</label>
-              <input type="search" id="docs-search" class="search-input"
-                     placeholder="Search…" autocomplete="off"
-                     data-arbor-search disabled>
-              <ul class="search-results" data-arbor-search-results hidden></ul>
+              <div tl:replace="~{trellis-ui/combobox :: combobox('docs-search', 'page', 'Search…', '', null)}"
+                   aria-label="Search documentation" disabled></div>
+              <template data-trellis-search-results>
+                <div tl:replace="~{trellis-ui/combobox :: comboboxOptions('docs-search', ${data['trellis-search']})}"></div>
+              </template>
             </div>
 
             <nav class="sidebar-nav" tl:attr="aria-label=${theme.sidebar_title}">
@@ -207,5 +201,10 @@
     </div>
   </footer>
 
+  <template data-code-copy>
+    <button tl:replace="~{trellis-ui/button :: button('default', 'xs')}"
+            aria-label="Copy code to clipboard">Copy</button>
+  </template>
+  <span class="sr-only" role="status" data-code-copy-status></span>
 </body>
 </html>

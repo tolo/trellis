@@ -1,0 +1,26 @@
+<h1>Button</h1>
+<section id="demo"><a id="before" href="#after">Before example</a><section id="component" aria-label="button examples"><p>Vega buttons, rendered through the application engine.</p>
+<section><h2>Variants</h2><div class="gallery-row">
+<button tl:replace="~{trellis-ui/button :: button('default', 'default')}">Default</button>
+<button tl:replace="~{trellis-ui/button :: button('outline', 'default')}">Outline</button>
+<button tl:replace="~{trellis-ui/button :: button('secondary', 'default')}">Secondary</button>
+<button tl:replace="~{trellis-ui/button :: button('ghost', 'default')}">Ghost</button>
+<button tl:replace="~{trellis-ui/button :: button('destructive', 'default')}">Destructive</button>
+<button tl:replace="~{trellis-ui/button :: button('link', 'default')}">Link</button>
+</div></section>
+<section><h2>Sizes</h2><div class="gallery-row">
+<button tl:replace="~{trellis-ui/button :: button('default', 'default')}">Default</button>
+<button tl:replace="~{trellis-ui/button :: button('default', 'xs')}">Xs</button>
+<button tl:replace="~{trellis-ui/button :: button('default', 'sm')}">Sm</button>
+<button tl:replace="~{trellis-ui/button :: button('default', 'lg')}">Lg</button>
+<button tl:replace="~{trellis-ui/button :: button('default', 'icon')}" aria-label="icon">+</button>
+<button tl:replace="~{trellis-ui/button :: button('default', 'icon-xs')}" aria-label="icon-xs">+</button>
+<button tl:replace="~{trellis-ui/button :: button('default', 'icon-sm')}" aria-label="icon-sm">+</button>
+<button tl:replace="~{trellis-ui/button :: button('default', 'icon-lg')}" aria-label="icon-lg">+</button>
+</div></section>
+<section><h2>States and attributes</h2><div class="gallery-row">
+<button tl:replace="~{trellis-ui/button :: button}" disabled>Disabled</button>
+<button tl:replace="~{trellis-ui/button :: button}" hx-get="/components/button" hx-target="main" hx-select="main > *">Refresh example</button>
+</div></section>
+</section><a id="after" href="#before">After example</a>
+<button id="swap" type="button" class="gallery-action" hx-get="/components/button" hx-select="#demo" hx-target="#demo" hx-swap="outerHTML">Refresh example</button> <a id="navigate" class="gallery-action" hx-boost="true" href="/components/input">Next example</a></section>

@@ -11,7 +11,9 @@ workspace:
   - packages/trellis_site
   - packages/trellis_dart_frog
   - packages/trellis_relic
+  - packages/trellis_ui
   - examples/shelf_app
+  - examples/admin_app
   - examples/todo_app
   - examples/relic_app
   - examples/dart_frog_app

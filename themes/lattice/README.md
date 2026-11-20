@@ -3,6 +3,9 @@
 Lattice is a reusable `docs` theme with an expressive, content-driven home page and Arbor-compatible documentation
 navigation. It includes light, dark, and automatic skins; sidebar, TOC, search, prev/next links; build-time syntax
 highlighting; and progressive enhancements that never gate access to content.
+Lattice requires Trellis 0.14.0 for its suite combobox and reader toggle.
+The build supplies the shared search client beside the JSON index.
+
 
 ## Use
 
@@ -52,13 +55,18 @@ Lattice-specific surface.
 | `code_font_family`    | Spline Sans Mono stack | Code font stack                             |
 | `max_width`           | `1056px`               | Maximum content width                       |
 | `border_radius`       | `8px`                  | Global corner radius                        |
-| `logo`                | unset                  | Optional prefix-relative header logo        |
-| `favicon`             | `favicon.svg`          | Prefix-relative browser icon                |
 | `nav_links`           | Home and Docs          | Header links                                |
 | `social_links`        | `[]`                   | Footer social links                         |
 | `footer_text`         | unset                  | Optional footer copy                        |
 | `show_powered_by`     | `true`                 | Trellis attribution                         |
 | `show_rss_link`       | `true`                 | Feed discovery link                         |
+
+### Branding params
+
+| Param     | Default       | Purpose                              |
+| --------- | ------------- | ------------------------------------ |
+| `logo`    | unset         | Optional prefix-relative header logo |
+| `favicon` | `favicon.svg` | Prefix-relative browser icon         |
 
 ### Docs params
 
@@ -180,8 +188,7 @@ and card lift. See [VENDORED.md](VENDORED.md) for provenance.
 
 ```bash
 cd example
-trellis build
-trellis serve
+trellis dev
 ```
 
 The screenshots declared by the manifest are 1280×800 captures of this bridged example in auto mode with light and

@@ -44,6 +44,49 @@ than the generic form:
 - `tl:class` sets `class` – it **replaces** the existing class, it does not append.
 - `tl:id` sets `id`.
 
+## Unsafe URLs are blocked
+
+A value an expression writes to `href`, `src`, `action`, `formaction`, `data` or
+`xlink:href`, through a shorthand, `tl:attr` or `tl:attrs`, is checked before it
+is written. A `javascript:` or `vbscript:` URL, or a `data:` URL that is not a
+PNG, GIF, JPEG, WebP or AVIF image, becomes `about:invalid#trellis-unsafe-url`,
+which never navigates or runs. The check sees the URL as a browser does, so
+leading spaces, control characters, tabs or newlines inside the scheme, and
+mixed case do not get past it. Relative URLs and every other scheme (`https:`,
+`mailto:`, `tel:`, an app's own) pass unchanged:
+
+```html render=url-scheme
+<a tl:href="${profile}">profile</a>
+<a tl:href="${home}">home</a>
+<img tl:src="${avatar}">
+```
+
+```json context=url-scheme
+{"profile": " JavaScript:alert(1)", "home": "/home", "avatar": "data:image/png;base64,iVBORw0KGgo="}
+```
+
+```html output=url-scheme
+<a href="about:invalid#trellis-unsafe-url">profile</a>
+<a href="/home">home</a>
+<img src="data:image/png;base64,iVBORw0KGgo=">
+```
+
+Attributes written literally in the template (`<a href="javascript:void(0)">`)
+are never checked, and neither are attributes a fragment's `...rest` parameter
+forwards from its host, since those were literals or were checked on the host.
+Strict mode replaces the value as well; it does not throw.
+
+To write a URL the application vouches for, wrap it in `TrustedUrl` in Dart
+before it reaches the context. A template cannot create one:
+
+```dart
+engine.render(template, {'bookmarklet': TrustedUrl('javascript:location.reload()')});
+```
+
+`TrustedUrl` renders as its URL. Building a new value from it (concatenation, a
+`|...|` literal, a filter that returns a string) drops the trust, so the result
+is checked again.
+
 ## `tl:classappend` / `tl:styleappend` – append
 
 Where `tl:class` replaces, these two append to an existing `class` or `style`
@@ -51,10 +94,12 @@ attribute, leaving what is already there in place:
 
 ```html static
 <div class="card" tl:classappend="${active} ? 'active' : ''">content</div>
-<div style="color:red" tl:styleappend="font-weight:bold">content</div>
+<div style="color:red" tl:styleappend="'font-weight:bold'">content</div>
 ```
 
-The first renders `class="card active"` when `active` is truthy.
+The first renders `class="card active"` when `active` is truthy, the second
+`style="color:red; font-weight:bold"`. Both values are expressions, so literal
+CSS goes in single quotes.
 
 A blank existing `class` or `style` (empty or whitespace only) counts as absent, so
 `<div class="" tl:classappend="'a'">` renders `class="a"`, not `class=" a"`.
@@ -165,15 +210,16 @@ with `tl:attr`).
 
 ### Trust the map
 
-Entries are written as given: values are only HTML-escaped, never checked for
+Entries are written as given: values are HTML-escaped and URL values are
+[scheme-checked](#unsafe-urls-are-blocked), but nothing else is checked for
 meaning, and keys are only checked for syntax. Keep the map out of reach of
 untrusted input:
 
 - **Never let untrusted data choose keys.** A key picks which attribute is set,
   so it decides what the element does.
-- **Validate values under `href`, `src`, `srcdoc`, `on*` and `style`** exactly as
-  you would for `tl:attr`. A `javascript:` URL, a `srcdoc` document or an event
-  handler passes through verbatim.
+- **Validate values under `srcdoc`, `on*` and `style`** exactly as you would for
+  `tl:attr`. A `srcdoc` document or an event handler passes through verbatim; a
+  `javascript:` value under `href` or `src` is replaced.
 - **A `null` value removes the attribute**, even a literal one on the element. A
   map can drop `sandbox` from an iframe or `action` from a form.
 
@@ -188,5 +234,5 @@ untrusted input:
 
 ```html output=attrs-trust
 <iframe src="/ok" srcdoc="<p>hi</p>"></iframe>
-<a href="javascript:alert(1)">go</a>
+<a href="about:invalid#trellis-unsafe-url">go</a>
 ```

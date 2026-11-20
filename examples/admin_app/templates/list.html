@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Contact list</title></head>
+<body>
+<section tl:fragment="list" id="contact-list" class="admin-list" aria-label="Contact list">
+  <form id="contact-filter" class="admin-filters" action="/contacts" method="get" hx-get="/contacts"
+    hx-trigger="input changed delay:250ms from:#contact-query, change from:#contact-status, submit"
+    hx-params="q,status,sort,dir" hx-target="#contact-list" hx-swap="outerHTML">
+    <input type="hidden" name="sort" tl:value="${sort}">
+    <input type="hidden" name="dir" tl:value="${dir}">
+    <input type="hidden" name="page" tl:value="${page}">
+    <div>
+      <input tl:replace="~{trellis-ui/field :: field('contact-query', 'Search contacts')}"
+        type="search" name="q" tl:value="${q}">
+    </div>
+    <div class="admin-control">
+      <label tl:replace="~{trellis-ui/field :: label('contact-status')}">Status</label>
+      <select tl:replace="~{trellis-ui/native-select :: native-select}" id="contact-status" name="status">
+        <option value="">All statuses</option>
+        <option tl:each="option : ${statuses}" tl:value="${option.value}" tl:text="${option.label}"
+          tl:attr="selected=${option.selected}">Active</option>
+      </select>
+    </div>
+  </form>
+  <p tl:if="${empty}" role="status">No contacts match these filters.</p>
+  <table tl:unless="${empty}" tl:replace="~{trellis-ui/table :: table('Contacts', null, contacts)}" class="admin-table">
+    <thead tl:slot="header">
+      <tr class="trellis-table-row">
+        <th tl:each="column : ${sortColumns}" class="trellis-table-head" scope="col"
+          tl:attr="aria-sort=${column.ariaSort}">
+          <a class="trellis-button trellis-button-variant-ghost trellis-button-size-sm"
+            tl:id="${'sort-' + column.key}" tl:href="${column.url}" hx-boost="true"
+            hx-target="#contact-list" hx-swap="outerHTML">
+            <span tl:text="${column.label}">Name</span>
+            <span tl:if="${column.ariaSort}" aria-hidden="true"
+              tl:text="${column.ariaSort == 'ascending' ? '↑' : '↓'}">↑</span>
+          </a>
+        </th>
+        <th class="trellis-table-head" scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody tl:slot="row">
+      <tr class="trellis-table-row" tl:attr="data-contact-id=${row.id}">
+        <td class="trellis-table-cell" tl:text="${row.name}">Ada Morgan</td>
+        <td class="trellis-table-cell" tl:text="${row.email}">ada@example.test</td>
+        <td class="trellis-table-cell" tl:text="${row.company}">Acme Studio</td>
+        <td class="trellis-table-cell">
+          <span tl:replace="~{trellis-ui/badge :: badge(row.statusVariant)}"><span tl:text="${row.status}">Active</span></span>
+        </td>
+        <td class="trellis-table-cell">
+          <div tl:replace="~{trellis-ui/dropdown-menu :: dropdownMenu('actions-' + row.id)}">
+            <span tl:slot="trigger">Actions <span class="trellis-sr-only">for <span tl:text="${row.name}">Ada Morgan</span></span></span>
+            <button tl:replace="~{trellis-ui/dropdown-menu :: menuItem}" tl:attr="hx-get=${row.editUrl}"
+              hx-target="#dialog-host">Edit</button>
+            <button tl:replace="~{trellis-ui/dropdown-menu :: menuItem('destructive')}" tl:attr="hx-get=${row.deleteUrl}"
+              hx-target="#dialog-host">Delete</button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <nav tl:unless="${empty}" tl:replace="~{trellis-ui/pagination :: pagination(pages, previous, next)}"
+    hx-boost="true" hx-target="#contact-list" hx-swap="outerHTML"></nav>
+</section>
+</body>
+</html>

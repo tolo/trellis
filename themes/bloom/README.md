@@ -130,7 +130,7 @@ explicitly, insert it with the `theme:` prefix:
 
 ```bash
 cd example
-trellis build && trellis serve
+trellis dev
 ```
 
 ## Theme-specific params
@@ -145,4 +145,4 @@ trellis build && trellis serve
 | `pill_badges` | boolean | `true` | Render eyebrow/badge labels as rounded pills |
 | `logo` | string | `null` | Optional header logo image path (null = text title) |
 
-Plus all 25 [standard params](../../docs/reference/standard-params.md).
+Plus all 25 [standard params](https://tolo.github.io/trellis/docs/themes/standard-params/).

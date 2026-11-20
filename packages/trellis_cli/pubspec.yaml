@@ -15,9 +15,13 @@ dependencies:
   shelf: ^1.4.0
   shelf_static: ^1.1.0
   trellis_css: ^0.13.0
+  trellis_dev: ^0.13.0
   trellis_site: ^0.13.0
+  trellis_ui: ^0.13.0
+  watcher: ^1.2.1
 
 dev_dependencies:
+  crypto: ^3.0.7
   lints: ^6.0.0
   pub_semver: ^2.2.0
   test: ^1.25.0

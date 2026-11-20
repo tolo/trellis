@@ -20,6 +20,9 @@ fragments:
   form with worked examples.
 - [**Server packages**](/docs/packages/) – connect Trellis to Shelf, Dart Frog,
   or Relic, then add hot reload and CSS tooling as needed.
+- [**Framework Integration**](/docs/packages/framework-integration/) – the three
+  adapters side by side, HTMX fragment and OOB patterns, security, template
+  testing, error handling, and AOT deployment.
 
 ## Build a site
 

@@ -33,27 +33,32 @@
     return LABELS[lang] || lang.toUpperCase();
   }
 
-  function copyText(text, button) {
-    var done = function () {
-      button.textContent = 'Copied';
-      button.classList.add('is-copied');
-      window.setTimeout(function () {
-        button.textContent = 'Copy';
-        button.classList.remove('is-copied');
-      }, 1600);
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done, function () {
-        button.textContent = 'Error';
-        window.setTimeout(function () { button.textContent = 'Copy'; }, 1600);
-      });
-    } else {
-      button.textContent = 'Error';
-      window.setTimeout(function () { button.textContent = 'Copy'; }, 1600);
-    }
+  var latestCopy = 0;
+
+  function enableCopy(code, button, status) {
+    var buttonCopy, resetTimer;
+    button.addEventListener('click', function () {
+      var copy = ++latestCopy;
+      buttonCopy = copy;
+      function report(copied) {
+        if (copy !== buttonCopy) return;
+        button.textContent = copied ? 'Copied' : 'Error';
+        // Every code block shares one live region, even though its button has its own feedback.
+        if (status && copy === latestCopy) {
+          status.textContent = copied ? 'Code copied to clipboard.' : 'Could not copy code to clipboard.';
+        }
+        window.clearTimeout(resetTimer);
+        resetTimer = window.setTimeout(function () { button.textContent = 'Copy'; }, 1600);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code.textContent).then(function () { report(true); }, function () { report(false); });
+      } else {
+        report(false);
+      }
+    });
   }
 
-  function enhance(code) {
+  function enhance(code, template, status) {
     var pre = code.parentElement;
     if (!pre || pre.tagName !== 'PRE') return;
     // Idempotent: skip if already wrapped (e.g. re-invoked).
@@ -72,14 +77,8 @@
     lang.className = 'code-lang';
     lang.textContent = label || '';
 
-    var button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'code-copy';
-    button.textContent = 'Copy';
-    button.setAttribute('aria-label', 'Copy code to clipboard');
-    button.addEventListener('click', function () {
-      copyText(code.textContent, button);
-    });
+    var button = template.content.firstElementChild.cloneNode(true);
+    enableCopy(code, button, status);
 
     bar.appendChild(lang);
     bar.appendChild(button);
@@ -88,8 +87,11 @@
   }
 
   function run() {
+    var template = document.querySelector('template[data-code-copy]');
+    if (!template) return;
+    var status = document.querySelector('[data-code-copy-status]');
     var blocks = document.querySelectorAll('pre > code[class*="language-"]');
-    Array.prototype.forEach.call(blocks, enhance);
+    Array.prototype.forEach.call(blocks, function (code) { enhance(code, template, status); });
   }
 
   if (document.readyState === 'loading') {

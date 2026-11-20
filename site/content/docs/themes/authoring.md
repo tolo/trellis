@@ -37,11 +37,11 @@ their customizations across.
 trellis create --template theme my_theme
 cd my_theme
 
-# Edit the manifest, add layouts and SASS
+# Add layouts and SASS (and, only for a theme contributed to this
+# repository, one archetype tag in features:)
 # Preview with the bundled example site
 cd example
-trellis build
-trellis serve
+trellis dev
 ```
 
 `trellis create` writes `example/trellis_site.yaml` with `theme: my_theme` and
@@ -54,6 +54,10 @@ on Windows, from the theme root: `mklink /J example\themes\my_theme .`. Do not
 run `trellis theme add ../` from `example/`: the source contains the site, and
 the command refuses it.
 
+The scaffold's `features:` carries no archetype tag. Add one only if you
+contribute the theme to this repository, where the built-in gallery reads it
+(see [Name and archetype rules](#name-and-archetype-rules)); nothing else does.
+
 You now have a working theme skeleton. The rest of this guide explains each
 piece in depth.
 
@@ -61,42 +65,41 @@ piece in depth.
 
 ```
 my_theme/
-  theme.yaml                    # Manifest — name, version, params
+  theme.yaml          # manifest: name, version, params
+  README.md
+  .gitignore
   layouts/
-    base.html                   # Root HTML shell (tl:define blocks)
-    home.html                   # Home page layout
+    base.html         # HTML shell with tl:define blocks
+    home.html         # home page
     _default/
-      single.html               # Default single page/post layout
-      list.html                 # Default section listing layout
-    tags/                       # Taxonomy-specific layouts (optional)
-      term.html
-      list.html
+      single.html     # a single page or post
+      list.html       # a section listing
   sass/
-    _variables.scss             # Params as $trellis-* with !default; builds the dark palette
+    _variables.scss   # the param bridge ($trellis-*)
     _skins/
-      _light.scss               # Light palette map ($palette)
-      _dark.scss                # Dark palette map ($palette)
-    _base.scss                  # Reset and typography
-    _layout.scss                # Page structure and breakpoints
-    _components.scss            # UI components
-    _footer.scss                # Footer styles
-    _a11y.scss                  # Accessibility: skip-link, focus rings
-    _code.scss                  # Code block styles
-    main.scss                   # Entry point — @forward 'variables' first, then @use the partials
-  static/                       # Static assets copied as-is (fonts, images)
-  screenshots/
-    light.png                   # Preview screenshot (light skin)
-    dark.png                    # Preview screenshot (dark skin)
+      _light.scss     # light palette map
+      _dark.scss      # dark palette map
+    main.scss         # entry point, forwards variables
+  static/             # copied as-is (fonts, images, JS)
+    .gitkeep
   example/
-    trellis_site.yaml           # Minimal preview site config
+    trellis_site.yaml # preview site (theme: my_theme)
     content/
       _index.md
-      posts/
-        _index.md
-        welcome.md
     themes/
-      <name> -> ../..           # Symlink to the theme root, made by `trellis create`
+      my_theme -> ../..  # symlink made by trellis create
 ```
+
+That is what `trellis create --template theme` writes. As the theme grows, add
+taxonomy layouts (`layouts/tags/term.html`, `layouts/tags/list.html`), SASS
+partials that each `@use 'variables' as *` (`_base.scss`, `_layout.scss`, …),
+and `screenshots/light.png` and `screenshots/dark.png` (uncomment
+`screenshots:` in `theme.yaml`). The official
+[Verdant theme](https://github.com/tolo/trellis/tree/main/themes/verdant)
+shows this structure grown out, so read it alongside this guide. `static/` holds
+everything copied verbatim into the build output; see
+[Third-Party and Vendored Assets](#third-party-and-vendored-assets) for what
+belongs there.
 
 ## The theme.yaml manifest
 
@@ -105,12 +108,13 @@ with types and defaults, and is parsed by
 [trellis_site](/docs/packages/trellis_site/) at build time.
 
 ```yaml
+# themes/verdant/theme.yaml (abbreviated)
 name: verdant
 version: 1.0.0
 author: Trellis Team
 description: >-
   A minimal, accessible blog theme for Trellis. Content-first design with
-  three color skins, responsive layout, and full keyboard navigation.
+  light, dark, and auto skins, responsive layout, and full keyboard navigation.
 min_trellis_version: 0.12.0
 screenshots:
   - screenshots/light.png
@@ -147,12 +151,33 @@ params:
 |---|---|---|
 | `name` | Yes | Theme identifier. Must match `^[a-z0-9][a-z0-9_-]*$` and equal the name of the directory the manifest sits in |
 | `version` | Yes | Semantic version (e.g. `1.0.0`) |
-| `author` | No | Author name or organization. Recommended, but nothing reads it — neither `ThemeManifest.load` nor the gallery generator requires it |
+| `author` | No | Author name or organization. Optional: `trellis theme info` shows it, and neither `ThemeManifest.load` nor the gallery generator requires it |
 | `description` | Yes | One-sentence description for theme galleries. Plain prose — no backticks |
-| `min_trellis_version` | No | Minimum `trellis_site` version required |
+| `min_trellis_version` | No | Minimum `trellis_site` version required. Advisory: `trellis theme add` and `trellis theme update` print a warning when the installed `trellis_site` is older, and nothing blocks the build |
 | `screenshots` | No | Relative paths to preview PNG files, resolving inside the theme directory |
-| `features` | Yes | Feature tags. Must contain exactly one **archetype** tag — `docs`, `landing`, or `blog` — plus any number of free-form tags |
+| `features` | Yes | Feature tags: exactly one **archetype** tag — `docs`, `landing`, or `blog` — plus any number of free-form tags. The archetype is required for the built-in themes listed in the gallery and optional for your own; only the built-in gallery reads it, and `trellis create` leaves it out |
+| `uses` | No | Registered build sources the theme uses. List names matching `[a-z][a-z0-9_]*` |
 | `params` | Yes | Parameter definitions (see below). Required by the standard-params contract below, not by the loader: a theme with no `params:` loads and builds, and simply ignores every `theme_params:` a site sets |
+
+The loader (`ThemeManifest.load`) requires a non-empty `name` and a
+`version` and validates the shape of an optional `uses` list. The other
+"Yes" rows are enforced elsewhere: `description` and
+`features` by the gallery generator below, which gates only the built-in themes
+in this repository, and `params` by the standard-params contract. Nothing checks
+a third-party theme's archetype, so the build and `trellis theme add` accept a
+theme without one.
+
+A theme can declare `uses: [trellis_ui]` to make the CLI's embedded suite
+available to its layouts. A direct Dart build must register the names it uses
+as `SiteSource` factories. The build combines the site and theme lists and
+loads each named source once. Theme templates and static files take
+precedence over source files. See [Build sources](/docs/packages/trellis_site/#build-sources)
+for the priority and asset rules.
+
+Arbor, Folio, Lattice, and Meadow require Trellis 0.14.0 and link the suite CSS
+and deferred JS from their asset base. They apply suite colour tokens on the
+search shell, reader toggle, or code bar so the page's other suite fragments
+keep their defaults.
 
 #### Name and archetype rules
 
@@ -187,9 +212,9 @@ theme:
   into the published site.
 
 Two screenshot problems are warnings rather than failures, and the card is
-published without the image: a file named anything other than `light.png` or
-`dark.png` (only those two variants reach a card), and a declared path with no
-file behind it.
+published without the image: a screenshot whose file name, before the
+extension, is neither `light` nor `dark` (only those two variants reach a card),
+and a declared path with no file behind it.
 
 ### Param types
 
@@ -200,7 +225,7 @@ file behind it.
 | `boolean` | `true` | `$trellis-show-toc: true !default` | Not emitted as CSS |
 | `int` | `160` | `$trellis-excerpt-length: 160 !default` | `--trellis-excerpt-length: 160` |
 | `enum` | `auto` | `$trellis-skin: auto !default` | Not emitted as CSS |
-| `list` | (see nav_links) | Not emitted as SASS or CSS | Not emitted as CSS |
+| `list` | (see nav_links) | A Sass list of maps in the generated `_theme_params.scss`; a theme's own SASS sees it only if it declares the variable `!default` | Not emitted as CSS |
 
 `null` defaults are emitted as `initial` in CSS custom property output (e.g.
 `--trellis-footer-text: initial;`).
@@ -210,20 +235,25 @@ each declared variable with the merged value (see
 [How the SASS bridge works](#how-the-sass-bridge-works)); a param with no
 declaration is inert in SASS.
 
+String params are emitted unquoted (via `#{"…"}` interpolation), so font stacks
+and lengths are usable directly as CSS values. `"` and `\` are escaped, and
+`#{…}` is never evaluated.
+
+The `type` is a hint: the build does not check a value against it or against an
+enum's `values:`, with one exception. `skin` must be `light`, `dark`, or `auto`,
+and any other value fails the build with `Unknown skin`.
+
 ## The standard-params contract
 
 The 25 standard params form a contract between themes and site builders. **Every
 theme must support all 25.** This is what lets site builders switch themes and
 carry their `theme_params:` customizations across.
 
-| Category | Params |
-|---|---|
-| Skin & Colors (15) | `skin`, the seven colors `primary_color`, `accent_color`, `text_color`, `muted_color`, `bg_color`, `surface_color`, `border_color`, and their seven `_dark` twins (`primary_color_dark`, …, `border_color_dark`) |
-| Typography | `font_family`, `heading_font_family`, `code_font_family` |
-| Layout | `max_width`, `border_radius` |
-| Navigation | `nav_links`, `social_links` |
-| Footer | `footer_text`, `show_powered_by` |
-| Features | `show_rss_link` |
+The [standard params reference](/docs/themes/standard-params/) is the full
+specification: each param's type, reference default, SASS variable, and CSS
+custom property. The 25 are `skin`, seven colors with a `_dark` twin each, three
+font stacks, `max_width`, `border_radius`, `nav_links`, `social_links`,
+`footer_text`, `show_powered_by`, and `show_rss_link`.
 
 **The twin rule.** Every `type: color` param has a twin `<name>_dark`, also
 `type: color`, whose default equals the dark palette's entry. A plain color param
@@ -256,10 +286,11 @@ plain-text summary length. It is not part of the 25 standard params.
 
 ## Theme data files
 
-A theme can provide YAML data files under `data/` for structured content that
+A theme can provide `.yaml` data files under `data/` for structured content that
 belongs to the theme rather than to a parameter. For example,
 `data/navigation.yaml` is available to layouts as `${data.navigation.*}`. The
-filename stem becomes the key below `${data}`.
+filename stem becomes the key below `${data}`. Only the `.yaml` extension is
+read, not `.yml`.
 
 Theme data is a fallback. Trellis loads the theme's files first, then the site's
 `data/*.yaml` files. When both provide the same stem, the site file replaces the
@@ -552,7 +583,17 @@ Templates reference these via a
 `<link rel="stylesheet" href="/css/theme-props.css">` tag in `base.html`. Your own
 SASS emits the runtime tokens your components read, from `main.scss` (or
 `_variables.scss`), so they exist for standalone compilation (without the bridge)
-too. Boolean and list params have no CSS custom-property equivalent – use them in
+too:
+
+```scss
+:root {
+  --trellis-primary: #{$trellis-primary-color};
+  --trellis-text: #{$trellis-text-color};
+  /* ... */
+}
+```
+
+Boolean and list params have no CSS custom-property equivalent – use them in
 templates via `${theme.show_reading_time}` etc.
 
 ## Layouts with tl:define blocks
@@ -686,16 +727,19 @@ are what make cross-boundary customization work without forking.
 ## The example directory
 
 The `example/` directory holds a minimal preview site so you can test the theme
-locally without a real content site:
+locally without a real content site.
+
+`trellis create` writes a minimal config (`title`, `description`, `baseUrl`,
+and `theme: my_theme`). Grow it as the theme needs, for example:
 
 ```yaml
-# example/trellis_site.yaml
-title: My Blog
-description: A sample blog powered by Trellis and this theme.
-baseUrl: http://localhost:4000
+# example/trellis_site.yaml (extended from the scaffold)
+title: my theme Example
+description: Preview site for the my theme theme.
+baseUrl: http://localhost:8080
 
 # Resolve the bundled theme by name (see the symlink note below).
-theme: mytheme
+theme: my_theme
 
 theme_params:
   skin: auto
@@ -709,16 +753,76 @@ paginate: 5
 ```
 
 The build resolves a theme by joining `<siteDir>/themes/<value>`, so the example
-needs a `themes/mytheme` entry. Because the example lives inside the theme, that
+needs a `themes/my_theme` entry. Because the example lives inside the theme, that
 entry is a relative symlink pointing back at the theme root – `trellis create`
-makes it for you; to create it by hand, `ln -s ../.. example/themes/mytheme`. A bare `theme: ..` does not work: it
-resolves to the example directory itself, not the theme.
+makes it for you; to create it by hand, `ln -s ../.. example/themes/my_theme`.
+Official themes ship this layout. A bare `theme: ..` does not work: it resolves
+to the example directory itself, not the theme.
 
-Run the preview from the example directory:
+Run the preview from the theme root:
 
 ```bash
-cd example && trellis build && trellis serve
+cd example && trellis dev
 ```
+
+## Third-Party and Vendored Assets
+
+A built Trellis site is a **self-contained folder you can host anywhere**. It
+must keep working with JavaScript disabled and with no reachable third-party
+host. That model (pure Dart, no external dependencies, offline-capable) sets a
+default preference order for any asset a theme needs, whether a font, a script, a
+stylesheet, or a highlighter:
+
+> **Prefer self-contained, build-time-generated output; then vendored,
+> same-origin assets; and only as a last resort, runtime CDN dependencies.**
+
+1. **Build-time output (best).** Generate the asset during `trellis build` and
+   ship the result. No runtime cost, no third-party trust surface. Example:
+   syntax highlighting is produced at build time by `trellis_site`, so themes
+   carry only token CSS and no highlighter JS (see
+   [ADR-010](https://github.com/tolo/trellis/blob/main/dev/adrs/ADR-010-syntax-highlighting.md)).
+2. **Vendored, same-origin asset (acceptable).** Commit the asset and serve it
+   from `static/`, alongside the HTML that loads it. Auditable, pinnable, and
+   outage-independent. Example: Arbor's first-party `code-enhance.js`,
+   documented for provenance in
+   [`themes/arbor/VENDORED.md`](https://github.com/tolo/trellis/blob/main/themes/arbor/VENDORED.md).
+   Folio, Lattice, and Meadow each keep a `VENDORED.md` too.
+3. **Runtime CDN dependency (last resort).** Fetching a script, font, or
+   stylesheet from an external host at page load trades **availability,
+   privacy, and supply-chain integrity** for convenience: the page breaks if the
+   host is down or blocked, every visitor's request leaks to a third party, and a
+   compromised CDN can inject code into your site.
+
+This is a **default with rationale, not an absolute ban.** Reaching for tier 3
+is allowed as a deliberate, documented exception, a conscious trade-off and not
+the path of least resistance. If you do, record *why* (the way `VENDORED.md`
+records provenance for tier 2) so the next maintainer can re-evaluate it.
+
+The `static/` directory in the
+[directory structure](#theme-directory-structure) above holds everything copied
+verbatim into the build output: fonts, images, and any vendored JS or CSS, all
+served same-origin (tier 2). Keeping a dependency there instead of on a CDN *is*
+the line between tiers 2 and 3.
+
+**Worked example: Verdant ships no highlighter.** Verdant, the minimal blog
+theme, deliberately ships **no** client-side highlighter rather than pulling one
+from a CDN. Its
+[`layouts/base.html`](https://github.com/tolo/trellis/blob/main/themes/verdant/layouts/base.html)
+records the reasoning inline: `trellis_site` bakes the highlighting into the
+built HTML (tier 1), and the theme's `_code.scss` colors the emitted `.hljs-*`
+spans with its `--trellis-code-*` token colors, so code is colored with
+JavaScript off, no CDN, and no runtime dependency. Arbor, the docs sibling, used
+to vendor Prism (tier 2) before ADR-010 moved highlighting for every theme to
+tier 1.
+
+The shared `trellis-search.js` is built beside the JSON search index. To reuse
+it, link it with `defer` and wrap the suite combobox in a hidden
+`data-trellis-search` shell with a prefix-aware `data-search-index` URL.
+Render the combobox with its input disabled and include a
+`template[data-trellis-search-results]` with one option rendered by
+`comboboxOptions`. The client reveals the control after load and clones that
+option to render results. See the Arbor sidebar for the template bindings.
+
 
 ## Publishing
 
@@ -776,9 +880,19 @@ pinned.
       `<main id="main-content">`, `<footer>`, `<article>`.
 - [ ] A skip-to-content link as the first `<body>` element.
 
-The official Verdant theme implements every pattern in this guide – the full
-manifest, `_variables.scss` with `!default` and the dark palette merge, light and dark
-palette maps, a `main.scss` that forwards `variables` first and carries the
-auto-skin media query, a `base.html` with all four `tl:define` blocks,
-child layouts with `tl:extends`, taxonomy layouts, and an example preview site.
-Read it alongside this guide as a reference.
+## Verdant as reference
+
+The official Verdant theme implements every pattern in this guide. Read it
+alongside the guide:
+
+| Pattern | Verdant file |
+|---|---|
+| Full manifest: 25 standard + theme-specific params | [`theme.yaml`](https://github.com/tolo/trellis/blob/main/themes/verdant/theme.yaml) |
+| `_variables.scss` with `!default` and the dark palette merge | [`sass/_variables.scss`](https://github.com/tolo/trellis/blob/main/themes/verdant/sass/_variables.scss) |
+| Light and dark palette maps | [`sass/_skins/`](https://github.com/tolo/trellis/tree/main/themes/verdant/sass/_skins) |
+| `main.scss`: `@forward 'variables'` first, auto skin media query | [`sass/main.scss`](https://github.com/tolo/trellis/blob/main/themes/verdant/sass/main.scss) |
+| `base.html` with all four `tl:define` blocks | [`layouts/base.html`](https://github.com/tolo/trellis/blob/main/themes/verdant/layouts/base.html) |
+| Child layout with `tl:extends` | [`layouts/home.html`](https://github.com/tolo/trellis/blob/main/themes/verdant/layouts/home.html) |
+| Reading time via `#numbers` and `#strings` | [`layouts/_default/single.html`](https://github.com/tolo/trellis/blob/main/themes/verdant/layouts/_default/single.html) |
+| Taxonomy layouts | [`layouts/tags/`](https://github.com/tolo/trellis/tree/main/themes/verdant/layouts/tags) |
+| Example preview site | [`example/`](https://github.com/tolo/trellis/tree/main/themes/verdant/example) |

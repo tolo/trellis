@@ -41,14 +41,16 @@ dart pub add trellis
 ```dart
 import 'package:trellis/trellis.dart';
 
-final engine = Trellis();
+final engine = Trellis(loader: MapLoader({}));
 
 final html = engine.render(
-  '<h1 tl:text="${title}">Default Title</h1>',
+  r'<h1 tl:text="${title}">Default Title</h1>',
   {'title': 'Hello, Trellis!'},
 );
-// <h1>Hello, Trellis!</h1>
+// <html><head></head><body><h1>Hello, Trellis!</h1></body></html>
 ```
+
+`render()` returns a full document; `renderFragment()` returns just one fragment. Without a `loader:`, the engine reads from `FileSystemLoader('templates/')`, which needs that directory to exist.
 
 Full template syntax, expression language, fragments, loaders, and API reference live on the engine's page: **[`packages/trellis`](packages/trellis/README.md)**.
 
@@ -58,7 +60,7 @@ Install the `trellis` CLI, then scaffold a complete, runnable project. The CLI
 ships as a self-contained binary (no Dart SDK required) and on pub.dev:
 
 ```bash
-# Homebrew (macOS / Linux)
+# Homebrew (macOS on Apple silicon / Linux)
 brew install tolo/trellis/trellis
 
 # Scoop (Windows)
@@ -69,7 +71,7 @@ scoop install trellis
 # https://github.com/tolo/trellis/releases/latest, then download the archive +
 # checksums, verify, and extract the binary onto your PATH.
 # Do not include the leading "v" in VERSION.
-#   Assets: trellis-v<version>-{macos-arm64,macos-x64,linux-x64,linux-arm64}.tar.gz
+#   Assets: trellis-v<version>-{macos-arm64,linux-x64,linux-arm64}.tar.gz
 #           trellis-v<version>-windows-x64.zip  (+ aggregate SHA256SUMS.txt)
 VERSION=0.13.0
 BASE=https://github.com/tolo/trellis/releases/download/v$VERSION
@@ -97,12 +99,12 @@ cd my_app && dart pub get && dart run bin/server.dart   # http://localhost:8080
 
 # Static site (Markdown + SSG)
 trellis create my_blog --template blog
-cd my_blog && trellis build && trellis serve
+cd my_blog && trellis dev   # http://localhost:8080, reloads as you edit
 ```
 
 Available `trellis create` templates: `htmx` (default — Shelf + HTMX), `blog` (static site), `dart_frog`, `relic`, and `theme` (authoring an SSG theme).
 
-Other CLI commands: `trellis build` (run the static-site pipeline), `trellis serve` (preview built output), and `trellis theme` (`add`/`update`/`list`/`info`/`remove`) for managing SSG themes.
+Other CLI commands: `trellis build` (run the static-site pipeline), `trellis serve` (serve built output), and `trellis theme` (`add`/`update`/`list`/`info`/`remove`) for managing SSG themes.
 
 ## SDK packages
 
@@ -110,10 +112,11 @@ Every package is independently usable and publishable. Add only what you need.
 
 | Package | Role | Description |
 |---|---|---|
-| [`trellis`](packages/trellis) | Engine | Natural HTML template engine — `tl:*` attributes, fragments, expression language, inheritance, validation. Single dependency (`package:html`). |
+| [`trellis`](packages/trellis) | Engine | Natural HTML template engine — `tl:*` attributes, fragments, expression language, inheritance, validation. Pure-Dart dependencies only (`html`, `args`, `matcher`, `path`, `string_scanner`). |
 | [`trellis_shelf`](packages/trellis_shelf) | Server | Shelf middleware, response helpers, HTMX helpers, security headers, CSRF protection. |
 | [`trellis_dart_frog`](packages/trellis_dart_frog) | Server | Dart Frog integration — `trellisProvider()` middleware, response/HTMX helpers, CSRF. |
 | [`trellis_relic`](packages/trellis_relic) | Server | Serverpod Relic integration — response helpers, HTMX helpers, security headers. |
+| [`trellis_ui`](packages/trellis_ui) | UI | Embedded HTML fragments, CSS and JavaScript served same-origin. |
 | [`trellis_site`](packages/trellis_site) | SSG | Static site generator — Markdown, front matter, taxonomies, pagination, RSS/Atom feeds, JSON search index, themes. |
 | [`trellis_css`](packages/trellis_css) | CSS | SASS/SCSS compilation (Dart-native) and `tl:scope` fragment-scoped CSS via CSS `@scope`. |
 | [`trellis_dev`](packages/trellis_dev) | DX | Browser hot reload via SSE — auto-refresh on template changes. |
@@ -121,14 +124,14 @@ Every package is independently usable and publishable. Add only what you need.
 
 ## Examples & guides
 
-- **Examples** — runnable apps in [`examples/`](examples): `shelf_app`, `dart_frog_app`, `relic_app`, `todo_app`.
-- **Framework Integration Guide** — [`docs/guides/framework-integration.md`](docs/guides/framework-integration.md): Shelf, Dart Frog, and Relic; HTMX fragment and OOB patterns; security and testing.
-- **Theme authoring & usage** — [`docs/guides/theme-authoring.md`](docs/guides/theme-authoring.md), [`docs/guides/theme-usage.md`](docs/guides/theme-usage.md), [`docs/reference/standard-params.md`](docs/reference/standard-params.md).
+- **Examples** — runnable apps in [`examples/`](examples): `shelf_app`, `dart_frog_app`, `relic_app`, `todo_app`, `admin_app`, `docs_site`.
+- **[Framework Integration Guide](https://tolo.github.io/trellis/docs/packages/framework-integration/)** — Shelf, Dart Frog, and Relic; HTMX fragment and OOB patterns; security and testing.
+- **Theme authoring & usage** — [Theme Authoring](https://tolo.github.io/trellis/docs/themes/authoring/), [Themes](https://tolo.github.io/trellis/docs/sites/themes/), [Standard Params](https://tolo.github.io/trellis/docs/themes/standard-params/).
 - **API documentation** — https://pub.dev/documentation/trellis/latest/
 
 ## Project status
 
-Trellis is in active early development. The template engine is published on [pub.dev](https://pub.dev/packages/trellis); the surrounding SDK packages are maturing toward a coordinated release. APIs may still change between minor versions.
+Trellis is in active early development. All SDK packages are published on [pub.dev](https://pub.dev/packages/trellis) together, in lockstep on one shared version (ADR-009). APIs may still change between minor versions.
 
 ## Development
 
@@ -152,12 +155,12 @@ melos run format:check  # check formatting
 **Documentation site preview** (from the repository root):
 
 ```bash
-tool/serve_docs.sh       # builds and serves http://localhost:8765
+tool/serve_docs.sh       # builds, serves and watches http://localhost:8765
 tool/serve_docs.sh 9000  # optional custom port
 ```
 
-This creates a root-served snapshot rather than watching source files. Stop it
-with Ctrl-C and rerun the command after changes. See the
+It runs `trellis dev`, which rebuilds and reloads the browser when site content,
+layouts or the theme change. Stop it with Ctrl-C. See the
 [docs-site README](site/README.md#preview-locally) for the production sub-path
 and link-checking workflow.
 
@@ -196,12 +199,13 @@ dart test -t e2e \
   test/generated_app_e2e_test.dart \
   test/dart_frog_e2e_test.dart \
   test/relic_e2e_test.dart \
+  test/blog_e2e_test.dart \
   test/examples_smoke_test.dart
 ```
 
-This covers starter generation plus the checked-in `examples/shelf_app`, `examples/dart_frog_app`, `examples/relic_app`, and `examples/todo_app`.
+This covers starter generation (including the `blog` starter) plus the checked-in `examples/shelf_app`, `examples/dart_frog_app`, `examples/relic_app`, and `examples/todo_app`.
 
-**Publishing order** — publish in dependency order: `trellis` first, then `trellis_shelf`, `trellis_dev`, and `trellis_css` (all depend on `trellis`), then `trellis_dart_frog` and `trellis_relic` (depend on `trellis_shelf`), then `trellis_site` and `trellis_cli` last.
+**Publishing** — all packages publish in lockstep from one `vX.Y.Z` tag: `tool/release.sh X.Y.Z` cuts the release and pushing the tag runs `.github/workflows/publish.yml` for every package. Follow [`dev/guidelines/RELEASE-RUNBOOK.md`](dev/guidelines/RELEASE-RUNBOOK.md).
 
 ## Contributing
 

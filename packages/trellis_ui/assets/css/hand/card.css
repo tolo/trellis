@@ -1,0 +1,7 @@
+.trellis-card-title, .trellis-card-description { margin: 0; }
+.trellis-card-action:empty, .trellis-card-footer:empty { display: none; }
+
+/* An empty action slot still matches upstream :has([data-slot]); only filled actions need a second column. */
+.trellis-card-header { grid-template-columns: 1fr; }
+.trellis-card-header:has(> .trellis-card-action:not(:empty)) { grid-template-columns: 1fr auto; }
+.trellis-card-header > .trellis-card-title, .trellis-card-header > .trellis-card-description { grid-column: 1; }

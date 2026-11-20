@@ -30,9 +30,10 @@ front matter rather than composing a page out of front-matter blocks.
 - **Three skins** — `light`, `dark`, and `auto` (follows
   `prefers-color-scheme`), both concrete skins passing WCAG 2.1 AA body-text
   contrast.
-- **No highlighter shipped** — code renders clean but uncolored rather than
-  pulling a highlighter from a CDN; build-time highlighting is configured
-  site-side (see [ADR-010](../../dev/adrs/ADR-010-syntax-highlighting.md)).
+- **Build-time syntax highlighting** — the SSG bakes `.hljs-*` spans into the
+  built HTML and `sass/_code.scss` colors them, so code is colored with
+  JavaScript off. No highlighter JS, no CDN; configure it site-side with
+  `highlight:` (see [ADR-010](../../dev/adrs/ADR-010-syntax-highlighting.md)).
 
 ## Using the theme
 
@@ -97,13 +98,13 @@ to be edited to change colors, fonts, navigation, or which metadata appears.
 | `excerpt_length` | int | `160` | Character cap for auto-generated summaries |
 | `posts_per_page` | int | `null` | Listing page size, used when the site sets no `paginate:` |
 
-Plus all 25 [standard params](../../docs/reference/standard-params.md).
+Plus all 25 [standard params](https://tolo.github.io/trellis/docs/themes/standard-params/).
 
 ## Preview
 
 ```bash
 cd example
-trellis build && trellis serve
+trellis dev
 ```
 
 The example site (`Verdant Blog`) exercises the home hero, four posts, an about

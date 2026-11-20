@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 import 'page.dart';
+import 'search_client.dart';
 
 /// Configuration for JSON search index generation.
 ///
@@ -24,7 +25,7 @@ class SearchConfig {
   final bool enabled;
 
   /// Output filename (relative to the output directory).
-  /// Default: `'search-index.json'`.
+  /// Default: `'search-index.json'`. The name `trellis-search.js` is reserved for the client.
   final String output;
 
   /// Fields to include in each index entry. `url` is always included
@@ -44,11 +45,11 @@ class SearchConfig {
   final bool stripHtml;
 
   /// Maximum character length for the `content` field after HTML stripping.
-  /// `null` means no truncation. Default: `5000`.
+  /// `null` means no truncation.
   ///
-  /// When the YAML key is absent, defaults to `5000` via the const constructor.
-  /// To disable truncation in a loaded config, omit the key — the factory
-  /// reads `null` from the map and stores `null` (no truncation).
+  /// Default: no truncation for a config loaded from YAML ([SearchConfig.fromYaml]
+  /// stores `null` when the `maxContentLength` key is absent), and `5000` for a
+  /// [SearchConfig] built with the const constructor.
   final int? maxContentLength;
 
   const SearchConfig({
@@ -109,9 +110,10 @@ class SearchIndexGenerator {
     return const JsonEncoder.withIndent('  ').convert(entries);
   }
 
-  /// Writes the JSON search index to `[outputDir]/[config.output]`.
+  /// Writes the JSON search index to `[outputDir]/[config.output]` and the
+  /// search client alongside it.
   ///
-  /// Returns `true` if the file was written, `false` if search is disabled
+  /// Returns `true` if both files were written, `false` if search is disabled
   /// or no pages qualify.
   bool writeToOutput(List<Page> pages, String outputDir) {
     if (!config.enabled) return false;
@@ -119,9 +121,28 @@ class SearchIndexGenerator {
     if (entries.isEmpty) return false;
     final json = const JsonEncoder.withIndent('  ').convert(entries);
     final filePath = p.join(outputDir, config.output);
-    Directory(p.dirname(filePath)).createSync(recursive: true);
+    if (p.basename(filePath).toLowerCase() == searchClientFilename) {
+      throw ArgumentError.value(config.output, 'search.output', 'The name $searchClientFilename is reserved');
+    }
+    final directory = Directory(p.dirname(filePath));
+    final client = File(p.join(directory.path, searchClientFilename));
+    final clientBytes = utf8.encode(searchClient);
+    final type = FileSystemEntity.typeSync(client.path, followLinks: false);
+    if (type != FileSystemEntityType.notFound &&
+        (type != FileSystemEntityType.file || !_matchesClient(client, clientBytes))) {
+      throw FileSystemException('The shared search client path is already occupied', client.path);
+    }
+
+    directory.createSync(recursive: true);
     File(filePath).writeAsStringSync(json);
+    client.writeAsBytesSync(clientBytes);
     return true;
+  }
+
+  // Accept the same generated client when a caller rebuilds into the same directory.
+  bool _matchesClient(File file, List<int> expected) {
+    if (file.lengthSync() != expected.length) return false;
+    return file.readAsBytesSync().indexed.every((byte) => expected[byte.$1] == byte.$2);
   }
 
   bool _shouldInclude(Page page) {

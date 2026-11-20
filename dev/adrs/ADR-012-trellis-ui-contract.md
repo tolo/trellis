@@ -4,7 +4,7 @@
 
 Accepted (2026-10-04). Proposed 2026-08-14, amended 2026-08-15 after a verification
 round, amended and accepted 2026-10-04 after the delivery, CSP, behaviour-layer and
-seed spikes – see [Amendments](#amendments).
+seed spikes, and amended 2026-11-18 for browser emulation fallback. See [Amendments](#amendments).
 
 ## Context
 
@@ -139,8 +139,8 @@ unmodified, vendored Basecoat).
   8× the port's. Switching would also break application CSS written against the
   public styling surface below, though not application templates.
 
-**Upstream sync.** A coding agent runs each sync through a project skill plus
-scripts, per batch of shadcn releases (monthly or bimonthly): bump the pinned tag,
+**Upstream sync.** A coding agent runs each sync through [`trellis-ui-sync`](../../.claude/skills/trellis-ui-sync/SKILL.md)
+and its scripts, per batch of shadcn releases (monthly or bimonthly): bump the pinned tag,
 regenerate, run the sync gates locally (slot parity, the behaviour gates, an
 appearance check per component state, and a check that the committed CSS regenerates
 unchanged), triage each upstream change (mechanical, hand-layer edit, or new
@@ -217,6 +217,17 @@ token-level visual fit, and upstream maintenance health. Accessibility conforman
 leans on the upstream programme where a credible one exists (currently Vaadin- or
 USWDS-tier); otherwise the recipe is documented as unaudited. Trellis tests the
 integration seam, not the third-party component.
+
+### Browser emulation fallback
+
+Attempt each automated item in Chrome and Firefox for every component and composed app route. An item passes
+when at least one browser passes and every other browser either passes or records `not-run` with an explicit
+unsupported-emulation reason. Both raw results and their evidence stay in the gate record. An actual `fail`
+fails the item. An omitted or unavailable browser, missing recipe or capture, or two unsupported results
+leave the item unqualified. A deliberately single-browser CLI run decides only that diagnostic run's outcome.
+CLI, release and publication use the same item decision for the browser set they require. A published
+support claim also requires all three manual passes. Optional component release dispositions apply only to
+observed failures as specified below.
 
 ## Consequences
 
@@ -324,6 +335,8 @@ Assets are embedded as base64 constants, not string literals (1.33× against 2.0
 payload). `dart compile exe` tree-shakes unreferenced embedded assets to +0 B, so a
 map-shaped registry forfeits per-component elimination.
 
+The CLI uses the same embedded package to supply fragments and assets to opted-in site builds in 0.14.
+
 ### Porting pipeline
 
 - Inputs pinned by shadcn tag and vendored with the MIT notice: the component TSX of
@@ -340,7 +353,21 @@ map-shaped registry forfeits per-component elimination.
   breakage, which is why the appearance check exists.
 - Licence notices in the suite: shadcn/ui (MIT), Lucide (ISC) plus the Feather MIT
   notice for Lucide's Feather-derived icons, tw-animate-css (MIT), and Tailwind CSS
-  (MIT, for the preflight and banner in the compiled CSS).
+  (MIT, for the compiler theme/utilities and banner in the compiled CSS).
+
+- In 0.14 the package pipeline imports Tailwind's theme and utilities layers without
+  preflight. `assets/css/hand/00-base.css` supplies resets only on suite roots and
+  descendants, inside the early `base` layer; other hand CSS uses `trellis-hand`.
+  Tokens and components stay layered so unlayered application theme blocks win in
+  either link order. The shadcn legacy page-wide `.shimmer` fallback is omitted;
+  its `@utility` retains reduced-motion behavior for components that apply it.
+- Tailwind standalone v4.3.3 has SHA-256 pins for macOS/Linux arm64/x64 in
+  `packages/trellis_ui/tool/pins.json`; a mismatch stops before generation.
+  Regeneration and embedding checks compare bytes. The ordinary test tier never starts the real compiler.
+- The first sync moved `shadcn@4.21.1` to `shadcn@4.23.0` with no changed colour tokens or in-scope style rules.
+  The report defers Code Block and Trace. The sync used 0 template lines, 0 hand CSS lines, 0 config entries and
+  0 hand JS lines. The suite has 397 owned JS lines. Both automated sweeps passed all 25 components in Chrome
+  and Firefox. The combined gzip level 9 payload across the three suite assets was 20,225 bytes.
 
 ### HTMX lifecycle
 
@@ -368,7 +395,7 @@ component remains gated on the revisit triggers below.
 
 ### First component slice
 
-**Prerequisite — core composition primitives (PB-012, ADR-014).** Thymeleaf
+**Prerequisite — core composition primitives (0.13, ADR-014).** Thymeleaf
 ecosystem research (2026-08-15) showed component libraries on fragment engines fail
 at three identifiable gaps: content slots, attribute spreading, and attribute
 pass-through. Trellis core lacks all three (verified against
@@ -402,6 +429,22 @@ limitation: `renderFragment` renders a parameterised fragment by bare name, see 
 - Do not define a generic provider interface before two real integrations reveal a
   stable shared seam.
 
+#### Optional component release dispositions
+
+Record one accepted qualification failure per component below, in the form
+`component | unsupported or removed | comma-separated failed gate item IDs`.
+Use the exact failed item IDs from the retained gate record. Dialog, dropdown
+menu, combobox, tabs, toast, and composed app routes cannot have a disposition.
+
+`unsupported` keeps the runtime fragment, gallery and manifest available for
+repeatable checks. `removed` drops the runtime fragment, gallery and manifest
+after their consumers are migrated. Both keep the failure evidence and withdraw
+the reference page and package catalogue entry. Remove the disposition when the
+component qualifies again. An unavailable check cannot justify a disposition.
+
+```text
+```
+
 ## Project Compliance
 
 - **ADR-004** – UI remains optional and depends toward core; core stays minimal.
@@ -422,10 +465,10 @@ limitation: `renderFragment` renders a parameterised fragment by bare name, see 
 
 ## References
 
-- Research – private planning repo, canonical (no public digest yet):
-  `docs/research/trellis-ui-component-architecture/` – bundle, `design-tree.md`,
+- Research – maintainer's private research repo, canonical (no public digest yet):
+  `trellis/research/trellis-ui-component-architecture/` – bundle, `design-tree.md`,
   `tradeoff-matrix.md`, `recommendation.md`, and the 2026-08-15 verification addendum
-  (`research.md`); `docs/research/11-trellis-ui-packaging-spike.md`,
+  (`research.md`); `trellis/research/11-trellis-ui-packaging-spike.md`,
   `12-trellis-ui-csp-spike.md`, `13-trellis-ui-behaviour-layer-spike.md`, and
   `14-trellis-ui-seed-reevaluation/` (brief, O5 and O6 spikes, stress sync)
 - Spike branches: `spike/trellis-ui-registry-vs-basecoat` (`21f4a5b`),
@@ -453,3 +496,5 @@ limitation: `renderFragment` renders a parameterised fragment by bare name, see 
   (research/14); no-Node rule extended to the Trellis toolchain, with pinned non-Node
   tool binaries allowed for the porting pipeline; Shadow DOM context corrected; Tom
   Select dropped from Tier 2; acceptance decoupled from the first slice.
+- **2026-11-18** – the maintainer confirmed the unsupported-emulation fallback for every component and
+  composed app route across the CLI, release checks and publication.

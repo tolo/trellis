@@ -26,7 +26,8 @@ import 'package:trellis/trellis.dart';
 import 'package:trellis_shelf/trellis_shelf.dart';
 
 void main() async {
-  final engine = Trellis();
+  // Renders files from templates/ (e.g. templates/index.html); the directory must exist.
+  final engine = Trellis(loader: FileSystemLoader('templates'));
 
   final handler = const Pipeline()
       .addMiddleware(trellisSecurityHeaders())
@@ -119,8 +120,8 @@ The helpers read the HTMX 2 headers (`HX-Target`, `HX-Trigger`, bare ids) and th
 
 // Customize CSP
 .addMiddleware(trellisSecurityHeaders(
-  csp: CspBuilder(
-    scriptSrc: "'self' 'unsafe-inline'",
+  csp: CspBuilder.strict(
+    scriptSrc: "'self'",
     connectSrc: "'self' ws:",
   ),
 ))
@@ -134,6 +135,15 @@ The helpers read the HTMX 2 headers (`HX-Target`, `HX-Trigger`, bare ids) and th
 `trellisCsrf(secret: ...)` uses a double-submit cookie pattern with HMAC-SHA256
 signing. It generates a token on safe methods (GET/HEAD/OPTIONS) and validates
 on state-changing methods (POST/PUT/DELETE/PATCH):
+
+`CspBuilder.strict()` sets `script-src 'self'; style-src 'self'` while preserving the other
+security defaults. Use it with `trellisSecurityHeaders(csp: const CspBuilder.strict())`.
+The plain `CspBuilder()` retains its existing inline-style allowance for compatibility.
+Under the strict preset, inline `<script>` bodies, `<style>` elements, `style="…"` attributes
+and `on*` handlers are blocked. Move them to same-origin JS/CSS files; CSSOM property writes
+(such as `element.style.top`) remain allowed by browsers. HTMX's injected indicator style
+must be disabled with the `htmx-config` meta option `includeIndicatorStyles: false`, with
+indicator rules in your stylesheet. CLI app scaffolds do this automatically.
 
 ```dart
 .addMiddleware(trellisCsrf(secret: 'your-secret-key'))
@@ -162,6 +172,7 @@ in HTMX 2, `htmx:config:request` in HTMX 4). Add this to your base layout:
 <script>
   (function () {
     function setCsrfHeader(headers) {
+      if (!headers) return;
       var token = document.querySelector('meta[name="csrf-token"]').content;
       if (token) headers['X-CSRF-Token'] = token;
     }
@@ -182,6 +193,10 @@ trellisCsrf(
   excludedPaths: ['/api/webhook'], // paths that skip validation
 )
 ```
+
+`excludedPaths` entries match the request path exactly (no prefixes or globs),
+relative to the handler's mount point: `'/api'` does not exclude
+`/api/webhook`.
 
 ## Middleware ordering
 

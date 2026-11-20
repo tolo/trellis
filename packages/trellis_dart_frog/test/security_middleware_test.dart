@@ -117,6 +117,69 @@ void main() {
       // When reusing, no Set-Cookie is issued
       expect(secondResponse.headers['set-cookie'], isNull);
     });
+
+    test('handler reads body() and formData() after a form-field token is validated', () async {
+      final middleware = trellisCsrf(secret: 'test-secret');
+      final cookieValue = parseCookieValue((await testGet(simpleHandler(middleware))).headers['set-cookie'], '__csrf')!;
+      final rawToken = cookieValue.split('.').first;
+
+      final handler = const Pipeline().addMiddleware(middleware).addHandler((context) async {
+        final body = await context.request.body();
+        final form = await context.request.formData();
+        return Response(body: '$body|${form.fields['title']}');
+      });
+      final postResponse = await testPost(
+        handler,
+        headers: {'cookie': '__csrf=$cookieValue', 'content-type': 'application/x-www-form-urlencoded'},
+        body: '_csrf=$rawToken&title=Hello',
+      );
+
+      expect(postResponse.statusCode, 200);
+      expect(postResponse.body, '_csrf=$rawToken&title=Hello|Hello');
+    });
+
+    test('handler reads body() after a header token is validated', () async {
+      final middleware = trellisCsrf(secret: 'test-secret');
+      final cookieValue = parseCookieValue((await testGet(simpleHandler(middleware))).headers['set-cookie'], '__csrf')!;
+      final rawToken = cookieValue.split('.').first;
+
+      final handler = const Pipeline().addMiddleware(middleware).addHandler((context) async {
+        return Response(body: await context.request.body());
+      });
+      final postResponse = await testPost(
+        handler,
+        headers: {'cookie': '__csrf=$cookieValue', 'x-csrf-token': rawToken},
+        body: '{"title":"Hello"}',
+      );
+
+      expect(postResponse.statusCode, 200);
+      expect(postResponse.body, '{"title":"Hello"}');
+    });
+
+    test('skips the check for an excluded path, matched against the full request path', () async {
+      final handler = const Pipeline()
+          .addMiddleware(trellisCsrf(secret: 'test-secret', excludedPaths: ['/hooks/stripe']))
+          .addHandler((context) async => Response(body: await context.request.body()));
+
+      final excluded = await testPost(handler, path: '/hooks/stripe', body: 'event=paid');
+      expect(excluded.statusCode, 200);
+      expect(excluded.body, 'event=paid');
+      expect(excluded.headers['set-cookie'], isNull);
+
+      final protected = await testPost(handler, path: '/hooks/other', body: 'event=paid');
+      expect(protected.statusCode, 403);
+    });
+
+    test("keeps the handler's own Set-Cookie alongside a new CSRF cookie", () async {
+      final handler = const Pipeline().addMiddleware(trellisCsrf(secret: 'test-secret')).addHandler((_) async {
+        return Response(body: 'ok', headers: {'set-cookie': 'session=abc; Path=/'});
+      });
+
+      final response = await testGet(handler);
+      expect(response.statusCode, 200);
+      expect(response.body, 'ok');
+      expect(response.headers['set-cookie'], allOf(contains('session=abc'), contains('__csrf=')));
+    });
   });
 
   group('middleware chain', () {

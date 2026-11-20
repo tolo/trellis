@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:shelf/shelf.dart';
 import 'package:trellis/trellis.dart';
 
-import 'live_reload_handler.dart';
+import 'live_reload_middleware.dart';
 
 /// Creates a Shelf [Middleware] that provides live reload functionality.
 ///
@@ -20,6 +21,11 @@ import 'live_reload_handler.dart';
 /// The [loader] must be created with `devMode: true`. If
 /// [FileSystemLoader.changes] is null, a [StateError] is thrown
 /// immediately.
+///
+/// The reload client is served at [scriptPath] as JavaScript, allowing a
+/// `script-src 'self'` policy. [staticDirectory], when present, also watches
+/// `.css` and `.js` recursively. A missing directory is ignored. Static
+/// watchers close with [loader], so the engine still owns shutdown.
 ///
 /// Script injection only applies to buffered `text/html` responses (those
 /// with a known `contentLength`). Streamed responses and non-HTML content
@@ -47,15 +53,17 @@ import 'live_reload_handler.dart';
 Middleware devMiddleware(
   FileSystemLoader loader, {
   String ssePath = '/_dev/reload',
+  String scriptPath = '/_dev/reload.js',
+  String? staticDirectory,
   bool injectScript = true,
   bool validate = true,
   TemplateValidator? validator,
   StringSink? validationSink,
 }) {
-  final sseHandler = liveReloadHandler(loader);
-  final ssePathNormalized = ssePath.startsWith('/') ? ssePath.substring(1) : ssePath;
-  final script = liveReloadScript(ssePath: ssePath);
-
+  final changes = loader.changes;
+  if (changes == null) {
+    throw StateError('Create the loader with devMode: true to enable live reload.');
+  }
   if (validate) {
     final effectiveValidator = validator ?? TemplateValidator();
     final sink = validationSink ?? stderr;
@@ -66,34 +74,15 @@ Middleware devMiddleware(
     validateLoadedTemplates(loader, effectiveValidator, cache, sink);
     // The watcher emits void events, so re-scan all templates on each change;
     // the cache short-circuits everything that has not actually changed.
-    loader.changes?.listen((_) => validateLoadedTemplates(loader, effectiveValidator, cache, sink));
+    changes.listen((_) => validateLoadedTemplates(loader, effectiveValidator, cache, sink));
   }
 
-  return (Handler innerHandler) {
-    return (Request request) async {
-      // Route SSE path to the live reload handler.
-      if (request.url.path == ssePathNormalized) {
-        return sseHandler(request);
-      }
-
-      final response = await innerHandler(request);
-
-      if (!injectScript) return response;
-
-      // Only inject into buffered text/html responses.
-      final contentType = response.headers['content-type'];
-      if (contentType == null || !contentType.contains('text/html')) {
-        return response;
-      }
-      if (response.contentLength == null) {
-        return response;
-      }
-
-      final body = await response.readAsString();
-      final injected = body.replaceFirst('</body>', '$script\n</body>');
-      return response.change(body: injected);
-    };
-  };
+  return liveReloadMiddleware(
+    _reloadChanges(changes, staticDirectory),
+    ssePath: ssePath,
+    scriptPath: scriptPath,
+    injectScript: injectScript,
+  );
 }
 
 /// Validates every template under [loader] and writes any issues to [sink].
@@ -158,3 +147,30 @@ void validateLoadedTemplates(
 /// Upper bound on cached validation results, mirroring the engine's default
 /// parsed-DOM cache size. Oldest entries are evicted first.
 const _maxValidationCacheEntries = 256;
+
+Stream<void> _reloadChanges(Stream<void> templates, String? staticDirectory) {
+  if (staticDirectory == null || !Directory(staticDirectory).existsSync()) return templates;
+  final staticLoaders = [
+    for (final extension in ['.css', '.js']) FileSystemLoader(staticDirectory, extension: extension, devMode: true),
+  ];
+  final controller = StreamController<void>.broadcast();
+  final staticSubscriptions = [
+    for (final loader in staticLoaders) loader.changes!.listen(controller.add, onError: controller.addError),
+  ];
+  // The template loader already defines the dev middleware's lifetime. Keep
+  // the static watchers on that same lifetime, including when no SSE client exists.
+  templates.listen(
+    controller.add,
+    onError: controller.addError,
+    onDone: () async {
+      for (final subscription in staticSubscriptions) {
+        await subscription.cancel();
+      }
+      for (final loader in staticLoaders) {
+        await loader.close();
+      }
+      await controller.close();
+    },
+  );
+  return controller.stream;
+}

@@ -18,6 +18,41 @@ void main() {
 
   String readWorkspaceFile(String path) => File('${workspaceRoot.path}/$path').readAsStringSync();
 
+  test('every publishable package is listed in each release registry', () {
+    final packages = Directory('${workspaceRoot.path}/packages')
+        .listSync()
+        .whereType<Directory>()
+        .where((d) => File('${d.path}/pubspec.yaml').existsSync())
+        .where((d) => !File('${d.path}/pubspec.yaml').readAsStringSync().contains('publish_to: none'))
+        .map((d) => d.uri.pathSegments.where((s) => s.isNotEmpty).last)
+        .toList();
+    expect(packages, contains('trellis_ui'));
+    for (final registry in [
+      'pubspec.yaml',
+      'tool/version_lockstep.sh',
+      'tool/release.sh',
+      'tool/verify_release.sh',
+      '.github/workflows/publish.yml',
+    ]) {
+      final source = readWorkspaceFile(registry);
+      for (final package in packages) {
+        expect(source, matches(RegExp('\\b${RegExp.escape(package)}\\b')), reason: '$registry lacks $package');
+      }
+    }
+    final core = readWorkspaceFile('packages/trellis/pubspec.yaml');
+    expect(core, isNot(contains('trellis_ui:')));
+  });
+
+  test('release refuses without a trellis_ui changelog section', () async {
+    final fixture = await _ReleaseFixture.create(workspaceRoot, omitChangelog: 'trellis_ui');
+    addTearDown(fixture.dispose);
+    final result = await fixture.release('9.8.7');
+    expect(result.exitCode, isNot(0));
+    expect(result.stderr, contains('trellis_ui'));
+    expect(result.stderr, contains("no '## 9.8.7' section"));
+    expect(await fixture.git(['status', '--porcelain']), isEmpty);
+  });
+
   group('binary release distribution contracts', () {
     test('publishing step requests semantic latest selection', () {
       final workflow = readWorkspaceFile('.github/workflows/release-binaries.yml');
@@ -40,8 +75,8 @@ void main() {
 
       expect(docs, isNot(contains('cd my_blog && dart pub get')));
       expect(docs, isNot(contains('cd my_blog\ndart pub get\ntrellis build')));
-      expect(docs, contains('cd my_blog && trellis build && trellis serve'));
-      expect(docs, contains('cd my_blog\ntrellis build\ntrellis serve'));
+      expect(docs, contains('cd my_blog && trellis dev'));
+      expect(docs, contains('cd my_blog\ntrellis dev'));
     });
 
     test('Windows checksum snippet compares expected and actual hashes', () {
@@ -102,9 +137,9 @@ void main() {
       expect((await Process.run('git', ['init', '--quiet'], workingDirectory: repo.path)).exitCode, 0);
 
       for (final scalar in <String>[
-        'trellis 0.10.2 — one dependency',
-        '"trellis 0.10.2 — one dependency"',
-        "'trellis 0.10.2 — one dependency'",
+        'trellis 0.10.2 — no Node, no build step',
+        '"trellis 0.10.2 — no Node, no build step"',
+        "'trellis 0.10.2 — no Node, no build step'",
       ]) {
         final fixture =
             '''
@@ -157,11 +192,11 @@ theme_params:
       final bumpScript = readWorkspaceFile('tool/version_lockstep.sh');
       final releaseScript = readWorkspaceFile('tool/release.sh');
       expect(bumpScript, contains(r's/^([ \t]+trellis\w*: \^)[0-9][0-9A-Za-z.+-]*$/$1$ENV{VERSION}/'));
-      expect(releaseScript, contains('README.md | packages/*/README.md | docs/*.md | site/content/*.md |'));
+      expect(releaseScript, contains('README.md | packages/*/README.md | site/content/*.md |'));
 
       final repo = Directory.systemTemp.createTempSync('version_lockstep_snippets_');
       addTearDown(() => repo.deleteSync(recursive: true));
-      for (final dir in ['tool', 'site', 'docs/guides', 'packages/trellis_x']) {
+      for (final dir in ['tool', 'site', 'site/content/docs', 'packages/trellis_x']) {
         Directory('${repo.path}/$dir').createSync(recursive: true);
       }
       final bin = Directory('${repo.path}/bin')..createSync();
@@ -170,7 +205,9 @@ theme_params:
       expect((await Process.run('chmod', ['+x', fakeMelos.path])).exitCode, 0);
       expect((await Process.run('git', ['init', '--quiet'], workingDirectory: repo.path)).exitCode, 0);
       // The hero sync exits non-zero unless it rewrites exactly one line, so the fixture needs one.
-      File('${repo.path}/site/trellis_site.yaml').writeAsStringSync('      text: trellis 0.10.2 — one dependency\n');
+      File(
+        '${repo.path}/site/trellis_site.yaml',
+      ).writeAsStringSync('      text: trellis 0.10.2 — no Node, no build step\n');
 
       // Prose mentioning a constraint inline, a config key that is not a dependency, and a
       // non-trellis dependency must all survive untouched; only the indented pubspec lines move.
@@ -192,7 +229,7 @@ trellis_x:
       final fixtures = [
         File('${repo.path}/README.md'),
         File('${repo.path}/packages/trellis_x/README.md'),
-        File('${repo.path}/docs/guides/install.md'),
+        File('${repo.path}/site/content/docs/install.md'),
       ];
       for (final fixture in fixtures) {
         fixture.writeAsStringSync(snippet);
@@ -228,28 +265,30 @@ trellis_x:
       const preRelease = '$stale-dev.1';
       final pinned = {
         'README.md': 'Install:\n\n```bash\n$install --theme x --ref $stale\n```\n',
-        'docs/guides/theme-usage.md': '$install --theme a --ref $stale\n\nprose\n\n$install --theme b --ref $stale\n',
+        'site/content/docs/theme-usage.md':
+            '$install --theme a --ref $stale\n\nprose\n\n$install --theme b --ref $stale\n',
         'themes/orchard/README.md': '$install --theme orchard --ref $stale\n',
         // A pin ending a sentence keeps its full stop.
-        'docs/guides/prose.md': 'Then run $install --theme c --ref $stale.\n',
+        'site/content/docs/prose.md': 'Then run $install --theme c --ref $stale.\n',
         // The whole pre-release tag is replaced, not just its X.Y.Z prefix.
-        'docs/guides/pre-release.md': '$install --theme d --ref $preRelease\n',
-        'docs/guides/two-pins.md': '$install --theme e --ref $stale && $install --theme f --ref $stale\n',
+        'site/content/docs/pre-release.md': '$install --theme d --ref $preRelease\n',
+        'site/content/docs/two-pins.md': '$install --theme e --ref $stale && $install --theme f --ref $stale\n',
         // Only a third-party source stops the scan: tolo's own links and a bare `git@` in prose do not.
-        'docs/guides/tolo-link.md': '$install --theme g # docs at github.com/tolo/trellis/wiki --ref $stale\n',
-        'docs/guides/git-at-prose.md': '$install --theme h (or clone via git@ if you prefer) --ref $stale\n',
+        'site/content/docs/tolo-link.md': '$install --theme g # docs at github.com/tolo/trellis/wiki --ref $stale\n',
+        'site/content/docs/git-at-prose.md': '$install --theme h (or clone via git@ if you prefer) --ref $stale\n',
       };
       final untouched = {
         // The pin scan stops at the next URL or git source, so a third-party pin after a tolo/trellis link keeps
         // its version.
-        'docs/guides/mixed.md': 'Built-ins live at https://github.com/tolo/trellis; $thirdParty\n',
-        'docs/guides/mixed-scp.md': 'Built-ins live at https://github.com/tolo/trellis; $scpThirdParty\n',
-        'docs/guides/mixed-schemeless.md': 'Built-ins live at https://github.com/tolo/trellis; $schemelessThirdParty\n',
+        'site/content/docs/mixed.md': 'Built-ins live at https://github.com/tolo/trellis; $thirdParty\n',
+        'site/content/docs/mixed-scp.md': 'Built-ins live at https://github.com/tolo/trellis; $scpThirdParty\n',
+        'site/content/docs/mixed-schemeless.md':
+            'Built-ins live at https://github.com/tolo/trellis; $schemelessThirdParty\n',
         'packages/trellis_x/CHANGELOG.md': '$history\n',
         'dev/state/LEARNINGS.md': 'pinned `--ref $stale` once\n$history\n',
         '.agent_temp/notes.md': '$history\n',
-        'docs/guides/third-party.md': '$thirdParty\n$lookAlike\n',
-        'docs/guides/no-url.md': 'Pass `--ref $stale` to pick a tag.\n',
+        'site/content/docs/third-party.md': '$thirdParty\n$lookAlike\n',
+        'site/content/docs/no-url.md': 'Pass `--ref $stale` to pick a tag.\n',
       };
       for (final entry in {...pinned, ...untouched}.entries) {
         final file = File('${repo.path}/${entry.key}')..createSync(recursive: true);
@@ -300,7 +339,7 @@ trellis_x:
 
       expect(result.exitCode, 0, reason: '${result.stderr}');
       final files = (result.stdout as String).trim().split('\n');
-      expect(files, contains('docs/guides/theme-usage.md'));
+      expect(files, contains('site/content/docs/sites/themes.md'));
       expect(files, contains('themes/lattice/README.md'));
       expect(files.where((f) => f.contains('CHANGELOG') || f.contains('LEARNINGS')), isEmpty);
       expect(files, isNot(contains('LICENSE')), reason: 'a file without a pin must not be listed');
@@ -490,21 +529,31 @@ trellis_x:
       ).firstMatch(gateScript)?.group(1);
 
       expect(workflow, 'ci.yml');
-      final ci = readWorkspaceFile('.github/workflows/$workflow');
-      expect(_jobBlock(ci, 'check'), allOf(contains('melos run --no-select analyze'), contains('dart test')));
+      // The job runs the mise tier tasks; the commands themselves live in mise.toml.
+      final job = _jobBlock(readWorkspaceFile('.github/workflows/$workflow'), 'check');
+      expect(job, allOf(contains('mise run setup'), contains("'check-full' || 'check'")));
+      final mise = readWorkspaceFile('mise.toml');
+      expect(_miseTask(mise, 'lint'), contains('melos run --no-select analyze'));
+      expect(_miseTask(mise, 'test'), contains('dart test'));
+      for (final tier in ['check', 'check-full']) {
+        expect(_miseTask(mise, tier), contains('{ task = "lint" }'), reason: '$tier must run lint');
+      }
     });
 
-    test('ci.yml and release-binaries.yml pin the same Dart SDK', () {
+    test('mise.toml (used by ci.yml) and release-binaries.yml pin the same Dart SDK', () {
       // CI's analyze/format/test evidence only speaks for the release toolchain
       // if both use the same SDK; and release-binaries must take it from the
       // single `env.DART_SDK`, not a per-job literal that can drift.
-      String pin(String path) {
-        final match = RegExp(r'^\s*DART_SDK:\s*(\S+)', multiLine: true).firstMatch(readWorkspaceFile(path));
-        expect(match, isNotNull, reason: 'no DART_SDK env in $path');
-        return match!.group(1)!;
-      }
+      final misePin = RegExp(r'^dart = "([^"]+)"$', multiLine: true).firstMatch(readWorkspaceFile('mise.toml'));
+      expect(misePin, isNotNull, reason: 'no exact dart pin in mise.toml [tools]');
+      final releasePin = RegExp(
+        r'^\s*DART_SDK:\s*(\S+)',
+        multiLine: true,
+      ).firstMatch(readWorkspaceFile('.github/workflows/release-binaries.yml'));
+      expect(releasePin, isNotNull, reason: 'no DART_SDK env in release-binaries.yml');
 
-      expect(pin('.github/workflows/release-binaries.yml'), pin('.github/workflows/ci.yml'));
+      expect(releasePin!.group(1), misePin!.group(1));
+      expect(readWorkspaceFile('.github/workflows/ci.yml'), isNot(contains('setup-dart')));
       final releaseWorkflow = readWorkspaceFile('.github/workflows/release-binaries.yml');
       expect(
         RegExp(r'^\s*sdk:\s*[0-9]', multiLine: true).hasMatch(releaseWorkflow),
@@ -518,12 +567,14 @@ trellis_x:
       final ci = readWorkspaceFile('.github/workflows/ci.yml');
       final releaseWorkflow = readWorkspaceFile('.github/workflows/release-binaries.yml');
       final checkoutPin = RegExp(r'actions/checkout@([0-9a-f]{40})').firstMatch(releaseWorkflow)!.group(1);
-      final dartPin = RegExp(r'dart-lang/setup-dart@([0-9a-f]{40})').firstMatch(releaseWorkflow)!.group(1);
+      final uses = RegExp(r'uses: (\S+)').allMatches(ci).map((m) => m.group(1)!).toList();
 
-      expect(ci, isNot(matches(RegExp(r'uses: (?:actions/checkout|dart-lang/setup-dart|actions/setup-node)@v\d'))));
-      expect(RegExp('actions/checkout@$checkoutPin').allMatches(ci), hasLength(2));
-      expect(RegExp('dart-lang/setup-dart@$dartPin').allMatches(ci), hasLength(2));
-      expect(ci, contains('actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7'));
+      expect(uses, hasLength(2));
+      expect(uses, everyElement(matches(RegExp(r'@[0-9a-f]{40}$'))), reason: 'every action must be pinned to a SHA');
+      expect(uses, contains('actions/checkout@$checkoutPin'));
+      expect(uses.where((u) => u.startsWith('jdx/mise-action@')), hasLength(1));
+      // mise.toml pins node; without it the JS harnesses skip and CI=true fails them.
+      expect(readWorkspaceFile('mise.toml'), matches(RegExp(r'^node = "\d+\.\d+\.\d+"$', multiLine: true)));
     });
   });
 
@@ -607,7 +658,9 @@ Directory _lockstepFixture(Directory workspaceRoot) {
     '${repo.path}/tool/version_lockstep.sh',
     File('${workspaceRoot.path}/tool/version_lockstep.sh').readAsStringSync(),
   );
-  File('${repo.path}/site/trellis_site.yaml').writeAsStringSync('      text: trellis 0.10.2 — one dependency\n');
+  File(
+    '${repo.path}/site/trellis_site.yaml',
+  ).writeAsStringSync('      text: trellis 0.10.2 — no Node, no build step\n');
   expect(Process.runSync('git', ['init', '--quiet'], workingDirectory: repo.path).exitCode, 0);
   return repo;
 }
@@ -627,7 +680,7 @@ Future<ProcessResult> _bash(Directory repo, List<String> args) => Process.run(
   environment: {...Platform.environment, 'PATH': '${repo.parent.path}/bin:${Platform.environment['PATH']}'},
 );
 
-/// A clone of a bare origin on `main` with all 8 package changelogs at `## 9.8.7`, the real
+/// A clone of a bare origin on `main` with all package changelogs at `## 9.8.7`, the real
 /// `tool/release.sh`, and stub `version_lockstep.sh` / `require_green_ci.sh` / dart / melos / gh,
 /// so release.sh can run end to end without a network or a real bump.
 class _ReleaseFixture {
@@ -642,6 +695,7 @@ class _ReleaseFixture {
     'trellis_site',
     'trellis_dart_frog',
     'trellis_relic',
+    'trellis_ui',
   ];
 
   final Directory root;
@@ -721,7 +775,7 @@ String _pubspecVersion(String pubspec) {
 }
 
 /// The README and docs pages whose install snippets version_lockstep.sh keeps on the
-/// lockstep version: `README.md`, `packages/*/README.md`, every `.md` under `docs/` and
+/// lockstep version: `README.md`, `packages/*/README.md`, every `.md` under
 /// `site/content/`. Mirrors the script's `snippet_files()` and release.sh's allow-list.
 Iterable<String> _installSnippetFiles(Directory root) sync* {
   final rootReadme = File('${root.path}/README.md');
@@ -730,10 +784,9 @@ Iterable<String> _installSnippetFiles(Directory root) sync* {
     final readme = File('${package.path}/README.md');
     if (readme.existsSync()) yield readme.path;
   }
-  for (final dir in ['docs', 'site/content']) {
-    final directory = Directory('${root.path}/$dir');
-    if (!directory.existsSync()) continue;
-    yield* directory.listSync(recursive: true).whereType<File>().map((f) => f.path).where((p) => p.endsWith('.md'));
+  final content = Directory('${root.path}/site/content');
+  if (content.existsSync()) {
+    yield* content.listSync(recursive: true).whereType<File>().map((f) => f.path).where((p) => p.endsWith('.md'));
   }
 }
 
@@ -742,6 +795,16 @@ Iterable<String> _installSnippetFiles(Directory root) sync* {
 String _jobsSection(String workflow) {
   final jobs = RegExp(r'^jobs:$', multiLine: true).firstMatch(workflow);
   return jobs == null ? '' : workflow.substring(jobs.end);
+}
+
+/// Extracts one `[tasks.<name>]` table from [mise] (`mise.toml`), from its header to
+/// the next table header, so an assertion about one task can't be satisfied by another.
+String _miseTask(String mise, String name) {
+  final header = RegExp('^\\[tasks\\.${RegExp.escape(name)}\\]\$', multiLine: true).firstMatch(mise);
+  if (header == null) return '';
+  final rest = mise.substring(header.end);
+  final next = RegExp(r'^\[', multiLine: true).firstMatch(rest);
+  return next == null ? rest : rest.substring(0, next.start);
 }
 
 /// Extracts a single top-level job block (keyed by [jobId] under `jobs:`) from a

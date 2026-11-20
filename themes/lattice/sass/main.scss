@@ -3,6 +3,7 @@
 @forward 'variables';
 @use 'sass:map';
 @use 'variables' as *;
+@use 'suite';
 
 @mixin lattice-dark {
   --paper: #{map.get($trellis-palette-dark, bg-color)};
@@ -198,7 +199,8 @@ a {
 a:hover {
   color: var(--leaf-hover);
 }
-:focus-visible {
+// The suite paints focus inside the search group and on the reader toggle.
+:focus-visible:where(:not(.search-shell *, .mode-toggle)) {
   outline: 2px solid currentColor;
   outline-offset: -2px;
   border-radius: 2px;
@@ -298,18 +300,7 @@ a:hover {
 .mobile-nav {
   display: none;
 }
-.mode-toggle {
-  display: inline-flex;
-  width: 34px;
-  height: 34px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--lattice-strong);
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--ink-soft);
-  cursor: pointer;
-}
+.mode-toggle { inline-size: 34px; block-size: 34px; }
 .mode-toggle .sun {
   display: none;
 }
@@ -1004,60 +995,6 @@ code {
 .toc-level-3 a {
   padding-left: 18px;
 }
-.search-input {
-  width: 100%;
-  margin-bottom: 18px;
-  padding: 8px 10px;
-  border: 1px solid var(--lattice-strong);
-  border-radius: 999px;
-  background: var(--paper);
-  color: var(--ink);
-}
-/* Search results, built by static/js/search.js. MAX_RESULTS is 20, so the list carries its own
-   scroll rather than pushing the section tree off the bottom of the sidebar. */
-.search-results {
-  max-height: 320px;
-  margin: 0 0 18px;
-  padding: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  list-style: none;
-}
-.search-result {
-  margin: 0 0 4px;
-}
-/* Title and snippet are <span>s: without an explicit block they run together on one line and
-   the link inherits the prose underline. */
-.search-result-link {
-  display: block;
-  padding: 6px 8px;
-  border-radius: var(--radius);
-  text-decoration: none;
-}
-.search-result-link:hover,
-.search-result-link:focus-visible {
-  background: var(--tint);
-}
-.search-result-title {
-  display: block;
-  color: var(--leaf);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.3;
-}
-.search-result-snippet {
-  display: block;
-  margin-top: 3px;
-  color: var(--ink-soft);
-  font-size: 12px;
-  line-height: 1.45;
-}
-.search-empty {
-  padding: 6px 8px;
-  color: var(--ink-soft);
-  font-size: 13px;
-  font-style: italic;
-}
 .doc {
   min-width: 0;
 }
@@ -1084,14 +1021,36 @@ code {
 .prose :not(pre) > code {
   overflow-wrap: anywhere;
 }
-.prose table {
-  width: 100%;
+/* A plain table wider than the column scrolls inside its own box, so it never widens the page and
+   never splits a word. `table-layout: fixed` with `overflow-wrap: anywhere` cells also kept the
+   page from widening, but cut identifiers mid-token (`maxContentLengt|h`) at every viewport:
+   the docs column is under 500px even at 1280px. `display: block` makes the table the scroll
+   container (its rows lay out in an anonymous table box inside it); `max-content` keeps a
+   narrow table at its natural width rather than stretching an empty block to the column.
+   Suite tables already have a named scroll region and own their cell styles. */
+.prose table:not(:where(.trellis-table)) {
+  display: block;
+  width: max-content;
   max-width: 100%;
-  table-layout: fixed;
+  overflow-x: auto;
 }
-.prose th,
-.prose td {
-  overflow-wrap: anywhere;
+/* Undo `main * { overflow-wrap: anywhere }` and the inline-code rule above: `anywhere` shrinks
+   a cell's min-content to one character, so the auto layout would split words instead of
+   scrolling. With `normal`, a cell wraps only at spaces and hyphens and an identifier is its
+   min-content. Inline code is deliberately not `nowrap`: that held `[title, summary, content,
+   tags]` on one line, made a 400px table 580px wide and pushed its prose column off-screen. */
+.prose :is(th, td):not(:where(.trellis-table *)),
+.prose :is(th, td) :not(:where(.trellis-table *)),
+.prose :is(th, td) code:not(:where(.trellis-table *)) {
+  overflow-wrap: normal;
+}
+/* Fixed layout spread spare width across columns; auto layout packs them to content, so
+   adjacent cells need their own gap. */
+.prose :is(th, td):not(:where(.trellis-table *)) {
+  padding: 6px 1em 6px 0;
+}
+.prose :is(th, td):not(:where(.trellis-table *)):last-child {
+  padding-right: 0;
 }
 .prose pre {
   overflow: visible;
@@ -1145,9 +1104,12 @@ code {
 .hljs-type {
   color: var(--syntax-function);
 }
+/* .hljs-function wraps a JS function head; its keyword and params carry their own classes,
+   so the only text it colours itself is the bare parentheses. */
 .hljs-punctuation,
 .hljs-operator,
 .hljs-subst,
+.hljs-function,
 .hljs-params,
 .hljs-meta,
 .hljs-tag,

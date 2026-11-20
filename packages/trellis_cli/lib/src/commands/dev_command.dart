@@ -1,0 +1,299 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:args/command_runner.dart';
+import 'package:path/path.dart' as p;
+import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf_io.dart' as io;
+import 'package:shelf_static/shelf_static.dart';
+import 'package:trellis_dev/trellis_dev.dart';
+import 'package:trellis_site/trellis_site.dart';
+import 'package:watcher/watcher.dart';
+
+import 'build_command.dart';
+import 'stop_signal.dart';
+
+/// The `trellis dev` command.
+///
+/// Builds the site for local preview, serves it, rebuilds when a source file changes, and reloads open browser tabs
+/// after each successful rebuild. Runs until Ctrl-C (SIGINT) or SIGTERM is received.
+///
+/// The preview build is served from the root (`pathPrefix` cleared), uses `http://localhost:<port>` as its base URL,
+/// and goes to a temporary directory, never the site's output directory, so a preview build cannot be deployed by
+/// mistake. Each rebuild writes a fresh directory and the server switches to it only when the build succeeds, so a
+/// broken edit keeps the last good build on screen.
+class DevCommand extends Command<int> {
+  /// Optional stop signal. When this future completes the server shuts down.
+  ///
+  /// Defaults to [processStopSignal] (Ctrl-C or SIGTERM). Tests inject their own future.
+  final Future<void>? stopSignal;
+
+  /// Base directory the site is loaded from. Defaults to the process current directory. Injected by tests so the
+  /// command never depends on (or mutates) the process-global working directory.
+  final String? workingDirectory;
+
+  /// Quiet period after the last file event before a rebuild starts, so an editor's save burst builds once.
+  final Duration debounce;
+
+  DevCommand({this.stopSignal, this.workingDirectory, this.debounce = const Duration(milliseconds: 150)}) {
+    argParser
+      ..addOption('port', abbr: 'p', help: 'Port to listen on.', defaultsTo: '8080')
+      ..addFlag('drafts', help: 'Include draft content.', defaultsTo: false)
+      ..addFlag('verbose', abbr: 'v', help: 'Show detailed build log.', defaultsTo: false);
+  }
+
+  @override
+  String get name => 'dev';
+
+  @override
+  String get description => 'Build, serve and watch a Trellis static site, reloading the browser on change.';
+
+  @override
+  String get invocation => 'trellis dev [options]';
+
+  @override
+  Future<int> run() async {
+    final portStr = argResults!['port'] as String;
+    final port = int.tryParse(portStr);
+    if (port == null || port < 1 || port > 65535) {
+      stderr.writeln('Error: Invalid port "$portStr". Port must be an integer between 1 and 65535.');
+      return 1;
+    }
+    final includeDrafts = argResults!['drafts'] as bool;
+    final verbose = argResults!['verbose'] as bool;
+    final baseDir = workingDirectory ?? Directory.current.path;
+
+    void reportFailure(String phase, Object error, StackTrace stackTrace) {
+      stderr.writeln('$phase: $error');
+      if (verbose) stderr.writeln(stackTrace);
+    }
+
+    SiteConfig? readConfig() {
+      try {
+        return loadSiteBuildConfig(baseDir);
+      } catch (error, stackTrace) {
+        reportFailure('Could not load preview config', error, stackTrace);
+        return null;
+      }
+    }
+
+    // Fail fast on a missing or invalid config: there is nothing to watch yet.
+    final initialConfig = readConfig();
+    if (initialConfig == null) return 1;
+
+    Directory? buildRoot;
+    late final String previewRoot;
+    final rebuilt = StreamController<void>.broadcast();
+    var generation = 0;
+    Directory? servedDir;
+    Handler? served;
+
+    Future<void> rebuild(SiteConfig loaded) async {
+      final outDir = Directory(p.join(buildRoot!.path, 'build-${generation++}'));
+      var code = 1;
+      try {
+        final config = overrideSiteBuildConfig(
+          loaded,
+          outputDir: outDir.path,
+          baseUrl: 'http://localhost:$port',
+          pathPrefix: '',
+        );
+        code = await buildSite(config, includeDrafts: includeDrafts, verbose: verbose);
+      } catch (error, stackTrace) {
+        // Preview is the recovery boundary: invalid inputs can also fail with Dart Errors.
+        reportFailure('Build failed', error, stackTrace);
+      }
+      if (code != 0) {
+        if (outDir.existsSync()) outDir.deleteSync(recursive: true);
+        if (served != null) stderr.writeln('Still serving the last successful build.');
+        return;
+      }
+      final previous = servedDir;
+      servedDir = outDir;
+      served = createStaticHandler(outDir.path, defaultDocument: 'index.html');
+      if (previous != null && previous.existsSync()) previous.deleteSync(recursive: true);
+      if (!rebuilt.isClosed) rebuilt.add(null);
+    }
+
+    final subscriptions = <String, StreamSubscription<WatchEvent>>{};
+    String? outputRoot;
+
+    // One rebuild at a time; changes during a build queue exactly one more.
+    Future<void>? building;
+    var pending = false;
+    var stopping = false;
+    Timer? debounceTimer;
+    Timer? missingThemeTimer;
+
+    Future<void> updateWatches(SiteConfig config, void Function() queueRebuild) async {
+      final site = Directory(config.siteDir).resolveSymbolicLinksSync();
+      final roots = {site};
+      final theme = config.themeConfig;
+      missingThemeTimer?.cancel();
+      if (theme != null) {
+        // Resolve the configured name the same way as the builder before following site or theme symlinks.
+        final directory = Directory(p.normalize(p.join(config.siteDir, 'themes', theme.name)));
+        if (directory.existsSync()) {
+          final target = directory.resolveSymbolicLinksSync();
+          if (!p.isWithin(site, target)) roots.add(target);
+        } else {
+          // A recursive watcher closes when its root disappears. Probe only the missing theme
+          // until it returns, without subscribing to unrelated directories above the site.
+          missingThemeTimer = Timer.periodic(const Duration(milliseconds: 250), (timer) {
+            if (directory.existsSync()) {
+              timer.cancel();
+              queueRebuild();
+            }
+          });
+        }
+      }
+      final configuredOutput = _resolvedOutputPath(Directory(config.outputDir));
+      // An output path that covers a watch root would also hide the edits needed to correct it.
+      final coversSource = roots.any((root) => root == configuredOutput || p.isWithin(configuredOutput, root));
+      outputRoot = coversSource ? null : configuredOutput;
+      for (final root in subscriptions.keys.toList()) {
+        if (!roots.contains(root)) await subscriptions.remove(root)!.cancel();
+      }
+      for (final root in roots) {
+        if (subscriptions.containsKey(root)) continue;
+        final watcher = DirectoryWatcher(root);
+        subscriptions[root] = watcher.events.listen(
+          (event) {
+            if (!_isIgnored(event.path, subscriptions.keys, [previewRoot, ?outputRoot])) queueRebuild();
+          },
+          onError: (Object error, StackTrace stackTrace) => reportFailure('Could not watch $root', error, stackTrace),
+          onDone: () {
+            subscriptions.remove(root);
+            if (root != site) queueRebuild();
+          },
+        );
+        // Watch the new sources before building so an edit during that build is queued.
+        await watcher.ready;
+      }
+    }
+
+    void queueRebuild() {
+      if (stopping) return;
+      debounceTimer?.cancel();
+      debounceTimer = Timer(debounce, () {
+        pending = true;
+        building ??= Future<void>(() async {
+          try {
+            while (pending && !stopping) {
+              pending = false;
+              stdout.writeln('Change detected, rebuilding...');
+              final config = readConfig();
+              if (config == null) {
+                if (served != null) stderr.writeln('Still serving the last successful build.');
+                continue;
+              }
+              await updateWatches(config, queueRebuild);
+              await rebuild(config);
+            }
+          } finally {
+            building = null;
+          }
+        });
+      });
+    }
+
+    final processStop = stopSignal == null ? processStopSignal() : null;
+    final stopped = (stopSignal ?? processStop!.stopped).then((_) {
+      stopping = true;
+    });
+    HttpServer? server;
+    try {
+      final temp = Directory.systemTemp.createTempSync('trellis_dev_');
+      buildRoot = temp;
+      previewRoot = temp.resolveSymbolicLinksSync();
+      stdout.writeln('Building site...');
+      await rebuild(initialConfig);
+      if (stopping) return 0;
+
+      await updateWatches(initialConfig, queueRebuild);
+      if (stopping) return 0;
+
+      final handler = const Pipeline().addMiddleware(liveReloadMiddleware(rebuilt.stream)).addHandler((request) {
+        final current = served;
+        if (current != null) return current(request);
+        // No successful build yet. The page still carries the reload script, so it refreshes once a build succeeds.
+        return Response(
+          503,
+          body:
+              '<!DOCTYPE html><html><body><p>The site has not built yet. See the terminal for the error.</p></body>'
+              '</html>',
+          headers: {'content-type': 'text/html; charset=utf-8'},
+        );
+      });
+      try {
+        server = await io.serve(handler, InternetAddress.loopbackIPv4, port);
+      } on SocketException catch (e) {
+        stderr.writeln('Error: Could not bind to port $port. ${e.message}');
+        stderr.writeln('Try --port <another-port>.');
+        return 1;
+      }
+      if (stopping) return 0;
+      stdout.writeln('Serving http://localhost:$port, watching ${subscriptions.keys.join(', ')}');
+      stdout.writeln('Press Ctrl-C to stop.');
+      await stopped;
+      return 0;
+    } finally {
+      stopping = true;
+      debounceTimer?.cancel();
+      try {
+        // Open SSE connections never finish on their own, so close them rather than wait.
+        await server?.close(force: true);
+        await building; // Let an in-flight build finish before its directory is deleted.
+      } finally {
+        missingThemeTimer?.cancel();
+        try {
+          await _shutdown(subscriptions.values.toList(), rebuilt, buildRoot);
+        } finally {
+          await processStop?.cancel();
+        }
+      }
+    }
+  }
+}
+
+Future<void> _shutdown(
+  Iterable<StreamSubscription<WatchEvent>> subscriptions,
+  StreamController<void> rebuilt,
+  Directory? buildRoot,
+) async {
+  for (final subscription in subscriptions) {
+    await subscription.cancel();
+  }
+  await rebuilt.close();
+  if (buildRoot != null && buildRoot.existsSync()) buildRoot.deleteSync(recursive: true);
+}
+
+/// Watchers report physical paths even when the configured output sits below a symlink
+/// and the build has not created the output directory yet.
+String _resolvedOutputPath(Directory directory, [Set<String>? followedLinks]) {
+  if (directory.existsSync()) return directory.resolveSymbolicLinksSync();
+  final parent = directory.parent;
+  if (parent.path == directory.path) return directory.path;
+  final link = Link(directory.path);
+  if (link.existsSync()) {
+    final links = followedLinks ?? <String>{};
+    if (!links.add(link.path)) return directory.path;
+    final target = p.normalize(p.join(parent.path, link.targetSync()));
+    return _resolvedOutputPath(Directory(target), links);
+  }
+  return p.join(_resolvedOutputPath(parent, followedLinks), p.basename(directory.path));
+}
+
+/// Whether a change at [path] cannot affect the build: build output, or anything under a dot directory (`.git`,
+/// `.dart_tool`) or a dotfile, relative to its watch root.
+bool _isIgnored(String path, Iterable<String> roots, List<String> ignored) {
+  final canonical = p.canonicalize(path);
+  for (final dir in ignored) {
+    if (canonical == dir || p.isWithin(dir, canonical)) return true;
+  }
+  for (final root in roots) {
+    if (!p.isWithin(root, canonical)) continue;
+    return p.split(p.relative(canonical, from: root)).any((segment) => segment.startsWith('.'));
+  }
+  return false;
+}

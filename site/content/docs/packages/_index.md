@@ -32,6 +32,10 @@ headers.
 - [**trellis_relic**](/docs/packages/trellis_relic/) – Serverpod Relic response
   helpers, HTMX detection, and security headers.
 
+The [Framework Integration](/docs/packages/framework-integration/) guide
+compares the three side by side and covers HTMX patterns, security, testing,
+and AOT deployment across all of them.
+
 ## Sites, CSS, and tooling
 
 - [**trellis_site**](/docs/packages/trellis_site/) – static site generator:
@@ -45,3 +49,6 @@ headers.
 
 Authoring a theme for `trellis_site`? See the
 [Theme Authoring](/docs/themes/authoring/) guide.
+
+- [**trellis_ui**](/docs/ui/guide/) provides embedded fragments and same-origin assets.
+  See the [component reference](/docs/ui/components/) for live examples and APIs.

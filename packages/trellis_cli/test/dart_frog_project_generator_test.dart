@@ -1,7 +1,23 @@
 import 'package:test/test.dart';
 import 'package:trellis_cli/trellis_cli.dart';
 
+import '_strict_scaffold.dart';
+
 void main() {
+  for (final cdn in [false, true]) {
+    test('strict CSP scaffold ${cdn ? "CDN opt-in" : "self-hosted default"}', () async {
+      final files = InMemoryFileWriter();
+      await DartFrogProjectGenerator(projectName: 'demo', writer: files, htmxCdn: cdn).generate();
+      expectStrictScaffold(
+        files.files,
+        cdn: cdn,
+        staticRoot: 'public',
+        layout: 'templates/layouts/base.html',
+        server: 'routes/_middleware.dart',
+        csrf: true,
+      );
+    });
+  }
   group('DartFrogProjectGenerator', () {
     late InMemoryFileWriter writer;
     late DartFrogProjectGenerator generator;
@@ -37,8 +53,8 @@ void main() {
       }
     });
 
-    test('generates exactly 16 files', () {
-      expect(writer.files.length, 16);
+    test('generates exactly 18 files', () {
+      expect(writer.files.length, 18);
     });
 
     test('all files have non-empty content', () {
@@ -151,8 +167,8 @@ void main() {
         expect(content, contains('<!DOCTYPE html>'));
         expect(content, contains('id="content"'));
         expect(content, contains('csrf-token'));
-        expect(content, contains('htmx:configRequest'));
-        expect(content, contains('htmx:config:request'));
+        expect(writer.files['public/js/csrf.js'], contains('htmx:configRequest'));
+        expect(writer.files['public/js/csrf.js'], contains('htmx:config:request'));
         expect(content, contains('nav.html'));
         expect(content, contains('Dart Frog'));
       });

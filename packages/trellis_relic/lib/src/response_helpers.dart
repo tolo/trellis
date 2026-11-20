@@ -1,12 +1,14 @@
 import 'package:relic/relic.dart';
 import 'package:trellis/trellis.dart';
 
+import 'csrf_middleware.dart';
 import 'htmx_helpers.dart';
 import 'response_utils.dart';
 
 /// Renders a full page template, or a specific fragment for HTMX requests.
 ///
-/// The [engine] is passed explicitly (Relic has no DI mechanism).
+/// The [engine] is passed explicitly (Relic has no DI mechanism). The CSRF
+/// token from [trellisCsrf], when it ran, reaches the template as `csrfToken`.
 ///
 /// When [htmxFragment] is provided and the request is an HTMX request,
 /// renders only the named fragment instead of the full page.
@@ -22,15 +24,17 @@ Future<Response> renderPage(
   Map<String, dynamic> context, {
   String? htmxFragment,
 }) async {
+  final merged = mergeRequestContext(request, context);
   if (htmxFragment != null && isHtmxRequest(request)) {
-    return htmlResponse(await engine.renderFileFragment(template, fragment: htmxFragment, context: context));
+    return htmlResponse(await engine.renderFileFragment(template, fragment: htmxFragment, context: merged));
   }
-  return htmlResponse(await engine.renderFile(template, context));
+  return htmlResponse(await engine.renderFile(template, merged));
 }
 
 /// Renders a single named fragment from a template.
 ///
-/// The [engine] is passed explicitly (Relic has no DI mechanism).
+/// The [engine] is passed explicitly (Relic has no DI mechanism). The CSRF
+/// token from [trellisCsrf], when it ran, reaches the template as `csrfToken`.
 ///
 /// ```dart
 /// return renderFragment(request, engine, 'todos', 'todo-list',
@@ -43,12 +47,15 @@ Future<Response> renderFragment(
   String fragment,
   Map<String, dynamic> context,
 ) async {
-  return htmlResponse(await engine.renderFileFragment(template, fragment: fragment, context: context));
+  return htmlResponse(
+    await engine.renderFileFragment(template, fragment: fragment, context: mergeRequestContext(request, context)),
+  );
 }
 
 /// Renders multiple named fragments concatenated for HTMX out-of-band swaps.
 ///
-/// The [engine] is passed explicitly (Relic has no DI mechanism).
+/// The [engine] is passed explicitly (Relic has no DI mechanism). The CSRF
+/// token from [trellisCsrf], when it ran, reaches the template as `csrfToken`.
 ///
 /// ```dart
 /// return renderOobFragments(request, engine, 'todos',
@@ -61,5 +68,7 @@ Future<Response> renderOobFragments(
   List<String> fragments,
   Map<String, dynamic> context,
 ) async {
-  return htmlResponse(await engine.renderFileFragments(template, fragments: fragments, context: context));
+  return htmlResponse(
+    await engine.renderFileFragments(template, fragments: fragments, context: mergeRequestContext(request, context)),
+  );
 }

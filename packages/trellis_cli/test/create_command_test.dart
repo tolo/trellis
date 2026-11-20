@@ -4,8 +4,94 @@ import 'dart:isolate';
 import 'package:args/command_runner.dart';
 import 'package:test/test.dart';
 import 'package:trellis_cli/trellis_cli.dart';
+import 'package:trellis_cli/src/templates/htmx_asset.dart';
 
 void main() {
+  group('--ui', () {
+    late Directory dir;
+    setUp(() => dir = Directory.systemTemp.createTempSync('trellis_ui_flag_'));
+    tearDown(() => dir.deleteSync(recursive: true));
+
+    for (final template in ['htmx', 'relic', 'dart_frog']) {
+      for (final cdn in [false, true]) {
+        test('creates the $template scaffold with htmx-cdn=$cdn', () async {
+          final cli = TrellisCli(workingDirectory: dir.path);
+          expect(
+            await cli.run([
+              'create',
+              'demo',
+              '--ui',
+              if (template != 'htmx') ...['--template', template],
+              if (cdn) '--htmx-cdn',
+            ]),
+            0,
+          );
+          final project = '${dir.path}/demo';
+          expect(File('$project/pubspec.yaml').readAsLinesSync(), contains('  trellis_ui: ^$cliVersion'));
+          final serverPath = template == 'dart_frog' ? 'main.dart' : 'bin/server.dart';
+          final server = File('$project/$serverPath').readAsStringSync();
+          if (cdn) {
+            expect(RegExp(r'scriptSrc: (.+),').firstMatch(server)?.group(1), '"\'self\' $htmxCdnOrigin"');
+          } else {
+            expect(server, isNot(contains('scriptSrc:')));
+          }
+        });
+      }
+    }
+
+    for (final template in ['blog', 'theme']) {
+      test('rejects $template before writing a directory', () async {
+        final cli = TrellisCli(workingDirectory: dir.path);
+        await expectLater(
+          cli.run(['create', 'demo', '--template', template, '--ui']),
+          throwsA(isA<UsageException>().having((e) => e.message, 'message', contains('htmx, relic and dart_frog'))),
+        );
+        expect(Directory('${dir.path}/demo').existsSync(), isFalse);
+      });
+    }
+
+    test('prints the run and preview commands for Dart Frog', () async {
+      final result = await Process.run(Platform.resolvedExecutable, [
+        'run',
+        await _trellisCliBinPath(),
+        'create',
+        'demo',
+        '--template',
+        'dart_frog',
+        '--ui',
+      ], workingDirectory: dir.path);
+      expect(result.exitCode, 0, reason: '${result.stderr}');
+      expect(result.stdout, contains('dart pub get\n  dart_frog dev'));
+      expect(result.stdout, contains('/ui'));
+      expect(result.stdout, contains('dart run trellis_ui:materialize public/trellis-ui'));
+    });
+  });
+
+  group('htmx-cdn', () {
+    late Directory dir;
+    setUp(() => dir = Directory.systemTemp.createTempSync('trellis_cdn_'));
+    tearDown(() => dir.deleteSync(recursive: true));
+    for (final template in ['htmx', 'relic', 'dart_frog']) {
+      test('reaches $template generator', () async {
+        final cli = TrellisCli(workingDirectory: dir.path);
+        expect(await cli.run(['create', 'demo', '--template', template, '--htmx-cdn']), 0);
+        final root = '${dir.path}/demo';
+        final layout = template == 'relic' ? 'templates/base.html' : 'templates/layouts/base.html';
+        expect(File('$root/$layout').readAsStringSync(), contains(htmxScriptTag()));
+        expect(File('$root/${template == "dart_frog" ? "public" : "static"}/js/htmx.min.js').existsSync(), isFalse);
+      });
+    }
+    for (final template in ['blog', 'theme']) {
+      test('rejects $template without writing a directory', () async {
+        final cli = TrellisCli(workingDirectory: dir.path);
+        await expectLater(
+          cli.run(['create', 'demo', '--template', template, '--htmx-cdn']),
+          throwsA(isA<UsageException>().having((e) => e.message, 'message', contains('htmx, relic and dart_frog'))),
+        );
+        expect(Directory('${dir.path}/demo').existsSync(), isFalse);
+      });
+    }
+  });
   group('CreateCommand', () {
     late Directory tempDir;
 
@@ -139,8 +225,7 @@ void main() {
       ], workingDirectory: tempDir.path);
 
       expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
-      expect(result.stdout, contains('  trellis build'));
-      expect(result.stdout, contains('  trellis serve'));
+      expect(result.stdout, contains('  trellis dev'));
       expect(result.stdout, isNot(contains('dart pub get')));
     });
 
@@ -299,13 +384,13 @@ void main() {
       expect(() => cli.run(['create', '--template', 'relic', 'existing_relic']), throwsA(isA<UsageException>()));
     });
 
-    test('generated server configures CSP for HTMX CDN script', () async {
+    test('generated server configures strict CSP for same-origin scripts', () async {
       final cli = TrellisCli(workingDirectory: tempDir.path);
       await cli.run(['create', '--template', 'relic', 'relic_csp_test']);
 
       final server = File('${tempDir.path}/relic_csp_test/bin/server.dart').readAsStringSync();
       expect(server, contains('CspBuilder'));
-      expect(server, contains('https://cdn.jsdelivr.net'));
+      expect(server, isNot(contains('cdn.jsdelivr.net')));
       expect(server, contains('trellisSecurityHeaders(csp: csp)'));
     });
   });

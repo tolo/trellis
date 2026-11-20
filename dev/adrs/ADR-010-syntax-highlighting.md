@@ -101,8 +101,8 @@ The current approach: vendor Prism core + one grammar per language, style `.toke
 
 Structured comparison (scores 1–5 × weight; only criteria that discriminate — pure
 Dart / no-npm / no-JS-build is a **gate all three pass**, not a weighted axis). The public digest is the
-[ADR-010 research appendix](research/ADR-010-research.md); the full derivation lives in the private
-planning repo (`docs/research/08-syntax-highlighting-tradeoff.md`, maintainer-only).
+[ADR-010 research appendix](research/ADR-010-research.md), which also lists the conditions that would reopen
+this decision.
 
 | Criterion (weight) | A: Build-time Dart | B: Client hljs | C: Client Prism |
 |---|---|---|---|
@@ -298,9 +298,8 @@ processing, which already assumes `hljs-*` classes):
 ### ADR location
 This ADR lives in the **public** repo `dev/adrs/` (as ADR-010), consistent with
 ADR-001…009 — all ADRs are public so contributors read them on GitHub, and the
-implementation lands here. It is **not** duplicated into the private repo (a copy
-would only drift); the private research index carries a pointer for inventory
-completeness.
+implementation lands here. It is **not** duplicated into a private repo (a copy
+would only drift).
 
 ## Alternatives Considered
 See Options A/B/C above, the [Weighted Trade-off Analysis](#weighted-trade-off-analysis)
@@ -315,7 +314,6 @@ zero-JS output were confirmed with the maintainer.
 
 ## References
 - Research: [ADR-010 research appendix](research/ADR-010-research.md)
-- Trade-off report (weighted matrix + framework analysis) – private planning repo, canonical: `docs/research/08-syntax-highlighting-tradeoff.md`
 - `package:highlight`: https://pub.dev/packages/highlight
 - highlight.js CSS class reference: https://highlightjs.readthedocs.io/en/latest/css-classes-reference.html
 - Hugo syntax highlighting (Chroma, build-time): https://gohugo.io/content-management/syntax-highlighting/

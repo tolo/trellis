@@ -1,0 +1,68 @@
+# One entry point for local runs, agents and CI (ci.yml). Each task is one line that calls the Dart tool, melos or
+# a script under tool/; logic that needs conditions or loops belongs in a script, not here.
+#
+# Dart is pinned because `format:check` is a hard gate and formatter output is SDK-versioned: an unpinned
+# `stable` would let a Dart release turn CI red on an unrelated commit. Bump deliberately, together with the
+# packages' `sdk:` constraints and DART_SDK in release-binaries.yml, which does not use mise yet.
+min_version = "2026.11.9"
+
+[tools]
+dart = "3.13.0"
+# Load-bearing for three root-suite consumers: the theme client-behaviour harness, Meadow's mobile-menu DOM
+# harness and the WOFF2/brotli fvar reader. Each skips without node; `_requireNodeInCi` turns that skip into a
+# failure when CI=true. Do not drop it while reasoning about only one consumer.
+node = "22.23.5"
+
+# Melos scripts use `exec:`, which shells out to `melos` on PATH (`dart run melos` is not enough), and mise has no
+# pub backend to pin it, so setup activates it globally and this puts the pub-cache bin on PATH.
+[env]
+_.path = ["{{env.HOME}}/.pub-cache/bin"]
+
+[tasks.setup]
+description = "Activate melos 7.4.0 and bootstrap the workspace"
+run = ["dart pub global activate melos 7.4.0", "dart pub get"]
+
+[tasks.fmt]
+description = "Format every package and the root tool/ and test/ in place"
+run = ["melos exec -- dart format .", "dart format tool test"]
+
+[tasks.lint]
+description = "Generated theme gallery check, analyzer and format checks"
+run = [
+  "dart run tool/generate_theme_gallery.dart --check",
+  "melos run --no-select analyze",
+  "melos run --no-select format:check",
+  "dart format --output=none --set-exit-if-changed tool test",
+]
+
+# The workspace root is not a melos member, so `melos exec` skips it; the second line covers its release
+# contract, docs-site and rendered suites. `visual` and `ui-gate` are local release gates (ADR-012, TD-035).
+[tasks.test]
+description = "Fast-tier tests: package unit tests without E2E, then the root suite"
+run = [
+  "melos exec --dir-exists=test -- dart test --exclude-tags=e2e --exclude-tags=ui-gate",
+  "dart test --exclude-tags=visual --exclude-tags=ui-gate",
+]
+
+[tasks.check]
+description = "Fast tier and the CI job on feature branches: lint, then fast tests"
+run = [{ task = "lint" }, { task = "test" }]
+
+# The dart_frog E2E suites activate their CLI when missing; doing it up front keeps that out of per-test timeouts.
+[tasks.check-full]
+description = "Full tier and the CI job on main: lint, then all package tests including E2E, then the root suite"
+run = [
+  { task = "lint" },
+  "dart pub global activate dart_frog_cli 1.2.6",
+  "melos exec --dir-exists=test -- dart test --exclude-tags=ui-gate",
+  "dart test --exclude-tags=visual --exclude-tags=ui-gate",
+]
+
+[tasks.release-gate]
+description = "Local release gate on the baseline-authoring host: every package test, then the full root suite"
+run = ["melos exec --dir-exists=test -- dart test --exclude-tags=e2e", "dart test"]
+
+[tasks.release]
+description = "Cut release X.Y.Z from main (tool/release.sh); pass --dry-run to rehearse"
+run = "tool/release.sh"
+run_windows = []

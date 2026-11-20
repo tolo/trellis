@@ -13,7 +13,7 @@ import '../templates/blog/blog_styles_template.dart';
 /// Generates a complete Trellis SSG blog project scaffold.
 ///
 /// Produces a static-site project (no Dart server) that can be built with
-/// `trellis build` and previewed with `trellis serve`.
+/// `trellis build` and previewed with `trellis dev`.
 class BlogProjectGenerator {
   /// Creates a generator for a blog project with [projectName], writing files
   /// via [writer].

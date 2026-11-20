@@ -1,0 +1,4 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>badge</title></head><body>
+<span tl:fragment="badge(variant, ...attrs)" data-slot="badge" class="trellis-badge group/badge" tl:with="variant=${variant == 'default' or variant == 'secondary' or variant == 'destructive' or variant == 'outline' or variant == 'ghost' or variant == 'link' ? variant : 'default'}" tl:attrs="${attrs}" tl:classappend="${'trellis-badge-variant-' + variant}"><tl:block tl:slot="">Badge</tl:block></span>
+</body></html>

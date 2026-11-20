@@ -190,8 +190,8 @@ entry does not follow it, and tokens with no colour param stay theme-authored.
 **Dark is never derived from light** (`darken()`, `color.adjust()`, a mixed tint). The bundled dark palettes carry
 hand-computed WCAG ratios per pair; one derived override would silently shift all of them. The reasoning, with a survey of
 eleven theming systems (Docusaurus, MkDocs Material, Starlight, VitePress and Hextra resolve brand colours per mode, and
-none ships one global brand colour applied unchanged to both), is in the private planning repo, canonical:
-`docs/research/10-skin-vs-override-precedence.md`.
+none ships one global brand colour applied unchanged to both), is in the maintainer's private research repo, canonical:
+`trellis/research/10-skin-vs-override-precedence.md`.
 
 ### The hard cut
 
@@ -263,8 +263,8 @@ Arbor, verdant and folio compile byte-identical to the 0.11 `@import` bridge at 
 - [ADR-008](ADR-008-ssg-theme-system.md): the theme system whose SASS bridge this supersedes
 - [ADR-006](ADR-006-css-strategy.md): SASS stays a Dart-native library call
 - [ADR-009](ADR-009-package-versioning-strategy.md): the break ships in the lockstep minor
-- [Theme Authoring Guide](../../docs/guides/theme-authoring.md) and
-  [Standard Params Contract](../../docs/reference/standard-params.md): the contract as theme authors and site builders
+- [Theme Authoring Guide](../../site/content/docs/themes/authoring.md) and
+  [Standard Params Contract](../../site/content/docs/themes/standard-params.md): the contract as theme authors and site builders
   read it
 - Sass module system: <https://sass-lang.com/documentation/at-rules/use/> (`with`, `!default` configuration) and
   <https://sass-lang.com/documentation/at-rules/forward/> (`@forward … with`)

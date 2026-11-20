@@ -25,7 +25,7 @@
 /// over the same two builds and fails on any unresolved link or asset.
 ///
 /// Untagged on purpose: `ci.yml` runs the root suite as `dart test
-/// --exclude-tags=visual`, so a `visual` tag would silently drop this from the
+/// --exclude-tags=visual --exclude-tags=ui-gate`, so either local-gate tag would drop this from the
 /// gate (TD-035).
 @Timeout(Duration(minutes: 15))
 library;

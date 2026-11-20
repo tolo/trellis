@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:path/path.dart' as p;
+import 'package:trellis_site/src/search_client.dart';
 import 'package:trellis_site/trellis_site.dart';
 import 'package:test/test.dart';
 
@@ -287,6 +288,104 @@ void main() {
     });
   });
 
+  // --- feed + taxonomy URLs built by the engine, not derived from a page ------
+
+  group('Feed and taxonomy URLs resolve under the prefix', () {
+    /// Builds a small blog with per-section feeds and a `tags` taxonomy. The home
+    /// layout prints `${site.feeds.*}` as text so the final href rewrite pass
+    /// cannot mask an unprefixed value.
+    Future<String> buildBlog({required String pathPrefix}) async {
+      final tempDir = Directory.systemTemp.createTempSync('prefix_blog_');
+      addTearDown(() => tempDir.deleteSync(recursive: true));
+
+      final contentDir = p.join(tempDir.path, 'content');
+      Directory(p.join(contentDir, 'posts')).createSync(recursive: true);
+      File(p.join(contentDir, '_index.md')).writeAsStringSync('---\ntitle: Home\n---\nHome.\n');
+      File(p.join(contentDir, 'posts', '_index.md')).writeAsStringSync('---\ntitle: Posts\n---\n');
+      File(
+        p.join(contentDir, 'posts', 'intro.md'),
+      ).writeAsStringSync('---\ntitle: Intro\ndate: 2026-01-01T00:00:00Z\ntags: [Dart]\n---\nIntro.\n');
+
+      final layoutsDir = p.join(tempDir.path, 'layouts');
+      Directory(p.join(layoutsDir, '_default')).createSync(recursive: true);
+      File(p.join(layoutsDir, 'home.html')).writeAsStringSync(
+        '<html><body><p id="atom" tl:text="\${site.feeds.atom}">x</p>'
+        '<p id="rss" tl:text="\${site.feeds.rss}">x</p></body></html>',
+      );
+      const listing = '<html><body><p tl:text="\${page.url}">x</p></body></html>';
+      File(p.join(layoutsDir, '_default', 'single.html')).writeAsStringSync(listing);
+      File(p.join(layoutsDir, '_default', 'list.html')).writeAsStringSync(listing);
+
+      final outputDir = p.join(tempDir.path, 'output');
+      await TrellisSite(
+        SiteConfig(
+          siteDir: tempDir.path,
+          title: 'Blog',
+          baseUrl: 'https://example.com',
+          pathPrefix: pathPrefix,
+          contentDir: contentDir,
+          layoutsDir: layoutsDir,
+          outputDir: outputDir,
+          taxonomies: const ['tags'],
+          feeds: const FeedConfig(atom: true, rss: true, sections: ['posts']),
+          searchConfig: const SearchConfig(enabled: true),
+        ),
+      ).build();
+      return outputDir;
+    }
+
+    String read(String outputDir, String path) => File(p.join(outputDir, path)).readAsStringSync();
+
+    test('site-wide atom + rss self, alternate and id carry the prefix', () async {
+      final out = await buildBlog(pathPrefix: '/my-site/');
+      final atom = read(out, 'feed.xml');
+      final rss = read(out, 'rss.xml');
+
+      expect(atom, contains('<link href="https://example.com/my-site/feed.xml" rel="self"/>'));
+      expect(atom, contains('<link href="https://example.com/my-site/" rel="alternate"/>'));
+      expect(atom, contains('<id>https://example.com/my-site/</id>'));
+      expect(rss, contains('<link>https://example.com/my-site/</link>'));
+      expect(rss, contains('<atom:link href="https://example.com/my-site/rss.xml"'));
+    });
+
+    test('per-section feed self links carry the prefix', () async {
+      final out = await buildBlog(pathPrefix: '/my-site/');
+      expect(read(out, 'posts/feed.xml'), contains('href="https://example.com/my-site/posts/feed.xml" rel="self"'));
+      expect(read(out, 'posts/rss.xml'), contains('href="https://example.com/my-site/posts/rss.xml"'));
+    });
+
+    test('\${site.feeds.*} template URLs carry the prefix', () async {
+      final home = read(await buildBlog(pathPrefix: '/my-site/'), 'index.html');
+      expect(home, contains('<p id="atom">/my-site/feed.xml</p>'));
+      expect(home, contains('<p id="rss">/my-site/rss.xml</p>'));
+    });
+
+    test('taxonomy listing and term pages carry the prefix in page.url, sitemap and search index', () async {
+      final out = await buildBlog(pathPrefix: '/my-site/');
+
+      // Files stay at unprefixed paths; the emitted URL carries the prefix.
+      expect(read(out, 'tags/index.html'), contains('<p>/my-site/tags/</p>'));
+      expect(read(out, 'tags/dart/index.html'), contains('<p>/my-site/tags/dart/</p>'));
+
+      final sitemap = read(out, 'sitemap.xml');
+      expect(sitemap, contains('<loc>https://example.com/my-site/tags/</loc>'));
+      expect(sitemap, contains('<loc>https://example.com/my-site/tags/dart/</loc>'));
+      expect(sitemap, isNot(contains('example.com/tags/')));
+
+      final urls = (jsonDecode(read(out, 'search-index.json')) as List).map((e) => (e as Map)['url']);
+      expect(urls, contains('/my-site/tags/dart/'));
+      expect(urls, everyElement(startsWith('/my-site/')));
+    });
+
+    test('with no prefix, feed and taxonomy URLs stay root-absolute', () async {
+      final out = await buildBlog(pathPrefix: '');
+      expect(read(out, 'feed.xml'), contains('<link href="https://example.com/feed.xml" rel="self"/>'));
+      expect(read(out, 'feed.xml'), contains('<id>https://example.com/</id>'));
+      expect(read(out, 'index.html'), contains('<p id="atom">/feed.xml</p>'));
+      expect(read(out, 'sitemap.xml'), contains('<loc>https://example.com/tags/dart/</loc>'));
+    });
+  });
+
   // --- ${site.pathPrefix} theme-author mechanism -------------------------
 
   group('\${site.pathPrefix} literal-asset mechanism', () {
@@ -346,6 +445,9 @@ void main() {
 
       final outputDir = await buildBuildSite(); // no pathPrefix
       final produced = snapshot(outputDir);
+      // The shared client was added after the golden. Keep the older artifacts'
+      // byte comparison and verify the additional asset from its shipped source.
+      expect(produced.remove('trellis-search.js'), searchClient);
 
       expect(produced.keys.toSet(), golden.keys.toSet(), reason: 'output file set changed');
       for (final entry in golden.entries) {
@@ -400,6 +502,7 @@ void main() {
       // search-index url fields carry the prefix, and the file is at the root.
       expect(prefixed.containsKey('search-index.json'), isTrue);
       expect(prefixed['search-index.json'], contains('/trellis/'));
+      expect(prefixed['trellis-search.js'], searchClient);
     });
   });
 

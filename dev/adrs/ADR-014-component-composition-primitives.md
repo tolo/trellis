@@ -7,7 +7,7 @@ re-verification (PRD 0.13): prefix-named spread
 keys throw (§2), extra rest-position arguments throw, parameterised fragments render
 top-level by bare name, and a `tl:insert` host keeps its own directive results (§3),
 slot collection and bare caller markers are pinned (§1), and Consequences and
-Implementation Notes are corrected. Design pass for PB-012 (Stage 1 of the
+Implementation Notes are corrected. Design pass for the 0.13 PRD (Linear LEA-16) (Stage 1 of the
 composition-primitives PRD); implementation lands in 0.13 under the standard plan/FIS
 flow. Prerequisite for the ADR-012 first component slice. Amended 2026-10-16: a
 `tl:slot` in an inner invocation host's unmarked content inside a definition throws
@@ -469,7 +469,7 @@ For the Stage 2 plan/FIS (not binding on internals, binding on semantics):
 
 - [Research digest](research/ADR-014-research.md) – options, weighted matrices,
   assumption log.
-- PB-012 composition-primitives PRD (private specs repo) – problem statement,
+- 0.13 composition-primitives PRD (Linear LEA-16) – problem statement,
   constraints, stages.
 - [`fragment_processor.dart`](../../packages/trellis/lib/src/processors/fragment_processor.dart),
   [`attr_processor.dart`](../../packages/trellis/lib/src/processors/attr_processor.dart),

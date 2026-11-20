@@ -30,6 +30,9 @@ The modes are:
   prototype list down to one row).
 - `none` – keep everything as-is; useful as an explicit prototype marker.
 
+The value may also be an expression that yields one of these modes, such as
+`tl:remove="${editing} ? 'none' : 'all'"`. Any other result throws.
+
 A common use is stripping placeholder rows that exist only so the raw template
 previews nicely in a browser.
 

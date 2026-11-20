@@ -7,7 +7,7 @@ import 'dart:io';
 ///   `  --checksums-dir <dir> --repo <owner/repo> --output <path>`
 ///
 /// `--checksums-dir` holds the `*.tar.gz.sha256` sidecars downloaded from the
-/// GitHub release (macOS + Linux, arm64 + x64). `--repo` is the release repo
+/// GitHub release (macOS arm64, Linux arm64 + x64). `--repo` is the release repo
 /// (`tolo/trellis`); the tap itself is `tolo/homebrew-trellis`.
 void main(List<String> argv) {
   final opts = _parse(argv);
@@ -28,15 +28,11 @@ class Trellis < Formula
   version "$version"
   license "MIT"
 
+  # Releases carry no Intel Mac archive, so Homebrew refuses an Intel Mac by name.
   on_macos do
-    on_arm do
-      url "${url('macos', 'arm64')}"
-      sha256 "${sha('macos', 'arm64')}"
-    end
-    on_intel do
-      url "${url('macos', 'x64')}"
-      sha256 "${sha('macos', 'x64')}"
-    end
+    depends_on arch: :arm64
+    url "${url('macos', 'arm64')}"
+    sha256 "${sha('macos', 'arm64')}"
   end
 
   on_linux do

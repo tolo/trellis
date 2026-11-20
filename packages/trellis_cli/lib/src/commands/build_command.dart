@@ -4,6 +4,7 @@ import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
 import 'package:trellis_css/trellis_css.dart';
 import 'package:trellis_site/trellis_site.dart';
+import 'package:trellis_ui/trellis_ui.dart';
 
 import '../version.dart';
 
@@ -45,100 +46,126 @@ class BuildCommand extends Command<int> {
     final pathPrefixOverride = argResults!['path-prefix'] as String?;
 
     final baseDir = workingDirectory ?? Directory.current.path;
-
-    // Locate trellis_site.yaml in the working directory
-    final configPath = p.join(baseDir, 'trellis_site.yaml');
-    if (!File(configPath).existsSync()) {
-      stderr.writeln('Error: trellis_site.yaml not found in $baseDir');
-      return 1;
-    }
-
-    // Load config
-    final SiteConfig config;
-    try {
-      final rawConfig = SiteConfig.load(configPath);
-      final outputExplicit = argResults!.wasParsed('output');
-      final outputDir = outputExplicit
-          ? (p.isAbsolute(outputOption) ? outputOption : p.join(baseDir, outputOption))
-          : rawConfig.outputDir;
-      final baseUrl = baseUrlOverride ?? rawConfig.baseUrl;
-
-      config = SiteConfig(
-        siteDir: rawConfig.siteDir,
-        title: rawConfig.title,
-        baseUrl: baseUrl,
-        description: rawConfig.description,
-        contentDir: rawConfig.contentDir,
-        layoutsDir: rawConfig.layoutsDir,
-        staticDir: rawConfig.staticDir,
-        outputDir: outputDir,
-        dataDir: rawConfig.dataDir,
-        taxonomies: rawConfig.taxonomies,
-        paginate: rawConfig.paginate,
-        params: rawConfig.params,
-        feeds: rawConfig.feeds,
-        searchConfig: rawConfig.searchConfig,
-        highlightConfig: rawConfig.highlightConfig,
-        themeConfig: rawConfig.themeConfig,
-        // pathPrefix from config (or --path-prefix override); the constructor
-        // re-normalizes, so passing the already-normalized config value is safe.
-        pathPrefix: pathPrefixOverride ?? rawConfig.pathPrefix,
-      );
-    } on SiteConfigException catch (e) {
-      stderr.writeln('Error: $e');
-      return 1;
-    }
+    final outputExplicit = argResults!.wasParsed('output');
+    final config = loadSiteBuildConfig(
+      baseDir,
+      outputDir: outputExplicit ? (p.isAbsolute(outputOption) ? outputOption : p.join(baseDir, outputOption)) : null,
+      baseUrl: baseUrlOverride,
+      pathPrefix: pathPrefixOverride,
+    );
+    if (config == null) return 1;
 
     stdout.writeln('Building site...');
-
-    // Run build pipeline
-    final BuildResult result;
-    try {
-      final site = TrellisSite(config, includeDrafts: includeDrafts);
-      result = await site.build();
-    } on SiteConfigException catch (e) {
-      stderr.writeln('Build failed: $e');
-      return 1;
-    } on TemplateNotFoundException catch (e) {
-      stderr.writeln('Build failed: $e');
-      return 1;
-    } on FrontMatterException catch (e) {
-      stderr.writeln('Build failed: $e');
-      return 1;
-    }
-
-    // Warnings show under --verbose; one that affects the output (a theme palette that disagrees with its defaults, a
-    // site override Sass cannot apply) prints regardless, to stderr, once. All are in the summary count.
-    void report(BuildWarning w) {
-      final text = 'Warning: ${w.message}${w.context != null ? ' (${w.context})' : ''}';
-      if (w.affectsOutput) {
-        stderr.writeln(text);
-      } else if (verbose) {
-        stdout.writeln('  $text');
-      }
-    }
-
-    result.warnings.forEach(report);
-
-    // Compile SASS after build (build() cleans outputDir as step 1)
-    final ({int count, List<BuildWarning> warnings}) sass;
-    try {
-      sass = await _compileSass(config, verbose, themeBuildConfig: result.themeBuildConfig);
-    } on _SassBuildFailure catch (failure) {
-      stderr.write(_describeSassFailure(failure, siteDir: config.siteDir));
-      return 1;
-    }
-
-    sass.warnings.forEach(report);
-
-    final totalStatic = result.staticFileCount + sass.count;
-    final elapsed = result.elapsed.inMilliseconds;
-    final warningCount = result.warnings.length + sass.warnings.length;
-    final warningStr = warningCount > 0 ? ' ($warningCount warning${warningCount == 1 ? '' : 's'})' : '';
-    stdout.writeln('Built ${result.pageCount} pages, $totalStatic static files in ${elapsed}ms$warningStr');
-
-    return 0;
+    return buildSite(config, includeDrafts: includeDrafts, verbose: verbose);
   }
+}
+
+/// Loads `trellis_site.yaml` from [baseDir] and applies the given overrides; a null override keeps the config value.
+///
+/// Prints the error and returns null when the file is missing or invalid. Shared by `build` and `dev`, which must
+/// build the same site the same way.
+SiteConfig? loadSiteBuildConfig(String baseDir, {String? outputDir, String? baseUrl, String? pathPrefix}) {
+  final configPath = p.join(baseDir, 'trellis_site.yaml');
+  if (!File(configPath).existsSync()) {
+    stderr.writeln('Error: trellis_site.yaml not found in $baseDir');
+    return null;
+  }
+
+  try {
+    final config = SiteConfig.load(configPath);
+    if (outputDir == null && baseUrl == null && pathPrefix == null) return config;
+    return overrideSiteBuildConfig(config, outputDir: outputDir, baseUrl: baseUrl, pathPrefix: pathPrefix);
+  } on SiteConfigException catch (e) {
+    stderr.writeln('Error: $e');
+    return null;
+  }
+}
+
+/// Applies CLI overrides, keeping the loaded value for each omitted option.
+SiteConfig overrideSiteBuildConfig(SiteConfig rawConfig, {String? outputDir, String? baseUrl, String? pathPrefix}) {
+  return SiteConfig(
+    siteDir: rawConfig.siteDir,
+    title: rawConfig.title,
+    baseUrl: baseUrl ?? rawConfig.baseUrl,
+    description: rawConfig.description,
+    contentDir: rawConfig.contentDir,
+    layoutsDir: rawConfig.layoutsDir,
+    staticDir: rawConfig.staticDir,
+    outputDir: outputDir ?? rawConfig.outputDir,
+    dataDir: rawConfig.dataDir,
+    taxonomies: rawConfig.taxonomies,
+    paginate: rawConfig.paginate,
+    params: rawConfig.params,
+    feeds: rawConfig.feeds,
+    searchConfig: rawConfig.searchConfig,
+    highlightConfig: rawConfig.highlightConfig,
+    themeConfig: rawConfig.themeConfig,
+    uses: rawConfig.uses,
+    // The constructor re-normalizes, so passing the already-normalized config value is safe.
+    pathPrefix: pathPrefix ?? rawConfig.pathPrefix,
+  );
+}
+
+/// Runs the SSG pipeline for [config], compiles its SASS, and prints warnings and the build summary.
+///
+/// Returns the exit code: 0 on success, 1 after printing why the build failed. The output directory is cleaned
+/// first, so a failed build leaves it partial.
+Future<int> buildSite(SiteConfig config, {required bool includeDrafts, required bool verbose}) async {
+  final BuildResult result;
+  try {
+    final site = TrellisSite(
+      config,
+      includeDrafts: includeDrafts,
+      sourceFactories: {
+        'trellis_ui': () => SiteSource(
+          loader: TrellisUiLoader(),
+          assets: {for (final path in trellisUiAssetPaths) path.substring(1): trellisUiRespond(path)!.body},
+        ),
+      },
+    );
+    result = await site.build();
+  } on SiteConfigException catch (e) {
+    stderr.writeln('Build failed: $e');
+    return 1;
+  } on TemplateNotFoundException catch (e) {
+    stderr.writeln('Build failed: $e');
+    return 1;
+  } on FrontMatterException catch (e) {
+    stderr.writeln('Build failed: $e');
+    return 1;
+  }
+
+  // Warnings show under --verbose; one that affects the output (a theme palette that disagrees with its defaults, a
+  // site override Sass cannot apply) prints regardless, to stderr, once. All are in the summary count.
+  void report(BuildWarning w) {
+    final text = 'Warning: ${w.message}${w.context != null ? ' (${w.context})' : ''}';
+    if (w.affectsOutput) {
+      stderr.writeln(text);
+    } else if (verbose) {
+      stdout.writeln('  $text');
+    }
+  }
+
+  result.warnings.forEach(report);
+
+  // Compile SASS after build (build() cleans outputDir as step 1)
+  final ({int count, List<BuildWarning> warnings}) sass;
+  try {
+    sass = await _compileSass(config, verbose, themeBuildConfig: result.themeBuildConfig);
+  } on _SassBuildFailure catch (failure) {
+    stderr.write(_describeSassFailure(failure, siteDir: config.siteDir));
+    return 1;
+  }
+
+  sass.warnings.forEach(report);
+
+  final totalStatic = result.staticFileCount + sass.count;
+  final elapsed = result.elapsed.inMilliseconds;
+  final warningCount = result.warnings.length + sass.warnings.length;
+  final warningStr = warningCount > 0 ? ' ($warningCount warning${warningCount == 1 ? '' : 's'})' : '';
+  stdout.writeln('Built ${result.pageCount} pages, $totalStatic static files in ${elapsed}ms$warningStr');
+
+  return 0;
 }
 
 /// Scans [config.staticDir] for `.scss`/`.sass` files (excluding partials that

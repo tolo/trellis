@@ -7,7 +7,7 @@ import 'package:yaml/yaml.dart';
 
 const _recognizedArchetypes = <String>{'docs', 'landing', 'blog'};
 const _regenerationCommand = 'dart run tool/generate_theme_gallery.dart';
-const _manifestRulesDoc = 'see docs/guides/theme-authoring.md, "Name and archetype rules"';
+const _manifestRulesDoc = 'see site/content/docs/themes/authoring.md, "Name and archetype rules"';
 
 /// Header written into `site/data/themes.yaml`, so a contributor who edits the
 /// file by hand reads why CI rejected it before they read the CI log.
@@ -80,7 +80,7 @@ final class ThemeGalleryGenerator {
     final screenshotsDir = Directory(_screenshotsDir)..createSync(recursive: true);
     final expectedPaths = model.screenshots.keys.toSet();
     for (final file in screenshotsDir.listSync(recursive: true, followLinks: false).whereType<File>()) {
-      if (!expectedPaths.contains(p.normalize(file.path))) {
+      if (!_isFinderMetadata(file) && !expectedPaths.contains(p.normalize(file.path))) {
         file.deleteSync();
       }
     }
@@ -127,7 +127,7 @@ final class ThemeGalleryGenerator {
       for (final entity in Directory(_screenshotsDir).listSync(recursive: true, followLinks: false)) {
         if (entity is Link) {
           problems.add('${p.relative(entity.path, from: projectRoot)} is an unsafe symbolic link');
-        } else if (entity is File && !expectedPaths.contains(p.normalize(entity.path))) {
+        } else if (entity is File && !_isFinderMetadata(entity) && !expectedPaths.contains(p.normalize(entity.path))) {
           problems.add('${p.relative(entity.path, from: projectRoot)} is an orphaned gallery copy');
         }
       }
@@ -437,6 +437,9 @@ bool _bytesEqual(List<int> first, List<int> second) {
   }
   return true;
 }
+
+// Finder owns this metadata, so checks and regeneration leave it alone.
+bool _isFinderMetadata(File file) => p.basename(file.path) == '.DS_Store';
 
 void _removeEmptyDirectories(Directory root) {
   final directories = root.listSync(recursive: true, followLinks: false).whereType<Directory>().toList()

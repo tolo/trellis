@@ -156,9 +156,8 @@ List<ThemeExample> discoverThemeExamples(String repoRoot) {
 
 /// Copies [example] into [into] and builds it with the shipped CLI.
 ///
-/// The copy is a copy, never a symlink, and [into] must live outside the
-/// repository: an agent on this branch symlinked repo-root entries into a
-/// scratch tree and the build wrote through the link over the real `site/`.
+/// Use a scratch directory for [into]. The build writes into the copy, so
+/// linking its files to repository originals could overwrite those originals.
 /// Returns the built `output/` directory.
 ///
 /// The build shells out to `packages/trellis_cli/bin/trellis.dart` rather than
@@ -167,7 +166,13 @@ List<ThemeExample> discoverThemeExamples(String repoRoot) {
 /// command, not in the SSG. Calling the SSG alone produces a site with no
 /// `css/main.css`, which renders in Times New Roman and would have made every
 /// baseline here a measurement of the browser's default stylesheet.
-Future<Directory> buildExample(ThemeExample example, {required Directory into, required String repoRoot}) async {
+Future<Directory> buildExample(
+  ThemeExample example, {
+  required Directory into,
+  required String repoRoot,
+  String? pathPrefix,
+  String Function(String)? editConfig,
+}) async {
   final siteDir = Directory(p.join(into.path, example.name))..createSync(recursive: true);
   _copyTree(Directory(example.exampleDir), siteDir, skip: const {'output', '.trellis', '.dart_tool'});
   _copyTree(
@@ -176,10 +181,15 @@ Future<Directory> buildExample(ThemeExample example, {required Directory into, r
     skip: const {'example'},
   );
 
+  if (editConfig != null) {
+    final config = File(p.join(siteDir.path, 'trellis_site.yaml'));
+    config.writeAsStringSync(editConfig(config.readAsStringSync()));
+  }
   final result = await Process.run(Platform.resolvedExecutable, [
     'run',
     p.join(repoRoot, 'packages', 'trellis_cli', 'bin', 'trellis.dart'),
     'build',
+    if (pathPrefix != null) ...['--path-prefix', pathPrefix],
   ], workingDirectory: siteDir.path);
   if (result.exitCode != 0) {
     throw StateError('building the ${example.name} example failed:\n${result.stdout}\n${result.stderr}');
@@ -251,6 +261,40 @@ List<String> baselinePages(Directory output) {
   return ['/', ...rest.take(pagesPerTheme - 1)];
 }
 
+/// A native modal makes rendered controls outside its top layer inert.
+const modalAllowsFocusScript = r'''function(element) {
+  const modal = document.activeElement?.closest('dialog:modal') ?? document.querySelector('dialog:modal');
+  return !modal || modal.contains(element);
+}''';
+
+/// Reestablishes and reports a requested focus state in the measurement task.
+///
+/// A headless Firefox document can be backgrounded between protocol commands
+/// while activeElement remains unchanged. Keep this with the read; remove the
+/// restoration if the driver can hold document activation through measurement.
+const forceFocusScript =
+    r'''async function(selector) {
+  const element = document.querySelector(selector);
+  if (!element) throw new Error('missing focus element ' + selector);
+  const box = element.getBoundingClientRect();
+  const allowed = (''' +
+    modalAllowsFocusScript +
+    r''')(element);
+  const applicable = !!(allowed && !element.disabled && box.width && box.height &&
+    getComputedStyle(element).visibility !== 'hidden' &&
+    (element.matches('button,input,select,textarea,a[href],summary,dialog,[tabindex]') || element.isContentEditable));
+  if (!applicable) return {applicable:false};
+  for (let attempt = 0; attempt < 30; attempt++) {
+    window.focus();
+    element.focus();
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    const state = {applicable:true, document:document.hasFocus(), target:document.activeElement === element,
+      visible:element.matches(':focus-visible')};
+    if (state.document && state.target && state.visible) return state;
+  }
+  throw new Error('requested focus state did not become active for ' + selector);
+}''';
+
 /// The expression evaluated in the page to produce one capture.
 ///
 /// Emits every rendered box in document order. A box is recorded when it
@@ -277,9 +321,8 @@ List<String> baselinePages(Directory output) {
 /// baseline and a coin flip. Three separate races showed up on the first
 /// recording of these six themes, and none of them is visible in the CSS:
 ///
-/// * Arbor's docs search input records `opacity: 0.6` or nothing at all,
-///   depending on whether `search.js` had finished fetching the index and
-///   enabled the field.
+/// * The docs search shell appears after `trellis-search.js` finishes fetching
+///   its index and the combobox is ready.
 /// * Folio's docs page settles 85 px shorter or taller between runs.
 /// * Lattice's home page reports 72 px of horizontal overflow at 390 px until
 ///   the headline-fitting script runs, and none afterwards.
@@ -289,11 +332,15 @@ List<String> baselinePages(Directory output) {
 /// failing loudly when the page never stabilises is the point: a harness that
 /// silently records whichever frame it landed on is the failure this whole
 /// package exists to end.
-const String digestScript = r'''
-async function () {
-  const freeze = document.createElement('style');
-  freeze.textContent = '*, *::before, *::after { transition: none !important; animation: none !important; }';
-  document.head.appendChild(freeze);
+const String digestScript =
+    r'''
+async function (selectors = {}, focusSelector = null, keepDocumentFocused = false) {
+  const forceFocus = ''' +
+    forceFocusScript +
+    r''';
+  const freeze = new CSSStyleSheet();
+  freeze.replaceSync('*, *::before, *::after { transition: none !important; animation: none !important; }');
+  document.adoptedStyleSheets = [...document.adoptedStyleSheets, freeze];
 
   const origin = location.origin;
   const norm = (v) => (v == null ? '' : String(v).split(origin).join(''));
@@ -311,6 +358,7 @@ async function () {
   };
   const PSEUDO = ['backgroundColor', 'backgroundImage', 'color', 'width', 'height', 'inset',
                   'transform', 'opacity', 'borderRadius', 'position'];
+
 
   function edges(cs, prefix, suffix) {
     const v = [cs[prefix + 'Top' + suffix], cs[prefix + 'Right' + suffix],
@@ -347,7 +395,8 @@ async function () {
     return out;
   }
 
-  function measure() {
+  async function measure() {
+    const focus = focusSelector ? await forceFocus(focusSelector) : null;
     const nodes = [];
     function walk(el, path, parentStyle) {
       const cs = getComputedStyle(el);
@@ -375,7 +424,20 @@ async function () {
     }
     walk(document.body, 'body', null);
     const de = document.documentElement;
-    return {doc: {sw: de.scrollWidth, cw: de.clientWidth, sh: de.scrollHeight}, nodes: nodes};
+    const result = {doc: {sw: de.scrollWidth, cw: de.clientWidth, sh: de.scrollHeight}, nodes: nodes};
+    if (Object.keys(selectors).length) {
+      const properties = ['backgroundColor', 'backgroundImage', 'color', 'outlineColor', 'outlineWidth', 'outlineStyle',
+        'borderColor', 'borderWidth', 'borderStyle', 'borderRadius', 'boxShadow', 'opacity', 'transform',
+        'fontSize', 'fontWeight', 'padding', 'gap'];
+      result.elements = Object.fromEntries(Object.entries(selectors).map(([name, selector]) => {
+        const element = document.querySelector(selector);
+        if (!element) throw new Error('missing appearance element ' + selector);
+        const style = getComputedStyle(element);
+        return [name, {selector, style: Object.fromEntries(properties.map(p => [p, norm(style[p])]))}];
+      }));
+    }
+    if (focus) result.focus = focus;
+    return result;
   }
 
   const frame = () => new Promise((resolve) =>
@@ -387,11 +449,22 @@ async function () {
       try { animation.finish(); } catch (e) { /* infinite animations cannot finish; the freeze rule holds them */ }
     }
     await frame();
-    const current = measure();
+    if (keepDocumentFocused && !document.hasFocus()) {
+      // A held Firefox pointer retains :active under backgrounding but loses
+      // native focus paint. Restore the window while keeping pointer modality.
+      // Remove this when the driver can retain document activation through readback.
+      window.focus();
+      previousJson = null;
+      continue;
+    }
+    const current = await measure();
     const json = JSON.stringify(current);
-    if (json === previousJson) return current;
+    if (json === previousJson && (!current.focus?.applicable ||
+        (current.focus.document && current.focus.target && current.focus.visible))) return current;
     previousJson = json;
   }
+  if (focusSelector) throw new Error('requested focus-visible state did not stay active through 30 measurements');
+  if (keepDocumentFocused) throw new Error('held-pointer appearance did not settle with document focus through 30 attempts');
   throw new Error('page did not settle after 30 measurements; ' +
       'the last two differ, so any recorded value is a coin flip');
 }

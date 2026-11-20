@@ -57,8 +57,7 @@ Preview the theme during development:
 
 ```bash
 cd example
-trellis build
-trellis serve
+trellis dev
 ```
 
 The example site sets `theme: $themeName`, and `example/themes/$themeName` is a

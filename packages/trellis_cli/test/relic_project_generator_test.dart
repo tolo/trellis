@@ -1,7 +1,23 @@
 import 'package:test/test.dart';
 import 'package:trellis_cli/trellis_cli.dart';
 
+import '_strict_scaffold.dart';
+
 void main() {
+  for (final cdn in [false, true]) {
+    test('strict CSP scaffold ${cdn ? "CDN opt-in" : "self-hosted default"}', () async {
+      final files = InMemoryFileWriter();
+      await RelicProjectGenerator(projectName: 'demo', writer: files, htmxCdn: cdn).generate();
+      expectStrictScaffold(
+        files.files,
+        cdn: cdn,
+        staticRoot: 'static',
+        layout: 'templates/base.html',
+        server: 'bin/server.dart',
+        csrf: true,
+      );
+    });
+  }
   group('RelicProjectGenerator', () {
     late InMemoryFileWriter writer;
     late RelicProjectGenerator generator;
@@ -23,6 +39,7 @@ void main() {
         'templates/index.html',
         'templates/about.html',
         'static/styles.css',
+        'static/js/csrf.js',
       ];
 
       for (final path in expectedFiles) {
@@ -30,8 +47,8 @@ void main() {
       }
     });
 
-    test('generates exactly 9 files', () {
-      expect(writer.files.length, 9);
+    test('generates exactly 11 files', () {
+      expect(writer.files.length, 11);
     });
 
     test('all files have non-empty content', () {
@@ -99,9 +116,22 @@ void main() {
         expect(content, contains('trellisSecurityHeaders'));
       });
 
-      test('configures CSP for HTMX CDN script', () {
+      test('uses trellisCsrf with an overridable secret and serves the header script', () {
+        expect(content, contains("..use('/', trellisCsrf(secret: csrfSecret))"));
+        expect(content, contains("Platform.environment['CSRF_SECRET']"));
+        expect(content, contains("..get('/js/csrf.js'"));
+      });
+
+      test('uses a process-generated signing key when no CSRF secret is configured', () {
+        expect(content, contains("import 'dart:math';"));
+        expect(content, contains('Random.secure()'));
+        expect(content, contains("Platform.environment['CSRF_SECRET'] ?? _generateCsrfSecret()"));
+        expect(content, isNot(contains('-dev-secret')));
+      });
+
+      test('configures strict CSP for same-origin scripts', () {
         expect(content, contains('CspBuilder'));
-        expect(content, contains('https://cdn.jsdelivr.net'));
+        expect(content, isNot(contains('cdn.jsdelivr.net')));
         expect(content, contains('trellisSecurityHeaders(csp: csp)'));
       });
 
@@ -178,8 +208,8 @@ void main() {
         expect(content, contains('tl:define="content"'));
       });
 
-      test('has HTMX CDN script', () {
-        expect(content, contains('htmx.org'));
+      test('has same-origin HTMX script', () {
+        expect(content, contains('src="/js/htmx.min.js"'));
       });
 
       test('has HTMX navigation links', () {
@@ -188,9 +218,9 @@ void main() {
         expect(content, contains('hx-push-url="true"'));
       });
 
-      test('does not have CSRF meta tag', () {
-        // Relic has no CSRF — no form body parser
-        expect(content, isNot(contains('csrf-token')));
+      test('has CSRF meta tag and header script', () {
+        expect(content, contains(r'<meta name="csrf-token" tl:attr="content=${csrfToken}" content="">'));
+        expect(content, contains('<script src="/js/csrf.js"></script>'));
       });
 
       test('contains project name', () {
@@ -226,6 +256,11 @@ void main() {
         expect(content, contains('hx-post="/counter/increment"'));
         expect(content, contains('hx-post="/counter/decrement"'));
         expect(content, contains('hx-post="/counter/reset"'));
+      });
+
+      test('counter buttons submit the CSRF field', () {
+        expect(content, contains(r'<input type="hidden" name="_csrf" tl:attr="value=${csrfToken}">'));
+        expect("hx-include=\"[name='_csrf']\"".allMatches(content), hasLength(3));
       });
 
       test('uses tl:text for counter display', () {

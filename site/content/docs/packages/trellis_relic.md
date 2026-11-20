@@ -23,7 +23,8 @@ import 'package:relic/relic.dart';
 import 'package:trellis/trellis.dart';
 import 'package:trellis_relic/trellis_relic.dart';
 
-final engine = Trellis();
+// Renders files from templates/ (e.g. templates/pages/index.html); the directory must exist.
+final engine = Trellis(loader: FileSystemLoader('templates'));
 
 void main() async {
   final app = RelicApp()
@@ -46,7 +47,7 @@ helper:
 
 ```dart
 final engine = Trellis(
-  loader: FileSystemLoader(templateDirectory: 'templates'),
+  loader: FileSystemLoader('templates'),
 );
 
 // Pass the engine directly to helpers
@@ -139,10 +140,19 @@ Default headers applied:
 
 Customise the CSP:
 
+`CspBuilder.strict()` sets `script-src 'self'; style-src 'self'` while preserving the other
+security defaults. Use it with `trellisSecurityHeaders(csp: const CspBuilder.strict())`.
+The plain `CspBuilder()` retains its existing inline-style allowance for compatibility.
+Under the strict preset, inline `<script>` bodies, `<style>` elements, `style="…"` attributes
+and `on*` handlers are blocked. Move them to same-origin JS/CSS files; CSSOM property writes
+(such as `element.style.top`) remain allowed by browsers. HTMX's injected indicator style
+must be disabled with the `htmx-config` meta option `includeIndicatorStyles: false`, with
+indicator rules in your stylesheet. CLI app scaffolds do this automatically.
+
 ```dart
 trellisSecurityHeaders(
-  csp: CspBuilder(
-    scriptSrc: "'self' 'unsafe-inline'",
+  csp: CspBuilder.strict(
+    scriptSrc: "'self'",
     connectSrc: "'self' ws:",
   ),
 )
@@ -160,10 +170,34 @@ matched routes.
 
 ## CSRF protection
 
-CSRF middleware is **not included** in `trellis_relic`. Relic lacks a built-in
-form-body parser, which is required to implement the double-submit cookie
-pattern. If you need CSRF protection:
+`trellisCsrf` uses a double-submit cookie pattern with HMAC-SHA256 signing,
+matching `trellisCsrf` in `trellis_shelf`. Attach it at `'/'` like the
+security headers:
 
-- Implement it manually once Relic adds form-parsing support.
-- Use a JavaScript fetch API with custom headers instead of form submissions
-  (HTMX supports this via `hx-headers`).
+```dart
+final app = RelicApp()
+  ..use('/', trellisSecurityHeaders())
+  ..use('/', trellisCsrf(secret: Platform.environment['CSRF_SECRET']!))
+  ..get('/', homePage)
+  ..post('/todos', addTodo);
+```
+
+- **GET/HEAD/OPTIONS** set a signed `__csrf` cookie (`HttpOnly`,
+  `SameSite=Strict`) or reuse a valid one.
+- **POST/PUT/DELETE/PATCH** need the token in the `X-CSRF-Token` header or the
+  `_csrf` field of an `application/x-www-form-urlencoded` body; a missing or
+  wrong token gets 403. The middleware buffers the form, so the handler can
+  still call `request.urlEncodedForm()`. A body over Relic's default form limit
+  gets Relic's 413.
+- `cookieName`, `fieldName`, `headerName` and `excludedPaths` (exact request
+  paths) are configurable.
+
+`renderPage`, `renderFragment` and `renderOobFragments` pass the token to the
+template as `csrfToken`; `csrfToken(request)` returns it in a handler. For HTMX,
+put it in a meta tag and copy it into the header from a same-origin script (the
+`trellis create --template relic` scaffold ships one as `static/js/csrf.js`):
+
+```html
+<meta name="csrf-token" tl:attr="content=${csrfToken}" content="">
+<input type="hidden" name="_csrf" tl:attr="value=${csrfToken}">
+```

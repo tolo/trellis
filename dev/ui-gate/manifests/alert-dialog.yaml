@@ -1,0 +1,88 @@
+name: alert-dialog
+page: /components/alert-dialog
+root: '#example-alert'
+elements:
+  cancel: '#example-alert [data-slot=alert-dialog-cancel]'
+  action: '#confirm-alert'
+states:
+  default: []
+  open:
+    - click: '#open-alert'
+    - wait: "document.querySelector('#example-alert:modal[data-open]') !== null"
+keyboard:
+  - focus: '#open-alert'
+  - press: Enter
+  - wait: "document.querySelector('#example-alert:modal[data-open]') !== null"
+  - expect: {expression: "document.activeElement.getAttribute('data-slot')", equals: alert-dialog-cancel}
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: confirm-alert}
+  - press: Tab
+  - expect: {expression: "document.activeElement.getAttribute('data-slot')", equals: alert-dialog-cancel}
+  - press: Escape
+  - wait: "document.querySelector('#example-alert[data-closed]:not([open])') !== null"
+  - expect: {expression: document.activeElement.id, equals: open-alert}
+  - press: Enter
+  - wait: "document.querySelector('#example-alert:modal[data-open]') !== null"
+  - press: Enter
+  - wait: "document.querySelector('#example-alert[data-closed]:not([open])') !== null"
+  - expect: {expression: document.activeElement.id, equals: open-alert}
+  - press: Enter
+  - wait: "document.querySelector('#example-alert:modal[data-open]') !== null"
+  - eval: >-
+      (() => {
+        window.keyboardAlertActions = 0;
+        document.getElementById('confirm-alert').addEventListener('htmx:afterRequest', () => window.keyboardAlertActions++, {once: true});
+      })()
+  - press: Tab
+  - press: Enter
+  - wait: "window.keyboardAlertActions === 1 && document.getElementById('alert-result').textContent === ''"
+  - expect: {expression: "document.getElementById('example-alert').open", equals: false}
+  - expect: {expression: document.activeElement.id, equals: open-alert}
+semantics:
+  - selector: '#example-alert'
+    attribute: role
+    equals: alertdialog
+  - selector: '#example-alert'
+    attribute: aria-modal
+    equals: 'true'
+  - expression: >-
+      (() => {
+        const dialog = document.getElementById('example-alert');
+        const ref = name => document.getElementById(dialog.getAttribute(name));
+        const cancel = dialog.querySelector('[data-slot=alert-dialog-cancel]');
+        return dialog instanceof HTMLDialogElement &&
+          ref('aria-labelledby').textContent === 'Delete profile?' &&
+          ref('aria-describedby').textContent.startsWith('Your public profile') &&
+          !dialog.querySelector('[data-slot=dialog-close]') &&
+          dialog.matches(':modal') === dialog.matches('[data-open]') &&
+          (!dialog.open || document.activeElement === cancel);
+      })()
+    equals: true
+htmx:
+  region: '#demo'
+  swap:
+    - press: Escape
+    - wait: "document.querySelector('#example-alert[data-closed]:not([open])') !== null"
+    - click: '#swap'
+  probe:
+    steps:
+      - state: open
+      - eval: >-
+          (() => {
+            window.alertActions = 0;
+            document.getElementById('confirm-alert').addEventListener('htmx:afterRequest', () => window.alertActions++);
+          })()
+      - click: '#confirm-alert'
+      - wait: "window.alertActions === 1 && document.getElementById('alert-result').textContent === ''"
+    expression: window.alertActions
+    equals: 1
+  navigate:
+    - state: open
+    - eval: "document.getElementById('navigate').click()"
+  transient: 'dialog[open]'
+instances:
+  - tl-dialog
+  - '#example-alert'
+provenance:
+  - file: ../../../packages/trellis_ui/vendor/shadcn/shadcn@4.23.0/LICENSE.md
+    license: MIT

@@ -1,0 +1,17 @@
+.gallery { margin: 0; padding: clamp(1rem, 4vw, 3rem); background: var(--background); color: var(--foreground); font-family: system-ui, sans-serif; line-height: 1.5; }
+.gallery main { max-width: 72rem; margin: 2rem auto; }
+.gallery header { max-width: 72rem; margin: auto; }
+.gallery header a { color: inherit; text-decoration: none; font-weight: 600; }
+.gallery h1 { font-size: 2rem; letter-spacing: -0.04em; }
+.gallery section { margin-block: 2rem; }
+.gallery h2 { font-size: 1rem; font-weight: 600; }
+.gallery-row { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; }
+
+.gallery-sample { margin-block: 1.5rem; max-inline-size: 32rem; }
+.gallery-sample label { display: block; margin-block-end: .5rem; }
+.gallery-action, #before, #after { display: inline-flex; align-items: center; min-block-size: 44px; min-inline-size: 44px; color: inherit; margin-block: .5rem; }
+.gallery-action { background: var(--secondary); color: var(--secondary-foreground); border: 1px solid var(--border); border-radius: var(--radius); padding-inline: 1rem; font: inherit; }
+.gallery-tile { padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--muted); }
+.trellis-cluster > .gallery-tile { min-inline-size: 9rem; }
+.gallery-wide-table { min-inline-size: 40rem; }
+#component > .trellis-alert, #component > .trellis-field, #component > .trellis-card { margin-block: 1rem; }

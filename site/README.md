@@ -26,18 +26,18 @@ deploy workflow hardcodes the domain.
 
 ## Preview locally
 
-From the repository root, [`tool/serve_docs.sh`](../tool/serve_docs.sh) builds a
-root-served variant and serves it at `http://localhost:8765`:
+From the repository root, [`tool/serve_docs.sh`](../tool/serve_docs.sh) runs
+`trellis dev`, which builds a root-served variant, serves it at `http://localhost:8765`,
+and rebuilds and reloads the browser when content, layouts, or theme files change:
 
 ```sh
 tool/serve_docs.sh
 ```
 
 Pass a different port as the only argument when needed, for example
-`tool/serve_docs.sh 9000`. Stop the server with Ctrl-C. Rerun the script after
-changing site content, layouts, or theme assets — it regenerates the themes
-gallery first, so a theme manifest or screenshot change shows up in the preview
-and the regenerated files are ready to commit.
+`tool/serve_docs.sh 9000`. Stop the server with Ctrl-C. The script regenerates the
+themes gallery and UI reference data only at startup, so rerun the script after
+a theme manifest or screenshot change; the regenerated files are then ready to commit.
 
 An intentional screenshot recapture must be reviewed before it becomes gallery input. After reviewing the image,
 update its SHA-256 entry in `tool/theme_screenshot_digests.json`, then regenerate the gallery; an unpinned byte change
@@ -90,7 +90,9 @@ the same result locally and in CI. See `dart run tool/link_check.dart --help` fo
 [`.github/workflows/deploy-docs-site.yml`](../.github/workflows/deploy-docs-site.yml)
 runs on every push to `main` (and via manual `workflow_dispatch`). It:
 
-1. sets up Dart, `dart pub get`, and activates the `trellis` CLI;
+1. sets up Dart, runs `dart pub get`, checks the generated themes gallery
+   (`dart run tool/generate_theme_gallery.dart --check`), and activates the
+   `trellis` CLI;
 2. builds the production (sub-path) site with `trellis build`;
 3. runs the link-integrity check against `site/output` with `--base-path /trellis/` as
    a **required gate** — a broken link fails the pipeline and blocks the deploy;

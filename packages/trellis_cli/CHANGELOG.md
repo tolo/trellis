@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.14.0
+
+### Added
+
+- `trellis build` registers the embedded `trellis_ui` source. Sites and themes can specify
+  `uses: [trellis_ui]` to render its fragments and publish its same-origin CSS and JavaScript.
+- `trellis dev` previews a static site while you edit it: builds root-served (`pathPrefix` cleared, `baseUrl`
+  `http://localhost:<port>`) into a temp directory, serves it, rebuilds on changes under the site and its theme
+  (including a theme outside the site or symlinked into it), and reloads the browser. A failed rebuild keeps the last
+  good build served. Stops on Ctrl-C or SIGTERM and removes its temp build. Options: `--port`, `--drafts`,
+  `--verbose`. Adds `trellis_dev` and `watcher` dependencies.
+
+### Changed
+
+- The `blog` and `theme` scaffolds' next steps and READMEs preview with `trellis dev` instead of `trellis build` +
+  `trellis serve`.
+- Counter fragment swaps preserve keyboard focus through stable control IDs, allowing repeated Enter activation.
+
+- App scaffolds use strict CSP, self-host pinned HTMX and external CSRF scripts, and disable injected indicator styles. `create --htmx-cdn` opts into the pinned CDN origin. Shelf and Dart Frog watch static CSS/JS in dev mode.
+- `trellis create --ui` adds Trellis UI and a Components page to Shelf, Relic and Dart Frog projects.
+  Shelf and Dart Frog dev mode materialize gitignored local-preview assets at startup.
+- `trellis create --template relic` writes `relic: ^2.0.0` (was `^1.2.0`). The generated code needs no change for Relic 2.
+- `trellis create --template relic` adds CSRF protection like the Shelf and Dart Frog scaffolds: `trellisCsrf()` with a
+  `CSRF_SECRET` override, the `csrf-token` meta tag, `static/js/csrf.js`, and the counter's hidden `_csrf` field.
+
+### Removed
+
+- Intel Mac binaries: releases from 0.14.0 have no `trellis-v<version>-macos-x64.tar.gz`, and the Homebrew formula
+  refuses an Intel Mac with an architecture requirement. The 0.13.0 archive is the last Intel Mac build.
+
+### Fixed
+
+- `trellis dev` picks up changes to the external theme and output directory in `trellis_site.yaml`. A build that
+  throws a Dart error leaves the last successful preview available and can be retried by saving another edit.
+  Replacing the theme directory resumes live preview when it returns. Writing to an output directory reached
+  through a theme symlink no longer triggers a rebuild.
+- Stopping `trellis dev` during its initial build removes the temporary preview directory.
+- Relic starters generate a CSRF signing key at startup when `CSRF_SECRET` is unset.
+- `trellis serve` also stops cleanly on SIGTERM (`kill`, a process manager, an IDE stop button), not only on Ctrl-C.
+
 ## 0.13.0
 
 ### Added

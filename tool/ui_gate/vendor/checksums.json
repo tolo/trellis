@@ -1,0 +1,6 @@
+{
+  "tool/ui_gate/vendor/axe.min.js": "b511cd9dec01c76f4b2ad1723b66b6db37d4c2eb4ed199076e1829d9ee7b75e3",
+  "tool/ui_gate/vendor/LICENSE.axe.txt": "af175b9d96ee93c21a036152e1b905b0b95304d4ae8c2c921c7609100ba8df7e",
+  "test/ui_gate_fixtures/htmx.min.js": "71ea67185bfa8c98c39d31717c6fce5d852370fcdfd129db4543774d3145c0de",
+  "test/ui_gate_fixtures/LICENSE.htmx.txt": "d3d2456f76414f2456104660ebd65aff1c04cd7966b942bdabd63f3cdb316a38"
+}

@@ -170,11 +170,10 @@ PageKind detectKind(String sourcePath) {
 /// - Root-level files → `''` (empty string)
 /// - `posts/hello.md` → `posts`
 /// - `docs/advanced/config.md` → `docs` (top-level only)
+/// - `posts/my-trip/index.md` → `posts` (a bundle belongs to its parent's section)
 String deriveSection(String sourcePath) {
-  final normalized = sourcePath.replaceAll(r'\', '/');
-  final parts = p.posix.split(normalized);
-  if (parts.length <= 1) return '';
-  return parts.first;
+  final dirs = _sectionDirs(sourcePath);
+  return dirs.isEmpty ? '' : dirs.first;
 }
 
 /// Derives the full nested section lineage for a content file.
@@ -187,11 +186,19 @@ String deriveSection(String sourcePath) {
 /// - `posts/hello.md` → `posts`
 /// - `docs/advanced/config.md` → `docs/advanced`
 /// - `docs/guides/_index.md` → `docs/guides` (a nested section owns its level)
-String deriveSectionPath(String sourcePath) {
-  final normalized = sourcePath.replaceAll(r'\', '/');
-  final parts = p.posix.split(normalized);
-  if (parts.length <= 1) return '';
-  return parts.sublist(0, parts.length - 1).join('/');
+/// - `posts/my-trip/index.md` → `posts` (a bundle is a page of its parent level)
+String deriveSectionPath(String sourcePath) => _sectionDirs(sourcePath).join('/');
+
+/// The directory segments that place [sourcePath] in the section tree.
+///
+/// A page bundle's `index.md` stands in for a `<folder>.md` file, so its own
+/// folder is the page, not a section level: `posts/my-trip/index.md` sits in
+/// `posts`, exactly like `posts/my-trip.md`.
+List<String> _sectionDirs(String sourcePath) {
+  final parts = p.posix.split(sourcePath.replaceAll(r'\', '/'));
+  final isBundle = p.posix.basenameWithoutExtension(parts.last) == 'index';
+  final dirCount = parts.length - (isBundle ? 2 : 1);
+  return dirCount <= 0 ? const [] : parts.sublist(0, dirCount);
 }
 
 /// Scans a content directory and discovers all Markdown pages.

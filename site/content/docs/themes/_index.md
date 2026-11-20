@@ -12,8 +12,12 @@ entirely through YAML – no forking required.
 - [**Theme Authoring**](/docs/themes/authoring/) – create, test, and publish a
   theme: the `theme.yaml` manifest, layouts with `tl:extends`/`tl:define`, the
   SASS bridge, and the standard-params contract.
-- [**Browse Built-in Themes**](/docs/themes/gallery/) – compare every installed
-  theme, its archetype, screenshots, and configuration hint.
+- [**Standard Params**](/docs/themes/standard-params/) – the 25-param contract
+  every theme supports: types, reference defaults, SASS variables, and CSS
+  custom properties.
+- [**Browse Built-in Themes**](/docs/themes/gallery/) – compare every built-in
+  theme (shipped in the Trellis repository), its archetype, screenshots, and
+  configuration hint.
 
 Applying an existing theme to your own site is covered in the
 [trellis_site](/docs/packages/trellis_site/) guide.

@@ -60,6 +60,23 @@ class CspBuilder {
     this.custom,
   });
 
+  /// Creates a policy for same-origin scripts and styles without inline code.
+  ///
+  /// Move inline scripts and styles to same-origin files before using this
+  /// preset. Explicit source overrides and [custom] can extend the policy.
+  const CspBuilder.strict({
+    this.defaultSrc = "'self'",
+    this.scriptSrc = "'self'",
+    this.imgSrc = "'self' data:",
+    this.objectSrc = "'none'",
+    this.frameAncestors = "'none'",
+    this.baseUri = "'self'",
+    this.formAction = "'self'",
+    this.connectSrc,
+    this.fontSrc,
+    this.custom,
+  }) : styleSrc = "'self'";
+
   /// Builds the CSP header value as a semicolon-separated directive string.
   String build() {
     final directives = <String>[];

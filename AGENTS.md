@@ -23,12 +23,13 @@ This file covers working **on** the SDK. For template syntax, see the
 | `trellis_shelf` | Shelf server integration |
 | `trellis_dart_frog` | Dart Frog server integration |
 | `trellis_relic` | Relic server integration |
+| `trellis_ui` | Embedded UI fragments and assets |
 | `trellis_site` | Static site generation (SSG) |
 | `trellis_css` | CSS processing |
 | `trellis_dev` | Hot reload / dev tooling |
 | `trellis_cli` | Scaffolding CLI (`trellis` command) |
 
-`examples/` holds runnable apps; `dev/` holds contributor docs; `docs/` holds user-facing docs.
+`examples/` holds runnable apps; `dev/` holds contributor docs; `site/content/docs/` holds user-facing docs.
 
 
 ---
@@ -48,25 +49,31 @@ path from its AndThen template – a skill that does not load `project-document-
 each: `- **{title}** – trap + pointer`. Admit an entry only if a frontier model does not already know it, the code and
 git history do not carry it, and it outlives the current initiative. -->``.
 
-> Planning docs (Product, Roadmap, Specs/PRDs, Research, Product Backlog) are maintained in a
-> **separate private repo** and are not in this repository. The rows below cover what lives here; the `Product`,
-> `Roadmap`, `Specs & Plans` and `Research` entries are in the private repo's own Index.
+> Product backlog, release planning and every PRD live in the maintainers' Linear workspace (project `Trellis`, see
+> `Issue Tracker` below), and each release's scope and status is its Linear milestone; bug reports and requests come
+> in through GitHub Issues. Research is kept outside this repository; ADRs carry its distilled form in
+> `dev/adrs/research/`.
 >
-> **Where requirements history lives.** Each release has exactly one durable requirements document: the private
-> `docs/specs/<version>/prd.md`. Plans, per-story specs (FIS), clarifications, mockups and review reports are
-> working material with a bounded life – they are deleted at release prep, once the PRD has been consolidated into
-> the complete record of the cycle (requirements, every story's outcome, deviations, tech debt opened/closed).
+> **Where requirements history lives.** Each release has exactly one durable requirements document: the PRD that is
+> the description of its Linear issue (`Record: tracker`). Plans, per-story specs (FIS), clarifications, mockups and
+> review reports are working material with a bounded life: they live in `dev/spec/<milestone>/` on the release's
+> feature branch, with a working copy of the PRD as `prd.md`, and are deleted at release prep, once the PRD has
+> been consolidated into the complete record of the cycle (requirements, every story's outcome, deviations, tech debt
+> opened/closed).
 > In *this* repository the durable record of behaviour is `packages/*/CHANGELOG.md`, with `dev/adrs/` for decisions
 > and `dev/architecture/` for design.
 
 | Document Type        | Location                                | Notes                                                |
 |----------------------|-----------------------------------------|------------------------------------------------------|
+| Product              | `dev/PRODUCT.md`                        | SDK vision, positioning, audiences, design principles. Read before scoping a feature or release |
+| Specs & Plans        | `dev/spec/<milestone>/`                 | Plan, FIS and PRD working copy for the release in flight; the PRD record is its Linear issue. Deleted at release prep |
 | Architecture         | `dev/architecture/`                     | System overview + engine internals; each carries a "Current through" marker |
-| Decisions / ADRs     | `dev/adrs/`                             | Architecture Decision Records (+ curated `dev/adrs/research/`) |
+| Decisions            | `dev/DECISIONS.md`                      | ADR index, superseded lineage, Still Current notes. Read before proposing or changing a design choice |
+| ADRs                 | `dev/adrs/`                             | Architecture Decision Records (+ curated `dev/adrs/research/`) |
 | Guidelines           | `dev/guidelines/`                       | Dart, packaging, and key dev commands                |
 | Learnings            | `dev/state/LEARNINGS.md`                | Traps, gotchas, and non-obvious patterns             |
 | Tech Debt            | `dev/state/TECH-DEBT-BACKLOG.md`        | Known technical debt (TD-IDs)                        |
-| User docs            | `docs/guides/`, `docs/reference/`       | User-facing guides and reference                     |
+| User docs            | `site/content/docs/`                    | User-facing guides and reference (the docs site)     |
 | Template syntax & API| `packages/trellis/README.md`            | Using the engine                                     |
 | Template agent guide | `packages/trellis/doc/trellis-for-agents.md` | Writing Trellis templates                       |
 | Changelog            | `packages/trellis/CHANGELOG.md`         | Release history                                      |
@@ -96,8 +103,8 @@ git history do not carry it, and it outlives the current initiative. -->``.
 - Never reformat the whole repo — format only the files/dirs you touched.
 - **Asset sourcing (repo-wide)** — prefer self-contained, build-time output; then vendored, same-origin
   assets; runtime CDN dependencies only as a last resort (a deliberate, documented exception, not a ban).
-  Covers shipped themes, `site/`, and `trellis_site` client assets (e.g. `search.js`). See the theme guide's
-  [Third-Party and Vendored Assets](docs/guides/theme-authoring.md#third-party-and-vendored-assets) section
+  Covers shipped themes, `site/`, and `trellis_site` client assets (e.g. `trellis-search.js`). See the theme guide's
+  [Third-Party and Vendored Assets](site/content/docs/themes/authoring.md#third-party-and-vendored-assets) section
   and [ADR-010](dev/adrs/ADR-010-syntax-highlighting.md).
 
 
@@ -121,11 +128,14 @@ git history do not carry it, and it outlives the current initiative. -->``.
   CI green → `tool/release.sh X.Y.Z` on `main` → push the tag (the one manual, irreversible step). Nothing else.
 - **Keep architecture docs current.** When a change adds/modifies/removes a subsystem, protocol, or
   pipeline stage, update the affected doc in `dev/architecture/` in the same change and bump its
-  "Current through" marker. Don't defer.
+  "Current through" marker, redraw any affected SVG diagram, and write or amend the ADR when a recorded decision
+  changes. Don't defer.
 - **Files here stand alone.** ADRs, `dev/state/`, and architecture docs must be usable without the private
-  planning repo. **Never write a clickable link into it** (`../../../trellis-private/...`) – it 404s for every
+  repos (the retiring planning repo, and the maintainer's research repo, where open research now lives under
+  `trellis/research/`). **Never write a clickable link into one** (`../../../trellis-private/...`) – it 404s for every
   reader who has only this repo. An **unlinked, labelled** provenance mention is fine where the private document
-  really is canonical: "private planning repo, canonical: `docs/research/<topic>/`", `PRD <version>, story <id>`.
+  really is canonical: "maintainer's private research repo, canonical: `trellis/research/<topic>`",
+  `PRD <version>, story <id>`.
   Substance belongs here: distilled research as an appendix under `dev/adrs/research/<adr>-research.md`, decisions
   in the ADR, behaviour in the CHANGELOG. Never cite a plan, FIS, mockup or review at all – they are deleted at
   release prep; refer to the release by version fact ("decided for 0.11", "shipped in 0.9").
@@ -157,6 +167,14 @@ Read the relevant guideline before starting work of its type:
   change that crosses package boundaries.
 - `dev/architecture/template-engine.md`: render pipeline, processor model, expression evaluator, caching, fragment
   system. Read before changing the core engine.
+
+External references, for the documentation lookup below:
+- **Core:** [Dart](https://dart.dev/guides), [Thymeleaf](https://www.thymeleaf.org/documentation.html) (the model for
+  `tl:*` semantics), [package:html](https://pub.dev/packages/html) (the core's HTML5 parser),
+  [HTMX](https://htmx.org/docs/).
+- **SDK:** [Shelf](https://pub.dev/packages/shelf), [Melos](https://melos.invertase.dev/),
+  [Dart Sass](https://pub.dev/packages/sass), [csslib](https://pub.dev/packages/csslib),
+  [package:markdown](https://pub.dev/packages/markdown), [Alpine.js](https://alpinejs.dev/) (client state beside HTMX).
 
 
 ---
@@ -209,3 +227,10 @@ Accessibility, after the same kinds of change, audited on the served pages again
 See [dev/guidelines/KEY_DEVELOPMENT_COMMANDS.md](dev/guidelines/KEY_DEVELOPMENT_COMMANDS.md) for the
 full reference. Tests run in two tiers (`fast`, `full`) plus a run-one-test row, declared there. Melos scripts:
 `analyze`, `test`, `format:check`.
+
+### trellis_ui hand CSS
+
+Component hand files sort before `zz-touch.css`, `zz-contrast.css` and `zz-forced-colors.css`; keep cross-cutting
+hit-box, contrast and forced-colour rules there. Native checkbox/radio/switch inputs own the measured 24/44px box,
+while pseudo-elements paint the smaller control. Forced colours remove shadow rings, so retain outline and
+system-colour checked paint. Avoid geometry transitions: a pointer change must reach the minimum immediately.

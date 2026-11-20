@@ -1,0 +1,22 @@
+/* Reduced from shadcn generated CSS at the named tag, MIT. */
+*{box-sizing:border-box}body{margin:16px;background:white;color:#171717;font:16px system-ui}button{min-height:44px;padding:8px;border:1px solid #333}main{position:relative;min-height:250px}.notice{border:1px solid #333;padding:12px;margin:4px;width:250px}#error{color:var(--destructive)}.dark #secondary{border-color:var(--primary)}
+:root{--secondary:oklch(0.97 0 0);--secondary-foreground:oklch(0.205 0 0);--foreground:oklch(0.145 0 0);--primary: oklch(0.205 0 0);--destructive: oklch(0.577 0.245 27.325);}
+.dark{--primary: oklch(0.922 0 0);--destructive: oklch(0.704 0.191 22.216);}
+.trellis-button-variant-secondary {
+    background-color: var(--secondary);
+    color: var(--secondary-foreground);
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--secondary);
+        @supports (color: color-mix(in lab, red, red)) {
+          background-color: color-mix(in oklch,var(--secondary),var(--foreground) 5%);
+        }
+      }
+    }
+    &[aria-expanded="true"] {
+      background-color: var(--secondary);
+    }
+    &[aria-expanded="true"] {
+      color: var(--secondary-foreground);
+    }
+  }

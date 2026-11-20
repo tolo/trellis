@@ -1,7 +1,7 @@
 /// Serverpod Relic integration for the Trellis template engine.
 ///
-/// Provides response helpers, HTMX detection, and security headers
-/// for building server-rendered web applications with Trellis and Relic.
+/// Provides response helpers, HTMX detection, security headers, and CSRF
+/// protection for building server-rendered web applications with Trellis and Relic.
 ///
 /// ```dart
 /// import 'package:relic/relic.dart';
@@ -13,6 +13,7 @@
 /// void main() async {
 ///   final app = RelicApp()
 ///     ..use('/', trellisSecurityHeaders())
+///     ..use('/', trellisCsrf(secret: 'my-secret-key'))
 ///     ..get('/', (request) async {
 ///       return renderPage(request, engine, 'pages/index', {
 ///         'title': 'Home',
@@ -24,6 +25,7 @@
 /// ```
 library;
 
+export 'src/csrf_middleware.dart' show trellisCsrf, csrfToken;
 export 'src/htmx_helpers.dart' show isHtmxRequest, htmxTarget, htmxSource, htmxTrigger, isHtmxBoosted;
 export 'src/response_helpers.dart' show renderPage, renderFragment, renderOobFragments;
 export 'src/response_utils.dart' show htmlResponse;

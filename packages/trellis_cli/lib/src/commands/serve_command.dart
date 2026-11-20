@@ -7,16 +7,18 @@ import 'package:shelf/shelf_io.dart' as io;
 import 'package:shelf_static/shelf_static.dart';
 import 'package:trellis_site/trellis_site.dart';
 
+import 'stop_signal.dart';
+
 /// The `trellis serve` command.
 ///
 /// Starts a Shelf-based static file server with clean URL support, serving the
-/// site's output directory. Runs until Ctrl-C (SIGINT) is received.
+/// site's output directory. Runs until Ctrl-C (SIGINT) or SIGTERM is received.
 class ServeCommand extends Command<int> {
   /// Optional stop signal. When this future completes the server shuts down.
   ///
-  /// Defaults to `ProcessSignal.sigint.watch().first` (Ctrl-C). Tests may
-  /// inject their own [Completer.future] to shut the server down without
-  /// sending SIGINT to the test process.
+  /// Defaults to [processStopSignal] (Ctrl-C or SIGTERM). Tests may inject
+  /// their own [Completer.future] to shut the server down without sending a
+  /// signal to the test process.
   final Future<void>? stopSignal;
 
   /// Base directory the served site is resolved from. Defaults to the process
@@ -89,11 +91,12 @@ class ServeCommand extends Command<int> {
       return 1;
     }
 
+    // A supervisor can send SIGTERM as soon as it reads the readiness line.
+    final stopped = stopSignal ?? processStopSignal().stopped;
     stdout.writeln('Serving http://localhost:$port from "$outputOption/"');
     stdout.writeln('Press Ctrl-C to stop.');
 
-    // Wait for stop signal (Ctrl-C in production, injected future in tests)
-    await (stopSignal ?? ProcessSignal.sigint.watch().first);
+    await stopped;
     await server.close();
 
     return 0;

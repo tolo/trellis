@@ -1,0 +1,40 @@
+name: fixture
+page: /pass.html
+root: '#component'
+elements: {trigger: '#trigger', input: '#name'}
+states:
+  default: []
+  open:
+    - click: '#trigger'
+keyboard:
+  - focus: '#trigger'
+  - press: ArrowDown
+  - expect: {expression: "document.activeElement.id", equals: first}
+  - press: End
+  - expect: {expression: "document.activeElement.id", equals: last}
+  - press: Home
+  - expect: {expression: "document.activeElement.id", equals: first}
+  - press: Escape
+  - expect: {expression: "document.activeElement.id", equals: trigger}
+  - press: Tab
+  - expect: {expression: "document.activeElement.id !== 'trigger'", equals: true}
+semantics:
+  - {selector: '#trigger', attribute: aria-haspopup, equals: menu}
+instances: [gate-demo]
+htmx:
+  region: '#region'
+  swap:
+    - click: '#swap'
+  navigate:
+    - click: '#trigger'
+    - click: '#navigate'
+  transient: '#popup:not([hidden])'
+  probe:
+    steps:
+      - click: '#probe'
+    expression: window.fixtureFires
+    equals: 1
+provenance:
+  - {file: LICENSE, license: MIT}
+distinct:
+  - ['#toast-one', '#toast-two']

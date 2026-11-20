@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 580" width="1080" height="580" role="img" aria-labelledby="t d">
   <title id="t">Trellis SDK package dependency graph</title>
-  <desc id="d">Arrows point from a package to the packages it depends on. trellis_cli depends on trellis_site and trellis_css; trellis_site on trellis_css and trellis; trellis_dart_frog on trellis_shelf and trellis; trellis_css, trellis_dev, trellis_shelf and trellis_relic on trellis. Core trellis depends on no SDK package. Edited by hand from the pubspecs; keep it in step with them.</desc>
+  <desc id="d">Arrows point from a package to the packages it depends on. trellis_cli depends on trellis_site, trellis_css, trellis_ui and trellis_dev; trellis_site on trellis_css and trellis; trellis_dart_frog on trellis_shelf and trellis; trellis_css, trellis_dev, trellis_shelf, trellis_relic and trellis_ui on trellis. Core trellis depends on no SDK package. Edited by hand from the pubspecs; keep it in step with them.</desc>
   <style>
     .bg { fill: #ffffff; }
     .box { fill: #f6f7f9; stroke: #5b6472; stroke-width: 1.5; }
@@ -36,13 +36,14 @@
   </defs>
 
   <rect class="bg" width="1080" height="580"/>
-  <text class="title" x="30" y="40">Trellis SDK – package dependencies (0.13)</text>
+  <text class="title" x="30" y="40">Trellis SDK – package dependencies (0.14)</text>
 
   <!-- edges: package → dependency -->
   <path class="edge" d="M225,130 L130,198" marker-end="url(#a)"/>
   <path class="edge" d="M225,130 L320,198" marker-end="url(#a)"/>
-  <path class="edge-new" d="M240,230 L212,230" marker-end="url(#an)"/>
-  <text class="label-new" x="226" y="190" text-anchor="middle">new in 0.13</text>
+  <path class="edge-new" d="M135,106 H18 V360 H28" marker-end="url(#an)"/>
+  <path class="edge-new" d="M315,100 H540 V198" marker-end="url(#an)"/>
+  <path class="edge" d="M240,230 L212,230" marker-end="url(#a)"/>
   <path class="edge" d="M750,130 L750,198" marker-end="url(#a)"/>
   <path class="edge" d="M660,115 L645,115 L645,380 L587,428" marker-end="url(#a)"/>
   <path class="edge" d="M120,260 L428,428" marker-end="url(#a)"/>
@@ -50,24 +51,32 @@
   <path class="edge" d="M540,260 L540,428" marker-end="url(#a)"/>
   <path class="edge" d="M750,260 L622,428" marker-end="url(#a)"/>
   <path class="edge" d="M960,260 L662,428" marker-end="url(#a)"/>
+  <path class="edge-new" d="M210,360 L398,450" marker-end="url(#an)"/>
+  <text class="label-new" x="120" y="318" text-anchor="middle">new in 0.14</text>
 
   <!-- tooling and framework adapters -->
   <rect class="box" x="135" y="70" width="180" height="60" rx="8"/>
   <text class="name" x="225" y="96" text-anchor="middle">trellis_cli</text>
-  <text class="ext" x="225" y="116" text-anchor="middle">args, shelf, shelf_static</text>
+  <text class="ext" x="225" y="111" text-anchor="middle">args, path, shelf</text>
+  <text class="ext" x="225" y="124" text-anchor="middle">shelf_static, watcher</text>
 
   <rect class="box" x="660" y="70" width="180" height="60" rx="8"/>
   <text class="name" x="750" y="96" text-anchor="middle">trellis_dart_frog</text>
-  <text class="ext" x="750" y="116" text-anchor="middle">dart_frog, shelf</text>
+  <text class="ext" x="750" y="116" text-anchor="middle">dart_frog</text>
 
   <!-- packages on core -->
   <rect class="box" x="30" y="200" width="180" height="60" rx="8"/>
   <text class="name" x="120" y="226" text-anchor="middle">trellis_css</text>
   <text class="ext" x="120" y="246" text-anchor="middle">sass, html</text>
 
+  <rect class="box" x="30" y="330" width="180" height="60" rx="8"/>
+  <text class="name" x="120" y="356" text-anchor="middle">trellis_ui</text>
+  <text class="ext" x="120" y="376" text-anchor="middle">no third-party deps</text>
+
   <rect class="box" x="240" y="200" width="180" height="60" rx="8"/>
   <text class="name" x="330" y="226" text-anchor="middle">trellis_site</text>
-  <text class="ext" x="330" y="246" text-anchor="middle">markdown, yaml, highlight, html</text>
+  <text class="ext" x="330" y="242" text-anchor="middle">markdown, yaml, highlight</text>
+  <text class="ext" x="330" y="255" text-anchor="middle">html, path</text>
 
   <rect class="box" x="450" y="200" width="180" height="60" rx="8"/>
   <text class="name" x="540" y="226" text-anchor="middle">trellis_dev</text>
@@ -79,7 +88,7 @@
 
   <rect class="box" x="870" y="200" width="180" height="60" rx="8"/>
   <text class="name" x="960" y="226" text-anchor="middle">trellis_relic</text>
-  <text class="ext" x="960" y="246" text-anchor="middle">relic</text>
+  <text class="ext" x="960" y="246" text-anchor="middle">crypto, relic</text>
 
   <!-- core -->
   <rect class="core" x="400" y="430" width="280" height="64" rx="8"/>

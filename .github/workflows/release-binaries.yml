@@ -3,7 +3,7 @@ name: Release Binaries
 #   gh api repos/<owner>/<repo>/commits/<tag> --jq .sha
 # then update both the SHA and the trailing # vX comment on the uses: line.
 #
-# Compiles the trellis_cli AOT binary for five targets and attaches them to the
+# Compiles the trellis_cli AOT binary for four targets and attaches them to the
 # GitHub Release, then updates the Homebrew tap and the Scoop bucket
 # (tolo/scoop-trellis). Triggered by the same `vX.Y.Z` tag that drives publish.yml
 # (pub.dev). The two workflows are independent — this one only touches the
@@ -77,7 +77,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          # Single creation point avoids the concurrent-create race from five matrix
+          # Single creation point avoids the concurrent-create race from four matrix
           # jobs; kept a draft until every artifact lands so users never see a partial
           # release. `|| create` makes the step idempotent across job re-runs.
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || \
@@ -93,8 +93,6 @@ jobs:
         include:
           - runs_on: macos-15
             target: macos-arm64
-          - runs_on: macos-15-intel
-            target: macos-x64
           - runs_on: ubuntu-latest
             target: linux-x64
           - runs_on: ubuntu-latest
@@ -133,7 +131,7 @@ jobs:
       # get` for the generated project). Verified locally against the AOT binary
       # from a clean dir outside the workspace. linux-arm64 is cross-compiled on
       # an x64 runner, so its binary cannot execute here — skipped; the other
-      # four targets cover the AOT code paths.
+      # three targets cover the AOT code paths.
       - name: Smoke test (unix)
         if: runner.os != 'Windows' && matrix.target != 'linux-arm64'
         run: |

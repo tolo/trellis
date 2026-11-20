@@ -33,6 +33,16 @@ void main() {
 
 Commands below assume you're in the repository root.
 
+### [admin_app/](admin_app/)
+
+A Shelf contacts app composed from Trellis UI fragments. Filter, sort and page the table, edit contacts in a
+dialog and confirm deletions. The app serves embedded UI assets under strict CSP and can run as an AOT binary.
+
+```bash
+cd examples/admin_app
+dart run bin/server.dart
+```
+
 ### [docs_site/](docs_site/) -- Markdown Documentation Site
 
 A static documentation site built from Markdown with the Arbor theme. It shows
@@ -41,8 +51,7 @@ default "Built with Trellis" attribution.
 
 ```bash
 cd examples/docs_site
-trellis build
-trellis serve
+trellis dev
 ```
 
 ### [shelf_app/](shelf_app/) -- Shelf + HTMX Starter App

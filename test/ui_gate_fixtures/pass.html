@@ -1,0 +1,8 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Gate fixture</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"><meta name="htmx-config" content='{"allowEval":false,"includeIndicatorStyles":false}'>
+<link rel="stylesheet" href="/fixture.css"><script src="/htmx.min.js" defer></script><script src="/fixture.js" defer></script></head>
+<body><main id="component"><h1>Qualification fixture</h1><div id="region"><gate-demo><button id="trigger" aria-haspopup="menu" aria-expanded="false">Choose</button><div id="popup" role="menu" hidden><button role="menuitem" id="first" tabindex="-1">Alpha</button><button role="menuitem" id="last" tabindex="-1">Beta</button></div></gate-demo></div>
+<button id="swap" hx-get="/region.html" hx-target="#region" hx-swap="innerHTML">Swap</button>
+<a id="navigate" href="/next.html" hx-boost="true">Next page</a><label for="name">Name</label><input id="name">
+<button id="probe">Probe</button><output id="fires" aria-live="polite">0</output><button id="mutate">Change label</button>
+<div id="toast-one" class="toast">First notice</div><div id="toast-two" class="toast">Second notice</div></main></body></html>

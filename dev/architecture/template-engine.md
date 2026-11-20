@@ -2,7 +2,7 @@
 
 Canonical reference for the internal architecture of the core `trellis` template engine package. Covers the render pipeline, processor model, expression evaluation, caching, fragment system, and extension points.
 
-**Current through**: 0.13 (composition primitives: `tl:slot` content slots, `tl:attrs` spreading, `...rest` fragment parameter, top-level rendering of parameterised fragments; the processor table below is pinned to `ProcessorPriority` by `test/processor_table_test.dart`)
+**Current through**: 0.14 (URL-scheme check in attribute writes, ADR-015; filter arity from the function type; earlier: 0.13 composition primitives: `tl:slot` content slots, `tl:attrs` spreading, `...rest` fragment parameter, top-level rendering of parameterised fragments; the processor table below is pinned to `ProcessorPriority` by `test/processor_table_test.dart`)
 
 ---
 
@@ -134,7 +134,7 @@ Context-modifying processors (`tl:with`, `tl:object`) update `processorContext.v
 | 9 | `TextProcessor` | `text` | afterInclusion | Never | HTML-escapes value, replaces element text |
 | 10 | `UtextProcessor` | `utext` | afterInclusion | Never | Raw HTML insertion (no escaping); skips child recursion when it inserts, so `tl:*` in the inserted HTML is output, not evaluated. With `_`, or when `tl:text` wins, it keeps the content and leaves recursion to the element's other directives |
 | 11 | `InlineProcessor` | `inline` | afterInclusion | Never | `[[${expr}]]` escaped, `[(${expr})]` unescaped; evaluates only `TemplateText`, the text nodes `markTemplateText` marks when template source is parsed (`Trellis._parse`, cross-file fragment loading). A text node any processor adds, built-in or custom, stays literal, even after `tl:insert` moves it into the host; a processor that edits a template text node's `data` in place (`trellis_css`'s `tl:scope`) keeps it inlinable |
-| 12 | `AttrProcessor` | `attr` + shorthands + `attrs` | afterContent | Never | Sets/appends/removes attributes; `tl:attrs` (map spread) runs first in the group, so explicit directives override it |
+| 12 | `AttrProcessor` | `attr` + shorthands + `attrs` | afterContent | Never | Sets/appends/removes attributes; `tl:attrs` (map spread) runs first in the group, so explicit directives override it; dynamic URL-attribute values are scheme-checked (ADR-015) |
 | 13 | `RemoveProcessor` | `remove` | afterAttributes | Varies | Modes: `all`, `body`, `tag`, `all-but-first`, `none` |
 
 ---
@@ -249,7 +249,7 @@ Both are resolved inside `_resolveAndProcess` (`fragment_processor.dart`), the s
 - **Scope**: grafted nodes stay unprocessed and run as part of the fragment subtree, so slot content sees caller variables plus fragment parameters, with parameters shadowing same-named caller variables.
 - **Name-based invocation only**: selector and tag-name targets never bind parameters, so a marker on them throws the unknown-slot error.
 
-`tl:attrs` is handled inside `AttrProcessor` (step 0 of the group), not as a registered processor, so it can order itself ahead of the shorthands within the shared `afterContent` slot. Attribute names are validated against the HTML attribute-name syntax (non-empty; no ASCII whitespace, controls, quotes, `>`, `/`, `=` or noncharacters, so `@click` and `:class` pass) and keys starting with the attribute prefix, compared ignoring ASCII case, throw, so a spread map cannot inject a directive. Every attribute write (`tl:attrs`, `tl:attr`, the shorthands) first drops attributes whose name differs only in ASCII case, including namespaced foreign attributes such as `xlink:href` (matched by `prefix:local`), so the later write wins; boolean attributes are classified ignoring case, while the `class`/`style` append switch stays exact.
+`tl:attrs` is handled inside `AttrProcessor` (step 0 of the group), not as a registered processor, so it can order itself ahead of the shorthands within the shared `afterContent` slot. Attribute names are validated against the HTML attribute-name syntax (non-empty; no ASCII whitespace, controls, quotes, `>`, `/`, `=` or noncharacters, so `@click` and `:class` pass) and keys starting with the attribute prefix, compared ignoring ASCII case, throw, so a spread map cannot inject a directive. Every attribute write (`tl:attrs`, `tl:attr`, the shorthands) first drops attributes whose name differs only in ASCII case, including namespaced foreign attributes such as `xlink:href` (matched by `prefix:local`), so the later write wins; boolean attributes are classified ignoring case, while the `class`/`style` append switch stays exact. Every write also goes through the URL-scheme check (ADR-015): a value for `href`, `src`, `action`, `formaction`, `data` or `xlink:href` (name matched ignoring ASCII case) that a browser would read as `javascript:`, `vbscript:` or non-image `data:` is written as `about:invalid#trellis-unsafe-url`; a `TrustedUrl` value is written as-is. `captureHostAttributes` returns the rest map as an unmodifiable marked type, and `tl:attrs` skips the check for it, because each of its values was a host literal or already checked.
 
 ### Cross-File Fragment Inclusion
 
@@ -325,8 +325,8 @@ class UiDialect extends Dialect {
 
 Registered at engine level or via dialect:
 - Old-style: `Function(dynamic)` — value only
-- New-style: `Function(dynamic, List<dynamic>)` — value + arguments
-- Arity auto-detected at registration; mismatch throws `ExpressionException`
+- New-style: `Function(dynamic, List<dynamic>)` — value + arguments (an optional `[List<dynamic>? args]` serves both)
+- Arity is read from the function type at each call (`is Object? Function(Never, Never)`), never from a `NoSuchMethodError`, which a filter body can raise too. Arguments passed to a value-only filter throw `ExpressionException` ("does not accept arguments"); a throw inside the filter body is wrapped as `ExpressionException("Filter 'x' failed: …")` with the original stack trace, except a `TemplateException`, which propagates unchanged
 
 ---
 
@@ -410,9 +410,12 @@ lib/
 
 - [ADR-001: Expression Evaluator Strategy](../adrs/ADR-001-expression-evaluator-strategy.md) — Hand-rolled recursive descent parser
 - [ADR-003: Pre-compiled Template Strategy](../adrs/ADR-003-precompiled-template-strategy.md) — Deferred
-- SDK Vision — how the engine fits into the broader SDK (internal)
-- SDK Phase 1 — template inheritance (`tl:extends`/`tl:define`) adds a pre-pass before step 4 (internal spec)
+- [Product](../PRODUCT.md) — how the engine fits into the broader SDK
+- SDK Phase 1 (0.7 PRD, maintainers' Linear) — template inheritance (`tl:extends`/`tl:define`) adds a pre-pass before step 4
 
 ### Diagrams
 
-Architecture diagrams are maintained as Excalidraw source files in the project's internal design repository.
+Architecture diagrams are hand-written SVG files in `dev/architecture/` (currently `sdk-package-dag.svg`). The `.svg`
+is the source of truth: edit it as text, with no drawing tool, Excalidraw source or export step. New and redrawn
+figures follow DartClaw's diagram conventions (visual language, interaction, self-contained theme-aware SVG, render
+check before committing): https://github.com/DartClaw/dartclaw/blob/main/dev/architecture/diagrams/README.md

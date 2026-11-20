@@ -24,11 +24,27 @@ Hand-written root-absolute Markdown links such as `/docs/` are rewritten during
 the build. Relative links and anchors are left alone. Do not author the deploy
 prefix into content; the same source should build for either target.
 
+## Preview a sub-path site
+
+`trellis serve` serves the output directory at `/` and does not strip the
+prefix, so links in a prefixed build such as `/my-site/docs/` return 404
+locally. `trellis dev` clears the prefix for its own preview, so it is the
+quickest check while editing. To look at the built files, preview a root-served
+build instead:
+
+```bash
+trellis build --path-prefix '' --output output-root
+trellis serve --output output-root
+```
+
 ## Check every link
 
 A successful build cannot detect a valid HTML link that points at the wrong
-mount point. From the repository containing `tool/link_check.dart`, verify both
-variants:
+mount point. The Trellis repository's
+[`tool/link_check.dart`](https://github.com/tolo/trellis/blob/main/tool/link_check.dart)
+checks the built tree. It is not part of any published package, so copy it into
+your repository's `tool/` directory and add `html` and `path` as dev
+dependencies. Then, from a site at the repository root, verify both variants:
 
 ```bash
 trellis build
@@ -37,6 +53,9 @@ dart run tool/link_check.dart output --base-path /my-site/
 trellis build --path-prefix '' --output output-root
 dart run tool/link_check.dart output-root
 ```
+
+`--base-path` must match `pathPrefix`. The checker exits `0` when every internal
+reference resolves, `1` when any is broken, and `2` on a usage error.
 
 The checker resolves internal `href`, `src`, `srcset`, and theme image-switch
 attributes against the built filesystem. It ignores external URLs and pure

@@ -9,6 +9,7 @@ import 'package:trellis_site/trellis_site.dart';
 import 'package:yaml/yaml.dart';
 
 import '../tool/generate_theme_gallery.dart';
+import 'theme_use_support.dart';
 
 void main() {
   late Directory root;
@@ -156,6 +157,7 @@ $screenshotsYaml
         outputDir: outputDir.path,
         themeConfig: ThemeConfig(name: relativeTheme),
       ),
+      sourceFactories: themeSourceFactories,
     ).build();
     expect(result.hasWarnings, isFalse);
     final gallery = html_parser.parse(
@@ -223,6 +225,43 @@ $screenshotsYaml
     generator().write();
     expect(generator().check().isFresh, isTrue);
     expect(relocated.existsSync(), isTrue);
+  });
+
+  test('check ignores Finder metadata but still reports other orphaned files', () {
+    addTheme('alpha');
+    generator().write();
+    final generated = p.join(root.path, 'site', 'static', 'themes');
+    for (final directory in <String>[generated, p.join(generated, 'alpha')]) {
+      File(p.join(directory, '.DS_Store')).writeAsStringSync('Finder metadata');
+    }
+
+    expect(generator().check().problems, isEmpty);
+
+    for (final name in <String>['orphan.png', '.orphan.png']) {
+      File(p.join(generated, name)).writeAsStringSync('orphan');
+    }
+    final problems = generator().check().problems.join('\n');
+    expect(problems, contains('themes/orphan.png is an orphaned gallery copy'));
+    expect(problems, contains('themes/.orphan.png is an orphaned gallery copy'));
+    expect(problems, isNot(contains('.DS_Store')));
+  });
+
+  test('regeneration preserves Finder metadata', () {
+    addTheme('alpha');
+    generator().write();
+    final generated = p.join(root.path, 'site', 'static', 'themes');
+    final metadata = <File>[
+      File(p.join(generated, '.DS_Store'))..writeAsStringSync('root Finder metadata'),
+      File(p.join(generated, 'alpha', '.DS_Store'))..writeAsStringSync('nested Finder metadata'),
+    ];
+    final before = metadata.map((file) => file.readAsBytesSync()).toList();
+
+    generator().write();
+
+    for (var index = 0; index < metadata.length; index++) {
+      expect(metadata[index].existsSync(), isTrue, reason: metadata[index].path);
+      expect(metadata[index].readAsBytesSync(), before[index]);
+    }
   });
 
   test('swapped screenshot bytes fail even after gallery regeneration', () {

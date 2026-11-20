@@ -50,7 +50,7 @@ themes:
     screenshot_dark_source: "screenshots/dark.png"
   - name: "verdant"
     archetype: "blog"
-    description: "A minimal, accessible blog theme for Trellis. Content-first design with three color skins, responsive layout, and full keyboard navigation."
+    description: "A minimal, accessible blog theme for Trellis. Content-first design with light, dark, and auto skins, responsive layout, and full keyboard navigation."
     config_hint: "theme: verdant"
     readme_url: "https://github.com/tolo/trellis/tree/main/themes/verdant/README.md"
     screenshot_light: "themes/verdant/light.png"

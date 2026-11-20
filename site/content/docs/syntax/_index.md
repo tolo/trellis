@@ -54,10 +54,11 @@ fixed priority order, highest first:
 4. `tl:switch` / `tl:case` – multi-branch conditionals
 5. `tl:each` – iteration
 6. `tl:insert` / `tl:replace` – fragment inclusion
-7. `tl:text` / `tl:utext` – content
+7. `tl:text` / `tl:utext` / `tl:inline` – content
 8. `tl:attr` and the attribute shorthands – attribute mutation. Within this
    group `tl:attrs` (spread) runs first, so the other attribute directives
    override its entries.
+9. `tl:remove` – output removal
 
 `tl:slot` is not a processing step: it is resolved while a fragment is included
 (step 6) and holds no place in this order.

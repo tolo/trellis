@@ -63,8 +63,8 @@ that browsers can render as prototypes without a server.
 
 - Edit `content/` to add your own pages and posts
 - Customize `layouts/` to change the look
-- Run `trellis build` to generate your site
-- Run `trellis serve` to preview it locally
+- Run `trellis dev` to preview it locally; it rebuilds and reloads the browser as you edit
+- Run `trellis build` to generate the deployable site in `output/`
 
 ## A note on dates
 

@@ -29,8 +29,14 @@
     return explicitTheme || (darkScheme.matches ? 'dark' : 'light');
   }
 
+  function syncPreviewSkin(theme) {
+    var previews = document.querySelectorAll('.ui-reference-preview');
+    for (var i = 0; i < previews.length; i++) previews[i].classList.toggle('dark', theme === 'dark');
+  }
+
   function setTheme(theme, persist) {
     root.dataset.theme = theme;
+    syncPreviewSkin(theme);
     if (themeToggle)
       themeToggle.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
     var screenshots = document.querySelectorAll('.theme-card img[data-light][data-dark]');
@@ -54,7 +60,7 @@
       darkScheme.addEventListener('change', function () {
         if (!explicitTheme) setTheme(effectiveTheme(), false);
       });
-  }
+  } else syncPreviewSkin(root.dataset.skin);
 
   var docsSidebar = document.querySelector('[data-docs-sidebar]');
   if (docsSidebar) {
@@ -164,6 +170,21 @@
         for (var j = 0; j < demoPanels.length; j++) demoPanels[j].hidden = demoPanels[j].dataset.demoPanel !== view;
       });
     }
+  }
+
+  // An overflowing plain prose table needs a tab stop so keyboard users can scroll it.
+  // The observer re-checks as the column changes width. Suite tables use a focusable region.
+  if (typeof window.ResizeObserver === 'function') {
+    var tableObserver = new window.ResizeObserver(function (entries) {
+      for (var entryIndex = 0; entryIndex < entries.length; entryIndex++) {
+        var table = entries[entryIndex].target;
+        if (table.scrollWidth > table.clientWidth) table.tabIndex = 0;
+        else table.removeAttribute('tabindex');
+      }
+    });
+    var proseTables = document.querySelectorAll('.prose table:not(.trellis-table)');
+    for (var tableIndex = 0; tableIndex < proseTables.length; tableIndex++)
+      tableObserver.observe(proseTables[tableIndex]);
   }
 
   // The Clipboard API is absent outside a secure context (plain-http staging or LAN), so the

@@ -1,0 +1,67 @@
+{
+  "name": "table",
+  "page": "/components/table",
+  "root": "#component",
+  "elements": {
+    "primary": ".trellis-table-container"
+  },
+  "states": {
+    "default": [],
+    "dark": [
+      {
+        "eval": "document.documentElement.classList.add('dark')"
+      },
+      {
+        "wait": 200
+      }
+    ]
+  },
+  "keyboard": [
+    {
+      "focus": ".trellis-table-container"
+    },
+    {
+      "expect": {
+        "expression": "document.activeElement === document.querySelector(\".trellis-table-container\")",
+        "equals": true
+      }
+    },
+    {
+      "press": "Tab"
+    },
+    {
+      "expect": {
+        "expression": "document.activeElement !== document.querySelector(\".trellis-table-container\")",
+        "equals": true
+      }
+    }
+  ],
+  "semantics": [
+    {
+      "expression": "document.querySelector('caption')!==null && document.querySelector('th[scope=col]')!==null && document.querySelectorAll('tbody tr').length===3 && document.querySelector('.trellis-table-container').getAttribute('aria-label')==='Recent invoices'",
+      "equals": true
+    }
+  ],
+  "htmx": {
+    "region": "#demo",
+    "swap": [
+      {
+        "click": "#swap"
+      }
+    ],
+    "navigate": [
+      {
+        "click": "#navigate"
+      }
+    ]
+  },
+  "instances": [
+    "#component"
+  ],
+  "provenance": [
+    {
+      "file": "../../../packages/trellis_ui/vendor/shadcn/shadcn@4.23.0/LICENSE.md",
+      "license": "MIT"
+    }
+  ]
+}

@@ -10,7 +10,7 @@
 ///
 /// void main() {
 ///   final engine = testEngine(templates: {
-///     'page': '<h1 tl:text="${title}">x</h1>',
+///     'page': r'<h1 tl:text="${title}">x</h1>',
 ///   });
 ///
 ///   test('renders title', () {

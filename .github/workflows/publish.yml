@@ -44,8 +44,15 @@ jobs:
           - trellis_site
           - trellis_dev
           - trellis_relic
+          - trellis_ui
           - trellis_cli
           - trellis_dart_frog
+        release: ['${{ github.ref_name }}']
+        exclude:
+          # pub.dev requires an authenticated first upload before OIDC can publish this package.
+          # Remove this exception on the next release branch after trellis_ui is onboarded.
+          - package: trellis_ui
+            release: v0.14.0
     permissions:
       id-token: write # Mint the OIDC token pub.dev validates; no secret needed.
     # Pinned by SHA to v1.7.2, the single-job workflow, not the moving `@v1`.

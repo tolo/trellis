@@ -86,35 +86,6 @@ pre {
   color: var(--trellis-muted, #{$trellis-muted-color});
 }
 
-.code-copy {
-  font-family: $trellis-font-family;
-  font-size: $trellis-font-size-xs;
-  font-weight: 600;
-  line-height: 1;
-  padding: $trellis-space-xs $trellis-space-sm;
-  color: var(--trellis-muted, #{$trellis-muted-color});
-  background-color: transparent;
-  border: 1px solid var(--trellis-border, #{$trellis-border-color});
-  border-radius: $trellis-border-radius;
-  cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
-
-  &:hover {
-    color: var(--trellis-primary, #{$trellis-primary-color});
-    border-color: var(--trellis-primary, #{$trellis-primary-color});
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--trellis-primary, #{$trellis-primary-color});
-    outline-offset: 2px;
-  }
-
-  &.is-copied {
-    color: var(--trellis-primary, #{$trellis-primary-color});
-    border-color: var(--trellis-primary, #{$trellis-primary-color});
-  }
-}
-
 // ── Syntax highlighting tokens (highlight.js `.hljs-*`) ─────────────────────────
 // Baked in at build time by the SSG (ADR-010). Colors reference the
 // --trellis-code-* custom properties so they flip with the active skin. The

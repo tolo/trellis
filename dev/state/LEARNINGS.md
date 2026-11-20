@@ -43,7 +43,7 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
 ## Filter System
 
 - **`Map<String, Function>` not `Map<String, dynamic Function(dynamic)>`**: The narrower type can't accept new-style `Function(dynamic, List<dynamic>)` filters. `Function` (untyped) enables runtime arity detection without ugly casts.
-- **Arity detection via `NoSuchMethodError`**: `(filter as dynamic)(value, args)` — old-style (1-arg) filters throw `NoSuchMethodError`, caught and retried without args. Consistent with `_autoConvert()` pattern.
+- **Filter arity comes from the function type, never from catching `NoSuchMethodError`**: up to 0.13 `_evalPipe` caught it around the call, so a `NoSuchMethodError` inside the filter body (an extension getter such as `firstOrNull` on a `dynamic` parameter) became "does not accept arguments", or reran the body as `filter(value, [])`. Test `filter is Object? Function(Never)` / `Function(Never, Never)`: `Never` parameters match any declared parameter type, so typed filters (`(String v)`) still qualify.
 
 ## Strict Mode
 
@@ -83,11 +83,22 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
 
 ## HTMX Integration
 
+- **Dart Frog checks public files before routes.** A dynamic asset route can lose to a file under `public/`
+  before route middleware adds security headers. The UI scaffold uses the custom entrypoint to serve
+  embedded suite paths first and puts preview materialization in its dev init hook.
+
+- **Chrome lazily materializes CSSOM style writes.** Calling `removeAttribute('style')` before any attribute read can leave an empty attribute, which HTMX copies with `setAttribute` under strict CSP.
+  `TlElement` reads `hasAttribute('style')` first. Read-only diagnostics can hide the bug by doing that read.
+
 - **HTMX 4 moves the request-configuration headers**: `htmx:configRequest` (HTMX 2) exposes `evt.detail.headers`; `htmx:config:request` (HTMX 4) passes `{ctx}` and the outgoing headers live at `evt.detail.ctx.request.headers`. A listener registered under the old name never fires on HTMX 4, so the CSRF header silently disappears and `trellisCsrf` rejects every state-changing request. Scaffolds register both names.
 - **HTMX 4 identifies elements as `tag#id`, not bare ids**, in `HX-Target` and `HX-Source` (`encodeURI(id)`, `#id` omitted when the element has none), and it always sends `HX-Source`. The adapter helpers use that header's presence as the version discriminator; under HTMX 4 a value without `#` means "no id", not an id called `form`.
 - **DELETE parameters travel in the query string on both HTMX 2 and 4** (`methodsThatUseUrlParams: ['get', 'delete']` / `/GET|DELETE/`), never in the body. A handler that reads `hx-vals` of an `hx-delete` from the request body sees nothing.
 
 ## Testing
+
+- **Nested HTMX settles can end a parent-region probe early.** An options response inside a combobox satisfies
+  a containing selector's settle event. Wait for those options to settle before starting the surrounding gallery
+  swap, then confirm the original surrounding node disconnected. See the combobox qualification recipe.
 
 - **`FileSystemLoader` validates directory existence at construction**: Tests using `Trellis()` no-arg constructor need a `MapLoader({})` instead, or the test directory must exist.
 - **`IOOverrides` CAN capture stderr**: `IOOverrides.runZoned(stderr: ...)` with a small `noSuchMethod`-based `Stdout` fake (`_BufferStdout`) captures writes reliably, even across async gaps.
@@ -108,6 +119,14 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
 - **A surface outside every rendered check has no gate, however green the suite**: the reflow sweep and the visual comparator targeted `themes/*` only, so a WCAG 1.4.10 reflow failure on `site/`'s gallery page reached the 0.11 release candidate (TD-039). `test/site_reflow_test.dart` now sweeps the built site in both deploy shapes. A new published surface needs a rendered check of its own; a clean build of it proves nothing about layout.
 
 ## Themes & SSG (docs-site)
+
+- **Source fragments in shortcodes** – `PageGenerator` and `ShortcodeProcessor` have separate engines. A missing
+  shortcode loader leaves the literal tag in the built page and reports only a warning. A source proof needs both
+  a page-layout invocation and a post-Markdown invocation.
+- **Lattice preview isolation** – Lattice's unlayered `--card` and `--radius` override layered suite tokens and
+  their derived values. Its Markdown table selectors also reach shortcode output. Compare previews to a suite-only
+  page before adjusting the scoped rules in `site/static/ui-reference.css`. Scope adopting themes' token bridges
+  to their controls too. Unlayered theme focus rules win over the suite's layer even when idle paint matches.
 
 - **A skin file's value can be dead in the render it names**: lattice's dark skin set `$trellis-border-color: #27392c`, but every dark view renders `--lattice: #1a2620` from the `lattice-dark` mixin's literal, because `[data-skin=dark]` on `<html>` overrides the base `:root` the skin file reached. Seeding the `border_color_dark` twin from the skin file would have shipped a default no mode renders; seed it from what the dark view renders, and expect the forced-dark base `:root` (not the rendered CSS) to change in the baseline diff.
 - **A fragment inserted twice (responsive dual-render) must not carry a literal `id`**: a TOC/nav fragment rendered once for mobile and once for desktop (one CSS-hidden per breakpoint) puts two copies in the DOM. Any hard-coded `id`/`aria-labelledby` inside it becomes a duplicate id (invalid HTML, ambiguous ARIA). Name the region with `aria-label` on a `<nav>` instead of `aria-labelledby`+`id`.
@@ -158,7 +177,7 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
 - **A screenshot diff needs an A/B control, because your renderer is not the one that took the original**: comparing a fresh capture against a committed PNG showed 4-24% of pixels differing on *every* theme - including Folio, whose source provably had not changed since its screenshots were taken. That floor is glyph and vector antialiasing from a different Chrome build, and it swamps the signal. The measurement that works: materialize the old source (`git archive <commit> themes/<name> | tar -x`), render **old and new in one browser instance in one run**, and compare those two to each other. Environment cancels exactly - all twelve pairs (six themes x two skins) came out byte-identical, so the finding that started this was disproven for every theme rather than only the one it named. Keep one provably-unchanged subject in the batch as the noise floor. Also: capture only after the frame settles (repeat until two consecutive PNGs are byte-equal), or a staggered entrance animation hands you a mid-animation frame - Lattice's hero grows six leaves and a naive capture is missing two of them.
 - **`contain: paint` already establishes a stacking context, so a neighbouring `isolation: isolate` does nothing**: `themes/meadow/sass/main.scss:325` carries both. The redundant declaration reads as load-bearing to the next person and survives review because removing it looks risky. Recorded rather than removed at release time (TD-046) - theme CSS is an input to the committed visual baselines, which record computed styles.
 
-- **A param set to `null` is "unset" to Sass, so `heading_font_family: null` cannot blank a theme's non-null default**: `$x: null !default` (old `@import` bridge) and `@use ... with ($x: null)` (module bridge) both leave the variable's own `!default` expression in force, so Arbor's `heading_font_family: null` still yields its Charter stack. Behaviour is unchanged by the module bridge (asserted in `theme_arbor_use_test.dart`); only a theme whose `!default` is itself `null` gives headings the body font. 0.12 documents this rather than special-casing the param in the bridge: `docs/reference/standard-params.md` tells a site to set the `font_family` stack instead.
+- **A param set to `null` is "unset" to Sass, so `heading_font_family: null` cannot blank a theme's non-null default**: `$x: null !default` (old `@import` bridge) and `@use ... with ($x: null)` (module bridge) both leave the variable's own `!default` expression in force, so Arbor's `heading_font_family: null` still yields its Charter stack. Behaviour is unchanged by the module bridge (asserted in `theme_arbor_use_test.dart`); only a theme whose `!default` is itself `null` gives headings the body font. 0.12 documents this rather than special-casing the param in the bridge: `site/content/docs/themes/standard-params.md` tells a site to set the `font_family` stack instead.
 - **A `$trellis-*` declared `!default` in a file the entry does not forward is silently inert on the module bridge**: Sass accepts `with()` only on the entry and what it forwards, so a partial the entry only `@use`s (or a `!default` in a mixin or string) builds without error and ignores every `theme_params:` override; `trellis build` warns only when the site overrides the param. A declaration in another forwarded file, or in the entry itself (folio kept its declarations in `main.scss` until 0.12), is configured. Prove a param reaches the theme with a bridged compile whose compiled CSS carries an override (`test/folio_theme_contract_test.dart`, `test/meadow_theme_contract_test.dart`), not by a clean build; the gate names the file for bundled themes.
 - **Sass prints attribute selectors unquoted, so `isNot(contains(":root[data-skin='dark']"))` can never fail**: the compiled CSS carries `:root[data-skin=dark]`. A negative assertion on a selector or at-rule is only evidence when the same query is shown to match under the skin that does emit it (`auto`); the folio and meadow suites pair every such negative with its `auto` positive.
 - **Sass configures a module at its first load, so `@forward 'variables'` must precede every `@use` in a theme entry**: an earlier `@use` that loads `_variables.scss` (even through a partial) loads it unconfigured, and the bridge's `with()` then fails with "This module was already loaded, so it can't be configured using "with"" (`theme_sass_integration_test.dart`, the `@use 'early'` case). Each bundled entry opens with the forward and a comment saying why; the scaffold's `main.scss` does too.
@@ -196,9 +215,12 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
   `tolo/trellis` `--ref` pin in the release commit and `--check-refs` fails on a stale one; a pin on a continuation
   line is invisible to both. A hand-kept state file missed both releases the same way; 0.12 retired it instead of
   guarding it, because the `## X.Y.Z` changelog check in `tool/release.sh` already proves the release is recorded.
-- **A user-facing command lives in hand-kept copies, and a fix to one misses the others**: each
-  `site/content/docs/packages/<pkg>.md` mirrors its package README's command blocks by hand, and the theme-authoring
-  guide exists in `docs/guides/` and `site/content/docs/themes/`. The 0.12 quick-start rename (`my-theme` →
-  `my_theme`, the only form `trellis create` accepts) fixed the README and both guides and missed the docs-site CLI
-  page. Before closing a doc fix, `rg` the exact command string across `README.md`, `packages/*/README.md`, `docs/`
-  and `site/content/`.
+- **A user-facing command lives in hand-kept copies, and a fix to one misses the others**: until 0.14 each
+  `packages/<pkg>/README.md` mirrored its `site/content/docs/packages/<pkg>.md` page by hand (and the theme guides had
+  `docs/guides/` twins). The 0.12 quick-start rename (`my-theme` → `my_theme`, the only form `trellis create` accepts)
+  fixed the README and both guides and missed the docs-site CLI page, and the 0.14 docs audit found the same errors
+  in both copies repeatedly. Since 0.14 the package READMEs are thin (intro, install snippet, one quick start, a
+  feature list, a link to the site page) and the site page is the full guide, so new detail goes on the site page
+  only. The overlap that remains (install snippets, quick starts, `trellis_cli`'s install channels) still drifts:
+  before closing a doc fix, `rg` the exact command string across `README.md`, `packages/*/README.md` and
+  `site/content/`.

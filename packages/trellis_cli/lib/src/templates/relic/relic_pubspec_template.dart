@@ -1,9 +1,11 @@
 import '../../version.dart';
 
+import '../ui_scaffold_template.dart';
+
 /// Generates the pubspec.yaml content for a Relic + Trellis project.
 ///
 /// Trellis packages are constrained to the CLI's own [cliVersion]: under lockstep (ADR-009) that is the SDK version.
-String relicPubspecTemplate(String projectName) =>
+String relicPubspecTemplate(String projectName, {bool ui = false}) =>
     '''
 name: $projectName
 version: 0.1.0
@@ -13,10 +15,10 @@ environment:
   sdk: ^3.10.0
 
 dependencies:
-  relic: ^1.2.0
+  relic: ^2.0.0
   trellis: ^$cliVersion
   trellis_relic: ^$cliVersion
-
+${ui ? uiDependency : ''}
 dev_dependencies:
   lints: ^6.0.0
   test: ^1.25.0

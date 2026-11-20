@@ -33,8 +33,8 @@ Environment:
                            gh login and the current repo)
   CI_WORKFLOW              workflow file to check (default: ci.yml)
   RELEASE_BRANCH           branch the commit must be on (default: main)
-  CI_GATE_TIMEOUT_MINUTES  how long to wait for the run to finish (default: 75 —
-                           ci.yml's check + e2e tiers may take up to 65 min)
+  CI_GATE_TIMEOUT_MINUTES  how long to wait for the run to finish (default: 75,
+                           allowing for ci.yml's 60-minute main job)
   CI_GATE_APPEAR_MINUTES   how long to wait for the run to exist (default: 10)
   CI_GATE_POLL_SECONDS     poll interval (default: 30)
 EOF
@@ -88,7 +88,7 @@ esac
 
 # 3./4. Find the CI run for that exact commit on the release branch and wait
 #    for it. Filter on head_branch: a feature-branch push of the same commit
-#    only runs the fast tier (ci.yml skips e2e off main) and would not prove
+#    usually runs the fast tier (ci.yml uses check-full on main) and would not prove
 #    what a main run proves. Newest run first; a re-run updates it in place.
 find_run() {
   gh api "repos/${REPO}/actions/workflows/${CI_WORKFLOW}/runs?head_sha=${SHA}&per_page=20" \

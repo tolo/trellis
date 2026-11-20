@@ -17,6 +17,15 @@ with `item` bound in each iteration:
 
 Rendering with `{'items': ['a', 'b', 'c']}` produces three `<li>` elements.
 
+The collection can be any `Iterable` or a `Map`. A map is iterated as its
+entries, each exposed as `key` and `value`:
+
+```html
+<li tl:each="entry : ${prices}" tl:text="|${entry.key}: ${entry.value}|">item</li>
+```
+
+A `null` or empty collection removes the element. Any other value throws.
+
 ## Status variables
 
 Each loop exposes a status object. By default it is named after the item with a

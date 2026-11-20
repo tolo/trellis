@@ -16,6 +16,7 @@ import 'page_generator.dart';
 import 'shortcode_processor.dart';
 import 'search_index_generator.dart';
 import 'site_config.dart';
+import 'site_source.dart';
 import 'sitemap_generator.dart';
 import 'taxonomy.dart';
 import 'theme_aware_loader.dart';
@@ -52,7 +53,7 @@ class BuildResult {
   /// The number of HTML pages written to the output directory.
   final int pageCount;
 
-  /// The number of static asset files copied to the output directory.
+  /// The number of static asset files copied or generated in the output directory.
   final int staticFileCount;
 
   /// Total time elapsed for the build.
@@ -111,13 +112,22 @@ class TrellisSite {
   /// asset. Used by [_anyPageLinks].
   static final RegExp _linkAttribute = RegExp(r'''(?:href|src)\s*=\s*["']([^"']*)["']''', caseSensitive: false);
 
+  // Backslashes, drive/stream syntax and NUL cannot name portable POSIX output paths.
+  static final _nonPortablePath = RegExp(r'[\\:\x00]');
+
   /// The site configuration.
   final SiteConfig config;
 
   /// When `true`, draft pages are included in the build output.
   final bool includeDrafts;
 
-  const TrellisSite(this.config, {this.includeDrafts = false});
+  /// Factories that a site or theme may opt into with `uses:`.
+  ///
+  /// Only named factories run, once per build. Site names precede theme names
+  /// when multiple sources offer the same template.
+  final Map<String, SiteSource Function()> sourceFactories;
+
+  const TrellisSite(this.config, {this.includeDrafts = false, this.sourceFactories = const {}});
 
   /// Runs the full build pipeline and returns a [BuildResult].
   ///
@@ -133,7 +143,7 @@ class TrellisSite {
   /// 7. Copy static assets
   /// 8. Generate sitemap
   /// 8.5. Generate feeds (when `feeds:` config section exists)
-  /// 9. Generate search index (when `search.enabled: true`)
+  /// 9. Generate the search index and client (when `search.enabled: true`)
   ///
   /// Throws [SiteConfigException] if the output directory configuration is
   /// unsafe. Throws [TemplateNotFoundException] if a required layout is
@@ -182,21 +192,21 @@ class TrellisSite {
     // 1.5. Load theme manifest, merge params, and generate SASS bridge
     Map<String, dynamic>? mergedThemeParams;
     ThemeBuildConfig? themeBuildConfig;
-    if (config.themeConfig != null) {
-      // Normalize so a relative `theme:` value (e.g. `../../themes/arbor`, used
-      // when a site references a theme outside its own dir) collapses its `..`
-      // segments to a real path both the manifest loader and the template
-      // FileSystemLoader can resolve — the loader does not canonicalize.
-      final themeDir = p.normalize(p.join(config.siteDir, 'themes', config.themeConfig!.name));
+    final theme = config.themeConfig;
+    // A relative theme path can traverse a nonexistent site-local themes directory.
+    final themeDir = theme == null ? null : p.normalize(p.join(config.siteDir, 'themes', theme.name));
+    var themeUses = const <String>[];
+    if (themeDir != null) {
       final ThemeManifest manifest;
       try {
         manifest = ThemeManifest.load(themeDir);
       } on ThemeManifestException catch (e) {
         throw SiteConfigException(e.message, configPath: p.join(config.siteDir, 'trellis_site.yaml'));
       }
+      themeUses = manifest.uses;
 
       const merger = ThemeParamMerger();
-      final mergeResult = merger.merge(manifest.defaultParams, config.themeConfig!.params);
+      final mergeResult = merger.merge(manifest.defaultParams, theme!.params);
       mergedThemeParams = mergeResult.params;
 
       for (final warning in mergeResult.warnings) {
@@ -219,6 +229,11 @@ class TrellisSite {
         throw SiteConfigException(e.message.toString(), configPath: p.join(config.siteDir, 'trellis_site.yaml'));
       }
     }
+    final sources = _resolveSources(themeUses);
+    Directory(config.outputDir).createSync(recursive: true);
+    final loader = themeDir == null
+        ? ThemeAwareLoader.noTheme(siteDir: config.siteDir, fallbacks: sources.loaders)
+        : ThemeAwareLoader.forTheme(siteDir: config.siteDir, themeDir: themeDir, fallbacks: sources.loaders);
 
     // 2. Discover pages — pathPrefix flows through deriveUrl into every page.url
     final discovery = ContentDiscovery(config.contentDir, pathPrefix: config.pathPrefix);
@@ -240,7 +255,12 @@ class TrellisSite {
     final codeHighlighter = config.highlightConfig.enabled ? const CodeHighlighter() : null;
 
     // 3.5. Process pre-Markdown shortcodes
-    final shortcodeProcessor = ShortcodeProcessor(siteDir: config.siteDir, highlighter: codeHighlighter);
+    final shortcodeProcessor = ShortcodeProcessor(
+      siteDir: config.siteDir,
+      highlighter: codeHighlighter,
+      // Preserve the site-only shortcode lookup in builds that use no sources.
+      loader: sources.loaders.isEmpty ? null : loader,
+    );
     for (final page in pages) {
       shortcodeProcessor.processPreMarkdown(page);
     }
@@ -254,7 +274,7 @@ class TrellisSite {
 
     // 4.5. Process post-Markdown shortcodes
     for (final page in pages) {
-      shortcodeProcessor.processPostMarkdown(page);
+      shortcodeProcessor.processPostMarkdown(page, context: sources.loaders.isEmpty ? const {} : page.frontMatter);
     }
     buildWarnings.addAll(shortcodeProcessor.warnings);
 
@@ -269,7 +289,7 @@ class TrellisSite {
     final siteContext = _buildSiteContext(pages);
     var siteParams = <String, dynamic>{'site': siteContext, 'theme': ?mergedThemeParams};
     if (config.taxonomies.isNotEmpty) {
-      final collector = const TaxonomyCollector();
+      final collector = TaxonomyCollector(pathPrefix: config.pathPrefix);
       final nonDraftPages = pages.where((pg) => !pg.isDraft).toList();
       final taxIndex = collector.collect(config.taxonomies, nonDraftPages);
 
@@ -295,15 +315,6 @@ class TrellisSite {
     }
 
     // 6. Generate HTML pages — with theme-aware loader and layout/data search paths
-    final themeDir = config.themeConfig != null
-        ? p.normalize(p.join(config.siteDir, 'themes', config.themeConfig!.name))
-        : null;
-    final TemplateLoader loader;
-    if (themeDir != null) {
-      loader = ThemeAwareLoader.forTheme(siteDir: config.siteDir, themeDir: themeDir);
-    } else {
-      loader = ThemeAwareLoader.noTheme(siteDir: config.siteDir);
-    }
     final generator = PageGenerator(
       siteDir: config.siteDir,
       outputDir: config.outputDir,
@@ -320,7 +331,11 @@ class TrellisSite {
     final pageCount = await generator.generateAll(pages);
     buildWarnings.addAll(generator.warnings);
 
-    // 7. Copy static assets — theme first so site files overwrite on conflict
+    // 7. Copy static assets in order of increasing precedence.
+    for (final entry in sources.assets.entries) {
+      final file = File(p.joinAll([config.outputDir, ...entry.key.split('/')]))..createSync(recursive: true);
+      file.writeAsBytesSync(entry.value);
+    }
     final themeAssets = <String>{};
     var themeStaticCount = 0;
     if (themeDir != null) {
@@ -329,7 +344,7 @@ class TrellisSite {
       themeAssets.addAll(themeStatic.stylesheetsAndScripts);
       themeAssets.addAll(_themeStylesheetOutputs(themeDir));
     }
-    var staticCount = themeStaticCount + _copyStaticAssets() + _copyBundleAssets(pages);
+    var staticCount = sources.assets.length + themeStaticCount + _copyStaticAssets() + _copyBundleAssets(pages);
     if (themeBuildConfig != null) {
       final props = _copyThemeCustomProps(themeBuildConfig);
       themeAssets.addAll(props);
@@ -363,6 +378,7 @@ class TrellisSite {
         siteDescription: config.description,
         contentDir: config.contentDir,
         siteAuthor: config.params['author'] as String?,
+        pathPrefix: config.pathPrefix,
       );
 
       // Validate configured sections against known sections
@@ -385,10 +401,10 @@ class TrellisSite {
       }
     }
 
-    // 9. Generate search index
+    // 9. Generate the search index and client
     if (config.searchConfig.enabled) {
       final searchGenerator = SearchIndexGenerator(config.searchConfig);
-      if (searchGenerator.writeToOutput(pages, config.outputDir)) staticCount++;
+      if (searchGenerator.writeToOutput(pages, config.outputDir)) staticCount += 2;
     }
 
     stopwatch.stop();
@@ -402,6 +418,52 @@ class TrellisSite {
       themeShadowedLayouts: themeShadowedLayouts,
       themeIsInert: themeIsInert,
     );
+  }
+
+  ({List<TemplateLoader> loaders, Map<String, List<int>> assets}) _resolveSources(List<String> themeUses) {
+    final names = {...config.uses, ...themeUses};
+    for (final name in names) {
+      if (!sourceFactories.containsKey(name)) {
+        final registered = sourceFactories.keys.toList()..sort();
+        throw SiteConfigException(
+          'Unknown source "$name" in uses. Registered sources: ${registered.isEmpty ? '(none)' : registered.join(', ')}.',
+        );
+      }
+    }
+
+    final loaders = <TemplateLoader>[];
+    final assets = <String, List<int>>{};
+    final owners = <String, String>{};
+    for (final name in names) {
+      final source = sourceFactories[name]!();
+      loaders.add(source.loader);
+      for (final entry in source.assets.entries) {
+        final path = entry.key;
+        if (_nonPortablePath.hasMatch(path) ||
+            path.split('/').any((part) => part.isEmpty || part == '.' || part == '..')) {
+          throw SiteConfigException('Source "$name" asset "$path" must have an output-relative POSIX path.');
+        }
+        final owner = owners[path];
+        if (owner != null) {
+          throw SiteConfigException('Sources "$owner" and "$name" both provide asset "$path".');
+        }
+        owners[path] = name;
+        assets[path] = entry.value;
+      }
+    }
+    for (final MapEntry(key: path, value: owner) in owners.entries) {
+      var parent = p.posix.dirname(path);
+      while (parent != '.') {
+        if (owners[parent] case final parentOwner?) {
+          throw SiteConfigException(
+            'Source "$parentOwner" asset "$parent" blocks source "$owner" asset "$path": '
+            'an asset file cannot also be a directory.',
+          );
+        }
+        parent = p.posix.dirname(parent);
+      }
+    }
+    return (loaders: loaders, assets: assets);
   }
 
   /// Builds the `site` context map available as `${site.*}` in templates.
@@ -429,12 +491,7 @@ class TrellisSite {
       'menu': const NavigationBuilder().build(pages),
     };
 
-    if (config.feeds != null) {
-      final feedUrls = <String, dynamic>{};
-      if (config.feeds!.atom) feedUrls['atom'] = '/feed.xml';
-      if (config.feeds!.rss) feedUrls['rss'] = '/rss.xml';
-      context['feeds'] = feedUrls;
-    }
+    if (config.feeds != null) context['feeds'] = config.feeds!.siteFeedUrls(config.pathPrefix);
 
     return context;
   }
@@ -475,7 +532,6 @@ class TrellisSite {
   void _cleanOutputDir() {
     final outDir = Directory(config.outputDir);
     if (outDir.existsSync()) outDir.deleteSync(recursive: true);
-    outDir.createSync(recursive: true);
   }
 
   /// A theme is inert when its stylesheets and scripts were published —

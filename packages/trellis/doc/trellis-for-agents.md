@@ -17,7 +17,8 @@ Thymeleaf-inspired HTML template engine for Dart: templates are valid HTML annot
 
 ## Core principles
 
-- **Escape by default.** Untrusted/user-controlled values go through `tl:text` (or `tl:attr`).
+- **Escape by default.** Untrusted/user-controlled text goes through `tl:text`. Attribute directives
+  only HTML-escape: they do not make an untrusted URL, handler or style safe (see below).
 - **Keep templates dumb.** Compute view data in Dart; templates only place prepared values.
 - **Trust boundary lives in code.** The code building the context decides what is safe to emit
   as raw HTML — the template cannot.
@@ -28,9 +29,17 @@ Thymeleaf-inspired HTML template engine for Dart: templates are valid HTML annot
 | Directive | Output | Use for |
 |---|---|---|
 | `tl:text` | HTML-escaped | **Default** for all text, especially user input |
-| `tl:attr` + shorthands (`tl:href`, `tl:src`, `tl:value`, `tl:class`, `tl:id`) | attribute-escaped | All dynamic attribute values |
+| `tl:attr` + shorthands (`tl:href`, `tl:src`, `tl:value`, `tl:class`, `tl:id`) | HTML-escaped; URL attributes scheme-checked | Dynamic attribute values (see the rule below for URLs) |
 | `tl:utext` | **raw, unescaped** | **Only** pre-rendered, trusted HTML |
-| `tl:attrs` (map spread) | names validated, values HTML-escaped only | Developer-built maps; never untrusted keys, and values under `href`/`src`/`srcdoc`/`on*`/`style` need the same validation as `tl:attr` |
+| `tl:attrs` (map spread) | names validated, values HTML-escaped, URL attributes scheme-checked | Developer-built maps; never untrusted keys |
+
+**Unsafe URL schemes are blocked.** A dynamic value written to `href`, `src`, `action`, `formaction`,
+`data` or `xlink:href` (through any attribute directive) that is `javascript:`, `vbscript:` or a
+non-image `data:` URL renders as `about:invalid#trellis-unsafe-url`. Literal attributes in the template
+are not checked. To write a URL you vouch for, put `TrustedUrl('...')` in the context from Dart; a
+template cannot create one. The engine does not check other values: never let an untrusted value reach
+an `on*` handler, `style`, `srcdoc` or `hx-on*`, and a custom processor that writes attributes itself
+must check URLs itself.
 
 ```html
 <span tl:text="${title}">Title</span>            <!-- safe default -->
@@ -127,7 +136,7 @@ A fragment is a component when it takes content slots, spread attributes or both
 - **No literal `id` in a parameterised component**: it repeats per use. Set it with `tl:id`.
 
 
-## Footguns (these fail silently — the engine warns, it does not fix)
+## Footguns (these fail silently at render time — `TemplateValidator` / `trellis:validate` warns)
 
 - **One `tl:attr` per element.** HTML forbids duplicate attribute names, so two `tl:attr` on the
   same element → the parser keeps the first and drops the rest *before Trellis runs*. Put every
@@ -179,6 +188,6 @@ plain run still exits `0`.
 ## Full reference
 
 - Engine README & syntax: <https://github.com/tolo/trellis/blob/main/packages/trellis/README.md>
-- Framework integration (Shelf, Dart Frog, Relic, HTMX): <https://github.com/tolo/trellis/blob/main/docs/guides/framework-integration.md>
+- Framework integration (Shelf, Dart Frog, Relic, HTMX): <https://tolo.github.io/trellis/docs/packages/framework-integration/>
 - API docs: <https://pub.dev/documentation/trellis/latest/>
 - Doc index for agents (`llms.txt`): <https://github.com/tolo/trellis/blob/main/llms.txt>

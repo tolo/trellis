@@ -27,8 +27,9 @@ Index into a list or map with a bracket expression:
 <p tl:text="${items[index]}">item</p>
 ```
 
-The index itself is an expression, so `${items[${i}]}` and `${map['key']}` both
-work.
+The index itself is an expression, so `${items[i + 1]}` and `${map['key']}` both
+work. Refer to variables inside the brackets by bare name: a nested `${...}`, as
+in `${items[${i}]}`, is an error.
 
 ## Selection expressions – `*{...}`
 
@@ -71,6 +72,15 @@ Single-quoted text is a literal string:
 
 ```html
 <span tl:text="'Hello, world'">placeholder</span>
+```
+
+## Other literals
+
+Integers (`42`), decimals (`3.14`), `true`, `false` and `null` are literals too.
+Parentheses group a sub-expression, and a leading `-` negates a number:
+
+```html
+<span tl:text="(${price} + 5) * -1">total</span>
 ```
 
 ## Literal substitution – `|...|`
@@ -156,18 +166,27 @@ single-quoted strings, ints, doubles, bools, null, and bare identifiers:
 <span tl:text="${text | truncate:100}">long text</span>
 ```
 
-Register custom filters when constructing the engine:
+Register custom filters when constructing the engine. A filter that takes
+arguments receives them as a list in its second parameter. Make that parameter
+optional so the filter also works without arguments:
 
 ```dart
 Trellis(filters: {
-  'currency': (v) => '\$${(v as num).toStringAsFixed(2)}',
-  'truncate': (v, [args]) {
-    final limit = (args?.firstOrNull as int?) ?? 80;
+  'currency': (dynamic v, [List<dynamic>? args]) {
+    final code = args != null && args.isNotEmpty ? args[0] as String : 'USD';
+    final digits = args != null && args.length > 1 ? args[1] as int : 2;
+    return '$code ${(v as num).toStringAsFixed(digits)}';
+  },
+  'truncate': (dynamic v, [List<dynamic>? args]) {
+    final limit = args != null && args.isNotEmpty ? args[0] as int : 80;
     final s = v.toString();
     return s.length <= limit ? s : '${s.substring(0, limit)}…';
   },
 });
 ```
+
+A filter declared with only the value parameter, such as `(v) => ...`, throws
+"does not accept arguments" when a template passes it any.
 
 ## Utility objects – `${#...}`
 
@@ -184,11 +203,19 @@ The available objects are `${#strings.*}`, `${#numbers.*}`, `${#dates.*}`, and
 
 ## No-op – `_`
 
-A bare underscore means "do nothing" – it preserves the prototype value and is
-handy in a ternary that should sometimes leave an attribute untouched:
+A bare underscore as the **whole** attribute value means "do nothing" – the
+directive is skipped and the prototype content or attribute stays:
 
 ```html
-<a tl:attr="aria-current=${isActive} ? 'page' : _">Link</a>
+<p tl:text="_">Prototype text, kept as written</p>
+```
+
+`_` is a no-op only as the entire value. Inside an expression it is an ordinary
+(undefined) variable: null in lenient mode, an error in strict mode. To set an
+attribute only sometimes, return `null`, which removes it:
+
+```html
+<a tl:attr="aria-current=${isActive} ? 'page' : null">Link</a>
 ```
 
 ## Quick reference
@@ -201,6 +228,7 @@ handy in a ternary that should sometimes leave an attribute untouched:
 | URL | `@{/users(id=${id})}` | URL with query parameters |
 | Message | `#{welcome.title}` | i18n key lookup via `MessageSource` |
 | String literal | `'hello'` | Single-quoted string |
+| Other literals | `42` `3.14` `true` `null` | Number, boolean and null literals |
 | Literal substitution | `\|Hi, ${name}!\|` | Pipe-delimited interpolated string |
 | Arithmetic | `${a} + ${b}` (`- * / %`) | Numeric arithmetic |
 | Concatenation | `${a} + ' ' + ${b}` | String concatenation |
@@ -211,4 +239,4 @@ handy in a ternary that should sometimes leave an attribute untouched:
 | Boolean | `${a} and ${b}` (`or`, `not` / `!`) | Logical operators |
 | Filter | `${name \| upper}` | Pipe-based value transformation |
 | Utility object | `${#strings.capitalize(x)}` | Built-in string/number/date/list helpers |
-| No-op | `_` | Explicitly do nothing |
+| No-op | `_` | As the whole attribute value: skip the directive |

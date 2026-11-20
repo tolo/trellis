@@ -1,10 +1,14 @@
+import '../ui_scaffold_template.dart';
+
 /// Generates the lib/handlers.dart content for a Relic + Trellis project.
 ///
 /// Demonstrates the no-DI pattern: engine is passed explicitly to each handler.
-String relicHandlersTemplate(String projectName) =>
+String relicHandlersTemplate(String projectName, {bool ui = false}) =>
+    '${ui ? "import 'dart:typed_data';\n\n" : ''}'
     "import 'package:relic/relic.dart';\n"
     "import 'package:trellis/trellis.dart';\n"
     "import 'package:trellis_relic/trellis_relic.dart';\n"
+    '${ui ? uiImport : ''}'
     '\n'
     '// In-memory counter state. In a real app this would be session-scoped\n'
     '// or stored in a database.\n'
@@ -60,4 +64,34 @@ String relicHandlersTemplate(String projectName) =>
     'Future<Response> resetCounter(Request request, Trellis engine) async {\n'
     '  _counter = 0;\n'
     "  return renderFragment(request, engine, 'index.html', 'counter', _counterContext());\n"
-    '}\n';
+    '}\n'
+    '${ui ? _uiHandlers(projectName) : ''}';
+
+String _uiHandlers(String projectName) =>
+    '''
+
+/// GET /ui — Components page.
+Future<Response> uiPage(Request request, Trellis engine) {
+  final context = {'pageTitle': 'Components — $projectName'};
+  if (isHtmxRequest(request)) {
+    return renderFragment(request, engine, 'ui.html', 'page-content', context);
+  }
+  return renderPage(request, engine, 'ui.html', context);
+}
+
+/// Serve embedded assets independently of the on-disk preview.
+Response uiAsset(Request request) {
+  final asset = trellisUiRespond(request.url.path, ifNoneMatch: request.headers['if-none-match']?.join(','));
+  if (asset == null) return Response.notFound();
+  final contentType = asset.headers['content-type'];
+  return Response(
+    asset.statusCode,
+    headers: Headers.fromMap(asset.headers.map((name, value) => MapEntry(name, [value]))),
+    // Relic takes Content-Type from the body.
+    body: Body(
+      bytes: Uint8List.fromList(asset.body),
+      bodyType: contentType == null ? null : BodyType.fromContentType(ContentTypeHeader.parse(contentType)),
+    ),
+  );
+}
+''';

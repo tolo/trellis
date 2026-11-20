@@ -1,0 +1,6 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>native-select</title></head><body>
+<div tl:fragment="native-select(size, ...attrs)" data-slot="native-select-wrapper" class="trellis-native-select-wrapper group/native-select" tl:with="size=${size == 'sm' ? 'sm' : 'default'}" tl:attr="data-size=${size}">
+<select tl:slot="" data-slot="native-select" class="trellis-native-select" tl:attr="data-size=${size}" tl:attrs="${attrs}"><option data-slot="native-select-option" value="">Choose an option</option></select>
+<svg data-slot="native-select-icon" class="trellis-native-select-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+</body></html>

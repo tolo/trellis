@@ -87,7 +87,7 @@ TAG="v${VERSION}"
 MSG="chore(release): trellis SDK ${VERSION}"
 RELEASE_BRANCH=main
 # Keep in sync with tool/version_lockstep.sh PACKAGES.
-PACKAGES=(trellis trellis_shelf trellis_dev trellis_cli trellis_css trellis_site trellis_dart_frog trellis_relic)
+PACKAGES=(trellis trellis_shelf trellis_dev trellis_cli trellis_css trellis_site trellis_dart_frog trellis_relic trellis_ui)
 
 print_push() {
   cat <<EOF
@@ -225,10 +225,10 @@ while IFS= read -r -d '' entry; do
       ;;
   esac
   case "${changed}" in
-    # Bash `case` globs match across `/`, so docs/*.md covers every docs page. The
+    # Bash `case` globs match across `/`, so site/content/*.md covers every docs page. The
     # README/docs entries are the install-snippet constraint lines version_lockstep.sh
     # rewrites (plus the two manual-download examples); keep the three file sets identical.
-    packages/*/pubspec.yaml | packages/*/lib/src/version.dart | README.md | packages/*/README.md | docs/*.md | site/content/*.md | site/trellis_site.yaml) EXPECTED_CHANGED+=("${changed}") ;;
+    packages/*/pubspec.yaml | packages/*/lib/src/version.dart | README.md | packages/*/README.md | site/content/*.md | site/trellis_site.yaml) EXPECTED_CHANGED+=("${changed}") ;;
     # --ref pins live wherever a theme is documented (themes/*/README.md ...), so the lockstep
     # script supplies the file set instead of a glob that would drift from its scan.
     *)
@@ -264,7 +264,7 @@ step "Local gate: unit tests (packages)"
 melos exec --dir-exists=test -- dart test --exclude-tags=e2e || gate_failed
 step "Local gate: root tests + root format"
 # Bare `dart test` — deliberately WIDER than ci.yml, which runs
-# `--exclude-tags=visual`. This is the only place the visual baseline tier runs, and
+# `--exclude-tags=visual --exclude-tags=ui-gate`. This runs both local gates, and
 # that is the point: it is a golden-file layout check whose baselines encode font
 # metrics, so it is only meaningful on the machine that recorded them. CI runners
 # drift in Chrome version and font set and cannot hold it stable. The tier is what

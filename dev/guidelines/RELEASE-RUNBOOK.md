@@ -1,6 +1,6 @@
 # Release Runbook — Trellis SDK
 
-One release = one lockstep version for all 8 packages (ADR-009), one `chore(release)` commit on `main`, one `vX.Y.Z`
+One release = one lockstep version for all publishable packages (ADR-009), one `chore(release)` commit on `main`, one `vX.Y.Z`
 tag. **Pushing the tag is the publish** (pub.dev via OIDC, GitHub Release + binaries, Homebrew/Scoop) and pub.dev
 cannot unpublish — so everything before the push is automated and rails-guarded, and the push is the one deliberate
 human action. Steps are in execution order; each names the guard that enforces it and what to do if it fails.
@@ -23,26 +23,24 @@ human action. Steps are in execution order; each names the guard that enforces i
 - **Do not bump versions on the branch.** Pubspecs stay at the previous version until step 4; `melos version` is
   restricted to `main` (root `pubspec.yaml` → `melos.command.version.branch`) and `tool/version_lockstep.sh` throws
   `RestrictedBranchException` and changes nothing anywhere else.
-- **Local gate = CI's `check` tier**, from the workspace root. Two prerequisites the Dart toolchain does not pull in:
-  - **Node 22** — three JS-driven checks. `ci.yml` installs it.
+- **Local gate**, from the workspace root. It runs CI's checks plus the macOS release-gate tests.
+  The Dart toolchain does not install these test prerequisites:
+  - **Node 22** — three JS-driven checks. `mise.toml` pins it, so `mise run` installs it locally and in CI.
   - **Chrome** — the theme reflow sweep and the visual baseline comparator drive it headless over the DevTools
     protocol. `ci.yml` only *asserts* it (`google-chrome --version`) because the ubuntu image ships it, so on your
     own machine you have to supply it.
+  - **Firefox and geckodriver** — the Trellis UI qualification tests run both browsers. See the setup below.
 
   Both tiers skip silently when their binary is absent; `_requireNodeInCi` / `requireChromeInCi` turn that skip into a
   failure only when `CI=true`, so **locally a missing Node or Chrome means those checks quietly do not run**.
   ```bash
-  dart run tool/generate_theme_gallery.dart --check          # CI runs this first; a stale gallery fails the job
-  melos run --no-select analyze
-  melos run --no-select format:check
-  melos exec --dir-exists=test -- dart test --exclude-tags=e2e
-  dart test                                                  # root suite: release/distribution contracts, tool/
-  dart format --output=none --set-exit-if-changed tool test
+  mise run setup
+  CI=true mise run lint
+  CI=true mise run release-gate
   ```
-  Root `dart test` alone covers only the root suite; `melos exec` alone skips the root — run both.
-  **The root run here is deliberately wider than CI's.** CI runs `dart test --exclude-tags=visual`; the bare `dart test`
-  above also runs `test/visual_baseline_test.dart`, the golden-file layout tier — and **this is the only place that
-  tier runs.** It is what catches "the page moved", which no stylesheet assertion can see. Its baselines encode font
+  The release gate runs package tests through Melos and tests the workspace root separately.
+  CI excludes `ui-gate` in both test commands and `visual` from the root suite. The local commands include the UI
+  qualification tests and the root golden-file layout check, `test/visual_baseline_test.dart`. Its baselines encode font
   metrics, so a recording is only valid on the Chrome build and font set that made it; CI runners drift in both
   (recordings from an `ubuntu:24.04` container on Chrome 152 failed the runner's Chrome 151 for the three themes whose
   stacks end in a system fallback), so chasing them there is permanent maintenance for a check that matters most right
@@ -63,9 +61,51 @@ human action. Steps are in execution order; each names the guard that enforces i
   (TD-044): the release gate keys on `ci.yml`, so an upstream outage there blocked a release tag over something the
   commit never touched. **A red `font-provenance` run therefore does not block a tag — but it still means the vendored
   fonts do not reproduce from their pinned upstream. Fix it; do not release past it.**
-- Push the branch: `ci.yml` runs the `check` job on every branch (E2E on `main` only), and `font-provenance.yml` runs
-  beside it.
+- Push the branch: `ci.yml` runs `mise run check` on every branch (`check-full`, with E2E, on `main` only), and
+  `font-provenance.yml` runs beside it.
 - `dart pub publish --dry-run` in every package whose public API changed (0 warnings).
+
+### Trellis UI release prep
+
+On the macOS baseline host, install Dart Frog CLI 1.2.6 and put geckodriver on `PATH` (or set `GECKODRIVER`) as described in
+[the UI qualification guide](TESTING-STRATEGY.md#ui-qualification-gate).
+From the repository root run `dart run packages/trellis_ui/tool/port.dart parity`,
+`dart run packages/trellis_ui/tool/port.dart check` and `dart run packages/trellis_ui/tool/embed.dart --check`, then
+run the report through `dart run packages/trellis_ui/tool/port.dart sync --check-report "$report"` with `report` set
+to the active pin's file in `packages/trellis_ui/sync-reports/`. The command checks the generated inventory for
+that pin. Run these browser gates with Chrome and Firefox.
+
+- From `packages/trellis_ui/`, run `dart test test/qualification_gate_test.dart` for all active component subjects.
+- From `packages/trellis_cli/`, run `dart test test/ui_surfaces_gate_test.dart` for the admin example and both pages
+  of each of the three UI scaffolds. The app records live in `dev/ui-gate/apps/records/`.
+- Verify the payload and authored code limits listed in [Testing Strategy](TESTING-STRATEGY.md#ui-qualification-gate).
+
+For each component and app record, run VoiceOver with Safari, NVDA with Firefox (Windows VM), and the Safari
+browser pass. Replace the corresponding `release-prep` values with the observed result and evidence. Rerun those
+manual checks after a change to the affected markup or behaviour. The owner reviews each sync disposition and
+records `Owner review: pass` in the sync report.
+
+An actual failure in Dialog, Dropdown Menu, Combobox, Tabs, Toast or an app surface blocks release. Fix it and
+rerun its automated and manual checks. For another failing component, keep its gate record and list the exact
+failed items under [Optional component release dispositions](../adrs/ADR-012-trellis-ui-contract.md#optional-component-release-dispositions),
+for example `badge | unsupported | safari` or `badge | removed | visual, safari`.
+
+- `unsupported` keeps the fragment, gallery and manifest. The browser gate reruns the component and matches the
+  fresh result to the committed record. If a component-specific test measures the same failure, keep the
+  measurement and assert the recorded result for that component, item and browser. Keep the normal assertions
+  for other results. For example, a coarse-pointer failure on Checkbox leaves its fine-pointer check and the
+  other controls' 44 px checks in force. Restore the original expectation when the disposition is removed.
+- `removed` keeps the failing record. Remove the fragment, gallery page and manifest, and migrate their callers,
+  examples and component-specific tests. Re-embed the package after removing a fragment.
+
+For either disposition, migrate any use of the fragment in the admin example to a qualified component, including
+uses through another suite fragment.
+Remove the reference page from `site/content/docs/ui/components/` and its package
+README catalogue rows. Regenerate `site/data/ui_components.yaml` with `dart run tool/generate_ui_reference.dart`.
+The generator omits removed components and recorded manual failures. An automated failure for an unsupported
+component with its fragment still present keeps an internal `qualified: false` entry. Run the generator with
+`--check` and rerun the local release gates. The raw browser record keeps each failing result. Claim support after
+every automated and manual item passes.
 
 ## 1. Fresh-context adversarial review — not optional
 
@@ -80,7 +120,7 @@ git switch main && git pull --ff-only
 git merge --squash <branch> && git commit          # one commit, one-line subject, e.g. "0.10.1: <summary>"
 git push origin main
 ```
-Guard: `AGENTS.md` Workflow Rules (squash only). `ci.yml` starts on the push (`check` + `e2e` on `main`), and
+Guard: `AGENTS.md` Workflow Rules (squash only). `ci.yml` starts on the push (`mise run check-full` on `main`), and
 `font-provenance.yml` beside it. Only `ci.yml` gates the tag.
 
 ## 3. Wait for CI green on `main`
@@ -93,26 +133,25 @@ that run is `success` (it waits while the run is in flight). If CI is red: fix o
 
 ## 4. Prepare the release on `main` — `tool/release.sh`
 
-The script requires both `melos` and `gh` on `PATH`, and `gh` must already be authenticated. Install/authenticate them
-before starting this step; `release.sh` fails before the bump if either prerequisite is missing.
+Run through Mise to use the pinned Dart and Node versions. Run `mise run setup` first to activate Melos.
+The script also requires an authenticated `gh` on `PATH`.
 
 ```bash
-tool/release.sh X.Y.Z --dry-run   # rehearsal: same checks + bump + gate + a temporary commit, then unwinds everything
-tool/release.sh X.Y.Z
+CI=true mise run release X.Y.Z --dry-run   # rehearses the bump, checks, and temporary commit, then restores the tree
+CI=true mise run release X.Y.Z
 ```
 It refuses unless: on `main`, tree clean, `HEAD == origin/main`, every changelog has `## X.Y.Z`, CI green for HEAD.
-Then: `tool/version_lockstep.sh X.Y.Z` (one `melos version` pass: 8 pubspecs + inter-package constraints, 2
+Then: `tool/version_lockstep.sh X.Y.Z` (one `melos version` pass over all publishable pubspecs and their inter-package constraints, 2
 `version.dart` constants, 2 README download examples, every `trellis*: ^x.y.z` install-snippet line in `README.md`,
 `packages/*/README.md`, `docs/`, `site/content/`, every `tolo/trellis` `--ref v<semver>` pin repo-wide, and the
 docs-site hero version) → `--check-refs X.Y.Z` (no stale pin left) → asserts **only** those files changed → local
-gate (step 0's five repeated local commands; gallery freshness is supplied by the required green CI run) → commit
-`chore(release): trellis SDK X.Y.Z` → `dart pub publish --dry-run` ×8 (commit is undone if one fails) →
+gate (analyze, formatting and release tests; CI checks gallery freshness) → commit
+`chore(release): trellis SDK X.Y.Z` → `dart pub publish --dry-run` for each publishable package (commit is undone if one fails) →
 `git tag vX.Y.Z` → prints the push command. **Nothing is pushed.**
 
-Check the commit: `git show --stat HEAD` — 13 fixed files (8 `pubspec.yaml`, 2 `lib/src/version.dart`, `README.md`,
-`packages/trellis_cli/README.md`, `site/trellis_site.yaml`) plus every README/docs page holding an install snippet
-(13 at 0.11.1: 6 package READMEs, 6 `site/content/docs/packages/` pages, `docs/guides/framework-integration.md`) plus
-every file holding a `--ref` pin (`tool/version_lockstep.sh --list-ref-files`; `themes/*/README.md` among them). The
+Inspect `git show --stat HEAD` for the publishable package manifests, both `lib/src/version.dart` constants,
+the root and CLI README download examples, and `site/trellis_site.yaml`. Also expect changes to pages with
+install snippets and files listed by `tool/version_lockstep.sh --list-ref-files`. The
 committed root `pubspec.lock` is not rewritten by the bump; release-binary jobs consume it with
 `dart pub get --enforce-lockfile`.
 
@@ -142,12 +181,24 @@ Guards after the push:
 - Publish jobs are independent (`fail-fast: false`); pub.dev refuses to re-publish an existing version, so re-running
   a failed job is safe.
 
+### First publication of `trellis_ui` in 0.14.0
+
+[pub.dev requires the first version of a package to be published with `dart pub publish`](https://dart.dev/tools/pub/automated-publishing#publishing-packages-using-github-actions).
+The `v0.14.0` matrix publishes the eight existing packages automatically. When `trellis` 0.14.0 appears on pub.dev,
+the package owner runs `dart pub publish` from `packages/trellis_ui` in a clean checkout of the exact `v0.14.0` tag.
+Use the intended pub.dev owner account. Enable GitHub Actions publishing in the package's Admin tab with repository
+`tolo/trellis` and tag pattern `v{{version}}` for later versions.
+
+The distribution verifier still requires all nine packages. If its wait expires before the first upload is visible,
+rerun the failed verification job after pub.dev lists `trellis_ui` 0.14.0.
+
 ## 6. Verify
 
 ```bash
 tool/verify_release.sh X.Y.Z --wait 20
 ```
-pub.dev ×8, GitHub Release published with 11 assets (5 binaries + 5 `.sha256` + `SHA256SUMS.txt`), Homebrew formula,
+The script checks every publishable package on pub.dev, the GitHub Release with nine assets
+(four binary archives, four `.sha256` files and `SHA256SUMS.txt`), the Homebrew formula and the
 Scoop manifest. The same script runs as the last job (`verify`) of `release-binaries.yml`, so a half-published release
 is red in the run.
 
@@ -170,6 +221,4 @@ is red in the run.
 
 ## Not enabled: platform-level protection
 
-`main` has no branch protection. Enabling *Require status checks to pass* with `CI / Analyze, format, unit tests` on
-`main` (GitHub → Settings → Branches → Add rule) would make step 3 unskippable at the platform level; the release gate
-above works without it and remains the rail for the tag workflows either way.
+`main` has no branch protection. The tag workflows require a successful `ci.yml` run on `main` for the tagged commit.

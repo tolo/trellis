@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:relic/relic.dart';
 import 'package:trellis/trellis.dart';
@@ -19,6 +20,9 @@ Future<void> main() async {
     loader: FileSystemLoader(templatesDir, devMode: true),
     devMode: true,
   );
+  // Set CSRF_SECRET to keep tokens valid across restarts and replicas.
+  final csrfSecret =
+      Platform.environment['CSRF_SECRET'] ?? _generateCsrfSecret();
   const csp = CspBuilder(scriptSrc: "'self' https://cdn.jsdelivr.net");
 
   final app = RelicApp()
@@ -27,6 +31,9 @@ Future<void> main() async {
     // responses do NOT get security headers. This is a behavioral
     // difference from Shelf.
     ..use('/', trellisSecurityHeaders(csp: csp))
+    // Double-submit cookie CSRF check on POST/PUT/DELETE/PATCH; templates get
+    // the token as csrfToken, and /js/csrf.js sends it on HTMX requests.
+    ..use('/', trellisCsrf(secret: csrfSecret))
     // Page routes
     ..get('/', (request) => homePage(request, engine))
     ..get('/about', (request) => aboutPage(request, engine))
@@ -34,13 +41,25 @@ Future<void> main() async {
     ..post('/counter/increment', (request) => incrementCounter(request, engine))
     ..post('/counter/decrement', (request) => decrementCounter(request, engine))
     ..post('/counter/reset', (request) => resetCounter(request, engine))
-    // Static CSS — Relic has no built-in static file handler like shelf_static.
-    // A dedicated route is the idiomatic approach for a small number of assets.
+    // Static files — two, so plain routes; Relic's StaticHandler suits a
+    // directory of assets.
     ..get('/styles.css', (_) async {
       final css = await File('$staticDir/styles.css').readAsString();
       return Response.ok(body: Body.fromString(css, mimeType: MimeType.css));
+    })
+    ..get('/js/csrf.js', (_) async {
+      final js = await File('$staticDir/js/csrf.js').readAsString();
+      return Response.ok(
+        body: Body.fromString(js, mimeType: MimeType.javascript),
+      );
     });
 
   await app.serve(address: InternetAddress.anyIPv4, port: port);
   print('Relic + Trellis example running at http://localhost:$port');
+}
+
+String _generateCsrfSecret() {
+  final random = Random.secure();
+  final bytes = List<int>.generate(32, (_) => random.nextInt(256));
+  return bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
 }

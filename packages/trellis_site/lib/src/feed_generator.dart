@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'content_discovery.dart';
 import 'front_matter_date.dart';
 import 'page.dart';
 
@@ -47,6 +48,13 @@ class FeedConfig {
     );
   }
 
+  /// The site-wide feed URLs keyed by format (`atom`, `rss`), under the
+  /// normalized [pathPrefix]. Surfaced to templates as `${site.feeds}`.
+  Map<String, dynamic> siteFeedUrls(String pathPrefix) => <String, dynamic>{
+    if (atom) 'atom': applyPathPrefix('/feed.xml', pathPrefix),
+    if (rss) 'rss': applyPathPrefix('/rss.xml', pathPrefix),
+  };
+
   static List<String> _parseStringList(dynamic value) {
     if (value is List) return value.map((e) => e.toString()).toList();
     return const [];
@@ -58,7 +66,8 @@ class FeedResult {
   /// The number of feed files written.
   final int fileCount;
 
-  /// Feed URLs keyed by format, for injection into the template context.
+  /// Site-wide feed URLs keyed by format (under the path prefix), as exposed to
+  /// templates in `${site.feeds}`.
   ///
   /// Example: `{'atom': '/feed.xml', 'rss': '/rss.xml'}`.
   final Map<String, dynamic> feedUrls;
@@ -105,6 +114,13 @@ class FeedGenerator {
   /// The site-level author name, used as fallback when a page has no author.
   final String? siteAuthor;
 
+  /// The normalized site path prefix (see `SiteConfig.normalizePathPrefix`).
+  ///
+  /// Item links come from the already-prefixed `page.url`; the feed's own URLs
+  /// (self link, site link, feed id) are built here, so they apply it
+  /// explicitly. Empty means served at root.
+  final String pathPrefix;
+
   static const _rfc822Days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   static const _rfc822Months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -115,6 +131,7 @@ class FeedGenerator {
     required this.siteDescription,
     required this.contentDir,
     this.siteAuthor,
+    this.pathPrefix = '',
   });
 
   /// Generates Atom XML for the given [pages], optionally filtered to [section].
@@ -124,8 +141,8 @@ class FeedGenerator {
   String generateAtom(List<Page> pages, {String? section}) {
     final entries = _collectFeedPages(pages, section: section);
     final feedTitle = _feedTitle(section: section);
-    final selfUrl = section != null ? _buildUrl('/$section/feed.xml') : _buildUrl('/feed.xml');
-    final siteUrl = _buildUrl('/');
+    final selfUrl = _siteUrl(section != null ? '/$section/feed.xml' : '/feed.xml');
+    final siteUrl = _siteUrl('/');
     final updated = entries.isNotEmpty
         ? _formatRfc3339(_resolveDateTime(entries.first))
         : _formatRfc3339(DateTime.now().toUtc());
@@ -182,8 +199,8 @@ class FeedGenerator {
   String generateRss(List<Page> pages, {String? section}) {
     final entries = _collectFeedPages(pages, section: section);
     final feedTitle = _feedTitle(section: section);
-    final selfUrl = section != null ? _buildUrl('/$section/rss.xml') : _buildUrl('/rss.xml');
-    final siteUrl = _buildUrl('/');
+    final selfUrl = _siteUrl(section != null ? '/$section/rss.xml' : '/rss.xml');
+    final siteUrl = _siteUrl('/');
     final lastBuildDate = entries.isNotEmpty
         ? _formatRfc822(_resolveDateTime(entries.first))
         : _formatRfc822(DateTime.now().toUtc());
@@ -227,7 +244,6 @@ class FeedGenerator {
   /// feed URLs for template context injection, and any warnings.
   FeedResult writeToOutput(List<Page> pages, String outputDir) {
     var fileCount = 0;
-    final feedUrls = <String, dynamic>{};
     final warnings = <String>[];
 
     if (config.atom) {
@@ -236,7 +252,6 @@ class FeedGenerator {
       Directory(p.dirname(path)).createSync(recursive: true);
       File(path).writeAsStringSync(xml);
       fileCount++;
-      feedUrls['atom'] = '/feed.xml';
     }
 
     if (config.rss) {
@@ -245,7 +260,6 @@ class FeedGenerator {
       Directory(p.dirname(path)).createSync(recursive: true);
       File(path).writeAsStringSync(xml);
       fileCount++;
-      feedUrls['rss'] = '/rss.xml';
     }
 
     for (final section in config.sections) {
@@ -265,7 +279,7 @@ class FeedGenerator {
       }
     }
 
-    return FeedResult(fileCount: fileCount, feedUrls: feedUrls, warnings: warnings);
+    return FeedResult(fileCount: fileCount, feedUrls: config.siteFeedUrls(pathPrefix), warnings: warnings);
   }
 
   // --- Private helpers ---
@@ -327,6 +341,10 @@ class FeedGenerator {
     final s = utc.second.toString().padLeft(2, '0');
     return '$dow, $d $mon $y $h:$mi:$s GMT';
   }
+
+  /// Absolute URL for a site-relative [path] the generator builds itself
+  /// (unlike `page.url`, it does not carry the path prefix yet).
+  String _siteUrl(String path) => _buildUrl(applyPathPrefix(path, pathPrefix));
 
   /// Joins [baseUrl] and [pageUrl], normalizing to avoid double slashes.
   String _buildUrl(String pageUrl) {

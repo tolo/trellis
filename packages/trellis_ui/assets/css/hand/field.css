@@ -1,0 +1,3 @@
+.trellis-field-set { min-inline-size: 0; margin: 0; padding: 0; gap: 1rem; }
+.trellis-field { min-inline-size: 0; }
+.trellis-field-error, .trellis-field-description { margin: 0; }

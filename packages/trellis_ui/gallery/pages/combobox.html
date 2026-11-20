@@ -1,0 +1,14 @@
+<h1>Combobox</h1>
+<section id="demo">
+  <a id="before" href="#after">Before example</a>
+  <section id="component" class="gallery-sample" aria-label="Fruit suggestions">
+    <label tl:replace="~{trellis-ui/field :: label('fruit')}">Fruit</label>
+    <div tl:replace="~{trellis-ui/combobox :: combobox('fruit', 'fruitId', 'Search fruits', '', fruitOptions)}"
+      name="q" hx-trigger="input changed delay:200ms" hx-target="#fruit-results" hx-swap="outerHTML"
+      hx-sync="this:replace" hx-get="/demo/options?id=fruit"></div>
+  </section>
+  <a id="after" href="#before">After example</a>
+  <button id="swap" type="button" class="gallery-action" hx-get="/components/combobox" hx-select="#demo"
+    hx-target="#demo" hx-swap="outerHTML">Refresh example</button>
+  <a id="navigate" class="gallery-action" hx-boost="true" href="/components/input">Next example</a>
+</section>

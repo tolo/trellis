@@ -33,10 +33,14 @@ final _engine = Trellis(loader: FileSystemLoader('templates'));
 Handler middleware(Handler handler) {
   return handler
       .use(trellisProvider(_engine))
-      .use(trellisSecurityHeaders())
-      .use(trellisCsrf(secret: Platform.environment['CSRF_SECRET']!));
+      .use(trellisCsrf(secret: Platform.environment['CSRF_SECRET']!))
+      .use(trellisSecurityHeaders()); // last `.use` is outermost
 }
 ```
+
+In Dart Frog the last `.use()` wraps everything before it. Keep
+`trellisSecurityHeaders()` last so its headers also reach the 403 responses
+`trellisCsrf` returns.
 
 ### 2. Render pages in your route handler
 
@@ -145,10 +149,19 @@ Handler middleware(Handler handler) {
 
 Custom CSP:
 
+`CspBuilder.strict()` sets `script-src 'self'; style-src 'self'` while preserving the other
+security defaults. Use it with `trellisSecurityHeaders(csp: const CspBuilder.strict())`.
+The plain `CspBuilder()` retains its existing inline-style allowance for compatibility.
+Under the strict preset, inline `<script>` bodies, `<style>` elements, `style="…"` attributes
+and `on*` handlers are blocked. Move them to same-origin JS/CSS files; CSSOM property writes
+(such as `element.style.top`) remain allowed by browsers. HTMX's injected indicator style
+must be disabled with the `htmx-config` meta option `includeIndicatorStyles: false`, with
+indicator rules in your stylesheet. CLI app scaffolds do this automatically.
+
 ```dart
 trellisSecurityHeaders(
-  csp: CspBuilder(
-    scriptSrc: "'self' 'nonce-{nonce}'",
+  csp: CspBuilder.strict(
+    scriptSrc: "'self' https://cdn.jsdelivr.net",
     connectSrc: "'self' ws:",
   ),
 )
@@ -185,3 +198,19 @@ if the middleware is not applied).
 For hot reload during development, use
 [trellis_dev](/docs/packages/trellis_dev/) alongside `dart_frog dev`. The
 SSE-based browser refresh works independently of Dart Frog's hot restart.
+
+`devMiddleware()` is Shelf middleware: wrap it with `fromShelfMiddleware` and
+pass it the engine's own loader, created with `devMode: true`:
+
+```dart
+import 'package:trellis_dev/trellis_dev.dart';
+
+final _loader = FileSystemLoader('templates', devMode: true);
+final _engine = Trellis(loader: _loader, devMode: true);
+
+Handler middleware(Handler handler) {
+  return handler
+      .use(trellisProvider(_engine))
+      .use(fromShelfMiddleware(devMiddleware(_loader, staticDirectory: 'public')));
+}
+```

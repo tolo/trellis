@@ -10,7 +10,7 @@ import 'package:yaml/yaml.dart';
 
 import 'theme_font_contract.dart';
 import 'theme_use_support.dart'
-    show compileBridged, copyDirectory, customProps, exampleSiteCopy, rootBlock, runNodeHarness;
+    show compileBridged, copyDirectory, customProps, exampleSiteCopy, rootBlock, runNodeHarness, themeSourceFactories;
 
 void main() {
   final themeDir = p.join(Directory.current.path, 'themes', 'lattice');
@@ -70,7 +70,7 @@ void main() {
     };
 
     expect(manifest.name, 'lattice');
-    expect(manifest.minTrellisVersion, '0.12.0');
+    expect(manifest.minTrellisVersion, '0.14.0');
     expect(manifest.features.where({'docs', 'landing', 'blog'}.contains), ['docs']);
     expect(manifest.params.keys.toSet(), standardParams.union(docsParams).union(latticeParams));
     expect(manifest.params['excerpt_length']!.defaultValue, 160);
@@ -275,7 +275,7 @@ void main() {
 
   test('bridged example builds cleanly with complete rendered pages', () async {
     final config = exampleSiteCopy(themeDir);
-    final result = await TrellisSite(config).build();
+    final result = await TrellisSite(config, sourceFactories: themeSourceFactories).build();
     expect(result.warnings, isEmpty);
     expect(result.pageCount, 5);
 
@@ -315,7 +315,7 @@ void main() {
 
   test('sub-path build prefixes URLs once without nesting output', () async {
     final config = exampleSiteCopy(themeDir, (source) => '$source\npathPrefix: /trellis/\n');
-    final result = await TrellisSite(config).build();
+    final result = await TrellisSite(config, sourceFactories: themeSourceFactories).build();
     expect(result.warnings, isEmpty);
     expect(result.pageCount, 5);
     expect(Directory(p.join(config.outputDir, 'trellis')).existsSync(), isFalse);
@@ -354,7 +354,7 @@ void main() {
           final configSource = source.replaceFirst('skin: auto', 'skin: $skin');
           return prefix.isEmpty ? configSource : '$configSource\npathPrefix: $prefix\n';
         });
-        final result = await TrellisSite(config).build();
+        final result = await TrellisSite(config, sourceFactories: themeSourceFactories).build();
         expect(result.warnings, isEmpty, reason: '$skin $prefix');
         final home = File(p.join(config.outputDir, 'index.html')).readAsStringSync();
         _expectShowcaseSources(home, dark: skin == 'dark');
@@ -368,7 +368,7 @@ void main() {
   test('documented local assets exist', () {
     for (final asset in [
       'static/js/lattice.js',
-      'static/js/search.js',
+      'data/trellis-search.yaml',
       'static/fonts/fraunces-latin.woff2',
       'static/fonts/fraunces-latin-ext.woff2',
       'static/fonts/fraunces-italic-latin.woff2',
@@ -451,7 +451,7 @@ void main() {
     }
 
     final config = exampleSiteCopy(themeDir);
-    await TrellisSite(config).build();
+    await TrellisSite(config, sourceFactories: themeSourceFactories).build();
     final document = html_parser.parse(File(p.join(config.outputDir, 'index.html')).readAsStringSync());
     final panes = document.querySelectorAll('.pane pre code, .demo-source pre code');
     expect(panes, hasLength(3));
@@ -565,7 +565,7 @@ $showcaseCards''',
       final config = SiteConfig.load(p.join(tempDir.path, 'trellis_site.yaml'));
       // A guard that reaches a null comparison throws out of build(), so reaching the assertions
       // below is itself the "no unhandled exception" check.
-      final result = await TrellisSite(config).build();
+      final result = await TrellisSite(config, sourceFactories: themeSourceFactories).build();
       expect(result.warnings, isEmpty, reason: entry.key);
 
       final document = html_parser.parse(File(p.join(config.outputDir, 'index.html')).readAsStringSync());
@@ -678,7 +678,6 @@ $showcaseCards''',
   });
 
   test('L5/L6 controls JavaScript cannot back are not rendered as live affordances', () async {
-    final base = File(p.join(themeDir, 'layouts', 'base.html')).readAsStringSync();
     final home = File(p.join(themeDir, 'layouts', 'home.html')).readAsStringSync();
     final script = File(p.join(themeDir, 'static', 'js', 'lattice.js')).readAsStringSync();
     expect(script, contains('themeToggle.hidden = false'));
@@ -694,7 +693,7 @@ $showcaseCards''',
     expect(css, matches(RegExp(r'\[hidden\]\s*\{[^}]*display:\s*none\s*!important', dotAll: true)));
 
     final config = exampleSiteCopy(themeDir);
-    await TrellisSite(config).build();
+    await TrellisSite(config, sourceFactories: themeSourceFactories).build();
     final document = html_parser.parse(File(p.join(config.outputDir, 'index.html')).readAsStringSync());
     final toggle = document.querySelector('[data-lattice-theme-toggle]');
     expect(toggle, isNotNull);
@@ -706,89 +705,15 @@ $showcaseCards''',
     }
     expect(home, contains('aria-label="Copy command"'));
 
-    // The search box is the same class of control and was the one exception: the layout shipped
-    // only the results <ul> hidden, and the client marked the shell unavailable on a *fetch
-    // failure* — never for "the script never ran". With JavaScript off that rendered a
-    // permanently disabled search input in the sidebar, which is worse than no search box.
+    // The browser search contract proves activation, scrolling and announcements.
     final docs = html_parser.parse(
       File(p.join(config.outputDir, 'docs', 'getting-started', 'index.html')).readAsStringSync(),
     );
-    final shell = docs.querySelector('.search-shell');
-    expect(shell, isNotNull);
-    expect(shell!.attributes.containsKey('hidden'), isTrue, reason: shell.outerHtml);
-    expect(docs.querySelector('.search-input')!.attributes.containsKey('disabled'), isTrue);
-    expect(base, contains('class="search-shell"'));
-    final searchScript = File(p.join(themeDir, 'static', 'js', 'search.js')).readAsStringSync();
-    // Revealed only on the success path; every failure path returns it to hidden.
-    expect(searchScript, contains('shell.hidden = false'));
-    expect(searchScript, contains('shell.hidden = true'));
-    // The class-toggle mechanism it replaces: a `.search-unavailable { display: none }` rule left
-    // behind would silently re-admit a shell that ships visible.
+    final shell = docs.querySelector('[data-trellis-search]')!;
+    expect(shell.attributes, allOf(contains('hidden'), containsPair('data-search-index', '/search-index.json')));
+    expect(shell.querySelector('[role=combobox]')!.attributes, contains('disabled'));
+    expect(shell.querySelector('template[data-trellis-search-results]'), isNotNull);
     expect(css, isNot(contains('search-unavailable')));
-    expect(searchScript, isNot(contains('search-unavailable')));
-  });
-
-  test('search results carry the classes the client builds, styled, capped, and announced', () async {
-    final script = File(p.join(themeDir, 'static', 'js', 'search.js')).readAsStringSync();
-    final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'));
-
-    // The client built bare <li><a> with no class at all: results rendered as inline, underlined,
-    // unpadded body text in an uncapped list, on the published docs site. The class set is derived
-    // from the script rather than hardcoded, so a rename on either side alone fails, and anchored
-    // so a longer selector (.search-result-title-DISABLED) cannot satisfy the match.
-    final built = RegExp(r"className = '([\w-]+)'").allMatches(script).map((match) => match.group(1)!).toSet();
-    expect(built, <String>{
-      'search-result',
-      'search-result-link',
-      'search-result-title',
-      'search-result-snippet',
-      'search-empty',
-    });
-    for (final className in built) {
-      expect(RegExp('\\.$className(?=[\\s,{:])').hasMatch(css), isTrue, reason: className);
-    }
-
-    // A selector that keeps its name and loses its declarations reproduces the finding verbatim, so
-    // every rule below is read for the whole value that produces the behaviour, not for a substring.
-    for (final rule in ['.search-result-link', '.search-result-title', '.search-result-snippet']) {
-      expect(
-        _declared(css, rule, 'display'),
-        'block',
-        reason: '$rule: title and snippet are <span>s and concatenate inline without it',
-      );
-    }
-    // Result links inherited the prose underline and had no hit area of their own (measured 0px).
-    expect(_declared(css, '.search-result-link', 'text-decoration'), 'none');
-    final padding = _declared(css, '.search-result-link', 'padding');
-    expect(padding, isNotNull, reason: '.search-result-link must declare its own hit area');
-    expect(int.parse(RegExp(r'^(\d+)px').firstMatch(padding!)!.group(1)!), greaterThanOrEqualTo(4));
-    // Title and snippet must be told apart; one colour for both makes the snippet read as more title.
-    final titleColour = _declared(css, '.search-result-title', 'color');
-    expect(titleColour, isNotNull);
-    expect(_declared(css, '.search-result-snippet', 'color'), allOf(isNotNull, isNot(titleColour)));
-    // The empty state is a list item like any other and needs its own treatment, or it renders as a
-    // line indistinguishable from a result.
-    expect(
-      ['color', 'font-style', 'padding'].map((prop) => _declared(css, '.search-empty', prop)).whereType<String>(),
-      isNotEmpty,
-    );
-
-    // MAX_RESULTS results at ~100px each overflow any sidebar, so the list carries its own scroll.
-    // The cap is read against the client's own limit rather than pinned; a degenerate 0 — or a cap
-    // above the natural height of a full list — leaves the sidebar exactly as it was.
-    final maxResults = int.parse(RegExp(r'MAX_RESULTS = (\d+)').firstMatch(script)!.group(1)!);
-    final cap = _declared(css, '.search-results', 'max-height');
-    expect(cap, isNotNull, reason: '.search-results must cap its height');
-    expect(int.parse(RegExp(r'^(\d+)px$').firstMatch(cap!)!.group(1)!), inInclusiveRange(120, maxResults * 40));
-    expect(_declared(css, '.search-results', 'overflow-y'), 'auto');
-
-    // Results appear without a focus change, so the region has to announce them.
-    final config = exampleSiteCopy(themeDir);
-    await TrellisSite(config).build();
-    final docs = html_parser.parse(
-      File(p.join(config.outputDir, 'docs', 'getting-started', 'index.html')).readAsStringSync(),
-    );
-    expect(docs.querySelector('.search-results')!.attributes['aria-live'], 'polite');
   });
 
   test('article code blocks wrap rather than becoming an unreachable scrollable region', () {
@@ -815,13 +740,15 @@ $showcaseCards''',
     final cardCommands = lines.join('\n').replaceAll(RegExp(r'\\\n\s*'), ' ').split('\n');
     final ctaCommands = (params['cta_commands']! as List).map((c) => c.toString()).toList();
     final commands = <String>{...cardCommands, ...ctaCommands};
-    // Both surfaces have to carry the install: a Lattice site is `create` *then* `theme add`, and
-    // either one alone scaffolds a site on the wrong theme. Asserted per surface, because the two
-    // are read independently — the card is what the gallery screenshot shows, the CTA is what a
-    // visitor copies.
+    // The gallery card and copyable CTA each need the full sequence. Theme installation and
+    // preview look for the scaffold's config in the current directory.
     for (final surface in {'terminal card': cardCommands, 'cta_commands': ctaCommands}.entries) {
-      expect(surface.value.any((c) => c.contains('theme add')), isTrue, reason: surface.key);
-      expect(surface.value.any((c) => c.contains('trellis create')), isTrue, reason: surface.key);
+      expect(surface.value, [
+        'trellis create my_docs --template blog',
+        'cd my_docs',
+        startsWith('trellis theme add '),
+        'trellis dev',
+      ], reason: surface.key);
     }
 
     // The hero card is the first thing a gallery visitor reads and it is baked into both
@@ -831,7 +758,7 @@ $showcaseCards''',
     final cli = p.join(Directory.current.path, 'packages', 'trellis_cli', 'bin', 'trellis.dart');
     final probeDir = Directory.systemTemp.createTempSync('lattice_cli_probe_');
     addTearDown(() => probeDir.deleteSync(recursive: true));
-    for (final command in commands) {
+    for (final command in commands.where((command) => command != 'cd my_docs')) {
       expect(command, startsWith('trellis '), reason: command);
       final args = [...command.split(RegExp(r'\s+')).skip(1), '--help'];
       final result = await Process.run('dart', ['run', cli, ...args], workingDirectory: probeDir.path);
@@ -915,7 +842,7 @@ $showcaseCards''',
     expect(RegExp(r'\.hero-section\s*\{([^}]*)\}').firstMatch(css)!.group(1), isNot(contains('!important')));
 
     final config = exampleSiteCopy(themeDir);
-    await TrellisSite(config).build();
+    await TrellisSite(config, sourceFactories: themeSourceFactories).build();
     for (final file in Directory(config.outputDir).listSync(recursive: true).whereType<File>()) {
       if (!file.path.endsWith('.html')) continue;
       final document = html_parser.parse(file.readAsStringSync());

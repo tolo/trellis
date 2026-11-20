@@ -10,9 +10,11 @@ JavaScript-free collapsible mobile sidebar.
 Arbor is a sibling of the `verdant` blog theme and shares its conventions
 (manifest shape, SASS bridge, `tl:extends`/`tl:define` layout inheritance). Code
 is colored at build time (`.hljs-*` spans baked in by the SSG, ADR-010), so the
-theme ships no highlighter JS; the client-side scripts it does ship — the search
-UI and the code-block copy button — are **vendored, same-origin assets, never
-CDN-loaded** (see [`VENDORED.md`](VENDORED.md)).
+theme ships no highlighter JS. The sidebar search and code-copy button use suite
+fragments and same-origin assets (see [`VENDORED.md`](VENDORED.md)).
+
+Arbor requires Trellis 0.14.0 for its suite combobox and code-copy button.
+The build supplies the shared search client beside the JSON index.
 
 ## Features
 
@@ -63,7 +65,7 @@ Colours are set per mode: `primary_color` sets the light palette's entry and
 ## Params
 
 Arbor implements all 25 standard theme params (see
-`docs/reference/standard-params.md`) plus documentation-specific params:
+[https://tolo.github.io/trellis/docs/themes/standard-params/](https://tolo.github.io/trellis/docs/themes/standard-params/)) plus documentation-specific params:
 
 | Param | Type | Default | Purpose |
 |---|---|---|---|
@@ -99,9 +101,8 @@ trellis build
 ```
 
 The `example/` site exercises a nested content tree (sidebar levels), code fences
-(highlighting), and headings (TOC). It builds with the current engine context
-surface even where `${site.menu}`/`${page.toc}` producers have not yet landed —
-the navigation regions simply render empty.
+(highlighting), and headings (TOC). The navigation regions are guarded, so a page
+without menu or TOC data renders them empty.
 
 ## Vendored assets
 

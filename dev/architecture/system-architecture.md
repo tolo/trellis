@@ -2,13 +2,22 @@
 
 Canonical reference for understanding the Trellis SDK architecture: how the packages compose, what each package is responsible for, the dependency graph, and how a request flows through the system.
 
-**Current through**: v0.11.0 SDK + the 2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
+**Current through**: dev reload, scaffold CSP and UI previews updated for 0.14 on 2026-11-17; `trellis dev` site
+preview, including theme watch recovery, output exclusions and startup cleanup, is current through 0.14 on
+2026-11-18. The named site source
+pipeline and CLI registry were verified for 0.14 on 2026-11-18. The wider scope is the v0.11.0 SDK + the
+2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
 Lattice `site_demo` home block, and the `examples/docs_site/` proof) + the 2026-09-04 HTMX 4 adapter
 compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme stylesheets compile through
 `@use … with()` instead of `@import`, with per-mode colour params + 0.13 bridge hardening: one shared
 `compileThemeEntry` that configures each entry with the params Sass accepts and reports the ones it drops,
 build-time warnings for palette-default drift and for a site override Sass cannot apply (`trellis_site` now
-depends on `trellis_css`), and the redrawn package graph.
+depends on `trellis_css`), and the redrawn package graph. The `trellis_ui` package map, pipeline and qualification sections
+are current through the 0.14 sync inventory and shared browser qualification decision (2026-11-18), and so is the
+Relic section (Relic 2, CSRF 2026-11-18). The content model's bundle rule and the `pathPrefix` coverage of feed
+and taxonomy URLs are current through 0.14.
+Other sections retain the verification scope above.
+The Dart Frog CSRF bridge note is current through 0.14 (it runs on Dart Frog's own request, so a handler can read the body after a form-field token).
 
 ---
 
@@ -31,11 +40,12 @@ Trellis is a Dart toolkit for building server-rendered web applications and stat
 | **`trellis`** | HTML template engine: parsing, expression evaluation (incl. utility objects), processor pipeline, fragment rendering, caching, validation, template inheritance, contextual escaping. Also includes testing utilities via `testing.dart` (test engine factory, CSS-selector matchers, snapshot golden file testing, fragment helpers). | `html`, `args`, `path`, `matcher`, `string_scanner` | v0.13.0 |
 | **`trellis_shelf`** | Shelf middleware: engine injection, HTMX helpers, security defaults (CSRF, CSP), response builders | `trellis`, `shelf`, `crypto` | v0.13.0 |
 | **`trellis_dart_frog`** | Dart Frog integration: `trellisProvider()` DI middleware, response helpers (`renderPage`, `renderFragment`, `renderOobFragments`), HTMX detection, CSRF/security middleware bridged from `trellis_shelf` | `trellis`, `trellis_shelf`, `dart_frog` | v0.13.0 |
-| **`trellis_relic`** | Serverpod Relic integration: response helpers with explicit engine passing, HTMX detection, `trellisSecurityHeaders()` middleware. No CSRF (Relic form parser gap). | `trellis`, `relic` | v0.13.0 |
-| **`trellis_dev`** | Dev tools: SSE browser hot reload, script injection middleware | `trellis`, `shelf` | v0.13.0 |
+| **`trellis_relic`** | Serverpod Relic integration: response helpers with explicit engine passing, HTMX detection, `trellisSecurityHeaders()` and `trellisCsrf()` middleware | `trellis`, `relic`, `crypto` | v0.13.0 |
+| **`trellis_ui`** | Embedded UI fragments, same-origin CSS/JS, neutral asset response and materialization. | `trellis` | v0.14.0 |
+| **`trellis_dev`** | Dev tools: SSE browser hot reload, script injection middleware driven by a template loader or any change stream | `trellis`, `shelf` | v0.13.0 |
 | **`trellis_css`** | CSS processing: Dart-native SASS/SCSS compilation via `package:sass`, `tl:scope` fragment-scoped CSS via CSS `@scope` | `trellis`, `sass`, `html` | v0.13.0 |
-| **`trellis_site`** | Static site generation: content discovery, front matter, Markdown, taxonomies, pagination, sitemap, shortcodes, data cascade, Atom/RSS feed generation, JSON search index | `trellis`, `trellis_css`, `markdown`, `yaml` | v0.13.0 |
-| **`trellis_cli`** | CLI tool: `trellis create` (htmx + blog + dart_frog + relic templates), `trellis build` (SSG pipeline + SASS), `trellis serve` (local preview server), and `trellis theme` (`add`, `update`, `list`, `info`, `remove`) | `args`, `shelf`, `shelf_static`, `trellis_css`, `trellis_site` | v0.13.0 |
+| **`trellis_site`** | Static site generation: content discovery, front matter, Markdown, taxonomies, pagination, sitemap, shortcodes, data cascade, Atom/RSS feeds, JSON search index and client, named build sources | `trellis`, `trellis_css`, `highlight`, `html`, `markdown`, `path`, `yaml` | v0.13.0 |
+| **`trellis_cli`** | CLI tool: `trellis create` (htmx + blog + dart_frog + relic templates), `trellis build` (SSG, SASS and the embedded UI source), `trellis dev` (site preview: rebuild on change + browser reload), `trellis serve` (static output server), and `trellis theme` (`add`, `update`, `list`, `info`, `remove`) | `args`, `path`, `shelf`, `shelf_static`, `trellis_css`, `trellis_dev`, `trellis_site`, `trellis_ui`, `watcher` | v0.13.0 |
 | ~~`trellis_test`~~ | *Merged into `trellis` core as `testing.dart` entry point (2026-03-18)* | — | — |
 
 ---
@@ -60,6 +70,9 @@ trellis_cli ──► trellis_site ──► trellis ──► package:html
      │         │
      │         ├──► sass
      │         └──► html
+     ├──► trellis_ui ──► trellis
+     ├──► trellis_dev ──► trellis
+     ├──► watcher
      ├──► shelf
      └──► shelf_static
 trellis_shelf ──► trellis ──► package:html
@@ -68,6 +81,8 @@ trellis_shelf ──► trellis ──► package:html
 trellis_dart_frog ──► trellis_shelf ──► trellis
      │
      └──► dart_frog
+trellis_ui ──► trellis
+
 trellis_relic ──► trellis ──► package:html
      │
      └──► relic
@@ -75,6 +90,50 @@ trellis_dev ──► trellis
      │
      └──► shelf
 ```
+
+---
+
+## Embedded UI delivery (0.14)
+
+`trellis_ui` depends only on core at runtime. Its native controls, data views and four layout primitives are plain
+fragments. Closed layout scales select hand CSS classes; final `zz-` hand files set target sizes, destructive contrast
+and forced-colour paint without modifying the pinned token values. `TrellisUiLoader` feeds embedded fragments into the app's engine via
+`CompositeLoader`; `trellisUiRespond` exposes immutable status/headers/bytes for server glue on Shelf, Relic or Dart
+Frog. Assets live under `/trellis-ui/`, use compile-time SHA-256 ETags and answer conditional GETs with 304.
+`materializeTrellisUi` optionally writes the same bytes beside the binary and overwrites divergence.
+An app with the suite dependency can invoke the same function through `dart run trellis_ui:materialize [dir]`.
+
+Interactive fragments upgrade to light-DOM custom elements from the deferred classic script. One base owns
+listener cleanup and popup sanitisation for HTMX swaps and history. Native dialogs provide modality; native
+popovers share CSSOM positioning that stays inside the viewport. Combobox option responses replace only the
+results region. Toast responses append to a pre-existing live region using an HTMX out-of-band swap.
+
+The package's development pipeline vendors pinned shadcn TSX/style/tokens and licences, extracts `cn-*` hooks and
+structural utilities, renames them to `trellis-*`, then compiles using a checksummed Tailwind standalone binary.
+`tool/port.dart sync <tag>` snapshots the previous package at committed `HEAD`, fetches and builds a candidate
+in scratch, then installs the single vendor pin, deterministic triage report and generated upstream inventory
+together. The validator checks the active pin and compares the report's old and new identities and ordered
+upstream rows with that inventory. Dispositions and reasons stay in the report.
+`tool/port.dart check` regenerates and compares the four committed outputs. `tool/embed.dart` layers hand CSS, bundles
+one classic script, and embeds assets and fragments as base64 plus digests. Runtime and tests use these committed
+outputs without invoking Tailwind or Node. Scoped resets replace page-wide preflight; all suite declarations are in
+cascade layers so app overrides retain precedence. A discovered-page gallery renders the same embedded fragments
+under strict CSP. The package graph SVG includes its single runtime dependency on the core engine.
+
+`tool/ui_gate.dart` is a separate, package-independent development tool. YAML recipes select pages, states,
+keyboard/HTMX steps and invariants; one `GateDriver` surface shares the checks across the existing raw-CDP
+`BrowserProbe` and a raw WebDriver/BiDi Firefox adapter. Each run writes a deterministic per-component record,
+keeps human-entered release-prep items, and compares per-OS state/style baselines containing both browsers.
+The digest settles geometry and selected styles atomically without a CSP-blocked style element. Firefox hover
+sampling replays the page state if another window takes focus before the snapshot. A failed visual setup can
+also replay after a trusted visible blur in that attempt. Fixture proofs
+run in the normal test tiers. The local release gate uses the same CLI for the gallery and for the admin and
+scaffold launcher. App recipes, records and baselines live under `dev/ui-gate/apps/`. The CLI, release and reference
+generator share the item verdict. Release and publication require both browser results. One passing measurement
+can cover an explicitly unsupported emulation in the other browser, and the record preserves both outcomes.
+Release checks match the optional component dispositions in ADR-012 to the exact failed items in the records.
+They replay active manifests and preserve evidence for removed subjects. During a native modal state the gate
+measures focus paint on controls inside the modal and still captures the visible background.
 
 ---
 
@@ -149,21 +208,68 @@ explicit trigger. See [ADR-011](../adrs/ADR-011-htmx-version-policy.md).
 
 ### Dev-Mode Hot Reload (trellis_dev)
 
-In development, a parallel SSE connection keeps the browser updated:
+Current for 0.14 (2026-11-17): app scaffolds self-host the pinned HTMX build by default;
+`--htmx-cdn` opts into the pinned CDN origin. All use `CspBuilder.strict()`, external CSRF
+scripts where needed, and local indicator CSS. Plain `CspBuilder()` defaults remain unchanged.
+
+In development, a same-origin reload script and parallel SSE connection keep the browser updated.
+Shelf watches `static/` and Dart Frog watches `public/`; Relic has no browser reload integration:
 
 ```
 Browser                          Server
    │                                │
+   ├── GET /_dev/reload.js ────────►│  Same-origin JavaScript
    ├── EventSource(/_dev/reload) ──►│  SSE connection
    │                                │
-   │   [developer edits template]   │
+   │   [template or CSS/JS edit]   │
    │                                ├── FileSystemLoader.changes fires
-   │                                ├── Engine cache cleared
+   │                                ├── Template cache cleared (templates only)
    │◄── SSE: event: reload ─────────│  Broadcast to all clients
    │                                │
    ├── location.reload() ──────────►│  Browser refreshes
    │                                │
 ```
+
+`devMiddleware` is a thin layer over `liveReloadMiddleware(Stream<void>)`, which owns the SSE endpoint, the reload
+client and script injection. Anything that can say "the page is stale" can drive it.
+
+### Static site preview (`trellis dev`)
+
+`trellis dev` reuses `trellis build`'s config loading and build (`loadSiteBuildConfig`, `buildSite`) with three
+overrides: `pathPrefix` cleared, `baseUrl` set to `http://localhost:<port>`, and output to `build-<n>` under a temp
+directory. `package:watcher` watches the site directory and, when its real path lies outside the site, the theme
+directory (a relative `theme: ../..` or a theme project's symlinked example). While that directory is missing,
+preview checks its path every 250 ms and reinstalls the recursive watch when it returns. Output exclusions
+resolve existing symlinked ancestors even before the output exists. Events under the output directory or a
+`.`-prefixed segment are ignored. Each valid config edit updates the theme watch and output exclusion before
+rebuilding. Events debounce for 150 ms. One build runs at a time and edits
+during it queue exactly one more. A successful build swaps the static handler to the new directory, deletes the
+old one and emits on the stream behind `liveReloadMiddleware`; a failed build is deleted and the last good build
+stays served. Ctrl-C or SIGTERM (SIGINT only on Windows) waits for an in-flight build and removes the temp
+directory, including during startup. If the server has bound, shutdown first closes it and its open SSE connections.
+
+---
+
+### UI app scaffolds and local previews (0.14)
+
+`trellis create --ui` adds the embedded suite loader, same-origin asset responses and a shared Components page to
+the Shelf, Relic and Dart Frog scaffolds. The page and layout pair relative preview asset paths with served paths.
+Template inheritance replaces the child page's head with the layout's head when rendered. Opening the child page
+from disk uses its own head and the classic suite script.
+
+Shelf and Dart Frog write the preview assets before starting their reload watchers. Relic uses the same preview
+command on demand. The app's asset route serves embedded bytes before static-file lookup, so an edited preview
+file cannot change the running app. The CLI emits this wiring as source text. The generated app owns the runtime
+dependency and runs the materialization command from that dependency.
+
+Dart Frog's generated cascade checks `public/` before its router. Its UI scaffold uses the custom entrypoint
+to serve the suite prefix ahead of that cascade and apply strict headers to both paths. The entrypoint's
+dev init hook materializes assets before the route middleware starts watching files.
+
+The [admin example](../../examples/admin_app/) uses the Shelf integration. It shares the contacts query and list
+fragment across full page loads and HTMX swaps, and a mutation returns the list plus out-of-band summary, dialog
+host and toast updates. The AOT executable embeds the suite and reads the example's own templates and static
+files alongside it.
 
 ---
 
@@ -277,7 +383,7 @@ layouts/**/*.html ──►  TaxonomyCollector   (term collection, virtual pages
 static/**         ──►  PageGenerator       (layout resolution, data cascade, Trellis render)
                        SitemapGenerator    (sitemap.xml with lastmod)
                        FeedGenerator       (Atom + RSS feeds — opt-in)
-                       SearchIndexGenerator (JSON search index — opt-in)
+                       SearchIndexGenerator (JSON index and client, opt-in)
                        Static asset copy   (+ bundle asset copy)
                             │
                             ▼
@@ -286,19 +392,27 @@ static/**         ──►  PageGenerator       (layout resolution, data cascad
 
 ### Pipeline Stages
 
-1. **Clean** output directory
+1. **Clean** output directory. Load the theme manifest and resolve the combined site and theme `uses` list against the
+   build's factory registry. Validate source asset paths and ownership before creating output.
 2. **Discover** pages — recursive `.md` scan, Hugo-style URL derivation (with optional `pathPrefix` applied at the single `deriveUrl` seam), page bundle detection
 3. **Parse** front matter — YAML extraction, draft flagging
 4. **Shortcodes (pre-MD)** — `{{% name %}}` and `{{% name %}} content {{% /name %}}` processed before Markdown
 5. **Render** Markdown — GitHub-flavored via `package:markdown`, summary + TOC extraction
 6. **Highlight** code (ADR-010) — build-time syntax highlighting woven into the Markdown render and both shortcode passes: when `highlight.enabled` (default), `CodeHighlighter` (`package:highlight`) rewrites each fenced `<pre><code class="language-x">` block into `.hljs-*` token spans; disabled or unknown-language blocks stay plain `<pre><code>`. No client-side highlighter JS ships — runs before path-prefix link rewriting in step 9
-7. **Shortcodes (post-MD)** — `<!-- tl:name -->` processed after Markdown
+7. **Shortcodes (post-MD)** — `<!-- tl:name -->` processed after Markdown. When the build uses sources, page front matter
+   supplies additional variables and explicit shortcode parameters win.
 8. **Taxonomies** — collect terms from front matter, generate virtual listing and term pages
 9. **Generate** HTML — priority-ordered layout resolution, 5-level data cascade, Trellis `renderFile()`, final path-prefix link rewriting
-10. **Static assets** — copy (skip `.scss`/`.sass`), copy bundle assets
+10. **Static assets** — write source bytes, copy theme then site static files (skip `.scss`/`.sass`), copy bundle assets
 11. **Sitemap** — `sitemap.xml` with `<lastmod>` from date or mtime
 12. **Feeds** — Atom `feed.xml` (+ optional `rss.xml`) when `feeds:` config present; per-section feeds supported
-13. **Search index** — JSON array at configured path when `search.enabled: true`
+13. **Search** — JSON index at the configured path and `trellis-search.js` beside it when enabled and pages qualify
+
+In 0.14 the source registry connects the same fallback loaders to the page and shortcode engines.
+Site templates resolve first and theme templates second. Source factories provide the remaining
+templates and output-relative asset bytes. `trellis_cli` registers `trellis_ui` for site and theme
+opt-in. The docs site uses it for the reference previews, with facts generated from suite source
+files and qualification records.
 
 ### Layout Resolution Order
 
@@ -330,7 +444,7 @@ Hybrid static/dynamic: Same Trellis templates can serve both SSG-generated pages
 
 A single canonical comparator defines page order everywhere. Within a section, integer-`weight` pages sort first (ascending by `weight`); ties and all unweighted pages fall through to the existing date-descending-then-URL order, so sections with no `weight` are byte-for-byte unchanged. A malformed `weight` is warned about (naming the page) and treated as unweighted; the build never aborts.
 
-The content model is additive-nested: `Page.section` stays the top-level folder, while the new immutable `Page.sectionPath` field carries the full lineage (e.g. `docs/guides`), surfaced to templates as `${page.sectionPath}` and `${page.ancestors}` (a plain list of cumulative section paths). A separate, additive `${page.breadcrumbs}` field carries the same trail as structured `{url, title}` nodes — each ancestor section's prefixed URL (or `''` for a synthesized `_index.md`-less folder) plus a menu-consistent 3-tier-fallback title — for themes that render a breadcrumb bar without re-deriving titles. A nested `_index.md` lists exactly its own level's pages (excluding sibling sub-sections).
+The content model is additive-nested: `Page.section` stays the top-level folder, while the new immutable `Page.sectionPath` field carries the full lineage (e.g. `docs/guides`), surfaced to templates as `${page.sectionPath}` and `${page.ancestors}` (a plain list of cumulative section paths). A separate, additive `${page.breadcrumbs}` field carries the same trail as structured `{url, title}` nodes — each ancestor section's prefixed URL (or `''` for a synthesized `_index.md`-less folder) plus a menu-consistent 3-tier-fallback title — for themes that render a breadcrumb bar without re-deriving titles. A nested `_index.md` lists exactly its own level's pages (excluding sibling sub-sections). A page bundle's `index.md` stands in for a `<folder>.md` file, so its folder is the page, not a section level: `posts/my-trip/index.md` has `section` and `sectionPath` `posts`, and is listed, menu-filed and prev/next-linked with the other `posts` pages.
 
 `orderedSectionPages(sectionPath, allPages)` is the single reusable ordered-section seam (own-level lineage filter + canonical comparator). `PageGenerator`'s `${pages}` listing and pagination route through it, and it is the contract downstream navigation (menu tree) and prev/next resolution consume verbatim — one ordering source, no divergent second sort.
 
@@ -348,7 +462,7 @@ The content model is additive-nested: `Page.section` stays the top-level folder,
 
 ### URL Path-Prefix
 
-`pathPrefix` (config) serves a site under a sub-path (e.g. GitHub project pages at `/my-site/`). It is applied at the **single `deriveUrl` seam** during discovery, so `page.url` itself carries the prefix and every downstream consumer inherits it with no per-consumer change: `${page.url}` links, the section/menu tree, prev/next, and the search-index `url` fields. Sitemap/feed generators compose `baseUrl` + the (now-prefixed) `page.url`, so the prefix appears exactly once (`baseUrl` — the canonical origin — and `pathPrefix` — the sub-path — are orthogonal and compose). `SiteConfig.normalizeBaseUrl` removes a configured trailing slash before the value reaches `${site.baseUrl}`, preventing themes that join it to root-absolute `${page.url}` from emitting a doubled slash. Only internal root-absolute paths (leading `/`, not `//` protocol-relative, not scheme-bearing) are rewritten; absolute/external URLs pass through verbatim. `SiteConfig` normalizes the prefix (`x`, `/x`, `x/`, `/x/` → `/x/`; `''` and `/` → no prefix) and rejects an un-normalizable value (scheme-bearing/protocol-relative or non-string) with a `SiteConfigException` before any output is written. The empty (default) prefix is a literal no-op — output is byte-for-byte unchanged. Hand-written literal asset references the engine cannot see are opted in by theme authors via `${site.pathPrefix}` (e.g. `tl:href="${site.pathPrefix} + 'css/main.css'"`). The prefix lives in emitted URLs only, **not** in the on-disk output layout: page files are written at their *unprefixed* paths (via `stripPathPrefix` in the output-write + bundle-asset steps), so the whole `output/` tree is published as the site root and the host mounts it under the prefix (GitHub Project Pages serves the artifact root at `/<repo>/`). Nesting output under the prefix would double-apply it. **Hand-written links get the prefix too:** a final `applyPathPrefixToLinks` pass over each emitted page rewrites root-absolute internal `href`/`src` (Markdown content links, theme literals, vendored-asset refs) that are not already prefixed — expected SSG behavior — while relative links, anchors, external URLs, and escaped code examples are left untouched. Theme resolution (`themeDir`) is `p.normalize`d at all three computation sites (engine manifest/loader + CLI SASS compile) so a relative `theme:` value that escapes the site dir resolves; the CLI's `build` also carries `pathPrefix` through and accepts a `--path-prefix` override.
+`pathPrefix` (config) serves a site under a sub-path (e.g. GitHub project pages at `/my-site/`). It is applied through `applyPathPrefix` wherever the engine derives an internal URL: at the `deriveUrl` seam during discovery, so `page.url` itself carries the prefix and every downstream consumer inherits it (`${page.url}` links, the section/menu tree, prev/next, the search-index `url` fields); in `TaxonomyCollector`, whose virtual listing and term pages are built outside discovery; and in `FeedConfig.siteFeedUrls`/`FeedGenerator` for the URLs a feed builds itself (`${site.feeds.*}`, the feed's self link, site link and id). Sitemap/feed generators compose `baseUrl` + the (now-prefixed) `page.url`, so the prefix appears exactly once (`baseUrl` — the canonical origin — and `pathPrefix` — the sub-path — are orthogonal and compose). `SiteConfig.normalizeBaseUrl` removes a configured trailing slash before the value reaches `${site.baseUrl}`, preventing themes that join it to root-absolute `${page.url}` from emitting a doubled slash. Only internal root-absolute paths (leading `/`, not `//` protocol-relative, not scheme-bearing) are rewritten; absolute/external URLs pass through verbatim. `SiteConfig` normalizes the prefix (`x`, `/x`, `x/`, `/x/` → `/x/`; `''` and `/` → no prefix) and rejects an un-normalizable value (scheme-bearing/protocol-relative or non-string) with a `SiteConfigException` before any output is written. The empty (default) prefix is a literal no-op — output is byte-for-byte unchanged. Hand-written literal asset references the engine cannot see are opted in by theme authors via `${site.pathPrefix}` (e.g. `tl:href="${site.pathPrefix} + 'css/main.css'"`). The prefix lives in emitted URLs only, **not** in the on-disk output layout: page files are written at their *unprefixed* paths (via `stripPathPrefix` in the output-write + bundle-asset steps), so the whole `output/` tree is published as the site root and the host mounts it under the prefix (GitHub Project Pages serves the artifact root at `/<repo>/`). Nesting output under the prefix would double-apply it. **Hand-written links get the prefix too:** a final `applyPathPrefixToLinks` pass over each emitted page rewrites root-absolute internal `href`/`src` (Markdown content links, theme literals, vendored-asset refs) that are not already prefixed — expected SSG behavior — while relative links, anchors, external URLs, and escaped code examples are left untouched. The builder and the CLI's SASS step normalize `themeDir` so a relative `theme:` can resolve outside the site directory. The CLI also accepts a `--path-prefix` override.
 
 ---
 
@@ -396,7 +510,7 @@ route handler
   isHtmxRequest(context)  htmxTarget(context)  htmxSource(context)  ← HTMX detection
 ```
 
-The CSRF bridge reads the Dart Frog request body via `request.bytes()` then creates a `shelf.Request` to hand off to `trellis_shelf.trellisCsrf`. Dart Frog test files use `concurrency: 1` (`dart_test.yaml`) because `serve()` starts real HTTP servers that cannot run in parallel within a single Dart isolate.
+The CSRF bridge runs `trellis_shelf.trellisCsrf` through `fromShelfMiddleware` on Dart Frog's own underlying `shelf.Request`, so the body that `trellis_shelf` re-wraps after reading a form-field token reaches the handler, and the CSRF cookie is added to the handler's real response. It matches `excludedPaths` itself against the full request path, because under a Dart Frog mount `trellis_shelf` would see only the part below the mount point. Dart Frog test files use `concurrency: 1` (`dart_test.yaml`) because `serve()` starts real HTTP servers that cannot run in parallel within a single Dart isolate.
 
 ### Relic (`trellis_relic`)
 
@@ -405,6 +519,7 @@ Thin adapter for Serverpod Relic — no DI framework, engine passed explicitly:
 ```
 RelicApp(hostname, port)
   .use(trellisSecurityHeaders())    ← Relic middleware chain
+  .use(trellisCsrf(secret: ...))    ← token in a ContextProperty
 
 handler(Request request) async {
   return renderPage(request, engine, 'template', ctx);
@@ -412,7 +527,7 @@ handler(Request request) async {
 }
 ```
 
-No CSRF support (Relic lacks a form body parser). Middleware only fires for matched routes (Relic behavioral difference vs Shelf). Does NOT depend on `trellis_shelf` or `shelf`.
+Targets Relic 2, where Content-Type comes from the `Body` and one set in response headers is dropped on the wire. `trellisCsrf` is a native port of the Shelf middleware (same cookie format and defaults, no Shelf bridge): it keeps the token in a `ContextProperty` that the response helpers merge as `csrfToken`, and reads `_csrf` by buffering a urlencoded body (Relic's `FormLimits.defaults` cap), parsing a copy with `urlEncodedForm()` and handing the handler a fresh `Body` over the same bytes. Middleware only fires for matched routes (Relic behavioral difference vs Shelf). Does NOT depend on `trellis_shelf` or `shelf`.
 
 ---
 
@@ -423,7 +538,7 @@ No CSRF support (Relic lacks a form body parser). Middleware only fires for matc
 ```
 ... (steps 1-9 as before) ...
 10. Feed generation   ← opt-in via feeds: config; Atom (RFC 4287) + optional RSS 2.0
-11. Search index      ← opt-in via search: config; JSON array (Lunr.js / Fuse.js / Pagefind)
+11. Search            ← opt-in via search: config; JSON index and shared client
 ```
 
 ### Feed Generation (`FeedGenerator`)
@@ -438,7 +553,7 @@ No CSRF support (Relic lacks a form body parser). Middleware only fires for matc
 ### Search Index (`SearchIndexGenerator`)
 
 - Activated by `search: enabled: true` in `trellis_site.yaml`
-- Outputs a JSON array at configured path (default: `output/search-index.json`)
+- Writes a JSON array at the configured path (default `output/search-index.json`) with `trellis-search.js` alongside it
 - Configurable fields: `title`, `summary`, `content`, `tags`, `date`, `section`, `url`
 - HTML stripping (`search.stripHtml: true`) and content truncation (`search.maxContentLength`)
 - Only `PageKind.single` content pages indexed; draft pages, excluded sections, and `search: false` front matter omitted
@@ -501,12 +616,13 @@ A documentation-oriented theme sitting beside the `verdant` blog theme (both are
 
 **Build-time syntax highlighting (ADR-010)** — arbor ships **no** highlighter JS. `trellis_site` colors fenced code at build time (`CodeHighlighter`, `package:highlight`), baking `.hljs-*` token spans into the HTML; the theme carries only the matching token CSS (`sass/_code.scss`), so code is colored with JavaScript disabled. See [ADR-010](../adrs/ADR-010-syntax-highlighting.md).
 
-**Vendored-JS discipline** — the two remaining client-side scripts are both first-party (no third-party library), vendored (committed) and served same-origin with `defer`; no Subresource Integrity hash is used, since for a same-origin script committed alongside the HTML that loads it an SRI hash guards nothing extra (anyone who can alter a served script can alter the served HTML). **No CDN, no `npm`/Node, no runtime fetch from an external host.** Two assets:
+**Client assets**. Arbor loads the generated `trellis-search.js` and suite styles and scripts
+from the site's origin. The theme's own `code-enhance.js` adds a language label and clones a
+server-rendered suite copy button into each code bar. It reads the language from the
+`language-*` class and the code from `textContent`.
 
-- **`search.js`** — a hand-authored, dependency-free vanilla-JS search client (no Lunr/Fuse/MiniSearch vendored library), chosen to keep the asset small and fully auditable while still satisfying the vendored, same-origin discipline.
-- **`code-enhance.js`** — adds a language label and copy button to each code block; reads the language from the `language-*` class and the code from `textContent`, so it is independent of the build-time tokenizer. Provenance for both is recorded in `themes/arbor/VENDORED.md`.
-
-Both search and the code copy button are **progressive enhancements**: the docs are fully readable and navigable with JavaScript disabled (and highlighting, being build-time, needs no client JS at all).
+Search and code copy are progressive enhancements. The docs remain readable and navigable with
+JavaScript disabled.
 
 ### Lattice Docs Theme (`themes/lattice/`)
 
@@ -520,23 +636,23 @@ and prevents a partial whole-file data override from publishing an empty section
 
 ### Client-Side Search Flow
 
-The engine and the theme meet at one artifact — `search-index.json`:
+Arbor, Folio, and Lattice use the same client. Their layouts load it with `defer` beside the suite
+script and render a disabled combobox inside a hidden search shell. The shell's `data-search-index`
+attribute carries the index URL with the configured path prefix.
 
 ```
-trellis_site build                         selected theme (browser)
-  SearchIndexGenerator                       search.js (vendored, same-origin)
-  (search.enabled: true)                       │
-        │  emits                                │  reads index URL from the shell's
-        ▼                                       │  data-search-index attribute
-  output/search-index.json  ──────────────────►│  (computed with ${site.pathPrefix},
-        (url fields already                     │   so the fetch resolves under any
-         pathPrefix-prefixed)                    │   deploy sub-path)
-                                                 ▼
-                                          same-origin fetch → in-memory filter →
-                                          result list (title + snippet, entry.url used verbatim)
+SearchIndexGenerator
+  └── JSON index + trellis-search.js
+          └── same-origin fetch
+                └── all-term match in title, summary, content and tags
+                      └── up to 20 server-rendered option clones
+                            └── selection navigates to indexed URL
 ```
 
-The `<input>` ships `disabled` in the static HTML and is enabled only after the index loads; any index-fetch failure (missing file, non-OK response, malformed payload) hides the control so the page stays usable. Result links use each entry's already-prefixed `url` verbatim — never re-prefixed client-side.
+The client reveals the shell after the same-origin index loads and the combobox is ready. An absent
+or invalid index leaves the shell hidden. The combobox handles focus, keyboard selection, and
+announcements. The client replaces its results wrapper and reads its hidden value after selection.
+The indexed URL already includes the path prefix.
 
 ### Docs Site (`site/`)
 
@@ -576,6 +692,7 @@ trellis/                          # monorepo root
 │   ├── trellis_shelf/            # Shelf integration
 │   ├── trellis_dart_frog/        # Dart Frog integration
 │   ├── trellis_relic/            # Serverpod Relic integration
+│   ├── trellis_ui/               # embedded UI fragments and assets
 │   ├── trellis_dev/              # dev tools (hot reload)
 │   ├── trellis_css/              # CSS processing (SASS + tl:scope)
 │   ├── trellis_site/             # static site generation

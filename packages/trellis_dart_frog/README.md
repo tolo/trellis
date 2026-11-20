@@ -1,7 +1,7 @@
 # trellis_dart_frog
 
-Dart Frog integration for the [Trellis](https://pub.dev/packages/trellis) template engine.
-Provides a provider middleware, response helpers, HTMX detection utilities, and security middleware (headers + CSRF) for building server-rendered web applications with Trellis and Dart Frog.
+Dart Frog integration for the [Trellis](https://pub.dev/packages/trellis) template engine: a provider middleware,
+response helpers, HTMX detection utilities, and security middleware (headers and CSRF).
 
 Part of the [Trellis SDK](https://github.com/tolo/trellis).
 
@@ -15,7 +15,7 @@ dependencies:
 
 ## Quick Start
 
-### 1. Set up middleware in `routes/_middleware.dart`
+Set up the middleware in `routes/_middleware.dart`:
 
 ```dart
 import 'dart:io';
@@ -29,12 +29,12 @@ final _engine = Trellis(loader: FileSystemLoader('templates'));
 Handler middleware(Handler handler) {
   return handler
       .use(trellisProvider(_engine))
-      .use(trellisSecurityHeaders())
-      .use(trellisCsrf(secret: Platform.environment['CSRF_SECRET']!));
+      .use(trellisCsrf(secret: Platform.environment['CSRF_SECRET']!))
+      .use(trellisSecurityHeaders()); // last `.use` is outermost
 }
 ```
 
-### 2. Render pages in your route handler
+Render pages in your route handler:
 
 ```dart
 import 'package:dart_frog/dart_frog.dart';
@@ -45,145 +45,24 @@ Future<Response> onRequest(RequestContext context) async {
 }
 ```
 
-## Provider
+## Features
 
-`trellisProvider(engine)` makes a `Trellis` engine available to all route handlers via `context.read<Trellis>()`.
+- `trellisProvider()` provides the engine through `context.read<Trellis>()`.
+- `renderPage`, `renderFragment` and `renderOobFragments` return HTML responses and merge the CSRF token into the
+  template context.
+- `isHtmxRequest`, `htmxTarget`, `htmxSource` and `isHtmxBoosted` read HTMX 2 and HTMX 4 request headers alike.
+- `trellisCsrf()` is a double-submit cookie with HMAC-SHA256 signing.
+- `trellisSecurityHeaders()` sets `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `X-XSS-Protection`
+  and a `Content-Security-Policy` built with `CspBuilder`.
+- `CspBuilder.strict()` gives `script-src 'self'; style-src 'self'` for apps without inline scripts or styles.
 
-```dart
-Handler middleware(Handler handler) {
-  return handler.use(trellisProvider(engine));
-}
+## Documentation
 
-Future<Response> onRequest(RequestContext context) async {
-  final engine = context.read<Trellis>(); // available anywhere
-  return renderPage(context, 'index', {});
-}
-```
-
-## Response Helpers
-
-All response helpers retrieve the engine via `context.read<Trellis>()` and automatically set `content-type: text/html; charset=utf-8`.
-
-### `renderPage`
-
-Renders a full page. When `htmxFragment` is provided and the request is an HTMX request, renders only the named fragment.
-
-```dart
-Future<Response> onRequest(RequestContext context) async {
-  return renderPage(
-    context,
-    'index',                        // template name
-    {'title': 'Home'},              // template context
-    htmxFragment: 'content',        // optional: fragment for HTMX requests
-  );
-}
-```
-
-### `renderFragment`
-
-Renders a single named fragment from a template.
-
-```dart
-Future<Response> onRequest(RequestContext context) async {
-  return renderFragment(context, 'todos', 'todo-list', {'items': todos});
-}
-```
-
-### `renderOobFragments`
-
-Renders multiple named fragments concatenated for HTMX out-of-band swaps.
-
-```dart
-Future<Response> onRequest(RequestContext context) async {
-  return renderOobFragments(
-    context,
-    'todos',
-    ['todo-list', 'todo-count'],
-    {'items': todos, 'count': todos.length},
-  );
-}
-```
-
-## HTMX Detection
-
-Helpers that read HTMX request headers from `RequestContext`:
-
-```dart
-Future<Response> onRequest(RequestContext context) async {
-  if (isHtmxRequest(context)) {
-    // HTMX partial request
-  }
-  final target = htmxTarget(context);   // id of the swap target, or null
-  final source = htmxSource(context);   // id of the triggering element, or null
-  final boosted = isHtmxBoosted(context); // HX-Boosted: true
-  // ...
-}
-```
-
-The helpers read the HTMX 2 headers (`HX-Target`, `HX-Trigger`, bare ids) and the HTMX 4 headers
-(`HX-Target`, `HX-Source`, `tag#id`) alike, so handler code is the same on either version.
-`htmxTrigger()` is deprecated in favour of `htmxSource()`.
-
-## Security Headers
-
-`trellisSecurityHeaders()` adds `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `X-XSS-Protection`, and `Content-Security-Policy` to all responses.
-
-```dart
-Handler middleware(Handler handler) {
-  return handler.use(trellisSecurityHeaders());
-}
-```
-
-Custom CSP:
-
-```dart
-trellisSecurityHeaders(
-  csp: CspBuilder(
-    scriptSrc: "'self' 'nonce-{nonce}'",
-    connectSrc: "'self' ws:",
-  ),
-)
-```
-
-Disable CSP:
-
-```dart
-trellisSecurityHeaders(enableCsp: false)
-```
-
-## CSRF Protection
-
-`trellisCsrf(secret: ...)` implements CSRF protection using a double-submit cookie pattern with HMAC-SHA256 signing.
-
-```dart
-Handler middleware(Handler handler) {
-  return handler.use(trellisCsrf(secret: 'my-secret-key'));
-}
-```
-
-The CSRF token is automatically merged into the template context as `csrfToken` by all response helpers:
-
-```html
-<!-- In your Trellis template -->
-<form method="POST">
-  <input type="hidden" name="_csrf" tl:attr="value=${csrfToken}">
-  ...
-</form>
-```
-
-You can also access the token directly:
-
-```dart
-final token = csrfToken(context); // String? — null if middleware not applied
-```
-
-## Hot Reload
-
-For hot reload during development, use [`trellis_dev`](https://pub.dev/packages/trellis_dev) alongside `dart_frog dev`. The SSE-based browser refresh works independently of Dart Frog's hot restart.
-
-## API Documentation
-
-- https://pub.dev/documentation/trellis_dart_frog/latest/
+- **[Full guide: trellis_dart_frog](https://tolo.github.io/trellis/docs/packages/trellis_dart_frog/)** covers the
+  middleware order, response helpers, CSP customisation, CSRF, and hot reload with `trellis_dev`.
+- [Framework integration](https://tolo.github.io/trellis/docs/packages/framework-integration/) compares Shelf, Dart
+  Frog, and Relic.
+- [API reference](https://pub.dev/documentation/trellis_dart_frog/latest/)
 
 ## License
 

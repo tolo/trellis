@@ -8,7 +8,7 @@ assumptions, not user confirmations.
 
 - **Core question**: what syntax and semantics should content slots, attribute
   spreading, and attribute pass-through have in `trellis` core?
-- **Constraints** (from the PB-012 PRD and CLAUDE.md design decisions):
+- **Constraints** (from the 0.13 PRD, Linear LEA-16, and the design decisions in `dev/architecture/template-engine.md`):
   natural-template survival (templates stay valid HTML and render sensibly opened
   directly in a browser); AOT-safe, no reflection, no new dependencies; fits the
   existing processing priority order without changing current semantics; existing
@@ -201,7 +201,7 @@ authoritative where this digest's earlier summaries are less specific.
 
 ## Assumption Log (`--auto` gates)
 
-- **Decision context**: taken verbatim from the PB-012 PRD Stage 1 and the tasking
+- **Decision context**: taken verbatim from the 0.13 PRD (Linear LEA-16) Stage 1 and the tasking
   for this design pass; not user-reconfirmed.
 - **Criteria + weights**: authored for this pass (table above); the ordering
   natural-templates > compatibility ≈ expressiveness > security > simplicity >

@@ -43,7 +43,8 @@
 // ── Focus-visible outlines ────────────────────────────────────────────────────
 // Keyboard users get clear outlines; pointer users don't see unwanted rings.
 
-:focus-visible {
+// Suite controls supply their own focus ring beneath the unlayered theme styles.
+:focus-visible:where(:not(.search-shell :is(input, button), .code-bar button)) {
   outline: $trellis-focus-ring-width solid currentColor;
   outline-offset: -$trellis-focus-ring-width;
   border-radius: $trellis-border-radius;

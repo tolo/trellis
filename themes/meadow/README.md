@@ -3,6 +3,8 @@
 Meadow is a self-contained Trellis landing theme with the Fresh Bloom visual language: Bricolage Grotesque display
 type, Schibsted Grotesk body text, JetBrains Mono code, a lime headline marker, color-blocked feature cards, and a
 theme-owned trellis illustration. It works offline and supports `light`, `dark`, and OS-aware `auto` skins.
+Meadow requires Trellis 0.14.0 for its suite reader toggle.
+
 
 ## Use
 
@@ -28,7 +30,7 @@ unbreakable 72-character token in every text container.
 
 ## Params
 
-Meadow implements all 25 [standard params](../../docs/reference/standard-params.md) plus the landing params below.
+Meadow implements all 25 [standard params](https://tolo.github.io/trellis/docs/themes/standard-params/) plus the landing params below.
 Each colour param has a dark-mode twin (`<name>_dark`). A plain colour param sets the light entry only and never reaches
 the dark edition, whether forced with `skin: dark` or reached through `auto`'s `prefers-color-scheme` block and toggle;
 set the `_dark` twin for that. The primary button's colours are theme-authored (lime on dark ink in light, dark ink on

@@ -1,0 +1,61 @@
+{
+  "name": "stack",
+  "page": "/components/stack",
+  "root": "#component",
+  "elements": {
+    "primary": ".trellis-stack"
+  },
+  "states": {
+    "default": [],
+    "dark": [
+      {
+        "eval": "document.documentElement.classList.add('dark')"
+      },
+      {
+        "wait": 200
+      }
+    ]
+  },
+  "keyboard": [
+    {
+      "focus": "#before"
+    },
+    {
+      "press": "Tab"
+    },
+    {
+      "expect": {
+        "expression": "document.activeElement.id",
+        "equals": "after"
+      }
+    }
+  ],
+  "semantics": [
+    {
+      "expression": "[...document.querySelector('#layout').children].every(e=>!e.hasAttribute('style'))",
+      "equals": true
+    }
+  ],
+  "htmx": {
+    "region": "#demo",
+    "swap": [
+      {
+        "click": "#swap"
+      }
+    ],
+    "navigate": [
+      {
+        "click": "#navigate"
+      }
+    ]
+  },
+  "instances": [
+    "#component"
+  ],
+  "provenance": [
+    {
+      "file": "../../../packages/trellis_ui/LICENSE",
+      "license": "MIT"
+    }
+  ]
+}

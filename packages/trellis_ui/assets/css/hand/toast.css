@@ -1,0 +1,30 @@
+.trellis-toaster {
+  position: fixed;
+  z-index: 50;
+  inset-inline: 1rem;
+  inset-block-end: 1rem;
+  max-inline-size: 24rem;
+  margin-inline-start: auto;
+  display: grid;
+  gap: .5rem;
+  pointer-events: none;
+}
+
+.trellis-toast {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: 1rem;
+  pointer-events: auto;
+  border: 1px solid var(--border);
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.trellis-toast-icon { display: flex; flex: 0 0 auto; }
+.trellis-toast-icon svg { inline-size: 1rem; block-size: 1rem; }
+.trellis-toast[data-type="error"] .trellis-toast-icon { color: var(--destructive); }
+.trellis-toast-body { min-inline-size: 0; flex: 1; overflow-wrap: anywhere; }
+.trellis-toast-title { font-size: .875rem; font-weight: 500; }
+.trellis-toast-description { font-size: .875rem; color: var(--muted-foreground); }

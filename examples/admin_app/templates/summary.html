@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Contact summary</title></head>
+<body>
+<dl tl:fragment="summary" id="contact-summary" class="admin-summary"
+  tl:attr="hx-swap-oob=${summaryOob ? 'true' : null}">
+  <div tl:each="status : ${summary}">
+    <dt tl:text="${status.label}">Active</dt>
+    <dd tl:id="${'count-' + status.key}" tl:text="${status.count}">12</dd>
+  </div>
+</dl>
+</body>
+</html>

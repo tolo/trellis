@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en" tl:extends="base">
+<head><meta charset="utf-8"><title>Contacts</title></head>
+<body>
+  <div tl:define="content">
+    <div tl:replace="~{trellis-ui/tabs :: tabs('directory', 'contacts', false)}" class="admin-tabs">
+      <div tl:replace="~{trellis-ui/tabs :: tabList}" aria-label="Directory">
+        <button tl:replace="~{trellis-ui/tabs :: tabTrigger('contacts')}">Contacts</button>
+        <button tl:replace="~{trellis-ui/tabs :: tabTrigger('summary')}">Summary</button>
+      </div>
+      <div tl:replace="~{trellis-ui/tabs :: tabPanel('contacts')}" class="admin-panel">
+        <section tl:replace="~{trellis-ui/card :: card}" class="admin-panel">
+          <span tl:slot="title">Contact directory</span>
+          <span tl:slot="description">Search by name, email or company.</span>
+          <div tl:slot="action">
+            <button tl:replace="~{trellis-ui/button :: button}" type="button" id="new-contact"
+              hx-get="/contacts/new" hx-include="#contact-filter" hx-target="#dialog-host">New contact</button>
+          </div>
+          <section tl:replace="~{list :: list}"></section>
+        </section>
+      </div>
+      <div tl:replace="~{trellis-ui/tabs :: tabPanel('summary')}" class="admin-panel">
+        <section tl:replace="~{trellis-ui/card :: card}">
+          <span tl:slot="title">Contact summary</span>
+          <span tl:slot="description">Contact totals across the directory.</span>
+          <dl tl:replace="~{summary :: summary}"></dl>
+        </section>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

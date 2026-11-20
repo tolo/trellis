@@ -1,31 +1,22 @@
 # trellis_dev
 
-Developer tools for the [Trellis](https://pub.dev/packages/trellis) template engine — SSE-based browser hot reload.
+Developer tools for the [Trellis](https://pub.dev/packages/trellis) template engine: SSE-based browser hot reload.
+When a template file changes on disk, every connected browser tab refreshes via Server-Sent Events. Template
+validation runs at startup and on each change.
 
 Part of the [Trellis SDK](https://github.com/tolo/trellis).
-
-## Overview
-
-`trellis_dev` provides live reload for Trellis template development. When a template file changes on disk, all connected browser tabs automatically refresh via Server-Sent Events (SSE).
-
-Three public APIs are provided:
-
-- **`liveReloadHandler()`** — a Shelf `Handler` that serves SSE events
-- **`devMiddleware()`** — a Shelf `Middleware` combining SSE endpoint with optional script injection
-- **`liveReloadScript()`** — the vanilla JS `EventSource` snippet
 
 ## Installation
 
 ```yaml
-dev_dependencies:
+dependencies:
   trellis_dev: ^0.13.0
 ```
 
-## Usage
+`devMiddleware()` is imported from server code (`bin/` or Dart Frog `routes/`), so list it under `dependencies`, as
+the examples do, and leave it out of the production pipeline.
 
-### Quick Start with `devMiddleware()`
-
-The simplest approach — adds both the SSE endpoint and auto-injects the reload script into HTML responses:
+## Quick start
 
 ```dart
 import 'package:shelf/shelf.dart';
@@ -38,7 +29,7 @@ void main() async {
   final engine = Trellis(loader: loader);
 
   final handler = const Pipeline()
-      .addMiddleware(devMiddleware(loader))
+      .addMiddleware(devMiddleware(loader, staticDirectory: 'static'))
       .addHandler(myAppHandler);
 
   await io.serve(handler, 'localhost', 8080);
@@ -46,54 +37,21 @@ void main() async {
 }
 ```
 
-### Manual Setup with `liveReloadHandler()`
+## Features
 
-For more control, use the handler and script separately:
+- `devMiddleware()`: Shelf middleware serving the SSE endpoint and injecting the reload script before `</body>`.
+- Reloads on template edits and, with `staticDirectory`, on `.css`/`.js` edits under it.
+- Serves the client as `/_dev/reload.js`, so it works under `script-src 'self'; style-src 'self'`.
+- `liveReloadMiddleware()`: the same endpoint, client and injection driven by any broadcast `Stream<void>`, for
+  reloads that a template loader does not decide (`trellis dev` sends one after each site rebuild).
+- `liveReloadHandler()`: the SSE endpoint alone, for manual setups.
+- `liveReloadScript()`: the vanilla JS `EventSource` snippet.
+- Template validation at startup and on each change, in the `dart run trellis:validate` format.
+- Configurable SSE path (`ssePath`).
 
-```dart
-final loader = FileSystemLoader('templates', devMode: true);
+## Documentation
 
-// Mount the SSE endpoint.
-final sseHandler = liveReloadHandler(loader);
+**[Full guide: tolo.github.io/trellis/docs/packages/trellis_dev/](https://tolo.github.io/trellis/docs/packages/trellis_dev/)**
+covers manual setup, the `devMode: true` requirement, lifecycle, the API reference, and Dart Frog use.
 
-// Add the script to your HTML template manually.
-final script = liveReloadScript();
-// Insert `script` before </body> in your templates.
-```
-
-### Custom SSE Path
-
-Both `devMiddleware()` and `liveReloadScript()` accept a custom `ssePath`:
-
-```dart
-final middleware = devMiddleware(loader, ssePath: '/my/reload');
-final script = liveReloadScript(ssePath: '/my/reload');
-```
-
-## Requirements
-
-- The `FileSystemLoader` **must** be created with `devMode: true` to enable file watching. If `devMode` is `false`, a `StateError` is thrown.
-
-## Lifecycle
-
-File watching is owned by `FileSystemLoader`. Call `loader.close()` to stop watching and clean up resources. The SSE connections will close automatically.
-
-## API Reference
-
-### `liveReloadHandler(FileSystemLoader loader)`
-
-Returns a Shelf `Handler` that serves SSE events. Each connected client receives a `reload` event when any template file changes.
-
-### `devMiddleware(FileSystemLoader loader, {String ssePath, bool injectScript})`
-
-Returns a Shelf `Middleware` that:
-- Routes `ssePath` (default `/_dev/reload`) to the SSE handler
-- When `injectScript` is `true` (default), injects the reload script before `</body>` in buffered HTML responses
-
-### `liveReloadScript({String ssePath})`
-
-Returns a `<script>` block containing a self-contained IIFE that connects to the SSE endpoint and reloads the page on `reload` events.
-
-## API Documentation
-
-- https://pub.dev/documentation/trellis_dev/latest/
+API reference: <https://pub.dev/documentation/trellis_dev/latest/>

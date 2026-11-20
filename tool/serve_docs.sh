@@ -25,13 +25,11 @@ fi
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLI="../packages/trellis_cli/bin/trellis.dart"
 
-# The gallery reaches the site only through the generator's committed outputs,
-# so a theme change is invisible to the preview until this runs. CI gates the
-# same artifacts with --check, so regenerating here is what keeps the local
-# loop and the gate agreeing.
+# The site reads the generated inventories, so regenerate them before previewing source changes.
 cd "${REPO_ROOT}"
 dart run tool/generate_theme_gallery.dart
+dart run tool/generate_ui_reference.dart
 
+# `dev` builds root-served into a temp directory, then rebuilds and reloads the browser on every source change.
 cd "${REPO_ROOT}/site"
-dart run "${CLI}" build --path-prefix '' --output output-root
-exec dart run "${CLI}" serve --output output-root --port "${DOCS_PORT}"
+exec dart run "${CLI}" dev --port "${DOCS_PORT}"

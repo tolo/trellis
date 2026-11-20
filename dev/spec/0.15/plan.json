@@ -120,7 +120,7 @@
       "dependsOn": [
         "S01"
       ],
-      "status": "pending",
+      "status": "in-progress",
       "fis": "s02-tooltip.md",
       "completedTaskIds": [],
       "scope": "Give pointer and keyboard users a dismissible hint that remains visible when hovered and is supplementary on touch devices.",
@@ -293,7 +293,7 @@
       "id": "S10",
       "name": "Relic dev reload",
       "dependsOn": [],
-      "status": "pending",
+      "status": "in-progress",
       "fis": "s10-relic-dev-reload.md",
       "completedTaskIds": [],
       "scope": "Reload an actual generated Relic development app on static CSS and JS edits. Keep production free of reload facilities and close TD-058.",

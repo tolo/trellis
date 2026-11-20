@@ -48,8 +48,7 @@ class TlDialog extends TlElement {
         next?.focus({ preventScroll: true });
       }
     };
-    const threshold = this.dataset.inlineAbove;
-    const width = Number(threshold);
+    const width = Number(this.dataset.inlineAbove);
     const media = Number.isFinite(width) && width >= 0 ? matchMedia(`(width > ${width}px)`) : null;
     if (media) this.listen(media, 'change', setInline);
     setInline(media ?? { matches: false });

@@ -23,12 +23,12 @@ final class TrustedUrlSources {
     final fields = _pending[source];
     if (fields == null || !_isNamedFile(path, source)) return const {};
     _pending.remove(source);
+    if (mapping is! Map<Object?, Object?>) {
+      _fail(source, fields.first, 'the source must contain a mapping');
+    }
 
     final result = <String, TrustedUrl>{};
     for (final field in fields) {
-      if (mapping is! Map<Object?, Object?>) {
-        _fail(source, field, 'the source must contain a mapping');
-      }
       final value = mapping[field];
       if (value is! String) {
         _fail(source, field, 'the literal top-level field must exist and hold a string');

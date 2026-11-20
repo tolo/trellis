@@ -32,7 +32,6 @@ archive for your platform. Do not include the leading `v` in `VERSION`.
 | Platform | Asset |
 |---|---|
 | macOS (Apple Silicon) | `trellis-v<version>-macos-arm64.tar.gz` |
-| macOS (Intel) | `trellis-v<version>-macos-x64.tar.gz` |
 | Linux (x64) | `trellis-v<version>-linux-x64.tar.gz` |
 | Linux (arm64) | `trellis-v<version>-linux-arm64.tar.gz` |
 | Windows (x64) | `trellis-v<version>-windows-x64.zip` |

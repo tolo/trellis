@@ -25,6 +25,11 @@
 - `trellis create --template relic` adds CSRF protection like the Shelf and Dart Frog scaffolds: `trellisCsrf()` with a
   `CSRF_SECRET` override, the `csrf-token` meta tag, `static/js/csrf.js`, and the counter's hidden `_csrf` field.
 
+### Removed
+
+- Intel Mac binaries: releases from 0.14.0 have no `trellis-v<version>-macos-x64.tar.gz`, and the Homebrew formula
+  refuses an Intel Mac with an architecture requirement. The 0.13.0 archive is the last Intel Mac build.
+
 ### Fixed
 
 - `trellis dev` picks up changes to the external theme and output directory in `trellis_site.yaml`. A build that

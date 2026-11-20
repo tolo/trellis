@@ -37,6 +37,10 @@
 
 ## Still Current
 
+- **No macos-x64 release** (2026-11-20): releases from 0.14.0 ship no Intel Mac archive, and the Homebrew formula
+  refuses an Intel Mac with `depends_on arch: :arm64`. macOS 27 runs on Apple silicon only, Apple drops Rosetta for
+  Intel apps in macOS 28 (autumn 2027), and GitHub retires `macos-15-intel` in August 2027. Reverse only with an Intel
+  runner to build and smoke-test on.
 - **Release sequence after 0.11** (2026-09-02): 0.12 = SASS `@use` migration
   (TD-006, PRD 0.12, Linear LEA-39, folder moved from
   `0.next-sass-use-migration`), 0.13 = composition primitives (ADR-014), 0.14 =

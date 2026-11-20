@@ -79,7 +79,6 @@ PACKAGES=(trellis trellis_shelf trellis_dev trellis_cli trellis_css trellis_site
 # Keep in sync with release-binaries.yml's build matrix + checksums job.
 ASSETS=(
   "trellis-${TAG}-macos-arm64.tar.gz" "trellis-${TAG}-macos-arm64.tar.gz.sha256"
-  "trellis-${TAG}-macos-x64.tar.gz" "trellis-${TAG}-macos-x64.tar.gz.sha256"
   "trellis-${TAG}-linux-x64.tar.gz" "trellis-${TAG}-linux-x64.tar.gz.sha256"
   "trellis-${TAG}-linux-arm64.tar.gz" "trellis-${TAG}-linux-arm64.tar.gz.sha256"
   "trellis-${TAG}-windows-x64.zip" "trellis-${TAG}-windows-x64.zip.sha256"

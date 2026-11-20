@@ -71,7 +71,7 @@ scoop install trellis
 # https://github.com/tolo/trellis/releases/latest, then download the archive +
 # checksums, verify, and extract the binary onto your PATH.
 # Do not include the leading "v" in VERSION.
-#   Assets: trellis-v<version>-{macos-arm64,macos-x64,linux-x64,linux-arm64}.tar.gz
+#   Assets: trellis-v<version>-{macos-arm64,linux-x64,linux-arm64}.tar.gz
 #           trellis-v<version>-windows-x64.zip  (+ aggregate SHA256SUMS.txt)
 VERSION=0.13.0
 BASE=https://github.com/tolo/trellis/releases/download/v$VERSION

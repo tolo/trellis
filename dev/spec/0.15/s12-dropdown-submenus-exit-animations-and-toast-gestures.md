@@ -146,3 +146,9 @@
   hidden behind an open panel. Keep the next control focused when Tab leaves, restore the trigger on Escape
   or pointer light dismissal, and preserve same-document link navigation. Exit presentation must preserve
   these observed focus paths. Traced from S01/TI06, 2026-11-20.
+
+- **Dismiss through the enhanced Sheet dialog.** S03 found that a server-rendered open dialog leaves normal
+  flow without CSS. Sheet now moves the slotted children of its fallback section into a dialog on enhancement.
+  Apply exit presentation to that live modal. Link navigation must keep destination focus without bouncing
+  through the trigger. Keep node removal and history teardown immediate.
+  Traced from S03/TI03, 2026-11-20.

@@ -146,3 +146,11 @@
 - **TI08** The debt and architecture records reflect the shipped navigation and CSP behavior.
   - **Verify**: `inspect: dev/state/TECH-DEBT-BACKLOG.md:34` – TD-031 is under Resolved with the serving/keyboard proof from TI02, TD-023 names Folio as the outstanding theme, and the Lattice and Meadow adoption is recorded in system architecture with its Current through marker advanced.
   - **SATISFIES**: SC03
+
+## Discovered Requirements
+
+- **Preserve the Sheet navigation landmark in fallback and modal views.** S03 found that putting the slot on
+  the list itself dropped its wrapper. Put the theme's navigation or list inside
+  `<tl:block tl:slot="content">`. The server emits a labelled section in normal flow, then Sheet enhancement
+  moves its children into the dialog. Keep the same links through the breakpoint and asset-loss cases.
+  Traced from S03/TI03 and TI06, 2026-11-20.

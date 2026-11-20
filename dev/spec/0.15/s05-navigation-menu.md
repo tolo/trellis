@@ -122,3 +122,9 @@
   `--available-width` and `--available-height` on `data-trellis-popup` panels. The width cap became concrete
   when S01 tested horizontal placement at a viewport edge. If the panel has a minimum width, limit it to
   `--available-width` so it can shrink before overflowing. Traced from S01/TI05, 2026-11-20.
+
+- **Shared CSS tokens appear in existing captures.** The component and app gates sample all root custom
+  properties. S03's pinned port added two tokens and surfaced the same differences on unrelated components.
+  If this port adds root tokens, compare the observed light and dark values from each affected browser
+  against the generated CSS. Preserve every existing capture value unless the change is independently
+  explained. Traced from S03/TI05, 2026-11-20.

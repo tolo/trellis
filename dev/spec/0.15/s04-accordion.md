@@ -102,3 +102,11 @@
 - **TI04** Authors can find and copy both modes from the public reference.
   - **Verify**: `cmd: dart run tool/generate_ui_reference.dart --check && git grep -n -e 'accordionItem' -e 'Accordion' -- site/content/docs/ui/components/accordion.md packages/trellis_ui/README.md` – confirm the generated reference agrees with the record, the listed signatures and both examples match the embedded fragments, and support follows the manual results.
   - **SATISFIES**: SC02
+
+## Discovered Requirements
+
+- **Shared CSS tokens appear in existing captures.** The component and app gates sample all root custom
+  properties. S03's pinned port added two tokens and surfaced the same differences on unrelated components.
+  If this port adds root tokens, compare the observed light and dark values from each affected browser
+  against the generated CSS. Preserve every existing capture value unless the change is independently
+  explained. Traced from S03/TI05, 2026-11-20.

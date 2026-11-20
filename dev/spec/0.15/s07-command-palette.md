@@ -128,3 +128,11 @@
   - Document static and indexed use, `show_search`, keyboard, failure and omission behavior. Update the search pipeline and docs-site flow in system architecture and advance Current through. Append the component and site build outcomes to the corresponding 0.15.0 changelogs.
   - **Verify**: `cmd: dart run tool/generate_ui_reference.dart --check` – the Command fragment and reference agree with inventory and recorded support. Read the examples and pipeline description against S01–S06.
   - **SATISFIES**: SC04
+
+## Discovered Requirements
+
+- **Shared CSS tokens appear in existing captures.** The component and app gates sample all root custom
+  properties. S03's pinned port added two tokens and surfaced the same differences on unrelated components.
+  If this port adds root tokens, compare the observed light and dark values from each affected browser
+  against the generated CSS. Preserve every existing capture value unless the change is independently
+  explained. Traced from S03/TI05, 2026-11-20.

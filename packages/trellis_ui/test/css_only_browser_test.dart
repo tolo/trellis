@@ -113,6 +113,35 @@ void main() {
     }
   });
 
+  test('a busy submit button keeps its progress label at full opacity without resubmitting', () async {
+    for (final dark in [false, true]) {
+      await open('button', 390);
+      await driver.evaluate("document.documentElement.classList.toggle('dark', $dark)");
+      final state = await driver.evaluate(r'''(() => {
+        const busy = document.querySelector('button[aria-busy="true"]');
+        const disabled = busy.form.querySelector('button:disabled:not([aria-busy])');
+        const label = busy.innerText.trim();
+        const opacity = getComputedStyle(busy).opacity;
+        let submits = 0;
+        busy.form.addEventListener('submit', event => { event.preventDefault(); submits++; });
+        busy.click();
+        busy.click();
+        const whileBusy = submits;
+        busy.disabled = false;
+        busy.removeAttribute('aria-busy');
+        busy.click();
+        return {label, opacity, disabledOpacity: getComputedStyle(disabled).opacity, whileBusy, afterRetry: submits};
+      })()''');
+      expect(state, {
+        'label': 'Starting…',
+        'opacity': '1',
+        'disabledOpacity': '0.5',
+        'whileBusy': 0,
+        'afterRetry': 1,
+      }, reason: 'dark=$dark');
+    }
+  });
+
   test('pagination retains a visible next label on mobile', () async {
     await open('pagination', 390);
     expect(

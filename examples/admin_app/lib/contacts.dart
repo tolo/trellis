@@ -21,6 +21,8 @@ final class ContactStore {
     final duplicateEmail = contacts.any(
       (contact) => contact.id != editingId && contact.draft.email.toLowerCase() == draft.email.toLowerCase(),
     );
+    final validRangeStart = _validDate(draft.rangeStart);
+    final validRangeEnd = _validDate(draft.rangeEnd);
     return {
       if (draft.name.isEmpty) 'name': 'Enter a name.',
       if (!_emailPattern.hasMatch(draft.email))
@@ -29,6 +31,17 @@ final class ContactStore {
         'email': 'That email address already belongs to a contact.',
       if (!companies.containsKey(draft.company)) 'company': 'Choose a company from the suggestions.',
       if (!statuses.containsKey(draft.status)) 'status': 'Choose a status from the list.',
+      if (!_validDate(draft.appointmentDate)) 'appointment_date': 'Enter a valid appointment date.',
+      if (!validRangeStart)
+        'range_start': 'Enter a valid start date.'
+      else if (draft.rangeStart.isEmpty && draft.rangeEnd.isNotEmpty)
+        'range_start': 'Enter a start date.',
+      if (!validRangeEnd)
+        'range_end': 'Enter a valid end date.'
+      else if (draft.rangeEnd.isEmpty && draft.rangeStart.isNotEmpty)
+        'range_end': 'Enter an end date.'
+      else if (validRangeStart && draft.rangeStart.compareTo(draft.rangeEnd) > 0)
+        'range_end': 'Enter an end date on or after the start date.',
     };
   }
 }
@@ -47,6 +60,9 @@ final class ContactDraft {
     this.company = '',
     this.companyText = '',
     this.status = 'active',
+    this.appointmentDate = '',
+    this.rangeStart = '',
+    this.rangeEnd = '',
   });
 
   factory ContactDraft.fromForm(Map<String, String> values) => ContactDraft(
@@ -55,6 +71,9 @@ final class ContactDraft {
     company: values['company'] ?? '',
     companyText: values['q']?.trim() ?? '',
     status: values['status'] ?? '',
+    appointmentDate: values['appointment_date'] ?? '',
+    rangeStart: values['range_start'] ?? '',
+    rangeEnd: values['range_end'] ?? '',
   );
 
   final String name;
@@ -62,6 +81,9 @@ final class ContactDraft {
   final String company;
   final String companyText;
   final String status;
+  final String appointmentDate;
+  final String rangeStart;
+  final String rangeEnd;
 }
 
 const companies = {'acme': 'Acme Studio', 'cobalt': 'Cobalt Systems', 'orbit': 'Orbit Works', 'river': 'River Labs'};
@@ -110,3 +132,12 @@ Contact _seed(int index, String name) {
 }
 
 final _emailPattern = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+
+final _datePattern = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+
+bool _validDate(String value) {
+  if (value.isEmpty) return true;
+  if (!_datePattern.hasMatch(value) || value.startsWith('0000')) return false;
+  // DateTime normalizes overflowing dates, such as February 30.
+  return DateTime.tryParse('${value}T00:00:00Z')?.toIso8601String().split('T').first == value;
+}

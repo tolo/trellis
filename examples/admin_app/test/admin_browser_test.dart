@@ -196,7 +196,16 @@ void main() {
       '/contacts/1/edit',
       "document.querySelector('#edit-1:modal') !== null",
     );
-    await tabTo('save-contact', 8);
+    for (final id in [
+      'contact-appointment-date',
+      'contact-appointment-calendar-trigger',
+      'contact-range-start',
+      'contact-range-end',
+      'contact-range-calendar-trigger',
+      'save-contact',
+    ]) {
+      await tabTo(id, 5);
+    }
     await browser.save('edit-1', keyboard: true);
     await browser.expectToast('Contact updated');
     expect(await browser.eval(actionVisible), isTrue, reason: 'the replaced table must reveal the restored focus');

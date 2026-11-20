@@ -9,6 +9,9 @@ states:
     - focus: '#contact-query'
     - type: No matching contact ZZZ
     - wait: "document.querySelector('#contact-list [role=status]')?.textContent.trim() === 'No contacts match these filters.' && !document.querySelector('.htmx-settling')"
+    - expect: {expression: document.activeElement.id, equals: contact-query}
+    # Keep ambient browser focus out of this empty-results appearance state.
+    - eval: "document.getElementById('contact-query').blur()"
   row-menu:
     - focus: '#contact-query'
     - eval: "(() => {document.activeElement.select();})()"
@@ -17,8 +20,16 @@ states:
     - click: '#actions-1-trigger'
     - wait: "document.querySelector('#actions-1:popover-open') !== null && document.activeElement.textContent.trim() === 'Edit'"
     - wait: "document.getElementById('actions-1').getAnimations().every(animation => animation.playState !== 'running')"
+    - expect: {expression: "document.activeElement.matches('#actions-1 [data-highlighted]')", equals: true}
+    - hover: 'main h1'
+    - eval: "document.querySelector('#actions-1 [role=menuitem]').blur()"
   edit-validation:
-    - eval: "(() => {if (!document.querySelector('#actions-1:popover-open')) document.querySelector('#actions-1-trigger').click();})()"
+    - eval: >-
+        (() => {
+          const menu = document.querySelector('#actions-1:popover-open');
+          if (menu) menu.querySelector('[role=menuitem]').focus();
+          else document.querySelector('#actions-1-trigger').click();
+        })()
     - wait: "document.querySelector('#actions-1:popover-open') !== null && document.activeElement.textContent.trim() === 'Edit'"
     - press: Enter
     - wait: "document.querySelector('#edit-1:modal') !== null && !document.querySelector('.htmx-settling')"
@@ -34,7 +45,78 @@ states:
           document.activeElement.getAttribute('aria-describedby')?.trim().split(/\s+/).some(id =>
             document.getElementById(id)?.textContent.trim() === 'Enter a valid email address.')
         equals: true
+  single-calendar:
+    - &date-editor
+      eval: >-
+        (async () => {
+          const current = document.querySelector('[data-calendar] :popover-open');
+          if (current) {
+            await new Promise(resolve => {
+              current.addEventListener('toggle', resolve, {once:true});
+              current.hidePopover();
+            });
+          }
+          if (document.querySelector('#edit-1:modal')) return;
+          if (!document.querySelector('#actions-1:popover-open')) document.querySelector('#actions-1-trigger').click();
+          document.querySelector('#actions-1 [role=menuitem]').click();
+        })()
+    - &mounted-dates
+      wait: >-
+        document.querySelector('#edit-1:modal calendar-date calendar-month')?.shadowRoot?.querySelector('table') != null &&
+        document.querySelector('#edit-1:modal calendar-range calendar-month')?.shadowRoot?.querySelector('table') != null &&
+        !document.querySelector('.htmx-settling')
+    - click: '#contact-appointment-calendar-trigger'
+    - &single-calendar-open
+      wait: "document.querySelector('#contact-appointment-calendar:popover-open[style]') !== null"
+    - &tab-into-calendar
+      press: Tab
+    - &calendar-tab-focus
+      wait: "document.activeElement.matches('calendar-date, calendar-range, calendar-month')"
+    - &pin-calendar-month
+      eval: >-
+        (() => {
+          const calendar = document.querySelector(':popover-open calendar-month').parentElement;
+          calendar.today = '2026-11-20';
+          calendar.focusedDate = '2026-11-18';
+        })()
+    - &wait-calendar-day
+      wait: >-
+        document.querySelector(':popover-open calendar-month')?.shadowRoot
+          ?.querySelector('button[tabindex="0"]')?.getAttribute('aria-label') === '18 november'
+    - &focus-calendar-day
+      eval: "document.querySelector(':popover-open calendar-month').focus()"
+    - &select-calendar-day
+      press: Enter
+    - &single-date-selected
+      wait: "document.querySelector('#contact-appointment-date').value === '2026-11-18'"
+    - &settled-calendar
+      wait: >-
+        document.querySelector(':popover-open calendar-month')?.closest('[popover]')?.getAnimations()
+          .every(animation => animation.playState !== 'running') === true
+  range-calendar:
+    - *date-editor
+    - *mounted-dates
+    - click: '#contact-range-calendar-trigger'
+    - &range-calendar-open
+      wait: "document.querySelector('#contact-range-calendar:popover-open[style]') !== null"
+    - *tab-into-calendar
+    - *calendar-tab-focus
+    - *pin-calendar-month
+    - *wait-calendar-day
+    - *focus-calendar-day
+    - *select-calendar-day
+    - &move-to-range-end
+      press: ArrowRight
+    - &range-end-focused
+      wait: >-
+        document.querySelector(':popover-open calendar-month')?.shadowRoot
+          ?.activeElement?.getAttribute('aria-label') === '19 november'
+    - *select-calendar-day
+    - &range-selected
+      wait: "document.querySelector('#contact-range-end').value === '2026-11-19'"
+    - *settled-calendar
   alert-dialog:
+    - press: Escape
     - press: Escape
     - wait: "document.querySelector('dialog:modal') === null"
     - click: '#actions-1-trigger'
@@ -76,6 +158,55 @@ keyboard:
   - expect: {expression: document.activeElement.id, equals: contact-query}
   - press: Tab
   - expect: {expression: document.activeElement.id, equals: contact-status}
+  - *date-editor
+  - *mounted-dates
+  - focus: '#contact-appointment-calendar-trigger'
+  - wait: "document.activeElement.id === 'contact-appointment-calendar-trigger'"
+  - press: Enter
+  - *single-calendar-open
+  - *tab-into-calendar
+  - *calendar-tab-focus
+  - *pin-calendar-month
+  - *wait-calendar-day
+  - *focus-calendar-day
+  - *select-calendar-day
+  - *single-date-selected
+  - &calendar-focus
+    expect:
+      expression: >-
+        document.querySelector(':popover-open calendar-month')?.shadowRoot?.activeElement
+          ?.matches('button:focus-visible[aria-pressed=true]') === true
+      equals: true
+  - &observe-calendar-close
+    eval: >-
+      (() => {
+        window.calendarClosed = false;
+        document.querySelector('[data-calendar] :popover-open').addEventListener('toggle', event => {
+          window.calendarClosed = event.newState === 'closed';
+        }, {once:true});
+      })()
+  - press: Escape
+  - wait: "window.calendarClosed && document.activeElement.id === 'contact-appointment-calendar-trigger' && !!document.querySelector('#edit-1:modal')"
+  - focus: '#contact-range-calendar-trigger'
+  - wait: "document.activeElement.id === 'contact-range-calendar-trigger'"
+  - press: Enter
+  - *range-calendar-open
+  - *tab-into-calendar
+  - *calendar-tab-focus
+  - *pin-calendar-month
+  - *wait-calendar-day
+  - *focus-calendar-day
+  - *select-calendar-day
+  - *move-to-range-end
+  - *range-end-focused
+  - *select-calendar-day
+  - *range-selected
+  - *calendar-focus
+  - *observe-calendar-close
+  - press: Escape
+  - wait: "window.calendarClosed && document.activeElement.id === 'contact-range-calendar-trigger' && !!document.querySelector('#edit-1:modal')"
+  - press: Escape
+  - wait: "document.querySelector('dialog:modal') === null"
 semantics:
   - expression: >-
       document.querySelector('h1')?.textContent.trim() === 'Contacts' &&
@@ -115,4 +246,6 @@ instances:
   - '#toaster'
 provenance:
   - file: ../../../../LICENSE
+    license: MIT
+  - file: ../../../../examples/admin_app/static/js/cally-0.9.2.LICENSE
     license: MIT

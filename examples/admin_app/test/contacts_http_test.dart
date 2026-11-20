@@ -49,6 +49,7 @@ void main() {
     expect(document.querySelectorAll('script').map((script) => script.attributes['src']), [
       htmxAsset,
       '/trellis-ui/trellis-ui.js',
+      dateRecipeAsset,
     ]);
     expect(document.querySelectorAll('link[rel=stylesheet]').map((link) => link.attributes['href']), [
       '/trellis-ui/trellis-ui.css',
@@ -63,7 +64,12 @@ void main() {
     expect(fragment.statusCode, 200);
     expectStrictPolicy(fragment.headers['content-security-policy']);
 
-    for (final entry in {...suiteAssets, htmxAsset: 'text/javascript'}.entries) {
+    for (final entry in {
+      ...suiteAssets,
+      htmxAsset: 'text/javascript',
+      dateRecipeAsset: 'text/javascript',
+      callyAsset: 'text/javascript',
+    }.entries) {
       final asset = await request(entry.key);
       expect(asset.statusCode, 200, reason: entry.key);
       expectStrictPolicy(asset.headers['content-security-policy']);
@@ -190,6 +196,77 @@ void main() {
     expect(Uri.parse(sortedLast.headers['hx-push-url']!).queryParameters['page'], '4');
     expect(names(parseFragment(await sortedLast.readAsString()).children.first).last, 'Zora Example');
   });
+
+  test('create and edit round-trip native dates and preserve them on other validation errors', () async {
+    final headers = await session();
+    const dates = {'appointment_date': '2026-11-18', 'range_start': '2026-11-23', 'range_end': '2026-11-27'};
+    Future<void> expectDates(Response response, Map<String, String> expected) async {
+      expect(response.statusCode, 200);
+      final form = parseFragment(await response.readAsString());
+      for (final entry in expected.entries) {
+        final input = form.querySelector('input[type=date][name=${entry.key}]')!;
+        expect(input.attributes['value'], entry.value);
+        expect(form.querySelector('label[for="${input.id}"]')?.text, isNotEmpty);
+      }
+    }
+
+    final initial = await request('/contacts/new', headers: headers);
+    await expectDates(initial, {for (final name in dates.keys) name: ''});
+    final invalidEmail = await request(
+      '/contacts',
+      method: 'POST',
+      headers: headers,
+      fields: {...validContact, ...dates, 'email': 'invalid'},
+    );
+    await expectDates(invalidEmail, dates);
+
+    final created = await request('/contacts', method: 'POST', headers: headers, fields: {...validContact, ...dates});
+    expect(created.headers['hx-retarget'], '#contact-list');
+    await expectDates(await request('/contacts/24/edit', headers: headers), dates);
+    final updatedDates = {...dates, 'appointment_date': '2026-12-06'};
+    final updated = await request(
+      '/contacts/24',
+      method: 'PUT',
+      headers: headers,
+      fields: {...validContact, ...updatedDates},
+    );
+    expect(updated.headers['hx-retarget'], '#contact-list');
+    await expectDates(await request('/contacts/24/edit', headers: headers), updatedDates);
+    final cleared = await request('/contacts/24', method: 'PUT', headers: headers, fields: validContact);
+    expect(cleared.headers['hx-retarget'], '#contact-list');
+    await expectDates(await request('/contacts/24/edit', headers: headers), {for (final name in dates.keys) name: ''});
+  });
+
+  test(
+    'invalid native dates and incomplete or reversed ranges render linked errors and leave the contact unchanged',
+    () async {
+      final headers = await session();
+      for (final (dates, errorField) in [
+        ({'appointment_date': '2026-02-30'}, 'appointment_date'),
+        ({'appointment_date': '20261118'}, 'appointment_date'),
+        ({'range_start': '2026-11-23'}, 'range_end'),
+        ({'range_start': '2026-11-27', 'range_end': '2026-11-23'}, 'range_end'),
+      ]) {
+        final result = await request(
+          '/contacts/1',
+          method: 'PUT',
+          headers: headers,
+          fields: {...validContact, ...dates},
+        );
+        expect(result.statusCode, 200);
+        expect(result.headers['hx-retarget'], isNull);
+        final form = parseFragment(await result.readAsString());
+        final field = form.querySelector('input[name=$errorField][aria-invalid=true][autofocus]')!;
+        expect(form.querySelector('#${field.attributes['aria-describedby']!.trim()}[role=alert]')?.text, isNotEmpty);
+        expect(field.attributes['value'], dates[errorField] ?? '');
+        final edit = await request('/contacts/1/edit', headers: headers);
+        expect(
+          parseFragment(await edit.readAsString()).querySelector('input[name=name]')?.attributes['value'],
+          'Ada Morgan',
+        );
+      }
+    },
+  );
 
   test('unknown ids answer 404 and a tokenless mutation answers 403 and changes nothing', () async {
     final headers = await session();

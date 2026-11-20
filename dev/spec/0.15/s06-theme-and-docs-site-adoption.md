@@ -162,3 +162,16 @@
 - **Keep grouped destinations readable when CSS is blocked.** In S05, adjacent bare anchors ran together.
   Render each group as a native list. For the current-page marker, pass the destination and page URL in the
   same final, prefixed form from the theme layout. Traced from S05/TI02 and TI04, 2026-11-20.
+
+- **Keep keyboard focus free to leave an inline Sheet.** On the wide Lattice header, the shared Tab handler wrapped
+  from the last navigation link to its first link. The adjacent colour button could never receive focus. Run the
+  focus loop while the Sheet is modal. Traced from TI01, 2026-11-20.
+
+## Implementation Observations
+
+- ASSUMPTION: Use one responsive Sheet around the header Navigation menu so both widths share one destination tree and one current marker. Revisit if Navigation menu gains its own responsive controller.
+- ASSUMPTION: Top-level sections use suite Accordion while retaining the existing nested lists. Recursive fragment expansion raises a cycle error. Revisit when nested Accordion composition can use the same fragment safely.
+- The build exposes the grouped view as `site.headerNavigation`. Raw `theme.nav_links` and `site.menu` retain their existing shapes. The view keeps exact prefixed destinations and leaves the existing search API in place.
+- Chrome and Firefox verified the Meadow anchor handoff and both Sheet breakpoint transitions. A live Lattice keyboard test reproduced the old inline focus loop. The repair keeps modal Tab cycling behind a native `:modal` guard. The measured suite is 700 owned JS lines and 26,931 combined gzip bytes.
+- Independent code review found clipped native fallback links, sub-44px tablet targets and an empty Menu opener. The repaired real builds passed all three probes. Independent visual review cleared the dark title and close-icon contrast and panel placement after recapture. Maintainer approval of the two candidate appearance files remains at release prep.
+- TI04 `CI=true dart test test/site_reflow_test.dart` is deferred to integrated verification for the whole docs site reflow sweep. S06's affected routes passed the two-browser CSP, axe and geometry checks in `test/theme_suite_controls_test.dart`. The full appearance matrix and complete component/app catalogue sweeps remain with `CI=true mise run release-gate` on the integrated revision.

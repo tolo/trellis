@@ -1,3 +1,4 @@
+import 'content_discovery.dart' show applyPathPrefix, stripPathPrefix;
 import 'page.dart';
 import 'page_generator.dart' show orderedSectionPages, pageWeight;
 
@@ -202,4 +203,60 @@ String humanizeSegment(String segment) {
   if (segment.isEmpty) return '';
   final words = segment.replaceAll(RegExp('[-_]'), ' ').split(RegExp(r'\s+')).where((w) => w.isNotEmpty);
   return words.map((w) => w[0].toUpperCase() + w.substring(1)).join(' ');
+}
+
+/// Resolves configured header links against the shared menu tree.
+///
+/// A configured destination owns its landing link and the unclaimed links
+/// beneath it. Stop at each separately configured destination so both the
+/// branch and direct-link cases keep a single owner.
+List<Map<String, Object?>> buildHeaderNavigation(
+  List<Map<String, dynamic>> menu,
+  List<Object?> links, {
+  required String pathPrefix,
+}) {
+  final configured = <String, Object?>{};
+  for (final link in links) {
+    if (link case {'url': final String url, 'label': final Object? label}) {
+      final href = stripPathPrefix(url, pathPrefix) == url ? applyPathPrefix(url, pathPrefix) : url;
+      configured.putIfAbsent(href, () => label);
+    }
+  }
+  if (configured.isEmpty) return const [];
+
+  final byUrl = <String, Map<String, dynamic>>{};
+  List<Map<String, dynamic>> children(Map<String, dynamic> node) => node['children'] as List<Map<String, dynamic>>;
+
+  void index(List<Map<String, dynamic>> nodes) {
+    for (final node in nodes) {
+      final url = node['url'] as String;
+      if (url.isNotEmpty) byUrl[url] = node;
+      index(children(node));
+    }
+  }
+
+  index(menu);
+  Iterable<Map<String, Object?>> descendants(Map<String, dynamic> node) sync* {
+    for (final child in children(node)) {
+      final href = child['url'] as String;
+      if (configured.containsKey(href)) continue;
+      if (href.isNotEmpty) yield {'label': child['title'], 'url': href};
+      yield* descendants(child);
+    }
+  }
+
+  return [
+    for (final MapEntry(key: href, value: label) in configured.entries)
+      {
+        'label': label,
+        'url': href,
+        'children': switch (byUrl[href]) {
+          final node? when children(node).isNotEmpty => [
+            {'label': node['title'], 'url': href},
+            ...descendants(node),
+          ],
+          _ => const <Map<String, Object?>>[],
+        },
+      },
+  ];
 }

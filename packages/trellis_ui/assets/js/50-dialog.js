@@ -79,6 +79,7 @@ class TlDialog extends TlElement {
   }
 
   cycleTab(event) {
+    if (!this.dialog.matches(':modal')) return;
     if (event.key !== 'Tab' || event.defaultPrevented || event.target.closest('dialog') !== this.dialog) return;
     // Native modality keeps the page inert, but Tab can still leave for browser chrome.
     const tabs = this.tabStops();

@@ -67,7 +67,7 @@
       <span tl:text="${item.label}">Label</span></li></ul>
   </aside>
 
-  <section class="section" id="features" tl:if="${page.features}">
+  <section class="section" id="features" tabindex="-1" tl:if="${page.features}">
     <div class="wrap">
       <header class="section-head"><span class="kicker lime" tl:text="${page.features.eyebrow}">Features</span>
         <h2 tl:text="${page.features.title}">Title</h2><p tl:if="${page.features.body}"
@@ -80,7 +80,7 @@
     </div>
   </section>
 
-  <section class="section signal-section" id="workflow" tl:if="${page.workflow}">
+  <section class="section signal-section" id="workflow" tabindex="-1" tl:if="${page.workflow}">
     <div class="wrap signal-grid" tl:classappend="${page.workflow.insight} ? '' : 'signal-grid-solo'">
       <div><header class="section-head"><span class="kicker sky"
       tl:text="${page.workflow.eyebrow}">Workflow</span><h2 tl:text="${page.workflow.title}">Title</h2>
@@ -94,16 +94,13 @@
       tl:if="${page.workflow.insight.label}" tl:text="${page.workflow.insight.label}">Insight</span>
       <h3 tl:if="${page.workflow.insight.title}" tl:text="${page.workflow.insight.title}">Title</h3>
       <p tl:if="${page.workflow.insight.body}" tl:text="${page.workflow.insight.body}">Body</p>
-      <!-- A missing confidence interpolates an empty value into `--confidence`, which makes the
-           clamp invalid: the width is dropped and the block-level span fills the whole meter. -->
-      <div class="meter" role="progressbar" aria-label="Opportunity confidence"
-      tl:if="${page.workflow.insight.confidence}" aria-valuemin="0" aria-valuemax="100"
-      tl:attr="aria-valuenow=${page.workflow.insight.confidence},style='--confidence: ' + ${page.workflow.insight.confidence} + '%'">
-      <span></span></div>
+      <progress class="meter" aria-label="Opportunity confidence" max="100"
+                tl:if="${page.workflow.insight.confidence != null}"
+                tl:attr="value=${page.workflow.insight.confidence}"></progress>
       </article></div>
   </section>
 
-  <section class="section template-section" id="use-cases" tl:if="${page.use_cases}">
+  <section class="section template-section" id="use-cases" tabindex="-1" tl:if="${page.use_cases}">
     <div class="wrap"><header class="section-head"><span class="kicker bloom" tl:text="${page.use_cases.eyebrow}">Use cases</span>
       <h2 tl:text="${page.use_cases.title}">Title</h2><p tl:text="${page.use_cases.body}">Body</p></header>
       <div class="template-grid"><a class="template-card" tl:each="item : ${page.use_cases.items}"
@@ -117,7 +114,7 @@
     aria-hidden="true">“</span><div><blockquote tl:text="${page.quote.text}">Quote</blockquote>
     <footer tl:text="${page.quote.attribution}">Attribution</footer></div></div></aside>
 
-  <section class="section start" id="start" tl:if="${page.cta}"><div class="wrap"><header class="section-head">
+  <section class="section start" id="start" tabindex="-1" tl:if="${page.cta}"><div class="wrap"><header class="section-head">
     <span class="kicker lime" tl:text="${page.cta.eyebrow}">Start</span><h2 tl:text="${page.cta.title}">Title</h2>
     <p tl:text="${page.cta.body}">Body</p></header><div class="terminal"><div class="terminal-top">
     <span aria-hidden="true">● ● ●</span><span

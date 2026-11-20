@@ -10,7 +10,7 @@ export 'src/feed_generator.dart';
 export 'src/front_matter_date.dart';
 export 'src/front_matter_parser.dart' hide parseFrontMatterWithTrustedUrls;
 export 'src/markdown_renderer.dart';
-export 'src/navigation_builder.dart';
+export 'src/navigation_builder.dart' hide buildHeaderNavigation;
 export 'src/page.dart' hide renderFrontMatter, setTrustedPageUrls;
 export 'src/page_generator.dart' hide generatePagesWithTrustedUrls;
 export 'src/paginator.dart';

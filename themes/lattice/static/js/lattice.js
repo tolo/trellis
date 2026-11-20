@@ -21,10 +21,6 @@
   // toggle; '' means "follow the OS".
   var explicitTheme = savedTheme();
 
-  // The pre-paint resolver in <head> is an inline script, so a page served under a strict
-  // script-src never runs it and data-theme stays unset. Resolve from the same two sources here
-  // rather than reading the attribute back: reading it back pins such a page to light and defeats
-  // the prefers-color-scheme fallback the CSS would otherwise apply.
   function effectiveTheme() {
     return explicitTheme || (darkScheme.matches ? 'dark' : 'light');
   }
@@ -61,17 +57,6 @@
         if (!explicitTheme) setTheme(effectiveTheme(), false);
       });
   } else syncPreviewSkin(root.dataset.skin);
-
-  var docsSidebar = document.querySelector('[data-docs-sidebar]');
-  if (docsSidebar) {
-    var sidebarBreakpoint = window.matchMedia('(max-width: 700px)');
-    function syncSidebar(event) {
-      docsSidebar.open = !event.matches;
-    }
-    syncSidebar(sidebarBreakpoint);
-    if (typeof sidebarBreakpoint.addEventListener === 'function')
-      sidebarBreakpoint.addEventListener('change', syncSidebar);
-  }
 
   var headline = document.querySelector('[data-headline]');
   if (headline) {

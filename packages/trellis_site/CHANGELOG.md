@@ -6,6 +6,8 @@
 
 - Declare trusted URL fields by source and field in `trellis_site.yaml`. The build preserves trust through
   render contexts and reports missing sources or fields and non-string values.
+- Expose `site.headerNavigation` for configured header links. The view groups menu descendants under their
+  nearest configured destination and supplies final prefixed URLs for the current-page marker.
 
 ## 0.14.0
 

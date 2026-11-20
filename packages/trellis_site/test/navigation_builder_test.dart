@@ -7,6 +7,7 @@ import 'package:test/test.dart';
 
 import 'fixture_mtimes.dart';
 import 'package:trellis/trellis.dart';
+import 'package:trellis_site/src/navigation_builder.dart' show buildHeaderNavigation;
 import 'package:trellis_site/trellis_site.dart';
 
 /// Tests for the hierarchical `${site.menu}` navigation tree.
@@ -27,6 +28,77 @@ void main() {
   });
 
   String fixture(String name) => p.join(packageRoot, 'test', 'test_fixtures', name);
+
+  test('the configured header view claims nested destinations and preserves the menu and config', () {
+    final menu = [
+      <String, dynamic>{
+        'title': 'Docs',
+        'url': '/preview/docs/',
+        'children': [
+          <String, dynamic>{
+            'title': 'Unlinked section',
+            'url': '',
+            'children': [
+              <String, dynamic>{
+                'title': 'Packages',
+                'url': '/preview/docs/packages/',
+                'children': [
+                  <String, dynamic>{
+                    'title': 'Trellis',
+                    'url': '/preview/docs/packages/trellis/',
+                    'children': <Map<String, dynamic>>[],
+                  },
+                ],
+              },
+              <String, dynamic>{
+                'title': 'Theme gallery',
+                'url': '/preview/docs/gallery/',
+                'children': <Map<String, dynamic>>[],
+              },
+              <String, dynamic>{
+                'title': 'Basics',
+                'url': '/preview/docs/basics/',
+                'children': <Map<String, dynamic>>[],
+              },
+            ],
+          },
+        ],
+      },
+    ];
+    const links = [
+      {'label': 'Packages', 'url': '/preview/docs/packages/'},
+      {'label': 'Documentation', 'url': '/docs/'},
+      {'label': 'Themes', 'url': '/docs/gallery/'},
+      {'label': 'External', 'url': '//example.test/docs/'},
+      {'label': 'Other', 'url': '/other/'},
+    ];
+    final before = jsonEncode(menu);
+    final header = buildHeaderNavigation(menu, links, pathPrefix: '/preview/');
+    expect(header.map((link) => link['label']), ['Packages', 'Documentation', 'Themes', 'External', 'Other']);
+    expect(header.map((link) => link['url']), [
+      '/preview/docs/packages/',
+      '/preview/docs/',
+      '/preview/docs/gallery/',
+      '//example.test/docs/',
+      '/preview/other/',
+    ]);
+    expect(header.map((link) => link['children']), [
+      [
+        {'label': 'Packages', 'url': '/preview/docs/packages/'},
+        {'label': 'Trellis', 'url': '/preview/docs/packages/trellis/'},
+      ],
+      [
+        {'label': 'Docs', 'url': '/preview/docs/'},
+        {'label': 'Basics', 'url': '/preview/docs/basics/'},
+      ],
+      <Map<String, Object?>>[],
+      <Map<String, Object?>>[],
+      <Map<String, Object?>>[],
+    ]);
+    expect(jsonEncode(menu), before);
+    expect(links[1]['url'], '/docs/');
+    expect(buildHeaderNavigation(menu, [], pathPrefix: '/preview/'), isEmpty);
+  });
 
   Page makePage({
     required String url,

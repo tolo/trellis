@@ -31,6 +31,30 @@
         <p tl:if="${errors.status}" id="contact-status-error" role="alert" class="trellis-field-error"
           tl:text="${errors.status}">Choose a status from the list.</p>
       </div>
+      <div class="admin-control" data-date-picker data-locale="sv-SE" data-first-day-of-week="1"
+        data-previous-label="Föregående" data-next-label="Nästa">
+        <input tl:replace="~{trellis-ui/field :: field('contact-appointment-date', 'Appointment date', null, errors.appointment_date)}"
+          type="date" name="appointment_date" tl:attr="value=${appointmentDate}, autofocus=${focus == 'appointment_date'}">
+        <div data-calendar hidden>
+          <div tl:replace="~{trellis-ui/popover :: popover('contact-appointment-calendar')}">
+            <tl:block tl:slot="trigger">Choose appointment date</tl:block>
+          </div>
+        </div>
+      </div>
+      <fieldset tl:replace="~{trellis-ui/field :: fieldset('Availability dates')}" class="admin-date-range"
+        data-date-picker data-range
+        data-locale="sv-SE" data-first-day-of-week="1"
+        data-previous-label="Föregående" data-next-label="Nästa">
+        <input tl:replace="~{trellis-ui/field :: field('contact-range-start', 'Start date', null, errors.range_start)}"
+          type="date" name="range_start" tl:attr="value=${rangeStart}, autofocus=${focus == 'range_start'}">
+        <input tl:replace="~{trellis-ui/field :: field('contact-range-end', 'End date', null, errors.range_end)}"
+          type="date" name="range_end" tl:attr="value=${rangeEnd}, autofocus=${focus == 'range_end'}">
+        <div data-calendar hidden>
+          <div tl:replace="~{trellis-ui/popover :: popover('contact-range-calendar')}">
+            <tl:block tl:slot="trigger">Choose availability dates</tl:block>
+          </div>
+        </div>
+      </fieldset>
     </form>
     <div tl:slot="footer">
       <button tl:replace="~{trellis-ui/button :: button('outline')}" type="button" data-dialog-close>Cancel</button>

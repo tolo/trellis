@@ -8,13 +8,13 @@
         "chrome": {
           "status": "pass",
           "evidence": [
-            "1 declared permissive notices exist"
+            "2 declared permissive notices exist"
           ]
         },
         "firefox": {
           "status": "pass",
           "evidence": [
-            "1 declared permissive notices exist"
+            "2 declared permissive notices exist"
           ]
         }
       }
@@ -212,13 +212,13 @@
         "chrome": {
           "status": "pass",
           "evidence": [
-            "42 states captured; no clipping, overlap or appearance differences"
+            "54 states captured; no clipping, overlap or appearance differences"
           ]
         },
         "firefox": {
           "status": "pass",
           "evidence": [
-            "42 states captured; no clipping, overlap or appearance differences"
+            "54 states captured; no clipping, overlap or appearance differences"
           ]
         }
       }

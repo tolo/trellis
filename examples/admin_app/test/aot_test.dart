@@ -14,7 +14,7 @@ import 'package:trellis_ui/trellis_ui.dart';
 import 'fixtures.dart';
 
 void main() {
-  test('a compiled binary moved away from the repo serves every suite asset', () async {
+  test('a compiled binary moved away from the repo serves suite assets and the pinned date recipe', () async {
     final deployment = await Directory.systemTemp.createTemp('trellis-admin-aot-');
     addTearDown(() => deployment.delete(recursive: true));
     final bin = await Directory('${deployment.path}/bin').create();
@@ -53,7 +53,9 @@ void main() {
     final page = await http.get(base);
     expect(page.statusCode, 200, reason: page.body);
     expectStrictPolicy(page.headers['content-security-policy']);
-    expect(parse(page.body).querySelectorAll('tr[data-contact-id]'), hasLength(8));
+    final document = parse(page.body);
+    expect(document.querySelectorAll('tr[data-contact-id]'), hasLength(8));
+    expect(document.querySelector('script[type=module][src="$dateRecipeAsset"]'), isNotNull);
     for (final path in suiteAssets.keys) {
       final asset = await http.get(base.resolve(path));
       expect(asset.statusCode, 200, reason: path);
@@ -65,6 +67,20 @@ void main() {
     final htmx = await http.get(base.resolve(htmxAsset));
     expect(htmx.statusCode, 200);
     expect(htmx.bodyBytes, File('static$htmxAsset').readAsBytesSync());
+    for (final path in [dateRecipeAsset, callyAsset, callyLicense]) {
+      final asset = await http.get(base.resolve(path));
+      expect(asset.statusCode, 200, reason: path);
+      expectStrictPolicy(asset.headers['content-security-policy']);
+      expect(asset.bodyBytes, File('static$path').readAsBytesSync(), reason: path);
+      if (path.endsWith('.js')) {
+        expect(asset.headers['content-type'], contains('javascript'), reason: path);
+      }
+      if (path == callyAsset) {
+        expect(sha256.convert(asset.bodyBytes).toString(), callySha256);
+      }
+    }
+    final recipe = await http.get(base.resolve(dateRecipeAsset));
+    expect(recipe.body, contains("import './cally-0.9.2.js'"));
     final created = await http.post(
       base.resolve('/contacts'),
       headers: mutationHeaders(page.headers['set-cookie']!, page.body),

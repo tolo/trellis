@@ -304,9 +304,19 @@
         "S01",
         "S08"
       ],
-      "status": "in-progress",
+      "status": "done",
       "fis": "s09-cally-date-recipe.md",
-      "completedTaskIds": [],
+      "completedTaskIds": [
+        "TI01",
+        "TI02",
+        "TI03",
+        "TI04",
+        "TI05"
+      ],
+      "verified": {
+        "at": "2026-11-20T17:59Z",
+        "summary": "CI=true mise exec -- dart run tool/ui_gate.dart --serve 'dart run tool/serve_ui_surface.dart admin' --manifests dev/ui-gate/apps/manifests --records .agent_temp/s09/gate/replayed-records --baselines dev/ui-gate/apps/baselines admin -> exit=0, admin: pass"
+      },
       "scope": "Document the HTMX recipe lifecycle and verify an app-vendored Cally calendar and range picker with native fallbacks, submission and history in the admin contact form.",
       "sourceRefs": [
         "dev/spec/0.15/prd.md#fr8-tier-2-recipe-seam-and-date-recipe",

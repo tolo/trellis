@@ -3,6 +3,7 @@
 - Add Popover with trigger and content slots, four-sided viewport placement and focus return after dismissal.
 - Render only supplied Card copy. Omitted title, description and body slots no longer show demo text.
 - Document a labelled native date field in the Input reference.
+- Document the app-owned Cally 0.9.2 single-date and range recipe with native fallback and HTMX history recovery.
 - Keep disabled Button progress labels at full opacity while `aria-busy="true"`.
 - Add Tooltip for delayed, hoverable text hints and immediate hints on keyboard focus.
 - Add a four-edge Sheet with native modal focus, link dismissal and an optional inline breakpoint.

@@ -112,3 +112,12 @@
   - Append to the S08 anchor in `site/content/docs/ui/components/input.md`. Include the exact hosted asset and pin from SC01 and the two form examples. Update the testing strategy's admin footprint description beside the test change so it describes the app-owned module.
   - **Verify**: `inspect: site/content/docs/ui/components/input.md:22` – check S01 against the admin implementation and SC01, and confirm the referenced architecture section and Current through marker document the same lifecycle and ownership.
   - **SATISFIES**: S01, SC03
+
+## Implementation Observations
+
+- ASSUMPTION: A contact may omit the range. A supplied range needs both endpoints in chronological order, so the native fields and Cally's complete range share one saved representation. Revisit if contact records need open-ended ranges.
+- ASSUMPTION: Use the macOS recording host's native digit order for the fallback proof. Chromium's field is year-first on this host and Firefox's default is month-first. Revisit if the baseline host or its browser settings change.
+- The app qualification keyboard sequence waits for the Popover close toggle before moving to the next control. Both browsers can return focus asynchronously after native Escape. A close-then-focus control reproduced the earlier opener taking focus back during the transition.
+- Responsive and appearance setups open the calendar with a real click. The original Firefox responsive replay could lose the fixture's focused Enter action before opening the panel. The keyboard recipe still exercises Enter on both triggers, Tab into the calendar, selection and focus return. The empty-results and row-menu states check focus before normalizing incidental focus and pointer paint for appearance capture.
+- Per the plan runner's revised verification scope, TI04 uses the same recorder and comparison against the changed admin surface in both engines. The seven-surface replay and workspace/release gates run once on the combined branch.
+- Visual review passed 41 captures at four widths. P3 tooling note. The older bundled Chrome for Testing 146 intermittently lost the original page during a compound Escape readback. System Chrome 157 and the independent Chrome/Firefox journey confirmed both focus returns and retained Edit. Routing: Note.

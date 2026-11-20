@@ -161,14 +161,14 @@ The local component sweep (`packages/trellis_ui/test/qualification_gate_test.dar
 disjoint CLI chunks and compares freshly written records byte for byte, retaining manual results. The release
 policy checks optional failures against their [ADR-012 dispositions](../adrs/ADR-012-trellis-ui-contract.md#optional-component-release-dispositions).
 `packages/trellis_cli/test/ui_surfaces_gate_test.dart` launches the actual admin entry point and three generated
-`--ui` scaffolds. The same CLI checks the admin list, filter, menu, validation, alert dialog, Summary and toast,
+`--ui` scaffolds. The same CLI checks the admin list, filter, menu, validation, single-date and range calendars, alert dialog, Summary and toast,
 and each scaffold's counter swap and UI dialog, using the seven recipes and records in `dev/ui-gate/apps/`.
 The sweep seeds only manual results, checks each fresh record against the same release policy, then compares
 its bytes to the committed record.
 
 Release limits are 30,000 bytes for the sum of the three embedded responses gzipped separately at level 9,
-700 authored JavaScript lines in the suite (excluding app-owned recipe glue), and 50 authored CSS lines with zero
-authored JavaScript in the admin example. Run `test/release_gates_test.dart` and `test/budget_test.dart` from `packages/trellis_ui/`, and
+700 authored JavaScript lines in the suite (excluding app-owned recipe glue), and 50 authored CSS lines in the admin example. Its exact script inventory is HTMX, the pinned Cally 0.9.2
+bundle and the app's date recipe module. The footprint check pins the vendor bytes and checks templates for strict CSP. Run `test/release_gates_test.dart` and `test/budget_test.dart` from `packages/trellis_ui/`, and
 `test/footprint_test.dart` from `examples/admin_app/`.
 
 Harness fixture tests are untagged in branch CI and the full tier. A test running the full gate over real component

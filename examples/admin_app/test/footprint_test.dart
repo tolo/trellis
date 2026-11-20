@@ -1,10 +1,12 @@
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:html/parser.dart';
 import 'package:test/test.dart';
 import 'package:trellis_ui/trellis_ui.dart';
 
 import '../../../tool/ui_gate/release_policy.dart';
+import 'fixtures.dart';
 
 Iterable<File> filesUnder(String path) => Directory(path).listSync(recursive: true).whereType<File>();
 
@@ -62,7 +64,7 @@ button | unsupported | safari
     }
   });
 
-  test('app CSS stays within 50 lines and no authored JS exists', () {
+  test('app CSS stays within 50 lines and only the pinned calendar recipe adds scripts', () {
     final files = filesUnder('static');
     int sourceLines(File file) => file
         .readAsStringSync()
@@ -84,7 +86,14 @@ button | unsupported | safari
       files
           .where((file) => RegExp(r'\.(?:[cm]?js)$', caseSensitive: false).hasMatch(file.path))
           .map((file) => file.path),
-      ['static/js/htmx.min.js'],
+      unorderedEquals([
+        for (final asset in [htmxAsset, dateRecipeAsset, callyAsset]) 'static$asset',
+      ]),
+    );
+    expect(sha256.convert(File('static$callyAsset').readAsBytesSync()).toString(), callySha256);
+    expect(
+      sha256.convert(File('static$callyLicense').readAsBytesSync()).toString(),
+      'c48fd407090d6d752b0370d39db55bd750e6dfc678ee252d4c906bddf54132eb',
     );
   });
 }

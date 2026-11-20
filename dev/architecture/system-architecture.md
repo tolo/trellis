@@ -20,6 +20,7 @@ The content model's bundle rule and the `pathPrefix` coverage of feed and taxono
 Embedded UI placement, Popover, Tooltip, Sheet and Accordion are current through 0.15 (2026-11-20).
 Other sections retain the verification scope above.
 The Dart Frog CSRF bridge note is current through 0.14 (it runs on Dart Frog's own request, so a handler can read the body after a form-field token).
+The app-owned Tier 2 date recipe is current through 0.15 (2026-11-20).
 
 ---
 
@@ -285,6 +286,22 @@ The [admin example](../../examples/admin_app/) uses the Shelf integration. It sh
 fragment across full page loads and HTMX swaps, and a mutation returns the list plus out-of-band summary, dialog
 host and toast updates. The AOT executable embeds the suite and reads the example's own templates and static
 files alongside it.
+
+### App-owned Tier 2 date recipe
+
+The admin contact form posts three native date inputs through its existing create
+and edit routes. The app vendors the unchanged Cally 0.9.2 module and MIT notice
+from the pinned release archive. Its static handler serves the module and the
+app's date adapter from the same origin, alongside HTMX and the embedded suite.
+
+The adapter mounts a Cally calendar inside each Popover on initial load and after
+HTMX swaps. The generated calendar reads the server-rendered inputs and writes
+completed selections back to them. If the vendor module fails, the hidden
+calendar controls stay hidden and the form still submits the native fields.
+Before HTMX serializes history, the adapter removes listeners and restores the
+pristine input and Popover markup. The same mounting path restores the live
+roots left outside the swap and the roots inserted on a cache hit or miss. Both
+start from the server-saved values.
 
 ---
 

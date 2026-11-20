@@ -68,16 +68,38 @@ void main() {
   });
 
   test('both workflows gate generated gallery freshness after dependencies and before builds', () {
-    for (final relative in <String>['.github/workflows/ci.yml', '.github/workflows/deploy-docs-site.yml']) {
-      final workflow = File(p.join(root, relative)).readAsStringSync();
-      final dependencies = workflow.indexOf('dart pub get');
-      final freshness = workflow.indexOf('dart run tool/generate_theme_gallery.dart --check');
-      final firstBuild = relative.endsWith('ci.yml')
-          ? workflow.indexOf('- name: Root workspace tests')
-          : workflow.indexOf('- name: Build site (production, sub-path)');
-      expect(freshness, greaterThan(dependencies), reason: relative);
-      expect(firstBuild, greaterThan(freshness), reason: relative);
+    // ci.yml runs mise tasks: `setup` fetches dependencies, then each tier runs `lint`, whose first command is the
+    // freshness check, before any test command.
+    final ci = File(p.join(root, '.github', 'workflows', 'ci.yml')).readAsStringSync();
+    final setupStep = ci.indexOf('run: mise run setup');
+    expect(setupStep, greaterThanOrEqualTo(0), reason: 'ci.yml');
+    expect(ci.indexOf('- name: Check\n'), greaterThan(setupStep), reason: 'ci.yml');
+    final mise = File(p.join(root, 'mise.toml')).readAsStringSync();
+    String task(String name) => RegExp(
+      '^\\[tasks\\.${RegExp.escape(name)}\\]\\n([\\s\\S]*?)(?=^\\[|(?![\\s\\S]))',
+      multiLine: true,
+    ).firstMatch(mise)!.group(1)!;
+    expect(task('setup'), contains('dart pub get'));
+    final lintCommands = RegExp(r'^  "([^"]+)",$', multiLine: true).allMatches(task('lint')).map((m) => m.group(1));
+    expect(lintCommands.first, 'dart run tool/generate_theme_gallery.dart --check');
+    for (final tier in <String>['check', 'check-full']) {
+      final body = task(tier);
+      final lint = body.indexOf('{ task = "lint" }');
+      expect(lint, greaterThanOrEqualTo(0), reason: tier);
+      final tests = [body.indexOf('{ task = "test" }'), body.indexOf('dart test')].where((i) => i >= 0);
+      expect(tests, isNotEmpty, reason: '$tier runs no tests');
+      expect(tests.reduce((a, b) => a < b ? a : b), greaterThan(lint), reason: '$tier must lint before testing');
     }
+
+    final docs = File(p.join(root, '.github', 'workflows', 'deploy-docs-site.yml')).readAsStringSync();
+    final dependencies = docs.indexOf('dart pub get');
+    final freshness = docs.indexOf('dart run tool/generate_theme_gallery.dart --check');
+    expect(freshness, greaterThan(dependencies), reason: 'deploy-docs-site.yml');
+    expect(
+      docs.indexOf('- name: Build site (production, sub-path)'),
+      greaterThan(freshness),
+      reason: 'deploy-docs-site.yml',
+    );
   });
 
   test('gallery layout is site-local, conditional, prefix-safe, and count-neutral', () {

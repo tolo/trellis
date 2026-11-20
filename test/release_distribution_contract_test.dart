@@ -529,21 +529,31 @@ trellis_x:
       ).firstMatch(gateScript)?.group(1);
 
       expect(workflow, 'ci.yml');
-      final ci = readWorkspaceFile('.github/workflows/$workflow');
-      expect(_jobBlock(ci, 'check'), allOf(contains('melos run --no-select analyze'), contains('dart test')));
+      // The job runs the mise tier tasks; the commands themselves live in mise.toml.
+      final job = _jobBlock(readWorkspaceFile('.github/workflows/$workflow'), 'check');
+      expect(job, allOf(contains('mise run setup'), contains("'check-full' || 'check'")));
+      final mise = readWorkspaceFile('mise.toml');
+      expect(_miseTask(mise, 'lint'), contains('melos run --no-select analyze'));
+      expect(_miseTask(mise, 'test'), contains('dart test'));
+      for (final tier in ['check', 'check-full']) {
+        expect(_miseTask(mise, tier), contains('{ task = "lint" }'), reason: '$tier must run lint');
+      }
     });
 
-    test('ci.yml and release-binaries.yml pin the same Dart SDK', () {
+    test('mise.toml (used by ci.yml) and release-binaries.yml pin the same Dart SDK', () {
       // CI's analyze/format/test evidence only speaks for the release toolchain
       // if both use the same SDK; and release-binaries must take it from the
       // single `env.DART_SDK`, not a per-job literal that can drift.
-      String pin(String path) {
-        final match = RegExp(r'^\s*DART_SDK:\s*(\S+)', multiLine: true).firstMatch(readWorkspaceFile(path));
-        expect(match, isNotNull, reason: 'no DART_SDK env in $path');
-        return match!.group(1)!;
-      }
+      final misePin = RegExp(r'^dart = "([^"]+)"$', multiLine: true).firstMatch(readWorkspaceFile('mise.toml'));
+      expect(misePin, isNotNull, reason: 'no exact dart pin in mise.toml [tools]');
+      final releasePin = RegExp(
+        r'^\s*DART_SDK:\s*(\S+)',
+        multiLine: true,
+      ).firstMatch(readWorkspaceFile('.github/workflows/release-binaries.yml'));
+      expect(releasePin, isNotNull, reason: 'no DART_SDK env in release-binaries.yml');
 
-      expect(pin('.github/workflows/release-binaries.yml'), pin('.github/workflows/ci.yml'));
+      expect(releasePin!.group(1), misePin!.group(1));
+      expect(readWorkspaceFile('.github/workflows/ci.yml'), isNot(contains('setup-dart')));
       final releaseWorkflow = readWorkspaceFile('.github/workflows/release-binaries.yml');
       expect(
         RegExp(r'^\s*sdk:\s*[0-9]', multiLine: true).hasMatch(releaseWorkflow),
@@ -557,12 +567,14 @@ trellis_x:
       final ci = readWorkspaceFile('.github/workflows/ci.yml');
       final releaseWorkflow = readWorkspaceFile('.github/workflows/release-binaries.yml');
       final checkoutPin = RegExp(r'actions/checkout@([0-9a-f]{40})').firstMatch(releaseWorkflow)!.group(1);
-      final dartPin = RegExp(r'dart-lang/setup-dart@([0-9a-f]{40})').firstMatch(releaseWorkflow)!.group(1);
+      final uses = RegExp(r'uses: (\S+)').allMatches(ci).map((m) => m.group(1)!).toList();
 
-      expect(ci, isNot(matches(RegExp(r'uses: (?:actions/checkout|dart-lang/setup-dart|actions/setup-node)@v\d'))));
-      expect(RegExp('actions/checkout@$checkoutPin').allMatches(ci), hasLength(2));
-      expect(RegExp('dart-lang/setup-dart@$dartPin').allMatches(ci), hasLength(2));
-      expect(ci, contains('actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7'));
+      expect(uses, hasLength(2));
+      expect(uses, everyElement(matches(RegExp(r'@[0-9a-f]{40}$'))), reason: 'every action must be pinned to a SHA');
+      expect(uses, contains('actions/checkout@$checkoutPin'));
+      expect(uses.where((u) => u.startsWith('jdx/mise-action@')), hasLength(1));
+      // mise.toml pins node; without it the JS harnesses skip and CI=true fails them.
+      expect(readWorkspaceFile('mise.toml'), matches(RegExp(r'^node = "\d+\.\d+\.\d+"$', multiLine: true)));
     });
   });
 
@@ -783,6 +795,16 @@ Iterable<String> _installSnippetFiles(Directory root) sync* {
 String _jobsSection(String workflow) {
   final jobs = RegExp(r'^jobs:$', multiLine: true).firstMatch(workflow);
   return jobs == null ? '' : workflow.substring(jobs.end);
+}
+
+/// Extracts one `[tasks.<name>]` table from [mise] (`mise.toml`), from its header to
+/// the next table header, so an assertion about one task can't be satisfied by another.
+String _miseTask(String mise, String name) {
+  final header = RegExp('^\\[tasks\\.${RegExp.escape(name)}\\]\$', multiLine: true).firstMatch(mise);
+  if (header == null) return '';
+  final rest = mise.substring(header.end);
+  final next = RegExp(r'^\[', multiLine: true).firstMatch(rest);
+  return next == null ? rest : rest.substring(0, next.start);
 }
 
 /// Extracts a single top-level job block (keyed by [jobId] under `jobs:`) from a

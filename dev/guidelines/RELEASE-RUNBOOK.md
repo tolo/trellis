@@ -25,7 +25,7 @@ human action. Steps are in execution order; each names the guard that enforces i
   `RestrictedBranchException` and changes nothing anywhere else.
 - **Local gate**, from the workspace root. It runs CI's checks plus the macOS release-gate tests.
   The Dart toolchain does not install these test prerequisites:
-  - **Node 22** — three JS-driven checks. `ci.yml` installs it.
+  - **Node 22** — three JS-driven checks. `mise.toml` pins it, so `mise run` installs it locally and in CI.
   - **Chrome** — the theme reflow sweep and the visual baseline comparator drive it headless over the DevTools
     protocol. `ci.yml` only *asserts* it (`google-chrome --version`) because the ubuntu image ships it, so on your
     own machine you have to supply it.
@@ -64,8 +64,8 @@ human action. Steps are in execution order; each names the guard that enforces i
   (TD-044): the release gate keys on `ci.yml`, so an upstream outage there blocked a release tag over something the
   commit never touched. **A red `font-provenance` run therefore does not block a tag — but it still means the vendored
   fonts do not reproduce from their pinned upstream. Fix it; do not release past it.**
-- Push the branch: `ci.yml` runs the `check` job on every branch (E2E on `main` only), and `font-provenance.yml` runs
-  beside it.
+- Push the branch: `ci.yml` runs `mise run check` on every branch (`check-full`, with E2E, on `main` only), and
+  `font-provenance.yml` runs beside it.
 - `dart pub publish --dry-run` in every package whose public API changed (0 warnings).
 
 ### Trellis UI release prep
@@ -123,7 +123,7 @@ git switch main && git pull --ff-only
 git merge --squash <branch> && git commit          # one commit, one-line subject, e.g. "0.10.1: <summary>"
 git push origin main
 ```
-Guard: `AGENTS.md` Workflow Rules (squash only). `ci.yml` starts on the push (`check` + `e2e` on `main`), and
+Guard: `AGENTS.md` Workflow Rules (squash only). `ci.yml` starts on the push (`mise run check-full` on `main`), and
 `font-provenance.yml` beside it. Only `ci.yml` gates the tag.
 
 ## 3. Wait for CI green on `main`

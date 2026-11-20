@@ -1,10 +1,14 @@
 # Key Development Commands
 
+The tiers below run through [mise](https://mise.jdx.dev) tasks defined in `mise.toml`, the same ones `ci.yml` runs.
+mise installs the pinned Dart 3.13.0 and Node 22 on first use. Prerequisite: `brew install mise`, then `mise trust` once
+per clone or worktree. `mise tasks` lists every task.
+
 ## Build
 
 ```bash
-# Install / sync dependencies
-dart pub get
+# Activate melos 7.4.0 and install / sync dependencies
+mise run setup
 ```
 
 ## Code Quality
@@ -12,11 +16,11 @@ dart pub get
 > **Line width: 120 chars** — enforced in analysis_options.yaml.
 
 ```bash
-# Format
-dart format lib test
+# Format every package and the root tool/ and test/ in place
+mise run fmt
 
-# Analyze
-dart analyze
+# Theme gallery check, analyze and format checks (writes nothing)
+mise run lint
 ```
 
 ## Testing
@@ -29,9 +33,9 @@ discovery. See [UI qualification gate](TESTING-STRATEGY.md#ui-qualification-gate
 
 | Tier | Command |
 |---|---|
-| fast | `dart run tool/generate_theme_gallery.dart --check && melos run --no-select analyze && melos run --no-select format:check && melos exec --dir-exists=test -- dart test --exclude-tags=e2e --exclude-tags=ui-gate && dart test --exclude-tags=visual --exclude-tags=ui-gate && dart format --output=none --set-exit-if-changed tool test` |
-| full | `dart run tool/generate_theme_gallery.dart --check && melos run --no-select analyze && melos run --no-select format:check && melos exec --dir-exists=test -- dart test --exclude-tags=ui-gate && dart test --exclude-tags=visual --exclude-tags=ui-gate && dart format --output=none --set-exit-if-changed tool test` |
-| release-gate | `melos exec --dir-exists=test -- dart test --exclude-tags=e2e && dart test` |
+| fast | `mise check` |
+| full | `mise check-full` |
+| release-gate | `mise release-gate` |
 | run one test | `dart test "{file}" --plain-name "{test}"` |
 
 ```bash
@@ -45,12 +49,13 @@ cd packages/trellis && dart test test/engine_test.dart
 ## Workspace-wide (Melos, from the repo root)
 
 ```bash
-# CI's `check` tier — run all five before pushing
+# The commands behind `mise check`, for running one step on its own
+dart run tool/generate_theme_gallery.dart --check
 melos run --no-select analyze
 melos run --no-select format:check
+dart format --output=none --set-exit-if-changed tool test
 melos exec --dir-exists=test -- dart test --exclude-tags=e2e --exclude-tags=ui-gate
 dart test --exclude-tags=visual --exclude-tags=ui-gate          # root suite without local release gates
-dart format --output=none --set-exit-if-changed tool test
 ```
 
 ## Trellis UI sync
@@ -68,5 +73,5 @@ With both browsers and the recorded host OS, run the same gate at release prep t
 
 ## Release
 
-See [RELEASE-RUNBOOK.md](RELEASE-RUNBOOK.md). Entry point: `tool/release.sh X.Y.Z` on `main` (`--dry-run` to rehearse);
+See [RELEASE-RUNBOOK.md](RELEASE-RUNBOOK.md). Entry point: `mise release X.Y.Z` (`tool/release.sh`) on `main` (`--dry-run` to rehearse);
 `tool/verify_release.sh X.Y.Z` afterwards. Never run the version bump on a feature branch.

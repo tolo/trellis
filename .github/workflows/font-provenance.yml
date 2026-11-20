@@ -44,7 +44,7 @@ jobs:
           python-version: '3.14'
 
       # Python and fontTools/brotli are pinned because the output hash is
-      # toolchain-versioned - the same reason ci.yml pins DART_SDK. The triple
+      # toolchain-versioned - the same reason mise.toml pins Dart. The triple
       # is the tooling contract declared by tool/subset_fonts.py's TOOLING
       # constant; move them together or --verify reports spurious drift.
       - name: Install the pinned subsetting toolchain

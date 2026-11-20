@@ -24,7 +24,7 @@ checks sit below all of them and run first.
 | Unit | nothing; templates come from `MapLoader`, no real IO | `packages/trellis/test` (51 files), `trellis_css`, parts of `trellis_site` | every push |
 | Integration | one boundary: temp dir, in-process HTTP, one socket | adapters, `trellis_site` fixture builds, `trellis_dev`, CLI generator tests | every push |
 | Contract (rendered) | `node` or headless Chrome over the DevTools protocol | root `test/`: theme, reflow, search-client, font suites | every push, except `visual` |
-| E2E | generated project, `pub get`, spawned servers | `trellis_cli`, files tagged `e2e` (5 files) | `e2e` job on `main` and manual dispatch |
+| E2E | generated project, `pub get`, spawned servers | `trellis_cli`, files tagged `e2e` (5 files) | `mise run check-full` in CI on `main` and manual dispatch |
 | UI qualification | Chrome + Firefox, served component pages | `tool/ui_gate/`; tests tagged `ui-gate` | local release gate only |
 | Visual baseline | Chrome plus the host's fonts | `test/visual_baseline_test.dart`, tag `visual` | release gate only |
 

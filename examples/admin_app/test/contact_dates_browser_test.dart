@@ -157,13 +157,14 @@ final class _DateBrowser {
       (request) async {
         final isMutation = request.method == 'PUT' || request.method == 'POST';
         final body = isMutation ? await request.readAsString() : '';
-        final path = request.requestedUri.path;
+        final uri = request.requestedUri;
+        final path = uri.path;
         final response = missingVendor && path == callyAsset
             ? Response.notFound('Cally fixture 404')
             : await app.handler(isMutation ? request.change(body: body) : request);
         if (path.startsWith('/contacts') || path == callyAsset) {
           browser.exchanges.add((
-            url: request.requestedUri.path + (request.requestedUri.hasQuery ? '?${request.requestedUri.query}' : ''),
+            url: uri.hasQuery ? '$path?${uri.query}' : path,
             method: request.method,
             status: response.statusCode,
             htmx: request.headers['hx-request'] == 'true',
@@ -217,7 +218,8 @@ final class _DateBrowser {
       "document.querySelector('#actions-1:popover-open') && document.activeElement.textContent.trim() === 'Edit'",
     );
     await driver.press('Enter');
-    await waitFor("document.querySelector('#edit-1:modal') && $_idle && ${enhanced ? '($_mounted)' : 'true'}");
+    final mounted = enhanced ? ' && ($_mounted)' : '';
+    await waitFor("document.querySelector('#edit-1:modal') && $_idle$mounted");
     final edit = exchanges.skip(before).single;
     expect((edit.method, Uri.parse(edit.url).path, edit.status, edit.htmx), ('GET', '/contacts/1/edit', 200, true));
   }

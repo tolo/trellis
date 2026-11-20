@@ -77,10 +77,10 @@ void main() {
       }
       if (path == callyAsset) {
         expect(sha256.convert(asset.bodyBytes).toString(), callySha256);
+      } else if (path == dateRecipeAsset) {
+        expect(asset.body, contains("import './cally-0.9.2.js'"));
       }
     }
-    final recipe = await http.get(base.resolve(dateRecipeAsset));
-    expect(recipe.body, contains("import './cally-0.9.2.js'"));
     final created = await http.post(
       base.resolve('/contacts'),
       headers: mutationHeaders(page.headers['set-cookie']!, page.body),

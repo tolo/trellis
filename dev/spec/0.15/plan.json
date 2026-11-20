@@ -149,7 +149,7 @@
       "dependsOn": [
         "S01"
       ],
-      "status": "pending",
+      "status": "in-progress",
       "fis": "s03-sheet.md",
       "completedTaskIds": [],
       "scope": "Provide a four-edge modal side panel, preserve navigation focus on link activation, and make nested popups, content swaps and plain content work.",
@@ -330,7 +330,7 @@
       "id": "S11",
       "name": "Site trusted URLs",
       "dependsOn": [],
-      "status": "pending",
+      "status": "in-progress",
       "fis": "s11-site-trusted-urls.md",
       "completedTaskIds": [],
       "scope": "Apply the ADR-015 source-and-field declaration through the normal site build, including source isolation, invalid declarations, front matter and site data. Close TD-059.",

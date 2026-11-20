@@ -135,3 +135,14 @@
   - Update relevant component pages and the `trellis_ui` changelog. Include a copyable submenu example and the toast swipe and overlay motion behaviour.
   - **Verify**: `cmd: dart run tool/generate_ui_reference.dart --check && (cd packages/trellis_ui && dart test test/menu_tabs_toast_fragments_test.dart test/dialog_fragments_test.dart)` – generated catalogue and legacy fragment rendering agree. Read the component reference against the served examples.
   - **SATISFIES**: SC01
+
+## Discovered Requirements
+
+- **Submenus must fit the available width.** S01's shared placement sets
+  `--available-width` and `--available-height` on `data-trellis-popup` panels. The width cap became concrete
+  when S01 tested horizontal placement at a viewport edge. If the panel has a minimum width, limit it to
+  `--available-width` so it can shrink before overflowing. Traced from S01/TI05, 2026-11-20.
+- **Keep the focus handoff during Popover exit.** S01’s browser review found that Tab could focus a link
+  hidden behind an open panel. Keep the next control focused when Tab leaves, restore the trigger on Escape
+  or pointer light dismissal, and preserve same-document link navigation. Exit presentation must preserve
+  these observed focus paths. Traced from S01/TI06, 2026-11-20.

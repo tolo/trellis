@@ -115,3 +115,10 @@
   - Include a path-prefixed current-page example and explain the native disclosure fallback. Generate the site data from the qualification record.
   - **Verify**: `cmd: dart run tool/generate_ui_reference.dart --check && cd packages/trellis_ui && dart test test/readme_test.dart` – compare generated metadata and catalogue with the port and record, and read the three fragment signatures in the reference example.
   - **SATISFIES**: SC02
+
+## Discovered Requirements
+
+- **Navigation panels must fit the available width.** S01's shared placement sets
+  `--available-width` and `--available-height` on `data-trellis-popup` panels. The width cap became concrete
+  when S01 tested horizontal placement at a viewport edge. If the panel has a minimum width, limit it to
+  `--available-width` so it can shrink before overflowing. Traced from S01/TI05, 2026-11-20.

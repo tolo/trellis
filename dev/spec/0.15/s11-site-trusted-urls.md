@@ -114,3 +114,16 @@
 ## Final Validation Checklist
 
 - Serve the built package reference using `dev/guidelines/VISUAL-VALIDATION.md#serving`, read the captures of its declaration example at the specified widths, and check the route under the strict policy.
+
+## Implementation Observations
+
+- ASSUMPTION: Use the named file's real site-relative path for trust. A symlink alias can still
+  load ordinary data, but cannot qualify as the declared source. Revisit only if the authority
+  model explicitly permits aliases.
+- Code review found that stringified keys could hide an absent literal key or shadow a declared one.
+  Field matching now uses original YAML keys and rejects shadowed declarations. Review also fixed
+  declared site-data parse errors so the builder and CLI include the pair. Routing: Fix applied.
+- External implementations of the public `Page` interface continue to work. Trust metadata follows
+  the discovered page's identity in a weak side table. A separate regression confirms the same
+  source boundary for `SiteConfig` constructed from Dart.
+- The Lattice guide's strict-route capture recorded only the existing TD-023 inline theme script.

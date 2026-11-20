@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:html/parser.dart' as html;
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:trellis/trellis.dart' show MapLoader, TemplateNotFoundException;
@@ -104,6 +105,59 @@ status: ignored
     expect(builtPage(), contains('<b>Public</b>'));
     expect(builtPage(), isNot(contains('In development')));
     expect(result.warnings, isEmpty);
+  });
+
+  test('trustedUrls reaches a post-Markdown shortcode and an explicit argument still overrides it', () async {
+    const bookmarklet = 'javascript:void(0)';
+    const blocked = 'about:invalid#trellis-unsafe-url';
+    fixture(useFragment: false);
+    write('content/sample.md', '''
+---
+bookmarklet: "$bookmarklet"
+---
+<!-- tl:badge -->
+
+<!-- tl:badge bookmarklet="$bookmarklet" -->
+''');
+    write('layouts/shortcodes/badge.html', r'''
+<i tl:replace="~{acme/link :: link(${bookmarklet})}"></i>
+''');
+    final result = await TrellisSite(
+      siteConfig('''
+uses: [acme]
+trustedUrls:
+  - source: content/sample.md
+    field: bookmarklet
+'''),
+      sourceFactories: {
+        'acme': () =>
+            SiteSource(loader: MapLoader({'acme/link': r'<a tl:fragment="link(url)" tl:href="${url}">Open</a>'})),
+      },
+    ).build();
+    final links = html.parse(builtPage()).querySelectorAll('main a');
+    expect(links.map((link) => link.attributes['href']), [bookmarklet, blocked]);
+    expect(result.warnings, isEmpty);
+  });
+
+  test('trustedUrls supplied from Dart still require a site-relative source', () async {
+    final site = write('site/layouts/home.html', '<h1>Home</h1>').parent.parent.path;
+    write('outside/_index.md', '---\nbookmarklet: "javascript:void(0)"\n---\nHome.\n');
+    final config = SiteConfig(
+      siteDir: site,
+      contentDir: p.join(root.path, 'outside'),
+      trustedUrls: [(source: '../outside/_index.md', field: 'bookmarklet')],
+    );
+
+    await expectLater(
+      TrellisSite(config).build(),
+      throwsA(
+        isA<SiteConfigException>().having(
+          (error) => error.message,
+          'message',
+          allOf(contains('../outside/_index.md'), contains('bookmarklet')),
+        ),
+      ),
+    );
   });
 
   test('site and theme naming one source write its asset once', () async {

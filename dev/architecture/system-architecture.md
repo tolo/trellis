@@ -5,7 +5,8 @@ Canonical reference for understanding the Trellis SDK architecture: how the pack
 **Current through**: dev reload, scaffold CSP and UI previews updated for 0.14 on 2026-11-17; `trellis dev` site
 preview, including theme watch recovery, output exclusions and startup cleanup, is current through 0.14 on
 2026-11-18. The named site source
-pipeline and CLI registry were verified for 0.14 on 2026-11-18. The wider scope is the v0.11.0 SDK + the
+pipeline and CLI registry were verified for 0.14 on 2026-11-18. Source-scoped URL trust is current through
+0.15 on 2026-11-20. The wider scope is the v0.11.0 SDK + the
 2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
 Lattice `site_demo` home block, and the `examples/docs_site/` proof) + the 2026-09-04 HTMX 4 adapter
 compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme stylesheets compile through
@@ -386,12 +387,12 @@ The `CssDialect` registers a `ScopeProcessor` that wraps fragment `<style>` cont
 
 ```
 content/**/*.md   ──►  ContentDiscovery    (recursive .md scanning, URL derivation)
-                       FrontMatterParser   (YAML extraction, draft detection)
+                       FrontMatterParser   (YAML extraction, draft detection, trusted URL field matching)
                        ShortcodeProcessor  (pre-Markdown: {{% name %}})
 data/**/*.yaml    ──►  MarkdownRenderer    (GitHub-flavored MD → HTML, TOC, summary)
                        ShortcodeProcessor  (post-Markdown: <!-- tl:name -->)
 layouts/**/*.html ──►  TaxonomyCollector   (term collection, virtual pages)
-static/**         ──►  PageGenerator       (layout resolution, data cascade, Trellis render)
+static/**         ──►  PageGenerator       (site data trust matching, data cascade, Trellis render)
                        SitemapGenerator    (sitemap.xml with lastmod)
                        FeedGenerator       (Atom + RSS feeds — opt-in)
                        SearchIndexGenerator (JSON index and client, opt-in)
@@ -406,14 +407,15 @@ static/**         ──►  PageGenerator       (layout resolution, data cascad
 1. **Clean** output directory. Load the theme manifest and resolve the combined site and theme `uses` list against the
    build's factory registry. Validate source asset paths and ownership before creating output.
 2. **Discover** pages — recursive `.md` scan, Hugo-style URL derivation (with optional `pathPrefix` applied at the single `deriveUrl` seam), page bundle detection
-3. **Parse** front matter — YAML extraction, draft flagging
+3. **Parse** front matter — YAML extraction, draft flagging and matching source-scoped URL declarations
 4. **Shortcodes (pre-MD)** — `{{% name %}}` and `{{% name %}} content {{% /name %}}` processed before Markdown
 5. **Render** Markdown — GitHub-flavored via `package:markdown`, summary + TOC extraction
 6. **Highlight** code (ADR-010) — build-time syntax highlighting woven into the Markdown render and both shortcode passes: when `highlight.enabled` (default), `CodeHighlighter` (`package:highlight`) rewrites each fenced `<pre><code class="language-x">` block into `.hljs-*` token spans; disabled or unknown-language blocks stay plain `<pre><code>`. No client-side highlighter JS ships — runs before path-prefix link rewriting in step 9
 7. **Shortcodes (post-MD)** — `<!-- tl:name -->` processed after Markdown. When the build uses sources, page front matter
    supplies additional variables and explicit shortcode parameters win.
 8. **Taxonomies** — collect terms from front matter, generate virtual listing and term pages
-9. **Generate** HTML — priority-ordered layout resolution, 5-level data cascade, Trellis `renderFile()`, final path-prefix link rewriting
+9. **Generate** HTML — load data, match its URL declarations, reject unmatched declarations, resolve layouts, run the
+   data cascade and Trellis `renderFile()`, then rewrite root-absolute links for the path prefix
 10. **Static assets** — write source bytes, copy theme then site static files (skip `.scss`/`.sass`), copy bundle assets
 11. **Sitemap** — `sitemap.xml` with `<lastmod>` from date or mtime
 12. **Feeds** — Atom `feed.xml` (+ optional `rss.xml`) when `feeds:` config present; per-section feeds supported
@@ -444,6 +446,14 @@ Global data has its own theme/site precedence. A theme's `data/*.yaml` files loa
 `data/*.yaml` files load second. The filename stem becomes the key below `${data}` (`navigation.yaml` →
 `${data.navigation}`), and a site file replaces the complete theme value at the same stem rather than deep-merging it.
 Non-overlapping stems from both sources remain available.
+
+`trustedUrls` matches a real site-relative input path and a literal top-level YAML key before key conversion
+and data merges. The source loaders wrap eligible strings as `TrustedUrl` in render projections. Section inheritance
+carries the wrapper, a page override replaces it, and site data still replaces a theme file at the same stem.
+Page maps for single pages, list slices and taxonomies keep wrappers on their own fields. Generated fields
+take precedence over front matter. Post-Markdown shortcodes in builds using sources share the projection,
+with explicit arguments taking precedence. Search and feeds read the original front-matter values.
+[ADR-015](../adrs/ADR-015-url-scheme-blocking.md#static-site-trust-declarations)
 
 ### Pagination
 

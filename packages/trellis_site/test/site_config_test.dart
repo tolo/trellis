@@ -100,6 +100,59 @@ void main() {
     });
   });
 
+  group('SiteConfig.load trustedUrls', () {
+    late File configFile;
+    setUp(() {
+      final directory = Directory.systemTemp.createTempSync('trellis_trusted_urls_config_');
+      addTearDown(() => directory.deleteSync(recursive: true));
+      configFile = File(p.join(directory.path, 'trellis_site.yaml'));
+    });
+
+    SiteConfig load(String yaml) => SiteConfig.load((configFile..writeAsStringSync(yaml)).path);
+
+    test('defaults to no declarations and reads literal field names', () {
+      expect(load('title: Test Site').trustedUrls, isEmpty);
+      expect(load('trustedUrls: []').trustedUrls, isEmpty);
+      expect(
+        load('''
+trustedUrls:
+  - source: pages/tools.md
+    field: bookmarklet
+  - source: records/brand.yaml
+    field: brand.logo
+''').trustedUrls,
+        [(source: 'pages/tools.md', field: 'bookmarklet'), (source: 'records/brand.yaml', field: 'brand.logo')],
+      );
+    });
+
+    test('rejects malformed declarations and non-site-relative source paths', () {
+      for (final value in [
+        'null',
+        '"a string"',
+        '{source: content/tools.md, field: bookmarklet}',
+        '[null]',
+        '[{source: content/tools.md}]',
+        '[{field: bookmarklet}]',
+        '[{source: 42, field: bookmarklet}]',
+        '[{source: content/tools.md, field: 42}]',
+        '[{source: content/tools.md, field: ""}]',
+        '[{source: content/tools.md, field: bookmarklet, extra: true}]',
+        for (final path in ['/tools.md', '../tools.md', 'content/../tools.md', 'C:/tools.md', r'..\tools.md'])
+          "[{source: '$path', field: bookmarklet}]",
+      ]) {
+        expect(
+          () => load('trustedUrls: $value'),
+          throwsA(
+            isA<SiteConfigException>()
+                .having((error) => error.message, 'message', contains('trustedUrls'))
+                .having((error) => error.configPath, 'configPath', p.canonicalize(configFile.path)),
+          ),
+          reason: value,
+        );
+      }
+    });
+  });
+
   group('SiteConfig.load()', () {
     test('loads valid config with all fields', () {
       final config = SiteConfig.load(buildSiteConfig());

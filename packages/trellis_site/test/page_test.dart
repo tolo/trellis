@@ -1,6 +1,35 @@
 import 'package:trellis_site/trellis_site.dart';
 import 'package:test/test.dart';
 
+class _ExternalPage implements Page {
+  @override
+  final String sourcePath = 'sample.md';
+  @override
+  final String url = '/sample/';
+  @override
+  final String section = '';
+  @override
+  final String sectionPath = '';
+  @override
+  final PageKind kind = PageKind.single;
+  @override
+  bool isDraft = false;
+  @override
+  final bool isBundle = false;
+  @override
+  final List<String> bundleAssets = const [];
+  @override
+  Map<String, dynamic> frontMatter = {'title': 'Sample'};
+  @override
+  String rawContent = '';
+  @override
+  String content = '';
+  @override
+  String summary = '';
+  @override
+  List<TocEntry> toc = [];
+}
+
 void main() {
   group('TocEntry', () {
     test('constructs with required fields', () {
@@ -132,6 +161,12 @@ void main() {
   });
 
   group('pageToMap', () {
+    test('accepts an external implementation of Page', () {
+      final projected = pageToMap(_ExternalPage());
+      expect(projected['title'], 'Sample');
+      expect(projected['url'], '/sample/');
+    });
+
     test('converts TocEntry objects to plain maps', () {
       final page = Page(
         sourcePath: 'posts/hello.md',

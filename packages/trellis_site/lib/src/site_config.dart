@@ -26,6 +26,9 @@ class SiteConfigException implements Exception {
   }
 }
 
+/// A site-relative source and literal top-level field authorized by the maintainer.
+typedef TrustedUrlDeclaration = ({String source, String field});
+
 /// Configuration loaded from `trellis_site.yaml`.
 ///
 /// All directory paths are stored as absolute paths.
@@ -94,6 +97,9 @@ class SiteConfig {
   /// Names of extra template and static asset sources to use in a build.
   final List<String> uses;
 
+  /// Source-scoped URL trust declarations from site configuration.
+  final List<TrustedUrlDeclaration> trustedUrls;
+
   const SiteConfig._({
     required this.siteDir,
     required this.title,
@@ -113,6 +119,7 @@ class SiteConfig {
     this.highlightConfig = const HighlightConfig(),
     this.themeConfig,
     required this.uses,
+    required this.trustedUrls,
   });
 
   /// Creates a [SiteConfig] with the given values.
@@ -137,6 +144,7 @@ class SiteConfig {
     HighlightConfig highlightConfig = const HighlightConfig(),
     ThemeConfig? themeConfig,
     List<String> uses = const [],
+    List<TrustedUrlDeclaration> trustedUrls = const [],
   }) {
     String resolve(String? rel, String defaultName) {
       if (rel == null) return p.join(siteDir, defaultName);
@@ -162,6 +170,7 @@ class SiteConfig {
       highlightConfig: highlightConfig,
       themeConfig: themeConfig,
       uses: List.unmodifiable(uses),
+      trustedUrls: List.unmodifiable(trustedUrls),
     );
   }
 
@@ -256,8 +265,40 @@ class SiteConfig {
       highlightConfig: highlightConfig,
       themeConfig: themeConfig,
       uses: parseSourceNames(map, (message) => SiteConfigException(message, configPath: resolvedPath)),
+      trustedUrls: _parseTrustedUrls(map, resolvedPath),
     );
   }
+
+  static List<TrustedUrlDeclaration> _parseTrustedUrls(YamlMap config, String configPath) {
+    if (!config.containsKey('trustedUrls')) return const [];
+    final declarations = config['trustedUrls'];
+    if (declarations is! YamlList) {
+      throw SiteConfigException('trustedUrls must be a list of source/field mappings', configPath: configPath);
+    }
+
+    final result = <TrustedUrlDeclaration>[];
+    for (final (index, entry) in declarations.indexed) {
+      final source = entry is YamlMap ? entry['source'] : null;
+      final field = entry is YamlMap ? entry['field'] : null;
+      if (entry is! YamlMap || entry.length != 2 || source is! String || field is! String || field.trim().isEmpty) {
+        throw SiteConfigException(
+          'trustedUrls[$index] must contain exactly a source path and a non-empty string field: $entry',
+          configPath: configPath,
+        );
+      }
+      if (_nonPortableSource.hasMatch(source) ||
+          source.split('/').any((part) => part.isEmpty || part == '.' || part == '..')) {
+        throw SiteConfigException(
+          'trustedUrls[$index] source "$source" for field "$field" must be a site-relative path with forward slashes',
+          configPath: configPath,
+        );
+      }
+      result.add((source: source, field: field));
+    }
+    return result;
+  }
+
+  static final _nonPortableSource = RegExp(r'[\\:\x00]');
 
   /// Strips trailing slashes from a `baseUrl`, so it concatenates cleanly with
   /// the root-absolute page URLs everything downstream joins onto it.

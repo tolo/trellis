@@ -101,6 +101,7 @@ SiteConfig overrideSiteBuildConfig(SiteConfig rawConfig, {String? outputDir, Str
     highlightConfig: rawConfig.highlightConfig,
     themeConfig: rawConfig.themeConfig,
     uses: rawConfig.uses,
+    trustedUrls: rawConfig.trustedUrls,
     // The constructor re-normalizes, so passing the already-normalized config value is safe.
     pathPrefix: pathPrefix ?? rawConfig.pathPrefix,
   );

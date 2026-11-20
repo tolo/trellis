@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
 import 'page.dart';
+import 'trusted_url_sources.dart';
 import 'yaml_utils.dart';
 
 /// Thrown when front matter cannot be parsed from a content file.
@@ -58,7 +59,9 @@ class FrontMatterParser {
   ///
   /// Throws [FrontMatterException] if the YAML is malformed or the file cannot
   /// be read.
-  void parse(Page page, String contentDir) {
+  void parse(Page page, String contentDir) => _parse(page, contentDir);
+
+  void _parse(Page page, String contentDir, {TrustedUrlSources? trustedUrls}) {
     final fullPath = p.join(contentDir, page.sourcePath);
     final String source;
     try {
@@ -68,24 +71,35 @@ class FrontMatterParser {
     }
 
     final (frontMatter, rawContent) = _extractFrontMatter(source, fullPath);
-    page.frontMatter = frontMatter;
+    if (trustedUrls != null) {
+      setTrustedPageUrls(page, trustedUrls.loadFields(fullPath, frontMatter ?? const <String, Object?>{}));
+    }
+    page.frontMatter = frontMatter == null ? {} : convertYamlMap(frontMatter);
     page.rawContent = rawContent;
-    page.isDraft = frontMatter['draft'] == true;
+    page.isDraft = page.frontMatter['draft'] == true;
   }
 }
+
+/// Grants trust while the original YAML keys are still available.
+void parseFrontMatterWithTrustedUrls(
+  FrontMatterParser parser,
+  Page page,
+  String contentDir,
+  TrustedUrlSources trustedUrls,
+) => parser._parse(page, contentDir, trustedUrls: trustedUrls);
 
 /// Extracts front matter and raw content from [source].
 ///
 /// Returns a record of `(frontMatter, rawContent)`. If [source] does not begin
-/// with a `---` delimiter, `frontMatter` is an empty map and `rawContent` is
+/// with a `---` delimiter, `frontMatter` is null and `rawContent` is
 /// the full source string.
-(Map<String, dynamic>, String) _extractFrontMatter(String source, String path) {
+(YamlMap?, String) _extractFrontMatter(String source, String path) {
   // Normalize Windows line endings to simplify delimiter detection.
   final normalized = source.replaceAll('\r\n', '\n');
 
   // Opening delimiter must be on the very first line.
   if (!normalized.startsWith('---\n')) {
-    return ({}, source);
+    return (null, source);
   }
 
   // Search for closing delimiter starting after the opening '---\n' (position 4).
@@ -95,7 +109,7 @@ class FrontMatterParser {
 
   if (closingIndex == -1) {
     // No closing delimiter — treat entire file as raw content (graceful fallback).
-    return ({}, source);
+    return (null, source);
   }
 
   // Extract the YAML block (between opening '---\n' and closing '\n---').
@@ -119,14 +133,12 @@ class FrontMatterParser {
   }
 
   if (yaml == null) {
-    // Empty front matter block — valid, produce empty map.
-    return ({}, rawContent);
+    return (null, rawContent);
   }
 
   if (yaml is! YamlMap) {
     throw FrontMatterException('Front matter must be a YAML mapping (got ${yaml.runtimeType})', path: path);
   }
 
-  final frontMatter = convertYamlMap(yaml);
-  return (frontMatter, rawContent);
+  return (yaml, rawContent);
 }

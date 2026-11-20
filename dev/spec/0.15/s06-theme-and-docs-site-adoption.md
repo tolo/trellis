@@ -154,3 +154,7 @@
   `<tl:block tl:slot="content">`. The server emits a labelled section in normal flow, then Sheet enhancement
   moves its children into the dialog. Keep the same links through the breakpoint and asset-loss cases.
   Traced from S03/TI03 and TI06, 2026-11-20.
+
+- **Leave sidebar disclosure visibility to native details.** S04 reproduced a failed Chromium text-fragment
+  reveal when CSS hid a closed panel with `display: none`. Keep Lattice's multiple-open sidebar groups unnamed
+  and let the browser reveal a section containing the target. Traced from S04/TI02, 2026-11-20.

@@ -211,7 +211,7 @@
       "dependsOn": [
         "S01"
       ],
-      "status": "pending",
+      "status": "in-progress",
       "fis": "s05-navigation-menu.md",
       "completedTaskIds": [],
       "scope": "Provide grouped site links with pointer and keyboard panel switching, current-page semantics and access to every destination before enhancement.",

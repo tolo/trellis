@@ -44,9 +44,7 @@ states: {default: []}
 page: /pass.html?defect=late-outline
 root: '#component'
 elements: {input: '#name'}
-states:
-  default:
-    - eval: "document.getElementById('name').focus()"
+states: {default: []}
 """),
     );
     await forBrowsers((driver) async {
@@ -54,6 +52,20 @@ states:
       final state = (capture['states'] as Map)['default/focus-visible:input'] as Map;
       final style = ((state['elements'] as Map)['input'] as Map)['style'] as Map;
       expect(style['outlineColor'], 'rgb(0, 0, 255)', reason: driver.name);
+
+      await driver.open(server.baseUrl.resolve(manifest.page));
+      final steps = await driver.evaluate(r'''(async () => {
+        const input = document.querySelector('#name');
+        const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve));
+        input.focus();
+        for (let frame = 0; frame < 7; frame++) await nextFrame();
+        const before = input.dataset.outlineStep;
+        input.blur();
+        input.focus();
+        await nextFrame();
+        return [before, input.dataset.outlineStep];
+      })()''');
+      expect(steps, ['7', '8'], reason: '${driver.name}: focus recovery continues the same outline sequence');
     });
   }, timeout: Timeout(Duration(minutes: 2)));
 

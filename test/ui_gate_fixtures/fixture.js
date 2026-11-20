@@ -44,10 +44,11 @@ if(defect==='background-focus')document.getElementById('name').addEventListener(
     else window.fixtureOther=window.open('/next.html','focus-contender');};
   requestAnimationFrame(background);
 });
+// Native focus recovery can fire focus again while the first sequence is settling.
 if(defect==='late-outline')document.getElementById('name').addEventListener('focus',()=>{
   let frame=0;const input=document.getElementById('name');
   const advance=()=>{input.setAttribute('data-outline-step',String(++frame));if(frame<24)requestAnimationFrame(advance);};
   requestAnimationFrame(advance);
-});
+},{once:true});
 if(defect)document.documentElement.classList.add('defect-'+defect);
 })();

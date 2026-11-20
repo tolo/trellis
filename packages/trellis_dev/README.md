@@ -10,7 +10,7 @@ Part of the [Trellis SDK](https://github.com/tolo/trellis).
 
 ```yaml
 dependencies:
-  trellis_dev: ^0.13.0
+  trellis_dev: ^0.14.0
 ```
 
 `devMiddleware()` is imported from server code (`bin/` or Dart Frog `routes/`), so list it under `dependencies`, as

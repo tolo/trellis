@@ -13,7 +13,7 @@ example.
 Install one by naming it:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.13.0
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.14.0
 ```
 
 The `--theme` selector requires Trellis CLI 0.11.0 or later.

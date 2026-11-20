@@ -12,7 +12,7 @@ The build supplies the shared search client beside the JSON index.
 Install it from the Trellis repository:
 
 ```sh
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.13.0
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.14.0
 ```
 
 That copies `themes/lattice/` into your site's `themes/` and sets `theme: lattice` in `trellis_site.yaml`. `theme:`

@@ -40,7 +40,7 @@ front matter rather than composing a page out of front-matter blocks.
 Install it out of the Trellis repository and set it in `trellis_site.yaml`:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme verdant --ref v0.13.0
+trellis theme add https://github.com/tolo/trellis --theme verdant --ref v0.14.0
 ```
 
 ```yaml

@@ -312,13 +312,13 @@ Options:
 
 ```bash
 # Install a built-in theme out of the Trellis repository
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.13.0
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.14.0
 
 # Install a single-theme repository (name derived from the repository)
 trellis theme add https://github.com/yourname/trellis-theme-orchard
 
 # Pin to a published release tag
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.13.0
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.14.0
 
 # Install from a local path (theme development)
 trellis theme add ./path/to/my-theme

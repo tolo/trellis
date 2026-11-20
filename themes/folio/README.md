@@ -12,7 +12,7 @@ build supplies the shared search client beside the JSON index.
 Install it from the Trellis repository:
 
 ```sh
-trellis theme add https://github.com/tolo/trellis --theme folio --ref v0.13.0
+trellis theme add https://github.com/tolo/trellis --theme folio --ref v0.14.0
 ```
 
 That copies `themes/folio/` into your site's `themes/` and sets `theme: folio` in `trellis_site.yaml`. `theme:` names

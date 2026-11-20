@@ -26,7 +26,7 @@ The six themes that ship with Trellis (`arbor`, `bloom`, `folio`, `lattice`,
 installs one of them out of that repository:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.13.0
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.14.0
 ```
 
 This copies `themes/lattice/` into your site's `themes/lattice/` and sets
@@ -289,7 +289,7 @@ pinned version, remove and re-add with a new `--ref`:
 
 ```bash
 trellis theme remove lattice
-trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.13.0
+trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.14.0
 ```
 
 `trellis theme list` shows each installed theme with its version and marks the
@@ -321,7 +321,7 @@ There are two ways out:
 
   ```bash
   trellis theme remove lattice
-  trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.13.0
+  trellis theme add https://github.com/tolo/trellis --theme lattice --ref v0.14.0
   ```
 
   `theme remove` clears `theme:` from `trellis_site.yaml` and leaves

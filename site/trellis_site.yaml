@@ -77,7 +77,7 @@ theme_params:
       text: dart pub add trellis
       kind: command
     - prefix: "+"
-      text: trellis 0.13.0 — no Node, no build step
+      text: trellis 0.14.0 — no Node, no build step
       kind: output
     - prefix: "$"
       text: trellis create my_app && cd my_app

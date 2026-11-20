@@ -10,8 +10,8 @@ in `dev/ui-gate/` in the SDK checkout. Screen-reader and Safari qualification re
 
 ```yaml
 dependencies:
-  trellis: ^0.13.0
-  trellis_ui: ^0.13.0
+  trellis: ^0.14.0
+  trellis_ui: ^0.14.0
 ```
 
 ```dart

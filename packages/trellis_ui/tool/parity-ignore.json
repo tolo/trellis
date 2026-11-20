@@ -592,5 +592,23 @@
     "direction": "missing",
     "name": "group/accordion-trigger",
     "reason": "The native summary exposes expanded state without an aria-expanded attribute. A single icon rotates from its parent details open state instead of using Base UI's two conditional icons."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "navigation-menu-indicator",
+    "reason": "Native details with a chevron indicates which group is open; there is no shared Base UI viewport indicator."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-navigation-menu-indicator",
+    "reason": "The native summary and its chevron show the active group."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-navigation-menu-indicator-arrow",
+    "reason": "The shared placement seam has no Base UI viewport arrow."
   }
 ]

@@ -211,9 +211,18 @@
       "dependsOn": [
         "S01"
       ],
-      "status": "in-progress",
+      "status": "done",
       "fis": "s05-navigation-menu.md",
-      "completedTaskIds": [],
+      "completedTaskIds": [
+        "TI01",
+        "TI02",
+        "TI03",
+        "TI04"
+      ],
+      "verified": {
+        "at": "2026-11-20T18:14Z",
+        "summary": "dart test test/navigation_menu_browser_test.dart test/budget_test.dart test/release_gates_test.dart test/sync_report_test.dart test/gate_records_test.dart test/readme_test.dart -> exit=0, 00:06 +26: All tests passed!"
+      },
       "scope": "Provide grouped site links with pointer and keyboard panel switching, current-page semantics and access to every destination before enhancement.",
       "sourceRefs": [
         "dev/spec/0.15/prd.md#fr5-navigation-menu",

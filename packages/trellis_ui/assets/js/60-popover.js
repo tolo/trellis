@@ -4,12 +4,7 @@ class TlPopover extends TlElement {
 
   onConnect() {
     const popup = this.popup;
-    const { side, align, offset } = this.dataset;
-    const options = {
-      side: ['top', 'right', 'bottom', 'left'].includes(side) ? side : 'bottom',
-      align: ['start', 'center', 'end'].includes(align) ? align : 'start',
-      offset: Number.isFinite(Number(offset)) ? Number(offset) : 4,
-    };
+    const options = { ...this.dataset };
     const reflect = (open) => {
       setOpenState(popup, open);
       this.trigger?.setAttribute('aria-expanded', String(open));
@@ -80,7 +75,5 @@ class TlPopover extends TlElement {
   onBeforeSwap(region) {
     if (region?.contains(this.trigger)) this.preparePopups(this);
   }
-
-  onDisconnect() { this.preparePopups(this); }
 }
 customElements.define('tl-popover', TlPopover);

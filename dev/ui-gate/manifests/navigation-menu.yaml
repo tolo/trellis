@@ -1,0 +1,79 @@
+name: navigation-menu
+page: /components/navigation-menu
+root: '#component'
+elements:
+  home: '#nav-home'
+  guidesTrigger: '#guides-trigger'
+  guidesPanel: '#guides'
+  currentLink: '#nav-overview'
+  referenceTrigger: '#reference-trigger'
+states:
+  default: []
+  open:
+    # Keep appearance setup free of focus and pointer paint. The keyboard recipe
+    # below starts with native input and the browser tests exercise a real pointer.
+    - eval: document.getElementById('guides-trigger').click()
+    - &guidesOpen
+      wait: "document.querySelector('#guides:popover-open[style]') !== null"
+keyboard:
+  - focus: '#guides-trigger'
+  - press: Enter
+  - *guidesOpen
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: nav-overview}
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: nav-accordion}
+  - press: Tab
+  - wait: "document.activeElement.id === 'reference-trigger' && document.querySelector('#reference:popover-open') !== null && document.querySelector('#guides:popover-open') === null"
+  - press: ArrowDown
+  - expect: {expression: document.activeElement.id, equals: nav-components}
+  - press: Escape
+  - wait: "document.activeElement.id === 'reference-trigger' && document.querySelector('#component :popover-open') === null"
+  - focus: '#guides-trigger'
+  - press: ' '
+  - *guidesOpen
+  - press: Escape
+  - wait: "document.activeElement.id === 'guides-trigger' && document.querySelector('#component :popover-open') === null"
+semantics:
+  - expression: >-
+      (() => {
+        const nav = document.getElementById('component');
+        const triggers = [...nav.querySelectorAll('summary')];
+        const links = [...nav.querySelectorAll('a[href]')];
+        return nav.tagName === 'NAV' && nav.getAttribute('aria-label') === 'Site navigation' &&
+          nav.querySelector('ul').children.length === 3 &&
+          triggers.length === 2 && triggers.every(trigger => {
+            const panel = document.getElementById(trigger.getAttribute('aria-controls'));
+            return trigger.parentElement.tagName === 'DETAILS' &&
+              trigger.parentElement.open === panel.matches(':popover-open') && panel.popover === 'auto';
+          }) &&
+          links.length === 5 && links.every(link => !link.hasAttribute('role')) &&
+          links.filter(link => link.getAttribute('aria-current') === 'page').map(link => link.id).join() === 'nav-overview';
+      })()
+    equals: true
+htmx:
+  region: '#demo'
+  swap:
+    - eval: document.getElementById('swap').click()
+  navigate:
+    - state: open
+    - eval: document.getElementById('navigate').click()
+  transient: '#component details[open], #component [data-trellis-popup][style], #component [data-trellis-popup][data-side], #component [data-trellis-popup][data-align]'
+  probe:
+    steps:
+      - eval: >-
+          (() => {
+            window.opens = 0;
+            document.getElementById('guides').addEventListener('beforetoggle', event => {
+              if (event.newState === 'open') window.opens++;
+            });
+          })()
+      - state: open
+    expression: window.opens
+    equals: 1
+instances: [tl-navigation-menu]
+provenance:
+  - file: ../../../packages/trellis_ui/vendor/shadcn/shadcn@4.23.0/LICENSE.md
+    license: MIT
+  - file: ../../../packages/trellis_ui/vendor/lucide/LICENSE
+    license: ISC

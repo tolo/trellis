@@ -19,6 +19,7 @@
     "input",
     "input-group",
     "label",
+    "navigation-menu",
     "native-select",
     "pagination",
     "popover",
@@ -50,6 +51,18 @@
     ]
   },
   "structuralSkip": {
+    "cn-navigation-menu-content": {
+      "from": "shadcn@4.23.0",
+      "reason": "The pinned Base UI activation-direction variant is invalid in the standalone compiler and drives a shared sliding viewport. Trellis positions each native popover and keeps the generated Vega paint."
+    },
+    "cn-navigation-menu-popup": {
+      "from": "shadcn@4.23.0",
+      "reason": "The pinned easing utility is invalid in the standalone compiler and the sizes depend on the Base UI viewport. The native popup sizes to its panel content."
+    },
+    "cn-navigation-menu-positioner": {
+      "from": "shadcn@4.23.0",
+      "reason": "The native popover uses the shared viewport caps and CSSOM positioning in place of measured Base UI dimensions and position transitions."
+    },
     "cn-toast": {
       "from": "shadcn@4.21.1",
       "reason": "Base UI toast stacking and swipe utilities read --toast-index, --toast-height and --toast-swipe-movement-*, which Base UI's runtime sets and Trellis's vanilla toast does not drive; they overlap stacked toasts"

@@ -24,6 +24,7 @@ const releaseComponents = {
   'field',
   'grid',
   'input',
+  'navigation-menu',
   'native-select',
   'pagination',
   'radio',

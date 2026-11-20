@@ -196,6 +196,19 @@ void main() {
     }
   });
 
+  test('Navigation menu preview marks its current page in both deploy shapes', () {
+    if (policy.isWithdrawn('navigation-menu')) return;
+    const componentPath = '$_componentRoute/navigation-menu/';
+    for (final MapEntry(key: prefix, value: output) in outputs.entries) {
+      final path = '${prefix.isEmpty ? '/' : prefix}$componentPath';
+      final uri = Uri.parse('https://example.test$path');
+      final document = html.parse(File(p.join(output.path, componentPath, 'index.html')).readAsStringSync());
+      final links = document.querySelectorAll('$_preview a[aria-current="page"]');
+      expect(links, hasLength(1), reason: path);
+      expect(uri.resolve(links.single.attributes['href']!).path, path);
+    }
+  });
+
   test('tokens a page lists exist in the shipped stylesheet', () {
     final css = utf8.decode(trellisUiRespond('/$_suiteCss')!.body);
     final declared = RegExp(r'(--[\w-]+)\s*:').allMatches(css).map((match) => match[1]).toSet();

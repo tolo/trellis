@@ -1,7 +1,7 @@
 {
   "tag": "shadcn@4.23.0",
-  "tsxFiles": 27,
-  "hooksPrimary": 173,
+  "tsxFiles": 28,
+  "hooksPrimary": 184,
   "hooks": [
     "trellis-accordion",
     "trellis-accordion-content",
@@ -136,6 +136,17 @@
     "trellis-native-select",
     "trellis-native-select-icon",
     "trellis-native-select-wrapper",
+    "trellis-navigation-menu",
+    "trellis-navigation-menu-content",
+    "trellis-navigation-menu-indicator",
+    "trellis-navigation-menu-indicator-arrow",
+    "trellis-navigation-menu-item",
+    "trellis-navigation-menu-link",
+    "trellis-navigation-menu-list",
+    "trellis-navigation-menu-popup",
+    "trellis-navigation-menu-positioner",
+    "trellis-navigation-menu-trigger",
+    "trellis-navigation-menu-trigger-icon",
     "trellis-pagination",
     "trellis-pagination-content",
     "trellis-pagination-ellipsis",
@@ -186,10 +197,10 @@
     "trellis-tooltip-content-logical"
   ],
   "hooksSecondary": 8,
-  "hooksWithStructural": 96,
+  "hooksWithStructural": 102,
   "styleRulesTotal": 441,
-  "styleRulesKept": 154,
-  "styleRulesWithoutTsxHook": 287,
+  "styleRulesKept": 164,
+  "styleRulesWithoutTsxHook": 277,
   "slots": [
     "accordion",
     "accordion-content",
@@ -291,6 +302,13 @@
     "native-select-optgroup",
     "native-select-option",
     "native-select-wrapper",
+    "navigation-menu",
+    "navigation-menu-content",
+    "navigation-menu-indicator",
+    "navigation-menu-item",
+    "navigation-menu-link",
+    "navigation-menu-list",
+    "navigation-menu-trigger",
     "pagination",
     "pagination-content",
     "pagination-ellipsis",
@@ -409,6 +427,15 @@
     "trellis-native-select-wrapper": [
       "group/native-select"
     ],
+    "trellis-navigation-menu": [
+      "group/navigation-menu"
+    ],
+    "trellis-navigation-menu-list": [
+      "group"
+    ],
+    "trellis-navigation-menu-trigger": [
+      "group/navigation-menu-trigger"
+    ],
     "trellis-radio-group-item": [
       "group/radio-group-item",
       "peer"
@@ -433,6 +460,9 @@
     "trellis-rtl-flip": 4
   },
   "structuralSkipped": [
+    "trellis-navigation-menu-content",
+    "trellis-navigation-menu-popup",
+    "trellis-navigation-menu-positioner",
     "trellis-toast"
   ],
   "orphanLiterals": [
@@ -495,6 +525,18 @@
       "line": 64,
       "slot": "native-select-optgroup",
       "literal": "bg-[Canvas] text-[CanvasText]"
+    },
+    {
+      "file": "navigation-menu.tsx",
+      "line": 70,
+      "slot": "navigation-menu-trigger",
+      "literal": "group"
+    },
+    {
+      "file": "navigation-menu.tsx",
+      "line": 125,
+      "slot": "navigation-menu-content",
+      "literal": "relative size-full overflow-hidden"
     },
     {
       "file": "pagination.tsx",

@@ -7,7 +7,11 @@ import '../../../tool/ui_gate/release_policy.dart';
 void main() {
   test('the component table lists every public fragment of required or example-used components', () {
     final policy = ComponentReleasePolicy.read(Directory.current.parent.parent);
-    final components = {...requiredReleaseComponents, if (!policy.isWithdrawn('alert-dialog')) 'alert-dialog'};
+    final components = {
+      ...requiredReleaseComponents,
+      if (!policy.isWithdrawn('alert-dialog')) 'alert-dialog',
+      if (!policy.isWithdrawn('navigation-menu')) 'navigation-menu',
+    };
     final declaration = RegExp(r'tl:fragment="([\w-]+)\(([^"]*)\)"');
     final row = RegExp(r'^\| `([\w-]+) :: ([\w-]+)` \| ([^|]+) \|', multiLine: true);
     final catalogue = File('README.md').readAsStringSync();

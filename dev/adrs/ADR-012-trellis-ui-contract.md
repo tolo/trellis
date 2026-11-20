@@ -252,9 +252,9 @@ observed failures as specified below.
 - Trellis's catalogue promise is a composed stack (Tier 1 suite plus Tier 2
   integrations), not single-suite completeness; Tier 2 accessibility claims belong
   to upstreams, not Trellis.
-- Trellis owns all Tier 1 behaviour and accessibility (an estimated 500–550 JS lines
-  for the catalogue) plus a recurring upstream sync. The expensive sync event is
-  upstream adding or re-implementing a component (toast: a sonner wrapper replaced by
+- Trellis owns Tier 1 behaviour and accessibility, with an estimated 600 owned JS
+  lines after the 0.15 additions and a recurring upstream sync. The expensive
+  sync event is upstream adding or re-implementing a component (toast: a sonner wrapper replaced by
   Base UI toast), not restyling.
 - shadcn's naming becomes Trellis's public naming: a hook rename that changes a
   `trellis-*` class is a Trellis breaking change.
@@ -376,22 +376,40 @@ The CLI uses the same embedded package to supply fragments and assets to opted-i
   same-origin stylesheet.
 - HTMX's settle step re-applies old `style` attributes with `setAttribute`, which
   `style-src 'self'` blocks; CSSOM-positioned popups drop their `style` attribute
-  before `htmx:beforeSwap` and `htmx:beforeHistorySave`.
+  before `htmx:beforeSwap` and `htmx:beforeHistorySave`. The shared placement code
+  uses CSSOM for four-sided viewport flip and clamp. CSS anchor positioning lacks
+  Baseline support and has open nested-popover and scroll issues.
+- A Tier 2 recipe mounts on initial load and after HTMX swaps. Before history save,
+  tear it down and restore a pristine copy of the server markup. Remount every
+  still-connected instance after saving or restoring history. The restored value
+  is the server-saved value. Preserving unsaved picks would need a separate spike.
 
 ### Tier 2 vetting
 
-Tier 2 shortlist (CSP-verified 2026-08-18): Cally 0.8.x (date/range), Tabulator 6.x
-(data grid and tree), Uppy 4.x (multi-upload). AG Grid Community is the documented
-grid fallback, requiring a `styleNonce` policy. Vaadin's free tier is excluded. Tom
-Select was dropped 2026-10-04: the Tier 1 combobox covers rich select. Web Awesome
-Free's tree is not on the shortlist; Tabulator's `dataTree` covers the tree row.
+The 0.15 shortlist draws on the 2026-11-18 research (maintainer's private research
+repo, canonical: `trellis/research/15-trellis-ui-tier2-refresh/research.md`).
 
-Per the vetting gate, Cally has **no audited accessibility programme**, so its
-recipe ships documented as unaudited. Uppy was assembled with a bundler in the CSP
-spike; its recipe must use an upstream prebuilt bundle or Uppy fails the no-Node
-rule. A widget that rewrites DOM is destroyed on `htmx:beforeHistorySave` so history
-snapshots hold the server markup. Building any Tier 2 widget as a Trellis-owned
-component remains gated on the revisit triggers below.
+| Widget | Decision and evidence |
+|---|---|
+| Cally 0.9.2 | Date/range recipe. MIT, 12.3 KB gzip. Passed strict CSP, axe, `sv-SE` locale with Monday start, and range selection in Chrome and Firefox. Safari is a release-prep check. Cally has no audited accessibility programme. |
+| Tabulator 6.7.1 | Grid and tree candidate for a later recipe. Its `dataTree` covers the tree row. |
+| Uppy 6.0.8 | Multi-upload candidate for a later recipe. It needs an upstream prebuilt bundle to meet the no-Node rule. |
+| FilePond 4.32.14 | Upload candidate for a later recipe. The refreshed evidence covers Chrome only. |
+| AG Grid Community 36.3.0 | Grid fallback for legacy uses with a `styleNonce` policy or with `noStyle`. |
+
+Vaadin's free tier and Web Awesome Free's tree remain outside the shortlist.
+The Tier 1 combobox covers the rich select use case formerly assigned to Tom Select.
+
+Each recipe names an exact version and SHA-256 for its app-vendored bundle. The
+native `<input type="date">` is the baseline, with two inputs for a range. Cally
+enhances those inputs when a calendar is needed. The shadcn Calendar wraps
+react-day-picker, exposes three `cn-*` hooks and one literal slot, and would need
+an estimated 300–400 lines of owned JS. Revisit a Tier 1 Calendar when two
+independent apps need one and the upstream recipe fails vetting or maintenance.
+
+The 0.15 release gate caps suite-owned behavior at 700 lines, excluding app-owned
+recipe glue. It caps the sum of the three embedded responses gzipped separately
+at level 9 at 30,000 bytes.
 
 ### First component slice
 
@@ -434,7 +452,7 @@ limitation: `renderFragment` renders a parameterised fragment by bare name, see 
 Record one accepted qualification failure per component below, in the form
 `component | unsupported or removed | comma-separated failed gate item IDs`.
 Use the exact failed item IDs from the retained gate record. Dialog, dropdown
-menu, combobox, tabs, toast, and composed app routes cannot have a disposition.
+menu, combobox, popover, tabs, toast, and composed app routes cannot have a disposition.
 
 `unsupported` keeps the runtime fragment, gallery and manifest available for
 repeatable checks. `removed` drops the runtime fragment, gallery and manifest
@@ -498,3 +516,5 @@ component qualifies again. An unavailable check cannot justify a disposition.
   Select dropped from Tier 2; acceptance decoupled from the first slice.
 - **2026-11-18** – the maintainer confirmed the unsupported-emulation fallback for every component and
   composed app route across the CLI, release checks and publication.
+- **2026-11-20** – 0.15 shortlist and date baseline, pristine-markup recipe lifecycle, CSSOM placement,
+  and suite budgets (LEA-41).

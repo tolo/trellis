@@ -85,8 +85,9 @@ browser pass. Replace the corresponding `release-prep` values with the observed 
 manual checks after a change to the affected markup or behaviour. The owner reviews each sync disposition and
 records `Owner review: pass` in the sync report.
 
-An actual failure in Dialog, Dropdown Menu, Combobox, Tabs, Toast or an app surface blocks release. Fix it and
-rerun its automated and manual checks. For another failing component, keep its gate record and list the exact
+An actual failure in Dialog, Dropdown Menu, Combobox, Popover, Tabs, Toast or an app surface blocks release. Fix it and
+rerun its automated and manual checks. After a Popover failure, rerun the affected dependent checks as well.
+For another failing component, keep its gate record and list the exact
 failed items under [Optional component release dispositions](../adrs/ADR-012-trellis-ui-contract.md#optional-component-release-dispositions),
 for example `badge | unsupported | safari` or `badge | removed | visual, safari`.
 

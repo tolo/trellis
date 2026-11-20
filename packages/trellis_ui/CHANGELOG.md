@@ -1,3 +1,8 @@
+## 0.15.0
+
+- Add Popover with trigger and content slots, four-sided viewport placement and focus return after dismissal.
+- Render only supplied Card copy. Omitted title, description and body slots no longer show demo text.
+
 ## 0.14.0
 
 - Add embedded suite fragments, same-origin assets and the pinned shadcn porting pipeline

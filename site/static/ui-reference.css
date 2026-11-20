@@ -27,6 +27,11 @@
   outline-offset: revert-layer;
 }
 
+/* Lattice's document headings use a separate font from the compact Popover title. */
+.ui-reference-preview .trellis-popover-title {
+  font: revert-layer;
+}
+
 .prose .ui-reference-preview .trellis-table {
   display: revert-layer;
   width: revert-layer;

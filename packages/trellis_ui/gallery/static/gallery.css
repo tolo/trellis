@@ -4,7 +4,7 @@
 .gallery header a { color: inherit; text-decoration: none; font-weight: 600; }
 .gallery h1 { font-size: 2rem; letter-spacing: -0.04em; }
 .gallery section { margin-block: 2rem; }
-.gallery h2 { font-size: 1rem; font-weight: 600; }
+.gallery h2:not(.trellis-popover-title) { font-size: 1rem; font-weight: 600; }
 .gallery-row { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; }
 
 .gallery-sample { margin-block: 1.5rem; max-inline-size: 32rem; }

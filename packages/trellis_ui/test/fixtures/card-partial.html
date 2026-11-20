@@ -1,0 +1,11 @@
+<h1>Partial Cards</h1>
+<div tl:replace="~{trellis-ui/card :: card()}" id="title-and-body">
+  <span tl:slot="title">On this page</span>
+  <p>Contents of this page.</p>
+</div>
+<div tl:replace="~{trellis-ui/card :: card()}" id="body-only">
+  <p>Body only.</p>
+</div>
+<div tl:replace="~{trellis-ui/card :: card()}" id="title-only">
+  <span tl:slot="title">Title only</span>
+</div>

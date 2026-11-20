@@ -14,7 +14,7 @@ void main() {
           return withoutBlockComments.split('\n').map((line) => line.trim());
         })
         .where((line) => line.isNotEmpty && !line.startsWith('//'));
-    expect(lines.length, lessThanOrEqualTo(400));
+    expect(lines.length, lessThanOrEqualTo(700));
     expect(bundleScript(Directory.current), startsWith('(function () {\n"use strict";'));
   });
 }

@@ -27,9 +27,19 @@ Link the same-origin assets in your layout.
 <script src="/trellis-ui/trellis-ui.js" defer></script>
 ```
 
-If the app uses htmx, self-host it and disable `allowEval` and
-`includeIndicatorStyles` in the htmx config (`includeIndicatorCSS` on HTMX 4).
-The indicator stylesheet handles the loading state.
+For interactive HTMX composition, self-host HTMX 2.0.10, the version the suite
+gallery qualifies for swaps, request errors and history restoration. Disable
+`allowEval` and `includeIndicatorStyles` in the HTMX config. The indicator
+stylesheet handles the loading state.
+
+Trellis's server request helpers handle both HTMX versions. The client suite
+listens for HTMX 2's `htmx:beforeSwap` and `htmx:responseError`. HTMX 4.0.0
+emits `htmx:before:swap` and `htmx:response:error` for those interactions. Open
+popup replacement is unqualified on HTMX 4. In Studio's 0.14 Chromium check,
+a remote Combobox request that returned HTTP 500 settled and announced “No
+results” on 2.0.10. On 4.0.0 with error swaps cancelled, it stayed searching
+with a closed popup and an empty live region. Static suite fragments do not
+depend on either event.
 
 ## Serve the assets
 

@@ -35,8 +35,8 @@ templates and fragments throw the engine's existing exceptions. `TrellisUiLoader
 
 Link `/trellis-ui/trellis-ui.css`, `/trellis-ui/htmx-indicator.css` and the deferred classic script
 `/trellis-ui/trellis-ui.js`. Serve these paths before the app's fallback route. All assets are same-origin and need no
-inline script, inline style or eval. If using htmx, self-host it and set the `htmx-config` meta options `allowEval` and
-`includeIndicatorStyles` (`includeIndicatorCSS` on HTMX 4) to `false`. The gallery shows a complete strict-CSP shell.
+inline script, inline style or eval. The gallery qualifies HTMX 2.0.10 for interactive swaps, request errors and history
+restoration. Self-host it and set the `htmx-config` meta options `allowEval` and `includeIndicatorStyles` to `false`.
 
 Public Dart names include `TrellisUiLoader`, `TrellisUiResponse` (`statusCode`, `headers`, `body`), `trellisUiRespond`,
 `materializeTrellisUi` and the read-only `trellisUiAssetPaths` list of root-absolute asset URLs.
@@ -73,6 +73,10 @@ slots take the contents of the caller marker; unmarked caller content fills the 
 | `input :: input` | none | none | native text input; caller `type` overrides text |
 | `native-select :: native-select` | `size` | anonymous native `option` / `optgroup` markup | `default`, `sm`; fallback `default` |
 | `pagination :: pagination` | `pages, previous, next` | none | pages `{label, href, current, ellipsis}`; nullable previous/next URLs |
+| `popover :: popover` | `id, side, align, offset` | `trigger`, `content` | forwards attributes to the panel; sides `top`, `right`, `bottom`, `left`; alignment `start`, `center`, `end`; defaults `bottom`, `start`, 4 px |
+| `popover :: popoverHeader` | none | anonymous header content | forwards to the header group |
+| `popover :: popoverTitle` | none | anonymous title | an `h2` |
+| `popover :: popoverDescription` | none | anonymous description | a `p` |
 | `radio :: radio` | `legend` | none | one native radio in a fieldset; repeat with the same `name` to group choices |
 | `separator :: separator` | `orientation` | none | `vertical`, otherwise horizontal `hr` |
 | `stack :: stack` | `gap` | anonymous | gap scale; fallback `md` |
@@ -122,7 +126,7 @@ that scrolls horizontally. Keep table minimum widths in application CSS (the gal
 
 ### Interactive fragments
 
-Use a unique base `id` for each dialog, alert dialog, menu, tabs, combobox and toast viewport on a page. Menu and tab
+Use a unique base `id` for each dialog, alert dialog, menu, popover, tabs, combobox and toast viewport on a page. Menu and tab
 parts derive their IDs and relationships from the parent scope. Keep tab values unique within their list and
 choose an enabled tab's value for `active`. Arrow keys wrap, skip disabled items and tabs, and move focus; tabs
 activate on Enter, Space or click. Menu checkbox items stay open, and item clicks also dispatch a bubbling
@@ -133,6 +137,10 @@ backdrop click. Mark footer buttons that should close it with `data-dialog-close
 and close when the action slot's button runs. A server-rendered `open` dialog opens modally on connection and
 honours native `autofocus`. To name a specific opener on a server response, pass its DOM ID in `data-return-focus`
 on the fragment host.
+
+The Popover trigger slot supplies the label of a native button. Click, Enter or Space opens the panel and moves focus
+inside. Tabbing out of the panel closes it without moving focus again. Escape or clicking outside returns focus to
+the trigger. Use a plain link or native disclosure when an action must stay available without the suite script.
 
 Give the combobox input a separate label using its base ID. Send text through an app-chosen query parameter
 (`name="q"`, for example) and use `hx-target="#<id>-results"` with `hx-swap="outerHTML"` to replace suggestions.

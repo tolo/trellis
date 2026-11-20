@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 import '../../../tool/ui_gate/release_policy.dart';
 
 void main() {
-  test('the component table lists every public fragment of the six components', () {
+  test('the component table lists every public fragment of required or example-used components', () {
     final policy = ComponentReleasePolicy.read(Directory.current.parent.parent);
     final components = {...requiredReleaseComponents, if (!policy.isWithdrawn('alert-dialog')) 'alert-dialog'};
     final declaration = RegExp(r'tl:fragment="([\w-]+)\(([^"]*)\)"');

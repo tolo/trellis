@@ -11,6 +11,7 @@ const requiredReleaseComponents = {'combobox', 'dialog', 'dropdown-menu', 'popov
 /// Every release subject, including components whose evidence is retained after removal.
 const releaseComponents = {
   ...requiredReleaseComponents,
+  'accordion',
   'alert',
   'alert-dialog',
   'badge',

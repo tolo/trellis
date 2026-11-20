@@ -431,7 +431,8 @@ final class GateSession {
           await driver.evaluate('''(() => {const root=document.querySelector(${jsonEncode(manifest.root)});
         return [root,...root.querySelectorAll('*')].filter(el=>el.matches('button,input,select,textarea,a[href],summary,[tabindex]')).filter(el=>{
           const r=el.getBoundingClientRect();
-          return ($modalAllowsFocusScript)(el)&&r.width&&r.height&&!el.disabled;
+          // A closed native disclosure can retain boxes for its hidden descendants.
+          return ($modalAllowsFocusScript)(el)&&r.width&&r.height&&el.checkVisibility()&&!el.disabled;
         }).map((el,i)=>{el.setAttribute('data-ui-gate-focus',String(i));return '[data-ui-gate-focus="'+i+'"]';});})()''')
               as List;
       for (final selector in selectors.cast<String>()) {

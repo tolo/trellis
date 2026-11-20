@@ -1,0 +1,8 @@
+.trellis-accordion-trigger { cursor: pointer; }
+.trellis-accordion-trigger:focus-visible { outline: 2px solid var(--foreground); outline-offset: 2px; }
+.trellis-accordion-trigger::-webkit-details-marker { display: none; }
+/* The empty upstream focus pseudo-element would take a third flex position. */
+.trellis-accordion-trigger::after { content: none; }
+/* Native open state rotates one icon. The summary's flex layout already aligns it to the end. */
+.trellis-accordion-trigger-icon { display: block; margin-left: 0; }
+.trellis-accordion-item[open] > .trellis-accordion-trigger > .trellis-accordion-trigger-icon { rotate: 180deg; }

@@ -21,6 +21,7 @@ const galleryPolicy =
 Handler galleryHandler(Directory root, {Directory? pages}) {
   final directory = pages ?? Directory('${root.path}/gallery/pages');
   final engine = Trellis(loader: TrellisUiLoader());
+  var accordionRender = 0;
   String shell(String body, String title) => File('${root.path}/gallery/shell.html')
       .readAsStringSync()
       .replaceFirst('<!-- title -->', const HtmlEscape().convert(title))
@@ -59,6 +60,8 @@ Handler galleryHandler(Directory root, {Directory? pages}) {
         final page = engine.render(file.readAsStringSync(), {
           'dialogOpen': request.requestedUri.queryParameters['open'] == '1',
           'fruitOptions': _fruitOptions,
+          // HTMX inserts new details before removing the old named group.
+          if (name == 'accordion') 'accordionRender': ++accordionRender,
           'sheetSides': ['right', 'top', 'bottom', 'left'],
           'sheetUpdated': request.requestedUri.queryParameters['updated'] == '1',
           'columns': ['Name', 'Email address', 'Status'],

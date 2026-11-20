@@ -1,8 +1,14 @@
 {
   "tag": "shadcn@4.23.0",
-  "tsxFiles": 26,
-  "hooksPrimary": 167,
+  "tsxFiles": 27,
+  "hooksPrimary": 173,
   "hooks": [
+    "trellis-accordion",
+    "trellis-accordion-content",
+    "trellis-accordion-content-inner",
+    "trellis-accordion-item",
+    "trellis-accordion-trigger",
+    "trellis-accordion-trigger-icon",
     "trellis-alert",
     "trellis-alert-action",
     "trellis-alert-description",
@@ -180,11 +186,16 @@
     "trellis-tooltip-content-logical"
   ],
   "hooksSecondary": 8,
-  "hooksWithStructural": 91,
+  "hooksWithStructural": 96,
   "styleRulesTotal": 441,
-  "styleRulesKept": 150,
-  "styleRulesWithoutTsxHook": 291,
+  "styleRulesKept": 154,
+  "styleRulesWithoutTsxHook": 287,
   "slots": [
+    "accordion",
+    "accordion-content",
+    "accordion-item",
+    "accordion-trigger",
+    "accordion-trigger-icon",
     "alert",
     "alert-action",
     "alert-description",
@@ -349,6 +360,9 @@
     "data-variant"
   ],
   "markers": {
+    "trellis-accordion-trigger": [
+      "group/accordion-trigger"
+    ],
     "trellis-alert": [
       "group/alert"
     ],
@@ -414,6 +428,7 @@
     ]
   },
   "hooksSeenInSeveralLiterals": {
+    "trellis-accordion-trigger-icon": 2,
     "trellis-dropdown-menu-item-indicator": 2,
     "trellis-rtl-flip": 4
   },
@@ -421,6 +436,12 @@
     "trellis-toast"
   ],
   "orphanLiterals": [
+    {
+      "file": "accordion.tsx",
+      "line": 32,
+      "slot": "accordion-item",
+      "literal": "flex"
+    },
     {
       "file": "breadcrumb.tsx",
       "line": 124,

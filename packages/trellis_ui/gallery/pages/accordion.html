@@ -1,0 +1,41 @@
+<h1>Accordion</h1>
+<section id="demo">
+  <section id="component" aria-label="Accordion examples">
+    <h2>Delivery and returns</h2>
+    <div tl:replace="~{trellis-ui/accordion :: accordion}" id="multiple">
+      <div tl:replace="~{trellis-ui/accordion :: accordionItem(null, 'Delivery', true)}" id="multiple-first">
+        <p>Orders ship within two working days.</p>
+      </div>
+      <div tl:replace="~{trellis-ui/accordion :: accordionItem(null, 'Returns')}" id="multiple-second">
+        <p>Check the return window before mailing your parcel.</p>
+        <a id="multiple-link" class="gallery-action" href="#multiple-destination">Return policy</a>
+      </div>
+    </div>
+    <h2>Account settings</h2>
+    <div tl:replace="~{trellis-ui/accordion :: accordion}" id="single">
+      <div tl:replace="~{trellis-ui/accordion :: accordionItem(${'account-' + accordionRender}, 'Profile', true)}" id="single-first">
+        <p>Change your name and contact details.</p>
+      </div>
+      <div tl:replace="~{trellis-ui/accordion :: accordionItem(${'account-' + accordionRender}, 'Security')}" id="single-second">
+        <p>Update your sign-in details.</p>
+        <a id="single-link" class="gallery-action" href="#single-destination">Sign-in settings</a>
+      </div>
+    </div>
+    <h2>Notifications</h2>
+    <div tl:replace="~{trellis-ui/accordion :: accordion}" id="independent">
+      <div tl:replace="~{trellis-ui/accordion :: accordionItem(${'notifications-' + accordionRender}, 'Email', true)}" id="independent-first">
+        <p>Choose which updates arrive by email.</p>
+      </div>
+      <div tl:replace="~{trellis-ui/accordion :: accordionItem(${'notifications-' + accordionRender}, 'Push')}" id="independent-second">
+        <p>Choose which updates appear on your device.</p>
+      </div>
+    </div>
+  </section>
+  <button id="swap" type="button" class="gallery-action" hx-get="/components/accordion" hx-select="#demo"
+    hx-target="#demo" hx-swap="outerHTML">Refresh example</button>
+  <a id="navigate" class="gallery-action" hx-boost="true" href="/components/button">Next example</a>
+  <h2 id="multiple-destination">Return policy</h2>
+  <p>Return unused items within 30 days.</p>
+  <h2 id="single-destination">Sign-in settings</h2>
+  <p>Change your password from your account’s Security page.</p>
+</section>

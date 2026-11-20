@@ -750,6 +750,21 @@
 
 /* structural utilities scanned from TSX string literals that carry a cn- hook */
 @layer components {
+  .trellis-accordion {
+    @apply flex w-full flex-col;
+  }
+  .trellis-accordion-content {
+    @apply overflow-hidden;
+  }
+  .trellis-accordion-content-inner {
+    @apply h-(--accordion-panel-height) data-ending-style:h-0 data-starting-style:h-0 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4;
+  }
+  .trellis-accordion-trigger {
+    @apply relative flex flex-1 items-start justify-between border border-transparent transition-all outline-none aria-disabled:pointer-events-none aria-disabled:opacity-50;
+  }
+  .trellis-accordion-trigger-icon {
+    @apply pointer-events-none shrink-0 group-aria-expanded/accordion-trigger:hidden hidden group-aria-expanded/accordion-trigger:inline;
+  }
   .trellis-alert {
     @apply relative w-full;
   }
@@ -1024,7 +1039,19 @@
     @apply z-50 w-fit max-w-xs origin-(--transform-origin) bg-foreground text-background;
   }
 
-  /* style-vega.css, unwrapped, 150 of 441 rules */
+  /* style-vega.css, unwrapped, 154 of 441 rules */
+  .trellis-accordion-item {
+      @apply not-last:border-b;
+    }
+  .trellis-accordion-trigger {
+      @apply focus-visible:ring-ring/50 focus-visible:border-ring focus-visible:after:border-ring **:data-[slot=accordion-trigger-icon]:text-muted-foreground rounded-md py-4 text-left text-sm font-medium hover:underline focus-visible:ring-3 **:data-[slot=accordion-trigger-icon]:ml-auto **:data-[slot=accordion-trigger-icon]:size-4;
+    }
+  .trellis-accordion-content {
+      @apply data-open:animate-accordion-down data-closed:animate-accordion-up text-sm;
+    }
+  .trellis-accordion-content-inner {
+      @apply pt-0 pb-4;
+    }
   .trellis-alert-dialog-overlay {
       @apply data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs;
     }

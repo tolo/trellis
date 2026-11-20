@@ -224,6 +224,71 @@
   }
 }
 @layer components {
+  .trellis-accordion {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+  }
+  .trellis-accordion-content {
+    overflow: hidden;
+  }
+  .trellis-accordion-content-inner {
+    height: var(--accordion-panel-height);
+    &[data-ending-style] {
+      height: 0px;
+    }
+    &[data-starting-style] {
+      height: 0px;
+    }
+    & a {
+      text-decoration-line: underline;
+    }
+    & a {
+      text-underline-offset: 3px;
+    }
+    & a {
+      &:hover {
+        @media (hover: hover) {
+          color: var(--foreground);
+        }
+      }
+    }
+    & p:not(:last-child) {
+      margin-bottom: calc(var(--spacing) * 4);
+    }
+  }
+  .trellis-accordion-trigger {
+    position: relative;
+    display: flex;
+    flex: 1;
+    align-items: flex-start;
+    justify-content: space-between;
+    border-style: var(--tw-border-style);
+    border-width: 1px;
+    border-color: transparent;
+    transition-property: all;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+    --tw-outline-style: none;
+    outline-style: none;
+    &[aria-disabled="true"] {
+      pointer-events: none;
+    }
+    &[aria-disabled="true"] {
+      opacity: 50%;
+    }
+  }
+  .trellis-accordion-trigger-icon {
+    pointer-events: none;
+    display: none;
+    flex-shrink: 0;
+    &:is(:where(.group\/accordion-trigger)[aria-expanded="true"] *) {
+      display: none;
+    }
+    &:is(:where(.group\/accordion-trigger)[aria-expanded="true"] *) {
+      display: inline;
+    }
+  }
   .trellis-alert {
     position: relative;
     width: 100%;
@@ -1354,6 +1419,73 @@
     transform-origin: var(--transform-origin);
     background-color: var(--foreground);
     color: var(--background);
+  }
+  .trellis-accordion-item:not(:last-child) {
+    border-bottom-style: var(--tw-border-style);
+    border-bottom-width: 1px;
+  }
+  .trellis-accordion-trigger {
+    border-radius: calc(var(--radius) * 0.8);
+    padding-block: calc(var(--spacing) * 4);
+    text-align: left;
+    font-size: var(--text-sm);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+    --tw-font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-medium);
+    &:hover {
+      @media (hover: hover) {
+        text-decoration-line: underline;
+      }
+    }
+    &:focus-visible {
+      border-color: var(--ring);
+    }
+    &:focus-visible {
+      --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(3px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
+      box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+    }
+    &:focus-visible {
+      --tw-ring-color: var(--ring);
+      @supports (color: color-mix(in lab, red, red)) {
+        --tw-ring-color: color-mix(in oklab, var(--ring) 50%, transparent);
+      }
+    }
+    &:focus-visible {
+      &::after {
+        content: var(--tw-content);
+        border-color: var(--ring);
+      }
+    }
+    :is(& *) {
+      &[data-slot="accordion-trigger-icon"] {
+        margin-left: auto;
+      }
+    }
+    :is(& *) {
+      &[data-slot="accordion-trigger-icon"] {
+        width: calc(var(--spacing) * 4);
+        height: calc(var(--spacing) * 4);
+      }
+    }
+    :is(& *) {
+      &[data-slot="accordion-trigger-icon"] {
+        color: var(--muted-foreground);
+      }
+    }
+  }
+  .trellis-accordion-content {
+    font-size: var(--text-sm);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+    &:where([data-state="open"]), &:where([data-open]:not([data-open="false"])) {
+      animation: accordion-down var(--tw-animation-duration,var(--tw-duration,.2s))var(--tw-ease,ease-out)var(--tw-animation-delay,0s)var(--tw-animation-iteration-count,1)var(--tw-animation-direction,normal)var(--tw-animation-fill-mode,none);
+    }
+    &:where([data-state="closed"]), &:where([data-closed]:not([data-closed="false"])) {
+      animation: accordion-up var(--tw-animation-duration,var(--tw-duration,.2s))var(--tw-ease,ease-out)var(--tw-animation-delay,0s)var(--tw-animation-iteration-count,1)var(--tw-animation-direction,normal)var(--tw-animation-fill-mode,none);
+    }
+  }
+  .trellis-accordion-content-inner {
+    padding-top: 0px;
+    padding-bottom: calc(var(--spacing) * 4);
   }
   .trellis-alert-dialog-overlay {
     background-color: color-mix(in srgb, #000 10%, transparent);
@@ -4428,6 +4560,11 @@
     }
   }
 }
+@property --tw-border-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
+}
 @property --tw-translate-x {
   syntax: "*";
   inherits: false;
@@ -4521,11 +4658,6 @@
   syntax: "*";
   inherits: false;
 }
-@property --tw-border-style {
-  syntax: "*";
-  inherits: false;
-  initial-value: solid;
-}
 @property --tw-duration {
   syntax: "*";
   inherits: false;
@@ -4593,6 +4725,38 @@
     filter: blur(var(--tw-exit-blur,0));
   }
 }
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height,var(--bits-accordion-content-height,var(--reka-accordion-content-height,var(--kb-accordion-content-height,var(--ngp-accordion-content-height,auto)))));
+  }
+}
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height,var(--bits-accordion-content-height,var(--reka-accordion-content-height,var(--kb-accordion-content-height,var(--ngp-accordion-content-height,auto)))));
+  }
+  to {
+    height: 0;
+  }
+}
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var( --radix-accordion-content-height, var(--accordion-panel-height, auto) );
+  }
+}
+@keyframes accordion-up {
+  from {
+    height: var( --radix-accordion-content-height, var(--accordion-panel-height, auto) );
+  }
+  to {
+    height: 0;
+  }
+}
 @layer properties {
   @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
     :root, :host {
@@ -4623,6 +4787,7 @@
       --scroll-fade-mask: initial;
       --shimmer-image: initial;
       --shimmer-text-fill: initial;
+      --tw-border-style: solid;
       --tw-translate-x: 0;
       --tw-translate-y: 0;
       --tw-translate-z: 0;
@@ -4643,7 +4808,6 @@
       --tw-content: "";
       --tw-leading: initial;
       --tw-font-weight: initial;
-      --tw-border-style: solid;
       --tw-duration: initial;
       --tw-outline-style: solid;
       --tw-backdrop-blur: initial;

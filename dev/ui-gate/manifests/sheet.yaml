@@ -14,9 +14,17 @@ states:
     - press: Enter
     - wait: "document.querySelector('#right-sheet:modal[data-open]') !== null"
     - wait: "document.getElementById('right-sheet').getAnimations().every(animation => animation.playState !== 'running')"
-    # Give appearance a confirmed keyboard-focused link even when the trigger is inert.
+    # A modal can move an interactive control under the pointer from a previous capture.
+    - hover: '#right-sheet [data-slot=sheet-title]'
+    # Start native Tab at the panel so the link receives keyboard focus directly.
+    - eval: >-
+        (() => {
+          const panel = document.getElementById('right-sheet');
+          panel.tabIndex = -1;
+          panel.focus();
+        })()
     - press: Tab
-    - focus: '#right-jump'
+    - eval: document.getElementById('right-sheet').removeAttribute('tabindex')
     - wait: "document.getElementById('right-jump').matches(':focus-visible')"
 keyboard:
   - state: open

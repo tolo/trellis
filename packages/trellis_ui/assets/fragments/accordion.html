@@ -1,0 +1,18 @@
+<div tl:fragment="accordion(...attrs)" data-slot="accordion" class="trellis-accordion" tl:attrs="${attrs}">
+  <tl:block tl:slot=""></tl:block>
+</div>
+
+<details tl:fragment="accordionItem(name, title, open, ...attrs)" data-slot="accordion-item"
+  class="trellis-accordion-item" tl:attr="name=${name}, open=${open}" tl:attrs="${attrs}">
+  <summary data-slot="accordion-trigger" class="trellis-accordion-trigger">
+    <tl:block tl:text="${title}"></tl:block>
+    <svg aria-hidden="true" data-slot="accordion-trigger-icon" class="trellis-accordion-trigger-icon"
+      viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="m6 9 6 6 6-6"/>
+    </svg>
+  </summary>
+  <div data-slot="accordion-content" class="trellis-accordion-content">
+    <div class="trellis-accordion-content-inner"><tl:block tl:slot=""></tl:block></div>
+  </div>
+</details>

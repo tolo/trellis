@@ -32,6 +32,12 @@ void main() {
 <script>
 const field=document.getElementById('field'), popup=document.getElementById('popup');
 const mode=new URLSearchParams(location.search).get('mode');
+if (sessionStorage.visibleHoverBlurs) {
+  const marker = document.createElement('div');
+  marker.id = 'replayed-popup';
+  marker.textContent = 'Replay after visible blur';
+  popup.append(marker);
+}
 field.addEventListener('focusout',()=>popup.hidePopover());
 document.getElementById('trigger').addEventListener('pointerover',()=>{
   if (mode==='dismiss') {
@@ -42,14 +48,16 @@ document.getElementById('trigger').addEventListener('pointerover',()=>{
   if (!['once','always'].includes(mode) || (mode==='once' && sessionStorage.getItem('hoverContended'))) return;
   sessionStorage.setItem('hoverContended','true');
   window.addEventListener('blur',event=>{
-    // The next appearance attempt may navigate before a plain fetch is sent.
-    if (event.isTrusted && !document.hidden) navigator.sendBeacon('/blur-observed');
+    // Navigation can cancel a network marker. Keep the count in this browsing context.
+    if (event.isTrusted && !document.hidden) {
+      sessionStorage.visibleHoverBlurs = String(Number(sessionStorage.visibleHoverBlurs || 0) + 1);
+    }
   }, {once:true});
   requestAnimationFrame(()=>window.open('/contender.html','_blank','popup,width=260,height=180'));
 });
 </script>
 ''');
-      for (final marker in ['blur-observed', 'dismiss-observed', 'contender.html']) {
+      for (final marker in ['dismiss-observed', 'contender.html']) {
         File('${root.path}/$marker').writeAsStringSync('<!doctype html><title>$marker</title>');
       }
       final server = await StaticSiteServer.serve(root);
@@ -81,7 +89,7 @@ states:
             isA<VisualCaptureUnavailable>().having((error) => error.reason, 'reason', contains('three hover captures')),
           ),
         );
-        expect(observations('blur-observed'), hasLength(3));
+        expect(await driver.evaluate('Number(sessionStorage.visibleHoverBlurs)'), 3);
         expect(await driver.evaluate("Object.hasOwn(window, '__uiGateHoverFocus')"), isFalse);
         expect(await driver.listeners(), 0, reason: 'An exhausted replay must clean up its window blur listener');
         return;
@@ -90,15 +98,15 @@ states:
       final state = (measured['states'] as Map)['open/hover:trigger'] as Map;
       if (mode == 'dismiss') {
         expect(observations('dismiss-observed'), isNotEmpty);
-        expect(observations('blur-observed'), isEmpty);
+        expect(observations('contender.html'), isEmpty);
         final clean = await capture('control');
         expect(
           compareAppearance(clean, measured),
           contains(allOf(contains('open/hover:trigger'), contains('box no longer rendered'))),
         );
       } else {
-        expect(observations('blur-observed'), isNotEmpty);
-        expect((state['nodes'] as List).whereType<Map>().map((node) => node['i']), contains('popup'));
+        final rendered = (state['nodes'] as List).whereType<Map>().map((node) => node['i']);
+        expect(rendered, containsAll(['popup', 'replayed-popup']));
         expect((((state['elements'] as Map)['trigger'] as Map)['style'] as Map)['color'], 'rgb(255, 0, 0)');
       }
     }, timeout: const Timeout(Duration(minutes: 2)));

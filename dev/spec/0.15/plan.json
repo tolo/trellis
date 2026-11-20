@@ -181,7 +181,7 @@
       "dependsOn": [
         "S01"
       ],
-      "status": "pending",
+      "status": "in-progress",
       "fis": "s04-accordion.md",
       "completedTaskIds": [],
       "scope": "Provide single-open and multiple-open native disclosure groups with usable sections before enhancement.",
@@ -295,7 +295,7 @@
         "S01",
         "S08"
       ],
-      "status": "pending",
+      "status": "in-progress",
       "fis": "s09-cally-date-recipe.md",
       "completedTaskIds": [],
       "scope": "Document the HTMX recipe lifecycle and verify an app-vendored Cally calendar and range picker with native fallbacks, submission and history in the admin contact form.",

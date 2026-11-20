@@ -179,6 +179,7 @@ void main() {
   }
 
   test('a late suite load preserves an open native disclosure and its focused link', () async {
+    const linkVisible = "document.getElementById('nav-overview').checkVisibility()";
     await driver.probe.command('Network.setBlockedURLs', {
       'urls': ['*/trellis-ui/trellis-ui.js'],
     });
@@ -187,7 +188,7 @@ void main() {
     await driver.press('Enter');
     await driver.press('Tab');
     expect(await driver.evaluate('document.activeElement.id'), 'nav-overview');
-    expect(await driver.evaluate("document.getElementById('nav-overview').checkVisibility()"), isTrue);
+    expect(await driver.evaluate(linkVisible), isTrue);
     await driver.probe.command('Network.setBlockedURLs', {'urls': []});
     await driver.evaluate(r'''new Promise((resolve, reject) => {
       const script = document.createElement('script');
@@ -197,7 +198,7 @@ void main() {
       document.head.append(script);
     })''');
     expect(await driver.evaluate(onlyGuides), isTrue);
-    expect(await driver.evaluate("document.getElementById('nav-overview').checkVisibility()"), isTrue);
+    expect(await driver.evaluate(linkVisible), isTrue);
     expect(await driver.evaluate('document.activeElement.id'), 'nav-overview');
     expect(await driver.evaluate('window.__uiGate.violations'), isEmpty);
   });

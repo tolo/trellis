@@ -23,7 +23,7 @@
 | [ADR-012](adrs/ADR-012-trellis-ui-contract.md) | Single Trellis-Owned UI Contract | Accepted (2026-10-04) | UI component public contract and expansion boundary; Tier 1 is a Trellis-owned shadcn/ui port |
 | [ADR-013](adrs/ADR-013-sass-module-bridge.md) | SASS Module Bridge and Per-Mode Colour Params | Accepted (owner, 2026-10-04) | `@use … with()` theme bridge, palette-map skins, per-mode colour params; hard cut, implemented in 0.12 |
 | [ADR-014](adrs/ADR-014-component-composition-primitives.md) | Component Composition Primitives | Accepted (owner, 2026-10-15) | Core slots, attribute spreading, pass-through, bare-name top-level rendering of parameterised fragments (Linear LEA-16); implementation in 0.13 |
-| [ADR-015](adrs/ADR-015-url-scheme-blocking.md) | Block Script-Capable URL Schemes in Dynamic URL Attributes | Accepted (owner, 2026-11-18) | `javascript:`/`vbscript:`/non-image `data:` in dynamic `href`/`src`/`action`/`formaction`/`data`/`xlink:href` become `about:invalid#trellis-unsafe-url`; `TrustedUrl` opt-out; implementation in 0.14 |
+| [ADR-015](adrs/ADR-015-url-scheme-blocking.md) | Block Script-Capable URL Schemes in Dynamic URL Attributes | Accepted (2026-11-18), amended 2026-11-20 | Core scheme check and `TrustedUrl` shipped in 0.14. For 0.15, only site config may grant trust to a named source file and field. |
 
 ## Superseded
 

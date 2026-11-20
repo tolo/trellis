@@ -2,6 +2,7 @@
 
 ## Status
 Accepted (owner, 2026-11-18). Breaking change, shipped in 0.14.0 under the pre-1.0 lockstep rule (ADR-009).
+Amended 2026-11-20 for the static-site opt-out in 0.15.
 
 ## Context
 
@@ -44,6 +45,29 @@ are percent-encoded, so it cannot carry a data-chosen scheme. The other attribut
    user-entered data fail renders wherever strict mode runs.
 7. **No validator change.** `TemplateValidator` reads template text and cannot see runtime values.
 
+### Static-site trust declarations
+
+Only the site maintainer can grant trust, in the site's `trellis_site.yaml`. Each `trustedUrls` entry names
+one site-relative source file and one literal top-level field in its front matter or data mapping:
+
+```yaml
+trustedUrls:
+  - source: content/tools.md
+    field: bookmarklet
+  - source: data/brand.yaml
+    field: logo
+```
+
+Match the pair against a source the build already loads from the configured content or site data directory.
+At render time its string value becomes a `TrustedUrl`. A missing source, absent field or non-string value
+fails the build with a `SiteConfigException` identifying the pair. With no declarations, existing builds keep
+their behaviour.
+
+Trust follows the value from that source through the render context. Another page, an override in the data
+cascade, or a theme data file with the same field name cannot acquire trust by name. Front matter and data
+cannot grant themselves trust. Someone able to edit a declared field controls its trusted URL, so the maintainer
+must control both the declaration and the named input.
+
 ## Consequences
 
 - Untrusted URLs in the six attribute names are safe by default; callers no longer scheme-check them in Dart.
@@ -55,8 +79,8 @@ are percent-encoded, so it cannot carry a data-chosen scheme. The other attribut
   throws. It has no `toJson()`, which the evaluator would reject for not returning a map.
 - Out of scope and still the caller's job: dynamic `srcdoc`, `on*`, `style`, `hx-on*` and `hx-vals="js:..."`, SVG
   `<set to>`, and attributes a custom processor writes to `element.attributes` directly, which bypass the check.
-- `trellis_site` builds its engine from YAML context with no filters, so a site author cannot pass a `TrustedUrl`.
-  Adding a way later is additive (TD-059). The out-of-scope values above are tracked as TD-060.
+- In 0.14, a site author could not pass a `TrustedUrl` from YAML (TD-059). The 0.15 amendment adds a
+  per-source declaration. The out-of-scope values above are tracked as TD-060.
 - Second opinion (oracle, 2026-11-18): agreed with the default and the denylist, and found that `TrustedUrl` was
   flattened to a string in the rest map and then re-blocked in the callee. Decision 5 is the fix it proposed.
 

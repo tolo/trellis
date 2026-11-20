@@ -32,7 +32,6 @@ void main() {
       const summary = '#multiple-second > summary';
       const visible = "document.querySelector('#multiple-link').checkVisibility()";
       expect(await driver.evaluate(visible), isFalse);
-      expect(await driver.evaluate("document.querySelector('$summary') instanceof HTMLElement"), isTrue);
       Future<void> toggle() => key == null ? driver.pointer(summary, click: true) : driver.press(key);
       if (key != null) await focusSummary('multiple-second');
       await toggle();

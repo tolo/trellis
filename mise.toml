@@ -60,7 +60,12 @@ run = [
 
 [tasks.release-gate]
 description = "Local release gate on the baseline-authoring host: every package test, then the full root suite"
-run = ["melos exec --dir-exists=test -- dart test --exclude-tags=e2e", "dart test"]
+# Starting a second headless Firefox can remove native focus paint from the admin calendar.
+run = [
+  "melos exec --dir-exists=test --scope=trellis_admin_example -- dart test --exclude-tags=e2e",
+  "melos exec --dir-exists=test --ignore=trellis_admin_example -- dart test --exclude-tags=e2e",
+  "dart test",
+]
 
 [tasks.release]
 description = "Cut release X.Y.Z from main (tool/release.sh); pass --dry-run to rehearse"

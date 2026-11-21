@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:shelf/shelf_io.dart' as shelf_io;
@@ -14,10 +15,61 @@ const _options =
 
 void main() {
   late Uri gallery;
+  Future<void> Function()? holdOptions;
   setUpAll(() async {
-    final server = await shelf_io.serve(galleryHandler(Directory.current), InternetAddress.loopbackIPv4, 0);
+    final handler = galleryHandler(Directory.current);
+    final server = await shelf_io.serve(
+      (request) async {
+        if (request.requestedUri.path == '/demo/options') await holdOptions?.call();
+        return handler(request);
+      },
+      InternetAddress.loopbackIPv4,
+      0,
+    );
     gallery = Uri.parse('http://127.0.0.1:${server.port}/components/command-palette');
     addTearDown(() => server.close(force: true));
+  });
+
+  test('Firefox opens pending combobox results after the browser window is backgrounded', () async {
+    final requested = Completer<void>();
+    final respond = Completer<void>();
+    holdOptions = () {
+      requested.complete();
+      return respond.future;
+    };
+    addTearDown(() {
+      holdOptions = null;
+      if (!respond.isCompleted) respond.complete();
+    });
+
+    final driver = await FirefoxDriver.launch();
+    addTearDown(driver.close);
+    await driver.viewport(768, 900);
+    await driver.open(gallery.resolve('/components/combobox'));
+    await driver.evaluate(r'''(() => {
+      const input = document.getElementById('fruit');
+      window.optionRequests = 0;
+      input.addEventListener('htmx:beforeRequest', () => window.optionRequests++);
+      input.focus();
+    })()''');
+    await driver.type('ap');
+    await requested.future.timeout(const Duration(seconds: 5));
+    expect(await _background(driver), 'fruit');
+    respond.complete();
+    await _waitFor(driver, "document.querySelector('#component [role=status]').textContent === '2 results available'");
+    expect(
+      await driver.evaluate(r'''(() => {
+        const input = document.getElementById('fruit');
+        return [window.optionRequests, document.getElementById('fruit-popup').matches(':popover-open'),
+          input.getAttribute('aria-expanded'), input.value];
+      })()'''),
+      [1, true, 'true', 'ap'],
+    );
+    await driver.press('ArrowDown');
+    expect(await driver.evaluate("document.activeElement.getAttribute('aria-activedescendant')"), 'fruit-option-0');
+    await driver.press('Tab');
+    expect(await driver.evaluate(_focused), 'after');
+    expect(await driver.evaluate("document.querySelector('#fruit-popup').matches(':popover-open')"), isFalse);
   });
 
   test('Firefox keeps open palette results while the browser window is backgrounded', () async {
@@ -29,15 +81,7 @@ void main() {
     const results = "document.getElementById('palette-query-popup').matches(':popover-open')";
     expect(await driver.evaluate(results), isTrue);
 
-    final blurred = await driver.evaluate(r'''new Promise((resolve, reject) => {
-      window.addEventListener('blur', event => {
-        resolve(event.isTrusted && document.activeElement.id === 'palette-query');
-      }, {once: true});
-      if (!window.open('/components/button', 'palette-focus-contender', 'popup,width=260,height=180')) {
-        reject(Error('Firefox blocked the focus contender'));
-      }
-    })''');
-    expect(blurred, isTrue);
+    expect(await _background(driver), 'palette-query');
     expect(await driver.evaluate(results), isTrue);
     await driver.press('Escape');
     await _waitFor(driver, "!$_modal && $_focused === 'open-palette'");
@@ -152,6 +196,16 @@ void main() {
     });
   }
 }
+
+Future<Object?> _background(FirefoxDriver driver) => driver.evaluate(r'''new Promise((resolve, reject) => {
+  window.addEventListener('blur', event => {
+    if (event.isTrusted) resolve(document.activeElement.id);
+    else reject(Error('Firefox did not produce a trusted window blur'));
+  }, {once: true});
+  if (!window.open('/components/button', 'focus-contender', 'popup,width=260,height=180')) {
+    reject(Error('Firefox blocked the focus contender'));
+  }
+})''');
 
 Future<void> _waitFor(GateDriver driver, String expression) async {
   final deadline = DateTime.now().add(const Duration(seconds: 5));

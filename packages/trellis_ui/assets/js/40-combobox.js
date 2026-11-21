@@ -19,7 +19,7 @@ class TlCombobox extends TlElement {
     this.listen(this.input, 'keydown', (event) => this.keydown(event));
     this.listen(this.input, 'focusout', event => {
       // Firefox can report focusout when the window loses focus and the input remains active.
-      if (this.palette && !event.relatedTarget && document.activeElement === this.input && !document.hasFocus()) return;
+      if (!event.relatedTarget && document.activeElement === this.input && !document.hasFocus()) return;
       this.setOpen(false);
     });
     this.listen(this, 'pointerdown', (event) => {

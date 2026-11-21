@@ -140,11 +140,12 @@ class TrellisSite {
   /// 4. Render Markdown
   /// 4.5. Process post-Markdown shortcodes
   /// 5. Collect taxonomy terms and inject virtual pages
+  /// 5.5. Prepare search entries and URLs from the complete page set
   /// 6. Generate HTML pages
   /// 7. Copy static assets
   /// 8. Generate sitemap
   /// 8.5. Generate feeds (when `feeds:` config section exists)
-  /// 9. Generate the search index and client (when `search.enabled: true`)
+  /// 9. Write the prepared search index and client when pages qualify
   ///
   /// Throws [SiteConfigException] if the output directory configuration is
   /// unsafe. Throws [TemplateNotFoundException] if a required layout is
@@ -296,20 +297,17 @@ class TrellisSite {
     }
 
     // 5. Taxonomy: collect terms and inject virtual pages
-    final search = prepareSearchIndex(SearchIndexGenerator(config.searchConfig), pages);
     final siteContext = _buildSiteContext(pages, mergedThemeParams?['nav_links']);
-    if (search != null) siteContext['search'] = search.urls(config.pathPrefix);
-    var siteParams = <String, dynamic>{'site': siteContext, 'theme': ?mergedThemeParams};
+    final siteParams = <String, dynamic>{'site': siteContext, 'theme': ?mergedThemeParams};
     if (config.taxonomies.isNotEmpty) {
       final collector = TaxonomyCollector(pathPrefix: config.pathPrefix);
       final nonDraftPages = pages.where((pg) => !pg.isDraft).toList();
       final taxIndex = collector.collect(config.taxonomies, nonDraftPages);
 
       // Expose ${taxonomy.<name>} as a list of term maps on every page
-      final taxContext = <String, dynamic>{
+      siteParams['taxonomy'] = <String, dynamic>{
         for (final entry in taxIndex.entries) entry.key: entry.value.toTermMapList(),
       };
-      siteParams = <String, dynamic>{'site': siteContext, 'taxonomy': taxContext, 'theme': ?mergedThemeParams};
 
       // Enrich each content page with its OWN terms as pre-slugified link maps,
       // resolved from the same index that generates the term pages. Templates
@@ -325,6 +323,10 @@ class TrellisSite {
       final virtualPages = collector.buildVirtualPages(taxIndex, nonDraftPages);
       pages.addAll(virtualPages);
     }
+
+    // 5.5. Prepare search after virtual term pages join the eligible content.
+    final search = prepareSearchIndex(SearchIndexGenerator(config.searchConfig), pages);
+    if (search != null) siteContext['search'] = search.urls(config.pathPrefix);
 
     // 6. Generate HTML pages — with theme-aware loader and layout/data search paths
     final generator = PageGenerator(

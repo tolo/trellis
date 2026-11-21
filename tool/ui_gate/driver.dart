@@ -199,7 +199,11 @@ final class ChromeDriver implements GateDriver {
   }
 
   @override
-  Future<void> press(String key) async {
+  Future<void> press(String key) => _keyStroke(key);
+
+  Future<void> pressShortcut(String key, {required bool command}) => _keyStroke(key, modifiers: command ? 4 : 2);
+
+  Future<void> _keyStroke(String key, {int modifiers = 0}) async {
     const codes = {
       'Tab': 9,
       'Enter': 13,
@@ -219,7 +223,9 @@ final class ChromeDriver implements GateDriver {
         'type': type,
         'key': key,
         'windowsVirtualKeyCode': code,
-        if (type == 'keyDown' && (key.length == 1 || key == 'Enter')) 'text': key == 'Enter' ? '\r' : key,
+        if (modifiers != 0) 'modifiers': modifiers,
+        if (modifiers == 0 && type == 'keyDown' && (key.length == 1 || key == 'Enter'))
+          'text': key == 'Enter' ? '\r' : key,
       });
     }
   }

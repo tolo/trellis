@@ -1,7 +1,7 @@
 {
   "tag": "shadcn@4.23.0",
-  "tsxFiles": 28,
-  "hooksPrimary": 184,
+  "tsxFiles": 29,
+  "hooksPrimary": 197,
   "hooks": [
     "trellis-accordion",
     "trellis-accordion-content",
@@ -82,6 +82,19 @@
     "trellis-combobox-separator",
     "trellis-combobox-trigger",
     "trellis-combobox-trigger-icon",
+    "trellis-command",
+    "trellis-command-dialog",
+    "trellis-command-empty",
+    "trellis-command-group",
+    "trellis-command-input",
+    "trellis-command-input-group",
+    "trellis-command-input-icon",
+    "trellis-command-input-wrapper",
+    "trellis-command-item",
+    "trellis-command-item-indicator",
+    "trellis-command-list",
+    "trellis-command-separator",
+    "trellis-command-shortcut",
     "trellis-dialog-close",
     "trellis-dialog-content",
     "trellis-dialog-description",
@@ -197,10 +210,10 @@
     "trellis-tooltip-content-logical"
   ],
   "hooksSecondary": 8,
-  "hooksWithStructural": 102,
+  "hooksWithStructural": 105,
   "styleRulesTotal": 441,
-  "styleRulesKept": 164,
-  "styleRulesWithoutTsxHook": 277,
+  "styleRulesKept": 176,
+  "styleRulesWithoutTsxHook": 265,
   "slots": [
     "accordion",
     "accordion-content",
@@ -254,6 +267,15 @@
     "combobox-separator",
     "combobox-trigger",
     "combobox-value",
+    "command",
+    "command-empty",
+    "command-group",
+    "command-input",
+    "command-input-wrapper",
+    "command-item",
+    "command-list",
+    "command-separator",
+    "command-shortcut",
     "dialog",
     "dialog-close",
     "dialog-content",
@@ -405,6 +427,9 @@
     "trellis-combobox-content": [
       "group/combobox-content"
     ],
+    "trellis-command-item": [
+      "group/command-item"
+    ],
     "trellis-dropdown-menu-item": [
       "group/dropdown-menu-item"
     ],
@@ -460,6 +485,9 @@
     "trellis-rtl-flip": 4
   },
   "structuralSkipped": [
+    "trellis-command-item",
+    "trellis-command-item-indicator",
+    "trellis-command-list",
     "trellis-navigation-menu-content",
     "trellis-navigation-menu-popup",
     "trellis-navigation-menu-positioner",
@@ -489,6 +517,12 @@
       "line": 122,
       "slot": "input-group-button",
       "literal": "isolate z-50"
+    },
+    {
+      "file": "command.tsx",
+      "line": 52,
+      "slot": "command",
+      "literal": "sr-only"
     },
     {
       "file": "dialog.tsx",

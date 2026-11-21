@@ -846,6 +846,15 @@
   .trellis-combobox-trigger-icon {
     @apply pointer-events-none;
   }
+  .trellis-command {
+    @apply flex size-full flex-col overflow-hidden;
+  }
+  .trellis-command-dialog {
+    @apply top-1/3 translate-y-0 overflow-hidden p-0;
+  }
+  .trellis-command-input {
+    @apply outline-hidden disabled:cursor-not-allowed disabled:opacity-50;
+  }
   .trellis-dialog-content {
     @apply fixed top-1/2 left-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 outline-none;
   }
@@ -1057,7 +1066,7 @@
     @apply z-50 w-fit max-w-xs origin-(--transform-origin) bg-foreground text-background;
   }
 
-  /* style-vega.css, unwrapped, 164 of 441 rules */
+  /* style-vega.css, unwrapped, 176 of 441 rules */
   .trellis-accordion-item {
       @apply not-last:border-b;
     }
@@ -1255,6 +1264,42 @@
     }
   .trellis-combobox-chip-remove {
       @apply -ml-1 opacity-50 hover:opacity-100;
+    }
+  .trellis-command {
+      @apply bg-popover text-popover-foreground rounded-xl! p-1;
+    }
+  .trellis-command-dialog {
+      @apply rounded-xl!;
+    }
+  .trellis-command-input-wrapper {
+      @apply p-1 pb-0;
+    }
+  .trellis-command-input-group {
+      @apply bg-input/30 border-input/30 h-8! rounded-lg! shadow-none! *:data-[slot=input-group-addon]:pl-2!;
+    }
+  .trellis-command-input-icon {
+      @apply size-4 shrink-0 opacity-50;
+    }
+  .trellis-command-input {
+      @apply w-full text-sm;
+    }
+  .trellis-command-list {
+      @apply no-scrollbar max-h-72 scroll-py-1 outline-none;
+    }
+  .trellis-command-empty {
+      @apply py-6 text-center text-sm;
+    }
+  .trellis-command-group {
+      @apply text-foreground **:[[cmdk-group-heading]]:text-muted-foreground overflow-hidden p-1 **:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:py-1.5 **:[[cmdk-group-heading]]:text-xs **:[[cmdk-group-heading]]:font-medium;
+    }
+  .trellis-command-separator {
+      @apply bg-border -mx-1 h-px w-auto;
+    }
+  .trellis-command-item {
+      @apply data-selected:bg-muted data-selected:text-foreground data-selected:**:[svg]:text-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none in-data-[slot=dialog-content]:rounded-lg! [&_svg:not([class*='size-'])]:size-4;
+    }
+  .trellis-command-shortcut {
+      @apply text-muted-foreground group-data-selected/command-item:text-foreground ml-auto text-xs tracking-widest;
     }
   .trellis-dialog-overlay {
       @apply data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs;

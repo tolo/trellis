@@ -280,9 +280,21 @@
       "dependsOn": [
         "S06"
       ],
-      "status": "in-progress",
+      "status": "done",
       "fis": "s07-command-palette.md",
-      "completedTaskIds": [],
+      "completedTaskIds": [
+        "TI01",
+        "TI02",
+        "TI03",
+        "TI04",
+        "TI05",
+        "TI06",
+        "TI07"
+      ],
+      "verified": {
+        "at": "2026-11-21T07:23Z",
+        "summary": "CI=true mise exec -- dart run tool/ui_gate.dart --serve 'dart run packages/trellis_ui/tool/gallery.dart --port 0' --records .agent_temp/0.15-evidence/S07-complete/gate/compare command-palette -> exit=0, command-palette: pass"
+      },
       "scope": "Qualify a reusable dialog and combobox composition with static items and connect it to the existing docs search index. Readers can search from every eligible docs page with the trigger or shortcut.",
       "sourceRefs": [
         "dev/spec/0.15/prd.md#fr7-command-palette",

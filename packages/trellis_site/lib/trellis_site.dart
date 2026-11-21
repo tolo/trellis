@@ -15,7 +15,7 @@ export 'src/page.dart' hide renderFrontMatter, setTrustedPageUrls;
 export 'src/page_generator.dart' hide generatePagesWithTrustedUrls;
 export 'src/paginator.dart';
 export 'src/shortcode_processor.dart';
-export 'src/search_index_generator.dart';
+export 'src/search_index_generator.dart' show SearchConfig, SearchIndexGenerator;
 export 'src/site_config.dart';
 export 'src/site_source.dart';
 export 'src/sitemap_generator.dart';

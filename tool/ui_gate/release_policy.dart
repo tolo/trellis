@@ -6,7 +6,15 @@ import 'checks.dart';
 import 'record.dart';
 
 /// Components whose failure blocks release regardless of a proposed disposition.
-const requiredReleaseComponents = {'combobox', 'dialog', 'dropdown-menu', 'popover', 'tabs', 'toast'};
+const requiredReleaseComponents = {
+  'combobox',
+  'command-palette',
+  'dialog',
+  'dropdown-menu',
+  'popover',
+  'tabs',
+  'toast',
+};
 
 /// Every release subject, including components whose evidence is retained after removal.
 const releaseComponents = {

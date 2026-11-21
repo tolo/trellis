@@ -2,7 +2,8 @@
 
 Canonical reference for understanding the Trellis SDK architecture: how the packages compose, what each package is responsible for, the dependency graph, and how a request flows through the system.
 
-**Current through**: dev reload, scaffold CSP and UI previews updated for 0.14 on 2026-11-17; `trellis dev` site
+**Current through**: 0.15 docs Command palette and prepared search index on 2026-11-21.
+Dev reload, scaffold CSP and UI previews updated for 0.14 on 2026-11-17. `trellis dev` site
 preview, including theme watch recovery, output exclusions and startup cleanup, is current through 0.14 on
 2026-11-18. The named site source
 pipeline and CLI registry were verified for 0.14 on 2026-11-18. Source-scoped URL trust is current through
@@ -589,7 +590,7 @@ Targets Relic 2, where Content-Type comes from the `Body` and one set in respons
 ```
 ... (steps 1-9 as before) ...
 10. Feed generation   ← opt-in via feeds: config; Atom (RFC 4287) + optional RSS 2.0
-11. Search            ← opt-in via search: config; JSON index and shared client
+11. Search emission   ← writes the prepared index and shared client
 ```
 
 ### Feed Generation (`FeedGenerator`)
@@ -604,6 +605,8 @@ Targets Relic 2, where Content-Type comes from the `Body` and one set in respons
 ### Search Index (`SearchIndexGenerator`)
 
 - Activated by `search: enabled: true` in `trellis_site.yaml`
+- Prepares eligible entries after front matter, Markdown, shortcodes, and draft policy. The same prepared result
+  supplies the optional `site.search.indexUrl` and `site.search.clientUrl` render context and both output files.
 - Writes a JSON array at the configured path (default `output/search-index.json`) with `trellis-search.js` alongside it
 - Configurable fields: `title`, `summary`, `content`, `tags`, `date`, `section`, `url`
 - HTML stripping (`search.stripHtml: true`) and content truncation (`search.maxContentLength`)
@@ -714,6 +717,13 @@ The client reveals the shell after the same-origin index loads and the combobox 
 or invalid index leaves the shell hidden. The combobox handles focus, keyboard selection, and
 announcements. The client replaces its results wrapper and reads its hidden value after selection.
 The indexed URL already includes the path prefix.
+
+Lattice also reads `site.params.search_palette` in its base layout. When that
+option, `theme.show_search`, and `site.search` are present, one header trigger
+opens the suite Command palette on home, docs and UI-reference pages. The site
+client shares the inline search match and result rendering path. It listens for
+the palette's `tl-select` event, reports unavailable payloads in the modal, and
+preserves ordinary inline initialization for the other themes.
 
 ### Docs Site (`site/`)
 

@@ -64,6 +64,7 @@ slots take the contents of the caller marker; unmarked caller content fills the 
 | `cluster :: cluster` | `gap` | anonymous | gap scale below; fallback `md` |
 | `combobox :: combobox` | `id, name, placeholder, value, options, displayValue` | none | forwards to the visible input; `name` and `value` identify the hidden submission; `options` is a list of `{value, label}`; `data-open` / `data-closed`, `data-side`, `data-align`, `data-empty`, `data-highlighted` |
 | `combobox :: comboboxOptions` | `id, options` | none | forwards to the results container; same ID and option list shape as the combobox |
+| `command-palette :: commandPalette` | `id, title, placeholder, options, shortcut` | `trigger` | a labelled modal picker; `options` are `{value, label}` maps, `shortcut` is an optional key letter; one `tl-select` event with `detail.value` |
 | `container :: container` | `size` | anonymous | `sm` 40rem, `md` 56rem, `lg` 72rem, `xl` 80rem; fallback `lg` |
 | `dialog :: dialog` | `id, title, description, open` | anonymous body, `trigger`, `footer` | forwards to the native dialog; `data-open` / `data-closed` |
 | `dropdown-menu :: dropdownMenu` | `id` | anonymous menu items, `trigger` | forwards to the popup; `data-open` / `data-closed`, `data-side`, `data-align` |
@@ -133,7 +134,7 @@ that scrolls horizontally. Keep table minimum widths in application CSS (the gal
 
 ### Interactive fragments
 
-Use a unique base `id` for each dialog, alert dialog, menu, navigation menu group, popover, sheet, tabs, combobox, toast viewport, and tooltip on a
+Use a unique base `id` for each dialog, alert dialog, menu, navigation menu group, popover, sheet, tabs, combobox, toast viewport, command palette, and tooltip on a
 page. Menu and tab parts derive their IDs and relationships from the parent scope. Keep tab values unique within their list and
 choose an enabled tab's value for `active`. Arrow keys wrap, skip disabled items and tabs, and move focus; tabs
 activate on Enter, Space or click. Menu checkbox items stay open, and item clicks also dispatch a bubbling

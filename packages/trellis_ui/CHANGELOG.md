@@ -13,9 +13,7 @@
   Sheet on navigation. Both themes resolve the saved skin before paint under strict CSP.
 - Inline Sheets allow Tab to leave the panel.
 
-## 0.15.0
-
-- Lockstep version bump to keep all Trellis SDK packages on a single shared version. No functional changes in this package.
+- Add Command palette with a modal local picker, guarded keyboard shortcut, selection event, and focus return.
 
 ## 0.14.0
 

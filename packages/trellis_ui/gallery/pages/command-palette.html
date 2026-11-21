@@ -1,0 +1,20 @@
+<h1>Command palette</h1>
+<section id="demo">
+  <section id="component" aria-label="Command palette example">
+    <div tl:replace="~{trellis-ui/command-palette :: commandPalette('palette', 'Choose a fruit', 'Search fruit…', ${fruitOptions}, 'k')}">
+      <tl:block tl:slot="trigger">
+        <button tl:replace="~{trellis-ui/button :: button}" type="button" id="open-palette">Search fruit</button>
+      </tl:block>
+    </div>
+    <a id="palette-opener" class="gallery-action" href="#palette-help">Shortcut help</a>
+    <p id="palette-help">Press Control+K or Command+K to open the picker.</p>
+  </section>
+  <div tl:replace="~{trellis-ui/command-palette :: commandPalette('second-palette', 'Choose fruit for a second basket', 'Search fruit…', ${fruitOptions}, 'm')}">
+    <tl:block tl:slot="trigger">
+      <button tl:replace="~{trellis-ui/button :: button('outline')}" type="button" id="open-second-palette">Second basket</button>
+    </tl:block>
+  </div>
+  <button id="swap" type="button" class="gallery-action" hx-get="/components/command-palette" hx-select="#demo"
+    hx-target="#demo" hx-swap="outerHTML settle:0ms">Refresh example</button>
+  <a id="navigate" class="gallery-action" hx-boost="true" href="/components/button">Next example</a>
+</section>

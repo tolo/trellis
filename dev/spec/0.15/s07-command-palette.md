@@ -147,3 +147,19 @@
   S06's inline Tab handoff and the standalone sidebar search shell. Compare the palette and header with
   S06's wide and dark baselines. The Sheet fix brings the suite to 700 lines and 26,931 gzip bytes.
   Traced from S06/TI01, TI04 and TI06, 2026-11-20.
+
+## Implementation Observations
+
+- ASSUMPTION: `site.params.search_palette: true` opts Lattice into the header picker. A theme that needs
+  this picker in another location can compose the public fragment and provide its own layout.
+- ASSUMPTION: The first valid palette shortcut on a page handles that key. Give multiple palettes distinct
+  letters when each needs an independent shortcut. Revisit if a caller needs explicit shortcut ownership.
+- The composed picker keeps matches below its input and scrolls them within the viewport gap. The ready
+  index provides up to 20 choices. At a 320×500 viewport, the original flip covered the close button.
+- A trusted Firefox window blur fired `focusout` with the query still active and `relatedTarget` null.
+  Keep the active palette results through that window transition. A true focus departure still closes them.
+- The indexed launcher and shortcut become available together when the search client mounts. A held index
+  response shows loading status. HTTP failures, disconnected sockets and invalid payloads show unavailable status.
+- TI05's complete catalogue sweep and the full workspace and app suites remain plan-final verification.
+  The story replays the focused Command palette, Dialog and Combobox records. Safari and assistive-technology
+  manual entries remain at release prep.

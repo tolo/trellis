@@ -610,5 +610,125 @@
     "direction": "missing",
     "name": "trellis-navigation-menu-indicator-arrow",
     "reason": "The shared placement seam has no Base UI viewport arrow."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "command-empty",
+    "reason": "Combobox renders and announces the shared empty state."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "command-group",
+    "reason": "The palette uses a flat option list and has no group API."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "command-input",
+    "reason": "The shared Combobox input retains its input-group-control slot."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "command-input-wrapper",
+    "reason": "The command composes the existing Combobox input wrapper."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "command-item",
+    "reason": "Combobox owns its options, selection mark, and visual focus state."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "command-list",
+    "reason": "The shared Combobox list remains responsible for options and focus via aria-activedescendant."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "command-separator",
+    "reason": "The flat picker has no separator component."
+  },
+  {
+    "kind": "slot",
+    "direction": "missing",
+    "name": "command-shortcut",
+    "reason": "Shortcut registration is attached to the dialog; options do not display individual shortcut hints."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-command-empty",
+    "reason": "Combobox renders and announces the shared empty state."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-command-group",
+    "reason": "The palette uses a flat option list and has no group API."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-command-input-group",
+    "reason": "The command input is rendered by the existing Combobox input group."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-command-input-icon",
+    "reason": "The labelled search input needs no decorative command icon."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-command-input-wrapper",
+    "reason": "The command composes the existing Combobox input wrapper."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-command-item",
+    "reason": "Combobox owns its options, selection mark, and visual focus state."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-command-item-indicator",
+    "reason": "The picker closes on selection, so no persistent selection indicator is rendered."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-command-list",
+    "reason": "The shared Combobox list remains responsible for options and focus via aria-activedescendant."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-command-separator",
+    "reason": "The flat picker has no separator component."
+  },
+  {
+    "kind": "hook",
+    "direction": "missing",
+    "name": "trellis-command-shortcut",
+    "reason": "Shortcut registration is attached to the dialog; options do not display individual shortcut hints."
+  },
+  {
+    "kind": "marker",
+    "direction": "missing",
+    "name": "group/command-item",
+    "reason": "Combobox owns its options, selection mark, and visual focus state."
+  },
+  {
+    "kind": "hook",
+    "direction": "extra",
+    "name": "trellis-command-palette",
+    "reason": "Trellis exposes a component hook for the composed modal, whose Vega paint uses trellis-command-dialog."
   }
 ]

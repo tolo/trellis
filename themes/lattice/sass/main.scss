@@ -200,7 +200,7 @@ a:hover {
   color: var(--leaf-hover);
 }
 // The suite paints focus inside the search group and on the reader toggle.
-:focus-visible:where(:not(.search-shell *, .mode-toggle)) {
+:focus-visible:where(:not(.search-shell *, .header-search input, .mode-toggle)) {
   outline: 2px solid currentColor;
   outline-offset: -2px;
   border-radius: 2px;
@@ -295,6 +295,17 @@ a:hover {
   #lattice-main-menu:is(dialog, :not(:has(details[open]))) [data-slot="navigation-menu-list"] {
     flex-wrap: nowrap;
     overflow-x: auto;
+  }
+}
+.header-search {
+  flex: none;
+}
+.header-search .search-trigger {
+  padding-inline: .75rem;
+}
+@media (pointer: coarse) {
+  .header-search .search-trigger {
+    min-block-size: 44px;
   }
 }
 .header-navigation summary,

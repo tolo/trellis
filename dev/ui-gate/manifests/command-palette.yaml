@@ -1,0 +1,86 @@
+name: command-palette
+page: /components/command-palette
+root: '#component'
+elements:
+  trigger: '#open-palette'
+  panel: '#palette'
+  query: '#palette-query'
+  close: '#palette [data-dialog-close]'
+  results: '#palette-query-popup'
+states:
+  default: []
+  open:
+    - press: Escape
+    - wait: "!document.getElementById('palette').open"
+    - eval: document.getElementById('open-palette').click()
+    - &opened
+      wait: "document.getElementById('palette').matches(':modal') && document.activeElement.id === 'palette-query'"
+  matches:
+    - state: open
+    - type: ap
+    - &matched
+      wait: "document.getElementById('palette-query-popup').matches(':popover-open') && document.querySelector('#palette tl-combobox [role=status]').textContent === '2 results available'"
+  empty:
+    - state: open
+    - type: zzz
+    - wait: "document.getElementById('palette-query-popup').matches(':popover-open') && document.querySelector('#palette tl-combobox [role=status]').textContent === 'No results'"
+keyboard:
+  - eval: >-
+      (() => {
+        window.selection = [];
+        document.getElementById('palette').addEventListener('tl-select', e => window.selection.push(e.detail.value));
+      })()
+  - focus: '#open-palette'
+  - press: Enter
+  - *opened
+  - type: ap
+  - *matched
+  - press: ArrowDown
+  - press: ArrowDown
+  - expect: {expression: "document.activeElement.getAttribute('aria-activedescendant')", equals: palette-query-option-1}
+  - press: ArrowUp
+  - expect: {expression: "document.activeElement.getAttribute('aria-activedescendant')", equals: palette-query-option-0}
+  - press: Enter
+  - &closed
+    wait: "!document.getElementById('palette').open && document.activeElement.id === 'open-palette'"
+  - expect: {expression: window.selection, equals: [apple]}
+  - state: matches
+  - press: Escape
+  - *closed
+  - state: empty
+  - press: Escape
+  - *closed
+semantics:
+  - expression: >-
+      (() => {
+        const panel = document.getElementById('palette'), query = document.getElementById('palette-query');
+        return panel.tagName === 'DIALOG' && panel.getAttribute('aria-modal') === 'true' &&
+          document.getElementById(panel.getAttribute('aria-labelledby')).textContent === 'Choose a fruit' &&
+          query.getAttribute('role') === 'combobox' && query.getAttribute('aria-label') === 'Search fruit…' &&
+          document.getElementById(query.getAttribute('aria-controls')).getAttribute('role') === 'listbox';
+      })()
+    equals: true
+htmx:
+  region: '#demo'
+  swap:
+    - eval: document.getElementById('swap').click()
+  navigate:
+    - state: matches
+    - eval: document.getElementById('navigate').click()
+  transient: '#palette[open], #palette[data-open], #palette-query-popup[style], #palette-query[aria-expanded=true]'
+  probe:
+    steps:
+      - eval: >-
+          (() => {
+            window.opens = 0;
+            document.getElementById('palette').addEventListener('beforetoggle', e => {
+              if (e.newState === 'open') window.opens++;
+            });
+          })()
+      - state: open
+    expression: window.opens
+    equals: 1
+instances: ['#component tl-dialog', '#component tl-combobox']
+provenance:
+  - file: ../../../packages/trellis_ui/vendor/shadcn/shadcn@4.23.0/LICENSE.md
+    license: MIT

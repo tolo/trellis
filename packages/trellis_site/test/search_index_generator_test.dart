@@ -632,6 +632,54 @@ void main() {
   // ──────────────────────────────────────────────────
   // Build pipeline integration
   // ──────────────────────────────────────────────────
+  test('built search URLs and files use the same eligible page set on rebuild', () async {
+    final root = (Directory('.agent_temp')..createSync()).createTempSync('search_context_');
+    addTearDown(() => root.deleteSync(recursive: true));
+    void write(String name, String content) =>
+        (File(p.join(root.path, name))..createSync(recursive: true)).writeAsStringSync(content);
+    write('layouts/_default/single.html', r'''
+<!doctype html>
+<body>
+  <div tl:if="${site.search}" tl:attr="data-index=${site.search.indexUrl}, data-client=${site.search.clientUrl}"></div>
+</body>
+''');
+    write('content/page.md', '---\ntitle: Searchable\n---\nHello');
+    write('content/draft.md', '---\ntitle: Draft\ndraft: true\n---\nDraft contents');
+    write('content/internal/guide.md', '---\ntitle: Internal\n---\nHidden from search');
+
+    final site = TrellisSite(
+      SiteConfig(
+        siteDir: root.path,
+        pathPrefix: '/guide/',
+        searchConfig: const SearchConfig(
+          enabled: true,
+          output: './assets/unused/../index files/content.json',
+          excludeSections: ['internal'],
+        ),
+      ),
+    );
+    final html = File(p.join(root.path, 'output/page/index.html'));
+    final index = File(p.join(root.path, 'output/assets/index files/content.json'));
+    final client = File(p.join(root.path, 'output/assets/index files/trellis-search.js'));
+
+    await site.build();
+    expect(html.readAsStringSync(), contains('data-index="/guide/assets/index%20files/content.json"'));
+    expect(html.readAsStringSync(), contains('data-client="/guide/assets/index%20files/trellis-search.js"'));
+    expect((jsonDecode(index.readAsStringSync()) as List).map((page) => (page as Map)['url']), ['/guide/page/']);
+    expect(client.readAsStringSync(), searchClient);
+
+    write('content/page.md', '---\ntitle: Searchable\nsearch: false\n---\nHello');
+    await site.build();
+    expect(html.readAsStringSync(), isNot(contains('data-index=')));
+    expect(html.readAsStringSync(), isNot(contains('data-client=')));
+    expect(index.existsSync(), isFalse);
+    expect(client.existsSync(), isFalse);
+
+    await TrellisSite(site.config, includeDrafts: true).build();
+    expect(html.readAsStringSync(), contains('data-index='));
+    expect((jsonDecode(index.readAsStringSync()) as List).map((page) => (page as Map)['url']), ['/guide/draft/']);
+  });
+
   group('search index integration', () {
     SiteConfig isolatedSearchConfig({required bool enabled, String output = 'search-index.json'}) {
       final outputDir = Directory.systemTemp.createTempSync('search_integ_').path;

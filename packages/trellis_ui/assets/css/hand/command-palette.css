@@ -1,0 +1,17 @@
+.trellis-command-dialog {
+  max-inline-size: 34rem;
+  gap: .5rem;
+  padding: 1rem;
+}
+.trellis-command-dialog [data-slot=dialog-description]:empty {
+  display: none;
+}
+.trellis-command-dialog [data-slot=combobox-trigger] {
+  display: none;
+}
+.trellis-command-dialog [role=option] {
+  overflow-wrap: anywhere;
+}
+.trellis-command-dialog [data-command-status] {
+  margin: .5rem 0 0;
+}

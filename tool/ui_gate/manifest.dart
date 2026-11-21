@@ -19,6 +19,7 @@ final class GateManifest {
   List<Map<String, Object?>> steps(Object? raw) =>
       (raw as List? ?? const []).map((e) => (e as Map).cast<String, Object?>()).toList();
   List<Map<String, Object?>> get keyboard => steps(data['keyboard']);
+  List<Map<String, Object?>> get touchGestures => steps(data['touch-gestures']);
   Map<String, Object?>? get htmx => (data['htmx'] as Map?)?.cast<String, Object?>();
   String resolveFile(String name) => p.normalize(p.join(file.parent.path, name));
 
@@ -36,6 +37,7 @@ final class GateManifest {
       'keyboard',
       'semantics',
       'htmx',
+      'touch-gestures',
       'instances',
       'distinct',
       'provenance',
@@ -57,9 +59,30 @@ final class GateManifest {
         final step = raw[i];
         if (step is! Map || step.length != 1) throw FormatException('$field[$i]: expected one step');
         final key = step.keys.single;
-        if (!{'focus', 'click', 'hover', 'type', 'press', 'wait', 'expect', 'axe', 'state', 'eval'}.contains(key))
+        if (!{
+          'focus',
+          'click',
+          'hover',
+          'type',
+          'press',
+          'wait',
+          'expect',
+          'axe',
+          'state',
+          'eval',
+          'touch-drag',
+        }.contains(key))
           throw FormatException('$field[$i].$key: unknown step');
         if ({'focus', 'click', 'hover'}.contains(key)) _selector(step[key], '$field[$i].$key');
+        if (key == 'touch-drag') {
+          final drag = step[key];
+          if (drag is! Map) throw FormatException('$field[$i].touch-drag: expected selector/dx/dy');
+          _keys(drag.cast<String, Object?>(), {'selector', 'dx', 'dy'}, '$field[$i].touch-drag');
+          _selector(drag['selector'], '$field[$i].touch-drag.selector');
+          if (drag['dx'] is! int || drag['dy'] is! int || (drag['dx'] == 0 && drag['dy'] == 0)) {
+            throw FormatException('$field[$i].touch-drag: supply a non-zero integer displacement');
+          }
+        }
         if (key == 'expect') {
           if (step[key] is! Map) throw FormatException('$field[$i].expect: expected expression/equals');
           _keys((step[key] as Map).cast<String, Object?>(), {'expression', 'equals'}, '$field[$i].expect');
@@ -70,6 +93,7 @@ final class GateManifest {
     }
 
     if (data['keyboard'] != null) steps(data['keyboard'], 'keyboard');
+    if (data['touch-gestures'] != null) steps(data['touch-gestures'], 'touch-gestures');
     if (data['states'] != null) {
       for (final entry in (data['states'] as Map).entries) {
         steps(entry.value, 'states.${entry.key}');

@@ -18,7 +18,7 @@ depends on `trellis_css`), and the redrawn package graph. The `trellis_ui` packa
 are current through the 0.14 sync inventory and shared browser qualification decision (2026-11-18).
 Relic is current through its 0.15 development reload (2026-11-20).
 The content model's bundle rule and the `pathPrefix` coverage of feed and taxonomy URLs are current through 0.14.
-Embedded UI placement, Popover, Tooltip, Sheet, Accordion and Navigation menu are current through 0.15 (2026-11-20).
+Embedded UI placement, components and dismissal behavior are current through 0.15 (2026-11-21).
 Other sections retain the verification scope above.
 The Dart Frog CSRF bridge note is current through 0.14 (it runs on Dart Frog's own request, so a handler can read the body after a form-field token).
 The app-owned Tier 2 date recipe is current through 0.15 (2026-11-20).
@@ -120,7 +120,13 @@ slotted control and uses the shared hover helper to cancel pending transitions w
 Its manual popover opens on keyboard focus and consumes Escape in the current modal scope. Navigation menu enhances native disclosures inside a navigation landmark. Each panel is an auto popover.
 The suite tracks delayed pointer intent per disclosure and uses the native top layer to switch active panels.
 The server compares final URLs to mark the current link. Combobox option responses replace only the results region.
-Toast responses append to a pre-existing live region using an HTMX out-of-band swap.
+Dropdown submenus use nested auto popovers and restrict traversal and selection to the current menu. Native
+dismissal releases focus and hit testing immediately. Browsers with discrete top-layer transitions and
+CSS inertness fade the original surface. The fallback paints a passive manual popover at the departing
+surface’s last viewport rectangle, including outside a clipping ancestor in Firefox. Swaps, history saves
+and reopening remove the exit presentation. Reduced motion omits it.
+Toast responses append to a pre-existing live region using an HTMX out-of-band swap. The CSS grid keeps the
+remaining toasts in order after a trusted rightward touch swipe dismisses one toast.
 
 The package's development pipeline vendors pinned shadcn TSX/style/tokens and licences, extracts `cn-*` hooks and
 structural utilities, renames them to `trellis-*`, then compiles using a checksummed Tailwind standalone binary.

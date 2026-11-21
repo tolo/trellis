@@ -415,9 +415,21 @@
         "S01",
         "S03"
       ],
-      "status": "in-progress",
+      "status": "done",
       "fis": "s12-dropdown-submenus-exit-animations-and-toast-gestures.md",
-      "completedTaskIds": [],
+      "completedTaskIds": [
+        "TI01",
+        "TI02",
+        "TI03",
+        "TI04",
+        "TI05",
+        "TI06",
+        "TI07"
+      ],
+      "verified": {
+        "at": "2026-11-21T07:33Z",
+        "summary": "CI=true mise exec -- dart test test/overlay_exit_browser_test.dart test/toast_browser_test.dart --name Firefox --concurrency=1 --reporter expanded -> exit=0, 00:34 +15: All tests passed!"
+      },
       "scope": "Implement dropdown submenus, exit animations for four overlays and swipe-to-dismiss for stacked toasts. Requalify each changed subject.",
       "sourceRefs": [
         "dev/spec/0.15/prd.md#fr11-014-unported-behaviour",

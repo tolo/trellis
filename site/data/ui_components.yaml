@@ -301,6 +301,7 @@
     - {"name":"dropdownMenu","signature":"dropdownMenu(id, ...attrs)","parameters":["id","...attrs"],"slots":["trigger","anonymous"],"attribute_targets":[{"tag":"<div>","part":"dropdown-menu-content"}]}
     - {"name":"menuItem","signature":"menuItem(variant, ...attrs)","parameters":["variant","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<button>","part":"dropdown-menu-item"}]}
     - {"name":"menuCheckboxItem","signature":"menuCheckboxItem(checked, ...attrs)","parameters":["checked","...attrs"],"slots":["anonymous"],"attribute_targets":[{"tag":"<button>","part":"dropdown-menu-checkbox-item"}]}
+    - {"name":"menuSubmenu","signature":"menuSubmenu(id, ...attrs)","parameters":["id","...attrs"],"slots":["trigger","anonymous"],"attribute_targets":[{"tag":"<div>","part":"dropdown-menu-sub-content"}]}
     - {"name":"menuSeparator","signature":"menuSeparator(...attrs)","parameters":["...attrs"],"slots":[],"attribute_targets":[{"tag":"<div>","part":"dropdown-menu-separator"}]}
   items:
     - {"name":"provenance","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}

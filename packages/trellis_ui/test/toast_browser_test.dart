@@ -4,6 +4,7 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:test/test.dart';
 
 import '../../../tool/ui_gate/driver.dart';
+import '../../../tool/ui_gate/firefox.dart';
 import '../tool/src/gallery.dart';
 
 void main() {
@@ -104,4 +105,102 @@ void main() {
       reason: 'Back must restore the saved snapshot instead of fetching a fresh empty page.',
     );
   });
+  test('cancelled touch lets an expired toast timer finish after the main thread is busy', () async {
+    await driver.open(Uri.parse('http://127.0.0.1:${server.port}/components/toast'));
+    expect(
+      await driver.evaluate(r'''new Promise(resolve => {
+        const viewport = document.getElementById('toaster');
+        const observeArrival = new MutationObserver(() => {
+          const toast = viewport.querySelector('tl-toast');
+          if (!toast) return;
+          observeArrival.disconnect();
+          const deadline = performance.now() + 60;
+          // The timer is due, but cannot run until this browser task returns.
+          while (performance.now() < deadline) {}
+          const pointer = {bubbles: true, pointerType: 'touch', pointerId: 1, isPrimary: true};
+          toast.dispatchEvent(new PointerEvent('pointerdown', pointer));
+          toast.dispatchEvent(new PointerEvent('pointercancel', pointer));
+          resolve(toast.isConnected);
+        });
+        observeArrival.observe(viewport, {childList: true});
+        htmx.ajax('GET', '/demo/toast?duration=40', {target: '#demo', swap: 'none'});
+      })'''),
+      isTrue,
+    );
+    await waitFor('$count === 0');
+  });
+
+  for (final name in ['Chrome', 'Firefox']) {
+    test('$name trusted touch dismisses only the rightward-swiped toast', () async {
+      final touchDriver = name == 'Chrome' ? driver : await FirefoxDriver.launch();
+      if (touchDriver != driver) addTearDown(touchDriver.close);
+      await touchDriver.viewport(390, 844);
+      await touchDriver.open(Uri.parse('http://127.0.0.1:${server.port}/components/toast'));
+      expect(await touchDriver.media(coarse: true), isTrue);
+      for (var index = 1; index <= 3; index++) {
+        await touchDriver.pointer('#toast-add', click: true);
+        final inserted = await touchDriver.evaluate('''(async () => {
+          for (let attempt = 0; attempt < 60; attempt++) {
+            if ($count === $index) return true;
+            await new Promise(requestAnimationFrame);
+          }
+          return false;
+        })()''');
+        expect(inserted, true, reason: 'HTMX inserted toast $index');
+      }
+      await touchDriver.evaluate("""(() => {
+        window.toastSequence = [...document.querySelectorAll('#toaster > tl-toast')];
+        window.touchStarts = [];
+        window.touchCancels = 0;
+        const viewport = document.getElementById('toaster');
+        viewport.addEventListener('pointerdown', event => touchStarts.push({
+          pointer: event.pointerType, trusted: event.isTrusted,
+        }));
+        viewport.addEventListener('pointercancel', () => touchCancels++);
+        document.body.style.minHeight = '1800px';
+      })()""");
+      const target = '#toaster > tl-toast:nth-child(2) [data-slot=toast]';
+      await touchDriver.dragTouch(target, dx: -85, dy: 0);
+      await touchDriver.dragTouch(target, dx: 21, dy: 0);
+      await touchDriver.dragTouch(target, dx: 12, dy: -115);
+      expect(await touchDriver.evaluate(count), 3);
+      expect(
+        await touchDriver.evaluate("getComputedStyle(document.querySelector('$target')).touchAction"),
+        contains('pan-y'),
+      );
+      if (touchDriver is ChromeDriver) {
+        expect(
+          await touchDriver.evaluate(r'''(async () => {
+          for (let attempt = 0; attempt < 30; attempt++) {
+            if (scrollY > 0) return true;
+            await new Promise(requestAnimationFrame);
+          }
+          return false;
+        })()'''),
+          isTrue,
+        );
+        final cancels = await touchDriver.evaluate('window.touchCancels') as int;
+        await touchDriver.dragTouch(target, dx: 86, dy: 0, cancel: true);
+        expect(await touchDriver.evaluate('window.touchCancels'), cancels + 1);
+        expect(await touchDriver.evaluate(count), 3);
+      }
+      await touchDriver.dragTouch(target, dx: 86, dy: 4);
+      expect(await touchDriver.evaluate(count), 2);
+      expect(
+        await touchDriver.evaluate("""(() => {
+          const [first, last] = document.getElementById('toaster').children;
+          return first === toastSequence[0] && last === toastSequence[2] &&
+            first.querySelector('[data-slot=toast]').getBoundingClientRect().bottom <=
+            last.querySelector('[data-slot=toast]').getBoundingClientRect().top;
+        })()"""),
+        true,
+      );
+      final starts = await touchDriver.evaluate('window.touchStarts') as List;
+      expect(starts, hasLength(name == 'Chrome' ? 5 : 4));
+      expect(starts, everyElement({'pointer': 'touch', 'trusted': true}));
+      await touchDriver.pointer('#toaster [data-slot=toast-close]', click: true);
+      expect(await touchDriver.evaluate(count), 1);
+      expect(await touchDriver.evaluate('window.__trellisCsp.violations'), isEmpty);
+    }, tags: name == 'Firefox' ? 'ui-gate' : null);
+  }
 }

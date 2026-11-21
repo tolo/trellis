@@ -7,6 +7,7 @@ class TlDialog extends TlElement {
     if (this.sheet && this.sheetTrigger) this.connectSheet();
     const dialog = this.dialog;
     if (!dialog) return;
+    this.observeExit(dialog);
     this.listen(this, 'click', (event) => this.clickDialog(event));
     this.listen(dialog, 'keydown', (event) => this.cycleTab(event));
     this.listen(dialog, 'close', () => {
@@ -39,7 +40,8 @@ class TlDialog extends TlElement {
     const close = dialog.querySelector('[data-slot=sheet-close]');
     const setInline = ({ matches }) => {
       const focused = document.activeElement;
-      if (dialog.matches(':modal')) this.closeDialog(false);
+      this.clearExit();
+      if (dialog.matches(':modal')) withoutOverlayExit(() => this.closeDialog(false));
       dialog.toggleAttribute('open', matches);
       trigger.closest('[data-slot=sheet-trigger]').hidden = matches;
       close.hidden = matches;

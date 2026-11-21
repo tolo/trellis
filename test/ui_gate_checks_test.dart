@@ -41,6 +41,43 @@ void main() {
     });
   }, timeout: Timeout(Duration(minutes: 2)));
 
+  test('touch targets ignore inert presentation and still reject small interactive controls', () async {
+    final server = await fixtureServer();
+    final chrome = await ChromeDriver.launch();
+    addTearDown(chrome.close);
+
+    Future<GateResult> measure({required bool inert}) {
+      final manifest = fixtureManifest(
+        replace: "  default: []",
+        withText:
+            """
+  default:
+    - eval: >
+        (() => {
+          const root = document.getElementById('component');
+          for (const mode of ['html', 'css']) {
+            const panel = document.createElement('section');
+            panel.inert = $inert && mode === 'html';
+            if ($inert && mode === 'css') panel.style.interactivity = 'inert';
+            const button = document.createElement('button');
+            button.id = mode + '-control';
+            button.textContent = 'X';
+            Object.assign(button.style, {width: '20px', height: '20px', minWidth: '0', minHeight: '0'});
+            panel.append(button);
+            root.append(panel);
+          }
+        })()""",
+      );
+      return GateSession(manifest, chrome, server.baseUrl).touchTargets();
+    }
+
+    final passive = await measure(inert: true);
+    expect(passive.status, 'pass', reason: '${passive.evidence}');
+    final interactive = await measure(inert: false);
+    expect(interactive.status, 'fail');
+    expect(interactive.evidence.join(), allOf(contains('#html-control'), contains('#css-control'), contains('44 px')));
+  });
+
   test('conditions and touch targets keep forced-focus paint atomic', () async {
     final server = await fixtureServer();
     await forBrowsers((driver) async {
@@ -306,6 +343,9 @@ base class DriverProxy implements GateDriver {
   @override
   Future<void> pointer(String selector, {bool click = false, bool down = false}) =>
       delegate.pointer(selector, click: click, down: down);
+  @override
+  Future<void> dragTouch(String selector, {required int dx, required int dy}) =>
+      delegate.dragTouch(selector, dx: dx, dy: dy);
   @override
   Future<void> pseudo(String selector, List<String> states) => delegate.pseudo(selector, states);
   @override

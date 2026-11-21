@@ -52,7 +52,7 @@ htmx:
   navigate:
     - click: 'header a[hx-get="/about"]'
     - wait: "location.pathname === '/about' && !document.querySelector('#components-dialog')"
-  transient: '#components-dialog[open]'
+  transient: '#components-dialog[open], [data-trellis-overlay-exit]'
 instances:
   - tl-dialog
   - '#components-dialog'

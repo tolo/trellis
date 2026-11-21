@@ -37,6 +37,9 @@ in document order. Tab or Shift+Tab beyond the panel closes it and leaves focus
 on the next control. Escape or clicking outside closes the panel and returns
 focus to the trigger.
 
+The panel fades briefly on dismissal while focus moves immediately. Readers who
+prefer reduced motion skip the fade.
+
 ## Accessibility notes
 
 Give the trigger a short accessible label and label the controls inside the

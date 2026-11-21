@@ -12,10 +12,9 @@
 - Lattice and the docs site use Navigation menu, Accordion, Sheet, and Tooltip. Meadow closes its mobile
   Sheet on navigation. Both themes resolve the saved skin before paint under strict CSP.
 - Inline Sheets allow Tab to leave the panel.
-
-## 0.15.0
-
-- Lockstep version bump to keep all Trellis SDK packages on a single shared version. No functional changes in this package.
+- Dropdown menus support nested actions with keyboard and pointer navigation.
+- Dismissed dialogs, sheets, popovers and menus fade while native focus moves immediately. Reduced motion skips the fade.
+- A rightward touch swipe dismisses one toast while the others retain their order.
 
 ## 0.14.0
 

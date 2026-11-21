@@ -87,7 +87,7 @@
 ### What We're NOT Doing
 
 - Swipe Drawer, a replacement toast manager or hover-triggered dropdown submenus. Retain the existing viewport stack and component lifecycle.
-- FR11 is the first release cut. Stories S01–S06 ship independently.
+- The maintainer selected FR11 for 0.15 in the 2026-11-21 amendment.
 
 ## Architecture Decision
 
@@ -152,3 +152,14 @@
   Apply exit presentation to that live modal. Link navigation must keep destination focus without bouncing
   through the trigger. Keep node removal and history teardown immediate.
   Traced from S03/TI03, 2026-11-20.
+
+## Implementation Observations
+
+- ASSUMPTION: A rightward swipe travels at least 56 CSS pixels with horizontal movement at least 1.5 times vertical movement. Revisit the thresholds if device testing finds accidental dismissal or failed deliberate swipes.
+- Keep dismissal synchronous. Browsers with both discrete top-layer transitions and CSS inertness fade the original surface. Other browsers paint a passive copy in a manual popover at the last viewport position. The fallback never mounts another custom element or reloads slotted images. The owned fade determines cleanup even when the app keeps an unrelated animation running.
+- The generated dropdown transition duration animated the submenu width after placement measured it. Keep submenu placement properties out of transitions so the width cap applies before placement. At 320 px the measured submenu now starts 4 px beyond its trigger.
+- Touch qualification measures actionable controls. HTML-inert subtrees and descendants with computed CSS inertness keep any painted pixels without contributing touch targets. The control still rejects the same 20 px buttons when inertness is removed.
+- Visual review verified the repaired narrow menu, backdrop focus paint, and early exit. P3: at 1440 px a partially entered Popover can move up to 4.4 px during dismissal. Settled exit rectangles stay fixed and all resulting panels retain their content and focus handoff.
+- Reported admin reflow exposed a dropdown closed in the same task it opened, before native toggle placement. The exit observer waits for the suite's open state. Chrome's reproduction verifies the unpositioned surface never paints, and all four affected app routes reproduced their records in both browsers.
+- Independent review fixed stale highlight on an item disabled while focused, an expired toast left after pointer cancellation, and two passive-copy cases involving a zero-size canvas and multiple selected options.
+- The gallery and composed-route checks ran for the affected subjects. Full workspace, gallery and app sweeps are integration obligations. Human screen-reader and Safari items stay marked release-prep.

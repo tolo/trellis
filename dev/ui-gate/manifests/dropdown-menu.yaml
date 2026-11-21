@@ -10,10 +10,17 @@ states:
     - state: open
   open:
     - press: Escape
+    - press: Escape
     - focus: '#menu-trigger'
     - press: ArrowDown
     - wait: document.activeElement.id === 'menu-profile'
     - wait: "document.getElementById('menu').getAnimations().every(animation => animation.playState !== 'running')"
+  submenu:
+    - state: open
+    - focus: '#menu-services-trigger'
+    - press: ArrowRight
+    - wait: "document.querySelector('#menu-services:popover-open') !== null && document.activeElement.id === 'menu-invoices'"
+    - wait: "document.getElementById('menu-services').getAnimations().every(animation => animation.playState !== 'running')"
   destructive:
     - state: open
     - press: End
@@ -30,6 +37,19 @@ keyboard:
   - expect: {expression: "document.querySelector('#menu-trigger').getAttribute('aria-expanded')", equals: "true"}
   - press: ArrowDown
   - expect: {expression: document.activeElement.id, equals: menu-billing}
+  - press: ArrowDown
+  - expect: {expression: document.activeElement.id, equals: menu-services-trigger}
+  - press: ArrowRight
+  - wait: document.activeElement.id === 'menu-invoices'
+  - expect: {expression: "document.getElementById('menu-services-trigger').getAttribute('aria-expanded')", equals: "true"}
+  - press: ArrowUp
+  - expect: {expression: document.activeElement.id, equals: menu-receipts}
+  - press: ArrowLeft
+  - wait: "document.activeElement.id === 'menu-services-trigger' && document.querySelector('#menu-services:popover-open') === null"
+  - press: Enter
+  - wait: document.activeElement.id === 'menu-invoices'
+  - press: Escape
+  - wait: "document.activeElement.id === 'menu-services-trigger' && document.querySelector('#menu:popover-open') !== null"
   - press: ArrowDown
   - expect: {expression: document.activeElement.id, equals: menu-status}
   - press: ArrowDown
@@ -105,10 +125,10 @@ htmx:
     - expect: {expression: "document.querySelector('#menu:popover-open') === null && document.getElementById('menu').hasAttribute('style')", equals: true}
     - click: '#swap'
   navigate:
-    - state: open
+    - state: submenu
     # A pointer click outside the popup could light-dismiss it before the snapshot.
     - eval: document.getElementById('navigate').click()
-  transient: '#menu[data-open], #menu[style]'
+  transient: '#menu[data-open], #menu[style], #menu-services[data-open], #menu-services[style], [data-trellis-overlay-exit]'
   probe:
     steps:
       - *arm-profile

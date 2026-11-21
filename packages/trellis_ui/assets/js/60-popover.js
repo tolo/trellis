@@ -4,6 +4,7 @@ class TlPopover extends TlElement {
 
   onConnect() {
     const popup = this.popup;
+    this.observeExit(popup);
     const options = { ...this.dataset };
     const reflect = (open) => {
       setOpenState(popup, open);

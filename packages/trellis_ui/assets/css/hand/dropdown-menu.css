@@ -1,5 +1,5 @@
 .trellis-dropdown-menu-content {
-  min-inline-size: min(calc(100vw - 8px), max(12rem, var(--anchor-width, 0px)));
+  min-inline-size: min(var(--available-width, calc(100vw - 8px)), max(12rem, var(--anchor-width, 0px)));
 }
 
 .trellis-button[data-slot="dropdown-menu-trigger"] svg { width: 1rem; height: 1rem; }
@@ -33,3 +33,12 @@
 @media (forced-colors: active) {
   :is(.trellis-dropdown-menu-item, .trellis-dropdown-menu-checkbox-item):focus-visible { outline: 2px solid Highlight; outline-offset: -2px; }
 }
+
+.trellis-dropdown-menu-sub-trigger svg {
+  margin-inline-start: auto;
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Placement reads the fitted width synchronously after changing its viewport cap. */
+.trellis-dropdown-menu-sub-content { transition-property: none; }

@@ -2227,18 +2227,19 @@ const assetBase64 = <String, String>{
       'bGxpcy1uYXZpZ2F0aW9uLW1lbnUtbGluaywudHJlbGxpcy1idXR0b24sLnRyZWxsaXMtaW5wdXQsLnRyZWxsaXMtdGV4dGFyZWEs'
       'LnRyZWxsaXMtbmF0aXZlLXNlbGVjdCwudHJlbGxpcy1jaGVja2JveCwudHJlbGxpcy1yYWRpby1ncm91cC1pdGVtLC50cmVsbGlz'
       'LXN3aXRjaCwudHJlbGxpcy1iYWRnZSl7dHJhbnNpdGlvbi1wcm9wZXJ0eTpjb2xvcixiYWNrZ3JvdW5kLWNvbG9yLGJvcmRlci1j'
-      'b2xvcixib3gtc2hhZG93LG9wYWNpdHl9QG1lZGlhKHByZWZlcnMtcmVkdWNlZC1tb3Rpb246IHJlZHVjZSl7OndoZXJlKFtkYXRh'
-      'LXNsb3RdW2NsYXNzKj10cmVsbGlzLV0sW2RhdGEtc2xvdF1bY2xhc3MqPXRyZWxsaXMtXSAqKXt0cmFuc2l0aW9uOm5vbmU7YW5p'
-      'bWF0aW9uOm5vbmV9fS50cmVsbGlzLWNvbWJvYm94LXRyaWdnZXIsLnRyZWxsaXMtZHJvcGRvd24tbWVudS1pdGVtLC50cmVsbGlz'
-      'LWRyb3Bkb3duLW1lbnUtY2hlY2tib3gtaXRlbSwudHJlbGxpcy1hY2NvcmRpb24tdHJpZ2dlciwudHJlbGxpcy1uYXZpZ2F0aW9u'
-      'LW1lbnUtdHJpZ2dlciwudHJlbGxpcy1uYXZpZ2F0aW9uLW1lbnUtbGluaywudHJlbGxpcy10YWJzLXRyaWdnZXIsLnRyZWxsaXMt'
-      'dGFicy1jb250ZW50LC50cmVsbGlzLXRvYXN0LWNsb3NlLC50cmVsbGlzLWRpYWxvZy1jbG9zZSwudHJlbGxpcy1zaGVldC1jbG9z'
-      'ZXttaW4taW5saW5lLXNpemU6MjRweDttaW4tYmxvY2stc2l6ZToyNHB4fUBtZWRpYShwb2ludGVyOiBjb2Fyc2Upey50cmVsbGlz'
-      'LWNvbWJvYm94LXRyaWdnZXIsLnRyZWxsaXMtZHJvcGRvd24tbWVudS1pdGVtLC50cmVsbGlzLWRyb3Bkb3duLW1lbnUtY2hlY2ti'
-      'b3gtaXRlbSwudHJlbGxpcy1hY2NvcmRpb24tdHJpZ2dlciwudHJlbGxpcy1uYXZpZ2F0aW9uLW1lbnUtdHJpZ2dlciwudHJlbGxp'
-      'cy1uYXZpZ2F0aW9uLW1lbnUtbGluaywudHJlbGxpcy10YWJzLXRyaWdnZXIsLnRyZWxsaXMtdGFicy1jb250ZW50LC50cmVsbGlz'
-      'LXRvYXN0LWNsb3NlLC50cmVsbGlzLWRpYWxvZy1jbG9zZSwudHJlbGxpcy1zaGVldC1jbG9zZXttaW4taW5saW5lLXNpemU6NDRw'
-      'eDttaW4tYmxvY2stc2l6ZTo0NHB4fX19Cg==',
+      'b2xvcixib3gtc2hhZG93LG9wYWNpdHl9LnRyZWxsaXMtYnV0dG9uLXZhcmlhbnQtZGVmYXVsdHt0cmFuc2l0aW9uLXByb3BlcnR5'
+      'OmJvcmRlci1jb2xvcixib3gtc2hhZG93LG9wYWNpdHl9QG1lZGlhKHByZWZlcnMtcmVkdWNlZC1tb3Rpb246IHJlZHVjZSl7Ondo'
+      'ZXJlKFtkYXRhLXNsb3RdW2NsYXNzKj10cmVsbGlzLV0sW2RhdGEtc2xvdF1bY2xhc3MqPXRyZWxsaXMtXSAqKXt0cmFuc2l0aW9u'
+      'Om5vbmU7YW5pbWF0aW9uOm5vbmV9fS50cmVsbGlzLWNvbWJvYm94LXRyaWdnZXIsLnRyZWxsaXMtZHJvcGRvd24tbWVudS1pdGVt'
+      'LC50cmVsbGlzLWRyb3Bkb3duLW1lbnUtY2hlY2tib3gtaXRlbSwudHJlbGxpcy1hY2NvcmRpb24tdHJpZ2dlciwudHJlbGxpcy1u'
+      'YXZpZ2F0aW9uLW1lbnUtdHJpZ2dlciwudHJlbGxpcy1uYXZpZ2F0aW9uLW1lbnUtbGluaywudHJlbGxpcy10YWJzLXRyaWdnZXIs'
+      'LnRyZWxsaXMtdGFicy1jb250ZW50LC50cmVsbGlzLXRvYXN0LWNsb3NlLC50cmVsbGlzLWRpYWxvZy1jbG9zZSwudHJlbGxpcy1z'
+      'aGVldC1jbG9zZXttaW4taW5saW5lLXNpemU6MjRweDttaW4tYmxvY2stc2l6ZToyNHB4fUBtZWRpYShwb2ludGVyOiBjb2Fyc2Up'
+      'ey50cmVsbGlzLWNvbWJvYm94LXRyaWdnZXIsLnRyZWxsaXMtZHJvcGRvd24tbWVudS1pdGVtLC50cmVsbGlzLWRyb3Bkb3duLW1l'
+      'bnUtY2hlY2tib3gtaXRlbSwudHJlbGxpcy1hY2NvcmRpb24tdHJpZ2dlciwudHJlbGxpcy1uYXZpZ2F0aW9uLW1lbnUtdHJpZ2dl'
+      'ciwudHJlbGxpcy1uYXZpZ2F0aW9uLW1lbnUtbGluaywudHJlbGxpcy10YWJzLXRyaWdnZXIsLnRyZWxsaXMtdGFicy1jb250ZW50'
+      'LC50cmVsbGlzLXRvYXN0LWNsb3NlLC50cmVsbGlzLWRpYWxvZy1jbG9zZSwudHJlbGxpcy1zaGVldC1jbG9zZXttaW4taW5saW5l'
+      'LXNpemU6NDRweDttaW4tYmxvY2stc2l6ZTo0NHB4fX19Cg==',
   'trellis-ui.js':
       'KGZ1bmN0aW9uICgpIHsKInVzZSBzdHJpY3QiOwo7CmNvbnN0IHBvcHVwU2VsZWN0b3IgPSAnW3BvcG92ZXJdW2RhdGEtdHJlbGxp'
       'cy1wb3B1cF0nOwoKY2xhc3MgVGxFbGVtZW50IGV4dGVuZHMgSFRNTEVsZW1lbnQgewogIGNvbm5lY3RlZENhbGxiYWNrKCkgewog'
@@ -2836,7 +2837,7 @@ const assetBase64 = <String, String>{
 };
 
 const assetDigests = <String, String>{
-  'trellis-ui.css': 'becab831ad0f5a2fd4105d8ff9d98950e5e93e3f20d184c7ab9eaee1af63973f',
+  'trellis-ui.css': '89f510e0d65ad32098940a6e8edd367a26b71fd5b0747d2ff40e43d6015d9327',
   'trellis-ui.js': '472dda2c82a489355e9ece73c2a801658e1722d72f698fabfceac8e0468e96e5',
   'htmx-indicator.css': 'a85e86583b170ce2819738dcd978b3a4575538991293b2b97ef871909f7de595',
 };

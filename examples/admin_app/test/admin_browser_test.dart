@@ -166,6 +166,53 @@ void main() {
     }
   });
 
+  test('the primary action keeps readable contrast as its palette is inverted', () async {
+    await open(await serve());
+    final result =
+        await browser.eval(r'''(async () => {
+      const button = document.getElementById('new-contact');
+      const style = getComputedStyle(button);
+      await Promise.allSettled(button.getAnimations().map(animation => animation.finished));
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 1;
+      const ink = canvas.getContext('2d');
+      const luminance = color => {
+        ink.fillStyle = color;
+        ink.fillRect(0, 0, 1, 1);
+        const [r, g, b] = [...ink.getImageData(0, 0, 1, 1).data].slice(0, 3).map(channel => {
+          const srgb = channel / 255;
+          return srgb <= .04045 ? srgb / 12.92 : ((srgb + .055) / 1.055) ** 2.4;
+        });
+        return r * .2126 + g * .7152 + b * .0722;
+      };
+      const measure = () => {
+        const foreground = luminance(style.color), background = luminance(style.backgroundColor);
+        return (Math.max(foreground, background) + .05) / (Math.min(foreground, background) + .05);
+      };
+      const before = [style.color, style.backgroundColor];
+      document.documentElement.classList.add('dark');
+      const samples = [measure()];
+      // Sample the interpolation independently of the wall clock and frame rate.
+      const transitions = button.getAnimations().filter(animation => animation instanceof CSSTransition);
+      for (const transition of transitions) transition.pause();
+      for (const point of [.2, .3, .4, .5, .6, .7, .8]) {
+        for (const transition of transitions) transition.currentTime = transition.effect.getTiming().duration * point;
+        samples.push(measure());
+      }
+      for (const transition of transitions) transition.finish();
+      samples.push(measure());
+      return {minimum: Math.min(...samples), changed: before[0] !== style.color && before[1] !== style.backgroundColor};
+    })()''')
+            as Map<String, dynamic>;
+
+    expect(result['changed'], isTrue, reason: 'the light and dark palettes both reached the button');
+    expect(
+      result['minimum'],
+      greaterThanOrEqualTo(4.5),
+      reason: 'the primary action remains readable through the change',
+    );
+  });
+
   test('a narrow keyboard edit keeps the restored row action visible', () async {
     await browser.driver.viewport(390, 844);
     await open(await serve());

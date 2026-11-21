@@ -25,7 +25,9 @@ class TlDropdownMenu extends TlElement {
     }
     this.listen(this, 'keydown', (event) => this.keydown(event));
     this.listen(this.popup, 'click', (event) => this.select(event));
-    this.listen(this.popup, 'pointermove', (event) => this.item(event.target)?.focus({ preventScroll: true }));
+    this.listen(this.popup, 'pointermove', (event) => {
+      if (!this.popup.querySelector('[role=menu]:popover-open')) this.item(event.target)?.focus({ preventScroll: true });
+    });
     this.listen(this.popup, 'focusin', (event) => this.item(event.target)?.setAttribute('data-highlighted', ''));
     this.listen(this.popup, 'focusout', (event) => this.item(event.target, '[data-highlighted]')?.removeAttribute('data-highlighted'));
   }

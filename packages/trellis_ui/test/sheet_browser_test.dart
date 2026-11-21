@@ -121,6 +121,43 @@ void main() {
     expect(await driver.evaluate("document.activeElement.matches('$close')"), isTrue);
   });
 
+  test('Sheet wraps in both directions when a selected radio ends the tab order', () async {
+    await driver.open(page);
+    await openRight();
+    await driver.evaluate('''(() => {
+      const selected = document.createElement('input');
+      selected.type = 'radio';
+      selected.name = 'layout';
+      selected.checked = true;
+      selected.id = 'selected-layout';
+      const alternative = selected.cloneNode();
+      alternative.id = 'alternative-layout';
+      alternative.checked = false;
+      $dialog.append(selected, alternative);
+      selected.focus();
+    })()''');
+    await driver.press('Tab');
+    expect(await driver.evaluate('document.activeElement.id'), 'right-jump');
+    await reverseTab();
+    expect(await driver.evaluate('document.activeElement.id'), 'selected-layout');
+    await driver.evaluate("document.getElementById('alternative-layout').focus()");
+    await driver.press('Tab');
+    expect(await driver.evaluate('document.activeElement.id'), 'right-jump');
+  });
+
+  test('Sheet ignores controls hidden inside a closed disclosure when wrapping focus', () async {
+    await driver.open(page);
+    await openRight();
+    await driver.evaluate('''(() => {
+      const disclosure = document.createElement('details');
+      disclosure.innerHTML = '<summary>More</summary><button tabindex="1">Hidden action</button>';
+      $dialog.prepend(disclosure);
+      disclosure.querySelector('summary').focus();
+    })()''');
+    await reverseTab();
+    expect(await driver.evaluate("document.activeElement.matches('$close')"), isTrue);
+  });
+
   test('Escape, Close and backdrop update state and restore trigger focus', () async {
     await driver.open(page);
     for (final action in ['escape', 'close', 'backdrop']) {

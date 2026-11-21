@@ -114,6 +114,17 @@ void main() {
       })()''');
       Future<void> pressShortcut({bool command = false}) => shortcut('k', command: command);
       Future<void> focus(String id) => driver.evaluate("document.getElementById('$id').focus()");
+      Future<void> dismissPalette(String key, String opener) async {
+        // Native close listeners can restore focus after the dialog leaves the top layer.
+        await driver.evaluate(r'''(() => {
+          window.paletteClosed = false;
+          document.getElementById('palette').addEventListener('close', event => {
+            window.paletteClosed = event.isTrusted;
+          }, { once: true });
+        })()''');
+        await driver.press(key);
+        await _waitFor(driver, "window.paletteClosed && !$_modal && $_focused === '$opener'");
+      }
 
       await driver.pointer('#open-palette', click: true);
       expect(await driver.evaluate(_modal), isTrue);
@@ -131,8 +142,7 @@ void main() {
         await driver.evaluate("document.activeElement.getAttribute('aria-activedescendant')"),
         'palette-query-option-0',
       );
-      await driver.press('Enter');
-      await _waitFor(driver, "!$_modal && $_focused === 'open-palette'");
+      await dismissPalette('Enter', 'open-palette');
       expect(await driver.evaluate('window.chosen'), ['apple']);
 
       await focus('palette-opener');
@@ -141,15 +151,15 @@ void main() {
       expect(await driver.evaluate(_focused), 'palette-query');
       await driver.type('BAN');
       expect(await driver.evaluate(_options), ['Banana']);
-      await driver.press('Escape');
-      await _waitFor(driver, "!$_modal && $_focused === 'palette-opener'");
+      await dismissPalette('Escape', 'palette-opener');
       await pressShortcut(command: Platform.isMacOS);
       expect(await driver.evaluate('document.activeElement.value'), isEmpty);
       expect(await driver.evaluate("document.activeElement.getAttribute('aria-expanded')"), 'false');
-      await driver.press('Escape');
+      await dismissPalette('Escape', 'palette-opener');
 
       for (final id in ['editable', 'notes', 'editable-child', 'handled']) {
         await focus(id);
+        expect(await driver.evaluate(_focused), id);
         await pressShortcut(command: Platform.isMacOS);
         expect(await driver.evaluate(_modal), isFalse, reason: id);
         expect(await driver.evaluate('window.shortcut'), [true, id == 'handled'], reason: id);

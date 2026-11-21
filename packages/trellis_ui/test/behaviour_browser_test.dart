@@ -245,6 +245,26 @@ void main() {
     expect(placement, containsPair('fits', true));
   });
 
+  test('moving over the parent menu preserves the open submenu keyboard level', () async {
+    await driver.viewport(900, 740);
+    await open('dropdown-menu');
+    await click('#menu-trigger');
+    await waitFor("document.activeElement.id === 'menu-profile'");
+    await driver.press('ArrowDown');
+    await driver.press('ArrowDown');
+    await driver.press('ArrowRight');
+    const submenuOpen = "document.querySelector('#menu-services:popover-open')";
+    await waitFor("$submenuOpen && document.activeElement.id === 'menu-invoices'");
+    await driver.evaluate('Promise.allSettled($submenuOpen.getAnimations().map(a => a.finished))');
+    await driver.pointer('#menu-billing');
+    await driver.press('Escape');
+    expect(await driver.evaluate(submenuOpen), isNull);
+    expect(await driver.evaluate(menuOpen), isTrue);
+    expect(await driver.evaluate('document.activeElement.id'), 'menu-services-trigger');
+    await driver.press('Escape');
+    await waitFor("!$menuOpen && document.activeElement.id === 'menu-trigger'");
+  });
+
   test('closing a submenu clears a highlight when the focused item becomes disabled', () async {
     await open('dropdown-menu');
     await click('#menu-trigger');

@@ -269,6 +269,8 @@ void main() {
               reason: '${driver.name}: scrollable results leave the close target exposed',
             );
             await driver.press('ArrowUp');
+            // Deliver a resize after selection, as with a deferred viewport resize notification.
+            await driver.evaluate("window.dispatchEvent(new Event('resize'))");
             expect(
               await driver.evaluate(r'''(() => {
                 const popup = document.getElementById('lattice-command-query-popup');

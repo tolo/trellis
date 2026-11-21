@@ -18,7 +18,6 @@ class TlDialog extends TlElement {
       this.listen(dialog, 'pointerdown', (event) => { this.backdropDown = this.onBackdrop(event); });
     }
     if (!this.sheet && dialog.open) {
-      // The parsed open attribute makes the dialog non-modal until we re-open it.
       dialog.removeAttribute('open');
       this.openDialog(document.activeElement);
     }
@@ -72,7 +71,7 @@ class TlDialog extends TlElement {
     const media = Number.isFinite(width) && width >= 0 ? matchMedia(`(width > ${width}px)`) : null;
     if (media) this.listen(media, 'change', setInline);
     setInline(media ?? { matches: false });
-    // A text-only HTMX swap has no replacement element to emit afterSettle.
+    // Text-only HTMX swaps do not emit afterSettle on replacement content.
     const recoverFocus = new MutationObserver((changes) => {
       if (dialog.matches(':modal') && !dialog.contains(document.activeElement) &&
           changes.some(change => change.removedNodes.length)) {
@@ -92,16 +91,20 @@ class TlDialog extends TlElement {
   tabStops() {
     const candidates = this.dialog.querySelectorAll('a[href], button, input, select, textarea, summary, [tabindex], [contenteditable]');
     const stops = Array.from(candidates).filter((element) => element.tabIndex >= 0 &&
-      !element.matches(':disabled') && !element.closest('[inert]') && element.getClientRects().length &&
-      getComputedStyle(element).visibility === 'visible');
-    // Positive tabindex comes first. Equal values retain tree order.
-    return stops.sort((a, b) => (a.tabIndex || Infinity) - (b.tabIndex || Infinity));
+      !element.matches(':disabled') && !element.closest('[inert]') && element.checkVisibility({ visibilityProperty: true }));
+    const active = document.activeElement;
+    // A radio group's selected or focused member is its tab stop.
+    return stops.filter(radio => radio.type !== 'radio' || !radio.name || radio === active || !stops.some(other =>
+      other.type === radio.type && other.name === radio.name && other.form === radio.form &&
+      (other === active || other.checked && !radio.checked)
+    )).sort((a, b) => (a.tabIndex || Infinity) - (b.tabIndex || Infinity));
   }
 
   cycleTab(event) {
-    if (!this.dialog.matches(':modal')) return;
-    if (event.key !== 'Tab' || event.defaultPrevented || event.target.closest('dialog') !== this.dialog) return;
-    // Native modality keeps the page inert, but Tab can still leave for browser chrome.
+    const dialog = this.dialog;
+    if (event.key !== 'Tab' || event.defaultPrevented || event.target.closest('dialog') !== dialog ||
+        !dialog.matches(':modal')) return;
+    // Native modality still lets Tab reach browser chrome.
     const tabs = this.tabStops();
     const [from, to] = event.shiftKey ? [tabs[0], tabs.at(-1)] : [tabs.at(-1), tabs[0]];
     if (event.target !== from) return;
@@ -124,18 +127,19 @@ class TlDialog extends TlElement {
   }
 
   openDialog(opener) {
-    if (this.dialog.open) return;
-    this.opener = document.getElementById(this.dialog.dataset.returnFocus) || opener;
-    if (this.dialog.hasAttribute('data-command-palette')) this.dialog.querySelector('tl-combobox').resetQuery();
+    const dialog = this.dialog;
+    if (dialog.open) return;
+    this.opener = document.getElementById(dialog.dataset.returnFocus) || opener;
+    if (dialog.hasAttribute('data-command-palette')) dialog.querySelector('tl-combobox').resetQuery();
     if (this.sheet) {
-      // Until close can suppress native focus restoration, blur before showModal() so link dismissal can navigate.
+      // Keep native focus restoration from overriding Sheet link navigation.
       document.activeElement?.blur();
     }
-    this.dialog.showModal();
-    if (this.sheet && !this.dialog.open) return this.returnFocus();
-    setOpenState(this.dialog, true);
+    dialog.showModal();
+    if (this.sheet && !dialog.open) return this.returnFocus();
+    setOpenState(dialog, true);
     if (this.sheet) {
-      this.dialog.setAttribute('aria-modal', 'true');
+      dialog.setAttribute('aria-modal', 'true');
       this.sheetTrigger.setAttribute('aria-expanded', 'true');
     }
   }
@@ -165,7 +169,6 @@ class TlDialog extends TlElement {
   }
 
   onDisconnect() {
-    // A replacement modal may already have taken focus as htmx inserts it first.
     if (this.dialog?.open && (!this.sheet || this.dialog.hasAttribute('data-open'))) queueMicrotask(() => this.returnFocus());
   }
 }

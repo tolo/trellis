@@ -123,6 +123,8 @@ The YAML recipe is the component boundary:
 - Steps are `focus`, `click`, `hover`, `type`, `press`, `wait` (milliseconds or a true JS expression), `state`,
   `eval`, `axe`, and `expect: {expression: <JS>, equals: <JSON value>}`. Each step has one key. Missing elements
   and failed expectations name the step. Browser execution bypasses page CSP without injecting inline handlers.
+- `touch-gestures` runs steps with coarse pointer emulation. A `touch-drag` step takes `{selector, dx, dy}` with
+  a non-zero integer displacement and sends a trusted touch gesture through the browser driver.
 - `semantics` contains `{selector, attribute, equals}` or `{expression, equals}` assertions for every state.
   `provenance` lists `{file, license}` notices, relative to the manifest. Allowed licences are MIT, ISC,
   Apache-2.0, BSD-*-Clause and 0BSD. `axe.disable` maps a rule id to a required written reason.

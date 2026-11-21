@@ -88,9 +88,6 @@ function place(anchor, popup, { side, align, offset, flip = true } = {}) {
   const maxWidth = Math.max(0, innerWidth - 2 * edge);
   const maxHeight = Math.max(0, innerHeight - 2 * edge);
   style.setProperty('--anchor-width', `${rect.width}px`);
-  // Restore viewport caps before measuring so a previously clipped panel can grow.
-  style.setProperty('--available-width', `${maxWidth}px`);
-  style.setProperty('--available-height', `${maxHeight}px`);
   const opposite = { top: 'bottom', right: 'left', bottom: 'top', left: 'right' };
   const available = {
     top: rect.top - offset - edge,
@@ -99,12 +96,17 @@ function place(anchor, popup, { side, align, offset, flip = true } = {}) {
     left: rect.left - offset - edge,
   };
   const horizontal = side === 'left' || side === 'right';
-  const naturalSize = horizontal ? popup.offsetWidth : popup.offsetHeight;
-  const otherSide = opposite[side];
-  if (flip && available[side] < naturalSize && available[otherSide] > available[side]) side = otherSide;
-  // If the anchor itself fills the viewport, allow the panel to overlap it.
-  const space = Math.min(available[side], horizontal ? maxWidth : maxHeight);
-  if (space > 0) style.setProperty(horizontal ? '--available-width' : '--available-height', `${space}px`);
+  if (flip) {
+    // Loosen caps only for flip measurement, since growing the panel can clamp its scroll offset.
+    style.setProperty('--available-width', `${maxWidth}px`);
+    style.setProperty('--available-height', `${maxHeight}px`);
+    const naturalSize = horizontal ? popup.offsetWidth : popup.offsetHeight;
+    const otherSide = opposite[side];
+    if (available[side] < naturalSize && available[otherSide] > available[side]) side = otherSide;
+  }
+  const space = available[side];
+  style.setProperty('--available-width', `${horizontal && space > 0 ? Math.min(space, maxWidth) : maxWidth}px`);
+  style.setProperty('--available-height', `${!horizontal && space > 0 ? Math.min(space, maxHeight) : maxHeight}px`);
 
   const width = popup.offsetWidth, height = popup.offsetHeight;
   const aligned = (start, end, size) =>

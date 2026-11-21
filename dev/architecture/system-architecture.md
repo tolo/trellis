@@ -128,9 +128,10 @@ structural utilities, renames them to `trellis-*`, then compiles using a checksu
 in scratch, then installs the single vendor pin, deterministic triage report and generated upstream inventory
 together. The validator checks the active pin and compares the report's old and new identities and ordered
 upstream rows with that inventory. Dispositions and reasons stay in the report.
-`tool/port.dart check` regenerates and compares the four committed outputs. `tool/embed.dart` compresses the
-hand-authored CSS layers with Dart Sass in plain CSS mode, appends them to the generated stylesheet, bundles
-one classic script, and embeds assets and fragments as base64 plus digests. Runtime and tests use these committed
+`tool/port.dart check` regenerates and compares the four committed outputs. `tool/embed.dart` groups the hand CSS
+by cascade layer, compresses it with Dart Sass in plain CSS mode and appends it to the generated stylesheet. It
+compresses the separate HTMX indicator stylesheet the same way, bundles one classic script, and embeds assets
+and fragments as base64 plus digests. Runtime and tests use these committed
 outputs without invoking Tailwind or Node. Scoped resets replace page-wide preflight; all suite declarations are in
 cascade layers so app overrides retain precedence. A discovered-page gallery renders the same embedded fragments
 under strict CSP. The package graph SVG includes its single runtime dependency on the core engine.

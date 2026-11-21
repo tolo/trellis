@@ -11,26 +11,25 @@ List<File> sourceFiles(Directory directory, String extension) {
 
 String bundleCss(Directory root) {
   final css = File('${root.path}/generated/trellis.min.css').readAsStringSync();
-  final hand = sourceFiles(Directory('${root.path}/assets/css/hand'), '.css')
-      .map((f) {
-        final layer = f.uri.pathSegments.last == '00-base.css' ? 'base' : 'trellis-hand';
-        return '@layer $layer {\n${f.readAsStringSync()}\n}';
-      })
-      .join('\n');
-  // The hand layers follow the generated UTF-8 sheet, so they need no separate encoding marker.
-  final compressed = sass.compileStringToResult(
-    hand,
-    syntax: sass.Syntax.css,
-    style: sass.OutputStyle.compressed,
-    charset: false,
-  );
-  return '$css\n${compressed.css}\n';
+  final layers = <String, List<String>>{};
+  for (final file in sourceFiles(Directory('${root.path}/assets/css/hand'), '.css')) {
+    final layer = file.uri.pathSegments.last == '00-base.css' ? 'base' : 'trellis-hand';
+    (layers[layer] ??= []).add(file.readAsStringSync());
+  }
+  final hand = layers.entries.map((layer) => '@layer ${layer.key} {\n${layer.value.join('\n')}\n}').join('\n');
+  return '$css\n${_compressCss(hand)}\n';
 }
+
+// Hand layers follow a UTF-8 sheet, so a second encoding marker would land in the middle of the response.
+String _compressCss(String css) =>
+    sass.compileStringToResult(css, syntax: sass.Syntax.css, style: sass.OutputStyle.compressed, charset: false).css;
 
 Map<String, List<int>> bundleAssets(Directory root) => {
   'trellis-ui.css': utf8.encode(bundleCss(root)),
   'trellis-ui.js': utf8.encode(bundleScript(root)),
-  'htmx-indicator.css': File('${root.path}/assets/css/htmx-indicator.css').readAsBytesSync(),
+  'htmx-indicator.css': utf8.encode(
+    _compressCss(File('${root.path}/assets/css/htmx-indicator.css').readAsStringSync()),
+  ),
 };
 
 String bundleScript(Directory root) {

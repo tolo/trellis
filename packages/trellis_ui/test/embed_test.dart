@@ -12,18 +12,20 @@ void main() {
     expect(embed.embeddedSource(Directory.current), File('lib/src/embedded_assets.g.dart').readAsStringSync());
   });
 
-  test('compressed hand CSS preserves the upstream sheet and embedded Unicode strings', () {
+  test('compressed hand CSS preserves the upstream sheet, cascade order and embedded Unicode strings', () {
     final fixture = Directory.systemTemp.createTempSync('suite_css_');
     addTearDown(() => fixture.deleteSync(recursive: true));
     final generated = Directory('${fixture.path}/generated')..createSync();
     final hand = Directory('${fixture.path}/assets/css/hand')..createSync(recursive: true);
     const upstream = '/*! upstream notice */\n@layer base, trellis-hand;';
     File('${generated.path}/trellis.min.css').writeAsStringSync(upstream);
-    File('${hand.path}/label.css').writeAsStringSync('.label::before { content: "✓  →"; }');
+    File('${hand.path}/zz-label.css').writeAsStringSync('.label::before { content: "✓  →"; }');
+    File('${hand.path}/label.css').writeAsStringSync('.label::before { content: "first"; }');
 
     final css = bundleCss(fixture);
     expect(css, startsWith('$upstream\n@layer trellis-hand'));
-    expect(css, contains('✓  →'));
+    expect(css, contains('first'));
+    expect(css.indexOf('✓  →'), greaterThan(css.indexOf('first')));
   });
 
   test('the bundle orders scripts by name and rejects module syntax', () {

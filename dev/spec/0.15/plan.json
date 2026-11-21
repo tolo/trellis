@@ -7,7 +7,7 @@
   "sharedDecisions": [
     {
       "title": "Suite placement, timing and qualification",
-      "description": "S01 extends place(anchor, popup, {side, align, offset}) and trackPopup without changing the bottom/start/4 defaults. hoverIntent({open, close, openDelay, closeDelay}) returns enter, leave and cancel callbacks. Consumers share this positioning and timing code. ADR-012 records the 700-owned-line and 30,000-byte combined gzip limits before they take effect.",
+      "description": "S01 extends place(anchor, popup, {side, align, offset}) and trackPopup without changing the bottom/start/4 defaults. hoverIntent({open, close, openDelay, closeDelay}) returns enter, leave and cancel callbacks. Consumers share this positioning and timing code. ADR-012 caps the three separate suite responses at 30,000 bytes combined gzip. Its 2026-11-21 amendment retires the JavaScript line-count gate and retains all twelve stories.",
       "stories": [
         "S01",
         "S02",

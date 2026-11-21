@@ -97,7 +97,7 @@
 
 - **TI01** The in-repo port and composed palette are reproducible from the active pin.
   - Follow the existing Dialog and Combobox fragments. Use the pinned `command.tsx` for style and slot provenance and record composition differences in the port inventory.
-  - **Verify**: `cmd: dart run packages/trellis_ui/tool/port.dart parity && dart run packages/trellis_ui/tool/port.dart check && dart run packages/trellis_ui/tool/embed.dart --check && (cd packages/trellis_ui && dart test test/release_gates_test.dart test/budget_test.dart)` – regenerated source, recorded parity and final payload/owned JS agree with SC01.
+  - **Verify**: `cmd: dart run packages/trellis_ui/tool/port.dart parity && dart run packages/trellis_ui/tool/port.dart check && dart run packages/trellis_ui/tool/embed.dart --check && (cd packages/trellis_ui && dart test test/release_gates_test.dart test/embed_test.dart)` – regenerated source, recorded parity and final compressed payload agree with SC01.
   - **SATISFIES**: SC01
 
 - **TI02** The static palette uses the suite's modal focus, keyboard and local-result behaviors.

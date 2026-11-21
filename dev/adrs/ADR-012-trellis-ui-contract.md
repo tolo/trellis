@@ -407,9 +407,16 @@ react-day-picker, exposes three `cn-*` hooks and one literal slot, and would nee
 an estimated 300–400 lines of owned JS. Revisit a Tier 1 Calendar when two
 independent apps need one and the upstream recipe fails vetting or maintenance.
 
-The 0.15 release gate caps suite-owned behavior at 700 lines, excluding app-owned
-recipe glue. It caps the sum of the three embedded responses gzipped separately
-at level 9 at 30,000 bytes.
+The 0.15 release gate measures the bytes delivered to the browser. Compress each
+of the three embedded asset responses separately at gzip level 9 and cap their
+sum at 30,000 bytes. Qualify keyboard, pointer, focus, accessibility and HTMX
+lifecycle behavior on the served components. Review the implementation for
+duplication and use of native browser primitives.
+
+The original 700-line ceiling came from an estimate. With the suite at 700 lines
+and 26,931 compressed bytes, a working Command palette added 29 lines and
+326 compressed bytes before styling. Counting source lines rewarded compressing
+the implementation without reducing transfer cost or improving its behavior.
 
 ### First component slice
 
@@ -518,3 +525,5 @@ component qualifies again. An unavailable check cannot justify a disposition.
   composed app route across the CLI, release checks and publication.
 - **2026-11-20** – 0.15 shortlist and date baseline, pristine-markup recipe lifecycle, CSSOM placement,
   and suite budgets (LEA-41).
+- **2026-11-21** – retired the suite JavaScript line-count gate. Retained the measured payload limit
+  and browser qualification for the complete 0.15 scope (LEA-41).

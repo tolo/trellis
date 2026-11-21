@@ -10,7 +10,7 @@
 - **Problem**: Trellis UI 0.14 has no popover, tooltip, sheet, accordion or navigation menu, so public-web authors hand-roll them. Our own themes do too: Lattice's sidebar and Meadow's `<details>` menu overlay (27 lines of hand-written theme JS, and a menu that stays open after a link click, TD-031). Date picking has no documented answer at all.
 - **Vision**: A public-web author composes app chrome (navigation, side panel, disclosure, hints, a search palette, a date field) from qualified suite components under `script-src 'self'; style-src 'self'`. The docs site and two built-in themes prove it by deleting their hand-rolled widgets.
 - **Target Users**: Dart developers building public web apps and sites on Trellis (themes, docs sites, marketing/content apps); secondarily admin-app authors who need a date field.
-- **Success Metrics**: hand-rolled nav/menu/sidebar JS in Lattice and Meadow 27 → 0 lines; 0 CSP violations under the strict policy across the gallery, docs site, Lattice and Meadow demo sites and the admin example; 5 new Tier 1 components plus the palette pass every automated gate item in Chrome and Firefox; suite JS ≤ 700 owned lines and payload ≤ 30,000 bytes gzip.
+- **Success Metrics**: hand-rolled nav/menu/sidebar JS in Lattice and Meadow 27 → 0 lines; 0 CSP violations under the strict policy across the gallery, docs site, Lattice and Meadow demo sites and the admin example; 5 new Tier 1 components plus the palette pass every automated gate item in Chrome and Firefox; suite payload ≤ 30,000 bytes gzip.
 
 ### Capabilities at a Glance
 - **FR1: Popover and shared positioning** _(Must / P0)_ – a qualified Popover, and the positioning and hover-intent layer Tooltip, Navigation menu and the date recipe build on.
@@ -312,7 +312,6 @@ None: components keep the shadcn look and themes keep their current designs (Dec
 |----------|-------------|--------------------|
 | Security | Strict CSP on every surface the release touches | 0 violations under `script-src 'self'; style-src 'self'`; no inline `style` attribute set through `setAttribute` |
 | Accessibility | Every new component passes ADR-012's gate | All automated items pass per ADR-012's browser rule (throughout this PRD, "pass in Chrome and Firefox" means one browser passes and every other passes or records `not-run` with a reason); WCAG 2.2 AA; 24/44 px touch targets; forced colours keep outline and system-colour paint |
-| Performance | Suite JS stays small | ≤ 700 owned JS lines (the `budget_test.dart` gate raised from 400); recipe glue not counted |
 | Performance | Suite payload | Combined gzip level 9 of the three suite assets ≤ 30,000 bytes (gate raised from 25,000 in `packages/trellis_ui/test/release_gates_test.dart:16`; 20,225 bytes in 0.14) |
 | Compatibility | Browser features | Popover API used; CSS anchor positioning, `popover="hint"`, `interestfor` and `<dialog closedby>` not relied on |
 | Maintainability | Upstream sync cost | Each new component ports through the pipeline with hand edits within 0.14's sync range (≤ 4 template, ≤ 3 hand CSS lines per sync) |
@@ -370,7 +369,8 @@ The plan uses Accordion for Lattice's sidebar section groups and Tooltip for its
 | Ride-alongs TD-058 and TD-059 | Owner selection 2026-11-18 | UI only |
 | LEA-12 closes with the 0.14 release | 0.14's suite combobox already gives docs search Arrow keys and Escape (`40-combobox.js:82,102`); debounce dropped as unnecessary for an in-memory filter capped at 20 results (`search_client.dart:46`) (owner, 2026-11-19) | Debounce criterion in FR7 |
 | Cut order: FR11, then FR8's recipe, then FR7/FR9/FR10; FR1–FR6 are the MVP | One maintainer and per-component manual gate cost (owner, 2026-11-18) | Everything Must; components first |
-| JS budget re-estimated: gate ≤ 700 owned lines, ADR-012 amended | 397 lines today; research estimates about 600 after the extras (owner, 2026-11-18) | Hard cap at 550; per-component budgets |
+| Prior estimate of 700 owned JS lines, superseded 2026-11-21 | 397 lines today; research estimates about 600 after the extras (owner, 2026-11-18) | Hard cap at 550; per-component budgets |
+| Complete all twelve stories and retire the line-count gate | The Command palette prototype fit the transfer budget. Keep the measured payload and browser gates (owner, 2026-11-21). | Cutting features or compressing source to meet the estimate |
 | Payload gate ≤ 30,000 bytes gzip | 0.14 is 20,225 bytes against a 25,000 gate; headroom for six components (owner, 2026-11-18) | – |
 | Date picking: native input baseline + Cally 0.9.x recipe; no Tier 1 Calendar port; revisit trigger in ADR-012 | Calendar wraps react-day-picker, 3 `cn-*` hooks, estimated 300–400 owned JS lines and a likely upstream re-implementation; Cally passes CSP, axe, locale and range (research 2026-11-18; owner, 2026-11-18) | Port shadcn Calendar; spike the port first; native input only |
 | Only the date recipe is in 0.15; Tabulator and upload in 0.16 | Reuses FR1's Popover; keeps 0.15 on public-web (owner, 2026-11-18) | All three recipes as Could; no Tier 2 in 0.15 |

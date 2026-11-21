@@ -20,7 +20,7 @@ void main() {
     File('${scripts.path}/10-b.js').writeAsStringSync('const second = first + 1;');
     final bundle = bundleScript(fixture);
     expect(bundle.indexOf('const first'), lessThan(bundle.indexOf('const second')));
-    expect(bundle, startsWith('(function () {'));
+    expect(bundle, startsWith('(function () {\n"use strict";'));
     expect(bundle, endsWith('})();\n'));
     for (final source in [
       'import x from "./a.js";',

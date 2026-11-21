@@ -72,7 +72,7 @@
 ## Structural Criteria
 
 - **SC01** Keep the existing public fragment calls and toast viewport contract. The component reference documents how to compose a submenu and use swipe and motion preferences.
-- **SC02 [runtime]** Submenu slots and hooks match the pinned port inventory. Preserve the rationale for each retained upstream exception, and keep the embedded assets reproducible within the S01 suite budgets.
+- **SC02 [runtime]** Submenu slots and hooks match the pinned port inventory. Preserve the rationale for each retained upstream exception, and keep the embedded assets reproducible within the 30,000-byte combined gzip budget.
 - **SC03** Each changed subject's three manual entries are reset to `release-prep`, with prior pass evidence cleared.
 
 ## Scope & Boundaries
@@ -118,7 +118,7 @@
 
 - **TI04** The port and shipped assets account for the submenu additions and retained toast exception.
   - Retire the submenu slot/hook misses in `packages/trellis_ui/tool/parity-ignore.json` for the parts now implemented. Regenerate the current scan report and slot parity. Preserve the previous tag-transition report and inventory for the upstream revision they describe.
-  - **Verify**: `cmd: dart run packages/trellis_ui/tool/port.dart parity && dart run packages/trellis_ui/tool/port.dart check && dart run packages/trellis_ui/tool/embed.dart --check && (cd packages/trellis_ui && dart test test/budget_test.dart test/release_gates_test.dart)` – pinned hooks and slots, rebuilt assets and both existing suite ceilings pass.
+  - **Verify**: `cmd: dart run packages/trellis_ui/tool/port.dart parity && dart run packages/trellis_ui/tool/port.dart check && dart run packages/trellis_ui/tool/embed.dart --check && (cd packages/trellis_ui && dart test test/embed_test.dart test/release_gates_test.dart)` – pinned hooks and slots, embedded output reproduces and the suite fits the combined gzip budget.
   - **SATISFIES**: SC02
 
 - **TI05** Each toast can be swiped independently and keeps its other dismissal paths.

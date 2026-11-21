@@ -70,6 +70,7 @@ slots take the contents of the caller marker; unmarked caller content fills the 
 | `dropdown-menu :: dropdownMenu` | `id` | anonymous menu items, `trigger` | forwards to the popup; `data-open` / `data-closed`, `data-side`, `data-align` |
 | `dropdown-menu :: menuItem` | `variant` | anonymous label | native item button; `default` or `destructive`; `data-highlighted`; native `disabled` |
 | `dropdown-menu :: menuCheckboxItem` | `checked` | anonymous label | native item button; `data-checked`, `data-highlighted`; native `disabled` |
+| `dropdown-menu :: menuSubmenu` | `id` | anonymous menu items, `trigger` | nests inside a dropdown menu and forwards attributes to the submenu popup |
 | `dropdown-menu :: menuSeparator` | none | none | forwards to the separator |
 | `field :: field` | `controlId, label, hint, error` | none | vertical labelled text input; caller attributes land on the input |
 | `grid :: grid` | `gap, minimum` | anonymous | gap scale; minimum `sm` 10rem, `md` 15rem, `lg` 20rem; fallback `md` |

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:sass/sass.dart' as sass;
+
 List<File> sourceFiles(Directory directory, String extension) {
   if (!directory.existsSync()) return [];
   return directory.listSync(followLinks: false).whereType<File>().where((f) => f.path.endsWith(extension)).toList()
@@ -15,7 +17,14 @@ String bundleCss(Directory root) {
         return '@layer $layer {\n${f.readAsStringSync()}\n}';
       })
       .join('\n');
-  return '$css\n$hand\n';
+  // The hand layers follow the generated UTF-8 sheet, so they need no separate encoding marker.
+  final compressed = sass.compileStringToResult(
+    hand,
+    syntax: sass.Syntax.css,
+    style: sass.OutputStyle.compressed,
+    charset: false,
+  );
+  return '$css\n${compressed.css}\n';
 }
 
 Map<String, List<int>> bundleAssets(Directory root) => {

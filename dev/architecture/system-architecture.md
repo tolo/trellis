@@ -6,7 +6,8 @@ Canonical reference for understanding the Trellis SDK architecture: how the pack
 preview, including theme watch recovery, output exclusions and startup cleanup, is current through 0.14 on
 2026-11-18. The named site source
 pipeline and CLI registry were verified for 0.14 on 2026-11-18. Source-scoped URL trust is current through
-0.15 on 2026-11-20, as are grouped header navigation and the Lattice and Meadow suite adoption. The wider scope is the v0.11.0 SDK + the
+0.15 on 2026-11-20, as are grouped header navigation and the Lattice and Meadow suite adoption. UI asset
+embedding is current through 0.15 on 2026-11-21. The wider scope is the v0.11.0 SDK + the
 2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
 Lattice `site_demo` home block, and the `examples/docs_site/` proof) + the 2026-09-04 HTMX 4 adapter
 compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme stylesheets compile through
@@ -127,7 +128,8 @@ structural utilities, renames them to `trellis-*`, then compiles using a checksu
 in scratch, then installs the single vendor pin, deterministic triage report and generated upstream inventory
 together. The validator checks the active pin and compares the report's old and new identities and ordered
 upstream rows with that inventory. Dispositions and reasons stay in the report.
-`tool/port.dart check` regenerates and compares the four committed outputs. `tool/embed.dart` layers hand CSS, bundles
+`tool/port.dart check` regenerates and compares the four committed outputs. `tool/embed.dart` compresses the
+hand-authored CSS layers with Dart Sass in plain CSS mode, appends them to the generated stylesheet, bundles
 one classic script, and embeds assets and fragments as base64 plus digests. Runtime and tests use these committed
 outputs without invoking Tailwind or Node. Scoped resets replace page-wide preflight; all suite declarations are in
 cascade layers so app overrides retain precedence. A discovered-page gallery renders the same embedded fragments

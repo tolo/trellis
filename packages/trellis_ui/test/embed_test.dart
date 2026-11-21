@@ -12,6 +12,20 @@ void main() {
     expect(embed.embeddedSource(Directory.current), File('lib/src/embedded_assets.g.dart').readAsStringSync());
   });
 
+  test('compressed hand CSS preserves the upstream sheet and embedded Unicode strings', () {
+    final fixture = Directory.systemTemp.createTempSync('suite_css_');
+    addTearDown(() => fixture.deleteSync(recursive: true));
+    final generated = Directory('${fixture.path}/generated')..createSync();
+    final hand = Directory('${fixture.path}/assets/css/hand')..createSync(recursive: true);
+    const upstream = '/*! upstream notice */\n@layer base, trellis-hand;';
+    File('${generated.path}/trellis.min.css').writeAsStringSync(upstream);
+    File('${hand.path}/label.css').writeAsStringSync('.label::before { content: "✓  →"; }');
+
+    final css = bundleCss(fixture);
+    expect(css, startsWith('$upstream\n@layer trellis-hand'));
+    expect(css, contains('✓  →'));
+  });
+
   test('the bundle orders scripts by name and rejects module syntax', () {
     final fixture = Directory.systemTemp.createTempSync('suite_bundle_');
     addTearDown(() => fixture.deleteSync(recursive: true));

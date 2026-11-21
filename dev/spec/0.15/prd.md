@@ -28,7 +28,7 @@
 ### Scope Highlights
 - **In scope**: Popover, Tooltip, Sheet, Accordion, Navigation menu, Command palette; docs-site/Lattice/Meadow adoption; the recipe seam and Cally date recipe; TD-058, TD-059.
 - **Out of scope**: a Tier 1 port of shadcn Calendar (rejected, revisit trigger recorded); rich/custom-listbox select (the combobox covers it, ADR-012); Tabulator and upload recipes (0.16); the swipe Drawer; htmx 4.
-- **MVP boundary**: FR1–FR6. FR7–FR10 ship unless time runs out; FR11 moves out first, then FR8's recipe, then FR7, FR9 and FR10.
+- **MVP boundary**: FR1–FR6 define the minimum useful feature set. The selected 0.15 release includes FR1–FR11.
 
 ### Key Constraints, Assumptions & Dependencies
 - *Dependency:* 0.14 is released first; execution starts on `feat/0.15` after it (Product design principle 1).
@@ -56,7 +56,7 @@ A public-web author builds site chrome from suite fragments and tokens only and 
 - Research 2026-11-18 (see Related Assets): shadcn's Calendar wraps react-day-picker rather than Base UI, with 3 `cn-*` rules and 1 `data-slot` (Popover has 6/6), so the porting pipeline generates almost none of its CSS; an owned calendar is an estimated 300–400 JS lines (inferred, not spiked). Cally 0.9.2 (MIT, 12.3 KB gzip) passes the strict CSP, axe, `sv-SE` locale with Monday start and range selection in Chrome and Firefox.
 - The shared popup layer (`place()`, `trackPopup`) already exists in `packages/trellis_ui/assets/js/00-base.js:48`.
 - The ride-alongs are owner-selected debt with no public-web link: TD-058 leaves Relic apps without the browser reload Shelf and Dart Frog have, and TD-059 leaves a site author no way past ADR-015's scheme check for a deliberate URL. They ride along because each is small and both are open in the Tech Debt backlog.
-- The suite has 397 owned JS lines against a 400-line gate (`packages/trellis_ui/test/budget_test.dart:17`) and ADR-012's 500–550 estimate for all of Tier 1; the extras alone are estimated at about 600.
+- At 0.14 the suite had 397 owned JS lines against a 400-line gate and ADR-012's 500–550 estimate for all of Tier 1; the extras alone are estimated at about 600.
 
 
 ## Success Metrics
@@ -70,7 +70,7 @@ A public-web author builds site chrome from suite fragments and tokens only and 
 | Public-web components passing the automated gate | 0 of Popover, Tooltip, Sheet, Accordion, Navigation menu, Command palette | 6 of 6 in Chrome and Firefox, at 0.15.0; manual items recorded at release prep | `dev/ui-gate/records/` |
 | Documented date-picking path | none | Native input baseline plus a Cally recipe used by the admin example under the strict policy, at 0.15.0 | Recipe docs page and admin example test |
 
-A row whose FR is cut under the MVP cut order leaves the table at that cut; it does not count as a miss at 0.15.0.
+All targets apply to the selected twelve-story release.
 
 
 ## Scope
@@ -82,7 +82,7 @@ A row whose FR is cut under the MVP cut order leaves the table at that cut; it d
 - The Tier 2 recipe seam (HTMX swap/history lifecycle for vetted third-party widgets) and one recipe: Cally 0.9.x for calendar and range date picking, vendored by the app, exercised in `examples/admin_app`.
 - The native `<input type="date">` documented as the Tier 1 date baseline.
 - TD-058 Relic dev reload; TD-059 site URL scheme opt-out (with its own ADR-015 amendment, decided before planning).
-- ADR-012 amendments: the refreshed Tier 2 shortlist and pins, the history rule (pristine-markup restore and remount), the date decision with a revisit trigger, the positioning note, and the re-estimated JS budget.
+- ADR-012 amendments: the refreshed Tier 2 shortlist and pins, the history rule (pristine-markup restore and remount), the date decision with a revisit trigger, the positioning note, and the combined gzip payload budget.
 - Could: dropdown submenus, exit animations, toast stacking and swipe.
 
 ### Out of Scope
@@ -96,7 +96,7 @@ A row whose FR is cut under the MVP cut order leaves the table at that cut; it d
 - RTL – not required, as in 0.14.
 
 ### MVP Boundary
-FR1–FR6: five qualified public-web components adopted by the docs site and two themes, with the hand-rolled widgets gone. FR7–FR10 ship with it unless time runs out; FR11 moves out first, then FR8's recipe (keeping the native baseline docs), then FR7, FR9 and FR10.
+FR1–FR6: five qualified public-web components adopted by the docs site and two themes, with the hand-rolled widgets gone. The maintainer selected FR7–FR11 for 0.15 as well, including the Command palette, calendar recipe and overlay interactions.
 
 
 ## Functional Requirements
@@ -348,7 +348,7 @@ None: components keep the shadcn look and themes keep their current designs (Dec
 | Dependency | Why It Matters |
 |------------|----------------|
 | 0.14 released | 0.15 branches from it; FR6 builds on 0.14's theme adoption (S09) |
-| ADR-012 amendment | Shortlist, history rule, date decision, positioning note and JS budget must be recorded before FR8 and the budget raise |
+| ADR-012 amendment | Shortlist, history rule, date decision, positioning note and combined payload budget govern the shipped components |
 | ADR-015 amendment (accepted 2026-11-20) | Defines the site-config declaration and the source matching rules for FR10 |
 | Cally 0.9.x (MIT) | FR8's recipe; vendored by the app |
 
@@ -368,7 +368,7 @@ The plan uses Accordion for Lattice's sidebar section groups and Tooltip for its
 | Rich select dropped | ADR-012 records that the Tier 1 combobox covers rich select (Tom Select dropped 2026-10-04) (owner, 2026-11-18) | Select-only listbox; multi-select with tags |
 | Ride-alongs TD-058 and TD-059 | Owner selection 2026-11-18 | UI only |
 | LEA-12 closes with the 0.14 release | 0.14's suite combobox already gives docs search Arrow keys and Escape (`40-combobox.js:82,102`); debounce dropped as unnecessary for an in-memory filter capped at 20 results (`search_client.dart:46`) (owner, 2026-11-19) | Debounce criterion in FR7 |
-| Cut order: FR11, then FR8's recipe, then FR7/FR9/FR10; FR1–FR6 are the MVP | One maintainer and per-component manual gate cost (owner, 2026-11-18) | Everything Must; components first |
+| Original cut order (superseded 2026-11-21): FR11, then FR8's recipe, then FR7/FR9/FR10; FR1–FR6 are the MVP | One maintainer and per-component manual gate cost (owner, 2026-11-18) | Everything Must; components first |
 | Prior estimate of 700 owned JS lines, superseded 2026-11-21 | 397 lines today; research estimates about 600 after the extras (owner, 2026-11-18) | Hard cap at 550; per-component budgets |
 | Complete all twelve stories and retire the line-count gate | The Command palette prototype fit the transfer budget. Keep the measured payload and browser gates (owner, 2026-11-21). | Cutting features or compressing source to meet the estimate |
 | Payload gate ≤ 30,000 bytes gzip | 0.14 is 20,225 bytes against a 25,000 gate; headroom for six components (owner, 2026-11-18) | – |

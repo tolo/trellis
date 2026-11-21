@@ -2,7 +2,7 @@
   "schemaVersion": "2",
   "prd": "dev/spec/0.15/prd.md",
   "overview": {
-    "summary": "Deliver five qualified public-web components and adopt them in Lattice and Meadow. Add docs search, date input, the Relic and site-config fixes, and the optional 0.14 interaction work in the PRD’s cut order."
+    "summary": "Deliver five qualified public-web components and adopt them in Lattice and Meadow. Add docs search, date input, the Relic and site-config fixes, and the remaining 0.14 interactions. Complete all twelve stories."
   },
   "sharedDecisions": [
     {
@@ -35,7 +35,7 @@
     },
     {
       "title": "Integrated release qualification",
-      "description": "After all retained stories land on feat/0.15, run CI=true mise run release-gate on the macOS baseline host. Regenerate affected records against that integrated revision, check the active upstream sync report, and rerun affected manual items at release prep before squash. The final sweep applies to the selected scope even if an optional story was cut.",
+      "description": "After all twelve stories land on feat/0.15, run CI=true mise run release-gate on the macOS baseline host. Regenerate affected records against that integrated revision, check the active upstream sync report, and rerun affected manual items at release prep before squash.",
       "stories": [
         "S01",
         "S02",
@@ -418,7 +418,7 @@
       "status": "in-progress",
       "fis": "s12-dropdown-submenus-exit-animations-and-toast-gestures.md",
       "completedTaskIds": [],
-      "scope": "First-cut optional improvements to dropdown submenus, four overlay exit animations and stacked swipe-to-dismiss toasts. Requalify each changed subject.",
+      "scope": "Implement dropdown submenus, exit animations for four overlays and swipe-to-dismiss for stacked toasts. Requalify each changed subject.",
       "sourceRefs": [
         "dev/spec/0.15/prd.md#fr11-014-unported-behaviour",
         "https://linear.app/leafnode/issue/LEA-41/product-requirements-document-trellis-ui-public-web-components-015"

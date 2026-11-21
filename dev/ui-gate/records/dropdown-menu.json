@@ -212,13 +212,13 @@
         "chrome": {
           "status": "pass",
           "evidence": [
-            "30 states captured; no clipping, overlap or appearance differences"
+            "36 states captured; no clipping, overlap or appearance differences"
           ]
         },
         "firefox": {
           "status": "pass",
           "evidence": [
-            "30 states captured; no clipping, overlap or appearance differences"
+            "36 states captured; no clipping, overlap or appearance differences"
           ]
         }
       }

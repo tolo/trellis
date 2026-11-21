@@ -6,19 +6,28 @@ class TlElement extends HTMLElement {
     this.onConnect();
     this.listen(document.body, 'htmx:beforeSwap', (event) => {
       const region = event.detail?.target;
-      this.preparePopups(region);
-      this.onBeforeSwap?.(region);
+      if (region?.contains(this) || this.contains(region)) this.clearExit();
+      withoutOverlayExit(() => {
+        this.preparePopups(region);
+        this.onBeforeSwap?.(region);
+      });
     });
     this.listen(document.body, 'htmx:beforeHistorySave', () => {
-      this.onHistorySave?.();
-      this.preparePopups(this);
+      this.clearExit();
+      withoutOverlayExit(() => {
+        this.onHistorySave?.();
+        this.preparePopups(this);
+      });
     });
   }
 
   disconnectedCallback() {
     this.listeners.abort();
-    this.onDisconnect?.();
-    this.preparePopups(this);
+    this.clearExit();
+    withoutOverlayExit(() => {
+      this.onDisconnect?.();
+      this.preparePopups(this);
+    });
   }
 
   listen(target, type, callback, options = {}) {
@@ -30,12 +39,27 @@ class TlElement extends HTMLElement {
     // htmx settles matching IDs by copying attributes. CSSOM positioning is safe
     // under CSP until htmx copies it or serializes it into a history snapshot.
     for (const popup of this.querySelectorAll(popupSelector)) {
-      if (region?.contains(popup) && popup.matches(':popover-open')) popup.hidePopover();
+      if (region?.contains(popup)) {
+        clearOverlayExit(popup);
+        if (popup.matches(':popover-open')) withoutOverlayExit(() => popup.hidePopover());
+      }
       // Blink can leave an empty attribute if it hasn't materialized the CSSOM
       // writes yet. Drop the presence read when removeAttribute alone clears it.
-      if (!popup.matches(':popover-open') && popup.hasAttribute('style')) popup.removeAttribute('style');
+      if (!popup.matches(':popover-open, [data-trellis-overlay-exit="native"]') && popup.hasAttribute('style')) {
+        popup.removeAttribute('style');
+      }
     }
   }
+
+  observeExit(surface) {
+    this.exitSurface = surface;
+    this.listen(surface, 'beforetoggle', ({ newState }) => {
+      clearOverlayExit(surface);
+      if (newState === 'closed') startOverlayExit(surface);
+    });
+  }
+
+  clearExit() { clearOverlayExit(this.exitSurface); }
 
   trackPopup(anchor, popup, options = {}) {
     const findAnchor = typeof anchor === 'function' ? anchor : () => anchor;

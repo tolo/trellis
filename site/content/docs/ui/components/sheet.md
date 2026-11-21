@@ -52,6 +52,9 @@ receive focus.
 An HTMX swap inside an open Sheet keeps the surrounding modal. If the
 focused control is removed, focus moves to a usable control in the panel.
 
+The panel fades briefly on dismissal while focus moves immediately. Readers who
+prefer reduced motion skip the fade.
+
 ## Accessibility notes
 
 A same-page destination can use a heading with `tabindex="-1"` so the

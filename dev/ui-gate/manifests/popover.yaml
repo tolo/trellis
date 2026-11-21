@@ -57,7 +57,7 @@ htmx:
   navigate:
     - state: open
     - eval: document.getElementById('navigate').click()
-  transient: '#options[data-open], #options[style], #options-trigger[aria-expanded="true"]'
+  transient: '#options[data-open], #options[style], #options-trigger[aria-expanded="true"], [data-trellis-overlay-exit]'
   probe:
     steps:
       - eval: >-

@@ -1,5 +1,5 @@
 dialog.trellis-sheet-content:not([open]), [data-slot="sheet-trigger"][hidden], .trellis-sheet-close[hidden] { display: none; }
-.trellis-sheet-content:not(:modal) {
+.trellis-sheet-content:not(:modal, [data-trellis-overlay-exit="native"]) {
   position: static;
   display: block;
   padding: 0;
@@ -12,26 +12,26 @@ dialog.trellis-sheet-content:not([open]), [data-slot="sheet-trigger"][hidden], .
   background: transparent;
   color: inherit;
 }
-.trellis-sheet-content:modal {
+.trellis-sheet-content:is(:modal, [data-trellis-overlay-exit="native"]) {
   inset: auto;
   margin: 0;
   max-height: 100%;
   overflow: auto;
   overscroll-behavior: contain;
 }
-.trellis-sheet-content:modal[data-side="left"] { inset: 0 auto 0 0; --sheet-start-x: -100%; }
-.trellis-sheet-content:modal[data-side="right"] { inset: 0 0 0 auto; --sheet-start-x: 100%; }
-.trellis-sheet-content:modal:is([data-side="top"], [data-side="bottom"]) {
+.trellis-sheet-content:is(:modal, [data-trellis-overlay-exit="native"])[data-side="left"] { inset: 0 auto 0 0; --sheet-start-x: -100%; }
+.trellis-sheet-content:is(:modal, [data-trellis-overlay-exit="native"])[data-side="right"] { inset: 0 0 0 auto; --sheet-start-x: 100%; }
+.trellis-sheet-content:is(:modal, [data-trellis-overlay-exit="native"]):is([data-side="top"], [data-side="bottom"]) {
   width: auto;
   max-inline-size: 100%;
 }
-.trellis-sheet-content:modal[data-side="top"] { inset: 0 0 auto; --sheet-start-y: -100%; }
-.trellis-sheet-content:modal[data-side="bottom"] { inset: auto 0 0; --sheet-start-y: 100%; }
-.trellis-sheet-content:modal::backdrop {
+.trellis-sheet-content:is(:modal, [data-trellis-overlay-exit="native"])[data-side="top"] { inset: 0 0 auto; --sheet-start-y: -100%; }
+.trellis-sheet-content:is(:modal, [data-trellis-overlay-exit="native"])[data-side="bottom"] { inset: auto 0 0; --sheet-start-y: 100%; }
+.trellis-sheet-content:is(:modal, [data-trellis-overlay-exit="native"])::backdrop {
   background: rgb(0 0 0 / .1);
   backdrop-filter: blur(4px);
 }
-.trellis-sheet-content:modal > .trellis-sheet-header { padding-inline-end: 4.5rem; }
+.trellis-sheet-content:is(:modal, [data-trellis-overlay-exit="native"]) > .trellis-sheet-header { padding-inline-end: 4.5rem; }
 .trellis-sheet-title { margin: 0; }
 .trellis-sheet-close svg { pointer-events: none; }
 

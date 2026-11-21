@@ -78,7 +78,7 @@
     },
     "cn-toast": {
       "from": "shadcn@4.21.1",
-      "reason": "Base UI toast stacking and swipe utilities read --toast-index, --toast-height and --toast-swipe-movement-*, which Base UI's runtime sets and Trellis's vanilla toast does not drive; they overlap stacked toasts"
+      "reason": "Base UI toast stacking and swipe utilities read --toast-index, --toast-height and --toast-swipe-movement-*, which Base UI's runtime sets. Trellis uses a CSS grid with native touch gestures; the Base UI utilities overlap the grid items"
     }
   },
   "shadcn": {

@@ -12,8 +12,10 @@
 - Lattice and the docs site use Navigation menu, Accordion, Sheet, and Tooltip. Meadow closes its mobile
   Sheet on navigation. Both themes resolve the saved skin before paint under strict CSP.
 - Inline Sheets allow Tab to leave the panel.
-
 - Add Command palette with a modal local picker, guarded keyboard shortcut, selection event, and focus return.
+- Dropdown menus support nested actions with keyboard and pointer navigation.
+- Dismissed dialogs, sheets, popovers and menus fade while native focus moves immediately. Reduced motion skips the fade.
+- A rightward touch swipe dismisses one toast while the others retain their order.
 
 ## 0.14.0
 

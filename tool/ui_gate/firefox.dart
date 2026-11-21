@@ -305,6 +305,28 @@ final class FirefoxDriver implements GateDriver {
     });
   }
 
+  @override
+  Future<void> dragTouch(String selector, {required int dx, required int dy}) async {
+    await _activate();
+    await evaluate('Boolean(($pointerTargetScript)(${jsonEncode(selector)}))');
+    final element = await _wd('POST', '/element', {'using': 'css selector', 'value': selector}) as Map;
+    await _wd('POST', '/actions', {
+      'actions': [
+        {
+          'type': 'pointer',
+          'id': 'gate-swipe',
+          'parameters': {'pointerType': 'touch'},
+          'actions': [
+            {'type': 'pointerMove', 'origin': element, 'x': 0, 'y': 0},
+            {'type': 'pointerDown', 'button': 0},
+            {'type': 'pointerMove', 'origin': 'pointer', 'x': dx, 'y': dy, 'duration': 160},
+            {'type': 'pointerUp', 'button': 0},
+          ],
+        },
+      ],
+    });
+  }
+
   bool _forcedActive = false;
 
   Future<void> _releasePseudoActions() async {

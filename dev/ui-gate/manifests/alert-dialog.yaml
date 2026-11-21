@@ -79,7 +79,7 @@ htmx:
   navigate:
     - state: open
     - eval: "document.getElementById('navigate').click()"
-  transient: 'dialog[open]'
+  transient: 'dialog[open], [data-trellis-overlay-exit]'
 instances:
   - tl-dialog
   - '#example-alert'

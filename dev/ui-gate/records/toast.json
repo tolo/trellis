@@ -195,13 +195,15 @@
         "chrome": {
           "status": "pass",
           "evidence": [
-            "checks completed"
+            "checks completed",
+            "trusted touch gesture checks completed"
           ]
         },
         "firefox": {
           "status": "pass",
           "evidence": [
-            "checks completed"
+            "checks completed",
+            "trusted touch gesture checks completed"
           ]
         }
       }

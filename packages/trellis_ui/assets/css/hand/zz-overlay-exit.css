@@ -1,0 +1,16 @@
+@media (prefers-reduced-motion: no-preference) {
+  [data-trellis-overlay-exit="native"] {
+    opacity: 0;
+    pointer-events: none;
+    interactivity: inert;
+    animation: none;
+    transition: display 160ms allow-discrete, overlay 160ms allow-discrete;
+  }
+
+  /* Focus has already returned to the page when the panel begins its fade. */
+  :is([data-trellis-overlay-exit][data-slot], [data-trellis-overlay-exit=""])::backdrop {
+    background: transparent;
+    backdrop-filter: none;
+    pointer-events: none;
+  }
+}

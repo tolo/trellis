@@ -344,12 +344,6 @@
   {
     "kind": "slot",
     "direction": "missing",
-    "name": "dropdown-menu-sub*",
-    "reason": "The menu has a single level of commands."
-  },
-  {
-    "kind": "slot",
-    "direction": "missing",
     "name": "input-group-button*",
     "reason": "The combobox composes a single native trigger; the upstream addon button size scale is unused."
   },
@@ -460,12 +454,6 @@
     "direction": "missing",
     "name": "trellis-dropdown-menu-shortcut",
     "reason": "The menu renders only its APG interaction keys and caller labels."
-  },
-  {
-    "kind": "hook",
-    "direction": "missing",
-    "name": "trellis-dropdown-menu-sub*",
-    "reason": "The menu has a single level of commands."
   },
   {
     "kind": "hook",

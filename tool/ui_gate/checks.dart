@@ -119,6 +119,9 @@ final class GateSession {
             await driver.pointer(value! as String, click: true);
           case 'hover':
             await driver.pointer(value! as String);
+          case 'touch-drag':
+            final drag = value! as Map;
+            await driver.dragTouch(drag['selector'] as String, dx: drag['dx'] as int, dy: drag['dy'] as int);
           case 'type':
             await driver.type(value! as String);
           case 'press':
@@ -159,7 +162,10 @@ final class GateSession {
     throw GateConditionError('wait timed out: $expression');
   }
 
-  Future<GateResult> measured(Future<void> Function() check) async {
+  Future<GateResult> measured(
+    Future<void> Function() check, {
+    List<String> evidence = const ['checks completed'],
+  }) async {
     _failures.clear();
     try {
       await check();
@@ -171,7 +177,7 @@ final class GateSession {
       _failures.add(normalize('$error'));
     }
     await collect();
-    return GateResult(_failures.isEmpty ? 'pass' : 'fail', _failures.isEmpty ? ['checks completed'] : [..._failures]);
+    return GateResult(_failures.isEmpty ? 'pass' : 'fail', _failures.isEmpty ? evidence : [..._failures]);
   }
 
   void require(bool condition, String evidence) {
@@ -412,7 +418,8 @@ final class GateSession {
           const root=document.querySelector(${jsonEncode(manifest.root)}),issues=[];
           for(const el of [root,...root.querySelectorAll('*')].filter(el=>el.matches('a[href],button,input,select,textarea,summary,[role=button],[tabindex]'))) {
             const r=el.getBoundingClientRect(),cs=getComputedStyle(el);
-            if(!r.width||!r.height||cs.visibility==='hidden') continue;
+            if (!r.width || !r.height || cs.visibility === 'hidden' ||
+                cs.interactivity === 'inert' || el.closest('[inert]')) continue;
             const name=el.id?'#'+el.id:el.tagName.toLowerCase();
             if(r.width<$minimum-0.1||r.height<$minimum-0.1) issues.push(name+' '+r.width+'x'+r.height+' below $minimum px');
             if($coarse && el.matches('input,select,textarea') && parseFloat(cs.fontSize)<16) issues.push(name+' input font below 16px');
@@ -422,7 +429,11 @@ final class GateSession {
         _failures.addAll(issues.map((issue) => '${coarse ? 'coarse' : 'fine'}/$state: $issue'));
       }
     }
-  });
+    if (manifest.touchGestures.isNotEmpty) {
+      await configure('default', coarse: true);
+      await steps(manifest.touchGestures, label: 'touch gestures');
+    }
+  }, evidence: ['checks completed', if (manifest.touchGestures.isNotEmpty) 'trusted touch gesture checks completed']);
 
   Future<GateResult> forcedColors() => measured(() async {
     for (final state in manifest.states.keys) {

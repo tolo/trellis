@@ -18,6 +18,11 @@ its state and keeps the menu open.
   <span tl:slot="trigger">Account actions</span>
   <button tl:replace="~{trellis-ui/dropdown-menu :: menuItem}">Edit profile</button>
   <button tl:replace="~{trellis-ui/dropdown-menu :: menuItem}" disabled>Manage team</button>
+  <div tl:replace="~{trellis-ui/dropdown-menu :: menuSubmenu('reference-services')}">
+    <span tl:slot="trigger">Services</span>
+    <button tl:replace="~{trellis-ui/dropdown-menu :: menuItem}">Invoices</button>
+    <button tl:replace="~{trellis-ui/dropdown-menu :: menuItem}">Receipts</button>
+  </div>
   <div tl:replace="~{trellis-ui/dropdown-menu :: menuSeparator}"></div>
   <button tl:replace="~{trellis-ui/dropdown-menu :: menuCheckboxItem(false)}">Show status</button>
 </div>
@@ -29,6 +34,13 @@ Enter, Space, ArrowDown or ArrowUp opens the menu. Arrow keys move through
 enabled items and wrap. Home and End jump to the first or last enabled item.
 Typing a letter finds a matching item. Enter or Space selects, Escape dismisses
 and returns focus to the trigger, and Tab moves on.
+
+ArrowRight opens a submenu and focuses its first enabled item. ArrowLeft or
+Escape closes the submenu and returns focus to its trigger in the still-open
+parent. Click, Enter and Space also open the focused submenu trigger.
+
+On dismissal, the panel fades while focus moves immediately. Readers who
+prefer reduced motion skip the fade.
 
 ## Accessibility notes
 

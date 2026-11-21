@@ -56,6 +56,28 @@ void main() {
     expect(nativeDisabled.querySelector('button[role=menuitem][disabled]'), isNotNull);
   });
 
+  test('a submenu labels and controls its own nested menu', () {
+    final document = render("""
+      <div tl:replace="~{trellis-ui/dropdown-menu :: dropdownMenu('account')}">
+        <div tl:replace="~{trellis-ui/dropdown-menu :: menuSubmenu('services')}" class="app-services">
+          <span tl:slot="trigger">Services</span>
+          <button tl:replace="~{trellis-ui/dropdown-menu :: menuItem}" disabled>Unavailable</button>
+          <button tl:replace="~{trellis-ui/dropdown-menu :: menuItem}">Invoices</button>
+        </div>
+      </div>""");
+    final menu = document.querySelector('#services[role=menu][popover=auto]')!;
+    final trigger = document.querySelector('#services-trigger[role=menuitem]')!;
+    expect(trigger.text.trim(), 'Services');
+    expect(trigger.attributes, containsPair('aria-haspopup', 'menu'));
+    expect(trigger.attributes, containsPair('aria-expanded', 'false'));
+    expect(trigger.attributes, containsPair('aria-controls', menu.id));
+    expect(trigger.attributes, containsPair('popovertarget', menu.id));
+    expect(menu.attributes, containsPair('aria-labelledby', trigger.id));
+    expect(menu.classes, contains('app-services'));
+    expect(menu.querySelectorAll('[role=menuitem]').map((element) => element.text), ['Unavailable', 'Invoices']);
+    expect(menu.querySelector('button[disabled]')!.text, 'Unavailable');
+  });
+
   test('tabs render roving tabindex, linked ids and hidden inactive panels', () {
     final document = render('''
       <div tl:replace="~{trellis-ui/tabs :: tabs('sample', 'one', true)}" class="app-tabs">

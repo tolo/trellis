@@ -17,6 +17,7 @@ abstract interface class GateDriver {
   Future<void> press(String key);
   Future<void> type(String text);
   Future<void> pointer(String selector, {bool click = false, bool down = false});
+  Future<void> dragTouch(String selector, {required int dx, required int dy});
   Future<void> pseudo(String selector, List<String> states);
   Future<int> listeners();
   Future<void> history(int delta);
@@ -261,6 +262,28 @@ final class ChromeDriver implements GateDriver {
           'clickCount': 1,
         });
     }
+  }
+
+  @override
+  Future<void> dragTouch(String selector, {required int dx, required int dy, bool cancel = false}) async {
+    final center =
+        (await evaluate("""(() => {
+      const box = ($pointerTargetScript)(${jsonEncode(selector)}).getBoundingClientRect();
+      return [box.x + box.width / 2, box.y + box.height / 2];
+    })()""")
+                as List)
+            .cast<num>();
+    Future<void> send(String type, List<Map<String, num>> points) =>
+        probe.command('Input.dispatchTouchEvent', {'type': type, 'touchPoints': points});
+    await send('touchStart', [
+      {'x': center[0], 'y': center[1]},
+    ]);
+    for (final fraction in [1 / 3, 2 / 3, 1.0]) {
+      await send('touchMove', [
+        {'x': center[0] + dx * fraction, 'y': center[1] + dy * fraction},
+      ]);
+    }
+    await send(cancel ? 'touchCancel' : 'touchEnd', []);
   }
 
   @override

@@ -238,7 +238,7 @@ htmx:
   navigate:
     - click: '#sort-email'
     - wait: "location.search.includes('sort=email') && !document.querySelector('.htmx-settling')"
-  transient: 'dialog[open], [popover][data-open], #toaster tl-toast'
+  transient: 'dialog[open], [popover][data-open], #toaster tl-toast, [data-trellis-overlay-exit]'
 instances:
   - '#contact-list'
   - tl-dropdown-menu

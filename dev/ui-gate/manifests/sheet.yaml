@@ -68,7 +68,7 @@ htmx:
   navigate:
     - state: open
     - eval: document.getElementById('navigate').click()
-  transient: '#right-sheet[open], #right-sheet[data-open], #sheet-options[data-open], #sheet-options[style]'
+  transient: '#right-sheet[open], #right-sheet[data-open], #sheet-options[data-open], #sheet-options[style], [data-trellis-overlay-exit]'
   probe:
     steps:
       - state: open

@@ -23,29 +23,32 @@ function startOverlayExit(surface) {
   const exit = nativeOverlayExit ? { layer: surface } : exitLayer(surface);
   if (!exit) return;
   overlayExits.set(surface, exit);
+  const fade = (from) => {
+    exit.animation = exit.layer.animate([from, { ...from, opacity: 0 }], overlayFade);
+    const release = () => {
+      if (overlayExits.get(surface) === exit) clearOverlayExit(surface);
+    };
+    exit.animation.finished.then(release, release);
+  };
+
   if (nativeOverlayExit) {
     const { opacity, transform, translate, scale } = getComputedStyle(surface);
-    const frame = { opacity, transform, translate, scale };
     surface.dataset.trellisOverlayExit = 'native';
     // A close can interrupt the entry animation. Freeze its rendered position.
-    exit.animation = surface.animate([frame, { ...frame, opacity: 0 }], overlayFade);
-    releaseAfterFade(surface, exit);
+    fade({ opacity, transform, translate, scale });
     return;
   }
   // A native Escape can continue its default close after the beforetoggle
   // microtasks. Enter the fallback top layer after that operation, before paint.
   exit.frame = requestAnimationFrame(() => {
     if (!surface.isConnected) return clearOverlayExit(surface);
-    exit.animation = animateOverlayExit(exit);
-    releaseAfterFade(surface, exit);
+    const { layer, opacity, scrollTop, scrollLeft } = exit;
+    document.body.append(layer);
+    layer.showPopover();
+    layer.scrollTop = scrollTop;
+    layer.scrollLeft = scrollLeft;
+    fade({ opacity });
   });
-}
-
-function releaseAfterFade(surface, exit) {
-  const release = () => {
-    if (overlayExits.get(surface) === exit) clearOverlayExit(surface);
-  };
-  exit.animation.finished.then(release, release);
 }
 
 function withoutOverlayExit(close) {
@@ -67,39 +70,21 @@ function exitLayer(surface) {
   layer.popover = 'manual';
   layer.className = surface.className;
 
-  const copiedStyles = [];
   for (const child of surface.childNodes) {
-    const copy = copyOverlayContent(child, copiedStyles);
+    const copy = copyOverlayContent(child);
     if (copy) layer.append(copy);
   }
 
   // Firefox drops the original top layer immediately. A manual, inert
   // popover preserves pixels outside transformed or clipping ancestors.
-  const styles = {};
   for (const property of [
     'background', 'border', 'border-radius', 'box-shadow', 'color', 'color-scheme',
     'direction', 'display', 'font', 'letter-spacing', 'line-height', 'overflow',
     'padding', 'text-align', 'writing-mode',
     ...Array.from(paint).filter(property => property.startsWith('--')),
   ]) {
-    styles[property] = paint.getPropertyValue(property);
+    layer.style.setProperty(property, paint.getPropertyValue(property));
   }
-
-  return {
-    layer,
-    box,
-    styles,
-    copiedStyles,
-    opacity: Number(paint.opacity),
-    scrollTop: surface.scrollTop,
-    scrollLeft: surface.scrollLeft,
-  };
-}
-
-function animateOverlayExit(snapshot) {
-  const { layer, box, styles, copiedStyles, opacity, scrollTop, scrollLeft } = snapshot;
-  document.body.append(layer);
-  for (const [property, value] of Object.entries(styles)) layer.style.setProperty(property, value);
   Object.assign(layer.style, {
     boxSizing: 'border-box', position: 'fixed', inset: 'auto', margin: '0',
     left: `${box.left}px`, top: `${box.top}px`,
@@ -108,11 +93,7 @@ function animateOverlayExit(snapshot) {
     pointerEvents: 'none', transform: 'none', translate: 'none',
     animation: 'none', transition: 'none',
   });
-  for (const [copy, style] of copiedStyles) Object.assign(copy.style, style);
-  layer.showPopover();
-  layer.scrollTop = scrollTop;
-  layer.scrollLeft = scrollLeft;
-  return layer.animate([{ opacity }, { opacity: 0 }], overlayFade);
+  return { layer, opacity: Number(paint.opacity), scrollTop: surface.scrollTop, scrollLeft: surface.scrollLeft };
 }
 
 
@@ -128,7 +109,7 @@ const overlayTextAttributes = new Set(
   'class dir lang hidden open type disabled readonly multiple selected checked rows cols size min max step placeholder'.split(' '),
 );
 
-function copyOverlayContent(node, copiedStyles) {
+function copyOverlayContent(node) {
   if (node.nodeType === Node.TEXT_NODE) return document.createTextNode(node.textContent);
   if (!(node instanceof Element) ||
       node.matches('script, style, link, iframe, object, embed, base, meta, source, template, dialog, [popover]')) {
@@ -161,13 +142,13 @@ function copyOverlayContent(node, copiedStyles) {
       (node.matches('img') && node.complete && node.naturalWidth > 0) ||
       (node.matches('video') && node.readyState >= 2);
     if (hasPixels) copy.getContext('2d')?.drawImage(node, 0, 0, copy.width, copy.height);
-    copiedStyles.push([copy, { width: `${width}px`, height: `${height}px` }]);
+    Object.assign(copy.style, { width: `${width}px`, height: `${height}px` });
     return copy;
   }
 
-  if (wrapper) copiedStyles.push([copy, { display: getComputedStyle(node).display }]);
+  if (wrapper) copy.style.display = getComputedStyle(node).display;
   for (const child of node.childNodes) {
-    const content = copyOverlayContent(child, copiedStyles);
+    const content = copyOverlayContent(child);
     if (content) copy.append(content);
   }
   if (node.matches('select[multiple]')) {

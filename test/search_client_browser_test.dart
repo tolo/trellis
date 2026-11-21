@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -5,6 +6,7 @@ import 'package:html/parser.dart' as html;
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
+import '../tool/ui_gate/checks.dart' show strictPolicy;
 import '../tool/ui_gate/driver.dart';
 import '../tool/ui_gate/firefox.dart';
 import '../tool/visual_baseline.dart';
@@ -152,6 +154,293 @@ void main() {
       });
     }, timeout: const Timeout(Duration(minutes: 2)));
   }
+
+  group('docs command palette', () {
+    const trigger = '.site-header .search-trigger';
+    const query = '#lattice-command-query';
+    const modal = "document.getElementById('lattice-command').matches(':modal')";
+    const resultStatus = "document.querySelector('#lattice-command tl-combobox [role=status]').textContent";
+    const indexPath = 'indexes/docs/search.json';
+    const clientPath = 'indexes/docs/trellis-search.js';
+
+    Future<Directory> docsOutput(String name, String prefix, {String Function(String)? editConfig}) async {
+      final site = Directory(p.join(scratch.path, 'docs-$name')).absolute..createSync();
+      var config = File(p.join(repo, 'site', 'trellis_site.yaml')).readAsStringSync();
+      config = config.replaceFirst(
+        'theme: ../../themes/lattice',
+        'theme: ${jsonEncode(p.relative(p.join(repo, 'themes', 'lattice'), from: p.join(site.path, 'themes')))}',
+      );
+      for (final directory in ['content', 'layouts', 'static', 'data']) {
+        final source = Directory(p.join(repo, 'site', directory));
+        for (final file in source.listSync(recursive: true, followLinks: false).whereType<File>()) {
+          final destination = File(p.join(site.path, directory, p.relative(file.path, from: source.path)));
+          destination.parent.createSync(recursive: true);
+          file.copySync(destination.path);
+        }
+      }
+      config = config.replaceFirst('search:\n', 'search:\n  output: $indexPath\n');
+      File(p.join(site.path, 'trellis_site.yaml')).writeAsStringSync(editConfig?.call(config) ?? config);
+      final build = await Process.run(Platform.resolvedExecutable, [
+        'run',
+        p.join(repo, 'packages', 'trellis_cli', 'bin', 'trellis.dart'),
+        'build',
+        '--path-prefix',
+        prefix,
+      ], workingDirectory: site.path);
+      expect(build.exitCode, 0, reason: '${build.stdout}${build.stderr}');
+      return Directory(p.join(site.path, 'output'));
+    }
+
+    Future<void> shortcut(GateDriver driver) => switch (driver) {
+      ChromeDriver() => driver.pressShortcut('k', command: Platform.isMacOS),
+      FirefoxDriver() => driver.pressShortcut('k', command: Platform.isMacOS),
+      _ => throw StateError('Unexpected docs browser'),
+    };
+
+    Future<void> checkVisiblePalette(GateDriver driver) async {
+      expect(
+        await driver.evaluate(r'''(() => {
+        const panel = document.getElementById('lattice-command').getBoundingClientRect();
+        const popup = document.getElementById('lattice-command-query-popup');
+        const inside = rect => rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight;
+        return document.documentElement.scrollWidth <= innerWidth && inside(panel) &&
+          (!popup.matches(':popover-open') || inside(popup.getBoundingClientRect()));
+      })()'''),
+        isTrue,
+        reason: '${driver.name} palette viewport geometry',
+      );
+      final axe = File('tool/ui_gate/vendor/axe.min.js').readAsStringSync();
+      await driver.evaluate('(() => {$axe; return true;})()');
+      final findings = await driver.evaluate(
+        r'''axe.run(document.getElementById('lattice-command'), {
+        runOnly: {type:'tag', values:['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']}
+      }).then(result => result.violations.map(issue => issue.id + ': ' + issue.nodes.map(node => node.target.join(' ')).join(', ')))''',
+      );
+      expect(findings, isEmpty, reason: '${driver.name} open palette WCAG checks');
+    }
+
+    Future<void> ready(GateDriver driver) => waitForThemeBrowser(
+      driver,
+      "document.querySelector('$trigger')?.checkVisibility() === true && document.querySelector('$query').readOnly === false",
+    );
+
+    test('the built home and inner pages use one palette and navigate to real indexed paths', () async {
+      for (final (name, mount) in [('root', ''), ('prefix', '/trellis/')]) {
+        final base = mount.isEmpty ? '/' : mount;
+        final output = await docsOutput(name, mount);
+        final index = jsonDecode(File(p.join(output.path, indexPath)).readAsStringSync()) as List<dynamic>;
+        final combobox = index.cast<Map<String, dynamic>>().singleWhere((entry) => entry['title'] == 'Combobox');
+        expect(combobox['url'], '${base}docs/ui/components/combobox/');
+        final server = await serveThemeOutput(
+          output,
+          pathPrefix: mount,
+          headers: {'content-security-policy': strictPolicy},
+        );
+
+        await forBrowsers((driver) async {
+          for (final (route, width) in [(base, 390), ('${base}docs/ui/components/input/', 1440)]) {
+            await driver.viewport(width, 820);
+            driver.requests.clear();
+            await driver.open(server.baseUrl.resolve(route));
+            await ready(driver);
+            expect(await driver.evaluate("document.querySelectorAll('$trigger').length"), 1);
+            expect(await driver.evaluate("document.querySelector('.search-shell [role=combobox]')"), isNull);
+            expect(driver.requests, contains(server.baseUrl.resolve('$base$clientPath').toString()));
+            expect(driver.requests, contains(server.baseUrl.resolve('$base$indexPath').toString()));
+
+            await driver.evaluate("document.querySelector('.skip-to-content').focus()");
+            await shortcut(driver);
+            expect(await driver.evaluate(_paletteFocus(modal, query)), isTrue);
+            await driver.viewport(width == 390 ? 320 : width, 500);
+            await driver.type('trellis the');
+            await waitForThemeBrowser(driver, "$resultStatus === '20 results available'");
+            expect(
+              await driver.evaluate(r'''(() => {
+              const popup = document.getElementById('lattice-command-query-popup');
+              const input = document.getElementById('lattice-command-query');
+              const list = document.getElementById('lattice-command-query-listbox');
+              const close = document.querySelector('#lattice-command [data-dialog-close]');
+              const rect = close.getBoundingClientRect();
+              return (popup.scrollHeight > popup.clientHeight || list.scrollHeight > list.clientHeight) &&
+                popup.getBoundingClientRect().top >= input.getBoundingClientRect().bottom &&
+                close.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2));
+            })()'''),
+              isTrue,
+              reason: '${driver.name}: scrollable results leave the close target exposed',
+            );
+            await driver.press('ArrowUp');
+            expect(
+              await driver.evaluate(r'''(() => {
+                const popup = document.getElementById('lattice-command-query-popup');
+                const list = document.getElementById('lattice-command-query-listbox');
+                const last = list.lastElementChild;
+                const panel = popup.getBoundingClientRect();
+                const option = last.getBoundingClientRect();
+                return document.activeElement.getAttribute('aria-activedescendant') === last.id &&
+                  option.top >= panel.top && option.bottom <= panel.bottom && (popup.scrollTop > 0 || list.scrollTop > 0);
+              })()'''),
+              isTrue,
+              reason: '${driver.name}: the last result scrolls into view',
+            );
+            await driver.press('Escape');
+            await waitForThemeBrowser(driver, "!($modal) && document.activeElement.matches('.skip-to-content')");
+            await shortcut(driver);
+            expect(await driver.evaluate(_paletteFocus(modal, query)), isTrue);
+            expect(await driver.evaluate('document.activeElement.value'), isEmpty);
+            expect(await driver.evaluate("document.querySelectorAll('#lattice-command [role=option]').length"), 0);
+            await driver.type('combobox suggestions');
+            await waitForThemeBrowser(driver, "$resultStatus === '1 result available'");
+            await driver.press('ArrowDown');
+            await driver.press('ArrowUp');
+            expect(
+              await driver.evaluate(
+                "document.getElementById(document.activeElement.getAttribute('aria-activedescendant')).textContent",
+              ),
+              'Combobox',
+            );
+            expect(await driver.evaluate('window.__trellisCsp.violations'), isEmpty);
+            await driver.press('Enter');
+            await _expectNavigation(driver, server.baseUrl.resolve(combobox['url'] as String));
+
+            driver.requests.clear();
+            await driver.open(server.baseUrl.resolve(route));
+            await ready(driver);
+            await driver.pointer(trigger, click: true);
+            expect(await driver.evaluate(_paletteFocus(modal, query)), isTrue);
+            await driver.type('combobox suggestions');
+            await waitForThemeBrowser(driver, "$resultStatus === '1 result available'");
+            await driver.pointer('#lattice-command [role=option]', click: true);
+            await _expectNavigation(driver, server.baseUrl.resolve(combobox['url'] as String));
+          }
+        });
+      }
+    }, timeout: const Timeout(Duration(minutes: 2)));
+
+    test('no match and index failure stay distinct across both deferred script orders', () async {
+      final output = await docsOutput('errors', '');
+      final original = File(p.join(output.path, 'index.html')).readAsStringSync();
+      final suite = RegExp(
+        r'<script[^>]+src="/trellis-ui/trellis-ui.js"[^>]*></script>',
+      ).firstMatch(original)!.group(0)!;
+      final client = RegExp(
+        r'<script[^>]+src="/indexes/docs/trellis-search.js"[^>]*></script>',
+      ).firstMatch(original)!.group(0)!;
+      final reordered = original.replaceFirst(suite, '').replaceFirst(client, '$client$suite');
+      expect(reordered.indexOf(client), lessThan(reordered.indexOf(suite)));
+      File(p.join(output.path, 'client-first.html')).writeAsStringSync(reordered);
+      File(p.join(output.path, 'invalid.json')).writeAsStringSync('{"not": "an index"}');
+      File(p.join(output.path, 'invalid.html')).writeAsStringSync(_indexAt(original, '/invalid.json'));
+
+      final healthy = await serveThemeOutput(output, headers: {'content-security-policy': strictPolicy});
+      final broken = await serveThemeOutput(
+        output,
+        headers: {'content-security-policy': strictPolicy},
+        statusCodes: {'/$indexPath': HttpStatus.notFound},
+      );
+      final missingClient = await serveThemeOutput(output, statusCodes: {'/$clientPath': HttpStatus.notFound});
+      final disconnected = await StaticSiteServer.serve(
+        output,
+        headers: {'content-security-policy': strictPolicy},
+        disconnectPaths: {'/$indexPath'},
+      );
+      addTearDown(disconnected.close);
+
+      await forBrowsers((driver) async {
+        await driver.viewport(390, 820);
+        final release = Completer<void>();
+        final delayed = await StaticSiteServer.serve(
+          output,
+          headers: {'content-security-policy': strictPolicy},
+          beforeResponses: {'/$indexPath': release.future},
+        );
+        try {
+          await driver.open(delayed.baseUrl);
+          await waitForThemeBrowser(driver, "document.querySelector('$trigger')?.checkVisibility() === true");
+          await driver.pointer(trigger, click: true);
+          expect(
+            await driver.evaluate("document.querySelector('[data-command-status][role=status]').innerText"),
+            'Loading search…',
+          );
+          expect(await driver.evaluate("document.querySelector('$query').getAttribute('aria-busy')"), 'true');
+          release.complete();
+          await ready(driver);
+          expect(await driver.evaluate("document.querySelector('[data-command-status]').hidden"), isTrue);
+          await driver.type('combobox suggestions');
+          await waitForThemeBrowser(driver, "$resultStatus === '1 result available'");
+          await driver.press('Escape');
+        } finally {
+          if (!release.isCompleted) release.complete();
+          await delayed.close();
+        }
+        for (final route in ['/', '/client-first.html']) {
+          await driver.open(healthy.baseUrl.resolve(route));
+          await ready(driver);
+          await driver.pointer(trigger, click: true);
+          await driver.type('qzzzz no match');
+          await waitForThemeBrowser(driver, "$resultStatus === 'No results'");
+          await checkVisiblePalette(driver);
+          expect(
+            await driver.evaluate("document.querySelector('#lattice-command [data-slot=combobox-empty]').innerText"),
+            'No results',
+          );
+          expect(await driver.evaluate('window.__trellisCsp.violations'), isEmpty);
+        }
+        await driver.open(missingClient.baseUrl);
+        await waitForThemeBrowser(driver, "customElements.get('tl-dialog') !== undefined");
+        await driver.evaluate(r'''window.addEventListener('keydown', event => {
+          if (event.key === 'k') window.shortcutObserved = [event.isTrusted, event.defaultPrevented];
+        })''');
+        await shortcut(driver);
+        expect(await driver.evaluate("document.querySelector('$trigger').hidden"), isTrue);
+        expect(await driver.evaluate(modal), isFalse);
+        expect(await driver.evaluate('window.shortcutObserved'), [true, false]);
+
+        for (final url in [broken.baseUrl, disconnected.baseUrl, healthy.baseUrl.resolve('/invalid.html')]) {
+          await driver.open(url);
+          await waitForThemeBrowser(driver, "document.querySelector('$trigger')?.checkVisibility() === true");
+          await driver.pointer(trigger, click: true);
+          await waitForThemeBrowser(driver, "document.querySelector('[data-command-status]').checkVisibility()");
+          expect(
+            await driver.evaluate("document.querySelector('[data-command-status][role=status]').innerText"),
+            'Search unavailable',
+          );
+          expect(await driver.evaluate("document.querySelectorAll('#lattice-command [role=option]').length"), 0);
+          await checkVisiblePalette(driver);
+          expect(await driver.evaluate("document.querySelector('$query').readOnly"), isTrue);
+          expect(
+            await driver.evaluate("document.querySelector('$query').getAttribute('aria-describedby')"),
+            'lattice-command-status',
+          );
+          expect(await driver.evaluate('window.__trellisCsp.violations'), isEmpty);
+          await driver.press('Escape');
+          expect(await driver.evaluate(modal), isFalse);
+        }
+      });
+    });
+
+    test('no build index or show_search false leaves no shortcut or entry point', () async {
+      for (final (name, edit, hasIndex) in <(String, String Function(String), bool)>[
+        ('disabled', (c) => c.replaceFirst('enabled: true', 'enabled: false'), false),
+        ('excluded', (c) => c.replaceFirst('search:\n', 'search:\n  excludeSections: [docs]\n'), false),
+        ('theme-disabled', (c) => c.replaceFirst('show_search: true', 'show_search: false'), true),
+      ]) {
+        final output = await docsOutput(name, '', editConfig: edit);
+        expect(File(p.join(output.path, indexPath)).existsSync(), hasIndex, reason: name);
+        final server = await serveThemeOutput(output);
+        await forBrowsers((driver) async {
+          await driver.open(server.baseUrl);
+          await shortcut(driver);
+          expect(await driver.evaluate("document.querySelector('$trigger, #lattice-command')"), isNull, reason: name);
+          expect(
+            await driver.evaluate("document.querySelector('script[src\$=\"trellis-search.js\"]')"),
+            isNull,
+            reason: name,
+          );
+          expect(await driver.evaluate("document.querySelector('dialog:modal')"), isNull, reason: name);
+        });
+      }
+    }, timeout: const Timeout(Duration(minutes: 2)));
+  });
 
   test('no match, empty query and markup in titles', () async {
     final output = outputs['arbor']!;
@@ -398,3 +687,5 @@ Future<void> _expectNavigation(GateDriver driver, Uri destination) async {
     reason: '${driver.name} requested the selected page once',
   );
 }
+
+String _paletteFocus(String modal, String query) => "$modal && document.activeElement.matches('$query')";

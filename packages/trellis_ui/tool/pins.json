@@ -13,6 +13,7 @@
     "card",
     "checkbox",
     "combobox",
+    "command",
     "dialog",
     "dropdown-menu",
     "field",
@@ -51,6 +52,18 @@
     ]
   },
   "structuralSkip": {
+    "cn-command-item": {
+      "from": "shadcn@4.23.0",
+      "reason": "The composed palette uses the Combobox item and its existing selected, disabled and focus rendering."
+    },
+    "cn-command-item-indicator": {
+      "from": "shadcn@4.23.0",
+      "reason": "Selecting a command closes the dialog, leaving no persistent check indicator."
+    },
+    "cn-command-list": {
+      "from": "shadcn@4.23.0",
+      "reason": "The shared Combobox popover owns viewport clipping, overflow and keyboard scrolling."
+    },
     "cn-navigation-menu-content": {
       "from": "shadcn@4.23.0",
       "reason": "The pinned Base UI activation-direction variant is invalid in the standalone compiler and drives a shared sliding viewport. Trellis positions each native popover and keeps the generated Vega paint."

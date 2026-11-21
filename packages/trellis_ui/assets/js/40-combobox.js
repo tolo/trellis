@@ -2,9 +2,12 @@ const optionSelector = '[role="option"]';
 
 class TlCombobox extends TlElement {
   onConnect() {
+    // Palette results must leave the modal's title and close button exposed.
+    this.placement = { flip: !this.palette };
     this.setOpen(false);
     this.listen(this.input, 'input', () => {
       this.querySelector('[data-slot="combobox-value"]').value = '';
+      this.filterLocalOptions();
       const hasText = Boolean(this.input.value.trim());
       if (!this.input.matches('[hx-get], [data-hx-get]')) return this.setOpen(hasText);
       // An editing action must not select from a previous search or its in-flight response.
@@ -14,14 +17,18 @@ class TlCombobox extends TlElement {
       this.searching = hasText;
     });
     this.listen(this.input, 'keydown', (event) => this.keydown(event));
-    this.listen(this.input, 'focusout', () => this.setOpen(false));
+    this.listen(this.input, 'focusout', event => {
+      // Firefox can report focusout when the window loses focus and the input remains active.
+      if (this.palette && !event.relatedTarget && document.activeElement === this.input && !document.hasFocus()) return;
+      this.setOpen(false);
+    });
     this.listen(this, 'pointerdown', (event) => {
       if (event.target.closest(`${optionSelector}, [data-slot="combobox-trigger"]`)) event.preventDefault();
     });
     this.listen(this, 'click', (event) => {
       if (this.input.disabled || this.searching) return;
       const option = event.target.closest(optionSelector);
-      if (option) this.select(option);
+      if (option && !option.hidden) this.select(option);
       if (event.target.closest('[data-slot="combobox-trigger"]')) {
         this.input.focus({ preventScroll: true });
         this.setOpen(!this.open);
@@ -40,11 +47,12 @@ class TlCombobox extends TlElement {
     // HTMX replaces the results node, so observe its stable parent.
     this.observer = new MutationObserver(applyResults);
     this.observer.observe(this.popup, { childList: true });
-    this.trackPopup(this.input.parentElement, this.popup);
+    this.trackPopup(this.input.parentElement, this.popup, this.placement);
   }
 
   onDisconnect() { this.observer.disconnect(); }
   onHistorySave() {
+    if (this.palette) this.resetQuery();
     this.input.defaultValue = this.input.value;
     this.setOpen(false);
   }
@@ -52,11 +60,28 @@ class TlCombobox extends TlElement {
   get input() { return this.querySelector('[role="combobox"]'); }
   get popup() { return this.querySelector(popupSelector); }
   get listbox() { return this.querySelector('[role="listbox"]'); }
-  get options() { return [...this.listbox.querySelectorAll(optionSelector)]; }
+  get options() { return [...this.listbox.querySelectorAll(`${optionSelector}:not([hidden])`)]; }
   get open() { return this.popup.matches(':popover-open'); }
+  get palette() { return this.closest('dialog[data-command-palette]'); }
+  get paletteUnavailable() { return this.input.readOnly && this.palette; }
+
+  filterLocalOptions() {
+    if (!this.input.hasAttribute('data-combobox-filter')) return;
+    const terms = this.input.value.trim().toLowerCase().split(/\s+/);
+    for (const option of this.listbox.querySelectorAll(optionSelector)) {
+      const label = option.textContent.toLowerCase();
+      option.hidden = !terms.every(term => label.includes(term));
+    }
+  }
+
+  resetQuery() {
+    this.input.value = '';
+    this.input.dispatchEvent(new Event('input'));
+  }
 
   setOpen(open) {
     this.searching = false;
+    open = open && !this.paletteUnavailable;
     if (open && !this.open) this.popup.showPopover();
     if (!open && this.open) this.popup.hidePopover();
     this.input.setAttribute('aria-expanded', String(open));
@@ -73,13 +98,13 @@ class TlCombobox extends TlElement {
     this.highlight(null);
     this.querySelector('[role="status"]').textContent =
       count ? `${count} result${count === 1 ? '' : 's'} available` : 'No results';
-    if (this.open) place(this.input.parentElement, this.popup);
+    if (this.open) place(this.input.parentElement, this.popup, this.placement);
   }
 
   keydown(event) {
     if (event.isComposing) return;
     const { key } = event;
-    if (key === 'Escape' && (this.open || this.searching)) {
+    if (key === 'Escape' && (this.open || this.searching) && !this.palette) {
       event.preventDefault();
       event.stopPropagation();
       this.setOpen(false);
@@ -92,7 +117,7 @@ class TlCombobox extends TlElement {
       this.input.setSelectionRange(cursor, cursor);
       return;
     }
-    if (this.searching) return;
+    if (this.searching || this.paletteUnavailable) return;
     const options = this.options;
     const index = options.findIndex((option) => option.id === this.input.getAttribute('aria-activedescendant'));
     if (key === 'Enter' && this.open && index >= 0) {
@@ -110,7 +135,7 @@ class TlCombobox extends TlElement {
   }
 
   highlight(active) {
-    for (const option of this.options) {
+    for (const option of this.listbox.querySelectorAll(optionSelector)) {
       option.setAttribute('aria-selected', String(option === active));
       option.toggleAttribute('data-highlighted', option === active);
     }
@@ -120,8 +145,12 @@ class TlCombobox extends TlElement {
 
   select(option) {
     this.input.value = option.textContent.trim();
-    this.querySelector('[data-slot="combobox-value"]').value = option.dataset.value;
+    const value = option.dataset.value;
+    this.querySelector('[data-slot="combobox-value"]').value = value;
     this.setOpen(false);
+    if (this.palette) {
+      option.dispatchEvent(new CustomEvent('tl-select', { bubbles: true, detail: { item: option, value } }));
+    }
   }
 }
 customElements.define('tl-combobox', TlCombobox);

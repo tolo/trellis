@@ -106,8 +106,7 @@ class SearchIndexGenerator {
   /// `search: false` in front matter. Returns a pretty-printed JSON
   /// string containing an array of page objects.
   String generate(List<Page> pages) {
-    final entries = pages.where(_shouldInclude).map(_buildEntry).toList();
-    return const JsonEncoder.withIndent('  ').convert(entries);
+    return const JsonEncoder.withIndent('  ').convert(_entries(pages));
   }
 
   /// Writes the JSON search index to `[outputDir]/[config.output]` and the
@@ -116,34 +115,13 @@ class SearchIndexGenerator {
   /// Returns `true` if both files were written, `false` if search is disabled
   /// or no pages qualify.
   bool writeToOutput(List<Page> pages, String outputDir) {
-    if (!config.enabled) return false;
-    final entries = pages.where(_shouldInclude).map(_buildEntry).toList();
-    if (entries.isEmpty) return false;
-    final json = const JsonEncoder.withIndent('  ').convert(entries);
-    final filePath = p.join(outputDir, config.output);
-    if (p.basename(filePath).toLowerCase() == searchClientFilename) {
-      throw ArgumentError.value(config.output, 'search.output', 'The name $searchClientFilename is reserved');
-    }
-    final directory = Directory(p.dirname(filePath));
-    final client = File(p.join(directory.path, searchClientFilename));
-    final clientBytes = utf8.encode(searchClient);
-    final type = FileSystemEntity.typeSync(client.path, followLinks: false);
-    if (type != FileSystemEntityType.notFound &&
-        (type != FileSystemEntityType.file || !_matchesClient(client, clientBytes))) {
-      throw FileSystemException('The shared search client path is already occupied', client.path);
-    }
-
-    directory.createSync(recursive: true);
-    File(filePath).writeAsStringSync(json);
-    client.writeAsBytesSync(clientBytes);
+    final output = prepareSearchIndex(this, pages);
+    if (output == null) return false;
+    output.writeTo(outputDir);
     return true;
   }
 
-  // Accept the same generated client when a caller rebuilds into the same directory.
-  bool _matchesClient(File file, List<int> expected) {
-    if (file.lengthSync() != expected.length) return false;
-    return file.readAsBytesSync().indexed.every((byte) => expected[byte.$1] == byte.$2);
-  }
+  List<Map<String, dynamic>> _entries(List<Page> pages) => pages.where(_shouldInclude).map(_buildEntry).toList();
 
   bool _shouldInclude(Page page) {
     if (page.isDraft) return false;
@@ -241,5 +219,58 @@ class SearchIndexGenerator {
       return '${text.substring(0, cutoff)}...';
     }
     return '${text.substring(0, maxLength)}...';
+  }
+}
+
+/// Settles eligibility and output paths once for both rendering and emission.
+SearchIndexOutput? prepareSearchIndex(SearchIndexGenerator generator, List<Page> pages) {
+  if (!generator.config.enabled) return null;
+  final entries = generator._entries(pages);
+  if (entries.isEmpty) return null;
+
+  final output = generator.config.output;
+  final indexPath = p.normalize(output);
+  if (indexPath == '.' || p.isAbsolute(indexPath) || p.split(indexPath).first == '..') {
+    throw ArgumentError.value(output, 'search.output', 'Expected a file path relative to the output directory');
+  }
+  if (p.basename(indexPath).toLowerCase() == searchClientFilename) {
+    throw ArgumentError.value(output, 'search.output', 'The name $searchClientFilename is reserved');
+  }
+  return SearchIndexOutput._(indexPath, entries);
+}
+
+/// A prepared index and the client served from its directory.
+final class SearchIndexOutput {
+  SearchIndexOutput._(this._indexPath, this._entries);
+
+  final String _indexPath;
+  final List<Map<String, dynamic>> _entries;
+
+  String get _clientPath => p.join(p.dirname(_indexPath), searchClientFilename);
+
+  Map<String, String> urls(String pathPrefix) {
+    final prefix = pathPrefix.isEmpty ? '/' : pathPrefix;
+    String url(String path) => prefix + Uri(pathSegments: p.split(path)).toString();
+    return {'indexUrl': url(_indexPath), 'clientUrl': url(_clientPath)};
+  }
+
+  void writeTo(String outputDir) {
+    final client = File(p.join(outputDir, _clientPath));
+    final clientBytes = utf8.encode(searchClient);
+    final type = FileSystemEntity.typeSync(client.path, followLinks: false);
+    if (type != FileSystemEntityType.notFound &&
+        (type != FileSystemEntityType.file || !_matchesClient(client, clientBytes))) {
+      throw FileSystemException('The shared search client path is already occupied', client.path);
+    }
+
+    client.parent.createSync(recursive: true);
+    File(p.join(outputDir, _indexPath)).writeAsStringSync(const JsonEncoder.withIndent('  ').convert(_entries));
+    client.writeAsBytesSync(clientBytes);
+  }
+
+  // Accept the same generated client when a caller rebuilds into the same directory.
+  bool _matchesClient(File file, List<int> expected) {
+    if (file.lengthSync() != expected.length) return false;
+    return file.readAsBytesSync().indexed.every((byte) => expected[byte.$1] == byte.$2);
   }
 }

@@ -408,20 +408,38 @@ class BrowserProbe {
 /// only be laid out correctly over HTTP. Binds an ephemeral loopback port so
 /// concurrent suites never collide.
 class StaticSiteServer {
-  StaticSiteServer._(this._server, this._root, this._headers, this._statusCodes);
+  StaticSiteServer._(
+    this._server,
+    this._root,
+    this._headers,
+    this._statusCodes,
+    this._disconnectPaths,
+    this._beforeResponses,
+  );
 
   final HttpServer _server;
   final Directory _root;
   final Map<String, String> _headers;
   final Map<String, int> _statusCodes;
+  final Set<String> _disconnectPaths;
+  final Map<String, Future<void>> _beforeResponses;
 
   static Future<StaticSiteServer> serve(
     Directory root, {
     Map<String, String> headers = const {},
     Map<String, int> statusCodes = const {},
+    Set<String> disconnectPaths = const {},
+    Map<String, Future<void>> beforeResponses = const {},
   }) async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    final instance = StaticSiteServer._(server, root, Map.unmodifiable(headers), Map.unmodifiable(statusCodes));
+    final instance = StaticSiteServer._(
+      server,
+      root,
+      Map.unmodifiable(headers),
+      Map.unmodifiable(statusCodes),
+      Set.unmodifiable(disconnectPaths),
+      Map.unmodifiable(beforeResponses),
+    );
     unawaited(instance._listen());
     return instance;
   }
@@ -433,28 +451,41 @@ class StaticSiteServer {
 
   Future<void> _listen() async {
     await for (final request in _server) {
-      _headers.forEach(request.response.headers.set);
-      if (_statusCodes[request.uri.path] case final status?) {
-        request.response.statusCode = status;
-        await request.response.close();
-        continue;
-      }
-      final relative = Uri.decodeComponent(request.uri.path).replaceFirst(RegExp('^/'), '');
-      var file = File('${_root.path}/$relative');
-      if (relative.isEmpty || file.statSync().type == FileSystemEntityType.directory) {
-        file = File('${_root.path}/$relative${relative.endsWith('/') || relative.isEmpty ? '' : '/'}index.html');
-      }
-      if (!file.existsSync()) {
-        request.response.statusCode = HttpStatus.notFound;
+      if (_beforeResponses[request.uri.path] case final ready?) {
+        unawaited(ready.then((_) => _respond(request)));
       } else {
-        request.response.headers.contentType = _contentTypeFor(file.path);
-        // No caching: a suite rebuilds the same origin's stylesheet between
-        // measurements, and a 304 would silently measure the previous build.
-        request.response.headers.set(HttpHeaders.cacheControlHeader, 'no-store');
-        request.response.add(file.readAsBytesSync());
+        await _respond(request);
       }
-      await request.response.close();
     }
+  }
+
+  Future<void> _respond(HttpRequest request) async {
+    if (_disconnectPaths.contains(request.uri.path)) {
+      final socket = await request.response.detachSocket(writeHeaders: false);
+      socket.destroy();
+      return;
+    }
+    _headers.forEach(request.response.headers.set);
+    if (_statusCodes[request.uri.path] case final status?) {
+      request.response.statusCode = status;
+      await request.response.close();
+      return;
+    }
+    final relative = Uri.decodeComponent(request.uri.path).replaceFirst(RegExp('^/'), '');
+    var file = File('${_root.path}/$relative');
+    if (relative.isEmpty || file.statSync().type == FileSystemEntityType.directory) {
+      file = File('${_root.path}/$relative${relative.endsWith('/') || relative.isEmpty ? '' : '/'}index.html');
+    }
+    if (!file.existsSync()) {
+      request.response.statusCode = HttpStatus.notFound;
+    } else {
+      request.response.headers.contentType = _contentTypeFor(file.path);
+      // No caching: a suite rebuilds the same origin's stylesheet between
+      // measurements, and a 304 would silently measure the previous build.
+      request.response.headers.set(HttpHeaders.cacheControlHeader, 'no-store');
+      request.response.add(file.readAsBytesSync());
+    }
+    await request.response.close();
   }
 
   static ContentType _contentTypeFor(String path) => switch (path.split('.').last.toLowerCase()) {

@@ -251,21 +251,29 @@ final class FirefoxDriver implements GateDriver {
     await type(keys[key] ?? key);
   }
 
+  Future<void> pressShortcut(String key, {required bool command}) {
+    final modifier = command ? '\uE03D' : '\uE009';
+    return _keyActions([
+      {'type': 'keyDown', 'value': modifier},
+      {'type': 'keyDown', 'value': key},
+      {'type': 'keyUp', 'value': key},
+      {'type': 'keyUp', 'value': modifier},
+    ]);
+  }
+
   @override
-  Future<void> type(String text) async {
+  Future<void> type(String text) => _keyActions([
+    for (final rune in text.runes) ...[
+      {'type': 'keyDown', 'value': String.fromCharCode(rune)},
+      {'type': 'keyUp', 'value': String.fromCharCode(rune)},
+    ],
+  ]);
+
+  Future<void> _keyActions(List<Map<String, String>> actions) async {
     await _activate();
     await _wd('POST', '/actions', {
       'actions': [
-        {
-          'type': 'key',
-          'id': 'gate-keyboard',
-          'actions': [
-            for (final rune in text.runes) ...[
-              {'type': 'keyDown', 'value': String.fromCharCode(rune)},
-              {'type': 'keyUp', 'value': String.fromCharCode(rune)},
-            ],
-          ],
-        },
+        {'type': 'key', 'id': 'gate-keyboard', 'actions': actions},
       ],
     });
   }

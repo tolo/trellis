@@ -9,6 +9,7 @@ class TlDialog extends TlElement {
     if (!dialog) return;
     this.listen(this, 'click', (event) => this.clickDialog(event));
     this.listen(dialog, 'keydown', (event) => this.cycleTab(event));
+    if (dialog.hasAttribute('data-command-palette')) this.connectPalette(dialog);
     this.listen(dialog, 'close', () => {
       if (!dialog.open) this.reflectClosed();
     });
@@ -20,6 +21,23 @@ class TlDialog extends TlElement {
       dialog.removeAttribute('open');
       this.openDialog(document.activeElement);
     }
+  }
+
+  connectPalette(dialog) {
+    this.listen(dialog, 'tl-select', event => {
+      if (event.target.matches('[role="option"]') && event.target.closest('dialog') === dialog) this.closeDialog();
+    });
+
+    const shortcut = dialog.dataset.shortcut?.toLowerCase();
+    if (!shortcut || !/^[a-z]$/.test(shortcut)) return;
+    this.listen(document, 'keydown', event => {
+      if (event.defaultPrevented || event.repeat || event.isComposing || event.altKey || event.shiftKey ||
+          event.ctrlKey === event.metaKey || event.key.toLowerCase() !== shortcut ||
+          dialog.closest('[data-palette-inactive]') || document.querySelector('dialog:modal')) return;
+      if (event.target.isContentEditable || event.target.matches?.('input:not(:read-only), textarea:not(:read-only), select')) return;
+      event.preventDefault();
+      this.openDialog(document.activeElement);
+    });
   }
 
   connectSheet() {
@@ -106,6 +124,7 @@ class TlDialog extends TlElement {
   openDialog(opener) {
     if (this.dialog.open) return;
     this.opener = document.getElementById(this.dialog.dataset.returnFocus) || opener;
+    if (this.dialog.hasAttribute('data-command-palette')) this.dialog.querySelector('tl-combobox').resetQuery();
     if (this.sheet) {
       // Until close can suppress native focus restoration, blur before showModal() so link dismissal can navigate.
       document.activeElement?.blur();

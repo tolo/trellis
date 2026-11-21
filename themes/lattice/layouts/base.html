@@ -29,7 +29,7 @@
       type="application/atom+xml"
       tl:attr="href=${site.feeds.atom}"
     />
-    <script tl:if="${theme.show_search}" tl:attr="src=${assetBase} + 'trellis-search.js'" defer></script>
+    <script tl:if="${theme.show_search and site.search}" tl:attr="src=${site.search.clientUrl}" defer></script>
     <script tl:attr="src=${assetBase} + 'js/lattice.js'" defer></script>
     <meta tl:define="head-extra" />
   </head>
@@ -99,6 +99,19 @@
               </tl:block>
             </div>
           </div>
+          <div class="header-search" data-trellis-search data-palette-inactive
+               tl:if="${theme.show_search and site.search and site.params.search_palette}"
+               tl:attr="data-search-index=${site.search.indexUrl}">
+            <div tl:replace="~{trellis-ui/command-palette :: commandPalette('lattice-command', 'Search documentation', 'Search…', null, 'k')}">
+              <tl:block tl:slot="trigger">
+                <button tl:replace="~{trellis-ui/button :: button('outline', 'sm')}"
+                  type="button" class="search-trigger" aria-keyshortcuts="Control+K Meta+K" hidden>Search</button>
+              </tl:block>
+            </div>
+            <template data-trellis-search-results>
+              <div tl:replace="~{trellis-ui/combobox :: comboboxOptions('lattice-command-query', ${data['trellis-search']})}"></div>
+            </template>
+          </div>
           <!-- Rendered hidden; lattice.js reveals it. Without JavaScript the toggle cannot do
                anything, and the PRD's no-JS contract is "no skin toggle" — the media query applies. -->
           <tl-tooltip tl:if="${theme.skin} == 'auto'"
@@ -149,9 +162,9 @@
           <tl:block tl:slot="content">
             <div class="docs-sidebar">
               <!-- The shell stays hidden until the shared search client loads its index. -->
-              <div class="search-shell" data-trellis-search hidden tl:if="${theme.show_search}"
-                   tl:with="assetBase=${site.pathPrefix} == '' ? '/' : ${site.pathPrefix}"
-                   tl:attr="data-search-index=${assetBase} + 'search-index.json'">
+              <div class="search-shell" data-trellis-search hidden
+                   tl:if="${theme.show_search and site.search and !site.params.search_palette}"
+                   tl:attr="data-search-index=${site.search.indexUrl}">
                 <div tl:replace="~{trellis-ui/combobox :: combobox('lattice-docs-search', 'page', 'Search…', '', null)}"
                      aria-label="Search documentation" disabled></div>
                 <template data-trellis-search-results>

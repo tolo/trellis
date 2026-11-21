@@ -296,7 +296,9 @@ class TrellisSite {
     }
 
     // 5. Taxonomy: collect terms and inject virtual pages
+    final search = prepareSearchIndex(SearchIndexGenerator(config.searchConfig), pages);
     final siteContext = _buildSiteContext(pages, mergedThemeParams?['nav_links']);
+    if (search != null) siteContext['search'] = search.urls(config.pathPrefix);
     var siteParams = <String, dynamic>{'site': siteContext, 'theme': ?mergedThemeParams};
     if (config.taxonomies.isNotEmpty) {
       final collector = TaxonomyCollector(pathPrefix: config.pathPrefix);
@@ -412,9 +414,9 @@ class TrellisSite {
     }
 
     // 9. Generate the search index and client
-    if (config.searchConfig.enabled) {
-      final searchGenerator = SearchIndexGenerator(config.searchConfig);
-      if (searchGenerator.writeToOutput(pages, config.outputDir)) staticCount += 2;
+    if (search != null) {
+      search.writeTo(config.outputDir);
+      staticCount += 2;
     }
 
     stopwatch.stop();

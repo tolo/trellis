@@ -54,7 +54,7 @@ function setOpenState(element, open) {
   element.toggleAttribute('data-closed', !open);
 }
 
-function place(anchor, popup, { side, align, offset } = {}) {
+function place(anchor, popup, { side, align, offset, flip = true } = {}) {
   if (!['top', 'right', 'bottom', 'left'].includes(side)) side = 'bottom';
   if (!['start', 'center', 'end'].includes(align)) align = 'start';
   offset = Number.isFinite(Number(offset)) ? Number(offset) : 4;
@@ -77,7 +77,7 @@ function place(anchor, popup, { side, align, offset } = {}) {
   const horizontal = side === 'left' || side === 'right';
   const naturalSize = horizontal ? popup.offsetWidth : popup.offsetHeight;
   const otherSide = opposite[side];
-  if (available[side] < naturalSize && available[otherSide] > available[side]) side = otherSide;
+  if (flip && available[side] < naturalSize && available[otherSide] > available[side]) side = otherSide;
   // If the anchor itself fills the viewport, allow the panel to overlap it.
   const space = Math.min(available[side], horizontal ? maxWidth : maxHeight);
   if (space > 0) style.setProperty(horizontal ? '--available-width' : '--available-height', `${space}px`);

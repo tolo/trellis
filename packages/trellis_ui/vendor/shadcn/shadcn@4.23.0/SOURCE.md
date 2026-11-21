@@ -16,6 +16,7 @@ Unmodified MIT inputs from https://raw.githubusercontent.com/shadcn-ui/ui/96da9c
 - `ui/card.tsx`: `apps/v4/registry/bases/base/ui/card.tsx`
 - `ui/checkbox.tsx`: `apps/v4/registry/bases/base/ui/checkbox.tsx`
 - `ui/combobox.tsx`: `apps/v4/registry/bases/base/ui/combobox.tsx`
+- `ui/command.tsx`: `apps/v4/registry/bases/base/ui/command.tsx`
 - `ui/dialog.tsx`: `apps/v4/registry/bases/base/ui/dialog.tsx`
 - `ui/dropdown-menu.tsx`: `apps/v4/registry/bases/base/ui/dropdown-menu.tsx`
 - `ui/field.tsx`: `apps/v4/registry/bases/base/ui/field.tsx`

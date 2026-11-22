@@ -365,8 +365,13 @@ final class _DateBrowser {
     final parts = iso.split('-');
     // Native field segments follow the recording host or browser locale, independent of Cally's locale.
     final digits = driver.name == 'chrome' ? '00${parts.join()}' : parts[1] + parts[2] + parts[0];
-    for (final digit in digits.split('')) {
-      await driver.press(digit);
+    if (driver is FirefoxDriver) {
+      // Keep native date entry in one WebDriver action sequence and one context activation.
+      await driver.type(digits);
+    } else {
+      for (final digit in digits.split('')) {
+        await driver.press(digit);
+      }
     }
     expect(await eval("document.querySelector('[name=$name]').value"), iso, reason: '${driver.name} $name');
   }
@@ -398,6 +403,8 @@ final class _DateBrowser {
   }
 
   Future<void> expectAxe() async {
+    // Axe includes CSS-inert exit paint in its full-page contrast audit.
+    await waitFor("document.querySelector('[data-trellis-overlay-exit]') === null");
     final axe = File('../../tool/ui_gate/vendor/axe.min.js').readAsStringSync();
     await eval('(() => {if (!globalThis.axe) {$axe} return true;})()');
     expect(

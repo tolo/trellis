@@ -116,6 +116,35 @@ void main() {
     expect(await driver.evaluate(noCsp), isEmpty);
   });
 
+  test('a queued close notification does not take back focus after native dismissal returned it', () async {
+    await driver.open(gallery);
+    await click(trigger);
+    await waitFor('$placed && $focused');
+    expect(
+      await driver.evaluate('''new Promise(resolve => {
+        $panel.addEventListener('toggle', () => resolve(document.activeElement.id), {once: true});
+        $panel.hidePopover();
+        if (document.activeElement !== $triggerNode) return resolve('native focus did not return');
+        document.getElementById('after').focus();
+      })'''),
+      'after',
+    );
+  });
+
+  test('an open and close in one task still restores focus when native dismissal leaves it outside', () async {
+    await driver.open(gallery);
+    expect(
+      await driver.evaluate('''new Promise(resolve => {
+        $panel.addEventListener('toggle', () => resolve(document.activeElement.id), {once: true});
+        $triggerNode.focus();
+        $panel.showPopover({source: $triggerNode});
+        document.getElementById('after').focus();
+        $panel.hidePopover();
+      })'''),
+      'options-trigger',
+    );
+  });
+
   test('Tab closes the panel when focus leaves it and preserves the newly focused control', () async {
     await driver.open(gallery);
     await click(trigger);

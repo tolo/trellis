@@ -1,6 +1,7 @@
 ## 0.15.0
 
 - Add Popover with trigger and content slots, four-sided viewport placement and focus return after dismissal.
+- Preserve the next control's focus when native Popover dismissal already returned focus to the trigger.
 - Render only supplied Card copy. Omitted title, description and body slots no longer show demo text.
 - Document a labelled native date field in the Input reference.
 - Document the app-owned Cally 0.9.2 single-date and range recipe with native fallback and HTMX history recovery.

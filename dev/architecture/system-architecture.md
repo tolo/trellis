@@ -2,7 +2,7 @@
 
 Canonical reference for understanding the Trellis SDK architecture: how the packages compose, what each package is responsible for, the dependency graph, and how a request flows through the system.
 
-**Current through**: 0.15 docs Command palette and search preparation after taxonomy collection on 2026-11-21.
+**Current through**: 0.15 Popover focus return during overlay exit on 2026-11-22.
 Dev reload, scaffold CSP and UI previews updated for 0.14 on 2026-11-17. `trellis dev` site
 preview, including theme watch recovery, output exclusions and startup cleanup, is current through 0.14 on
 2026-11-18. The named site source
@@ -116,7 +116,8 @@ listener and popup cleanup for HTMX swaps, history and disconnect. Dialog, Alert
 native modality and tab containment. Sheet upgrades a labelled section and keeps its content nodes through
 its optional inline breakpoint. Link dismissal lets the destination take focus. Native popovers share
 four-sided CSSOM placement with viewport flip, size caps and repositioning on scroll and resize.
-Popover exposes trigger and content slots and restores focus on dismissal. Tooltip adds a description to a
+Popover exposes trigger and content slots and restores focus on dismissal. If native dismissal already returned
+focus to the trigger, the queued close notification leaves subsequent focus alone. Tooltip adds a description to a
 slotted control and uses the shared hover helper to cancel pending transitions when pointer intent changes.
 Its manual popover opens on keyboard focus and consumes Escape in the current modal scope. Navigation menu enhances native disclosures inside a navigation landmark. Each panel is an auto popover.
 The suite tracks delayed pointer intent per disclosure and uses the native top layer to switch active panels.

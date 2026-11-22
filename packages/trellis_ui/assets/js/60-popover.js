@@ -10,24 +10,29 @@ class TlPopover extends TlElement {
       setOpenState(popup, open);
       this.trigger?.setAttribute('aria-expanded', String(open));
     };
-    let retainTabFocus = false;
+    let retainFocus = false;
     const restoreFocus = () => {
       if (!document.activeElement?.closest(':popover-open')) this.trigger?.focus({ preventScroll: true });
     };
     reflect(popup.matches(':popover-open'));
-    // HTMX serializes synchronously on close. An opening beforetoggle can be cancelled.
-    this.listen(popup, 'beforetoggle', (event) => {
-      if (event.newState === 'closed') reflect(false);
+    // Reflect close before an HTMX snapshot and open only after toggle.
+    this.listen(popup, 'beforetoggle', ({ newState }) => {
+      if (newState === 'closed') {
+        retainFocus = false;
+        reflect(false);
+      }
+    });
+    this.listen(this, 'focusin', ({ target }) => {
+      if (target === this.trigger && !popup.matches(':popover-open')) retainFocus = true;
     });
     this.listen(popup, 'toggle', () => {
       if (popup.matches(':popover-open')) {
         const trigger = this.trigger;
         if (!trigger) return popup.hidePopover();
-        retainTabFocus = false;
         reflect(true);
         place(trigger, popup, options);
         if (!popup.contains(document.activeElement)) popup.focus({ preventScroll: true });
-      } else if (!retainTabFocus) {
+      } else if (!retainFocus) {
         restoreFocus();
       }
     });
@@ -36,8 +41,8 @@ class TlPopover extends TlElement {
       // Let the browser choose the next control. Close before painting focus behind the panel.
       requestAnimationFrame(() => {
         if (popup.matches(':popover-open') && !popup.contains(document.activeElement)) {
-          retainTabFocus = true;
           popup.hidePopover();
+          retainFocus = true;
         }
       });
     });

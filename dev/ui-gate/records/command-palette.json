@@ -228,12 +228,16 @@
       "evidence": []
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. The named Choose a fruit dialog opens. The editable combo box reads result count and Apple/Apricot positions. Selecting Apple returns to Search fruit."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. The Choose a fruit dialog focused its query. `ap` exposed Apple, Down selected Apple, and Return closed the popup and restored Search fruit."
+      ]
     }
   }
 }

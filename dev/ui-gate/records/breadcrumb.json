@@ -228,12 +228,16 @@
       "evidence": []
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. A named navigation landmark has three items. Home and Components are links. Breadcrumb is announced as current page."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. The Breadcrumb trail exposed Home and Components as links, and the final Breadcrumb as text. Components reached the Button page."
+      ]
     }
   }
 }

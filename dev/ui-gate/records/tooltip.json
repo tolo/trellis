@@ -228,12 +228,16 @@
       "evidence": []
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Colour mode and Keyboard shortcuts speak their associated descriptions on focus."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Option-Tab focused Colour mode and displayed Find light and dark themes. Escape hid it and kept focus on Colour mode. Tab moved through Keyboard shortcuts to Refresh example."
+      ]
     }
   }
 }

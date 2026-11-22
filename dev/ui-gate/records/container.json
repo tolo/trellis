@@ -228,12 +228,16 @@
       "evidence": []
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Sidebar first in the DOM is read before Main content follows the sidebar."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. The narrow container was centered. Sidebar appeared before and left of the distinct Main content panel."
+      ]
     }
   }
 }

@@ -228,12 +228,16 @@
       "evidence": []
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Fruit is an editable combo box. Filtering announces two suggestions. Arrow keys announce Apple and Apricot with positions. Enter leaves Apple in the collapsed input."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Typing `ap` opened suggestions. Down selected Apple. Return collapsed the popup, wrote Apple to Fruit and restored focus to the combobox."
+      ]
     }
   }
 }

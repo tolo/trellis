@@ -228,12 +228,16 @@
       "evidence": []
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Page links opens as a dialog with focus on Jump to details. Tab traverses the controls through Close and wraps to Jump to details. Escape returns to the collapsed Open right sheet trigger."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Right Sheet focused Jump to details. In its nested Popover, Escape restored Display options and preserved the Sheet. Second Escape restored Open right sheet."
+      ]
     }
   }
 }

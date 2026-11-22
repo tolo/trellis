@@ -228,12 +228,16 @@
       "evidence": []
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Delete profile is exposed as a dialog with the removal description. Cancel is focused, Tab cycles through Delete profile and back, and dismissal announces the opener."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Delete profile opened its labelled modal and focused Cancel. Escape restored Delete profile focus."
+      ]
     }
   }
 }

@@ -24,8 +24,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "alert-dialog":
   name: "alert-dialog"
   qualified: true
@@ -48,8 +48,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "alert":
   name: "alert"
   qualified: true
@@ -72,8 +72,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "badge":
   name: "badge"
   qualified: true
@@ -96,8 +96,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "breadcrumb":
   name: "breadcrumb"
   qualified: true
@@ -120,8 +120,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "button":
   name: "button"
   qualified: true
@@ -144,8 +144,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "card":
   name: "card"
   qualified: true
@@ -168,8 +168,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "checkbox":
   name: "checkbox"
   qualified: true
@@ -192,8 +192,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "cluster":
   name: "cluster"
   qualified: true
@@ -216,8 +216,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "combobox":
   name: "combobox"
   qualified: true
@@ -241,8 +241,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "command-palette":
   name: "command-palette"
   qualified: true
@@ -265,8 +265,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "container":
   name: "container"
   qualified: true
@@ -290,8 +290,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "dialog":
   name: "dialog"
   qualified: true
@@ -314,8 +314,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "dropdown-menu":
   name: "dropdown-menu"
   qualified: true
@@ -342,8 +342,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "field":
   name: "field"
   qualified: true
@@ -368,8 +368,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "grid":
   name: "grid"
   qualified: true
@@ -392,8 +392,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "input":
   name: "input"
   qualified: true
@@ -416,8 +416,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "native-select":
   name: "native-select"
   qualified: true
@@ -440,8 +440,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "navigation-menu":
   name: "navigation-menu"
   qualified: true
@@ -466,8 +466,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "pagination":
   name: "pagination"
   qualified: true
@@ -490,8 +490,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "popover":
   name: "popover"
   qualified: true
@@ -517,8 +517,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "radio":
   name: "radio"
   qualified: true
@@ -541,8 +541,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "separator":
   name: "separator"
   qualified: true
@@ -565,8 +565,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "sheet":
   name: "sheet"
   qualified: true
@@ -589,8 +589,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "stack":
   name: "stack"
   qualified: true
@@ -613,8 +613,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "switch":
   name: "switch"
   qualified: true
@@ -637,8 +637,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "table":
   name: "table"
   qualified: true
@@ -661,8 +661,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "tabs":
   name: "tabs"
   qualified: true
@@ -688,8 +688,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "textarea":
   name: "textarea"
   qualified: true
@@ -712,8 +712,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "toast":
   name: "toast"
   qualified: true
@@ -737,8 +737,8 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}
 "tooltip":
   name: "tooltip"
   qualified: true
@@ -761,5 +761,5 @@
     - {"name":"touch-target","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"visual","status":"pass","browsers":[{"name":"chrome","status":"pass"},{"name":"firefox","status":"pass"}]}
     - {"name":"screen-reader-voiceover-safari","status":"release-prep","browsers":[]}
-    - {"name":"screen-reader-nvda-firefox","status":"release-prep","browsers":[]}
-    - {"name":"safari","status":"release-prep","browsers":[]}
+    - {"name":"screen-reader-nvda-firefox","status":"pass","browsers":[]}
+    - {"name":"safari","status":"pass","browsers":[]}

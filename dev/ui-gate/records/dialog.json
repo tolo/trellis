@@ -228,12 +228,16 @@
       "evidence": []
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Edit profile and its description are announced. Tab traverses Name, Email, Cancel, Save and Close, then wraps to Name. Escape returns to Edit profile."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Name focused initially. Option-Tab completed a lap inside the dialog and returned to Name. Escape restored Edit profile."
+      ]
     }
   }
 }

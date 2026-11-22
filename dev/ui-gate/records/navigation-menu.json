@@ -228,12 +228,16 @@
       "evidence": []
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Site navigation is a three-item landmark. Guides expands, Guide overview is current, Disclosure patterns is reachable, and Reference announces expanded then collapsed."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Guides exposed Guide overview and Disclosure patterns. Escape collapsed it and restored Guides focus. Lattice mobile nested check also passed."
+      ]
     }
   }
 }

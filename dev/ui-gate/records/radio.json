@@ -228,12 +228,16 @@
       "evidence": []
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Choice grouping and Primary radio control are announced. Space changes Primary to checked. The other examples announce disabled and invalid state."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Primary accepted pointer selection. Disabled stayed disabled and the independent Checked sample stayed checked."
+      ]
     }
   }
 }

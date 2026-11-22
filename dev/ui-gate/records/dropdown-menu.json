@@ -228,12 +228,16 @@
       "evidence": []
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Account is announced as a submenu button. Arrow navigation reaches Profile, Billing, Services, Invoices and Receipts. Closing nested levels announces Services then Account."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Down skipped disabled Settings. Services Right focused Invoices and exposed Receipts while Unavailable was disabled. Two Escapes returned to Services and Account."
+      ]
     }
   }
 }

@@ -117,7 +117,10 @@ native modality and tab containment. Sheet upgrades a labelled section and keeps
 its optional inline breakpoint. Link dismissal lets the destination take focus. Native popovers share
 four-sided CSSOM placement with viewport flip, size caps and repositioning on scroll and resize.
 Popover exposes trigger and content slots and restores focus on dismissal. If native dismissal already returned
-focus to the trigger, the queued close notification leaves subsequent focus alone. Tooltip adds a description to a
+focus to the trigger, the queued close notification leaves subsequent focus alone. Closing reflects state before
+HTMX can capture a history snapshot, and opening reflects state after the native toggle succeeds. Inside a modal,
+the Popover handles Escape for the nearest auto or hint popup on the keyboard event's composed path, including
+one inside slotted content. This keeps Safari from dismissing the enclosing dialog. Tooltip adds a description to a
 slotted control and uses the shared hover helper to cancel pending transitions when pointer intent changes.
 Its manual popover opens on keyboard focus and consumes Escape in the current modal scope. Navigation menu enhances native disclosures inside a navigation landmark. Each panel is an auto popover.
 The suite tracks delayed pointer intent per disclosure and uses the native top layer to switch active panels.

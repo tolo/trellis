@@ -325,6 +325,28 @@ void main() {
     expect(await driver.evaluate("$popup.matches(':popover-open')"), isFalse);
   });
 
+  test('Escape leaves the Sheet and its Popover open when slotted content owns a nested popup', () async {
+    await driver.open(page);
+    await openRight();
+    await click('#sheet-options-trigger');
+    const popup = "document.getElementById('sheet-options')";
+    await waitFor("$popup.matches(':popover-open') && $popup.style.left.endsWith('px')");
+    await driver.evaluate('''(() => {
+      const host = document.createElement('section');
+      $popup.append(host);
+      const widget = host.attachShadow({mode: 'open'});
+      widget.innerHTML = '<button>More options</button><div popover><input aria-label="Extra limit"></div>';
+      const trigger = widget.querySelector('button');
+      window.innerPopup = widget.querySelector('[popover]');
+      trigger.focus();
+      window.innerPopup.showPopover({source: trigger});
+      window.innerPopup.querySelector('input').focus();
+    })()''');
+    expect(await driver.evaluate("window.innerPopup.matches(':popover-open')"), isTrue);
+    await driver.press('Escape');
+    await waitFor("$open && $popup.matches(':popover-open') && !window.innerPopup.matches(':popover-open')");
+  });
+
   test('links stay visible and reachable in flow without script or suite assets', () async {
     for (final block in ['javascript', 'suite script', 'suite assets']) {
       await driver.probe.command('Network.setBlockedURLs', {

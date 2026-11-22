@@ -419,9 +419,9 @@ and 26,931 compressed bytes, a working Command palette added 29 lines and
 the implementation without reducing transfer cost or improving its behavior.
 
 With the Command palette, dropdown submenus, overlay exits and Toast gestures
-included, the 0.15 suite measured 29,991 compressed bytes across its three
+included, the 0.15 suite measured 29,975 compressed bytes across its three
 responses. The suite stylesheet accounted for 18,063 bytes, the classic script
-for 11,818 and the separate HTMX indicator stylesheet for 110. The embed step
+for 11,802 and the separate HTMX indicator stylesheet for 110. The embed step
 compresses authored CSS at build time, and the two browser paths share the
 overlay fade and cleanup logic.
 

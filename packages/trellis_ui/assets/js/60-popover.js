@@ -15,7 +15,6 @@ class TlPopover extends TlElement {
       if (!document.activeElement?.closest(':popover-open')) this.trigger?.focus({ preventScroll: true });
     };
     reflect(popup.matches(':popover-open'));
-    // Reflect close before an HTMX snapshot and open only after toggle.
     this.listen(popup, 'beforetoggle', ({ newState }) => {
       if (newState === 'closed') {
         retainFocus = false;
@@ -36,9 +35,15 @@ class TlPopover extends TlElement {
         restoreFocus();
       }
     });
-    this.listen(popup, 'keydown', ({ key }) => {
-      if (key !== 'Tab') return;
-      // Let the browser choose the next control. Close before painting focus behind the panel.
+    this.listen(popup, 'keydown', (event) => {
+      if (event.key === 'Escape' && !event.defaultPrevented && popup.closest(':modal')) {
+        const layer = event.composedPath().find(node => node.matches?.(':popover-open, :modal'));
+        if (layer?.matches(':popover-open') && layer.popover !== 'manual') {
+          event.preventDefault();
+          layer.hidePopover();
+        }
+      }
+      if (event.key !== 'Tab') return;
       requestAnimationFrame(() => {
         if (popup.matches(':popover-open') && !popup.contains(document.activeElement)) {
           popup.hidePopover();
@@ -71,7 +76,7 @@ class TlPopover extends TlElement {
       if (hash && hash !== location.hash && origin === location.origin &&
           pathname === location.pathname && search === location.search) destination = href;
     }, { capture: true });
-    // A same-page link can move focus after native light dismissal. Let the jump stand.
+    // Restore focus after the hash jump in Firefox.
     this.listen(window, 'hashchange', ({ newURL }) => {
       if (newURL === destination && !popup.matches(':popover-open')) restoreFocus();
       destination = null;

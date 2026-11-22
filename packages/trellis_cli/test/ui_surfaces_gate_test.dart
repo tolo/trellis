@@ -152,9 +152,9 @@ void main() {
       }
     }
 
-    final apps = _routes.entries.toList();
-    for (var i = 0; i < apps.length; i += 2) {
-      await Future.wait(apps.skip(i).take(2).map(verify), eagerError: false);
+    // Another headless Firefox session can blur the app during a native keyboard check.
+    for (final app in _routes.entries) {
+      await verify(app);
     }
     print('${names.length} surfaces pass ${automatedItems.length} automated items with Chrome and Firefox evidence');
   }, timeout: const Timeout(Duration(minutes: 25)));

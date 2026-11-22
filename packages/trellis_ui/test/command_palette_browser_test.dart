@@ -54,7 +54,7 @@ void main() {
     })()''');
     await driver.type('ap');
     await requested.future.timeout(const Duration(seconds: 5));
-    expect(await _background(driver), 'fruit');
+    await _background(driver, 'fruit');
     respond.complete();
     await _waitFor(driver, "document.querySelector('#component [role=status]').textContent === '2 results available'");
     expect(
@@ -81,7 +81,7 @@ void main() {
     const results = "document.getElementById('palette-query-popup').matches(':popover-open')";
     expect(await driver.evaluate(results), isTrue);
 
-    expect(await _background(driver), 'palette-query');
+    await _background(driver, 'palette-query');
     expect(await driver.evaluate(results), isTrue);
     await driver.press('Escape');
     await _waitFor(driver, "!$_modal && $_focused === 'open-palette'");
@@ -207,15 +207,33 @@ void main() {
   }
 }
 
-Future<Object?> _background(FirefoxDriver driver) => driver.evaluate(r'''new Promise((resolve, reject) => {
-  window.addEventListener('blur', event => {
-    if (event.isTrusted) resolve(document.activeElement.id);
-    else reject(Error('Firefox did not produce a trusted window blur'));
-  }, {once: true});
-  if (!window.open('/components/button', 'focus-contender', 'popup,width=260,height=180')) {
-    reject(Error('Firefox blocked the focus contender'));
-  }
-})''');
+Future<void> _background(FirefoxDriver driver, String activeId) async {
+  await driver.evaluate(r'''(() => {
+    window.contenderBlur = null;
+    window.addEventListener('keyup', () => requestAnimationFrame(() => {
+      window.addEventListener('blur', event => {
+        window.contenderBlur = {
+          trusted: event.isTrusted,
+          visible: !document.hidden,
+          focused: document.hasFocus(),
+          active: document.activeElement.id,
+        };
+      }, {once: true});
+      if (!window.open('/components/button', 'focus-contender', 'popup,width=260,height=180')) {
+        window.contenderBlur = {error: 'Firefox blocked the focus contender'};
+      }
+    }), {once: true});
+  })()''');
+  // Native End reactivates the source window while only moving the combobox caret.
+  await driver.press('End');
+  await _waitFor(driver, 'window.contenderBlur !== null');
+  expect(await driver.evaluate('window.contenderBlur'), {
+    'trusted': true,
+    'visible': true,
+    'focused': false,
+    'active': activeId,
+  });
+}
 
 Future<void> _waitFor(GateDriver driver, String expression) async {
   final deadline = DateTime.now().add(const Duration(seconds: 5));

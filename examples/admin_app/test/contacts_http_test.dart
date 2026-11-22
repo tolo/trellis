@@ -41,7 +41,7 @@ void main() {
   List<String> names(Element page) =>
       page.querySelectorAll('tbody tr[data-contact-id] td:first-child').map((cell) => cell.text.trim()).toList();
 
-  test('responses carry the strict policy and the page links the suite, htmx and indicator assets', () async {
+  test('responses carry the strict policy and load the app assets', () async {
     final page = await request('/');
     expect(page.statusCode, 200);
     expectStrictPolicy(page.headers['content-security-policy']);
@@ -49,6 +49,7 @@ void main() {
     expect(document.querySelectorAll('script').map((script) => script.attributes['src']), [
       htmxAsset,
       '/trellis-ui/trellis-ui.js',
+      searchFocusAsset,
       dateRecipeAsset,
     ]);
     expect(document.querySelectorAll('link[rel=stylesheet]').map((link) => link.attributes['href']), [
@@ -67,6 +68,7 @@ void main() {
     for (final entry in {
       ...suiteAssets,
       htmxAsset: 'text/javascript',
+      searchFocusAsset: 'text/javascript',
       dateRecipeAsset: 'text/javascript',
       callyAsset: 'text/javascript',
     }.entries) {
@@ -119,10 +121,19 @@ void main() {
         'dir': 'desc',
         'page': '2',
       });
+      final filter = await request(url, headers: {'hx-request': 'true', 'hx-trigger': 'contact-filter'});
+      expect(filter.headers['vary']?.toLowerCase(), contains('hx-trigger'));
+      expect(parseFragment(await filter.readAsString()).querySelector('#contact-query[hx-preserve]'), isNotNull);
+      expect(swap.querySelector('#contact-query[hx-preserve]'), isNull);
       expect(names(parse(await (await request(url)).readAsString()).body!), names(swap.children.single));
 
-      final restored = await request(url, headers: {'hx-request': 'true', 'hx-history-restore-request': 'true'});
-      expect(parse(await restored.readAsString()).querySelector('#directory'), isNotNull);
+      final restored = await request(
+        url,
+        headers: {'hx-request': 'true', 'hx-history-restore-request': 'true', 'hx-trigger': 'contact-filter'},
+      );
+      final restoredPage = parse(await restored.readAsString());
+      expect(restoredPage.querySelector('#directory'), isNotNull);
+      expect(restoredPage.querySelector('#contact-query[hx-preserve]'), isNull);
       final fallback = await request(
         '/contacts?status=oops&sort=bad&dir=wrong&page=90',
         headers: {'hx-request': 'true'},

@@ -19,6 +19,7 @@ const suiteAssets = {
 };
 
 const htmxAsset = '/js/htmx.min.js';
+const searchFocusAsset = '/js/search-focus.js';
 const dateRecipeAsset = '/js/contact-dates.js';
 const callyAsset = '/js/cally-0.9.2.js';
 const callyLicense = '/js/cally-0.9.2.LICENSE';

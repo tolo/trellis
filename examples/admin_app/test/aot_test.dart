@@ -55,6 +55,7 @@ void main() {
     expectStrictPolicy(page.headers['content-security-policy']);
     final document = parse(page.body);
     expect(document.querySelectorAll('tr[data-contact-id]'), hasLength(8));
+    expect(document.querySelector('script[defer][src="$searchFocusAsset"]'), isNotNull);
     expect(document.querySelector('script[type=module][src="$dateRecipeAsset"]'), isNotNull);
     for (final path in suiteAssets.keys) {
       final asset = await http.get(base.resolve(path));
@@ -67,7 +68,7 @@ void main() {
     final htmx = await http.get(base.resolve(htmxAsset));
     expect(htmx.statusCode, 200);
     expect(htmx.bodyBytes, File('static$htmxAsset').readAsBytesSync());
-    for (final path in [dateRecipeAsset, callyAsset, callyLicense]) {
+    for (final path in [searchFocusAsset, dateRecipeAsset, callyAsset, callyLicense]) {
       final asset = await http.get(base.resolve(path));
       expect(asset.statusCode, 200, reason: path);
       expectStrictPolicy(asset.headers['content-security-policy']);

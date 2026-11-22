@@ -2,7 +2,7 @@
 
 Canonical reference for understanding the Trellis SDK architecture: how the packages compose, what each package is responsible for, the dependency graph, and how a request flows through the system.
 
-**Current through**: 0.15 Popover focus return during overlay exit on 2026-11-22.
+**Current through**: 0.15 Popover dismissal and admin search focus on 2026-11-22.
 Dev reload, scaffold CSP and UI previews updated for 0.14 on 2026-11-17. `trellis dev` site
 preview, including theme watch recovery, output exclusions and startup cleanup, is current through 0.14 on
 2026-11-18. The named site source
@@ -317,6 +317,12 @@ Before HTMX serializes history, the adapter removes listeners and restores the
 pristine input and Popover markup. The same mounting path restores the live
 roots left outside the swap and the roots inserted on a cache hit or miss. Both
 start from the server-saved values.
+
+Live filter responses preserve the search input through the list swap. Safari can
+otherwise lose the accessible modal tree after HTMX pushes a history entry and
+replaces the focused input. A same-origin adapter returns focus if moving the
+preserved input dropped focus to the document body. Sort, paging and history
+restores can still replace it with the search value for their URL.
 
 ---
 

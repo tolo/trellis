@@ -3,6 +3,7 @@
 - Add Popover with trigger and content slots, four-sided viewport placement and focus return after dismissal.
 - Preserve the next control's focus when native Popover dismissal already returned focus to the trigger.
 - Escape dismisses a focused Popover inside a Safari modal before dismissing the modal itself.
+- The admin example keeps the search field through live filtering so Safari exposes subsequent contact dialogs to assistive technology.
 - Render only supplied Card copy. Omitted title, description and body slots no longer show demo text.
 - Document a labelled native date field in the Input reference.
 - Document the app-owned Cally 0.9.2 single-date and range recipe with native fallback and HTMX history recovery.

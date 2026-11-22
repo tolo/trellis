@@ -58,6 +58,22 @@ void main() {
     await browser.proveList(base);
   });
 
+  test('Back and Forward restore consecutive live search values', () async {
+    await open(await serve());
+    const query = "new URL(location.href).searchParams.get('q')";
+    const search = "document.getElementById('contact-query').value";
+    await browser.listSwap(() => browser.typeOver('#contact-query', 'Ada'), "$query === 'Ada'");
+    expect(await browser.eval('document.activeElement.id'), 'contact-query');
+    await browser.listSwap(() => browser.driver.type(' Morgan'), "$query === 'Ada Morgan'");
+
+    await browser.driver.history(-1);
+    await browser.waitFor("$query === 'Ada' && !document.querySelector('.htmx-settling')");
+    expect(await browser.eval(search), 'Ada');
+    await browser.driver.history(1);
+    await browser.waitFor("$query === 'Ada Morgan' && !document.querySelector('.htmx-settling')");
+    expect(await browser.eval(search), 'Ada Morgan');
+  });
+
   test('create and edit in a dialog with validation errors, focus and toast', () async {
     await open(await serve());
     await browser.proveCreateAndEdit();
@@ -343,7 +359,13 @@ final class _Browser {
 
   Future<void> proveList(Uri base) async {
     expect(await rows(), hasLength(8));
+    await eval("window.searchBeforeFilter = document.getElementById('contact-query')");
     await listSwap(() => typeOver('#contact-query', 'example.test'), "location.search.includes('q=example.test')");
+    expect(
+      await eval("document.getElementById('contact-query') === window.searchBeforeFilter"),
+      isTrue,
+      reason: 'Safari can lose the modal accessibility tree if the live search control is replaced during navigation',
+    );
     expect(await eval('document.activeElement.id'), 'contact-query');
     await driver.press('Tab');
     expect(await eval('document.activeElement.id'), 'contact-status');
@@ -375,6 +397,7 @@ final class _Browser {
       "location.href === ${jsonEncode(url.toString())} && document.querySelectorAll('tbody tr').length === 4",
     );
     expect(await rows(), ['Eden Ross', 'Emilia Cruz', 'Finn Patel', 'Hana Ito']);
+    expect(await eval("document.getElementById('contact-query').value"), 'example.test');
     expect(await eval('window.header !== undefined'), isTrue, reason: 'Back must restore in this document');
   }
 

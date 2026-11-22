@@ -11,7 +11,7 @@
     <input type="hidden" name="page" tl:value="${page}">
     <div>
       <input tl:replace="~{trellis-ui/field :: field('contact-query', 'Search contacts')}"
-        type="search" name="q" tl:value="${q}">
+        type="search" name="q" tl:value="${q}" tl:attr="hx-preserve=${preserveSearch ? 'true' : null}">
     </div>
     <div class="admin-control">
       <label tl:replace="~{trellis-ui/field :: label('contact-status')}">Status</label>

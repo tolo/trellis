@@ -170,7 +170,7 @@ its bytes to the committed record.
 
 Release limits are 30,000 bytes for the sum of the three embedded responses gzipped separately at level 9
 and 50 authored CSS lines in the admin example. Its exact script inventory is HTMX, the pinned Cally 0.9.2
-bundle and the app's date recipe module. The footprint check pins the vendor bytes and checks templates for strict CSP. Run `test/release_gates_test.dart` from `packages/trellis_ui/`, and
+bundle, the date recipe and the live search focus adapter. The footprint check pins the vendor bytes and checks templates for strict CSP. Run `test/release_gates_test.dart` from `packages/trellis_ui/`, and
 `test/footprint_test.dart` from `examples/admin_app/`.
 
 Harness fixture tests are untagged in branch CI and the full tier. A test running the full gate over real component

@@ -64,7 +64,7 @@ button | unsupported | safari
     }
   });
 
-  test('app CSS stays within 50 lines and only the pinned calendar recipe adds scripts', () {
+  test('app CSS stays within 50 lines and static scripts match the app inventory', () {
     final files = filesUnder('static');
     int sourceLines(File file) => file
         .readAsStringSync()
@@ -87,7 +87,7 @@ button | unsupported | safari
           .where((file) => RegExp(r'\.(?:[cm]?js)$', caseSensitive: false).hasMatch(file.path))
           .map((file) => file.path),
       unorderedEquals([
-        for (final asset in [htmxAsset, dateRecipeAsset, callyAsset]) 'static$asset',
+        for (final asset in [htmxAsset, dateRecipeAsset, callyAsset, searchFocusAsset]) 'static$asset',
       ]),
     );
     expect(sha256.convert(File('static$callyAsset').readAsBytesSync()).toString(), callySha256);

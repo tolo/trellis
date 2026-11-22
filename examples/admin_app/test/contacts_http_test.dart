@@ -123,8 +123,8 @@ void main() {
       });
       final filter = await request(url, headers: {'hx-request': 'true', 'hx-trigger': 'contact-filter'});
       expect(filter.headers['vary']?.toLowerCase(), contains('hx-trigger'));
-      expect(parseFragment(await filter.readAsString()).querySelector('#contact-query[hx-preserve]'), isNotNull);
-      expect(swap.querySelector('#contact-query[hx-preserve]'), isNull);
+      expect(parseFragment(await filter.readAsString()).querySelector('#contact-filter[hx-preserve]'), isNotNull);
+      expect(swap.querySelector('#contact-filter[hx-preserve]'), isNull);
       expect(names(parse(await (await request(url)).readAsString()).body!), names(swap.children.single));
 
       final restored = await request(
@@ -133,7 +133,7 @@ void main() {
       );
       final restoredPage = parse(await restored.readAsString());
       expect(restoredPage.querySelector('#directory'), isNotNull);
-      expect(restoredPage.querySelector('#contact-query[hx-preserve]'), isNull);
+      expect(restoredPage.querySelector('#contact-filter[hx-preserve]'), isNull);
       final fallback = await request(
         '/contacts?status=oops&sort=bad&dir=wrong&page=90',
         headers: {'hx-request': 'true'},

@@ -235,8 +235,12 @@
       ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Both calendar popovers closed before the Edit contact dialog, then Escape restored the row Actions control.",
+        "Two live filter swaps kept keyboard focus on Search contacts. Back and Forward restored the applied search and status and their matching rows.",
+        "After Save and after Forward, the New contact dialog rendered with Name focused. The native macOS accessibility API exposed the focused Name text field, the named application dialog and its heading in both journeys."
+      ]
     }
   }
 }

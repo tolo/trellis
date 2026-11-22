@@ -64,11 +64,11 @@ final class _Contacts {
   Future<Response> list(Request request) async {
     const vary = 'HX-Request, HX-History-Restore-Request, HX-Trigger';
     final query = _query(request);
-    final context = {...query.toContext(), 'summary': _summary, 'summaryOob': false, 'preserveSearch': false};
+    final context = {...query.toContext(), 'summary': _summary, 'summaryOob': false, 'preserveFilter': false};
     if (isHtmxRequest(request) && request.headers['hx-history-restore-request'] != 'true') {
       final result = await renderFragment(request, 'list', 'list', {
         ...context,
-        'preserveSearch': request.headers['hx-trigger'] == 'contact-filter',
+        'preserveFilter': request.headers['hx-trigger'] == 'contact-filter',
       });
       return result.change(headers: {'HX-Push-Url': query.url(), 'Vary': vary});
     }
@@ -153,7 +153,7 @@ final class _Contacts {
 
   Future<Response> _mutation(Request request, String title, String name, {int? savedId}) async {
     final query = _query(request, savedId: savedId);
-    final context = {...query.toContext(), 'summary': _summary, 'summaryOob': true, 'preserveSearch': false};
+    final context = {...query.toContext(), 'summary': _summary, 'summaryOob': true, 'preserveFilter': false};
     final engine = getEngine(request);
     final list = await engine.renderFileFragment('list', fragment: 'list', context: context);
     final summary = await engine.renderFileFragment('summary', fragment: 'summary', context: context);

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -22,11 +23,12 @@ void main() {
     addTearDown(browser.driver.close);
   });
 
-  Future<Uri> serve([Directory? root]) async {
+  Future<Uri> serve({Directory? root, Future<void> Function(Uri)? beforeResponse}) async {
     final app = createAdminApp(root ?? Directory.current, csrfSecret: 'browser-test-secret');
     addTearDown(app.close);
     final server = await shelf_io.serve(
       (request) async {
+        await beforeResponse?.call(request.requestedUri);
         final response = await app.handler(request);
         final path = request.requestedUri.path;
         if (path == '/' || path.startsWith('/contacts') || path == '/companies') {
@@ -58,7 +60,7 @@ void main() {
     await browser.proveList(base);
   });
 
-  test('Back and Forward restore consecutive live search values', () async {
+  test('Back and Forward restore the applied search and status filters', () async {
     await open(await serve());
     const query = "new URL(location.href).searchParams.get('q')";
     const search = "document.getElementById('contact-query').value";
@@ -72,6 +74,60 @@ void main() {
     await browser.driver.history(1);
     await browser.waitFor("$query === 'Ada Morgan' && !document.querySelector('.htmx-settling')");
     expect(await browser.eval(search), 'Ada Morgan');
+    await browser.rememberShell();
+
+    const status = "new URL(location.href).searchParams.get('status')";
+    const select = "document.getElementById('contact-status').value";
+    await browser.click('#contact-status');
+    await browser.listSwap(() => browser.driver.press('a'), "$status === 'active'");
+    expect(await browser.rows(), ['Ada Morgan']);
+    await browser.listSwap(() async {
+      await browser.eval('''(() => {
+        const status = document.getElementById('contact-status');
+        status.value = 'pending';
+        status.dispatchEvent(new Event('change', { bubbles: true }));
+      })()''');
+    }, "$status === 'pending'");
+    expect(await browser.rows(), isEmpty);
+
+    await browser.driver.history(-1);
+    await browser.waitFor("$status === 'active' && !document.querySelector('.htmx-settling')");
+    expect(await browser.eval(select), 'active');
+    expect(await browser.eval(search), 'Ada Morgan');
+    expect(await browser.rows(), ['Ada Morgan']);
+    await browser.driver.history(1);
+    await browser.waitFor("$status === 'pending' && !document.querySelector('.htmx-settling')");
+    expect(await browser.eval(select), 'pending');
+    expect(await browser.eval(search), 'Ada Morgan');
+    expect(await browser.rows(), isEmpty);
+  });
+
+  test('a newer query is sent after an in-flight live filter', () async {
+    final firstRequest = Completer<void>();
+    final releaseFirstResponse = Completer<void>();
+    await open(
+      await serve(
+        beforeResponse: (uri) async {
+          if (uri.path == '/contacts' && uri.queryParameters['q'] == 'example') {
+            firstRequest.complete();
+            await releaseFirstResponse.future;
+          }
+        },
+      ),
+    );
+    try {
+      await browser.typeOver('#contact-query', 'example');
+      await firstRequest.future.timeout(const Duration(seconds: 5));
+      await browser.driver.type('.test Ada');
+      // Let the input debounce fire while the first request still owns the form.
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+    } finally {
+      releaseFirstResponse.complete();
+    }
+
+    await browser.waitFor("new URL(location.href).searchParams.get('q') === 'example.test Ada'");
+    expect(await browser.rows(), isEmpty);
+    expect(await browser.eval('document.activeElement.id'), 'contact-query');
   });
 
   test('create and edit in a dialog with validation errors, focus and toast', () async {
@@ -150,8 +206,8 @@ void main() {
 .dark { --primary: #e4a938; --radius: 0px; }
 ''', mode: FileMode.append);
 
-    final unchanged = await serve(original);
-    final customized = await serve(themed);
+    final unchanged = await serve(root: original);
+    final customized = await serve(root: themed);
     Future<List<Object?>> measure(Uri base, {required bool dark}) async {
       await open(base);
       expect(await browser.driver.media(reducedMotion: true), isTrue);
@@ -364,7 +420,7 @@ final class _Browser {
     expect(
       await eval("document.getElementById('contact-query') === window.searchBeforeFilter"),
       isTrue,
-      reason: 'Safari can lose the modal accessibility tree if the live search control is replaced during navigation',
+      reason: 'live filtering must keep the field the user is typing into',
     );
     expect(await eval('document.activeElement.id'), 'contact-query');
     await driver.press('Tab');
@@ -388,6 +444,7 @@ final class _Browser {
 
     await listSwap(() => typeOver('#contact-query', 'unmatched'), "location.search.includes('q=unmatched')");
     expect(await rows(), isEmpty);
+    expect(await eval("document.querySelector('#contact-filter [name=page]').value"), '1');
     expect(
       await eval("document.querySelector('#contact-list [role=status]').textContent"),
       'No contacts match these filters.',

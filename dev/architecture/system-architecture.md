@@ -318,10 +318,10 @@ pristine input and Popover markup. The same mounting path restores the live
 roots left outside the swap and the roots inserted on a cache hit or miss. Both
 start from the server-saved values.
 
-Live filter responses preserve the search input through the list swap. A
-same-origin adapter returns focus if moving the preserved input dropped focus
-to the document body. Sort, paging and history restores can still replace the
-field with the search value for their URL.
+Live filter responses preserve the form through the list swap so HTMX can run
+queued filter requests. The adapter records applied values for history and
+returns focus if moving the form dropped it to the document body. Sort, paging
+and history restores replace the form with values for their URL.
 
 ---
 

@@ -66,6 +66,11 @@ states: {default: []}
     final driver = await FirefoxDriver.launch();
     addTearDown(driver.close);
     final capture = await captureAppearance(GateSession(manifest, driver, server.baseUrl));
+    expect(
+      driver.requests,
+      contains(server.baseUrl.resolve('/next.html?fixture=visible-background-blur').toString()),
+      reason: 'The focus-visible capture must background the visible source with its input still active.',
+    );
     final state = (capture['states'] as Map)['default/focus-visible:input'] as Map;
     final style = ((state['elements'] as Map)['input'] as Map)['style'] as Map;
     expect(style['outlineStyle'], 'solid');

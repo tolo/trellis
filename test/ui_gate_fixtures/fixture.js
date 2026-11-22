@@ -38,12 +38,31 @@ if(defect==='wrong-region') {
   const other=document.createElement('div');other.id='wrong-region';document.body.append(other);
   document.getElementById('swap').setAttribute('hx-target','#wrong-region');
 }
-if(defect==='background-focus')document.getElementById('name').addEventListener('focus',()=>{
-  if(window.fixtureBackgrounded)return;window.fixtureBackgrounded=true;
-  let frame=0;const background=()=>{if(++frame<6)requestAnimationFrame(background);
-    else window.fixtureOther=window.open('/next.html','focus-contender');};
-  requestAnimationFrame(background);
-});
+if (defect === 'background-focus') {
+  const input = document.getElementById('name');
+  let keyboardFocus = false;
+  window.addEventListener('keydown', event => {
+    if (event.isTrusted && event.key === 'Tab') keyboardFocus = true;
+  }, {capture: true});
+  input.addEventListener('focus', () => {
+    if (!keyboardFocus) return;
+    let frame = 0;
+    const background = () => {
+      if (++frame < 6) {
+        requestAnimationFrame(background);
+        return;
+      }
+      window.addEventListener('blur', event => {
+        if (event.isTrusted && !document.hidden && !document.hasFocus() && document.activeElement === input) {
+          navigator.sendBeacon('/next.html?fixture=visible-background-blur');
+        }
+      }, {once: true});
+      // A new tab can pause animation frames in the document being measured.
+      window.open('/next.html', 'focus-contender', 'popup,width=260,height=180');
+    };
+    requestAnimationFrame(background);
+  }, {once: true});
+}
 // Native focus recovery can fire focus again while the first sequence is settling.
 if(defect==='late-outline')document.getElementById('name').addEventListener('focus',()=>{
   let frame=0;const input=document.getElementById('name');

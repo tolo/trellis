@@ -224,8 +224,10 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “Primary unchecked tickbox checkbox examples region”, “checked Primary tickbox”, “unchecked Primary tickbox” and “Invalid invalid data unchecked tickbox”."
+      ]
     },
     "screen-reader-nvda-firefox": {
       "status": "pass",

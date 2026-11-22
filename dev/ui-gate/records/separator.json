@@ -224,8 +224,10 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “Account”, “horizontal separator”, “Settings”, “vertical splitter” and “Profile”."
+      ]
     },
     "screen-reader-nvda-firefox": {
       "status": "pass",

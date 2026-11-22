@@ -224,8 +224,10 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “Default button button examples region”, “Outline button”, “icon button”, “icon-lg button”, “Disabled dimmed button” and “Starting… website button busy dimmed button”."
+      ]
     },
     "screen-reader-nvda-firefox": {
       "status": "pass",

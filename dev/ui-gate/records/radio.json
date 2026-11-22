@@ -224,8 +224,10 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “Primary radio button, 1 of 1 Choice group”, “selected Primary radio button, 1 of 1” and “Invalid invalid data radio button, 1 of 1 Choice group”."
+      ]
     },
     "screen-reader-nvda-firefox": {
       "status": "pass",

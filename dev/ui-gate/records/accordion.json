@@ -224,8 +224,10 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 read “Delivery expanded summary Accordion examples region”, its “Orders ship within two working days.” content and “Returns collapsed summary”."
+      ]
     },
     "screen-reader-nvda-firefox": {
       "status": "pass",

@@ -224,14 +224,18 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 read the named Edit and New contact dialogs and their Name field in the live search and Save flow. After Forward, VoiceOver Right read “New contact web dialogue with 6 items”, then Name was read on focus. Cancel restored New contact focus.",
+        "VoiceOver read both the “Choose appointment date” and “Choose availability dates” dialogs, the November 2026 calendar tables and the “22 november current date button”."
+      ]
     },
     "screen-reader-nvda-firefox": {
       "status": "pass",
       "evidence": [
         "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Contacts and Summary announce selection, and the table announces its headers and row labels. New contact opens through HTMX and announces its form controls. Both pickers announce their names, month, calendar table and the current date. Escape from each returns to its collapsed trigger while New contact remains active. Outer Escape returns focus to New contact. The installed synthesizer reports Swedish unsupported, and reads the Swedish calendar text in its available voice.",
-        "Live filtering retained Search contacts focus from Ada through Ada Morgan without refocusing. NVDA announced the Edit contact and New contact dialogs and their focused Name fields. Escape returned focus to Actions for Ada Morgan and New contact, respectively."
+        "Live filtering retained Search contacts focus from Ada through Ada Morgan without refocusing. NVDA announced the Edit contact and New contact dialogs and their focused Name fields. Escape returned focus to Actions for Ada Morgan and New contact, respectively.",
+        "The final preserved-form replay again announced both live search values and the focused Name field in Edit contact and New contact."
       ]
     },
     "safari": {

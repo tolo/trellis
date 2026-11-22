@@ -224,8 +224,10 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “Saved”, “Your changes are saved.”, “Could not save”, “Check the highlighted fields.” and “Background task”."
+      ]
     },
     "screen-reader-nvda-firefox": {
       "status": "pass",

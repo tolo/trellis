@@ -224,8 +224,10 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “current page link Page 3 list 6 items”, “link Page 2” and “visited link Page 2 list 6 items”."
+      ]
     },
     "screen-reader-nvda-firefox": {
       "status": "pass",

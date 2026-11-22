@@ -224,8 +224,10 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “Email Use a work address. email field with autofill menu field examples region” and “Email with an error Use a work address. invalid data email field with autofill menu”."
+      ]
     },
     "screen-reader-nvda-firefox": {
       "status": "pass",

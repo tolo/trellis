@@ -224,8 +224,10 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 read Fruit as a collapsible combo box. Filtering for ap announced “2 results available”. Selecting Apple announced “collapsed Apple” and “Apple Fruit list box pop up collapsed combo box has keyboard focus”."
+      ]
     },
     "screen-reader-nvda-firefox": {
       "status": "pass",

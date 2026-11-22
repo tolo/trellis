@@ -224,8 +224,10 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “Primary text entry area has keyboard focus” and “Invalid invalid data text entry area has keyboard focus”."
+      ]
     },
     "screen-reader-nvda-firefox": {
       "status": "pass",

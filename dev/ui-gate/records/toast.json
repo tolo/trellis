@@ -226,8 +226,10 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 reached the new Notifications region after activating Show notification. VoiceOver navigation announced “Changes saved”, “Your changes are ready.” and “Dismiss notification button Notifications region”. Dismiss removed the notification."
+      ]
     },
     "screen-reader-nvda-firefox": {
       "status": "pass",

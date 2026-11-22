@@ -224,8 +224,10 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 announced the + button. VoiceOver activation updated the counter to “1” and rerouting keyboard focus announced “+ button has keyboard focus”."
+      ]
     },
     "screen-reader-nvda-firefox": {
       "status": "pass",

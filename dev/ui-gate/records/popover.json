@@ -224,8 +224,10 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “heading level 2 Display options Options web dialogue”, “10 contents selected Rows per page incrementable number field” and “Options dialog pop up button”."
+      ]
     },
     "screen-reader-nvda-firefox": {
       "status": "pass",

@@ -224,8 +224,10 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “Page links web dialogue with 8 items link Jump to details”, “Note edit text”, “Close button” and “Open right sheet dialog pop up button”."
+      ]
     },
     "screen-reader-nvda-firefox": {
       "status": "pass",

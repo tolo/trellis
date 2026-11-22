@@ -224,8 +224,10 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “Primary off switch switch examples region”, “on Primary switch”, “off Primary switch” and “Invalid invalid data off switch”."
+      ]
     },
     "screen-reader-nvda-firefox": {
       "status": "pass",

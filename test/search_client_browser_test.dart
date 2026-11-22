@@ -268,11 +268,7 @@ void main() {
               isTrue,
               reason: '${driver.name}: scrollable results leave the close target exposed',
             );
-            await driver.press('ArrowUp');
-            // Deliver a resize after selection, as with a deferred viewport resize notification.
-            await driver.evaluate("window.dispatchEvent(new Event('resize'))");
-            expect(
-              await driver.evaluate(r'''(() => {
+            const lastResultVisible = r'''(() => {
                 const popup = document.getElementById('lattice-command-query-popup');
                 const list = document.getElementById('lattice-command-query-listbox');
                 const last = list.lastElementChild;
@@ -280,9 +276,24 @@ void main() {
                 const option = last.getBoundingClientRect();
                 return document.activeElement.getAttribute('aria-activedescendant') === last.id &&
                   option.top >= panel.top && option.bottom <= panel.bottom && (popup.scrollTop > 0 || list.scrollTop > 0);
-              })()'''),
+              })()''';
+            await driver.press('ArrowUp');
+            // Deliver a resize after selection, as with a deferred viewport resize notification.
+            await driver.evaluate("window.dispatchEvent(new Event('resize'))");
+            expect(
+              await driver.evaluate(lastResultVisible),
               isTrue,
               reason: '${driver.name}: the last result scrolls into view',
+            );
+            await driver.evaluate(r'''
+              window.addEventListener('resize', () => { window.paletteResizeHeight = innerHeight; })
+            ''');
+            await driver.viewport(width == 390 ? 320 : width, 425);
+            await waitForThemeBrowser(driver, 'window.paletteResizeHeight === 425');
+            expect(
+              await driver.evaluate(lastResultVisible),
+              isTrue,
+              reason: '${driver.name}: the active result stays visible when the viewport shrinks',
             );
             await driver.press('Escape');
             await waitForThemeBrowser(driver, "!($modal) && document.activeElement.matches('.skip-to-content')");

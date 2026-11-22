@@ -71,7 +71,7 @@ class TlDialog extends TlElement {
     const media = Number.isFinite(width) && width >= 0 ? matchMedia(`(width > ${width}px)`) : null;
     if (media) this.listen(media, 'change', setInline);
     setInline(media ?? { matches: false });
-    // Text-only HTMX swaps do not emit afterSettle on replacement content.
+    // Text-only swaps have no afterSettle target.
     const recoverFocus = new MutationObserver((changes) => {
       if (dialog.matches(':modal') && !dialog.contains(document.activeElement) &&
           changes.some(change => change.removedNodes.length)) {
@@ -90,21 +90,25 @@ class TlDialog extends TlElement {
 
   tabStops() {
     const candidates = this.dialog.querySelectorAll('a[href], button, input, select, textarea, summary, [tabindex], [contenteditable]');
-    const stops = Array.from(candidates).filter((element) => element.tabIndex >= 0 &&
-      !element.matches(':disabled') && !element.closest('[inert]') && element.checkVisibility({ visibilityProperty: true }));
+    const stops = [...candidates].filter(element => {
+      // Editing hosts may report tabIndex -1.
+      const editable = element.isContentEditable && !element.hasAttribute('tabindex') && !element.parentElement.isContentEditable;
+      if ((element.tabIndex < 0 && !editable) || element.matches(':disabled') || element.closest('[inert]')) return false;
+      const { visibility, interactivity } = getComputedStyle(element);
+      return visibility === 'visible' && interactivity !== 'inert' && element.checkVisibility();
+    });
     const active = document.activeElement;
-    // A radio group's selected or focused member is its tab stop.
     return stops.filter(radio => radio.type !== 'radio' || !radio.name || radio === active || !stops.some(other =>
       other.type === radio.type && other.name === radio.name && other.form === radio.form &&
       (other === active || other.checked && !radio.checked)
-    )).sort((a, b) => (a.tabIndex || Infinity) - (b.tabIndex || Infinity));
+    )).sort((a, b) => (Math.max(a.tabIndex, 0) || Infinity) - (Math.max(b.tabIndex, 0) || Infinity));
   }
 
   cycleTab(event) {
     const dialog = this.dialog;
     if (event.key !== 'Tab' || event.defaultPrevented || event.target.closest('dialog') !== dialog ||
         !dialog.matches(':modal')) return;
-    // Native modality still lets Tab reach browser chrome.
+    // Tab can reach browser chrome.
     const tabs = this.tabStops();
     const [from, to] = event.shiftKey ? [tabs[0], tabs.at(-1)] : [tabs.at(-1), tabs[0]];
     if (event.target !== from) return;
@@ -132,7 +136,7 @@ class TlDialog extends TlElement {
     this.opener = document.getElementById(dialog.dataset.returnFocus) || opener;
     if (dialog.hasAttribute('data-command-palette')) dialog.querySelector('tl-combobox').resetQuery();
     if (this.sheet) {
-      // Keep native focus restoration from overriding Sheet link navigation.
+      // Avoid restoring focus on link dismissal.
       document.activeElement?.blur();
     }
     dialog.showModal();

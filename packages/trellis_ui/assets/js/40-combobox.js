@@ -2,7 +2,7 @@ const optionSelector = '[role="option"]';
 
 class TlCombobox extends TlElement {
   onConnect() {
-    // Palette results must leave the modal's title and close button exposed.
+    // Flipped results can cover the palette's close button.
     this.placement = { flip: !this.palette };
     this.setOpen(false);
     this.listen(this.input, 'input', () => {
@@ -10,7 +10,7 @@ class TlCombobox extends TlElement {
       this.filterLocalOptions();
       const hasText = Boolean(this.input.value.trim());
       if (!this.input.matches('[hx-get], [data-hx-get]')) return this.setOpen(hasText);
-      // An editing action must not select from a previous search or its in-flight response.
+      // Discard stale results on edit.
       this.input.dispatchEvent(new CustomEvent('htmx:abort', { bubbles: true, detail: { elt: this.input } }));
       this.listbox.replaceChildren();
       this.setOpen(false);
@@ -18,7 +18,7 @@ class TlCombobox extends TlElement {
     });
     this.listen(this.input, 'keydown', (event) => this.keydown(event));
     this.listen(this.input, 'focusout', event => {
-      // Firefox can report focusout when the window loses focus and the input remains active.
+      // Firefox can fire focusout on window blur without moving focus.
       if (!event.relatedTarget && document.activeElement === this.input && !document.hasFocus()) return;
       this.setOpen(false);
     });
@@ -44,10 +44,14 @@ class TlCombobox extends TlElement {
         applyResults();
       });
     }
-    // HTMX replaces the results node, so observe its stable parent.
+    // HTMX replaces the listbox.
     this.observer = new MutationObserver(applyResults);
     this.observer.observe(this.popup, { childList: true });
     this.trackPopup(this.input.parentElement, this.popup, this.placement);
+    // Reveal the selection after trackPopup applies the new cap.
+    if (this.palette) this.listen(window, 'resize', () => {
+      this.listbox.querySelector('[aria-selected=true]')?.scrollIntoView({ block: 'nearest' });
+    });
   }
 
   onDisconnect() { this.observer.disconnect(); }
@@ -110,7 +114,7 @@ class TlCombobox extends TlElement {
       this.setOpen(false);
       return;
     }
-    // Firefox on macOS can otherwise scroll the page on unmodified Home/End.
+    // Home/End can scroll the page in Firefox on macOS.
     if ((key === 'Home' || key === 'End') && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
       event.preventDefault();
       const cursor = key === 'Home' ? 0 : this.input.value.length;

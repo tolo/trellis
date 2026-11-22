@@ -12,7 +12,7 @@
 - Lattice and the docs site use Navigation menu, Accordion, Sheet, and Tooltip. Meadow closes its mobile
   Sheet on navigation. Both themes resolve the saved skin before paint under strict CSP.
 - Inline Sheets allow Tab to leave the panel.
-- Modal focus wrapping skips collapsed disclosure content and follows the selected radio in each group.
+- Modal focus wrapping follows selected radios and editable regions, and skips collapsed or inert content.
 - Add Command palette with a modal local picker, guarded keyboard shortcut, selection event, and focus return.
 - Keep the highlighted palette result in view when the results panel is repositioned.
 - Dropdown menus support nested actions with keyboard and pointer navigation.

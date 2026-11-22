@@ -158,6 +158,45 @@ void main() {
     expect(await driver.evaluate("document.activeElement.matches('$close')"), isTrue);
   });
 
+  test('Sheet wraps focus through a trailing editable region with no explicit tabindex', () async {
+    await driver.open(page);
+    await openRight();
+    await driver.evaluate('''(() => {
+      const editor = document.createElement('div');
+      editor.contentEditable = 'true';
+      editor.id = 'sheet-editor';
+      editor.innerHTML = '<span contenteditable="true">Editable notes</span>';
+      $dialog.append(editor);
+      editor.focus();
+    })()''');
+    expect(await driver.evaluate('document.activeElement.id'), 'sheet-editor');
+    await driver.press('Tab');
+    expect(await driver.evaluate('document.activeElement.id'), 'right-jump');
+    await reverseTab();
+    expect(await driver.evaluate('document.activeElement.id'), 'sheet-editor');
+    await driver.evaluate("document.getElementById('sheet-editor').tabIndex = -1");
+    await driver.evaluate("document.getElementById('right-jump').focus()");
+    await reverseTab();
+    expect(await driver.evaluate("document.activeElement.matches('$close')"), isTrue);
+  });
+
+  test('Sheet wraps past controls made inert by CSS', () async {
+    await driver.open(page);
+    await openRight();
+    await driver.evaluate('''(() => {
+      const section = document.createElement('section');
+      section.style.interactivity = 'inert';
+      section.innerHTML = '<button>Inactive control</button>';
+      $dialog.append(section);
+      document.querySelector('$close').focus();
+    })()''');
+    expect(await driver.evaluate("document.activeElement.matches('$close')"), isTrue);
+    await driver.press('Tab');
+    expect(await driver.evaluate('document.activeElement.id'), 'right-jump');
+    await reverseTab();
+    expect(await driver.evaluate("document.activeElement.matches('$close')"), isTrue);
+  });
+
   test('Escape, Close and backdrop update state and restore trigger focus', () async {
     await driver.open(page);
     for (final action in ['escape', 'close', 'backdrop']) {

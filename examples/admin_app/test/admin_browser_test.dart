@@ -78,16 +78,18 @@ void main() {
 
     const status = "new URL(location.href).searchParams.get('status')";
     const select = "document.getElementById('contact-status').value";
-    await browser.click('#contact-status');
-    await browser.listSwap(() => browser.driver.press('a'), "$status === 'active'");
-    expect(await browser.rows(), ['Ada Morgan']);
-    await browser.listSwap(() async {
+    // Native select menus commit typed choices differently across platforms.
+    Future<void> changeStatus(String value) => browser.listSwap(() async {
       await browser.eval('''(() => {
         const status = document.getElementById('contact-status');
-        status.value = 'pending';
+        status.value = ${jsonEncode(value)};
         status.dispatchEvent(new Event('change', { bubbles: true }));
       })()''');
-    }, "$status === 'pending'");
+    }, '$status === ${jsonEncode(value)}');
+
+    await changeStatus('active');
+    expect(await browser.rows(), ['Ada Morgan']);
+    await changeStatus('pending');
     expect(await browser.rows(), isEmpty);
 
     await browser.driver.history(-1);

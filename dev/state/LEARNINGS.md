@@ -96,6 +96,9 @@ Templates are parsed by `package:html` (a spec-compliant HTML5 parser) *before* 
 
 ## Testing
 
+- **Closed `details` content can still have layout boxes.** Check browser visibility and keep concealment native.
+  Applying `display: none` to the contents blocked Chromium from opening an Accordion answer for a text-fragment link.
+
 - **Nested HTMX settles can end a parent-region probe early.** An options response inside a combobox satisfies
   a containing selector's settle event. Wait for those options to settle before starting the surrounding gallery
   swap, then confirm the original surrounding node disconnected. See the combobox qualification recipe.

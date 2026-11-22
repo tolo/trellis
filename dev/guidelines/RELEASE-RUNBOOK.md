@@ -85,6 +85,9 @@ browser pass. Replace the corresponding `release-prep` values with the observed 
 manual checks after a change to the affected markup or behaviour. The owner reviews each sync disposition and
 records `Owner review: pass` in the sync report.
 
+Bring Safari to the macOS foreground before checking VoiceOver. Record speech with the Copy Last Phrase command.
+[Apple VoiceOver User Guide](https://support.apple.com/guide/voiceover/vo2725/mac)
+
 An actual failure in Dialog, Dropdown Menu, Combobox, Command Palette, Popover, Tabs, Toast or an app surface blocks
 release. Fix it and rerun its automated and manual checks. After a Popover failure, rerun the affected dependent checks
 as well.

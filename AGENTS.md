@@ -127,8 +127,14 @@ git history do not carry it, and it outlives the current initiative. -->``.
   waits for the next branch.
 - **Lockstep versioning (ADR-009).** All publishable packages share one version and release together — never
   bump a single package on its own. Pre-1.0: minor for features, patch for fixes, applied to the whole SDK.
-- **Releases follow [`dev/guidelines/RELEASE-RUNBOOK.md`](dev/guidelines/RELEASE-RUNBOOK.md):** review → squash-merge →
-  CI green → `tool/release.sh X.Y.Z` on `main` → push the tag (the one manual, irreversible step). Nothing else.
+- **Run release prep when invoking `andthen:ship`.** Follow the applicable feature-branch steps in the
+  [release runbook](dev/guidelines/RELEASE-RUNBOOK.md#0-on-the-feature-branch--before-asking-for-a-merge),
+  including [Trellis UI qualification](dev/guidelines/RELEASE-RUNBOOK.md#trellis-ui-release-prep).
+  Record the evidence and obtain any manual results and signoffs before deleting the plan bundle, pushing the
+  branch, or opening the PR. If a required item is pending, report it and pause publication.
+- **Releases follow the [release runbook](dev/guidelines/RELEASE-RUNBOOK.md).** Complete feature-branch prep and
+  review before the squash merge. After CI passes on `main`, run `tool/release.sh X.Y.Z` there and push the tag
+  as the deliberate publishing step.
 - **Keep architecture docs current.** When a change adds/modifies/removes a subsystem, protocol, or
   pipeline stage, update the affected doc in `dev/architecture/` in the same change and bump its
   "Current through" marker, redraw any affected SVG diagram, and write or amend the ADR when a recorded decision

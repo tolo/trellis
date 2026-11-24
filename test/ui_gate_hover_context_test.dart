@@ -113,14 +113,16 @@ states:
     }, timeout: const Timeout(Duration(minutes: 2)));
   }
 
-  for (final (mode, description) in [
-    ('once', 'replays visible recipe blur and retains diagnostics'),
-    ('dismiss', 'keeps an in-page recipe failure'),
-    ('synthetic', 'ignores a synthetic blur'),
-    ('script-error', 'keeps an evaluated script error after visible blur'),
-    ('always', 'fails after three visible interruptions'),
+  for (final (measurement, mode, description) in [
+    ('appearance', 'once', 'replays visible recipe blur and retains diagnostics'),
+    ('appearance', 'dismiss', 'keeps an in-page recipe failure'),
+    ('appearance', 'synthetic', 'ignores a synthetic blur'),
+    ('appearance', 'script-error', 'keeps an evaluated script error after visible blur'),
+    ('appearance', 'always', 'fails after three visible interruptions'),
+    ('responsive', 'once', 'replays visible recipe blur'),
+    ('touch-target', 'once', 'replays visible recipe blur'),
   ]) {
-    test('Firefox appearance $description', () async {
+    test('Firefox $measurement $description', () async {
       if (FirefoxDriver.locateFirefox() == null || FirefoxDriver.locateGeckodriver() == null) {
         markTestSkipped('Firefox or geckodriver not installed');
         return;
@@ -132,7 +134,7 @@ states:
       File('${root.path}/visible-blur').writeAsStringSync('Observed actual visible blur');
       File('${root.path}/index.html').writeAsStringSync('''
 <!doctype html><title>Native End fixture</title>
-<style>#last[data-highlighted] { color: green; }</style>
+<style>button { min-width: 44px; min-height: 44px; } #last[data-highlighted] { color: green; }</style>
 <main><button id="first">First</button><button id="last">Destructive</button></main>
 <script>
 const last = document.getElementById('last'), mode = '$mode';
@@ -200,8 +202,19 @@ states:
 '''),
       );
       final session = GateSession(manifest, driver, server.baseUrl);
-      final result = captureAppearance(session);
       Iterable<String> interruptions() => driver.requests.where((url) => Uri.parse(url).path == '/visible-blur');
+      final geometry = switch (measurement) {
+        'responsive' => session.reflow([390]),
+        'touch-target' => session.touchTargets(),
+        _ => null,
+      };
+      if (geometry != null) {
+        final measured = await geometry;
+        expect(measured.status, 'pass', reason: measured.evidence.join('\n'));
+        expect(interruptions(), hasLength(measurement == 'touch-target' ? 2 : 1));
+        return;
+      }
+      final result = captureAppearance(session);
       if (mode != 'once') {
         final errorText = mode == 'script-error'
             ? 'interrupted recipe script error'

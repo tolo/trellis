@@ -4,6 +4,7 @@ import 'dart:io';
 import '../visual_baseline.dart';
 
 import 'driver.dart';
+import 'firefox.dart';
 import 'manifest.dart';
 
 /// Policy used by fixture servers and checked on the target page.
@@ -103,6 +104,23 @@ final class GateSession {
         'condition did not read back: coarse=$coarse forced-colors=$forcedColors reduced-motion=$reducedMotion dark=$dark',
       );
     await steps(manifest.steps(manifest.states[state]), label: 'state $state');
+  }
+
+  /// Replays a measurement interrupted by trusted blur in a visible Firefox window.
+  /// Remove the retry when Firefox can hold activation throughout a recipe.
+  Future<void> configureForMeasurement(String state, {bool coarse = false, bool dark = false}) async {
+    for (var attempt = 1; ; attempt++) {
+      try {
+        await configure(state, coarse: coarse, dark: dark);
+        return;
+      } on GateConditionError {
+        if (driver is! FirefoxDriver ||
+            attempt == 3 ||
+            await driver.evaluate('window.__uiGate.lostVisibleFocus && !document.hasFocus()') != true) {
+          rethrow;
+        }
+      }
+    }
   }
 
   /// Declarative input is shared by both browser drivers.
@@ -367,7 +385,7 @@ final class GateSession {
     for (final width in widths) {
       await driver.viewport(width, 900);
       for (final state in manifest.states.keys) {
-        await load(state);
+        await configureForMeasurement(state);
         final actualWidth = await driver.evaluate('innerWidth');
         if (actualWidth != width) throw UnsupportedCondition('viewport $width did not read back: $actualWidth');
         final issues =
@@ -412,7 +430,7 @@ final class GateSession {
     for (final coarse in [false, true]) {
       final minimum = coarse ? 44 : 24;
       for (final state in manifest.states.keys) {
-        await configure(state, coarse: coarse);
+        await configureForMeasurement(state, coarse: coarse);
         final issues =
             await driver.evaluate('''(() => {
           const root=document.querySelector(${jsonEncode(manifest.root)}),issues=[];

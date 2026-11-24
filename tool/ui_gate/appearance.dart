@@ -80,27 +80,14 @@ Future<Map<String, Object?>> captureAppearance(
   }
 
   Future<void> loadState(String state, {bool dark = false}) async {
-    // A visible Firefox window can lose focus during the native recipe itself.
-    // Replay only that failed measurement; native keyboard and lifecycle checks
-    // continue to run their recipes directly. Remove this retry when Firefox can
-    // hold document activation across the whole recipe.
-    for (var attempt = 1; ; attempt++) {
-      try {
-        await session.configure(state, dark: dark);
-        return;
-      } on UnsupportedCondition catch (error) {
-        // A later emulation limit cannot waive a defect already measured in this browser.
-        final failures = invariants.toSet().toList()..sort();
-        if (failures.isEmpty) failures.addAll(comparePartial?.call(snapshot()) ?? const []);
-        if (failures.isEmpty) rethrow;
-        throw GateConditionError([...failures, error.reason].join('\n'));
-      } on GateConditionError {
-        if (driver is! FirefoxDriver ||
-            attempt == 3 ||
-            await driver.evaluate('window.__uiGate.lostVisibleFocus && !document.hasFocus()') != true) {
-          rethrow;
-        }
-      }
+    try {
+      await session.configureForMeasurement(state, dark: dark);
+    } on UnsupportedCondition catch (error) {
+      // A later emulation limit cannot waive a defect already measured in this browser.
+      final failures = invariants.toSet().toList()..sort();
+      if (failures.isEmpty) failures.addAll(comparePartial?.call(snapshot()) ?? const []);
+      if (failures.isEmpty) rethrow;
+      throw GateConditionError([...failures, error.reason].join('\n'));
     }
   }
 

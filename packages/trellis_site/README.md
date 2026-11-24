@@ -10,7 +10,7 @@ Part of the [Trellis SDK](https://github.com/tolo/trellis).
 
 ```yaml
 dependencies:
-  trellis_site: ^0.14.0
+  trellis_site: ^0.15.0
 ```
 
 ## Quick start

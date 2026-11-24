@@ -41,7 +41,7 @@ The build supplies the shared search client beside the JSON index.
 Install it from the Trellis repository:
 
 ```bash
-trellis theme add https://github.com/tolo/trellis --theme arbor --ref v0.14.0
+trellis theme add https://github.com/tolo/trellis --theme arbor --ref v0.15.0
 ```
 
 That copies `themes/arbor/` into your site's `themes/` and sets `theme: arbor`

@@ -13,8 +13,8 @@ building server-rendered web applications.
 
 ```yaml
 dependencies:
-  trellis: ^0.14.0
-  trellis_dart_frog: ^0.14.0
+  trellis: ^0.15.0
+  trellis_dart_frog: ^0.15.0
 ```
 
 ## Quick start

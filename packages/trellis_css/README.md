@@ -9,7 +9,7 @@ Part of the [Trellis SDK](https://github.com/tolo/trellis).
 
 ```yaml
 dependencies:
-  trellis_css: ^0.14.0
+  trellis_css: ^0.15.0
 ```
 
 ## Quick start

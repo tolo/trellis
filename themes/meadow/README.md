@@ -11,7 +11,7 @@ Meadow requires Trellis 0.14.0 for its suite reader toggle.
 Install it from the Trellis repository:
 
 ```sh
-trellis theme add https://github.com/tolo/trellis --theme meadow --ref v0.14.0
+trellis theme add https://github.com/tolo/trellis --theme meadow --ref v0.15.0
 ```
 
 That copies `themes/meadow/` into your site's `themes/` and sets `theme: meadow` in `trellis_site.yaml`. `theme:` names

@@ -9,8 +9,8 @@ Part of the [Trellis SDK](https://github.com/tolo/trellis).
 
 ```yaml
 dependencies:
-  trellis: ^0.14.0
-  trellis_relic: ^0.14.0
+  trellis: ^0.15.0
+  trellis_relic: ^0.15.0
 ```
 
 ## Quick Start

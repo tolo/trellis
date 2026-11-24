@@ -222,7 +222,8 @@ Future<void> main(List<String> args) async {
     final ready = process.stdout.transform(utf8.decoder).transform(const LineSplitter()).first;
     final errors = utf8.decodeStream(process.stderr);
     try {
-      expect(await ready.timeout(const Duration(seconds: 10)), 'fetch started');
+      // Parallel CI can delay the cold Dart child before it reaches the fetch callback.
+      expect(await ready.timeout(const Duration(seconds: 45)), 'fetch started');
       await expectLater(sync(_newTag), throwsA(isA<FileSystemException>()));
       expect(_syncFiles(root), original);
     } finally {
@@ -241,7 +242,7 @@ Future<void> main(List<String> args) async {
     }
     expect(_syncFiles(root), original);
     expect(await sync(_newTag), 0);
-  });
+  }, timeout: const Timeout(Duration(minutes: 1)));
 
   test('dirty committed sources are rejected before fetching', () async {
     final css = File('${root.path}/generated/entry.css');

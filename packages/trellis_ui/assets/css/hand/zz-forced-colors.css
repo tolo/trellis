@@ -1,6 +1,8 @@
 @media (forced-colors: active) {
-  :is(.trellis-button, .trellis-input, .trellis-textarea, .trellis-native-select, .trellis-checkbox, .trellis-radio-group-item, .trellis-switch, .trellis-pagination-link, .trellis-breadcrumb-link, .trellis-table-container):focus-visible { outline: 2px solid Highlight; outline-offset: 2px; }
+  :is(.trellis-accordion-trigger, .trellis-navigation-menu-trigger, .trellis-navigation-menu-link, .trellis-button, .trellis-input, .trellis-textarea, .trellis-native-select, .trellis-checkbox, .trellis-radio-group-item, .trellis-switch, .trellis-pagination-link, .trellis-breadcrumb-link, .trellis-table-container):focus-visible { outline: 2px solid Highlight; outline-offset: 2px; }
   :is(.trellis-checkbox, .trellis-radio-group-item, .trellis-switch)::before { border: 1px solid CanvasText; background: Canvas; }
   :is(.trellis-checkbox, .trellis-radio-group-item, .trellis-switch):checked::before { border: 3px double Highlight; background: Highlight; forced-color-adjust: none; }
   :is(.trellis-checkbox, .trellis-radio-group-item, .trellis-switch):checked::after { background: HighlightText; border-color: HighlightText; forced-color-adjust: none; }
+  .trellis-navigation-menu-popup { border-color: CanvasText; }
+  .trellis-tooltip-content { outline: 1px solid CanvasText; }
 }

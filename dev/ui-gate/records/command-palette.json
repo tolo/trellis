@@ -1,0 +1,245 @@
+{
+  "component": "command-palette",
+  "automated": "pass",
+  "items": {
+    "provenance": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "1 declared permissive notices exist"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "1 declared permissive notices exist"
+          ]
+        }
+      }
+    },
+    "self-hosting": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "all requests same-origin"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "all requests same-origin"
+          ]
+        }
+      }
+    },
+    "strict-csp": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "semantic-markup": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "htmx-lifecycle": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "keyboard": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "wcag-axe": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "forced-colors": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "responsive": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "zoom": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "reduced-motion": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "touch-target": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "visual": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "88 states captured; no clipping, overlap or appearance differences"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "88 states captured; no clipping, overlap or appearance differences"
+          ]
+        }
+      }
+    },
+    "screen-reader-voiceover-safari": {
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “Choose a fruit Search fruit… web dialogue with 4 items Search fruit… list box pop up collapsed combo box”, “expanded list Suggestions 2 items”, “In Suggestions list box Apple (1 of 2)”, “Apricot (2 of 2)” and “Search fruit button has keyboard focus”."
+      ]
+    },
+    "screen-reader-nvda-firefox": {
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. The named Choose a fruit dialog opens. The editable combo box reads result count and Apple/Apricot positions. Selecting Apple returns to Search fruit."
+      ]
+    },
+    "safari": {
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. The Choose a fruit dialog focused its query. `ap` exposed Apple, Down selected Apple, and Return closed the popup and restored Search fruit."
+      ]
+    }
+  }
+}

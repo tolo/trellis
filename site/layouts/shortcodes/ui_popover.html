@@ -1,0 +1,13 @@
+<div class="ui-reference-preview">
+  <div tl:replace="~{trellis-ui/popover :: popover('reference-options', 'bottom', 'start', 8)}">
+    <span tl:slot="trigger">Options</span>
+    <div tl:slot="content">
+      <div tl:replace="~{trellis-ui/popover :: popoverHeader}">
+        <h2 tl:replace="~{trellis-ui/popover :: popoverTitle}">Display options</h2>
+        <p tl:replace="~{trellis-ui/popover :: popoverDescription}">Set the number of rows per page.</p>
+      </div>
+      <label for="reference-page-size">Rows per page</label>
+      <input tl:replace="~{trellis-ui/input :: input}" id="reference-page-size" type="number" value="10" min="1">
+    </div>
+  </div>
+</div>

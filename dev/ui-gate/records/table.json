@@ -224,16 +224,22 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “Recent invoices table 3 columns, 4 rows”, “Name column 1 of 3” and “Email address column 2 of 3”."
+      ]
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Recent invoices is announced as a captioned table with four rows and three columns. NVDA table commands announce the Name and Email address headers and the first row under Email address."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Safari exposed caption Recent invoices, header row, three named data rows and status cells. All columns and caption painted legibly."
+      ]
     }
   }
 }

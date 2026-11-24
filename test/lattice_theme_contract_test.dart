@@ -70,7 +70,7 @@ void main() {
     };
 
     expect(manifest.name, 'lattice');
-    expect(manifest.minTrellisVersion, '0.14.0');
+    expect(manifest.minTrellisVersion, '0.15.0');
     expect(manifest.features.where({'docs', 'landing', 'blog'}.contains), ['docs']);
     expect(manifest.params.keys.toSet(), standardParams.union(docsParams).union(latticeParams));
     expect(manifest.params['excerpt_length']!.defaultValue, 160);
@@ -193,7 +193,7 @@ void main() {
     expect(closingRule!.group(1), isNot(contains('padding')));
   });
 
-  test('subpage shell provides spacing, utility type, and compact navigation', () async {
+  test('subpage shell provides spacing and utility type', () {
     final css = TrellisCss.compileSass(p.join(themeDir, 'sass', 'main.scss'));
     expect(css, matches(RegExp(r'\.docs-shell\s*\{[^}]*padding-block:\s*64px 96px', dotAll: true)));
     expect(
@@ -217,24 +217,6 @@ void main() {
         ),
       ),
     );
-
-    final base = File(p.join(themeDir, 'layouts', 'base.html')).readAsStringSync();
-    expect(base, contains('class="sidebar-disclosure" open data-docs-sidebar'));
-
-    final result = await runNodeHarness('lattice', p.join(themeDir, 'static', 'js', 'lattice.js'));
-    if (result == null) return;
-    expect((result['motion']! as Map<String, dynamic>)['sidebar'], {
-      'initial': true,
-      'afterCrossing': false,
-      'afterReturn': true,
-      'listenerCount': 1,
-    });
-    expect((result['sidebarMobile']! as Map<String, dynamic>)['sidebar'], {
-      'initial': false,
-      'afterCrossing': true,
-      'afterReturn': false,
-      'listenerCount': 1,
-    });
   });
 
   test('headline waits for the interval and stays static with reduced motion', () async {

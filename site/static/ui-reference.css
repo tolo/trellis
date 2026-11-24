@@ -27,6 +27,18 @@
   outline-offset: revert-layer;
 }
 
+/* Lattice's document headings use a separate font from the suite panel titles. */
+.ui-reference-preview :is(.trellis-popover-title, .trellis-sheet-title) {
+  font: revert-layer;
+}
+
+.ui-reference-preview .trellis-sheet-content a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  color: var(--popover-foreground);
+}
+
 .prose .ui-reference-preview .trellis-table {
   display: revert-layer;
   width: revert-layer;

@@ -194,6 +194,12 @@ form elements.
 </li>
 ```
 
+Templates that group `nav_links` by section can read `${site.headerNavigation}`. It is available when the theme
+provides `nav_links` and keeps the configured order. Each item has `label`, `url` and `children`. A link to a
+section with children gets a list of `{label, url}` entries starting with the section's landing page. Descendants
+assigned to another configured link appear under that link. Direct links have an empty `children` list. Compare
+`url` to `page.url` for `aria-current`; both carry the serving prefix.
+
 List params have no CSS custom property representation.
 
 ### Footer (2 params)

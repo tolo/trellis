@@ -224,16 +224,22 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 announced the + button. VoiceOver activation updated the counter to “1” and rerouting keyboard focus announced “+ button has keyboard focus”."
+      ]
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Counter controls are announced. Activating + keeps focus on + after the HTMX swap. The served counter value is 1."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Native click of plus changed the HTMX counter to 1. Components linked to its native dialog route."
+      ]
     }
   }
 }

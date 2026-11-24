@@ -2,10 +2,13 @@
 
 Canonical reference for understanding the Trellis SDK architecture: how the packages compose, what each package is responsible for, the dependency graph, and how a request flows through the system.
 
-**Current through**: dev reload, scaffold CSP and UI previews updated for 0.14 on 2026-11-17; `trellis dev` site
+**Current through**: 0.15 Popover dismissal and admin search focus on 2026-11-22.
+Dev reload, scaffold CSP and UI previews updated for 0.14 on 2026-11-17. `trellis dev` site
 preview, including theme watch recovery, output exclusions and startup cleanup, is current through 0.14 on
 2026-11-18. The named site source
-pipeline and CLI registry were verified for 0.14 on 2026-11-18. The wider scope is the v0.11.0 SDK + the
+pipeline and CLI registry were verified for 0.14 on 2026-11-18. Source-scoped URL trust is current through
+0.15 on 2026-11-20, as are grouped header navigation and the Lattice and Meadow suite adoption. UI asset
+embedding is current through 0.15 on 2026-11-21. The wider scope is the v0.11.0 SDK + the
 2026-09-03 docs-site SSG positioning change (first-class Sites documentation,
 Lattice `site_demo` home block, and the `examples/docs_site/` proof) + the 2026-09-04 HTMX 4 adapter
 compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme stylesheets compile through
@@ -13,11 +16,13 @@ compatibility (ADR-011 amendment) + the 0.12 SASS module bridge (ADR-013): theme
 `compileThemeEntry` that configures each entry with the params Sass accepts and reports the ones it drops,
 build-time warnings for palette-default drift and for a site override Sass cannot apply (`trellis_site` now
 depends on `trellis_css`), and the redrawn package graph. The `trellis_ui` package map, pipeline and qualification sections
-are current through the 0.14 sync inventory and shared browser qualification decision (2026-11-18), and so is the
-Relic section (Relic 2, CSRF 2026-11-18). The content model's bundle rule and the `pathPrefix` coverage of feed
-and taxonomy URLs are current through 0.14.
+are current through the 0.14 sync inventory and shared browser qualification decision (2026-11-18).
+Relic is current through its 0.15 development reload (2026-11-20).
+The content model's bundle rule and the `pathPrefix` coverage of feed and taxonomy URLs are current through 0.14.
+Embedded UI placement, components and dismissal behavior are current through 0.15 (2026-11-21).
 Other sections retain the verification scope above.
 The Dart Frog CSRF bridge note is current through 0.14 (it runs on Dart Frog's own request, so a handler can read the body after a form-field token).
+The app-owned Tier 2 date recipe is current through 0.15 (2026-11-20).
 
 ---
 
@@ -40,7 +45,7 @@ Trellis is a Dart toolkit for building server-rendered web applications and stat
 | **`trellis`** | HTML template engine: parsing, expression evaluation (incl. utility objects), processor pipeline, fragment rendering, caching, validation, template inheritance, contextual escaping. Also includes testing utilities via `testing.dart` (test engine factory, CSS-selector matchers, snapshot golden file testing, fragment helpers). | `html`, `args`, `path`, `matcher`, `string_scanner` | v0.13.0 |
 | **`trellis_shelf`** | Shelf middleware: engine injection, HTMX helpers, security defaults (CSRF, CSP), response builders | `trellis`, `shelf`, `crypto` | v0.13.0 |
 | **`trellis_dart_frog`** | Dart Frog integration: `trellisProvider()` DI middleware, response helpers (`renderPage`, `renderFragment`, `renderOobFragments`), HTMX detection, CSRF/security middleware bridged from `trellis_shelf` | `trellis`, `trellis_shelf`, `dart_frog` | v0.13.0 |
-| **`trellis_relic`** | Serverpod Relic integration: response helpers with explicit engine passing, HTMX detection, `trellisSecurityHeaders()` and `trellisCsrf()` middleware | `trellis`, `relic`, `crypto` | v0.13.0 |
+| **`trellis_relic`** | Serverpod Relic integration: response helpers with explicit engine passing, HTMX detection, `trellisSecurityHeaders()` and `trellisCsrf()` middleware, development browser reload | `trellis`, `relic`, `crypto` | v0.13.0 |
 | **`trellis_ui`** | Embedded UI fragments, same-origin CSS/JS, neutral asset response and materialization. | `trellis` | v0.14.0 |
 | **`trellis_dev`** | Dev tools: SSE browser hot reload, script injection middleware driven by a template loader or any change stream | `trellis`, `shelf` | v0.13.0 |
 | **`trellis_css`** | CSS processing: Dart-native SASS/SCSS compilation via `package:sass`, `tl:scope` fragment-scoped CSS via CSS `@scope` | `trellis`, `sass`, `html` | v0.13.0 |
@@ -96,17 +101,37 @@ trellis_dev ──► trellis
 ## Embedded UI delivery (0.14)
 
 `trellis_ui` depends only on core at runtime. Its native controls, data views and four layout primitives are plain
-fragments. Closed layout scales select hand CSS classes; final `zz-` hand files set target sizes, destructive contrast
-and forced-colour paint without modifying the pinned token values. `TrellisUiLoader` feeds embedded fragments into the app's engine via
+fragments. Accordion uses native details and summary elements. A shared name limits a group to one open item.
+When an HTMX swap inserts a replacement before removing its predecessor, distinct names preserve the intended
+open item in both instances. CSS paints native state without suite JavaScript. Closed layout scales select hand CSS
+classes. Final `zz-` hand files set target sizes, destructive contrast and forced-colour paint without altering the
+pinned token values. `TrellisUiLoader` feeds embedded fragments into the app's engine via
 `CompositeLoader`; `trellisUiRespond` exposes immutable status/headers/bytes for server glue on Shelf, Relic or Dart
 Frog. Assets live under `/trellis-ui/`, use compile-time SHA-256 ETags and answer conditional GETs with 304.
 `materializeTrellisUi` optionally writes the same bytes beside the binary and overwrites divergence.
 An app with the suite dependency can invoke the same function through `dart run trellis_ui:materialize [dir]`.
 
 Interactive fragments upgrade to light-DOM custom elements from the deferred classic script. One base owns
-listener cleanup and popup sanitisation for HTMX swaps and history. Native dialogs provide modality; native
-popovers share CSSOM positioning that stays inside the viewport. Combobox option responses replace only the
-results region. Toast responses append to a pre-existing live region using an HTMX out-of-band swap.
+listener and popup cleanup for HTMX swaps, history and disconnect. Dialog, Alert Dialog and Sheet share
+native modality and tab containment. Sheet upgrades a labelled section and keeps its content nodes through
+its optional inline breakpoint. Link dismissal lets the destination take focus. Native popovers share
+four-sided CSSOM placement with viewport flip, size caps and repositioning on scroll and resize.
+Popover exposes trigger and content slots and restores focus on dismissal. If native dismissal already returned
+focus to the trigger, the queued close notification leaves subsequent focus alone. Closing reflects state before
+HTMX can capture a history snapshot, and opening reflects state after the native toggle succeeds. Inside a modal,
+the Popover handles Escape for the nearest auto or hint popup on the keyboard event's composed path, including
+one inside slotted content. This keeps Safari from dismissing the enclosing dialog. Tooltip adds a description to a
+slotted control and uses the shared hover helper to cancel pending transitions when pointer intent changes.
+Its manual popover opens on keyboard focus and consumes Escape in the current modal scope. Navigation menu enhances native disclosures inside a navigation landmark. Each panel is an auto popover.
+The suite tracks delayed pointer intent per disclosure and uses the native top layer to switch active panels.
+The server compares final URLs to mark the current link. Combobox option responses replace only the results region.
+Dropdown submenus use nested auto popovers and restrict traversal and selection to the current menu. Native
+dismissal releases focus and hit testing immediately. Browsers with discrete top-layer transitions and
+CSS inertness fade the original surface. The fallback paints a passive manual popover at the departing
+surface’s last viewport rectangle, including outside a clipping ancestor in Firefox. Swaps, history saves
+and reopening remove the exit presentation. Reduced motion omits it.
+Toast responses append to a pre-existing live region using an HTMX out-of-band swap. The CSS grid keeps the
+remaining toasts in order after a trusted rightward touch swipe dismisses one toast.
 
 The package's development pipeline vendors pinned shadcn TSX/style/tokens and licences, extracts `cn-*` hooks and
 structural utilities, renames them to `trellis-*`, then compiles using a checksummed Tailwind standalone binary.
@@ -114,8 +139,10 @@ structural utilities, renames them to `trellis-*`, then compiles using a checksu
 in scratch, then installs the single vendor pin, deterministic triage report and generated upstream inventory
 together. The validator checks the active pin and compares the report's old and new identities and ordered
 upstream rows with that inventory. Dispositions and reasons stay in the report.
-`tool/port.dart check` regenerates and compares the four committed outputs. `tool/embed.dart` layers hand CSS, bundles
-one classic script, and embeds assets and fragments as base64 plus digests. Runtime and tests use these committed
+`tool/port.dart check` regenerates and compares the four committed outputs. `tool/embed.dart` groups the hand CSS
+by cascade layer, compresses it with Dart Sass in plain CSS mode and appends it to the generated stylesheet. It
+compresses the separate HTMX indicator stylesheet the same way, bundles one classic script, and embeds assets
+and fragments as base64 plus digests. Runtime and tests use these committed
 outputs without invoking Tailwind or Node. Scoped resets replace page-wide preflight; all suite declarations are in
 cascade layers so app overrides retain precedence. A discovered-page gallery renders the same embedded fragments
 under strict CSP. The package graph SVG includes its single runtime dependency on the core engine.
@@ -206,14 +233,14 @@ formats, so a project can run either version against unchanged packages. Scaffol
 constant, `trellis_cli`'s `htmx_asset.dart`; the HTMX 4 migration is deferred pending an
 explicit trigger. See [ADR-011](../adrs/ADR-011-htmx-version-policy.md).
 
-### Dev-Mode Hot Reload (trellis_dev)
+### Dev-Mode Hot Reload
 
 Current for 0.14 (2026-11-17): app scaffolds self-host the pinned HTMX build by default;
 `--htmx-cdn` opts into the pinned CDN origin. All use `CspBuilder.strict()`, external CSRF
 scripts where needed, and local indicator CSS. Plain `CspBuilder()` defaults remain unchanged.
 
 In development, a same-origin reload script and parallel SSE connection keep the browser updated.
-Shelf watches `static/` and Dart Frog watches `public/`; Relic has no browser reload integration:
+Shelf and Relic watch `static/`. Dart Frog watches `public/`:
 
 ```
 Browser                          Server
@@ -230,8 +257,12 @@ Browser                          Server
    │                                │
 ```
 
-`devMiddleware` is a thin layer over `liveReloadMiddleware(Stream<void>)`, which owns the SSE endpoint, the reload
-client and script injection. Anything that can say "the page is stale" can drive it.
+Shelf's `devMiddleware` adapts its watcher to `liveReloadMiddleware(Stream<void>)`. Relic's
+`trellisDevReload` mounts both GET routes and uses native response bodies. It inserts the client
+before the closing body tag of buffered HTML. It coalesces file signals with a 50 ms quiet
+period and closes the static watches and event streams when the template loader closes.
+The default I/O transport pads each dev frame with an ignored SSE comment to reach the
+socket before stream close. See [ADR-002](../adrs/ADR-002-browser-hot-reload-strategy.md#relic-adapter-015).
 
 ### Static site preview (`trellis dev`)
 
@@ -270,6 +301,27 @@ The [admin example](../../examples/admin_app/) uses the Shelf integration. It sh
 fragment across full page loads and HTMX swaps, and a mutation returns the list plus out-of-band summary, dialog
 host and toast updates. The AOT executable embeds the suite and reads the example's own templates and static
 files alongside it.
+
+### App-owned Tier 2 date recipe
+
+The admin contact form posts three native date inputs through its existing create
+and edit routes. The app vendors the unchanged Cally 0.9.2 module and MIT notice
+from the pinned release archive. Its static handler serves the module and the
+app's date adapter from the same origin, alongside HTMX and the embedded suite.
+
+The adapter mounts a Cally calendar inside each Popover on initial load and after
+HTMX swaps. The generated calendar reads the server-rendered inputs and writes
+completed selections back to them. If the vendor module fails, the hidden
+calendar controls stay hidden and the form still submits the native fields.
+Before HTMX serializes history, the adapter removes listeners and restores the
+pristine input and Popover markup. The same mounting path restores the live
+roots left outside the swap and the roots inserted on a cache hit or miss. Both
+start from the server-saved values.
+
+Live filter responses preserve the form through the list swap so HTMX can run
+queued filter requests. The adapter records applied values for history and
+returns focus if moving the form dropped it to the document body. Sort, paging
+and history restores replace the form with values for their URL.
 
 ---
 
@@ -375,12 +427,12 @@ The `CssDialect` registers a `ScopeProcessor` that wraps fragment `<style>` cont
 
 ```
 content/**/*.md   ──►  ContentDiscovery    (recursive .md scanning, URL derivation)
-                       FrontMatterParser   (YAML extraction, draft detection)
+                       FrontMatterParser   (YAML extraction, draft detection, trusted URL field matching)
                        ShortcodeProcessor  (pre-Markdown: {{% name %}})
 data/**/*.yaml    ──►  MarkdownRenderer    (GitHub-flavored MD → HTML, TOC, summary)
                        ShortcodeProcessor  (post-Markdown: <!-- tl:name -->)
 layouts/**/*.html ──►  TaxonomyCollector   (term collection, virtual pages)
-static/**         ──►  PageGenerator       (layout resolution, data cascade, Trellis render)
+static/**         ──►  PageGenerator       (site data trust matching, data cascade, Trellis render)
                        SitemapGenerator    (sitemap.xml with lastmod)
                        FeedGenerator       (Atom + RSS feeds — opt-in)
                        SearchIndexGenerator (JSON index and client, opt-in)
@@ -395,14 +447,15 @@ static/**         ──►  PageGenerator       (layout resolution, data cascad
 1. **Clean** output directory. Load the theme manifest and resolve the combined site and theme `uses` list against the
    build's factory registry. Validate source asset paths and ownership before creating output.
 2. **Discover** pages — recursive `.md` scan, Hugo-style URL derivation (with optional `pathPrefix` applied at the single `deriveUrl` seam), page bundle detection
-3. **Parse** front matter — YAML extraction, draft flagging
+3. **Parse** front matter — YAML extraction, draft flagging and matching source-scoped URL declarations
 4. **Shortcodes (pre-MD)** — `{{% name %}}` and `{{% name %}} content {{% /name %}}` processed before Markdown
 5. **Render** Markdown — GitHub-flavored via `package:markdown`, summary + TOC extraction
 6. **Highlight** code (ADR-010) — build-time syntax highlighting woven into the Markdown render and both shortcode passes: when `highlight.enabled` (default), `CodeHighlighter` (`package:highlight`) rewrites each fenced `<pre><code class="language-x">` block into `.hljs-*` token spans; disabled or unknown-language blocks stay plain `<pre><code>`. No client-side highlighter JS ships — runs before path-prefix link rewriting in step 9
 7. **Shortcodes (post-MD)** — `<!-- tl:name -->` processed after Markdown. When the build uses sources, page front matter
    supplies additional variables and explicit shortcode parameters win.
 8. **Taxonomies** — collect terms from front matter, generate virtual listing and term pages
-9. **Generate** HTML — priority-ordered layout resolution, 5-level data cascade, Trellis `renderFile()`, final path-prefix link rewriting
+9. **Generate** HTML — load data, match its URL declarations, reject unmatched declarations, resolve layouts, run the
+   data cascade and Trellis `renderFile()`, then rewrite root-absolute links for the path prefix
 10. **Static assets** — write source bytes, copy theme then site static files (skip `.scss`/`.sass`), copy bundle assets
 11. **Sitemap** — `sitemap.xml` with `<lastmod>` from date or mtime
 12. **Feeds** — Atom `feed.xml` (+ optional `rss.xml`) when `feeds:` config present; per-section feeds supported
@@ -434,6 +487,14 @@ Global data has its own theme/site precedence. A theme's `data/*.yaml` files loa
 `${data.navigation}`), and a site file replaces the complete theme value at the same stem rather than deep-merging it.
 Non-overlapping stems from both sources remain available.
 
+`trustedUrls` matches a real site-relative input path and a literal top-level YAML key before key conversion
+and data merges. The source loaders wrap eligible strings as `TrustedUrl` in render projections. Section inheritance
+carries the wrapper, a page override replaces it, and site data still replaces a theme file at the same stem.
+Page maps for single pages, list slices and taxonomies keep wrappers on their own fields. Generated fields
+take precedence over front matter. Post-Markdown shortcodes in builds using sources share the projection,
+with explicit arguments taking precedence. Search and feeds read the original front-matter values.
+[ADR-015](../adrs/ADR-015-url-scheme-blocking.md#static-site-trust-declarations)
+
 ### Pagination
 
 List pages (section, home, taxonomy term) are automatically paginated when `paginate` is set in config. Templates access `${pagination.page}`, `${pagination.totalPages}`, `${pagination.hasNext}`, `${pagination.prevUrl}`, `${pagination.nextUrl}`.
@@ -451,6 +512,11 @@ The content model is additive-nested: `Page.section` stays the top-level folder,
 ### Navigation Menu Tree
 
 `NavigationBuilder` produces one nested `${site.menu}` tree of `{title, url, children}` map nodes, mirroring the content section hierarchy. It is built once from the discovered pages and injected into the shared `siteParams` (`site.menu`) at both assembly sites (with and without taxonomy), so it rides the existing every-page context to **every** render — single, section, home, and taxonomy virtual pages — from a single injection point (list-page-only assembly would omit it from single/home renders). Own-level page order comes from `orderedSectionPages` (the builder holds no comparator or lineage filter of its own); sections nest by `Page.sectionPath` lineage. Because the tree is shared across renders it carries **no** per-page active flag: a theme resolves the active page and its ancestor trail by comparing each `node.url` against `${page.url}` at render time. Title precedence is `menu_title` → `title` → humanized URL slug. Drafts and `menu_exclude: true` pages are filtered (mirroring `!isDraft`); an opted-out section drops its own node but hoists surviving children to its parent, while a folder with no `_index.md` still yields a synthesized node. Empty content yields `[]`, and sites not referencing `${site.menu}` stay byte-for-byte unchanged. Taxonomy virtual pages are injected after the tree is built, so they receive the menu but never appear as menu nodes.
+
+The same build projects `theme.nav_links` into `site.headerNavigation` when the theme provides that list.
+This ordered view uses the existing menu nodes and final URLs. A configured section with children includes its
+own landing link and descendants until the next configured destination. A matching leaf or unmatched link stays
+direct. Lattice compares the resulting URLs with `page.url` when it renders each Navigation menu link.
 
 ### In-Section Prev/Next
 
@@ -527,6 +593,10 @@ handler(Request request) async {
 }
 ```
 
+The generated app sets `devMode` from `--dev` or `DEV=true` before it creates the template loader
+and mounts browser reload. With `--ui`, the scaffold retains ownership of the file-system loader
+inside its `CompositeLoader` and closes it on Ctrl-C.
+
 Targets Relic 2, where Content-Type comes from the `Body` and one set in response headers is dropped on the wire. `trellisCsrf` is a native port of the Shelf middleware (same cookie format and defaults, no Shelf bridge): it keeps the token in a `ContextProperty` that the response helpers merge as `csrfToken`, and reads `_csrf` by buffering a urlencoded body (Relic's `FormLimits.defaults` cap), parsing a copy with `urlEncodedForm()` and handing the handler a fresh `Body` over the same bytes. Middleware only fires for matched routes (Relic behavioral difference vs Shelf). Does NOT depend on `trellis_shelf` or `shelf`.
 
 ---
@@ -538,7 +608,7 @@ Targets Relic 2, where Content-Type comes from the `Body` and one set in respons
 ```
 ... (steps 1-9 as before) ...
 10. Feed generation   ← opt-in via feeds: config; Atom (RFC 4287) + optional RSS 2.0
-11. Search            ← opt-in via search: config; JSON index and shared client
+11. Search emission   ← writes the prepared index and shared client
 ```
 
 ### Feed Generation (`FeedGenerator`)
@@ -553,10 +623,14 @@ Targets Relic 2, where Content-Type comes from the `Body` and one set in respons
 ### Search Index (`SearchIndexGenerator`)
 
 - Activated by `search: enabled: true` in `trellis_site.yaml`
+- Prepares eligible entries after front matter, Markdown, shortcodes, draft policy, and virtual taxonomy page
+  creation. The same prepared result supplies the optional `site.search.indexUrl` and `site.search.clientUrl`
+  render context and both output files.
 - Writes a JSON array at the configured path (default `output/search-index.json`) with `trellis-search.js` alongside it
 - Configurable fields: `title`, `summary`, `content`, `tags`, `date`, `section`, `url`
 - HTML stripping (`search.stripHtml: true`) and content truncation (`search.maxContentLength`)
-- Only `PageKind.single` content pages indexed; draft pages, excluded sections, and `search: false` front matter omitted
+- Indexes `PageKind.single` pages, including virtual taxonomy term pages. Draft pages, excluded sections, and
+  pages with `search: false` front matter are omitted.
 
 ---
 
@@ -634,6 +708,16 @@ defaults to `false`; when enabled, the home layout renders its Markdown-to-page 
 `site_demo.markdown_html`, and `site_demo.page_title` are all present. This leaf-level guard preserves existing installs
 and prevents a partial whole-file data override from publishing an empty section or failing the build.
 
+Lattice keeps one header Navigation menu and one sidebar tree. Their Sheets expose the same content inline above
+700 px and as modals on smaller viewports. The argument-free `sidebar` fragment stays site-overridable, and docs
+layouts that use the bundled sidebar resolve it through the explicit theme loader. An initially open Accordion
+groups each sidebar section. A Tooltip describes the existing skin button.
+
+Meadow serves its compact navigation through a Sheet up to 840 px. Wider layouts show the desktop navigation
+and release the hidden Sheet's modality. The fallback Sheet section exposes normal links in both themes. Each
+theme loads a same-origin skin initializer before its stylesheets, and Meadow uses a native progress element for
+the confidence value.
+
 ### Client-Side Search Flow
 
 Arbor, Folio, and Lattice use the same client. Their layouts load it with `defer` beside the suite
@@ -653,6 +737,13 @@ The client reveals the shell after the same-origin index loads and the combobox 
 or invalid index leaves the shell hidden. The combobox handles focus, keyboard selection, and
 announcements. The client replaces its results wrapper and reads its hidden value after selection.
 The indexed URL already includes the path prefix.
+
+Lattice also reads `site.params.search_palette` in its base layout. When that
+option, `theme.show_search`, and `site.search` are present, one header trigger
+opens the suite Command palette on home, docs and UI-reference pages. The site
+client shares the inline search match and result rendering path. It listens for
+the palette's `tl-select` event, reports unavailable payloads in the modal, and
+preserves ordinary inline initialization for the other themes.
 
 ### Docs Site (`site/`)
 

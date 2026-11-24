@@ -1,0 +1,13 @@
+<div class="ui-reference-preview">
+  <div tl:replace="~{trellis-ui/sheet :: sheet('reference-sheet', 'right', 'Related guides')}">
+    <tl:block tl:slot="trigger">
+      <button id="reference-sheet-trigger" tl:replace="~{trellis-ui/button :: button}">Open related guides</button>
+    </tl:block>
+    <tl:block tl:slot="content">
+      <ul>
+        <li><a href="../../guide/">Using Trellis UI</a></li>
+        <li><a href="../dialog/">Dialog reference</a></li>
+      </ul>
+    </tl:block>
+  </div>
+</div>

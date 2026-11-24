@@ -1,8 +1,14 @@
 {
   "tag": "shadcn@4.23.0",
-  "tsxFiles": 23,
-  "hooksPrimary": 154,
+  "tsxFiles": 29,
+  "hooksPrimary": 197,
   "hooks": [
+    "trellis-accordion",
+    "trellis-accordion-content",
+    "trellis-accordion-content-inner",
+    "trellis-accordion-item",
+    "trellis-accordion-trigger",
+    "trellis-accordion-trigger-icon",
     "trellis-alert",
     "trellis-alert-action",
     "trellis-alert-description",
@@ -76,6 +82,19 @@
     "trellis-combobox-separator",
     "trellis-combobox-trigger",
     "trellis-combobox-trigger-icon",
+    "trellis-command",
+    "trellis-command-dialog",
+    "trellis-command-empty",
+    "trellis-command-group",
+    "trellis-command-input",
+    "trellis-command-input-group",
+    "trellis-command-input-icon",
+    "trellis-command-input-wrapper",
+    "trellis-command-item",
+    "trellis-command-item-indicator",
+    "trellis-command-list",
+    "trellis-command-separator",
+    "trellis-command-shortcut",
     "trellis-dialog-close",
     "trellis-dialog-content",
     "trellis-dialog-description",
@@ -130,6 +149,17 @@
     "trellis-native-select",
     "trellis-native-select-icon",
     "trellis-native-select-wrapper",
+    "trellis-navigation-menu",
+    "trellis-navigation-menu-content",
+    "trellis-navigation-menu-indicator",
+    "trellis-navigation-menu-indicator-arrow",
+    "trellis-navigation-menu-item",
+    "trellis-navigation-menu-link",
+    "trellis-navigation-menu-list",
+    "trellis-navigation-menu-popup",
+    "trellis-navigation-menu-positioner",
+    "trellis-navigation-menu-trigger",
+    "trellis-navigation-menu-trigger-icon",
     "trellis-pagination",
     "trellis-pagination-content",
     "trellis-pagination-ellipsis",
@@ -138,11 +168,23 @@
     "trellis-pagination-next-text",
     "trellis-pagination-previous",
     "trellis-pagination-previous-text",
+    "trellis-popover-content",
+    "trellis-popover-content-logical",
+    "trellis-popover-description",
+    "trellis-popover-header",
+    "trellis-popover-title",
     "trellis-radio-group",
     "trellis-radio-group-indicator",
     "trellis-radio-group-indicator-icon",
     "trellis-radio-group-item",
     "trellis-rtl-flip",
+    "trellis-sheet-close",
+    "trellis-sheet-content",
+    "trellis-sheet-description",
+    "trellis-sheet-footer",
+    "trellis-sheet-header",
+    "trellis-sheet-overlay",
+    "trellis-sheet-title",
     "trellis-switch",
     "trellis-switch-thumb",
     "trellis-table",
@@ -161,14 +203,23 @@
     "trellis-tabs-list-variant-line",
     "trellis-tabs-trigger",
     "trellis-textarea",
-    "trellis-toast"
+    "trellis-toast",
+    "trellis-tooltip-arrow",
+    "trellis-tooltip-arrow-logical",
+    "trellis-tooltip-content",
+    "trellis-tooltip-content-logical"
   ],
-  "hooksSecondary": 5,
-  "hooksWithStructural": 84,
+  "hooksSecondary": 8,
+  "hooksWithStructural": 105,
   "styleRulesTotal": 441,
-  "styleRulesKept": 134,
-  "styleRulesWithoutTsxHook": 307,
+  "styleRulesKept": 176,
+  "styleRulesWithoutTsxHook": 265,
   "slots": [
+    "accordion",
+    "accordion-content",
+    "accordion-item",
+    "accordion-trigger",
+    "accordion-trigger-icon",
     "alert",
     "alert-action",
     "alert-description",
@@ -216,6 +267,15 @@
     "combobox-separator",
     "combobox-trigger",
     "combobox-value",
+    "command",
+    "command-empty",
+    "command-group",
+    "command-input",
+    "command-input-wrapper",
+    "command-item",
+    "command-list",
+    "command-separator",
+    "command-shortcut",
     "dialog",
     "dialog-close",
     "dialog-content",
@@ -264,15 +324,38 @@
     "native-select-optgroup",
     "native-select-option",
     "native-select-wrapper",
+    "navigation-menu",
+    "navigation-menu-content",
+    "navigation-menu-indicator",
+    "navigation-menu-item",
+    "navigation-menu-link",
+    "navigation-menu-list",
+    "navigation-menu-trigger",
     "pagination",
     "pagination-content",
     "pagination-ellipsis",
     "pagination-item",
     "pagination-link",
+    "popover",
+    "popover-content",
+    "popover-description",
+    "popover-header",
+    "popover-title",
+    "popover-trigger",
     "radio-group",
     "radio-group-indicator",
     "radio-group-item",
     "separator",
+    "sheet",
+    "sheet-close",
+    "sheet-content",
+    "sheet-description",
+    "sheet-footer",
+    "sheet-header",
+    "sheet-overlay",
+    "sheet-portal",
+    "sheet-title",
+    "sheet-trigger",
     "switch",
     "switch-thumb",
     "table",
@@ -297,7 +380,11 @@
     "toast-icon",
     "toast-portal",
     "toast-title",
-    "toast-viewport"
+    "toast-viewport",
+    "tooltip",
+    "tooltip-content",
+    "tooltip-provider",
+    "tooltip-trigger"
   ],
   "dataAttrs": [
     "data-active",
@@ -307,11 +394,15 @@
     "data-icon",
     "data-inset",
     "data-orientation",
+    "data-side",
     "data-size",
     "data-slot",
     "data-variant"
   ],
   "markers": {
+    "trellis-accordion-trigger": [
+      "group/accordion-trigger"
+    ],
     "trellis-alert": [
       "group/alert"
     ],
@@ -336,6 +427,9 @@
     "trellis-combobox-content": [
       "group/combobox-content"
     ],
+    "trellis-command-item": [
+      "group/command-item"
+    ],
     "trellis-dropdown-menu-item": [
       "group/dropdown-menu-item"
     ],
@@ -358,6 +452,15 @@
     "trellis-native-select-wrapper": [
       "group/native-select"
     ],
+    "trellis-navigation-menu": [
+      "group/navigation-menu"
+    ],
+    "trellis-navigation-menu-list": [
+      "group"
+    ],
+    "trellis-navigation-menu-trigger": [
+      "group/navigation-menu-trigger"
+    ],
     "trellis-radio-group-item": [
       "group/radio-group-item",
       "peer"
@@ -377,13 +480,26 @@
     ]
   },
   "hooksSeenInSeveralLiterals": {
+    "trellis-accordion-trigger-icon": 2,
     "trellis-dropdown-menu-item-indicator": 2,
     "trellis-rtl-flip": 4
   },
   "structuralSkipped": [
+    "trellis-command-item",
+    "trellis-command-item-indicator",
+    "trellis-command-list",
+    "trellis-navigation-menu-content",
+    "trellis-navigation-menu-popup",
+    "trellis-navigation-menu-positioner",
     "trellis-toast"
   ],
   "orphanLiterals": [
+    {
+      "file": "accordion.tsx",
+      "line": 32,
+      "slot": "accordion-item",
+      "literal": "flex"
+    },
     {
       "file": "breadcrumb.tsx",
       "line": 124,
@@ -401,6 +517,12 @@
       "line": 122,
       "slot": "input-group-button",
       "literal": "isolate z-50"
+    },
+    {
+      "file": "command.tsx",
+      "line": 52,
+      "slot": "command",
+      "literal": "sr-only"
     },
     {
       "file": "dialog.tsx",
@@ -439,16 +561,40 @@
       "literal": "bg-[Canvas] text-[CanvasText]"
     },
     {
+      "file": "navigation-menu.tsx",
+      "line": 70,
+      "slot": "navigation-menu-trigger",
+      "literal": "group"
+    },
+    {
+      "file": "navigation-menu.tsx",
+      "line": 125,
+      "slot": "navigation-menu-content",
+      "literal": "relative size-full overflow-hidden"
+    },
+    {
       "file": "pagination.tsx",
       "line": 143,
       "slot": "pagination-ellipsis",
       "literal": "sr-only"
     },
     {
+      "file": "popover.tsx",
+      "line": 34,
+      "slot": "popover-trigger",
+      "literal": "isolate z-50"
+    },
+    {
       "file": "separator.tsx",
       "line": 16,
       "slot": "separator",
       "literal": "shrink-0 bg-border data-horizontal:h-px data-horizontal:w-full data-vertical:w-px data-vertical:self-stretch"
+    },
+    {
+      "file": "sheet.tsx",
+      "line": 80,
+      "slot": "sheet-close",
+      "literal": "sr-only"
     },
     {
       "file": "toast.tsx",
@@ -509,6 +655,12 @@
       "line": 233,
       "slot": "toast-icon",
       "literal": "flex min-w-0 flex-1 flex-col gap-1"
+    },
+    {
+      "file": "tooltip.tsx",
+      "line": 47,
+      "slot": "tooltip-trigger",
+      "literal": "isolate z-50"
     }
   ]
 }

@@ -123,6 +123,8 @@ The YAML recipe is the component boundary:
 - Steps are `focus`, `click`, `hover`, `type`, `press`, `wait` (milliseconds or a true JS expression), `state`,
   `eval`, `axe`, and `expect: {expression: <JS>, equals: <JSON value>}`. Each step has one key. Missing elements
   and failed expectations name the step. Browser execution bypasses page CSP without injecting inline handlers.
+- `touch-gestures` runs steps with coarse pointer emulation. A `touch-drag` step takes `{selector, dx, dy}` with
+  a non-zero integer displacement and sends a trusted touch gesture through the browser driver.
 - `semantics` contains `{selector, attribute, equals}` or `{expression, equals}` assertions for every state.
   `provenance` lists `{file, license}` notices, relative to the manifest. Allowed licences are MIT, ISC,
   Apache-2.0, BSD-*-Clause and 0BSD. `axe.disable` maps a rule id to a required written reason.
@@ -161,18 +163,18 @@ The local component sweep (`packages/trellis_ui/test/qualification_gate_test.dar
 disjoint CLI chunks and compares freshly written records byte for byte, retaining manual results. The release
 policy checks optional failures against their [ADR-012 dispositions](../adrs/ADR-012-trellis-ui-contract.md#optional-component-release-dispositions).
 `packages/trellis_cli/test/ui_surfaces_gate_test.dart` launches the actual admin entry point and three generated
-`--ui` scaffolds. The same CLI checks the admin list, filter, menu, validation, alert dialog, Summary and toast,
+`--ui` scaffolds. The same CLI checks the admin list, filter, menu, validation, single-date and range calendars, alert dialog, Summary and toast,
 and each scaffold's counter swap and UI dialog, using the seven recipes and records in `dev/ui-gate/apps/`.
 The sweep seeds only manual results, checks each fresh record against the same release policy, then compares
 its bytes to the committed record.
 
-Release limits are 25,000 bytes for the sum of the three embedded responses gzipped separately at level 9,
-400 authored JavaScript lines in the suite, and 50 authored CSS lines with zero authored JavaScript in the admin
-example. Run `test/release_gates_test.dart` and `test/budget_test.dart` from `packages/trellis_ui/`, and
+Release limits are 30,000 bytes for the sum of the three embedded responses gzipped separately at level 9
+and 50 authored CSS lines in the admin example. Its exact script inventory is HTMX, the pinned Cally 0.9.2
+bundle, the date recipe and the live search focus adapter. The footprint check pins the vendor bytes and checks templates for strict CSP. Run `test/release_gates_test.dart` from `packages/trellis_ui/`, and
 `test/footprint_test.dart` from `examples/admin_app/`.
 
-Harness fixture tests are untagged in fast/full. A test running the full gate over real component or app pages
-carries `ui-gate`; OS-baseline comparisons carry `visual`. Both are excluded from CI's check/E2E tiers and run in
+Harness fixture tests are untagged in branch CI and the full tier. A test running the full gate over real component
+or app pages carries `ui-gate`; OS-baseline comparisons carry `visual`. Both are excluded from CI's check/E2E tiers and run in
 the local `release-gate` tier, preserving ADR-012's local gate decision.
 
 
@@ -217,9 +219,9 @@ the local `release-gate` tier, preserving ADR-012's local gate decision.
 
 ## Before-merge bar
 
-1. **Fast tier green** (KEY_DEVELOPMENT_COMMANDS.md, `fast`). It is the `check` job, so a green local run predicts the
+1. **Branch CI green** (Key Dev Commands, `branch CI`). It is the `check` job, so a green local run predicts the
    feature-branch CI result. That includes `dart analyze --fatal-infos`, the format check, the gallery check, every
-   package suite without `e2e`, and the root suite without `visual`.
+   package suite without `e2e` and `ui-gate`, and the root suite without `visual` and `ui-gate`.
 2. **Full tier green when the change can reach an E2E journey.** Feature branches get only `check` in CI; `e2e` runs on
    `main`, so a red E2E would first appear after the squash. Run the `full` tier before merging a change to
    `trellis_cli` templates or generators, server adapters, `trellis_dev`, or anything an example app imports.
@@ -274,9 +276,9 @@ Each is explained where it was found; this list says where to look.
 
 - **`dart test` at the workspace root runs only root `test/`.** The package suites need `melos exec`. A hand-rolled root
   `dart test` passes while skipping every package suite (ci.yml header comment). KEY_DEVELOPMENT_COMMANDS.md
-  `fast` and `full` already do both.
-- **`dart test --tags=e2e` exits 79 in any package where nothing carries the tag**, and only `trellis_cli` has tagged
-  files. Narrow with `--exclude-tags`, as the tiers do.
+  `branch CI` and `full` already do both.
+- **`dart test --tags=e2e` exits 79 in packages without that tag.** The CLI and admin example have E2E-tagged tests.
+  Run that selection in those packages when adding E2E coverage to the local release gate.
 - **A local run without Chrome or `node` reports a pass with those assertions unrun.** CI turns the skip into a failure;
   your machine does not. Check the output for skipped tests before calling a theme change verified.
 - **Shared worktree red runs are not evidence.** A suite that imports a helper someone is mid-edit on goes red for no

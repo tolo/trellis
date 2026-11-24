@@ -82,7 +82,7 @@ function makeElement(dataset = {}) {
   };
 }
 
-function runLattice(reducedMotion, { entryCount = 2, contentHeight = 100, sidebarMobile = false } = {}) {
+function runLattice(reducedMotion, { entryCount = 2, contentHeight = 100 } = {}) {
   // The theme server-renders the headline unscaled and lets lattice.js add
   // `is-fitted` before measuring, so the harness must start from the unscaled
   // state - `fit-initial` was removed from the theme and simulating it here
@@ -119,19 +119,6 @@ function runLattice(reducedMotion, { entryCount = 2, contentHeight = 100, sideba
   const timeouts = [];
   const fontReadyHandlers = [];
   const fontLoadingDoneHandlers = [];
-  const docsSidebar = makeElement();
-  docsSidebar.open = true;
-  const sidebarMedia = {
-    matches: sidebarMobile,
-    listeners: [],
-    addEventListener(type, handler) {
-      if (type === 'change') this.listeners.push(handler);
-    },
-    change(matches) {
-      this.matches = matches;
-      this.listeners.forEach((handler) => handler({ matches }));
-    },
-  };
   const document = {
     hidden: false,
     documentElement: makeElement(),
@@ -149,7 +136,6 @@ function runLattice(reducedMotion, { entryCount = 2, contentHeight = 100, sideba
       if (selector === '[data-headline]') return headline;
       if (selector === '[data-headline-text]') return headlineText;
       if (selector === '[data-headline-slot]') return headlineSlot;
-      if (selector === '[data-docs-sidebar]') return docsSidebar;
       return null;
     },
     querySelectorAll() {
@@ -163,7 +149,7 @@ function runLattice(reducedMotion, { entryCount = 2, contentHeight = 100, sideba
     },
   };
   const window = {
-    matchMedia: (query) => query === '(max-width: 700px)' ? sidebarMedia : { matches: reducedMotion },
+    matchMedia: () => ({ matches: reducedMotion }),
     addEventListener() {},
     setInterval(handler, delay) {
       intervals.push({ handler, delay });
@@ -173,11 +159,6 @@ function runLattice(reducedMotion, { entryCount = 2, contentHeight = 100, sideba
     },
   };
   runScript({ document, window, navigator: {} });
-  const sidebarInitial = docsSidebar.open;
-  sidebarMedia.change(!sidebarMobile);
-  const sidebarAfterCrossing = docsSidebar.open;
-  sidebarMedia.change(sidebarMobile);
-  const sidebarAfterReturn = docsSidebar.open;
   const immediate = headline.textContent;
   const beforeFonts = {
     contentHeight: headlineText.scrollHeight,
@@ -212,12 +193,6 @@ function runLattice(reducedMotion, { entryCount = 2, contentHeight = 100, sideba
     beforeFonts,
     afterFonts,
     fontReadyHandlerCount: fontReadyHandlers.length,
-    sidebar: {
-      initial: sidebarInitial,
-      afterCrossing: sidebarAfterCrossing,
-      afterReturn: sidebarAfterReturn,
-      listenerCount: sidebarMedia.listeners.length,
-    },
   };
 }
 
@@ -276,7 +251,6 @@ if (mode === 'lattice') {
     empty: runLattice(false, { entryCount: 0 }),
     single: runLattice(false, { entryCount: 1 }),
     long: runLattice(false, { entryCount: 1, contentHeight: 2000 }),
-    sidebarMobile: runLattice(false, { sidebarMobile: true }),
   }));
 } else {
   const osDark = runFolio(null, true);

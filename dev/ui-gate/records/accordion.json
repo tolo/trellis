@@ -1,0 +1,245 @@
+{
+  "component": "accordion",
+  "automated": "pass",
+  "items": {
+    "provenance": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "2 declared permissive notices exist"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "2 declared permissive notices exist"
+          ]
+        }
+      }
+    },
+    "self-hosting": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "all requests same-origin"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "all requests same-origin"
+          ]
+        }
+      }
+    },
+    "strict-csp": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "semantic-markup": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "htmx-lifecycle": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "keyboard": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "wcag-axe": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "forced-colors": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "responsive": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "zoom": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "reduced-motion": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "touch-target": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "visual": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "52 states captured; no clipping, overlap or appearance differences"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "52 states captured; no clipping, overlap or appearance differences"
+          ]
+        }
+      }
+    },
+    "screen-reader-voiceover-safari": {
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 read “Delivery expanded summary Accordion examples region”, its “Orders ship within two working days.” content and “Returns collapsed summary”."
+      ]
+    },
+    "screen-reader-nvda-firefox": {
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Delivery is expanded, Returns announces collapsed then expanded, Return policy is reachable, and Returns announces collapsed on reactivation."
+      ]
+    },
+    "safari": {
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Delivery and Returns remained open together. Option-Tab reached Security and Return opened it with Profile closed and Email still open in the other group. The desktop chevrons and panels painted without overlap."
+      ]
+    }
+  }
+}

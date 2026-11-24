@@ -25,18 +25,27 @@ mise run lint
 
 ## Testing
 
-Run these tiers from the repository root. The fast tier matches CI's checks; full also runs package E2E tests.
-Both exclude `visual` and `ui-gate`, the local release gates. `release-gate` includes those on the maintainer's
-baseline-authoring host. Harness fixture tests remain untagged and run in fast/full. For Firefox checks, put
+For each plan story, run the fast static checks plus the tests named in its FIS. Select the test files, named cases
+or browser manifests that exercise the change and its affected callers. A story that changes browser behavior still
+proves it in the browser. Reuse the result when a task, story review or batch asks for the same check on unchanged inputs.
+
+Branch CI runs the workspace tests. The full tier adds package E2E tests. Both exclude `visual` and `ui-gate`.
+The local release gate covers those on the maintainer's baseline-authoring host. For Firefox checks, put
 geckodriver 0.37.1 on `PATH` or set `GECKODRIVER` to the binary's absolute path; `FIREFOX_PATH` overrides Firefox
 discovery. See [UI qualification gate](TESTING-STRATEGY.md#ui-qualification-gate) for browser setup.
 
 | Tier | Command |
 |---|---|
-| fast | `mise check` |
+| fast | `mise run lint` |
+| branch CI | `mise check` |
 | full | `mise check-full` |
-| release-gate | `mise release-gate` |
+| release-gate | `CI=true mise run release-gate` |
 | run one test | `dart test "{file}" --plain-name "{test}"` |
+
+Run mise commands at the repository root and test commands in the package that owns the test. In a multi-story plan,
+assign the workspace suites, complete component catalogue and full app-surface sweep to final integration. If an
+existing FIS names a whole sweep for one subject, run the subject now and record the sweep against the integrated
+revision. A deferred sweep counts as pending until its command passes.
 
 ```bash
 # Root suite only (release/distribution contracts, tool/); package suites run through the tiers above
@@ -65,7 +74,16 @@ Follow [`trellis-ui-sync`](../../.claude/skills/trellis-ui-sync/SKILL.md) from t
 `dart run packages/trellis_ui/tool/port.dart sync --check-report "$report"`. The checker uses the generated
 `packages/trellis_ui/tool/sync-inventory.json` for the active pin.
 
-With both browsers and the recorded host OS, run the same gate at release prep through these tests.
+For one changed gallery subject, supply its manifest name. For example, this compares Tooltip with its baseline
+in Chrome and Firefox and writes the result to scratch:
+
+```bash
+CI=true dart run tool/ui_gate.dart --serve 'dart run packages/trellis_ui/tool/gallery.dart --port 0' \
+  --records .agent_temp/ui-gate/records tooltip
+```
+
+For an app route, pass its manifest path and the running app's `--base` URL with its app baseline directory.
+On the integrated release tree, `CI=true mise run release-gate` includes both sweeps:
 
 - From `packages/trellis_ui/`, `dart test test/qualification_gate_test.dart` sweeps the active gallery subjects.
 - From `packages/trellis_cli/`, `dart test test/ui_surfaces_gate_test.dart` sweeps the admin example and both UI

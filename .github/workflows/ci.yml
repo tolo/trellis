@@ -57,7 +57,8 @@ jobs:
   check:
     name: mise ${{ (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && 'check-full' || 'check' }}
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && 60 || 20 }}
+    # The root browser suite was still completing checks at the 20-minute job limit.
+    timeout-minutes: ${{ (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && 60 || 30 }}
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7

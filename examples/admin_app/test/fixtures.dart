@@ -19,6 +19,11 @@ const suiteAssets = {
 };
 
 const htmxAsset = '/js/htmx.min.js';
+const searchFocusAsset = '/js/search-focus.js';
+const dateRecipeAsset = '/js/contact-dates.js';
+const callyAsset = '/js/cally-0.9.2.js';
+const callyLicense = '/js/cally-0.9.2.LICENSE';
+const callySha256 = '4dcba6a3b8ec63b66ff2fbfc6cf47b7dee1eb4896eac89fe7487d82e28e15870';
 
 Map<String, String> mutationHeaders(String cookie, String page) {
   final hxHeaders = parse(page).body!.attributes['hx-headers']!;

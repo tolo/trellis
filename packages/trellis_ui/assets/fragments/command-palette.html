@@ -1,0 +1,11 @@
+<div tl:fragment="commandPalette(id, title, placeholder, options, shortcut)">
+  <div tl:replace="~{trellis-ui/dialog :: dialog(${id}, ${title}, null, false)}"
+    class="trellis-command-dialog trellis-command-palette" data-command-palette tl:attr="data-shortcut=${shortcut}">
+    <tl:block tl:slot="trigger"><tl:block tl:slot="trigger"></tl:block></tl:block>
+    <div class="trellis-command" data-slot="command">
+      <div tl:replace="~{trellis-ui/combobox :: combobox(${id + '-query'}, null, ${placeholder}, '', ${options})}"
+        class="trellis-command-input" autofocus data-combobox-filter tl:attr="aria-label=${placeholder ?: (title ?: 'Search')}"></div>
+      <p data-command-status role="status" hidden tl:attr="id=${id + '-status'}"></p>
+    </div>
+  </div>
+</div>

@@ -152,16 +152,22 @@ final class UiReferenceGenerator {
       final match = _signature.firstMatch(source);
       if (match == null) throw UiReferenceException('$component: invalid fragment signature $source');
       final name = match[1]!;
-      final parameters = (match[2] ?? '').split(',').map((value) => value.trim()).where((value) => value.isNotEmpty);
+      final parameters = (match[2] ?? '')
+          .split(',')
+          .map((value) => value.trim())
+          .where((value) => value.isNotEmpty)
+          .toList();
       final nodes = [definition, ...definition.querySelectorAll('*')];
       final receivers = nodes.where((node) => node.attributes['tl:attrs'] == r'${attrs}').toList();
-      if (receivers.isEmpty) throw UiReferenceException('$component :: $name: no attribute target');
+      if (parameters.contains('...attrs') && receivers.isEmpty) {
+        throw UiReferenceException('$component :: $name: no attribute target');
+      }
       // Aliases such as sidebar and toastViewport can expose unprefixed component hooks.
       aliases.addAll(definition.classes.where((part) => part.startsWith('trellis-')));
       fragments.add({
         'name': name,
         'signature': source,
-        'parameters': parameters.toList(),
+        'parameters': parameters,
         'slots': [
           for (final node in nodes)
             if (node.attributes['tl:slot'] case final String slot) slot.isEmpty ? 'anonymous' : slot,

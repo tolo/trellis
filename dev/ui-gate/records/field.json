@@ -224,16 +224,22 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “Email Use a work address. email field with autofill menu field examples region” and “Email with an error Use a work address. invalid data email field with autofill menu”."
+      ]
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Email reads its associated help. The error field announces invalid entry, help and error."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Email and Email with an error exposed their named editable fields, work-address help and error text. Preferences represented grouped fields."
+      ]
     }
   }
 }

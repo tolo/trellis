@@ -94,16 +94,15 @@ my_site/
 - `title`, `baseUrl`, and `description` for site identity;
 - `pathPrefix` for a site served below the domain root;
 - `contentDir`, `layoutsDir`, `staticDir`, `dataDir`, and `outputDir` for
-  filesystem locations;
+  directory paths, either absolute or relative to the site root;
 - `theme`, `theme_params`, and `theme_ref` (the git ref that
   `trellis theme add --ref` pins) for an installed theme;
 - `taxonomies` and `paginate` for generated collections;
 - `params` for arbitrary values exposed as `${site.params.*}`;
 - `feeds`, `search`, and `highlight` for generated discovery artifacts and
-  build-time code highlighting.
-- `uses` for named template and static asset sources.
-
-Paths can be relative to the site root or absolute.
+  build-time code highlighting;
+- `uses` for named template and static asset sources;
+- `trustedUrls` for [source-scoped URL declarations](#trusted-urls).
 
 ```yaml
 title: My Site
@@ -148,6 +147,36 @@ theme entry; use a mapped drive letter.
 
 Fenced code blocks are highlighted at build time; see
 [Syntax highlighting](#syntax-highlighting).
+
+## Trusted URLs
+
+Add a `trustedUrls` entry to `trellis_site.yaml` when a URL from front matter or
+site data needs to pass the dynamic attribute scheme check.
+
+```yaml
+trustedUrls:
+  - source: content/tools.md
+    field: bookmarklet
+  - source: data/brand.yaml
+    field: logo
+```
+
+Use a site-relative path with forward slashes to name the file under the
+configured `contentDir` or `dataDir`. Each `field` names one literal top-level
+key, so `brand.logo` selects that exact key.
+
+Read the field through its existing context.
+
+```html
+<a tl:href="${bookmarklet}">Open tool</a>
+<img tl:src="${data.brand.logo}" alt="Brand logo">
+```
+
+An undeclared field, including a page override or a theme value, uses the
+default scheme check. The maintainer must control both the config and the named
+file, since editing the field changes the authorized URL. Missing sources,
+directory aliases, and fields that do not resolve to an exact string value fail
+the build with a `SiteConfigException` naming the source and field.
 
 ## Build sources
 

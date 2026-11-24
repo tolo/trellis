@@ -1,23 +1,30 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:test/test.dart';
 
 import '../../../tool/ui_gate/driver.dart';
+import '../tool/src/bundle.dart';
 import '../tool/src/gallery.dart';
 
 void main() {
   late HttpServer server;
   late ChromeDriver driver;
   Future<void> Function()? holdOptions;
+  String? suiteScript;
 
   setUp(() async {
     holdOptions = null;
+    suiteScript = null;
     final gallery = galleryHandler(Directory.current);
     server = await shelf_io.serve(
       (request) async {
         final uri = request.requestedUri;
+        if (uri.path == '/trellis-ui/trellis-ui.js' && suiteScript != null) {
+          return Response.ok(suiteScript, headers: {'content-type': 'text/javascript'});
+        }
         if (uri.path == '/demo/options' &&
             (uri.queryParameters['q'] == 'zz' || uri.queryParameters['mode'] == 'timeout')) {
           await holdOptions?.call();
@@ -144,6 +151,136 @@ void main() {
     }
   });
 
+  test('submenu activation and traversal stay local and emit one selection', () async {
+    await driver.viewport(900, 740);
+    await open('dropdown-menu');
+    await click('#menu-trigger');
+    await waitFor("document.activeElement.id === 'menu-profile'");
+    await driver.evaluate("Promise.allSettled(document.querySelector('#menu').getAnimations().map(a => a.finished))");
+    await driver.press('ArrowDown');
+    expect(await driver.evaluate('document.activeElement.id'), 'menu-billing');
+    await driver.press('ArrowDown');
+    expect(await driver.evaluate('document.activeElement.id'), 'menu-services-trigger');
+
+    const submenuOpen = "document.querySelector('#menu-services:popover-open')";
+    const expanded = "document.querySelector('#menu-services-trigger').getAttribute('aria-expanded')";
+    for (final (activation, dismissal) in [('ArrowRight', 'ArrowLeft'), ('Enter', 'Escape'), (' ', 'Escape')]) {
+      await driver.press(activation);
+      await waitFor("$submenuOpen && document.activeElement.id === 'menu-invoices'");
+      expect(await driver.evaluate(expanded), 'true');
+      await driver.evaluate('Promise.allSettled($submenuOpen.getAnimations().map(a => a.finished))');
+      final boxes =
+          await driver.evaluate("""
+          (() => {
+            const trigger = document.querySelector('#menu-services-trigger').getBoundingClientRect();
+            const panel = $submenuOpen.getBoundingClientRect();
+            const content = $submenuOpen;
+            const tolerance = 1;
+            return {
+              fits: panel.left >= 0 && panel.right <= innerWidth && panel.top >= 0 && panel.bottom <= innerHeight,
+              beside: panel.left >= trigger.right - tolerance || panel.right <= trigger.left + tolerance,
+              panel: panel.toJSON(),
+              trigger: trigger.toJSON(),
+              side: content.dataset.side,
+            };
+          })()
+        """)
+              as Map;
+      expect(boxes, containsPair('fits', true));
+      expect(boxes, containsPair('beside', true));
+      await driver.press('Home');
+      expect(await driver.evaluate('document.activeElement.id'), 'menu-invoices');
+      await driver.press('ArrowUp');
+      expect(await driver.evaluate('document.activeElement.id'), 'menu-receipts');
+      await driver.press(dismissal);
+      await waitFor("!$submenuOpen && document.activeElement.id === 'menu-services-trigger'");
+      expect(await driver.evaluate(expanded), 'false');
+      expect(await driver.evaluate(menuOpen), isTrue);
+    }
+    await driver.press('Escape');
+    await waitFor("!$menuOpen && document.activeElement.id === 'menu-trigger'");
+
+    await driver.evaluate("""
+      (() => {
+        window.selections = [];
+        document.addEventListener('tl-select', event => selections.push(event.detail.item.id));
+      })()
+    """);
+    await click('#menu-trigger');
+    await waitFor("document.activeElement.id === 'menu-profile'");
+    await driver.evaluate("Promise.allSettled(document.querySelector('#menu').getAnimations().map(a => a.finished))");
+    await click('#menu-status');
+    expect(await driver.evaluate("document.querySelector('#menu-status').getAttribute('aria-checked')"), 'true');
+    expect(await driver.evaluate(menuOpen), isTrue);
+    await click('#menu-services-trigger');
+    await waitFor("$submenuOpen && document.activeElement.id === 'menu-invoices'");
+    await click('#menu-invoices');
+    await waitFor("!$menuOpen && document.activeElement.id === 'menu-trigger'");
+    expect(await driver.evaluate('window.selections'), ['menu-status', 'menu-invoices']);
+    expect(await driver.evaluate(noCsp), isEmpty);
+  });
+
+  test('a narrow submenu clears its trigger when there is enough space', () async {
+    await driver.viewport(320, 800);
+    await open('dropdown-menu');
+    await click('#menu-trigger');
+    await waitFor("document.activeElement.id === 'menu-profile'");
+    await driver.evaluate("Promise.allSettled(document.querySelector('#menu').getAnimations().map(a => a.finished))");
+    await driver.evaluate("document.getElementById('menu-services-trigger').focus()");
+    await driver.press('ArrowRight');
+    await waitFor("document.activeElement.id === 'menu-invoices'");
+    final placement =
+        await driver.evaluate(r"""
+      (async () => {
+        const trigger = document.getElementById('menu-services-trigger');
+        const popup = document.getElementById('menu-services');
+        await Promise.allSettled(popup.getAnimations().map(animation => animation.finished));
+        const anchor = trigger.getBoundingClientRect();
+        const menu = popup.getBoundingClientRect();
+        return {gap: menu.left - anchor.right, fits: menu.right <= innerWidth && menu.bottom <= innerHeight};
+      })()
+    """)
+            as Map;
+    expect(placement['gap'], closeTo(4, 1));
+    expect(placement, containsPair('fits', true));
+  });
+
+  test('moving over the parent menu preserves the open submenu keyboard level', () async {
+    await driver.viewport(900, 740);
+    await open('dropdown-menu');
+    await click('#menu-trigger');
+    await waitFor("document.activeElement.id === 'menu-profile'");
+    await driver.press('ArrowDown');
+    await driver.press('ArrowDown');
+    await driver.press('ArrowRight');
+    const submenuOpen = "document.querySelector('#menu-services:popover-open')";
+    await waitFor("$submenuOpen && document.activeElement.id === 'menu-invoices'");
+    await driver.evaluate('Promise.allSettled($submenuOpen.getAnimations().map(a => a.finished))');
+    await driver.pointer('#menu-billing');
+    await driver.press('Escape');
+    expect(await driver.evaluate(submenuOpen), isNull);
+    expect(await driver.evaluate(menuOpen), isTrue);
+    expect(await driver.evaluate('document.activeElement.id'), 'menu-services-trigger');
+    await driver.press('Escape');
+    await waitFor("!$menuOpen && document.activeElement.id === 'menu-trigger'");
+  });
+
+  test('closing a submenu clears a highlight when the focused item becomes disabled', () async {
+    await open('dropdown-menu');
+    await click('#menu-trigger');
+    await waitFor("document.activeElement.id === 'menu-profile'");
+    await driver.press('ArrowDown');
+    await driver.press('ArrowDown');
+    await driver.press('ArrowRight');
+    await waitFor("document.activeElement.id === 'menu-invoices'");
+    const invoice = "document.getElementById('menu-invoices')";
+    expect(await driver.evaluate("$invoice.hasAttribute('data-highlighted')"), isTrue);
+    await driver.evaluate('$invoice.disabled = true');
+    await driver.press('Escape');
+    await waitFor("!document.querySelector('#menu-services').matches(':popover-open')");
+    expect(await driver.evaluate("$invoice.hasAttribute('data-highlighted')"), isFalse);
+  });
+
   test('popup style attributes are dropped before swap and history save', () async {
     await open('dropdown-menu');
     await click('#menu-trigger');
@@ -151,9 +288,12 @@ void main() {
     await driver.press('Escape');
     await waitFor('!$menuOpen');
     expect(await driver.evaluate("document.querySelector('#menu').hasAttribute('style')"), isTrue);
-    await driver.evaluate(
-      "document.querySelector('#demo').dispatchEvent(new Event('htmx:beforeSwap', {bubbles:true}))",
-    );
+    await driver.evaluate(r"""
+        (() => {
+          const region = document.getElementById('demo');
+          region.dispatchEvent(new CustomEvent('htmx:beforeSwap', {bubbles: true, detail: {target: region}}));
+        })()
+      """);
     expect(await driver.evaluate("document.querySelector('#menu').hasAttribute('style')"), isFalse);
 
     await click('#menu-trigger');
@@ -221,5 +361,45 @@ void main() {
       expect(await verify(), greaterThan(left));
       expect(await driver.evaluate(noCsp), isEmpty);
     }
+  });
+
+  test('hover intent cancels opposite transitions and pending work on disconnect', () async {
+    final script = bundleScript(Directory.current);
+    // Observe the internal helper without adding a production export or a second bundle.
+    final end = script.lastIndexOf('})();');
+    suiteScript = script.replaceRange(end, end, r"""
+window.hoverTransitions = [];
+customElements.define('hover-intent-probe', class extends TlElement {
+  onConnect() {
+    const transition = action => () => window.hoverTransitions.push(action);
+    this.intent = hoverIntent({open: transition('open'), close: transition('close'), openDelay: 40, closeDelay: 40});
+    this.listen(this, 'pointerenter', this.intent.enter);
+    this.listen(this, 'pointerleave', this.intent.leave);
+  }
+  onDisconnect() { this.intent.cancel(); }
+});
+""");
+    await open('dropdown-menu');
+    final result = await driver.evaluate(r"""(async () => {
+      const probe = document.createElement('hover-intent-probe');
+      document.body.append(probe);
+      const fire = type => probe.dispatchEvent(new PointerEvent(type));
+      const settle = () => new Promise(resolve => setTimeout(resolve, 80));
+
+      fire('pointerenter');
+      fire('pointerleave');
+      await settle();
+
+      fire('pointerleave');
+      fire('pointerenter');
+      await settle();
+
+      fire('pointerleave');
+      probe.remove();
+      await settle();
+      return window.hoverTransitions;
+    })()""");
+    expect(result, ['close', 'open']);
+    expect(await driver.evaluate(noCsp), isEmpty);
   });
 }

@@ -27,3 +27,8 @@ is skipped.
 
 Use an action label. For an icon-only button, give the host an `aria-label`
 and hide a decorative icon with `aria-hidden="true"`.
+
+While a submission is pending, set `disabled` to prevent repeat activation and
+`aria-busy="true"` to keep the progress label at full opacity. Use a label
+such as “Saving…”. Restore the action label and clear both attributes when the
+request finishes or fails.

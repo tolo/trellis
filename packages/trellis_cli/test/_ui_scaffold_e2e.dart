@@ -170,6 +170,19 @@ void testUiScaffold(UiScaffold scaffold) {
       reason: 'natural preview preserves the layout and input at 390px',
     );
 
+    if (scaffold == UiScaffold.relic) {
+      await stop(server);
+      final devServer = await _boot(scaffold, project, client, dev: true, originalServer: originalServer);
+      addTearDown(() => stop(devServer));
+      final devBase = Uri.parse('http://${e2eLoopback.address}:${devServer.port}/');
+      final devPage = await _get(client, devBase.resolve('/ui'));
+      expect(devPage.status, 200, reason: devPage.text);
+      expect(devPage.text, contains('src="/_dev/reload.js"'));
+      _expectStrict(devPage.csp);
+      expect(await _expectEmbeddedAssets(client, devBase), digests);
+      await expectStaticReload(devBase, project, 'static');
+    }
+
     if (scaffold == UiScaffold.shelf) {
       await stop(server);
       assetFile('trellis-ui.css').writeAsStringSync('stale on dev boot');

@@ -1,0 +1,48 @@
+<h1>Sheet</h1>
+<section id="demo">
+  <section id="component" aria-label="Sheet examples">
+    <div class="gallery-row">
+      <tl:block tl:each="side : ${sheetSides}">
+        <div tl:replace="~{trellis-ui/sheet :: sheet(${side + '-sheet'}, ${side}, 'Page links')}">
+          <tl:block tl:slot="trigger">
+            <button tl:replace="~{trellis-ui/button :: button('outline')}" tl:attr="id=${'open-' + side}">
+              Open <span tl:text="${side}">right</span> sheet
+            </button>
+          </tl:block>
+          <tl:block tl:slot="content">
+            <a class="gallery-action" tl:attr="id=${side + '-jump'}" href="#destination">Jump to details</a>
+            <a class="gallery-action" tl:attr="id=${side + '-next'}" href="/components/button">Button examples</a>
+            <div tl:replace="~{trellis-ui/field :: field(${side + '-note'}, 'Note')}"></div>
+            <tl:block tl:if="${side == 'right'}">
+              <div id="sheet-swap">
+                <button tl:unless="${sheetUpdated}" id="update-sheet" type="button" class="gallery-action"
+                  hx-get="/components/sheet?updated=1" hx-select="#sheet-swap" hx-target="#sheet-swap"
+                  hx-swap="outerHTML">Refresh sheet content</button>
+                <p tl:if="${sheetUpdated}" id="updated-sheet">Sheet content refreshed.</p>
+              </div>
+              <div tl:replace="~{trellis-ui/popover :: popover('sheet-options', 'bottom', 'start', 8)}">
+                <span tl:slot="trigger">Display options</span>
+                <div tl:slot="content">
+                  <label for="sheet-page-size">Rows per page</label>
+                  <input tl:replace="~{trellis-ui/input :: input}" type="number" id="sheet-page-size" value="10" min="1">
+                </div>
+              </div>
+            </tl:block>
+          </tl:block>
+        </div>
+      </tl:block>
+    </div>
+    <div tl:replace="~{trellis-ui/sheet :: sheet('inline-sheet', 'left', 'Related pages', 700)}">
+      <tl:block tl:slot="trigger">
+        <button id="open-inline" tl:replace="~{trellis-ui/button :: button('outline')}">Open related pages</button>
+      </tl:block>
+      <tl:block tl:slot="content">
+        <a id="inline-link" class="gallery-action" href="/components/popover">Popover examples</a>
+      </tl:block>
+    </div>
+  </section>
+  <button id="swap" type="button" class="gallery-action" hx-get="/components/sheet" hx-select="#demo"
+    hx-target="#demo" hx-swap="outerHTML">Refresh example</button>
+  <a id="navigate" class="gallery-action" hx-boost="true" href="/components/button">Next example</a>
+  <h2 id="destination" tabindex="-1">Details</h2>
+</section>

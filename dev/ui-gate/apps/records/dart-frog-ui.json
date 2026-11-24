@@ -224,16 +224,22 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 announced Name as an edit field, “Example dialog web dialogue with 3 items Close button”, and “Open dialog button has keyboard focus” after Close."
+      ]
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Open dialog opens the named Example dialog, reads the description and Close, and regains focus after Escape."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Named Example dialog focused Close. Escape closed it and focused Open dialog."
+      ]
     }
   }
 }

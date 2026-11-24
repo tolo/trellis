@@ -30,6 +30,9 @@ Use a dialog when a task needs a modal surface. The trigger opens the example an
 Tab and Shift+Tab move through the modal. Escape closes it. A button marked
 `data-dialog-close` closes it and focus returns to the opener.
 
+The panel fades briefly on dismissal while focus moves immediately. Readers who
+prefer reduced motion skip the fade.
+
 ## Accessibility notes
 
 Give each dialog a unique ID, visible title, and useful description. The

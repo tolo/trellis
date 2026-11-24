@@ -17,6 +17,7 @@ abstract interface class GateDriver {
   Future<void> press(String key);
   Future<void> type(String text);
   Future<void> pointer(String selector, {bool click = false, bool down = false});
+  Future<void> dragTouch(String selector, {required int dx, required int dy});
   Future<void> pseudo(String selector, List<String> states);
   Future<int> listeners();
   Future<void> history(int delta);
@@ -199,7 +200,11 @@ final class ChromeDriver implements GateDriver {
   }
 
   @override
-  Future<void> press(String key) async {
+  Future<void> press(String key) => _keyStroke(key);
+
+  Future<void> pressShortcut(String key, {required bool command}) => _keyStroke(key, modifiers: command ? 4 : 2);
+
+  Future<void> _keyStroke(String key, {int modifiers = 0}) async {
     const codes = {
       'Tab': 9,
       'Enter': 13,
@@ -219,7 +224,9 @@ final class ChromeDriver implements GateDriver {
         'type': type,
         'key': key,
         'windowsVirtualKeyCode': code,
-        if (type == 'keyDown' && (key.length == 1 || key == 'Enter')) 'text': key == 'Enter' ? '\r' : key,
+        if (modifiers != 0) 'modifiers': modifiers,
+        if (modifiers == 0 && type == 'keyDown' && (key.length == 1 || key == 'Enter'))
+          'text': key == 'Enter' ? '\r' : key,
       });
     }
   }
@@ -255,6 +262,28 @@ final class ChromeDriver implements GateDriver {
           'clickCount': 1,
         });
     }
+  }
+
+  @override
+  Future<void> dragTouch(String selector, {required int dx, required int dy, bool cancel = false}) async {
+    final center =
+        (await evaluate("""(() => {
+      const box = ($pointerTargetScript)(${jsonEncode(selector)}).getBoundingClientRect();
+      return [box.x + box.width / 2, box.y + box.height / 2];
+    })()""")
+                as List)
+            .cast<num>();
+    Future<void> send(String type, List<Map<String, num>> points) =>
+        probe.command('Input.dispatchTouchEvent', {'type': type, 'touchPoints': points});
+    await send('touchStart', [
+      {'x': center[0], 'y': center[1]},
+    ]);
+    for (final fraction in [1 / 3, 2 / 3, 1.0]) {
+      await send('touchMove', [
+        {'x': center[0] + dx * fraction, 'y': center[1] + dy * fraction},
+      ]);
+    }
+    await send(cancel ? 'touchCancel' : 'touchEnd', []);
   }
 
   @override

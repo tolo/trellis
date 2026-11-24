@@ -4,6 +4,7 @@
   "style": "vega",
   "baseColor": "neutral",
   "components": [
+    "accordion",
     "alert",
     "alert-dialog",
     "badge",
@@ -12,21 +13,26 @@
     "card",
     "checkbox",
     "combobox",
+    "command",
     "dialog",
     "dropdown-menu",
     "field",
     "input",
     "input-group",
     "label",
+    "navigation-menu",
     "native-select",
     "pagination",
+    "popover",
     "radio-group",
     "separator",
+    "sheet",
     "switch",
     "table",
     "tabs",
     "textarea",
-    "toast"
+    "toast",
+    "tooltip"
   ],
   "twAnimate": {
     "version": "1.4.0",
@@ -46,9 +52,33 @@
     ]
   },
   "structuralSkip": {
+    "cn-command-item": {
+      "from": "shadcn@4.23.0",
+      "reason": "The composed palette uses the Combobox item and its existing selected, disabled and focus rendering."
+    },
+    "cn-command-item-indicator": {
+      "from": "shadcn@4.23.0",
+      "reason": "Selecting a command closes the dialog, leaving no persistent check indicator."
+    },
+    "cn-command-list": {
+      "from": "shadcn@4.23.0",
+      "reason": "The shared Combobox popover owns viewport clipping, overflow and keyboard scrolling."
+    },
+    "cn-navigation-menu-content": {
+      "from": "shadcn@4.23.0",
+      "reason": "The pinned Base UI activation-direction variant is invalid in the standalone compiler and drives a shared sliding viewport. Trellis positions each native popover and keeps the generated Vega paint."
+    },
+    "cn-navigation-menu-popup": {
+      "from": "shadcn@4.23.0",
+      "reason": "The pinned easing utility is invalid in the standalone compiler and the sizes depend on the Base UI viewport. The native popup sizes to its panel content."
+    },
+    "cn-navigation-menu-positioner": {
+      "from": "shadcn@4.23.0",
+      "reason": "The native popover uses the shared viewport caps and CSSOM positioning in place of measured Base UI dimensions and position transitions."
+    },
     "cn-toast": {
       "from": "shadcn@4.21.1",
-      "reason": "Base UI toast stacking and swipe utilities read --toast-index, --toast-height and --toast-swipe-movement-*, which Base UI's runtime sets and Trellis's vanilla toast does not drive; they overlap stacked toasts"
+      "reason": "Base UI toast stacking and swipe utilities read --toast-index, --toast-height and --toast-swipe-movement-*, which Base UI's runtime sets. Trellis uses a CSS grid with native touch gestures; the Base UI utilities overlap the grid items"
     }
   },
   "shadcn": {

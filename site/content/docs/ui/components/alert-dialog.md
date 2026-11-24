@@ -29,6 +29,9 @@ dismisses after either button and leaves the project in place.
 Opening focuses Cancel. Tab and Shift+Tab stay within the modal. Escape and
 Cancel dismiss it. Enter or Space activates the focused button.
 
+The panel fades briefly on dismissal while focus moves immediately. Readers who
+prefer reduced motion skip the fade.
+
 ## Accessibility notes
 
 Describe the consequence in the title and description. Keep a safe default

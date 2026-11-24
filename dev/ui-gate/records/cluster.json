@@ -224,16 +224,22 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “Item 1”, “Item 2”, “Item 3”, “Item 4”, “Item 5” and “Item 6”."
+      ]
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Item 1 through Item 6 read in source order."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. All six labeled tiles lay in one spaced row at desktop size without overlap."
+      ]
     }
   }
 }

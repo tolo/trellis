@@ -33,17 +33,36 @@ Every entry includes its built URL plus the configured fields. Only single
 pages are indexed: the home page and section listings are not. Drafts are left
 out, and `search: false` in a page's front matter omits it.
 
-Trellis writes `trellis-search.js` beside the index. Arbor, Folio, and Lattice
-load it for the docs sidebar when `theme_params.show_search` is on. The combobox
-appears after the same-origin index loads. It lists up to 20 page titles that
-match every search term across title, summary, content, and tags, ignoring case.
-Use the arrow keys and Enter or click a result to open its page. The indexed URL
-already carries the configured path prefix.
+Trellis writes `trellis-search.js` beside the index. Search lists up to 20
+page titles that match every term across title, summary, content, and tags,
+ignoring case. Use the arrow keys and Enter or click a result to open its page.
+The indexed URL already carries the configured path prefix.
 
-The bundled themes use the default index location. If you change `search.output`,
-adjust your layout's script URL and its `data-search-index` attribute to point
-to the new directory and index. The name `trellis-search.js` is reserved for
-the shared client. Keep that path free of site assets in the index directory.
+Arbor, Folio, and Lattice use inline sidebar search when
+`theme_params.show_search` is on. The inline combobox appears after the
+same-origin index loads. Lattice can put search in a header palette instead:
+
+```yaml
+params:
+  search_palette: true
+theme_params:
+  show_search: true
+search:
+  enabled: true
+  output: assets/search/search-index.json
+```
+
+A Search button or Control+K / Command+K opens the palette. An unmatched query
+shows **No results**. A failed index request or parse shows **Search unavailable**.
+If the build disables search or has no eligible pages, it omits the palette
+and its keyboard binding.
+
+Custom layouts can use `${site.search.indexUrl}` and `${site.search.clientUrl}`
+when `site.search` is present. Both URLs include the configured path prefix
+and honour a nested output path. Arbor and Folio's default inline layouts use
+the conventional root location. Adjust their script URL and
+`data-search-index` if you use a custom index location. The name
+`trellis-search.js` is reserved for the shared client.
 
 ## Sitemap
 

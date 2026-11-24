@@ -1,0 +1,11 @@
+.trellis-popover-content {
+  inline-size: 18rem;
+  transform-origin: var(--transform-origin);
+}
+
+/* The upstream flex layout overrides the user agent's closed-popover display. */
+.trellis-popover-content:not(:popover-open) { display: none; }
+
+.trellis-popover-title, .trellis-popover-description { margin: 0; }
+
+.trellis-popover-title { font-size: inherit; }

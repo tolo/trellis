@@ -1,0 +1,245 @@
+{
+  "component": "navigation-menu",
+  "automated": "pass",
+  "items": {
+    "provenance": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "2 declared permissive notices exist"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "2 declared permissive notices exist"
+          ]
+        }
+      }
+    },
+    "self-hosting": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "all requests same-origin"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "all requests same-origin"
+          ]
+        }
+      }
+    },
+    "strict-csp": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "semantic-markup": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "htmx-lifecycle": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "keyboard": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "wcag-axe": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "forced-colors": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "responsive": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "zoom": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "reduced-motion": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "touch-target": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "visual": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "44 states captured; no clipping, overlap or appearance differences"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "44 states captured; no clipping, overlap or appearance differences"
+          ]
+        }
+      }
+    },
+    "screen-reader-voiceover-safari": {
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “Guides expanded summary”, “current page, visited link Guide overview list 2 items level 2”, “visited link Disclosure patterns”, “Reference expanded summary” and “visited link Component catalogue list 2 items level 2”."
+      ]
+    },
+    "screen-reader-nvda-firefox": {
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Site navigation is a three-item landmark. Guides expands, Guide overview is current, Disclosure patterns is reachable, and Reference announces expanded then collapsed."
+      ]
+    },
+    "safari": {
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Guides exposed Guide overview and Disclosure patterns. Escape collapsed it and restored Guides focus. Lattice mobile nested check also passed."
+      ]
+    }
+  }
+}

@@ -224,16 +224,22 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “Account selected tab, 1 of 3 Account details tab group” and “Billing selected tab, 3 of 3”."
+      ]
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Account tab selected, Billing tab reachable, and Security unavailable. Enter selects Billing and Tab announces the Billing panel text."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Right from Account reached Billing, skipping disabled Security. Return selected Billing and exposed the correct panel."
+      ]
     }
   }
 }

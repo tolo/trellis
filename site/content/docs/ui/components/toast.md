@@ -17,6 +17,10 @@ notification available until you dismiss it.
 <div tl:replace="~{trellis-ui/toast :: toast('success', 'Changes saved', 'Your profile has been updated.', 0, false)}"></div>
 ```
 
+Toasts stack in the existing notification region. A rightward touch swipe
+dismisses the touched toast. Vertical scrolling and leftward or short swipes
+leave it in place.
+
 ## Keyboard interaction
 
 Tab reaches the dismiss button. Enter or Space dismisses the notification.

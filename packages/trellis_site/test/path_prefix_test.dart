@@ -294,7 +294,7 @@ void main() {
     /// Builds a small blog with per-section feeds and a `tags` taxonomy. The home
     /// layout prints `${site.feeds.*}` as text so the final href rewrite pass
     /// cannot mask an unprefixed value.
-    Future<String> buildBlog({required String pathPrefix}) async {
+    Future<String> buildBlog({required String pathPrefix, bool indexPost = true}) async {
       final tempDir = Directory.systemTemp.createTempSync('prefix_blog_');
       addTearDown(() => tempDir.deleteSync(recursive: true));
 
@@ -302,15 +302,18 @@ void main() {
       Directory(p.join(contentDir, 'posts')).createSync(recursive: true);
       File(p.join(contentDir, '_index.md')).writeAsStringSync('---\ntitle: Home\n---\nHome.\n');
       File(p.join(contentDir, 'posts', '_index.md')).writeAsStringSync('---\ntitle: Posts\n---\n');
-      File(
-        p.join(contentDir, 'posts', 'intro.md'),
-      ).writeAsStringSync('---\ntitle: Intro\ndate: 2026-01-01T00:00:00Z\ntags: [Dart]\n---\nIntro.\n');
+      File(p.join(contentDir, 'posts', 'intro.md')).writeAsStringSync(
+        '---\ntitle: Intro\ndate: 2026-01-01T00:00:00Z\ntags: [Dart]\n'
+        '${indexPost ? '' : 'search: false\n'}---\nIntro.\n',
+      );
 
       final layoutsDir = p.join(tempDir.path, 'layouts');
       Directory(p.join(layoutsDir, '_default')).createSync(recursive: true);
       File(p.join(layoutsDir, 'home.html')).writeAsStringSync(
         '<html><body><p id="atom" tl:text="\${site.feeds.atom}">x</p>'
-        '<p id="rss" tl:text="\${site.feeds.rss}">x</p></body></html>',
+        '<p id="rss" tl:text="\${site.feeds.rss}">x</p>'
+        '<p id="search-index" tl:if="\${site.search}" tl:text="\${site.search.indexUrl}">x</p>'
+        '<p id="search-client" tl:if="\${site.search}" tl:text="\${site.search.clientUrl}">x</p></body></html>',
       );
       const listing = '<html><body><p tl:text="\${page.url}">x</p></body></html>';
       File(p.join(layoutsDir, '_default', 'single.html')).writeAsStringSync(listing);
@@ -383,6 +386,19 @@ void main() {
       expect(read(out, 'feed.xml'), contains('<id>https://example.com/</id>'));
       expect(read(out, 'index.html'), contains('<p id="atom">/feed.xml</p>'));
       expect(read(out, 'sitemap.xml'), contains('<loc>https://example.com/tags/dart/</loc>'));
+    });
+
+    test('an eligible taxonomy term alone makes search available in the rendered build', () async {
+      final out = await buildBlog(pathPrefix: '/my-site/', indexPost: false);
+
+      final home = read(out, 'index.html');
+      expect(home, contains('<p id="search-index">/my-site/search-index.json</p>'));
+      expect(home, contains('<p id="search-client">/my-site/trellis-search.js</p>'));
+      expect(read(out, 'trellis-search.js'), searchClient);
+      final urls = (jsonDecode(read(out, 'search-index.json')) as List<dynamic>).cast<Map<String, dynamic>>().map(
+        (entry) => entry['url'],
+      );
+      expect(urls, ['/my-site/tags/dart/']);
     });
   });
 

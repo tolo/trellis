@@ -224,16 +224,22 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “Default button button examples region”, “Outline button”, “icon button”, “icon-lg button”, “Disabled dimmed button” and “Starting… website button busy dimmed button”."
+      ]
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Variant names and the four icon labels are announced as buttons. Disabled announces unavailable and Starting announces unavailable and busy."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Default, Outline, Secondary and Destructive controls exposed as buttons. Option-Tab reached Default then Outline, with Disabled and Starting… marked disabled."
+      ]
     }
   }
 }

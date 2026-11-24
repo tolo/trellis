@@ -16,6 +16,7 @@
   gap: .75rem;
   padding: 1rem;
   pointer-events: auto;
+  touch-action: pan-y pinch-zoom;
   border: 1px solid var(--border);
   background: var(--popover);
   color: var(--popover-foreground);

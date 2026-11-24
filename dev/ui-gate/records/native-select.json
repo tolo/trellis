@@ -224,16 +224,22 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “One Primary collapsed pop-up button native-select examples region”, “menu 2 items ✓ One”, “Closing menu Two Primary collapsed pop-up button” and “One Invalid invalid data collapsed pop-up button”."
+      ]
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Primary is a combo box with One selected, then announces Two on Down. Disabled and Invalid are announced with their state."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Primary opened native options and Down plus Return changed One to Two. Disabled stayed disabled."
+      ]
     }
   }
 }

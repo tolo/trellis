@@ -8,13 +8,13 @@
         "chrome": {
           "status": "pass",
           "evidence": [
-            "1 declared permissive notices exist"
+            "2 declared permissive notices exist"
           ]
         },
         "firefox": {
           "status": "pass",
           "evidence": [
-            "1 declared permissive notices exist"
+            "2 declared permissive notices exist"
           ]
         }
       }
@@ -212,28 +212,39 @@
         "chrome": {
           "status": "pass",
           "evidence": [
-            "42 states captured; no clipping, overlap or appearance differences"
+            "54 states captured; no clipping, overlap or appearance differences"
           ]
         },
         "firefox": {
           "status": "pass",
           "evidence": [
-            "42 states captured; no clipping, overlap or appearance differences"
+            "54 states captured; no clipping, overlap or appearance differences"
           ]
         }
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 read the named Edit and New contact dialogs and their Name field in the live search and Save flow. After Forward, VoiceOver Right read “New contact web dialogue with 6 items”, then Name was read on focus. Cancel restored New contact focus.",
+        "VoiceOver read both the “Choose appointment date” and “Choose availability dates” dialogs, the November 2026 calendar tables and the “22 november current date button”."
+      ]
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Contacts and Summary announce selection, and the table announces its headers and row labels. New contact opens through HTMX and announces its form controls. Both pickers announce their names, month, calendar table and the current date. Escape from each returns to its collapsed trigger while New contact remains active. Outer Escape returns focus to New contact. The installed synthesizer reports Swedish unsupported, and reads the Swedish calendar text in its available voice.",
+        "Live filtering retained Search contacts focus from Ada through Ada Morgan without refocusing. NVDA announced the Edit contact and New contact dialogs and their focused Name fields. Escape returned focus to Actions for Ada Morgan and New contact, respectively.",
+        "The final preserved-form replay again announced both live search values and the focused Name field in Edit contact and New contact."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Both calendar popovers closed before the Edit contact dialog, then Escape restored the row Actions control.",
+        "Two live filter swaps kept keyboard focus on Search contacts. Back and Forward restored the applied search and status and their matching rows.",
+        "After Save and after Forward, the New contact dialog rendered with Name focused. The native macOS accessibility API exposed the focused Name text field, the named application dialog and its heading in both journeys."
+      ]
     }
   }
 }

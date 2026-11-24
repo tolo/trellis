@@ -1,0 +1,38 @@
+<h1>Navigation menu</h1>
+<section id="demo">
+  <div tl:replace="~{trellis-ui/navigation-menu :: navigationMenu('Site navigation')}" id="component">
+    <li>
+      <a tl:replace="~{trellis-ui/navigation-menu :: navigationMenuLink(${navPrefix + '/components/breadcrumb'}, ${navCurrent})}"
+        id="nav-home">Home</a>
+    </li>
+    <li tl:replace="~{trellis-ui/navigation-menu :: navigationMenuGroup('guides', 'Guides')}">
+      <ul role="list">
+        <li>
+          <a tl:replace="~{trellis-ui/navigation-menu :: navigationMenuLink(${navPrefix + '/components/navigation-menu'}, ${navCurrent})}"
+            id="nav-overview">Guide overview</a>
+          </li>
+        <li>
+          <a tl:replace="~{trellis-ui/navigation-menu :: navigationMenuLink(${navPrefix + '/components/accordion'}, ${navCurrent})}"
+            id="nav-accordion">Disclosure patterns</a>
+          </li>
+      </ul>
+    </li>
+    <li tl:replace="~{trellis-ui/navigation-menu :: navigationMenuGroup('reference', 'Reference', 'bottom', 'end')}">
+      <ul role="list">
+        <li>
+          <a tl:replace="~{trellis-ui/navigation-menu :: navigationMenuLink(${navPrefix + '/components/button'}, ${navCurrent})}"
+            id="nav-components">Component catalogue</a>
+          </li>
+        <li>
+          <a tl:replace="~{trellis-ui/navigation-menu :: navigationMenuLink(${navPrefix + '/components/table'}, ${navCurrent})}"
+            id="nav-table">Tables</a>
+          </li>
+      </ul>
+    </li>
+  </div>
+  <button id="swap" type="button" class="gallery-action"
+    tl:attr="hx-get=${navPrefix + '/components/navigation-menu'}" hx-select="#demo"
+    hx-target="#demo" hx-swap="outerHTML">Refresh example</button>
+  <a id="navigate" class="gallery-action" hx-boost="true"
+    tl:attr="href=${navPrefix + '/components/breadcrumb'}">Next example</a>
+</section>

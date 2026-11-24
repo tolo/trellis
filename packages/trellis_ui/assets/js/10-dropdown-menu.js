@@ -3,30 +3,53 @@ const MENU_ITEM = ':is([role="menuitem"], [role="menuitemcheckbox"]):not(:disabl
 class TlDropdownMenu extends TlElement {
   onConnect() {
     this.sync(false);
-    this.trackPopup(this.trigger, this.popup);
+    this.observeExit(this.popup);
+    const placement = this.submenu ? { side: 'right' } : undefined;
+    this.trackPopup(this.trigger, this.popup, placement);
+    this.listen(this.popup, 'beforetoggle', (event) => {
+      if (event.newState === 'closed') this.clearMenu();
+    });
     this.listen(this.popup, 'toggle', () => {
       const open = this.popup.matches(':popover-open');
       this.sync(open);
       if (open) {
-        place(this.trigger, this.popup);
+        place(this.trigger, this.popup, placement);
         (this.focusLast ? this.items.at(-1) : this.items[0])?.focus();
       }
       this.focusLast = false;
     });
+    if (this.submenu) {
+      this.listen(this.trigger, 'click', (event) => {
+        if (!this.trigger.matches(MENU_ITEM)) event.preventDefault();
+      });
+    }
     this.listen(this, 'keydown', (event) => this.keydown(event));
     this.listen(this.popup, 'click', (event) => this.select(event));
-    this.listen(this.popup, 'pointermove', (event) => event.target.closest(MENU_ITEM)?.focus({ preventScroll: true }));
-    this.listen(this.popup, 'focusin', (event) => event.target.closest(MENU_ITEM)?.setAttribute('data-highlighted', ''));
-    this.listen(this.popup, 'focusout', (event) => event.target.closest('[data-highlighted]')?.removeAttribute('data-highlighted'));
+    this.listen(this.popup, 'pointermove', (event) => {
+      if (!this.popup.querySelector('[role=menu]:popover-open')) this.item(event.target)?.focus({ preventScroll: true });
+    });
+    this.listen(this.popup, 'focusin', (event) => this.item(event.target)?.setAttribute('data-highlighted', ''));
+    this.listen(this.popup, 'focusout', (event) => this.item(event.target, '[data-highlighted]')?.removeAttribute('data-highlighted'));
   }
 
-  get trigger() { return this.querySelector('[data-slot="dropdown-menu-trigger"]'); }
-  get popup() { return this.querySelector('[data-slot="dropdown-menu-content"]'); }
-  get items() { return [...this.popup.querySelectorAll(MENU_ITEM)]; }
+  get trigger() { return this.querySelector(':scope > button[popovertarget]'); }
+  get popup() { return this.querySelector(':scope > [role=menu]'); }
+  get parentMenu() { return this.parentElement?.closest('tl-dropdown-menu'); }
+  get submenu() { return this.dataset.slot === 'dropdown-menu-sub'; }
+  get items() { return [...this.popup.querySelectorAll(MENU_ITEM)].filter(item => this.item(item)); }
 
-  onHistorySave() {
+  item(target, selector = MENU_ITEM) {
+    const item = target.closest(selector);
+    return item?.closest('[role=menu]') === this.popup ? item : null;
+  }
+
+  onHistorySave() { this.clearMenu(); }
+
+  clearMenu() {
     this.sync(false);
-    this.popup.querySelector('[data-highlighted]')?.removeAttribute('data-highlighted');
+    for (const item of this.popup.querySelectorAll('[data-highlighted]')) {
+      this.item(item, '[data-highlighted]')?.removeAttribute('data-highlighted');
+    }
   }
 
   sync(open) {
@@ -37,23 +60,25 @@ class TlDropdownMenu extends TlElement {
 
   close() {
     this.popup.hidePopover();
-    this.sync(false);
-    this.trigger.focus();
+    this.trigger.focus({ preventScroll: true });
   }
 
   keydown(event) {
+    if (event.defaultPrevented) return;
     const { key } = event;
     if (event.target === this.trigger) {
-      if (key !== 'ArrowDown' && key !== 'ArrowUp') return;
+      if (this.submenu ? key !== 'ArrowRight' : key !== 'ArrowDown' && key !== 'ArrowUp') return;
+      if (this.submenu && !this.trigger.matches(MENU_ITEM)) return;
       event.preventDefault();
       this.focusLast = key === 'ArrowUp';
-      this.popup.showPopover();
+      this.popup.showPopover({ source: this.trigger });
       return;
     }
-    if (!this.popup.contains(event.target) || !this.popup.matches(':popover-open')) return;
-    if (key === 'Escape' || key === 'Tab') {
-      if (key === 'Escape') event.preventDefault();
-      this.close();
+    if (event.target.closest('[role=menu]') !== this.popup || !this.popup.matches(':popover-open')) return;
+    if (key === 'Escape' || key === 'Tab' || (this.submenu && key === 'ArrowLeft')) {
+      if (key !== 'Tab') event.preventDefault();
+      if (key === 'Tab') this.closeBranch();
+      else this.close();
       return;
     }
     const items = this.items, index = items.indexOf(document.activeElement);
@@ -72,15 +97,21 @@ class TlDropdownMenu extends TlElement {
     }
   }
 
+  closeBranch() {
+    this.close();
+    this.parentMenu?.closeBranch();
+  }
+
   select(event) {
-    const item = event.target.closest(MENU_ITEM);
+    const item = this.item(event.target);
     if (!item) return;
+    if (item.dataset.slot === 'dropdown-menu-sub-trigger') return;
     if (item.getAttribute('role') === 'menuitemcheckbox') {
       const checked = item.getAttribute('aria-checked') !== 'true';
       item.setAttribute('aria-checked', String(checked));
       item.toggleAttribute('data-checked', checked);
     } else {
-      this.close();
+      this.closeBranch();
     }
     item.dispatchEvent(new CustomEvent('tl-select', { bubbles: true, detail: { item } }));
   }

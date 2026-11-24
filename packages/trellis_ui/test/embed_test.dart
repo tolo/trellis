@@ -12,6 +12,22 @@ void main() {
     expect(embed.embeddedSource(Directory.current), File('lib/src/embedded_assets.g.dart').readAsStringSync());
   });
 
+  test('compressed hand CSS preserves the upstream sheet, cascade order and embedded Unicode strings', () {
+    final fixture = Directory.systemTemp.createTempSync('suite_css_');
+    addTearDown(() => fixture.deleteSync(recursive: true));
+    final generated = Directory('${fixture.path}/generated')..createSync();
+    final hand = Directory('${fixture.path}/assets/css/hand')..createSync(recursive: true);
+    const upstream = '/*! upstream notice */\n@layer base, trellis-hand;';
+    File('${generated.path}/trellis.min.css').writeAsStringSync(upstream);
+    File('${hand.path}/zz-label.css').writeAsStringSync('.label::before { content: "✓  →"; }');
+    File('${hand.path}/label.css').writeAsStringSync('.label::before { content: "first"; }');
+
+    final css = bundleCss(fixture);
+    expect(css, startsWith('$upstream\n@layer trellis-hand'));
+    expect(css, contains('first'));
+    expect(css.indexOf('✓  →'), greaterThan(css.indexOf('first')));
+  });
+
   test('the bundle orders scripts by name and rejects module syntax', () {
     final fixture = Directory.systemTemp.createTempSync('suite_bundle_');
     addTearDown(() => fixture.deleteSync(recursive: true));
@@ -20,7 +36,7 @@ void main() {
     File('${scripts.path}/10-b.js').writeAsStringSync('const second = first + 1;');
     final bundle = bundleScript(fixture);
     expect(bundle.indexOf('const first'), lessThan(bundle.indexOf('const second')));
-    expect(bundle, startsWith('(function () {'));
+    expect(bundle, startsWith('(function () {\n"use strict";'));
     expect(bundle, endsWith('})();\n'));
     for (final source in [
       'import x from "./a.js";',

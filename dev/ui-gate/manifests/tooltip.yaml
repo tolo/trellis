@@ -1,0 +1,57 @@
+name: tooltip
+page: /components/tooltip
+root: '#component'
+elements:
+  trigger: '#colour-mode'
+  hint: '#colour-hint'
+  arrow: '#colour-hint .trellis-tooltip-arrow'
+states:
+  default: []
+  open:
+    - focus: '#before-hint'
+    - press: Tab
+    - wait: "document.querySelector('#colour-hint:popover-open[style]') !== null"
+    - wait: "document.getElementById('colour-hint').getAnimations().every(animation => animation.playState !== 'running')"
+keyboard:
+  - state: open
+  - expect: {expression: document.activeElement.id, equals: colour-mode}
+  - press: Escape
+  - expect: {expression: "document.activeElement.id === 'colour-mode' && !document.querySelector('#colour-hint:popover-open')", equals: true}
+  - press: Tab
+  - expect: {expression: "document.activeElement.id === 'shortcuts' && !!document.querySelector('#shortcut-hint:popover-open')", equals: true}
+  - press: Tab
+  - expect: {expression: "document.activeElement.id === 'swap' && !document.querySelector('#shortcut-hint:popover-open')", equals: true}
+semantics:
+  - expression: >-
+      (() => {
+        const trigger = document.getElementById('colour-mode'), hint = document.getElementById('colour-hint');
+        return trigger.tagName === 'A' && trigger.getAttribute('href') === '#colour-settings' &&
+          trigger.textContent.trim() === 'Colour mode' &&
+          trigger.getAttribute('aria-describedby') === 'colour-mode-help colour-hint' &&
+          hint.textContent.trim() === 'Find light and dark themes.' &&
+          hint.getAttribute('role') === 'tooltip' && hint.getAttribute('popover') === 'manual';
+      })()
+    equals: true
+htmx:
+  region: '#demo'
+  swap:
+    - eval: document.getElementById('swap').click()
+  navigate:
+    - eval: document.getElementById('navigate').click()
+  transient: '[data-slot="tooltip-content"][data-open], [data-slot="tooltip-content"][style]'
+  probe:
+    steps:
+      - eval: >-
+          (() => {
+            window.opens = 0;
+            document.getElementById('colour-hint').addEventListener('beforetoggle', event => {
+              if (event.newState === 'open') window.opens++;
+            });
+          })()
+      - state: open
+    expression: window.opens
+    equals: 1
+instances: [tl-tooltip]
+provenance:
+  - file: ../../../packages/trellis_ui/vendor/shadcn/shadcn@4.23.0/LICENSE.md
+    license: MIT

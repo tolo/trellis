@@ -8,6 +8,12 @@
         hx-get="/components/dropdown-menu" hx-select="#menu-result" hx-target="#menu-result" hx-swap="outerHTML">Profile</button>
       <button type="button" tl:replace="~{trellis-ui/dropdown-menu :: menuItem}" id="menu-disabled" disabled>Settings</button>
       <button type="button" tl:replace="~{trellis-ui/dropdown-menu :: menuItem}" id="menu-billing">Billing</button>
+      <div tl:replace="~{trellis-ui/dropdown-menu :: menuSubmenu('menu-services')}">
+        <span tl:slot="trigger">Services</span>
+        <button tl:replace="~{trellis-ui/dropdown-menu :: menuItem}" id="menu-sub-disabled" disabled>Unavailable</button>
+        <button tl:replace="~{trellis-ui/dropdown-menu :: menuItem}" id="menu-invoices">Invoices</button>
+        <button tl:replace="~{trellis-ui/dropdown-menu :: menuItem}" id="menu-receipts">Receipts</button>
+      </div>
       <div tl:replace="~{trellis-ui/dropdown-menu :: menuSeparator}"></div>
       <button type="button" tl:replace="~{trellis-ui/dropdown-menu :: menuCheckboxItem(false)}" id="menu-status">Show status</button>
       <button type="button" tl:replace="~{trellis-ui/dropdown-menu :: menuItem('destructive')}" id="menu-alert"

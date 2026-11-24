@@ -62,14 +62,18 @@ final class _Contacts {
   ];
 
   Future<Response> list(Request request) async {
+    const vary = 'HX-Request, HX-History-Restore-Request, HX-Trigger';
     final query = _query(request);
-    final context = {...query.toContext(), 'summary': _summary, 'summaryOob': false};
+    final context = {...query.toContext(), 'summary': _summary, 'summaryOob': false, 'preserveFilter': false};
     if (isHtmxRequest(request) && request.headers['hx-history-restore-request'] != 'true') {
-      final result = await renderFragment(request, 'list', 'list', context);
-      return result.change(headers: {'HX-Push-Url': query.url(), 'Vary': 'HX-Request, HX-History-Restore-Request'});
+      final result = await renderFragment(request, 'list', 'list', {
+        ...context,
+        'preserveFilter': request.headers['hx-trigger'] == 'contact-filter',
+      });
+      return result.change(headers: {'HX-Push-Url': query.url(), 'Vary': vary});
     }
     final result = await renderPage(request, 'contacts', context);
-    return result.change(headers: {'Vary': 'HX-Request, HX-History-Restore-Request'});
+    return result.change(headers: {'Vary': vary});
   }
 
   Future<Response> createDialog(Request request) => _form(request, const ContactDraft());
@@ -100,6 +104,9 @@ final class _Contacts {
         'url': _query(request).url(path: id == null ? '/contacts' : '/contacts/$id'),
         'name': draft.name,
         'email': draft.email,
+        'appointmentDate': draft.appointmentDate,
+        'rangeStart': draft.rangeStart,
+        'rangeEnd': draft.rangeEnd,
         'companyId': draft.company,
         'companyText': companies[draft.company] ?? draft.companyText,
         'options': _companyOptions(''),
@@ -146,7 +153,7 @@ final class _Contacts {
 
   Future<Response> _mutation(Request request, String title, String name, {int? savedId}) async {
     final query = _query(request, savedId: savedId);
-    final context = {...query.toContext(), 'summary': _summary, 'summaryOob': true};
+    final context = {...query.toContext(), 'summary': _summary, 'summaryOob': true, 'preserveFilter': false};
     final engine = getEngine(request);
     final list = await engine.renderFileFragment('list', fragment: 'list', context: context);
     final summary = await engine.renderFileFragment('summary', fragment: 'summary', context: context);

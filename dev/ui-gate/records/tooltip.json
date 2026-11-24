@@ -1,0 +1,245 @@
+{
+  "component": "tooltip",
+  "automated": "pass",
+  "items": {
+    "provenance": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "1 declared permissive notices exist"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "1 declared permissive notices exist"
+          ]
+        }
+      }
+    },
+    "self-hosting": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "all requests same-origin"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "all requests same-origin"
+          ]
+        }
+      }
+    },
+    "strict-csp": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "semantic-markup": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "htmx-lifecycle": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "keyboard": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "wcag-axe": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "forced-colors": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "responsive": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "zoom": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "reduced-motion": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "touch-target": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "visual": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "28 states captured; no clipping, overlap or appearance differences"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "28 states captured; no clipping, overlap or appearance differences"
+          ]
+        }
+      }
+    },
+    "screen-reader-voiceover-safari": {
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “link Colour mode Light and dark modes are available. Find light and dark themes. Tooltip examples region” and “Keyboard shortcuts Press Tab to move between controls. button”."
+      ]
+    },
+    "screen-reader-nvda-firefox": {
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Colour mode and Keyboard shortcuts speak their associated descriptions on focus."
+      ]
+    },
+    "safari": {
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Option-Tab focused Colour mode and displayed Find light and dark themes. Escape hid it and kept focus on Colour mode. Tab moved through Keyboard shortcuts to Refresh example."
+      ]
+    }
+  }
+}

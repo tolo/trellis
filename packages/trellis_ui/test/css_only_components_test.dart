@@ -137,6 +137,20 @@ void main() {
     );
   });
 
+  test('Card renders only supplied copy and every supplied title is an h2', () {
+    final doc = render(File('test/fixtures/card-partial.html').readAsStringSync());
+    expect(doc.querySelector('#title-and-body')!.text.trim(), 'On this pageContents of this page.');
+    expect(doc.querySelector('#body-only')!.text.trim(), 'Body only.');
+    expect(doc.querySelector('#title-only')!.text.trim(), 'Title only');
+    expect(
+      doc
+          .querySelectorAll('h2[data-slot=card-title]')
+          .map((heading) => heading.text.trim())
+          .where((text) => text.isNotEmpty),
+      ['On this page', 'Title only'],
+    );
+  });
+
   test('a natural table header slot can render a sortable column control', () {
     final table = render(
       '''

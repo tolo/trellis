@@ -29,6 +29,24 @@
   </span>
 </button>
 
+<tl-dropdown-menu tl:fragment="menuSubmenu(id, ...attrs)" data-slot="dropdown-menu-sub">
+  <button type="button" role="menuitem" tabindex="-1" data-slot="dropdown-menu-sub-trigger" aria-haspopup="menu"
+    aria-expanded="false" class="trellis-dropdown-menu-item trellis-dropdown-menu-sub-trigger"
+    tl:attr="id=${id + '-trigger'}, aria-controls=${id}, popovertarget=${id}">
+    <tl:block tl:slot="trigger">More actions</tl:block>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="m9 18 6-6-6-6"></path>
+    </svg>
+  </button>
+  <div popover="auto" role="menu" data-slot="dropdown-menu-sub-content" data-trellis-popup data-closed
+    data-side="right" data-align="start"
+    class="trellis-dropdown-menu-content trellis-dropdown-menu-content-logical trellis-dropdown-menu-sub-content"
+    tl:attr="id=${id}, aria-labelledby=${id + '-trigger'}" tl:attrs="${attrs}">
+    <tl:block tl:slot=""></tl:block>
+  </div>
+</tl-dropdown-menu>
+
 <div tl:fragment="menuSeparator(...attrs)" role="separator" data-slot="dropdown-menu-separator"
   class="trellis-dropdown-menu-separator" tl:attrs="${attrs}"></div>
 </body></html>

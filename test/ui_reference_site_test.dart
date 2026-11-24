@@ -196,6 +196,19 @@ void main() {
     }
   });
 
+  test('Navigation menu preview marks its current page in both deploy shapes', () {
+    if (policy.isWithdrawn('navigation-menu')) return;
+    const componentPath = '$_componentRoute/navigation-menu/';
+    for (final MapEntry(key: prefix, value: output) in outputs.entries) {
+      final path = '${prefix.isEmpty ? '/' : prefix}$componentPath';
+      final uri = Uri.parse('https://example.test$path');
+      final document = html.parse(File(p.join(output.path, componentPath, 'index.html')).readAsStringSync());
+      final links = document.querySelectorAll('$_preview a[aria-current="page"]');
+      expect(links, hasLength(1), reason: path);
+      expect(uri.resolve(links.single.attributes['href']!).path, path);
+    }
+  });
+
   test('tokens a page lists exist in the shipped stylesheet', () {
     final css = utf8.decode(trellisUiRespond('/$_suiteCss')!.body);
     final declared = RegExp(r'(--[\w-]+)\s*:').allMatches(css).map((match) => match[1]).toSet();
@@ -301,6 +314,34 @@ void main() {
     })()'''),
       [true, true, 'undefined'],
     );
+    expect(
+      await example('sheet', r'''(() => {
+      const trigger = document.querySelector('#reference-sheet-trigger');
+      const sheet = document.querySelector('#reference-sheet');
+      trigger.click();
+      const links = [...sheet.querySelectorAll('ul > li > a')];
+      const opened = sheet.matches(':modal') && document.activeElement === links[0];
+      const targetsFit = links.every(link => link.getBoundingClientRect().height >= 44);
+      sheet.querySelector('[data-slot=sheet-close]').click();
+      return [opened, !sheet.open, document.activeElement === trigger, typeof window.htmx,
+        links.length, targetsFit];
+    })()'''),
+      [true, true, true, 'undefined', 2, true],
+    );
+    if (!policy.isWithdrawn('tooltip')) {
+      expect(
+        await example('tooltip', r'''(() => {
+      const control = document.querySelector('#reference-mode');
+      const hint = document.querySelector('#reference-mode-hint');
+      control.focus();
+      const open = hint.matches(':popover-open') && hint.getBoundingClientRect().height > 0;
+      const stillFocused = document.activeElement === control;
+      control.blur();
+      return [open, stillFocused, !hint.matches(':popover-open'), control.getAttribute('aria-describedby')];
+    })()'''),
+        [true, true, true, 'reference-mode-hint'],
+      );
+    }
     if (!policy.isWithdrawn('button')) {
       expect(
         await example('button', r'''(() => {
@@ -320,6 +361,30 @@ void main() {
     await browser.evaluateHere("document.querySelector('[data-lattice-theme-toggle]').click()");
     expect(await browser.evaluateHere(skin), ['light', false]);
     expect(errors, isEmpty);
+  });
+
+  test('Popover reference preserves the suite title typography inside an open panel', () async {
+    final browser = await _startChrome('Trellis UI Popover reference typography');
+    if (browser == null) return;
+    final site = await StaticSiteServer.serve(outputs['']!);
+    addTearDown(site.close);
+    final styles = await browser.evaluate(
+      site.baseUrl.resolve('/$_componentRoute/popover/'),
+      r"""(async () => {
+        const trigger = document.querySelector('#reference-options-trigger');
+        const panel = document.querySelector('#reference-options');
+        const opened = new Promise(resolve => panel.addEventListener('toggle', resolve, {once: true}));
+        trigger.click();
+        await opened;
+        const title = getComputedStyle(panel.querySelector('.trellis-popover-title'));
+        const body = getComputedStyle(panel);
+        return [title.fontFamily === body.fontFamily, title.fontSize === body.fontSize,
+          title.lineHeight === body.lineHeight, title.fontWeight];
+      })()""",
+      width: 390,
+      height: 844,
+    );
+    expect(styles, [true, true, true, '500']);
   });
 
   test('the docs page leaves each preview as the suite renders it', () async {

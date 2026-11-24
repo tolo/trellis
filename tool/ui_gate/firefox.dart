@@ -251,27 +251,41 @@ final class FirefoxDriver implements GateDriver {
     await type(keys[key] ?? key);
   }
 
+  Future<void> pressShortcut(String key, {required bool command}) {
+    final modifier = command ? '\uE03D' : '\uE009';
+    return _keyActions([
+      {'type': 'keyDown', 'value': modifier},
+      {'type': 'keyDown', 'value': key},
+      {'type': 'keyUp', 'value': key},
+      {'type': 'keyUp', 'value': modifier},
+    ]);
+  }
+
   @override
-  Future<void> type(String text) async {
+  Future<void> type(String text) => _keyActions([
+    for (final rune in text.runes) ...[
+      {'type': 'keyDown', 'value': String.fromCharCode(rune)},
+      {'type': 'keyUp', 'value': String.fromCharCode(rune)},
+    ],
+  ]);
+
+  Future<void> _keyActions(List<Map<String, String>> actions) async {
     await _activate();
     await _wd('POST', '/actions', {
       'actions': [
-        {
-          'type': 'key',
-          'id': 'gate-keyboard',
-          'actions': [
-            for (final rune in text.runes) ...[
-              {'type': 'keyDown', 'value': String.fromCharCode(rune)},
-              {'type': 'keyUp', 'value': String.fromCharCode(rune)},
-            ],
-          ],
-        },
+        {'type': 'key', 'id': 'gate-keyboard', 'actions': actions},
       ],
     });
   }
 
   @override
-  Future<void> pointer(String selector, {bool click = false, bool down = false}) async {
+  Future<void> pointer(String selector, {bool click = false, bool down = false}) =>
+      _pointer(selector, 'mouse', click: click, down: down);
+
+  /// Sends a trusted touch tap through W3C WebDriver actions.
+  Future<void> tap(String selector) => _pointer(selector, 'touch', click: true);
+
+  Future<void> _pointer(String selector, String type, {bool click = false, bool down = false}) async {
     await _activate();
     await evaluate('Boolean(($pointerTargetScript)(${jsonEncode(selector)}))');
     final element = await _wd('POST', '/element', {'using': 'css selector', 'value': selector}) as Map;
@@ -279,12 +293,34 @@ final class FirefoxDriver implements GateDriver {
       'actions': [
         {
           'type': 'pointer',
-          'id': 'gate-mouse',
-          'parameters': {'pointerType': 'mouse'},
+          'id': 'gate-$type',
+          'parameters': {'pointerType': type},
           'actions': [
             {'type': 'pointerMove', 'origin': element, 'x': 0, 'y': 0},
             if (click || down) {'type': 'pointerDown', 'button': 0},
             if (click && !down) {'type': 'pointerUp', 'button': 0},
+          ],
+        },
+      ],
+    });
+  }
+
+  @override
+  Future<void> dragTouch(String selector, {required int dx, required int dy}) async {
+    await _activate();
+    await evaluate('Boolean(($pointerTargetScript)(${jsonEncode(selector)}))');
+    final element = await _wd('POST', '/element', {'using': 'css selector', 'value': selector}) as Map;
+    await _wd('POST', '/actions', {
+      'actions': [
+        {
+          'type': 'pointer',
+          'id': 'gate-swipe',
+          'parameters': {'pointerType': 'touch'},
+          'actions': [
+            {'type': 'pointerMove', 'origin': element, 'x': 0, 'y': 0},
+            {'type': 'pointerDown', 'button': 0},
+            {'type': 'pointerMove', 'origin': 'pointer', 'x': dx, 'y': dy, 'duration': 160},
+            {'type': 'pointerUp', 'button': 0},
           ],
         },
       ],

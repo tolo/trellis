@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -22,11 +23,12 @@ void main() {
     addTearDown(browser.driver.close);
   });
 
-  Future<Uri> serve([Directory? root]) async {
+  Future<Uri> serve({Directory? root, Future<void> Function(Uri)? beforeResponse}) async {
     final app = createAdminApp(root ?? Directory.current, csrfSecret: 'browser-test-secret');
     addTearDown(app.close);
     final server = await shelf_io.serve(
       (request) async {
+        await beforeResponse?.call(request.requestedUri);
         final response = await app.handler(request);
         final path = request.requestedUri.path;
         if (path == '/' || path.startsWith('/contacts') || path == '/companies') {
@@ -56,6 +58,78 @@ void main() {
     final base = await serve();
     await open(base);
     await browser.proveList(base);
+  });
+
+  test('Back and Forward restore the applied search and status filters', () async {
+    await open(await serve());
+    const query = "new URL(location.href).searchParams.get('q')";
+    const search = "document.getElementById('contact-query').value";
+    await browser.listSwap(() => browser.typeOver('#contact-query', 'Ada'), "$query === 'Ada'");
+    expect(await browser.eval('document.activeElement.id'), 'contact-query');
+    await browser.listSwap(() => browser.driver.type(' Morgan'), "$query === 'Ada Morgan'");
+
+    await browser.driver.history(-1);
+    await browser.waitFor("$query === 'Ada' && !document.querySelector('.htmx-settling')");
+    expect(await browser.eval(search), 'Ada');
+    await browser.driver.history(1);
+    await browser.waitFor("$query === 'Ada Morgan' && !document.querySelector('.htmx-settling')");
+    expect(await browser.eval(search), 'Ada Morgan');
+    await browser.rememberShell();
+
+    const status = "new URL(location.href).searchParams.get('status')";
+    const select = "document.getElementById('contact-status').value";
+    // Native select menus commit typed choices differently across platforms.
+    Future<void> changeStatus(String value) => browser.listSwap(() async {
+      await browser.eval('''(() => {
+        const status = document.getElementById('contact-status');
+        status.value = ${jsonEncode(value)};
+        status.dispatchEvent(new Event('change', { bubbles: true }));
+      })()''');
+    }, '$status === ${jsonEncode(value)}');
+
+    await changeStatus('active');
+    expect(await browser.rows(), ['Ada Morgan']);
+    await changeStatus('pending');
+    expect(await browser.rows(), isEmpty);
+
+    await browser.driver.history(-1);
+    await browser.waitFor("$status === 'active' && !document.querySelector('.htmx-settling')");
+    expect(await browser.eval(select), 'active');
+    expect(await browser.eval(search), 'Ada Morgan');
+    expect(await browser.rows(), ['Ada Morgan']);
+    await browser.driver.history(1);
+    await browser.waitFor("$status === 'pending' && !document.querySelector('.htmx-settling')");
+    expect(await browser.eval(select), 'pending');
+    expect(await browser.eval(search), 'Ada Morgan');
+    expect(await browser.rows(), isEmpty);
+  });
+
+  test('a newer query is sent after an in-flight live filter', () async {
+    final firstRequest = Completer<void>();
+    final releaseFirstResponse = Completer<void>();
+    await open(
+      await serve(
+        beforeResponse: (uri) async {
+          if (uri.path == '/contacts' && uri.queryParameters['q'] == 'example') {
+            firstRequest.complete();
+            await releaseFirstResponse.future;
+          }
+        },
+      ),
+    );
+    try {
+      await browser.typeOver('#contact-query', 'example');
+      await firstRequest.future.timeout(const Duration(seconds: 5));
+      await browser.driver.type('.test Ada');
+      // Let the input debounce fire while the first request still owns the form.
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+    } finally {
+      releaseFirstResponse.complete();
+    }
+
+    await browser.waitFor("new URL(location.href).searchParams.get('q') === 'example.test Ada'");
+    expect(await browser.rows(), isEmpty);
+    expect(await browser.eval('document.activeElement.id'), 'contact-query');
   });
 
   test('create and edit in a dialog with validation errors, focus and toast', () async {
@@ -134,8 +208,8 @@ void main() {
 .dark { --primary: #e4a938; --radius: 0px; }
 ''', mode: FileMode.append);
 
-    final unchanged = await serve(original);
-    final customized = await serve(themed);
+    final unchanged = await serve(root: original);
+    final customized = await serve(root: themed);
     Future<List<Object?>> measure(Uri base, {required bool dark}) async {
       await open(base);
       expect(await browser.driver.media(reducedMotion: true), isTrue);
@@ -164,6 +238,53 @@ void main() {
         expect(before[index], isNot(after[index]), reason: 'applying the block must change computed property $index');
       }
     }
+  });
+
+  test('the primary action keeps readable contrast as its palette is inverted', () async {
+    await open(await serve());
+    final result =
+        await browser.eval(r'''(async () => {
+      const button = document.getElementById('new-contact');
+      const style = getComputedStyle(button);
+      await Promise.allSettled(button.getAnimations().map(animation => animation.finished));
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 1;
+      const ink = canvas.getContext('2d');
+      const luminance = color => {
+        ink.fillStyle = color;
+        ink.fillRect(0, 0, 1, 1);
+        const [r, g, b] = [...ink.getImageData(0, 0, 1, 1).data].slice(0, 3).map(channel => {
+          const srgb = channel / 255;
+          return srgb <= .04045 ? srgb / 12.92 : ((srgb + .055) / 1.055) ** 2.4;
+        });
+        return r * .2126 + g * .7152 + b * .0722;
+      };
+      const measure = () => {
+        const foreground = luminance(style.color), background = luminance(style.backgroundColor);
+        return (Math.max(foreground, background) + .05) / (Math.min(foreground, background) + .05);
+      };
+      const before = [style.color, style.backgroundColor];
+      document.documentElement.classList.add('dark');
+      const samples = [measure()];
+      // Sample the interpolation independently of the wall clock and frame rate.
+      const transitions = button.getAnimations().filter(animation => animation instanceof CSSTransition);
+      for (const transition of transitions) transition.pause();
+      for (const point of [.2, .3, .4, .5, .6, .7, .8]) {
+        for (const transition of transitions) transition.currentTime = transition.effect.getTiming().duration * point;
+        samples.push(measure());
+      }
+      for (const transition of transitions) transition.finish();
+      samples.push(measure());
+      return {minimum: Math.min(...samples), changed: before[0] !== style.color && before[1] !== style.backgroundColor};
+    })()''')
+            as Map<String, dynamic>;
+
+    expect(result['changed'], isTrue, reason: 'the light and dark palettes both reached the button');
+    expect(
+      result['minimum'],
+      greaterThanOrEqualTo(4.5),
+      reason: 'the primary action remains readable through the change',
+    );
   });
 
   test('a narrow keyboard edit keeps the restored row action visible', () async {
@@ -196,7 +317,16 @@ void main() {
       '/contacts/1/edit',
       "document.querySelector('#edit-1:modal') !== null",
     );
-    await tabTo('save-contact', 8);
+    for (final id in [
+      'contact-appointment-date',
+      'contact-appointment-calendar-trigger',
+      'contact-range-start',
+      'contact-range-end',
+      'contact-range-calendar-trigger',
+      'save-contact',
+    ]) {
+      await tabTo(id, 5);
+    }
     await browser.save('edit-1', keyboard: true);
     await browser.expectToast('Contact updated');
     expect(await browser.eval(actionVisible), isTrue, reason: 'the replaced table must reveal the restored focus');
@@ -287,7 +417,13 @@ final class _Browser {
 
   Future<void> proveList(Uri base) async {
     expect(await rows(), hasLength(8));
+    await eval("window.searchBeforeFilter = document.getElementById('contact-query')");
     await listSwap(() => typeOver('#contact-query', 'example.test'), "location.search.includes('q=example.test')");
+    expect(
+      await eval("document.getElementById('contact-query') === window.searchBeforeFilter"),
+      isTrue,
+      reason: 'live filtering must keep the field the user is typing into',
+    );
     expect(await eval('document.activeElement.id'), 'contact-query');
     await driver.press('Tab');
     expect(await eval('document.activeElement.id'), 'contact-status');
@@ -310,6 +446,7 @@ final class _Browser {
 
     await listSwap(() => typeOver('#contact-query', 'unmatched'), "location.search.includes('q=unmatched')");
     expect(await rows(), isEmpty);
+    expect(await eval("document.querySelector('#contact-filter [name=page]').value"), '1');
     expect(
       await eval("document.querySelector('#contact-list [role=status]').textContent"),
       'No contacts match these filters.',
@@ -319,6 +456,7 @@ final class _Browser {
       "location.href === ${jsonEncode(url.toString())} && document.querySelectorAll('tbody tr').length === 4",
     );
     expect(await rows(), ['Eden Ross', 'Emilia Cruz', 'Finn Patel', 'Hana Ito']);
+    expect(await eval("document.getElementById('contact-query').value"), 'example.test');
     expect(await eval('window.header !== undefined'), isTrue, reason: 'Back must restore in this document');
   }
 

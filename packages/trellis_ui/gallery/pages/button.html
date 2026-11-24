@@ -18,9 +18,10 @@
 <button tl:replace="~{trellis-ui/button :: button('default', 'icon-sm')}" aria-label="icon-sm">+</button>
 <button tl:replace="~{trellis-ui/button :: button('default', 'icon-lg')}" aria-label="icon-lg">+</button>
 </div></section>
-<section><h2>States and attributes</h2><div class="gallery-row">
+<section><h2>States and attributes</h2><form class="gallery-row">
 <button tl:replace="~{trellis-ui/button :: button}" disabled>Disabled</button>
+<button tl:replace="~{trellis-ui/button :: button}" type="submit" disabled aria-busy="true">Starting…</button>
 <button tl:replace="~{trellis-ui/button :: button}" hx-get="/components/button" hx-target="main" hx-select="main > *">Refresh example</button>
-</div></section>
+</form></section>
 </section><a id="after" href="#before">After example</a>
 <button id="swap" type="button" class="gallery-action" hx-get="/components/button" hx-select="#demo" hx-target="#demo" hx-swap="outerHTML">Refresh example</button> <a id="navigate" class="gallery-action" hx-boost="true" href="/components/input">Next example</a></section>

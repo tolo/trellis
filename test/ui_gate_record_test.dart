@@ -356,6 +356,24 @@ void main() {
     expect(ci.stderr, contains('refused'));
   }, timeout: Timeout(Duration(minutes: 8)));
 
+  test('touch gestures require a selector and non-zero integer displacement', () {
+    final root = Directory.systemTemp.createTempSync('gate_touch_manifest_');
+    addTearDown(() => root.deleteSync(recursive: true));
+    final manifest = File('${root.path}/toast.yaml');
+    void writeGesture(String gesture) {
+      manifest.writeAsStringSync('page: /toast\nroot: main\ntouch-gestures:\n  - touch-drag: $gesture\n');
+    }
+
+    writeGesture('{selector: "button", dx: 86, dy: 0}');
+    expect(GateManifest.load(manifest).touchGestures.single['touch-drag'], {'selector': 'button', 'dx': 86, 'dy': 0});
+    for (final invalid in ['{selector: "button", dx: 0, dy: 0}', '{selector: "button", dx: 1.2, dy: 0}']) {
+      writeGesture(invalid);
+      expect(() => GateManifest.load(manifest), throwsFormatException);
+    }
+    writeGesture('{dx: 86, dy: 0}');
+    expect(() => GateManifest.load(manifest), throwsFormatException);
+  });
+
   test('manifest', () async {
     final root = Directory.systemTemp.createTempSync('gate_manifest_');
     addTearDown(() => root.deleteSync(recursive: true));

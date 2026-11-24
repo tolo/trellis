@@ -221,29 +221,59 @@ void main() {
             markTestSkipped('no Chrome/Chromium found – adversarial Lattice navigation not measured');
             return;
           }
-          final output = defaultBuilds[theme.name]!;
-          final server = await StaticSiteServer.serve(Directory(output));
-          addTearDown(server.close);
           final offenders = <String>[];
           var desktopProbes = 0;
           for (final labelCount in const [6, 8]) {
+            final labels = [for (var i = 1; i <= labelCount; i++) 'Long navigation label $i'];
+            final output = await _build(
+              theme,
+              cli: cli,
+              workspace: workspace,
+              label: 'long-navigation-$labelCount',
+              themeParams: {
+                'nav_links': [
+                  for (final (i, label) in labels.indexed) {'label': label, 'url': i == 1 ? '/docs/' : '/#nav-$i'},
+                ],
+              },
+            );
+            final server = await StaticSiteServer.serve(Directory(output));
+            addTearDown(server.close);
             for (var width = 690; width <= 720; width++) {
               final measurement =
                   await browser.evaluate(
                         pageUrl(server.baseUrl, 'index.html'),
-                        _latticeLongNavigationExpression(labelCount),
+                        _latticeLongNavigationExpression,
                         width: width,
                         height: 900,
                       )
                       as Map;
-              if (measurement['desktop'] != true) continue;
+              final where = '$labelCount labels at ${width}px';
+              expect(measurement['labels'], labels, reason: where);
+              expect(measurement['desktop'], width > 700, reason: where);
+              expect(measurement['menuButton'], width <= 700, reason: where);
+              expect(measurement['documentOverflow'], 0, reason: where);
+              if (width <= 700) continue;
               desktopProbes++;
-              if (measurement['documentOverflow'] != 0 ||
-                  measurement['overflowX'] != 'auto' ||
+              if (measurement['overflowX'] != 'auto' ||
+                  measurement['nowrap'] != true ||
+                  measurement['scrolled'] != true ||
+                  measurement['fitsBar'] != true ||
                   measurement['lastLinkVisible'] != true) {
-                offenders.add('$labelCount labels at ${width}px: $measurement');
+                offenders.add('$where: $measurement');
               }
             }
+            final fallback = await browser.evaluate(
+              pageUrl(server.baseUrl, 'index.html'),
+              _latticeNativeNavigationExpression,
+              width: 701,
+              height: 900,
+              disableScripts: true,
+            );
+            expect(fallback, {
+              'disclosureOpen': true,
+              'pageOverflow': 0,
+              'focusedLinkVisible': true,
+            }, reason: '$labelCount labels with an expanded native disclosure at 701px');
           }
           expect(desktopProbes, 40, reason: 'Lattice desktop navigation must be exercised at every width above 700px');
           expect(offenders, isEmpty, reason: 'Lattice long navigation must scroll internally, never the page');
@@ -736,6 +766,7 @@ Future<String> _build(
   String? fixture,
   bool rootAllAssetPaths = false,
   String Function(String body)? rewriteMarkdown,
+  Map<String, Object?> themeParams = const {},
   Map<String, String> shortcodes = const {},
 }) async {
   final site = Directory(p.join(workspace.path, '${theme.name}-$label'))..createSync(recursive: true);
@@ -772,6 +803,9 @@ Future<String> _build(
 
   var config = (_plain(loadYaml(File(p.join(example, 'trellis_site.yaml')).readAsStringSync()))! as Map)
       .cast<String, Object?>();
+  if (themeParams.isNotEmpty) {
+    config['theme_params'] = {...?(config['theme_params'] as Map?)?.cast<String, Object?>(), ...themeParams};
+  }
   if (rootAllAssetPaths) {
     final urlKeys = theme.urlValuedKeys;
     config = (_rootAssetPaths(config, urlKeys)! as Map).cast<String, Object?>();
@@ -1060,19 +1094,22 @@ const _anchorOffsetExpression = r'''(() => {
 /// The bar is the element the anchor measurement above scrolls against, found the
 /// same way, so the two cannot end up talking about different elements.
 ///
+/// Sample the first rendering frame after a viewport change so the Sheet's
+/// media-query listener has applied the same breakpoint as the stylesheet.
+///
 /// A *link strip* is a flex container whose every element child is a link or a
 /// list item — the nav row, however it is marked up, and not the masthead
 /// container that holds the brand beside it (Folio wraps that one on purpose).
 ///
-/// Two exclusions from the walk, both because the box is not laid out *in* the
-/// bar:
+/// The walk crosses `display: contents` wrappers, which give their children
+/// layout boxes without creating a box of their own. Two subtrees are excluded:
 ///  * an absolutely positioned or fixed box — a dropdown panel, a skip link — is
 ///    positioned against the bar and is meant to hang past it. A collapsed
 ///    disclosure's contents are unrendered and drop out with the zero-size boxes;
 ///  * SVG internals, whose rects are the shapes' bounding boxes rather than
 ///    layout. The `<svg>` element itself is still measured, so an oversized mark
 ///    in the bar is caught; only the walk stops there.
-const _mastheadFitExpression = r'''(() => {
+const _mastheadFitExpression = r'''new Promise((settle) => requestAnimationFrame(settle)).then(() => {
   const header = document.querySelector('header, [role="banner"]');
   if (header === null) return {found: false, strips: 0, barHeight: 0, wrapping: [], overhanging: []};
   const bar = header.getBoundingClientRect();
@@ -1098,6 +1135,10 @@ const _mastheadFitExpression = r'''(() => {
       if (child.namespaceURI !== 'http://www.w3.org/1999/xhtml') continue;
       const style = getComputedStyle(child);
       if (style.position === 'absolute' || style.position === 'fixed') continue;
+      if (style.display === 'contents') {
+        walk(child);
+        continue;
+      }
       const box = child.getBoundingClientRect();
       if (box.width === 0 && box.height === 0) continue;
       const key = selectorOf(child);
@@ -1127,7 +1168,7 @@ const _mastheadFitExpression = r'''(() => {
     wrapping: [...wrapping.values()],
     overhanging: [...overhanging.values()].sort((a, b) => b.overhang - a.overhang).slice(0, 3),
   };
-})()''';
+})''';
 
 /// The shape of the docs site's config-reference tables, plus one identifier longer than the
 /// docs column is wide at 400px and at 1280px, so the table has to scroll at both.
@@ -1202,29 +1243,50 @@ const _suiteTableExpression = r'''new Promise((settle) => requestAnimationFrame(
     };
   })''';
 
-String _latticeLongNavigationExpression(int labelCount) =>
-    '''(() => {
-  const list = document.querySelector('.nav-links');
-  if (list === null) return {desktop: false};
-  while (list.children.length < $labelCount) {
-    const item = list.lastElementChild.cloneNode(true);
-    const link = item.querySelector('a');
-    link.textContent = 'Long navigation label ' + (list.children.length + 1);
-    link.setAttribute('href', '#nav-' + list.children.length);
-    list.appendChild(item);
-  }
+const _latticeLongNavigationExpression = r'''(() => {
+  const sheet = document.querySelector('#lattice-main-menu');
+  const list = sheet.querySelector('[data-slot=navigation-menu-list]');
+  const labels = [...list.querySelectorAll(':scope > li > a, :scope > li > details > summary')]
+    .map(control => control.textContent.trim());
+  const root = document.documentElement;
+  const measurement = {
+    labels,
+    desktop: sheet.matches('dialog[open]:not(:modal)') && list.checkVisibility(),
+    menuButton: document.querySelector('.nav-menu-toggle').checkVisibility(),
+    documentOverflow: root.scrollWidth - root.clientWidth,
+  };
+  if (!measurement.desktop) return measurement;
+
   const style = getComputedStyle(list);
-  if (style.display === 'none' || list.getClientRects().length === 0) return {desktop: false};
-  const last = list.querySelector('li:last-child a');
-  last.focus({preventScroll: true});
-  list.scrollLeft = list.scrollWidth;
+  const last = list.querySelector(':scope > li:last-child > a');
+  last.focus();
+  const bar = list.closest('header').getBoundingClientRect();
   const listBox = list.getBoundingClientRect();
   const lastBox = last.getBoundingClientRect();
+  const hit = document.elementFromPoint(lastBox.x + lastBox.width / 2, lastBox.y + lastBox.height / 2);
   return {
-    desktop: true,
-    documentOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
+    ...measurement,
     overflowX: style.overflowX,
-    lastLinkVisible: lastBox.left >= listBox.left - 1 && lastBox.right <= listBox.right + 1,
+    nowrap: style.flexWrap === 'nowrap',
+    scrolled: list.scrollLeft > 0,
+    fitsBar: listBox.top >= bar.top - 1 && listBox.bottom <= bar.bottom + 1,
+    lastLinkVisible: document.activeElement === last && last.contains(hit) &&
+      lastBox.left >= listBox.left - 1 && lastBox.right <= listBox.right + 1,
+  };
+})()''';
+
+const _latticeNativeNavigationExpression = r'''(() => {
+  const disclosure = document.querySelector('#lattice-main-menu details');
+  disclosure.querySelector('summary').click();
+  const link = disclosure.querySelector('li:last-child a');
+  link.focus();
+  const box = link.getBoundingClientRect();
+  const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+  const root = document.documentElement;
+  return {
+    disclosureOpen: disclosure.open,
+    pageOverflow: root.scrollWidth - root.clientWidth,
+    focusedLinkVisible: document.activeElement === link && link.contains(hit),
   };
 })()''';
 

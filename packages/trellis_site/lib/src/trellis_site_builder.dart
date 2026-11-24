@@ -25,6 +25,7 @@ import 'theme_manifest.dart';
 import 'theme_param_merger.dart';
 import 'theme_sass_compiler.dart';
 import 'theme_sass_generator.dart';
+import 'trusted_url_sources.dart';
 
 /// A non-fatal issue collected during a site build.
 class BuildWarning {
@@ -139,11 +140,12 @@ class TrellisSite {
   /// 4. Render Markdown
   /// 4.5. Process post-Markdown shortcodes
   /// 5. Collect taxonomy terms and inject virtual pages
+  /// 5.5. Prepare search entries and URLs from the complete page set
   /// 6. Generate HTML pages
   /// 7. Copy static assets
   /// 8. Generate sitemap
   /// 8.5. Generate feeds (when `feeds:` config section exists)
-  /// 9. Generate the search index and client (when `search.enabled: true`)
+  /// 9. Write the prepared search index and client when pages qualify
   ///
   /// Throws [SiteConfigException] if the output directory configuration is
   /// unsafe. Throws [TemplateNotFoundException] if a required layout is
@@ -244,8 +246,14 @@ class TrellisSite {
 
     // 3. Parse front matter
     final fmParser = const FrontMatterParser();
+    final trustedUrls = TrustedUrlSources(config);
     for (final page in pages) {
-      fmParser.parse(page, config.contentDir);
+      try {
+        parseFrontMatterWithTrustedUrls(fmParser, page, config.contentDir, trustedUrls);
+      } on FrontMatterException catch (error) {
+        trustedUrls.rejectSourceFailure(p.join(config.contentDir, page.sourcePath), error.message);
+        rethrow;
+      }
     }
 
     // Build-time syntax highlighter (ADR-010) — shared by the page Markdown pass
@@ -274,7 +282,10 @@ class TrellisSite {
 
     // 4.5. Process post-Markdown shortcodes
     for (final page in pages) {
-      shortcodeProcessor.processPostMarkdown(page, context: sources.loaders.isEmpty ? const {} : page.frontMatter);
+      shortcodeProcessor.processPostMarkdown(
+        page,
+        context: sources.loaders.isEmpty ? const {} : renderFrontMatter(page),
+      );
     }
     buildWarnings.addAll(shortcodeProcessor.warnings);
 
@@ -286,18 +297,17 @@ class TrellisSite {
     }
 
     // 5. Taxonomy: collect terms and inject virtual pages
-    final siteContext = _buildSiteContext(pages);
-    var siteParams = <String, dynamic>{'site': siteContext, 'theme': ?mergedThemeParams};
+    final siteContext = _buildSiteContext(pages, mergedThemeParams?['nav_links']);
+    final siteParams = <String, dynamic>{'site': siteContext, 'theme': ?mergedThemeParams};
     if (config.taxonomies.isNotEmpty) {
       final collector = TaxonomyCollector(pathPrefix: config.pathPrefix);
       final nonDraftPages = pages.where((pg) => !pg.isDraft).toList();
       final taxIndex = collector.collect(config.taxonomies, nonDraftPages);
 
       // Expose ${taxonomy.<name>} as a list of term maps on every page
-      final taxContext = <String, dynamic>{
+      siteParams['taxonomy'] = <String, dynamic>{
         for (final entry in taxIndex.entries) entry.key: entry.value.toTermMapList(),
       };
-      siteParams = <String, dynamic>{'site': siteContext, 'taxonomy': taxContext, 'theme': ?mergedThemeParams};
 
       // Enrich each content page with its OWN terms as pre-slugified link maps,
       // resolved from the same index that generates the term pages. Templates
@@ -314,6 +324,10 @@ class TrellisSite {
       pages.addAll(virtualPages);
     }
 
+    // 5.5. Prepare search after virtual term pages join the eligible content.
+    final search = prepareSearchIndex(SearchIndexGenerator(config.searchConfig), pages);
+    if (search != null) siteContext['search'] = search.urls(config.pathPrefix);
+
     // 6. Generate HTML pages — with theme-aware loader and layout/data search paths
     final generator = PageGenerator(
       siteDir: config.siteDir,
@@ -328,7 +342,7 @@ class TrellisSite {
       pathPrefix: config.pathPrefix,
     );
     // pageCount reflects actual output files, including paginated pages
-    final pageCount = await generator.generateAll(pages);
+    final pageCount = await generatePagesWithTrustedUrls(generator, pages, trustedUrls);
     buildWarnings.addAll(generator.warnings);
 
     // 7. Copy static assets in order of increasing precedence.
@@ -402,9 +416,9 @@ class TrellisSite {
     }
 
     // 9. Generate the search index and client
-    if (config.searchConfig.enabled) {
-      final searchGenerator = SearchIndexGenerator(config.searchConfig);
-      if (searchGenerator.writeToOutput(pages, config.outputDir)) staticCount += 2;
+    if (search != null) {
+      search.writeTo(config.outputDir);
+      staticCount += 2;
     }
 
     stopwatch.stop();
@@ -474,7 +488,9 @@ class TrellisSite {
   /// section, home, and taxonomy virtual pages alike. Taxonomy virtual pages are
   /// injected into the pipeline after this call, so they never appear as menu
   /// nodes but still receive the tree.
-  Map<String, dynamic> _buildSiteContext(List<Page> pages) {
+  Map<String, dynamic> _buildSiteContext(List<Page> pages, Object? headerLinks) {
+    const navigation = NavigationBuilder();
+    final menu = navigation.build(pages);
     final context = <String, dynamic>{
       'title': config.title,
       'baseUrl': config.baseUrl,
@@ -488,7 +504,9 @@ class TrellisSite {
       // Hierarchical navigation tree (nested {title, url, children} nodes),
       // built once and shared across every render. Active-trail state is resolved
       // at render time by comparing node.url to ${page.url} (no per-node flag).
-      'menu': const NavigationBuilder().build(pages),
+      'menu': menu,
+      if (headerLinks is List<Object?>)
+        'headerNavigation': buildHeaderNavigation(menu, headerLinks, pathPrefix: config.pathPrefix),
     };
 
     if (config.feeds != null) context['feeds'] = config.feeds!.siteFeedUrls(config.pathPrefix);

@@ -6,11 +6,20 @@ import 'checks.dart';
 import 'record.dart';
 
 /// Components whose failure blocks release regardless of a proposed disposition.
-const requiredReleaseComponents = {'combobox', 'dialog', 'dropdown-menu', 'tabs', 'toast'};
+const requiredReleaseComponents = {
+  'combobox',
+  'command-palette',
+  'dialog',
+  'dropdown-menu',
+  'popover',
+  'tabs',
+  'toast',
+};
 
-/// Every component in the shipped first slice, including any whose evidence is retained after removal.
+/// Every release subject, including components whose evidence is retained after removal.
 const releaseComponents = {
   ...requiredReleaseComponents,
+  'accordion',
   'alert',
   'alert-dialog',
   'badge',
@@ -23,14 +32,17 @@ const releaseComponents = {
   'field',
   'grid',
   'input',
+  'navigation-menu',
   'native-select',
   'pagination',
   'radio',
   'separator',
+  'sheet',
   'stack',
   'switch',
   'table',
   'textarea',
+  'tooltip',
 };
 
 /// Release decisions are recorded next to the ADR's revisit trigger, apart from the observed results.

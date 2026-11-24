@@ -1,0 +1,24 @@
+<tl-popover tl:fragment="popover(id, side, align, offset, ...attrs)" data-slot="popover"
+  tl:attr="data-side=${side} ?: 'bottom', data-align=${align} ?: 'start', data-offset=${offset} ?: 4">
+  <button type="button" data-slot="popover-trigger" data-size="default" data-variant="outline"
+    class="trellis-button trellis-button-variant-outline trellis-button-size-default group/button"
+    aria-haspopup="dialog" aria-expanded="false" tl:attr="id=${id + '-trigger'}, aria-controls=${id}">
+    <tl:block tl:slot="trigger">Options</tl:block>
+  </button>
+  <div popover="auto" role="dialog" tabindex="-1" data-slot="popover-content" data-trellis-popup data-closed
+    class="trellis-popover-content trellis-popover-content-logical"
+    tl:attr="id=${id}, aria-labelledby=${id + '-trigger'}"
+    tl:attrs="${attrs}"><tl:block tl:slot="content"></tl:block></div>
+</tl-popover>
+
+<div tl:fragment="popoverHeader(...attrs)" data-slot="popover-header" class="trellis-popover-header"
+  tl:attrs="${attrs}">
+  <tl:block tl:slot=""></tl:block>
+</div>
+<h2 tl:fragment="popoverTitle(...attrs)" data-slot="popover-title" class="trellis-popover-title" tl:attrs="${attrs}">
+  <tl:block tl:slot=""></tl:block>
+</h2>
+<p tl:fragment="popoverDescription(...attrs)" data-slot="popover-description" class="trellis-popover-description"
+  tl:attrs="${attrs}">
+  <tl:block tl:slot=""></tl:block>
+</p>

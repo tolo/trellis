@@ -1,0 +1,76 @@
+name: popover
+page: /components/popover
+root: '#component'
+elements:
+  trigger: '#options-trigger'
+  panel: '#options'
+  input: '#page-size'
+states:
+  default: []
+  dark:
+    - eval: document.documentElement.classList.add('dark')
+    - state: open
+  open:
+    - press: Escape
+    - focus: '#options-trigger'
+    - press: Enter
+    - wait: "document.querySelector('#options:popover-open[style]')?.contains(document.activeElement) === true"
+    - wait: "document.getElementById('options').getAnimations().every(animation => animation.playState !== 'running')"
+keyboard:
+  - state: open
+  - press: Tab
+  - expect: {expression: document.activeElement.id, equals: page-size}
+  - press: Tab
+  - wait: "document.activeElement.id === 'after' && !document.querySelector('#options:popover-open')"
+  - state: open
+  - press: Escape
+  - &closed
+    wait: "document.activeElement.id === 'options-trigger' && document.querySelector('#options-trigger').getAttribute('aria-expanded') === 'false' && !document.querySelector('#options:popover-open')"
+  - press: ' '
+  - wait: "document.querySelector('#options:popover-open')?.contains(document.activeElement) === true"
+  - click: '#outside'
+  - *closed
+  - state: open
+  - click: '#before'
+  - wait: "location.hash === '#after'"
+  - *closed
+  - click: '#options-trigger'
+  - wait: "document.querySelector('#options:popover-open')?.contains(document.activeElement) === true"
+  - press: Escape
+  - *closed
+semantics:
+  - expression: >-
+      (() => {
+        const trigger = document.getElementById('options-trigger'), panel = document.getElementById('options');
+        return trigger.tagName === 'BUTTON' && trigger.getAttribute('aria-haspopup') === 'dialog' &&
+          trigger.getAttribute('aria-controls') === panel.id &&
+          trigger.getAttribute('aria-expanded') === String(panel.matches(':popover-open')) &&
+          panel.getAttribute('role') === 'dialog' && panel.getAttribute('aria-labelledby') === trigger.id &&
+          panel.getAttribute('popover') === 'auto' && document.getElementById('page-size').labels.length === 1;
+      })()
+    equals: true
+htmx:
+  region: '#demo'
+  swap:
+    # Keep the panel open until the actual HTMX response replaces its markup.
+    - eval: document.getElementById('swap').click()
+  navigate:
+    - state: open
+    - eval: document.getElementById('navigate').click()
+  transient: '#options[data-open], #options[style], #options-trigger[aria-expanded="true"], [data-trellis-overlay-exit]'
+  probe:
+    steps:
+      - eval: >-
+          (() => {
+            window.opens = 0;
+            document.getElementById('options').addEventListener('beforetoggle', e => {
+              if (e.newState === 'open') window.opens++;
+            });
+          })()
+      - state: open
+    expression: window.opens
+    equals: 1
+instances: [tl-popover]
+provenance:
+  - file: ../../../packages/trellis_ui/vendor/shadcn/shadcn@4.23.0/LICENSE.md
+    license: MIT

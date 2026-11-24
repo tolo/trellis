@@ -36,6 +36,31 @@ keyboard:
   - focus: '#toaster [data-slot=toast-close]'
   - press: Enter
   - expect: {expression: "document.querySelector('#toaster > tl-toast') === null", equals: true}
+touch-gestures:
+  - state: stacked
+  - click: '#toast-add'
+  - wait: >-
+      document.querySelectorAll('#toaster > tl-toast').length === 3 &&
+      !document.querySelector('#toaster .htmx-settling, #toast-add.htmx-request')
+  - eval: >-
+      (() => { const viewport = document.getElementById('toaster');
+      window.toastBeforeSwipe = [...viewport.children];
+      window.toastTouches = [];
+      viewport.addEventListener('pointerdown', event => window.toastTouches.push([event.pointerType, event.isTrusted]));
+      document.body.style.minHeight = '1800px';
+      })()
+  - touch-drag: {selector: '#toaster > tl-toast:nth-child(2) [data-slot=toast]', dx: 19, dy: 0}
+  - wait: window.toastTouches.length === 1
+  - expect: {expression: window.toastTouches, equals: [['touch', true]]}
+  - expect: {expression: "document.querySelectorAll('#toaster > tl-toast').length", equals: 3}
+  - touch-drag: {selector: '#toaster > tl-toast:nth-child(2) [data-slot=toast]', dx: 86, dy: 0}
+  - expect:
+      expression: >-
+        (() => { const items = document.getElementById('toaster').children;
+        return items.length === 2 && items[0] === toastBeforeSwipe[0] && items[1] === toastBeforeSwipe[2] &&
+          window.toastTouches.length === 2 && window.toastTouches[1][0] === 'touch' && window.toastTouches[1][1] &&
+          items[0].getBoundingClientRect().bottom <= items[1].getBoundingClientRect().top; })()
+      equals: true
 semantics:
   - expression: >-
       (() => { const viewport = document.getElementById('toaster');

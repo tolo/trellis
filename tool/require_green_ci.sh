@@ -88,7 +88,7 @@ esac
 
 # 3./4. Find the CI run for that exact commit on the release branch and wait
 #    for it. Filter on head_branch: a feature-branch push of the same commit
-#    usually runs the fast tier (ci.yml uses check-full on main) and would not prove
+#    usually runs the branch CI tier (ci.yml uses check-full on main) and would not prove
 #    what a main run proves. Newest run first; a re-run updates it in place.
 find_run() {
   gh api "repos/${REPO}/actions/workflows/${CI_WORKFLOW}/runs?head_sha=${SHA}&per_page=20" \

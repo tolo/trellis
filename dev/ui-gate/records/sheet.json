@@ -1,0 +1,245 @@
+{
+  "component": "sheet",
+  "automated": "pass",
+  "items": {
+    "provenance": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "2 declared permissive notices exist"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "2 declared permissive notices exist"
+          ]
+        }
+      }
+    },
+    "self-hosting": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "all requests same-origin"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "all requests same-origin"
+          ]
+        }
+      }
+    },
+    "strict-csp": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "semantic-markup": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "htmx-lifecycle": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "keyboard": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "wcag-axe": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "forced-colors": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "responsive": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "zoom": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "reduced-motion": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "touch-target": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "checks completed"
+          ]
+        }
+      }
+    },
+    "visual": {
+      "status": "pass",
+      "browsers": {
+        "chrome": {
+          "status": "pass",
+          "evidence": [
+            "36 states captured; no clipping, overlap or appearance differences"
+          ]
+        },
+        "firefox": {
+          "status": "pass",
+          "evidence": [
+            "36 states captured; no clipping, overlap or appearance differences"
+          ]
+        }
+      }
+    },
+    "screen-reader-voiceover-safari": {
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 copied “Page links web dialogue with 8 items link Jump to details”, “Note edit text”, “Close button” and “Open right sheet dialog pop up button”."
+      ]
+    },
+    "screen-reader-nvda-firefox": {
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Page links opens as a dialog with focus on Jump to details. Tab traverses the controls through Close and wraps to Jump to details. Escape returns to the collapsed Open right sheet trigger."
+      ]
+    },
+    "safari": {
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Right Sheet focused Jump to details. In its nested Popover, Escape restored Display options and preserved the Sheet. Second Escape restored Open right sheet."
+      ]
+    }
+  }
+}

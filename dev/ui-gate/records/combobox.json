@@ -224,16 +224,22 @@
       }
     },
     "screen-reader-voiceover-safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "VoiceOver with Safari 27.2 on macOS 27.2.1 read Fruit as a collapsible combo box. Filtering for ap announced “2 results available”. Selecting Apple announced “collapsed Apple” and “Apple Fruit list box pop up collapsed combo box has keyboard focus”."
+      ]
     },
     "screen-reader-nvda-firefox": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "NVDA 2026.3.1 with Firefox 160.0.1 on Windows 11. Fruit is an editable combo box. Filtering announces two suggestions. Arrow keys announce Apple and Apricot with positions. Enter leaves Apple in the collapsed input."
+      ]
     },
     "safari": {
-      "status": "release-prep",
-      "evidence": []
+      "status": "pass",
+      "evidence": [
+        "Safari 27.2 on macOS 27.2.1. Typing `ap` opened suggestions. Down selected Apple. Return collapsed the popup, wrote Apple to Fruit and restored focus to the combobox."
+      ]
     }
   }
 }

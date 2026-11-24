@@ -41,7 +41,7 @@ void main() {
         expect(result['background'], result['expected']);
         expect(result['background'], isNot('rgba(0, 0, 0, 0)'));
         expect(result['boxSizing'], 'border-box');
-        expect(result['count'], 16);
+        expect(result['count'], 17);
         expect(result['overflow'], isFalse, reason: 'width $width');
         expect(result['htmxVersion'], '2.0.10');
         expect(result['allowEval'], isFalse);
@@ -80,7 +80,7 @@ void main() {
                 as Map<String, dynamic>;
         expect(result['main'], 1);
         expect(result['header'], 1);
-        expect(result['buttons'], 16);
+        expect(result['buttons'], 17);
         expect(result['violations'], isEmpty);
       }
     } finally {

@@ -2,9 +2,9 @@
 
 Embedded HTML fragments and CSS/JS. Runtime depends toward `trellis` only.
 
-- Run `dart test --exclude-tags=ui-gate`, `dart analyze --fatal-infos` and `dart format .` here.
+- For a story, run its affected test files and qualify each changed gallery subject as described in Key Dev Commands. Branch CI runs the package suite with `dart test --exclude-tags=ui-gate`.
 - The local full-gallery gate is `dart test test/qualification_gate_test.dart`, with `GECKODRIVER` set. Its
-  `ui-gate`/`visual` tags are declared in this package; fast/full workspace tiers exclude it.
+  `ui-gate`/`visual` tags are declared in this package; branch CI and the full workspace tier exclude it.
 - `dart run tool/port.dart fetch` vendors the pinned sources and notices; `build` verifies the standalone compiler
   checksum before writing `generated/`. `check` regenerates all four outputs and rejects any byte drift.
 - Follow the project `trellis-ui-sync` skill at [`.claude/skills/trellis-ui-sync/SKILL.md`](../../.claude/skills/trellis-ui-sync/SKILL.md) to bump the pin, run the local gates and triage the report.

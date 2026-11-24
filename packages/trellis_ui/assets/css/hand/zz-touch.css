@@ -5,14 +5,18 @@
 }
 
 /* Geometry changes from pointer emulation must not animate through undersized targets. */
-:is(.trellis-button, .trellis-input, .trellis-textarea, .trellis-native-select, .trellis-checkbox, .trellis-radio-group-item, .trellis-switch, .trellis-badge) { transition-property: color, background-color, border-color, box-shadow, opacity; }
+:is(.trellis-accordion-trigger, .trellis-navigation-menu-trigger, .trellis-navigation-menu-link, .trellis-button, .trellis-input, .trellis-textarea, .trellis-native-select, .trellis-checkbox, .trellis-radio-group-item, .trellis-switch, .trellis-badge) { transition-property: color, background-color, border-color, box-shadow, opacity; }
+/* The primary palette reverses contrast polarity. Interpolating both colors makes the label unreadable. */
+.trellis-button-variant-default { transition-property: border-color, box-shadow, opacity; }
 @media (prefers-reduced-motion: reduce) {
   :where([data-slot][class*="trellis-"], [data-slot][class*="trellis-"] *) { transition: none; animation: none; }
 }
 
 .trellis-combobox-trigger, .trellis-dropdown-menu-item, .trellis-dropdown-menu-checkbox-item,
-.trellis-tabs-trigger, .trellis-tabs-content, .trellis-toast-close, .trellis-dialog-close { min-inline-size: 24px; min-block-size: 24px; }
+.trellis-accordion-trigger, .trellis-navigation-menu-trigger, .trellis-navigation-menu-link,
+.trellis-tabs-trigger, .trellis-tabs-content, .trellis-toast-close, .trellis-dialog-close, .trellis-sheet-close { min-inline-size: 24px; min-block-size: 24px; }
 @media (pointer: coarse) {
   .trellis-combobox-trigger, .trellis-dropdown-menu-item, .trellis-dropdown-menu-checkbox-item,
-  .trellis-tabs-trigger, .trellis-tabs-content, .trellis-toast-close, .trellis-dialog-close { min-inline-size: 44px; min-block-size: 44px; }
+  .trellis-accordion-trigger, .trellis-navigation-menu-trigger, .trellis-navigation-menu-link,
+  .trellis-tabs-trigger, .trellis-tabs-content, .trellis-toast-close, .trellis-dialog-close, .trellis-sheet-close { min-inline-size: 44px; min-block-size: 44px; }
 }

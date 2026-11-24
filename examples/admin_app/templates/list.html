@@ -5,7 +5,8 @@
 <section tl:fragment="list" id="contact-list" class="admin-list" aria-label="Contact list">
   <form id="contact-filter" class="admin-filters" action="/contacts" method="get" hx-get="/contacts"
     hx-trigger="input changed delay:250ms from:#contact-query, change from:#contact-status, submit"
-    hx-params="q,status,sort,dir" hx-target="#contact-list" hx-swap="outerHTML">
+    hx-params="q,status,sort,dir" hx-target="#contact-list" hx-swap="outerHTML"
+    tl:attr="hx-preserve=${preserveFilter ? 'true' : null}">
     <input type="hidden" name="sort" tl:value="${sort}">
     <input type="hidden" name="dir" tl:value="${dir}">
     <input type="hidden" name="page" tl:value="${page}">

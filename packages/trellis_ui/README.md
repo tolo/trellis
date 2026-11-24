@@ -35,8 +35,8 @@ templates and fragments throw the engine's existing exceptions. `TrellisUiLoader
 
 Link `/trellis-ui/trellis-ui.css`, `/trellis-ui/htmx-indicator.css` and the deferred classic script
 `/trellis-ui/trellis-ui.js`. Serve these paths before the app's fallback route. All assets are same-origin and need no
-inline script, inline style or eval. If using htmx, self-host it and set the `htmx-config` meta options `allowEval` and
-`includeIndicatorStyles` (`includeIndicatorCSS` on HTMX 4) to `false`. The gallery shows a complete strict-CSP shell.
+inline script, inline style or eval. The gallery qualifies HTMX 2.0.10 for interactive swaps, request errors and history
+restoration. Self-host it and set the `htmx-config` meta options `allowEval` and `includeIndicatorStyles` to `false`.
 
 Public Dart names include `TrellisUiLoader`, `TrellisUiResponse` (`statusCode`, `headers`, `body`), `trellisUiRespond`,
 `materializeTrellisUi` and the read-only `trellisUiAssetPaths` list of root-absolute asset URLs.
@@ -46,12 +46,14 @@ letting the application's router decide. Strong ETags contain the embedded SHA-2
 
 ## Fragment catalogue
 
-Every signature ends in `...attrs`, forwarded to the native control or component root. Base classes survive a caller
+Where a signature takes `...attrs`, it forwards attributes to the native control or component root. Base classes survive a caller
 `class`; boolean, `aria-*` and `hx-*` attributes pass through. Omitted arguments select the defaults below. Named
 slots take the contents of the caller marker; unmarked caller content fills the anonymous slot.
 
 | Template / fragment | Signature before `...attrs` | Slots | Closed values and defaults |
 |---|---|---|---|
+| `accordion :: accordion` | none | anonymous items | forwards to the group |
+| `accordion :: accordionItem` | `name, title, open` | anonymous panel | native summary and details; null name permits multiple open items, a shared name allows one |
 | `alert :: alert` | `variant` | anonymous description, `title` | `default`, `destructive`; fallback `default` |
 | `alert-dialog :: alertDialog` | `id, title, description, open` | anonymous body, `trigger`, `action` | forwards to the native dialog; starts on Cancel; `data-open` / `data-closed` |
 | `badge :: badge` | `variant` | anonymous | `default`, `secondary`, `destructive`, `outline`, `ghost`, `link`; fallback `default` |
@@ -62,19 +64,29 @@ slots take the contents of the caller marker; unmarked caller content fills the 
 | `cluster :: cluster` | `gap` | anonymous | gap scale below; fallback `md` |
 | `combobox :: combobox` | `id, name, placeholder, value, options, displayValue` | none | forwards to the visible input; `name` and `value` identify the hidden submission; `options` is a list of `{value, label}`; `data-open` / `data-closed`, `data-side`, `data-align`, `data-empty`, `data-highlighted` |
 | `combobox :: comboboxOptions` | `id, options` | none | forwards to the results container; same ID and option list shape as the combobox |
+| `command-palette :: commandPalette` | `id, title, placeholder, options, shortcut` | `trigger` | a labelled modal picker; `options` are `{value, label}` maps, `shortcut` is an optional key letter; one `tl-select` event with `detail.value` |
 | `container :: container` | `size` | anonymous | `sm` 40rem, `md` 56rem, `lg` 72rem, `xl` 80rem; fallback `lg` |
 | `dialog :: dialog` | `id, title, description, open` | anonymous body, `trigger`, `footer` | forwards to the native dialog; `data-open` / `data-closed` |
 | `dropdown-menu :: dropdownMenu` | `id` | anonymous menu items, `trigger` | forwards to the popup; `data-open` / `data-closed`, `data-side`, `data-align` |
 | `dropdown-menu :: menuItem` | `variant` | anonymous label | native item button; `default` or `destructive`; `data-highlighted`; native `disabled` |
 | `dropdown-menu :: menuCheckboxItem` | `checked` | anonymous label | native item button; `data-checked`, `data-highlighted`; native `disabled` |
+| `dropdown-menu :: menuSubmenu` | `id` | anonymous menu items, `trigger` | nests inside a dropdown menu and forwards attributes to the submenu popup |
 | `dropdown-menu :: menuSeparator` | none | none | forwards to the separator |
 | `field :: field` | `controlId, label, hint, error` | none | vertical labelled text input; caller attributes land on the input |
 | `grid :: grid` | `gap, minimum` | anonymous | gap scale; minimum `sm` 10rem, `md` 15rem, `lg` 20rem; fallback `md` |
 | `input :: input` | none | none | native text input; caller `type` overrides text |
+| `navigation-menu :: navigationMenu` | `label` | anonymous list items | labelled navigation landmark |
+| `navigation-menu :: navigationMenuGroup` | `id, title, side, align, offset` | anonymous panel links | native disclosure; unique ID; placement defaults to bottom, start, 4 px |
+| `navigation-menu :: navigationMenuLink` | `href, currentUrl` | anonymous label | anchor marks an exact `currentUrl` match with `aria-current="page"` |
 | `native-select :: native-select` | `size` | anonymous native `option` / `optgroup` markup | `default`, `sm`; fallback `default` |
 | `pagination :: pagination` | `pages, previous, next` | none | pages `{label, href, current, ellipsis}`; nullable previous/next URLs |
+| `popover :: popover` | `id, side, align, offset` | `trigger`, `content` | forwards attributes to the panel; sides `top`, `right`, `bottom`, `left`; alignment `start`, `center`, `end`; defaults `bottom`, `start`, 4 px |
+| `popover :: popoverHeader` | none | anonymous header content | forwards to the header group |
+| `popover :: popoverTitle` | none | anonymous title | an `h2` |
+| `popover :: popoverDescription` | none | anonymous description | a `p` |
 | `radio :: radio` | `legend` | none | one native radio in a fieldset; repeat with the same `name` to group choices |
 | `separator :: separator` | `orientation` | none | `vertical`, otherwise horizontal `hr` |
+| `sheet :: sheet` | `id, side, title, inlineAbove` | `trigger`, `content` | forwards to the panel; native modal or inline content |
 | `stack :: stack` | `gap` | anonymous | gap scale; fallback `md` |
 | `switch :: switch` | `size` | none | `default`, `sm`; fallback `default`; native checkbox with switch role |
 | `table :: table` | `caption, columns, rows` | `header`, `row`, `footer` | server lists; row marker reads the `row` map in loop scope |
@@ -85,6 +97,7 @@ slots take the contents of the caller marker; unmarked caller content fills the 
 | `textarea :: textarea` | none | anonymous text | native textarea |
 | `toast :: toast` | `type, title, description, duration, outOfBand` | none | forwards to the card; `data-type`: `info` (default), `success`, `warning`, `error`; duration in ms defaults to 5000, 0 persists |
 | `toast :: toastViewport` | `id` | anonymous toasts | forwards to the live region; default ID and out-of-band target `toaster` |
+| `tooltip :: tooltip` | `id, text, side, openDelay, closeDelay` | `trigger` | one native focusable control; forwards to the wrapper; default side `top`, delays 300/150 ms; zero is valid |
 
 Template names in the table have the `trellis-ui/` prefix. Gap values are `none` 0, `xs` .25rem, `sm` .5rem,
 `md` 1rem, `lg` 1.5rem and `xl` 2rem. Unrecognised layout values fall back and never create an inline style.
@@ -122,8 +135,8 @@ that scrolls horizontally. Keep table minimum widths in application CSS (the gal
 
 ### Interactive fragments
 
-Use a unique base `id` for each dialog, alert dialog, menu, tabs, combobox and toast viewport on a page. Menu and tab
-parts derive their IDs and relationships from the parent scope. Keep tab values unique within their list and
+Use a unique base `id` for each dialog, alert dialog, menu, navigation menu group, popover, sheet, tabs, combobox, toast viewport, command palette, and tooltip on a
+page. Menu and tab parts derive their IDs and relationships from the parent scope. Keep tab values unique within their list and
 choose an enabled tab's value for `active`. Arrow keys wrap, skip disabled items and tabs, and move focus; tabs
 activate on Enter, Space or click. Menu checkbox items stay open, and item clicks also dispatch a bubbling
 `tl-select` event with the item in its detail.
@@ -133,6 +146,20 @@ backdrop click. Mark footer buttons that should close it with `data-dialog-close
 and close when the action slot's button runs. A server-rendered `open` dialog opens modally on connection and
 honours native `autofocus`. To name a specific opener on a server response, pass its DOM ID in `data-return-focus`
 on the fragment host.
+
+The Popover trigger slot supplies the label of a native button. Click, Enter or Space opens the panel and moves focus
+inside. Tabbing out of the panel closes it without moving focus again. Escape or clicking outside returns focus to
+the trigger. Use a plain link or native disclosure when an action must stay available without the suite script.
+
+The Tooltip trigger slot contains the existing native control. Its label and action stay intact and the suite
+adds the hint ID to `aria-describedby`. Use Tooltip for supplementary text and put essential information in
+visible content for touch readers and readers without the suite script.
+
+A Sheet accepts a button in its `trigger` slot and links or controls in its `content` slot. Use
+`top`, `right`, `bottom` or `left` to choose the edge. `inlineAbove` is an optional CSS-pixel
+threshold above which the content appears inline. Escape, Close and a backdrop click restore
+trigger focus. Activating a link leaves focus with its destination. Without the suite script, the
+links and controls remain in the page.
 
 Give the combobox input a separate label using its base ID. Send text through an app-chosen query parameter
 (`name="q"`, for example) and use `hx-target="#<id>-results"` with `hx-swap="outerHTML"` to replace suggestions.

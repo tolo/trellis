@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:html/dom.dart';
@@ -60,7 +59,7 @@ void main() {
     };
 
     expect(manifest.name, 'meadow');
-    expect(manifest.minTrellisVersion, '0.14.0');
+    expect(manifest.minTrellisVersion, '0.15.0');
     expect(manifest.features.where({'docs', 'landing', 'blog'}.contains), ['landing']);
     expect(manifest.params.keys.toSet(), standard.union(meadow));
     const expectedTypes = {
@@ -847,12 +846,11 @@ void main() {
     }
     final authoredMeter = await _buildFixture(themeDir, 'no-proof');
     final meter = authoredMeter.querySelector('.meter')!;
-    expect(meter.attributes['aria-valuenow'], '42');
-    expect(meter.attributes['style'], contains('--confidence: 42%'));
+    expect(meter.localName, 'progress');
+    expect(meter.attributes, containsPair('value', '42'));
+    expect(meter.attributes, isNot(contains('style')));
 
-    // A present block may still have absent optional fields. Unguarded, the insight card emitted an
-    // empty span/h3/p and `--confidence: null%` - an invalid clamp, so the width was dropped and the
-    // block-level span filled the meter: a full bar for a value that does not exist.
+    // An absent optional value must leave out the confidence bar.
     final partial = await _buildFixture(themeDir, 'partial-workflow');
     expect(partial.querySelector('#workflow'), isNotNull);
     expect(partial.querySelectorAll('.signal-card'), hasLength(1));
@@ -863,7 +861,7 @@ void main() {
 
     // The mirror case: an insight with no signal list and no confidence. `#lists.size(null)` returns
     // null and `null > 0` throws, so the list guard has to test for null first and let `and`
-    // short-circuit; an unguarded meter would render `--confidence: null%` and a full bar.
+    // short-circuit; a missing confidence must also leave out the progress control.
     final partialInsight = await _buildFixture(themeDir, 'partial-insight');
     expect(partialInsight.querySelector('.insight-card'), isNotNull);
     expect(partialInsight.querySelector('.signal-stack'), isNull);
@@ -926,108 +924,9 @@ void main() {
     final forced = await _buildFixture(themeDir, 'no-optionals', skin: 'dark');
     expect(forced.querySelector('[data-meadow-skin-toggle]'), isNull);
     expect(forced.head!.text, isNot(contains('localStorage.getItem')));
-
-    // A bare <details> overlay does not close on Escape or on a click elsewhere, and its summary
-    // keeps announcing "Open navigation menu" while it is open. Driven against a DOM stub because
-    // the assertion is about behaviour, not about the source containing the word "Escape".
-    final menu = await _runMenuHarness(p.join(themeDir, 'static', 'js', 'meadow.js'));
-    if (menu == null) return;
-    expect(menu['initial'], {'open': false, 'label': 'Open navigation menu'});
-    expect(menu['opened'], {'open': true, 'label': 'Close navigation menu'});
-    expect(menu['otherKey'], {'open': true}, reason: 'only Escape closes it');
-    expect(menu['escaped'], {'open': false, 'label': 'Open navigation menu', 'focused': 1});
-    expect(menu['insideClick'], {'open': true}, reason: 'a click on the menu itself must not close it');
-    expect(menu['outsideClick'], {'open': false, 'label': 'Open navigation menu'});
   });
 }
 
-/// Drives `meadow.js` against a DOM stub and reports the mobile menu's state after each step.
-Future<Map<String, dynamic>?> _runMenuHarness(String scriptPath) async {
-  final tempDir = Directory.systemTemp.createTempSync('meadow_menu_');
-  addTearDown(() => tempDir.deleteSync(recursive: true));
-  final harness = File(p.join(tempDir.path, 'menu.js'))..writeAsStringSync(_menuHarness);
-  try {
-    final result = await Process.run('node', [harness.path, scriptPath]);
-    expect(result.exitCode, 0, reason: 'menu harness failed: ${result.stderr}');
-    return jsonDecode(result.stdout as String) as Map<String, dynamic>;
-  } on ProcessException {
-    requireNodeInCi('the mobile-menu behavioural harness');
-    markTestSkipped('system node not found - mobile menu behavioural harness skipped');
-    return null;
-  }
-}
-
-const _menuHarness = r'''
-'use strict';
-const fs = require('fs');
-const vm = require('vm');
-
-function element(tag) {
-  const attributes = {};
-  const listeners = {};
-  return {
-    tag,
-    focused: 0,
-    children: [],
-    setAttribute(name, value) { attributes[name] = String(value); },
-    getAttribute(name) { return name in attributes ? attributes[name] : null; },
-    focus() { this.focused++; },
-    addEventListener(type, fn) { (listeners[type] = listeners[type] || []).push(fn); },
-    dispatch(type) { (listeners[type] || []).forEach((fn) => fn({})); },
-    querySelector() { return null; },
-    contains(node) { return node === this || this.children.indexOf(node) !== -1; },
-  };
-}
-
-const summary = element('summary');
-summary.setAttribute('aria-label', 'Open navigation menu');
-const menu = element('details');
-menu.children.push(summary);
-menu.querySelector = (selector) => (selector === 'summary' ? summary : null);
-let isOpen = false;
-Object.defineProperty(menu, 'open', {
-  get() { return isOpen; },
-  set(value) { isOpen = !!value; menu.dispatch('toggle'); },
-});
-
-const documentListeners = {};
-const context = {
-  window: { matchMedia: () => ({ matches: false, addEventListener() {} }), isSecureContext: false },
-  document: {
-    documentElement: { dataset: {} },
-    querySelector: (selector) => (selector === '.mobile-menu' ? menu : null),
-    getElementById: () => null,
-    addEventListener(type, fn) { (documentListeners[type] = documentListeners[type] || []).push(fn); },
-  },
-  navigator: {},
-  localStorage: { getItem: () => null, setItem() {} },
-};
-context.window.document = context.document;
-vm.createContext(context);
-vm.runInContext(fs.readFileSync(process.argv[2], 'utf8'), context, { filename: process.argv[2] });
-
-const fire = (type, event) => (documentListeners[type] || []).forEach((fn) => fn(event));
-const label = () => summary.getAttribute('aria-label');
-const steps = {};
-steps.initial = { open: menu.open, label: label() };
-menu.open = true;
-steps.opened = { open: menu.open, label: label() };
-fire('keydown', { key: 'a' });
-steps.otherKey = { open: menu.open };
-fire('keydown', { key: 'Escape' });
-steps.escaped = { open: menu.open, label: label(), focused: summary.focused };
-menu.open = true;
-fire('pointerdown', { target: summary });
-steps.insideClick = { open: menu.open };
-fire('pointerdown', { target: element('main') });
-steps.outsideClick = { open: menu.open, label: label() };
-process.stdout.write(JSON.stringify(steps));
-''';
-
-/// Declarations of the first rule matching [selector], as property -> value.
-///
-/// Splitting on `;` avoids the prefix traps of matching a declaration with a substring regex:
-/// `overflow:` would otherwise match inside `text-overflow:`, and `column` inside `column-reverse`.
 Map<String, String> _declarations(String css, String selector) {
   final body = RegExp('${RegExp.escape(selector)}\\s*\\{([^}]*)\\}').firstMatch(css)?.group(1) ?? '';
   return {

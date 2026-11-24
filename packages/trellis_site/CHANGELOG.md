@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.15.0
+
+### Added
+
+- Declare trusted URL fields by source and field in `trellis_site.yaml`. The build preserves trust through
+  render contexts and reports missing sources or fields and non-string values.
+- Expose `site.headerNavigation` for configured header links. The view groups menu descendants under their
+  nearest configured destination and supplies final prefixed URLs for the current-page marker.
+
+- Expose `site.search.indexUrl` and `site.search.clientUrl` when the build will emit an index. Lattice can
+  opt into a header Command palette, and the docs site uses it for both the shortcut and Search button.
+
 ## 0.14.0
 
 ### Added

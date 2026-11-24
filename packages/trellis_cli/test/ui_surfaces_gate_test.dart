@@ -137,14 +137,24 @@ void main() {
       expect(result.exitCode, 0, reason: surface);
       for (final name in entry.value.keys) {
         final bytes = File.fromUri(records.uri.resolve('$name.json')).readAsBytesSync();
-        expect(policy.recordIssues(name, jsonDecode(utf8.decode(bytes)), app: true), isEmpty, reason: name);
+        final record = jsonDecode(utf8.decode(bytes)) as Map;
+        expect(policy.recordIssues(name, record, app: true), isEmpty, reason: name);
+        if (name == 'admin') {
+          final items = record['items'] as Map;
+          for (final item in ['strict-csp', 'wcag-axe']) {
+            final browsers = (items[item] as Map)['browsers'] as Map;
+            for (final browser in ['chrome', 'firefox']) {
+              expect((browsers[browser] as Map)['status'], 'pass', reason: 'admin $item in $browser');
+            }
+          }
+        }
         expect(bytes, expected[name], reason: '$name automated rerun preserves checked-in evidence and manual results');
       }
     }
 
-    final apps = _routes.entries.toList();
-    for (var i = 0; i < apps.length; i += 2) {
-      await Future.wait(apps.skip(i).take(2).map(verify), eagerError: false);
+    // Another headless Firefox session can blur the app during a native keyboard check.
+    for (final app in _routes.entries) {
+      await verify(app);
     }
     print('${names.length} surfaces pass ${automatedItems.length} automated items with Chrome and Firefox evidence');
   }, timeout: const Timeout(Duration(minutes: 25)));

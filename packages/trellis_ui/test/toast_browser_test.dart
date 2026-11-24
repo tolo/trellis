@@ -162,6 +162,11 @@ void main() {
       const target = '#toaster > tl-toast:nth-child(2) [data-slot=toast]';
       await touchDriver.dragTouch(target, dx: -85, dy: 0);
       await touchDriver.dragTouch(target, dx: 21, dy: 0);
+      if (touchDriver is ChromeDriver) {
+        await touchDriver.evaluate('''
+          document.addEventListener('scrollend', () => { window.toastScrollEnded = true; }, {once: true})
+        ''');
+      }
       await touchDriver.dragTouch(target, dx: 12, dy: -115);
       expect(await touchDriver.evaluate(count), 3);
       expect(
@@ -169,16 +174,8 @@ void main() {
         contains('pan-y'),
       );
       if (touchDriver is ChromeDriver) {
-        expect(
-          await touchDriver.evaluate(r'''(async () => {
-          for (let attempt = 0; attempt < 30; attempt++) {
-            if (scrollY > 0) return true;
-            await new Promise(requestAnimationFrame);
-          }
-          return false;
-        })()'''),
-          isTrue,
-        );
+        // Chrome can keep scrolling after the diagonal touch ends.
+        await waitFor('window.toastScrollEnded === true && scrollY > 0');
         final cancels = await touchDriver.evaluate('window.touchCancels') as int;
         await touchDriver.dragTouch(target, dx: 86, dy: 0, cancel: true);
         expect(await touchDriver.evaluate('window.touchCancels'), cancels + 1);
